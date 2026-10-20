@@ -667,7 +667,7 @@
 
             </div>
 
-            <!-- ── TABELA POR FILIAL (drill-down) ──────────────── -->
+            <!-- ── TABELA POR REGIONAL (drill-down: Regional › Estratégia › Família) ── -->
             <style>
               .sr-tbl tbody tr.sr-fl-row:last-child td{background:#fff;}
               .sr-fl-row:hover td{background:var(--bm-blue-50);}
@@ -677,7 +677,7 @@
             <div class="sr-tbl-wrap">
               <div class="sr-tbl-header" style="padding-bottom:12px;border-bottom:1px solid var(--border);">
                 <div style="display:flex;flex-direction:column;gap:1px;">
-                  <h4 style="font-size:15px;font-weight:700;color:var(--bm-blue-900);">Performance por Filial</h4>
+                  <h4 style="font-size:15px;font-weight:700;color:var(--bm-blue-900);">Performance por Regional</h4>
                   <span id="sr-fil-period" style="font-weight:500;color:var(--text-3);font-size:11px;"></span>
                 </div>
                 <div style="display:flex;align-items:center;gap:6px;">
@@ -698,7 +698,7 @@
               <table class="sr-tbl">
                 <thead>
                   <tr>
-                    <th>Filial</th>
+                    <th>Regional</th>
                     <th>Faturamento</th>
                     <th>Meta</th>
                     <th>% Atingimento</th>
@@ -1400,11 +1400,11 @@ async function medirFaturamentoDiario(filtros) {
   return out;
 }
 
-// ── Performance por Filial (drill-down: Filial > Estratégia > Família) ──
+// ── Performance por Regional (drill-down: Regional > Estratégia > Família) ──
 const _numN = x => (x == null || x === '' || x === '-' || isNaN(Number(x))) ? null : Number(x);
 const _esc = s => String(s == null ? '' : s).replace(/"/g, '&quot;');
 const _corPct = p => p == null ? 'var(--text-2)' : (p >= 1 ? 'var(--bm-green-700)' : p >= 0.8 ? 'var(--warning)' : 'var(--danger)');
-window._filtrosFiliais = [];
+window._filtrosRegionais = [];
 
 // A meta DESCE para este nível? Quando o modelo não projeta a meta no campo,
 // toda linha devolve a meta do pai (ou, sem pai, todas devolvem a mesma) —
@@ -1487,9 +1487,8 @@ async function medirNivel(groupCol, filtros, metaPai) {
     .filter(x => x.nome != null && ((x.fat || 0) > 0 || (x.meta || 0) > 0))
     .sort((a, b) => (b.fat - a.fat) || ((b.meta || 0) - (a.meta || 0)));
 }
-const medirFiliais = (filtros) => medirNivel("'DIM_UNIDADE_DE_NEGOCIO_V2'[UNIDADE_DE_NEGOCIO]", filtros);
 
-// ── Regionais (lado direito do HERO MSBio) ───────────────────────────
+// ── Regionais (HERO MSBio e tabela Performance por Regional) ─────────
 // Regional = região do Brasil, montada pelo 'Estados'[Cód. do estado] — o
 // mesmo filtro dos cartões "REGIONAL …" do relatório no Power BI (Nordeste =
 // AL, BA, CE, MA, PB, PE, PI, RN ou SE). Cada medida é avaliada NA REGIONAL
@@ -1502,16 +1501,26 @@ const REGIONAIS = [
   { id: 'CENTRO-OESTE', nome: 'Centro-Oeste', ufs: ['DF', 'GO', 'MS', 'MT'] },
   { id: 'NORTE',        nome: 'Norte',        ufs: ['AC', 'AM', 'AP', 'PA', 'RO', 'RR', 'TO'] }
 ];
+// o que não cai em nenhuma das 5 (exterior, UF em branco ou sem estado): o
+// NOT … IN pega também a linha em branco do 'Estados' — assim as regionais +
+// esta linha fecham com o TOTAL da tabela
+const REG_OUTRAS = { id: 'OUTRAS', nome: 'Exterior / sem UF', ufs: [] };
+const _ufLista = ufs => '{ ' + ufs.map(u => '"' + u + '"').join(', ') + ' }';
+function regFiltro(id) {
+  if (id === REG_OUTRAS.id) return `NOT(${UF_COL} IN ${_ufLista(REGIONAIS.flatMap(r => r.ufs))})`;
+  const r = REGIONAIS.find(x => x.id === id);
+  return r ? `${UF_COL} IN ${_ufLista(r.ufs)}` : null;
+}
 
-// 1 linha por regional (UNION de ROWs, cada uma com o filtro de UF dela).
-// Mesmo roteiro do medirNivel: faturamento isolado; Meta/%/Gap/Margem num
-// combinado e, se o OLS recusar, uma a uma.
+// 1 linha por regional + OUTRAS (UNION de ROWs, cada uma com o filtro de UF
+// dela). Mesmo roteiro do medirNivel: faturamento isolado; Meta/%/Gap/Margem
+// num combinado e, se o OLS recusar, uma a uma.
 async function medirRegionais(filtros) {
   const fStr = filtros.join(', ');
   const val  = (r, re) => { const k = Object.keys(r).find(x => re.test(x)); return k ? r[k] : null; };
-  const out  = REGIONAIS.map(r => ({ id: r.id, nome: r.nome, ufs: r.ufs, fat: null, meta: null, pct: null, gap: null, mgPct: null, mgNota: null }));
+  const out  = REGIONAIS.concat(REG_OUTRAS).map(r => ({ id: r.id, nome: r.nome, ufs: r.ufs, fat: null, meta: null, pct: null, gap: null, mgPct: null, mgNota: null }));
   const daxReg = cols => 'EVALUATE CALCULATETABLE(UNION('
-    + REGIONAIS.map(r => `CALCULATETABLE(ROW("Reg", "${r.id}", ${cols}), ${UF_COL} IN { ${r.ufs.map(u => '"' + u + '"').join(', ')} })`).join(', ')
+    + out.map(r => `CALCULATETABLE(ROW("Reg", "${r.id}", ${cols}), ${regFiltro(r.id)})`).join(', ')
     + '), ' + fStr + ')';
   const casar = (rows, alias, campo) => {
     const re = new RegExp('\\[' + alias + '\\]$');
@@ -1547,9 +1556,11 @@ async function medirRegionais(filtros) {
       _olsMem.aprender(falhas, falhas.length < EXTRAS.length);
     }
   }
-  // meta que não desce para a UF volta igual nas 5: não é da regional
+  // meta que não desce para a UF volta igual em todas: não é da regional
   if (_metaRepetida(out, null)) out.forEach(x => { x.meta = null; x.pct = null; x.gap = null; });
-  return out.sort((a, b) => ((b.fat || 0) - (a.fat || 0)) || ((b.meta || 0) - (a.meta || 0)));
+  // as 5 da maior para a menor; OUTRAS sempre por último
+  return out.sort((a, b) => ((a.id === REG_OUTRAS.id) - (b.id === REG_OUTRAS.id))
+    || ((b.fat || 0) - (a.fat || 0)) || ((b.meta || 0) - (a.meta || 0)));
 }
 
 // R$ curto, como nos cartões do Power BI: R$ 682,88 mil · R$ 1,12 mi
@@ -1566,9 +1577,9 @@ const REG_CAB = '<div class="ix-reg-r ix-reg-hd" role="row">'
   + '<span role="columnheader" title="Regiões do Brasil pela UF do faturamento (Cód. do estado)">REGIONAL</span>'
   + ['FATURAMENTO', 'META', 'GAP', '% META', 'MARGEM', '% MARGEM'].map(t => `<span role="columnheader">${t}</span>`).join('')
   + '</div>';
-// regs = null → carregando. totalFat = faturamento do consolidado, para
-// avisar o que não cai em regional nenhuma (nota sem UF / exterior).
-function pintarRegionais(regs, totalFat) {
+// regs = null → carregando. A linha OUTRAS não entra no banner: vira a nota
+// do rodapé (o que não cai em regional nenhuma).
+function pintarRegionais(regs) {
   const tb = document.getElementById('ix-reg-rows');
   if (!tb) return;
   const nota = document.getElementById('ix-reg-nota');
@@ -1577,7 +1588,7 @@ function pintarRegionais(regs, totalFat) {
   if (!regs) { tb.innerHTML = REG_CAB + aviso('Carregando…'); return; }
   if (regs.erro) { tb.innerHTML = REG_CAB + aviso('Não foi possível carregar as regionais agora.'); return; }
   const corPct = p => p == null ? '' : p >= 1 ? 'ix-reg-ok' : p >= 0.8 ? 'ix-reg-mid' : 'ix-reg-low';
-  tb.innerHTML = REG_CAB + regs.map(r => {
+  tb.innerHTML = REG_CAB + regs.filter(r => r.id !== REG_OUTRAS.id).map(r => {
     const p = r.pct;
     const larg = p == null ? 0 : Math.max(0, Math.min(p * 100, 100));
     const mgp = r.mgPct == null ? '—' : fPCT(r.mgPct * 100);
@@ -1591,12 +1602,11 @@ function pintarRegionais(regs, totalFat) {
       <span role="cell" class="ix-reg-mgp">${mgp}</span>
     </div>`;
   }).join('');
-  const soma = regs.reduce((s, r) => s + (r.fat || 0), 0);
-  const fora = totalFat == null ? 0 : Number(totalFat) - soma;
-  if (nota && fora >= 0.5) nota.textContent = fBRL(fora) + ' sem UF do Brasil (exterior ou sem estado) ficam fora das regionais.';
+  const fora = (regs.find(r => r.id === REG_OUTRAS.id) || {}).fat || 0;
+  if (nota && fora >= 0.5) nota.textContent = fBRL(fora) + ' de exterior ou sem UF ficam fora das regionais.';
 }
 
-function _linhaFilial(item, level, expandable, attrs) {
+function _linhaReg(item, level, expandable, attrs) {
   const ind = level * 18;
   const tg = expandable
     ? `<span class="sr-tg" style="cursor:pointer;display:inline-block;width:14px;color:var(--bm-blue-600);">▶</span>`
@@ -1612,10 +1622,14 @@ function _linhaFilial(item, level, expandable, attrs) {
     <td>${fNUM(item.mgNota)}</td>
   </tr>`;
 }
-function renderTabelaFiliais(rows, total) {
+// 1º nível = as linhas do medirRegionais (as mesmas do banner): as 5 sempre,
+// OUTRAS só quando tem faturamento ou meta
+function renderTabelaRegionais(regs, total) {
   const tbody = document.getElementById('sr-tbody');
   if (!tbody) return;
-  let html = rows.map(f => _linhaFilial(f, 0, true, `data-filial="${_esc(f.nome)}"`)).join('');
+  if (regs && regs.erro) { tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;color:var(--text-3);">Não foi possível carregar as regionais agora.</td></tr>'; return; }
+  const rows = (regs || []).filter(r => r.id !== REG_OUTRAS.id || (r.fat || 0) > 0 || (r.meta || 0) > 0);
+  let html = rows.map(r => _linhaReg(r, 0, true, `data-reg="${_esc(r.id)}" title="${_esc(r.ufs.length ? r.nome + ': ' + r.ufs.join(', ') : 'Exterior, UF em branco ou sem estado')}"`)).join('');
   if (total) {
     html += `<tr class="sr-fl-total">
       <td style="padding-left:26px;font-weight:700;">TOTAL</td>
@@ -1631,31 +1645,33 @@ function renderTabelaFiliais(rows, total) {
 }
 
 // expande UMA linha (reutilizado pelo clique e pelo botão "+ Nível")
-async function _expandFilialRow(tr) {
+async function _expandRegRow(tr) {
   if (!tr || !tr.classList.contains('sr-fl-row')) return;
   if (tr.classList.contains('open')) return;
   const tg = tr.querySelector('.sr-tg');
   if (!tg) return;
   const level = +tr.dataset.level;
   tg.textContent = '…';
-  const base = window._filtrosFiliais || [];
-  const filial = tr.dataset.filial;
+  const base = window._filtrosRegionais || [];
+  const reg = tr.dataset.reg;
+  const fReg = regFiltro(reg);
+  if (!fReg) { tg.textContent = '▶'; return; }
   const metaPai = _numN(tr.dataset.meta);
   // medirNivel já devolve só estratégias/famílias com faturamento > 0 OU meta > 0
   let children = [], childLevel, childExpandable, attrsFn;
   if (level === 0) {
-    children = await medirNivel("'Famílias'[Estratégia]", base.concat(`'DIM_UNIDADE_DE_NEGOCIO_V2'[UNIDADE_DE_NEGOCIO] = "${filial}"`), metaPai);
+    children = await medirNivel("'Famílias'[Estratégia]", base.concat(fReg), metaPai);
     childLevel = 1; childExpandable = true;
-    attrsFn = c => `data-filial="${_esc(filial)}" data-estrategia="${_esc(c.nome)}"`;
+    attrsFn = c => `data-reg="${_esc(reg)}" data-estrategia="${_esc(c.nome)}"`;
   } else if (level === 1) {
     const estr = tr.dataset.estrategia;
-    children = await medirNivel("'Famílias'[Família]", base.concat(`'DIM_UNIDADE_DE_NEGOCIO_V2'[UNIDADE_DE_NEGOCIO] = "${filial}"`, `'Famílias'[Estratégia] = "${estr}"`), metaPai);
+    children = await medirNivel("'Famílias'[Família]", base.concat(fReg, `'Famílias'[Estratégia] = "${_srDax(estr)}"`), metaPai);
     childLevel = 2; childExpandable = false;
-    attrsFn = () => `data-filial="${_esc(filial)}"`;
+    attrsFn = () => `data-reg="${_esc(reg)}"`;
   } else { tg.textContent = '▶'; return; }
   tr.classList.add('open'); tg.textContent = '▼';
   const childHtml = children.length
-    ? children.map(c => _linhaFilial(c, childLevel, childExpandable, attrsFn(c))).join('')
+    ? children.map(c => _linhaReg(c, childLevel, childExpandable, attrsFn(c))).join('')
     : `<tr class="sr-fl-row" data-level="${childLevel}"><td colspan="7" style="padding-left:${12 + childLevel * 18}px;color:var(--text-3);">sem dados</td></tr>`;
   tr.insertAdjacentHTML('afterend', childHtml);
 }
@@ -1673,20 +1689,20 @@ document.addEventListener('click', async (ev) => {
     tr.classList.remove('open'); tg.textContent = '▶';
     return;
   }
-  await _expandFilialRow(tr);
+  await _expandRegRow(tr);
 });
 
 // ── Botões: expandir próximo nível / recolher tudo ──
 async function srExpandirNivel() {
   const tbody = document.getElementById('sr-tbody');
   if (!tbody) return;
-  const maxLevel = 1;  // nível 0 (Filial) e 1 (Estratégia) são expansíveis; 2 (Família) é folha
+  const maxLevel = 1;  // nível 0 (Regional) e 1 (Estratégia) são expansíveis; 2 (Família) é folha
   const candidatas = [...tbody.querySelectorAll('tr.sr-fl-row')]
     .filter(tr => !tr.classList.contains('open') && tr.querySelector('.sr-tg') && +tr.dataset.level <= maxLevel);
   if (!candidatas.length) return;
   const alvo = Math.min(...candidatas.map(tr => +tr.dataset.level));
   const lote = candidatas.filter(tr => +tr.dataset.level === alvo);
-  for (const tr of lote) { await _expandFilialRow(tr); }
+  for (const tr of lote) { await _expandRegRow(tr); }
 }
 function srRecolher() {
   const tbody = document.getElementById('sr-tbody');
@@ -1704,7 +1720,7 @@ function srExportExcel() {
   if (typeof XLSX === 'undefined') { alert('Biblioteca de exportação não carregou.'); return; }
   const tbody = document.getElementById('sr-tbody');
   if (!tbody) return;
-  const dimLabels = ['Filial', 'Estratégia', 'Família'];
+  const dimLabels = ['Regional', 'Estratégia', 'Família'];
   const measHeaders = ['Faturamento', 'Meta', '% Atingimento', 'Gap', '% Margem', 'Nota de Margem'];
   const rows = [dimLabels.concat(measHeaders)];
   const parseN = txt => {
@@ -1733,9 +1749,9 @@ function srExportExcel() {
   });
   const ws = XLSX.utils.aoa_to_sheet(rows);
   const wb = XLSX.utils.book_new();
-  XLSX.utils.book_append_sheet(wb, ws, 'Performance por Filial');
+  XLSX.utils.book_append_sheet(wb, ws, 'Performance por Regional');
   const f = window.filtroAtual || {};
-  XLSX.writeFile(wb, `Performance_Filial_${f.mes || ''}_${f.ano || ''}.xlsx`);
+  XLSX.writeFile(wb, `Performance_Regional_${f.mes || ''}_${f.ano || ''}.xlsx`);
 }
 window.srExportExcel = srExportExcel;
 
@@ -1910,7 +1926,7 @@ async function aplicarFiltroFaturamento() {
 
   try {
     const filtrosDia = empresaFiltro ? base.concat(empresaFiltro) : base.slice();
-    window._filtrosFiliais = filtrosDia;  // base p/ o drill-down da tabela de filiais
+    window._filtrosRegionais = filtrosDia;  // base p/ o drill-down da tabela de regionais
 
     // ── Faturados de HOJE (data de hoje no horário de Brasília) ──
     const hojeBR = new Intl.DateTimeFormat('en-CA', { timeZone: 'America/Sao_Paulo', year: 'numeric', month: '2-digit', day: '2-digit' }).format(new Date());
@@ -1934,11 +1950,10 @@ async function aplicarFiltroFaturamento() {
       .then(([det, tot]) => { if (seqD === _srSeqDiario) renderPedidosDetalhe(det, tot, { filtros: filtrosPedDet, query: pbiQuery }); })
       .catch(e => console.warn('[SR] pedidos em andamento:', e.message));
 
-    const [msbio, regionais, diario, filiais, dwUpdate, evol, metaEvol] = await Promise.all([
+    const [msbio, regionais, diario, dwUpdate, evol, metaEvol] = await Promise.all([
       medirSegmento(base, empresaFiltro),  // consolidado (respeita Empresa)
-      medirRegionais(filtrosDia),          // regionais, ao lado do consolidado
+      medirRegionais(filtrosDia),          // regionais: banner e tabela Performance por Regional
       medirFaturamentoDiario(filtrosDia),  // gráfico Faturamento por Dia
-      medirFiliais(filtrosDia),            // tabela Performance por Filial
       pbiQuery("EVALUATE ROW(\"UltimaAtualizacao\", MAX('Atualizações DW'[Última atualização]))").catch(()=>[]),
       medirEvolucaoMensal(empresaFiltro ? [empresaFiltro] : []),  // gráfico Evolução Mensal
       medirMetaMensal(empresaFiltro ? [empresaFiltro] : [])       // linha de meta no gráfico
@@ -1969,7 +1984,7 @@ async function aplicarFiltroFaturamento() {
     // barra de % Margem
     const mbar = document.getElementById('ix-msbio-margem-bar');
     if (mbar && r.mpct != null) mbar.style.width = Math.max(0, Math.min(r.mpct, 100)) + '%';
-    pintarRegionais(regionais, msbio.fat);
+    pintarRegionais(regionais);
 
     // Gráfico Faturamento por Dia
     if (window.renderChartDiario) window.renderChartDiario(diario.labels, diario.valores);
@@ -1978,8 +1993,8 @@ async function aplicarFiltroFaturamento() {
     if (window.renderChartMensal) window.renderChartMensal(evol, metaEvol);
     setTxt('sr-mensal-ano', '· ' + Math.max.apply(null, [].concat(f.ano)));
 
-    // Tabela Performance por Filial
-    renderTabelaFiliais(filiais, msbio);
+    // Tabela Performance por Regional
+    renderTabelaRegionais(regionais, msbio);
     setTxt('sr-fil-period', labelPeriodo + srSufixoValores());
   } catch (e) {
     console.error('[PBI] Erro ao aplicar filtro:', e.message);

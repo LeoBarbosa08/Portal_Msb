@@ -81,6 +81,10 @@ novidades de lá, reaplique:
   `'Estados'[Cód. do estado]` (`REGIONAIS`, `medirRegionais`,
   `pintarRegionais`). Cada medida é avaliada na regional, com os mesmos filtros
   do banner. Em tela estreita a tabela desce para baixo do número.
+- **Performance por Regional** no lugar da Performance por Filial — mesmas
+  linhas do banner (uma consulta só), mais "Exterior / sem UF" quando houver,
+  para fechar com o TOTAL; abre em Estratégia › Família. O Excel sai como
+  `Performance_Regional_<mês>_<ano>.xlsx`.
 
 ### Identidade visual MSB (20/10/2026)
 
