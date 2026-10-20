@@ -70,12 +70,45 @@ inteiro** (chegou a ser ocultado e voltou no mesmo dia). Marcado no código com
 
 Para voltar um módulo: recoloque-o nesses pontos.
 
+### Só a empresa MSB (20/10/2026)
+
+**Todo relatório do portal mostra só a empresa MSB** — sem opção de ver a BIO
+nem "Todos". A regra mora no `pbi-throttle.js` (bloco `RECORTE MSB`), por onde
+passa toda consulta ao Power BI do portal (telas, listas de filtro, detalhes,
+exportações e o assistente de voz): cada `EVALUATE` vira
+`EVALUATE CALCULATETABLE(<consulta>, 'Empresas'[Código da empresa] IN { "MSB" })`.
+
+- A coluna e o valor são descobertos uma vez por modelo, nesta ordem:
+  `'Empresas'[Código da empresa]`, `'Empresas'[Empresa]`, `'Empresa'[Empresa]`;
+  vale o valor `MSB` (ou, sem ele, o que tiver MSB / MEDICAL SYSTEM no nome).
+  `PBIQ.recorte()` no F12 mostra o que foi achado em cada modelo.
+- Modelo com a coluna mas **sem a MSB** → nenhuma consulta vai; a tela fica sem
+  números e com a faixa "Este relatório não tem dados da MSB no Power BI".
+- Modelo **sem tabela de empresa** → as consultas vão como estão (aviso no
+  console). Tabela sem relação com `'Empresas'` no modelo (as de preço, a de
+  ruptura…) também não é recortada: o filtro só desce pelas relações.
+- Um filtro de outra empresa **dentro** da consulta passaria por cima do
+  recorte, então nenhuma tela oferece a BIO: Sales Report e Performance de
+  Vendas têm a Empresa fixa; nas outras telas a lista de Empresa vem do modelo
+  já recortada (só MSB); o assistente de voz recusa DAX com `"BIO"`
+  (`voz-embed.js`) e o prompt (`api/shared/comercial-schema.js`) diz que o
+  portal é só da MSB.
+- Ficam de fora o InventarIA (planilha enviada pela pessoa, sem coluna de
+  empresa) e o que o portal não lê do Power BI.
+- É filtro do portal, no navegador. Para o dado nem sair do Power BI, o lugar é
+  uma função de RLS no modelo para as contas da MSB.
+
 ### Sales Report da MSB (20/10/2026)
 
 `pages/comercial-sales-report.html` já não é igual ao do completo — ao trazer
 novidades de lá, reaplique:
 
-- **Sem os cards Bio e MSB** — só o consolidado de Faturamento × Meta (MSBio).
+- **Sem os cards Bio e MSB** — só o consolidado de Faturamento × Meta, já
+  recortado na MSB (ver "Só a empresa MSB").
+- **Empresa fixa em MSB** — sem o dropdown de Empresa (BIO/MSB); a barra mostra
+  o rótulo fixo "Empresa MSB" e `srFiltroEmpresa()` sempre devolve
+  `'Empresas'[Código da empresa] = "MSB"`. O mesmo na Performance de Vendas
+  (`pvFiltrosValor()`).
 - **Regionais no banner** — à direita do número grande, Faturamento, Meta, Gap,
   % Meta e Margem das 5 regiões do Brasil, montadas pelo
   `'Estados'[Cód. do estado]` (`REGIONAIS`, `medirRegionais`,
@@ -183,6 +216,12 @@ arquivo de lá e, se for um dos arquivos da lista "O que mudou", reaplique o
 trecho `RECORTE COMERCIAL + ESTOQUE`. Página ou Function nova: confira se ela
 chama outra Function ou script que ainda não está aqui.
 
+**Atenção ao `pbi-throttle.js`:** o daqui tem o bloco `RECORTE MSB` (só a
+empresa MSB). Copiar o do completo por cima apaga essa regra — traga só o que
+mudou lá e mantenha o bloco. O mesmo para a Empresa fixa do Sales Report e da
+Performance de Vendas, o filtro de `"BIO"` do `voz-embed.js` e a regra EMPRESA
+de `api/shared/comercial-schema.js`.
+
 O arquivo do completo chega **azul e com as fontes da Biomedical**. Depois de
 copiar, converta **só os arquivos que acabaram de chegar** (rodar de novo num
 arquivo já convertido acinzenta as cores):
@@ -199,4 +238,6 @@ Google Fonts `family=Roboto:wght@300..900`), o logo (`/icons/logo-msb.png`) e o
 
 Pasta `.claude/` (fora do git): `node .claude/teste-server.js` e abra
 `http://localhost:4321/index.html?fake=1` — login e Power BI de mentira;
-`/api/my-areas` e `/api/alertas` rodam o código de verdade.
+`/api/my-areas` e `/api/alertas` rodam o código de verdade. O recorte MSB
+responde BIO/MSB no modelo de mentira; `&empresa=sem` simula um modelo sem a
+MSB e `&empresa=nenhuma` um modelo sem tabela de empresa.

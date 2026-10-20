@@ -10,7 +10,7 @@
   <link rel="stylesheet" href="../dash-v2.css?v=3">
   <!-- MSAL via unpkg (CDN mais confiável) -->
   <script src="https://unpkg.com/@azure/msal-browser@2.38.3/lib/msal-browser.min.js"></script>
-<script src="../pbi-throttle.js?v=3"></script>
+<script src="../pbi-throttle.js?v=4"></script>
   <!-- Layout v3 (Claude Design · animado): fonte + camada visual + motor de animações -->
   <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300..900&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="../portal-v3.css?v=2">
@@ -266,6 +266,9 @@
             .av-dd-btn:hover{border-color:var(--bm-blue-500);}
             .av-dd-btn.has{border-color:var(--bm-blue-600);background:var(--bm-blue-50);color:var(--bm-blue-800);}
             .av-dd-btn .cnt{background:var(--bm-blue-600);color:#fff;border-radius:999px;padding:0 7px;font-size:11px;}
+            /* Empresa fixa (recorte MSB): mesmo visual do dropdown, sem abrir */
+            .av-dd-fixa .av-dd-btn{cursor:default;}
+            .av-dd-fixa .av-dd-btn .fixo{font-weight:800;}
             .av-dd-panel{position:absolute;z-index:40;top:calc(100% + 4px);left:0;width:270px;max-height:340px;display:none;flex-direction:column;background:#fff;border:1px solid var(--border);border-radius:10px;box-shadow:var(--shadow);overflow:hidden;}
             .av-dd.open .av-dd-panel{display:flex;}
             .av-dd-search{padding:8px;border-bottom:1px solid var(--border);}
@@ -378,9 +381,9 @@
 
               <div class="fx-fdiv"></div>
 
-              <!-- Filtros de valor · um dropdown POR CAMPO (Empresa, Tipo de Cliente).
-                   Injetados por srMontarToolbar() com o mesmo componente da Análise
-                   de Vendas: multi-seleção, busca e contador. -->
+              <!-- Filtros de valor · Empresa fixa em MSB (recorte MSB) + um dropdown
+                   de Tipo de Cliente. Injetados por srMontarToolbar() com o mesmo
+                   componente da Análise de Vendas: multi-seleção, busca e contador. -->
               <div class="av-toolbar av-row" id="av-toolbar-filtros" style="gap:8px;flex-wrap:wrap;"></div>
             </div>
 
@@ -423,7 +426,7 @@
             })();
             </script>
 
-            <!-- ════════ INDICADORES (Bio · MSB · MSBio) ════════ -->
+            <!-- ════════ INDICADORES (MSB) ════════ -->
             <style>
               .ix-grid{display:grid;grid-template-columns:1fr 1.15fr;gap:14px;align-items:start;}
               .ix-card{background:#fff;border:1px solid var(--border);border-radius:var(--radius);padding:18px 20px;}
@@ -536,7 +539,7 @@
               <div class="ix-hero" style="min-width:0;grid-row:span 2;padding:22px;border-radius:14px;background:linear-gradient(150deg,#0C2029,#1A5160);color:#FFFFFF;display:flex;flex-direction:column;position:relative;overflow:hidden;">
                 <div style="position:absolute;inset:0;background-image:radial-gradient(circle at 90% 10%, rgba(47,191,113,0.16), transparent 45%);"></div>
                 <div style="position:relative;display:flex;align-items:center;justify-content:space-between;gap:10px;">
-                  <span style="font-size:11.5px;font-weight:800;letter-spacing:1px;color:#ACC3CC;">FATURAMENTO × META · MSBIO</span>
+                  <span style="font-size:11.5px;font-weight:800;letter-spacing:1px;color:#ACC3CC;">FATURAMENTO × META · MSB</span>
                   <span id="ix-period" style="font-size:11px;font-weight:700;color:#E0EAEF;background:rgba(255,255,255,0.10);border-radius:999px;padding:3px 10px;white-space:nowrap;">Jun 2026</span>
                 </div>
                 <div class="ix-hero-body">
@@ -898,16 +901,16 @@
             if (window.filtroAtual) { window.filtroAtual.sem = s; window.filtroAtual.tri = null; } // '1S' ou '2S'
             if (window.aplicarFiltroFaturamento) window.aplicarFiltroFaturamento();
           }
-          /* ── Filtros de valor (Empresa · Tipo de Cliente) ─────────────────
+          /* ── Filtros de valor (Tipo de Cliente) ───────────────────────────
              Componente IDÊNTICO ao da Análise de Vendas (comercial-vendas.html):
              um dropdown por campo, multi-seleção, com busca, contador e
              Limpar/Fechar. Os valores vêm do próprio modelo; se a query falhar
              (sem sessão, OLS, etc.) cai na lista fixa de reserva. */
           // Os VALORES são exatamente os que já estavam nos botões desta página —
           // lista fixa, NÃO consultada no modelo. Só a forma de escolher mudou.
+          // RECORTE MSB: Empresa não é mais escolha — é sempre MSB (srFiltroEmpresa
+          // e o freio pbi-throttle.js); na barra fica só o rótulo fixo.
           const SR_FILTROS = [
-            { id:'empresa',     label:'Empresa',         col:"'Empresas'[Código da empresa]",
-              valores:['BIO','MSB'] },
             { id:'tipoCliente', label:'Tipo de Cliente', col:"'Clientes'[Tipo de cliente (Revisado)]",
               valores:['Distribuidor','Órgão Público','Representante','Venda Direta'] }
           ];
@@ -965,7 +968,7 @@
           function srMontarToolbar(){
             const tb = document.getElementById('av-toolbar-filtros');
             if (!tb) return;
-            tb.innerHTML = '';
+            tb.innerHTML = '<div class="av-dd av-dd-fixa"><span class="av-dd-btn has" title="Neste portal todos os relatórios são da MSB"><span>Empresa</span><span class="fixo">MSB</span></span></div>';
             SR_FILTROS.forEach(ft => tb.appendChild(srMakeDropdown({
               label: ft.label,
               getOptions: async () => ft.valores.map(v => ({ value:v, label:v })),
@@ -1094,7 +1097,7 @@
   <script src="../script.js?v=8"></script>
 <script src="../nav-sidebar.js?v=52"></script>
 <script src="../sr-intercompany.js?v=1"></script>
-<script src="../sr-diario.js?v=2"></script>
+<script src="../sr-diario.js?v=3"></script>
 <script>
 // ================================================================
 // POWER BI — Autenticação automática e busca de dados reais
@@ -1216,7 +1219,7 @@ let _srSeqDiario = 0;   // rodada das listas Pedidos em andamento + Faturamento 
 window.MES_NUM   = { Jan:1, Fev:2, Mar:3, Abr:4, Mai:5, Jun:6, Jul:7, Ago:8, Set:9, Out:10, Nov:11, Dez:12 };
 window.NOMES_MES = ['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
 // default = mês/ano marcados como ativos no HTML (Jun / 2026)
-// só o PERÍODO vive aqui; Empresa e Tipo de Cliente ficam em window._srSel (dropdowns .av-dd)
+// só o PERÍODO vive aqui; Tipo de Cliente fica em window._srSel (dropdown .av-dd); Empresa é sempre MSB
 window.filtroAtual = { mes: (new Date().getMonth()+1), ano: 2026, sem: null, tri: null };  // padrão = mês atual (calendário)
 // Padrão: ao abrir, destaca o botão do mês atual em vez do mês fixo
 (function(){ try {
@@ -1260,18 +1263,17 @@ const MEDIDAS = {
   pedidosDataCol: "Pedidos[Data da ordem de venda]",
   // status válidos de Pedidos em andamento
   pedidosStatus: "(Pedidos[Status do pedido] = \"EM PROCESSO LOGÍSTICO\" || Pedidos[Status do pedido] = \"AGUARDANDO FATURAMENTO\")",
-  // Coluna que separa Bio / MSB (confirmado pelo modelo):
+  // Coluna da empresa (confirmado pelo modelo) — o portal da MSB só mostra a MSB:
   segCol:   "'Empresas'[Código da empresa]", // ✅ valores: BIO / MSB
-  segBio:   "BIO",
   segMsb:   "MSB",
   // Coluna do Tipo de Cliente:
   tipoClienteCol: "'Clientes'[Tipo de cliente (Revisado)]" // ✅
 };
 
-// ── Filtros de valor (Empresa · Tipo de Cliente) ────────────────
+// ── Filtros de valor (Tipo de Cliente) e Empresa fixa ───────────
 // Os dropdowns .av-dd são MULTI-seleção, então o predicado sai como
 // `col = "x"` (1 valor) ou `col IN { "x", "y" }` (vários). Nenhum valor
-// marcado = sem predicado (Todos).
+// marcado = sem predicado (Todos). A Empresa não tem "Todos": é sempre MSB.
 const _srDax  = s => String(s == null ? '' : s).replace(/"/g, '""');
 const _srVals = id => [...((window._srSel && window._srSel[id]) || [])];
 function srPredicado(col, id) {
@@ -1281,10 +1283,10 @@ function srPredicado(col, id) {
     ? `${col} = "${_srDax(v[0])}"`
     : `${col} IN { ${v.map(x => '"' + _srDax(x) + '"').join(', ')} }`;
 }
-const srFiltroEmpresa = () => srPredicado(MEDIDAS.segCol, 'empresa');
+const srFiltroEmpresa = () => `${MEDIDAS.segCol} = "${MEDIDAS.segMsb}"`;
 const srFiltroTipo    = () => srPredicado(MEDIDAS.tipoClienteCol, 'tipoCliente');
-// sufixo do rótulo de período (" · BIO · Distribuidor"); 3+ valores viram contagem
-const srSufixoValores = () => ['empresa', 'tipoCliente'].map(id => {
+// sufixo do rótulo de período (" · MSB · Distribuidor"); 3+ valores viram contagem
+const srSufixoValores = () => ' · ' + MEDIDAS.segMsb + ['tipoCliente'].map(id => {
   const v = _srVals(id);
   if (!v.length) return '';
   return v.length <= 2 ? v.join('+') : v.length + ' selecionados';
@@ -1921,7 +1923,7 @@ async function aplicarFiltroFaturamento() {
   setTxt('ix-msbio-fat', '…');
   pintarRegionais(null);
 
-  // filtro de Empresa do topo (Todos = sem filtro) aplicado ao bloco consolidado
+  // Empresa: sempre MSB (recorte MSB) — vale para TODOS os blocos da página
   const empresaFiltro = srFiltroEmpresa();
 
   try {
@@ -2092,6 +2094,6 @@ document.addEventListener('DOMContentLoaded', async () => {
      um cartão (../sr-diario.css) — nada a esconder aqui */
 }
 </style>
-  <script src="../voz-embed.js?v=12"></script>
+  <script src="../voz-embed.js?v=13"></script>
 </body>
 </html>

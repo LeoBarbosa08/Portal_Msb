@@ -845,7 +845,7 @@
     h += secDados(doc, ent, 'Dados do pedido');
     h += '<details class="sd-dw-card sd-dw-mais"><summary><h5>Como entra nesta lista</h5></summary>'
       + '<p class="sd-dw-p">Entram os pedidos com status <b>em processo logístico</b> ou <b>aguardando faturamento</b>, de qualquer data de criação: é o retrato de hoje, e não muda com o período escolhido no filtro lá em cima.</p>'
-      + '<p class="sd-dw-p">Fora intercompany e só operações que geram fatura a receber. Os filtros de <b>Empresa</b> e <b>Tipo de Cliente</b> valem aqui.</p>'
+      + '<p class="sd-dw-p">Fora intercompany e só operações que geram fatura a receber. Só a empresa <b>MSB</b>; o filtro de <b>Tipo de Cliente</b> vale aqui.</p>'
       + '<p class="sd-dw-p">Esta ficha mostra a <b>OV inteira</b>: todas as linhas, em qualquer status, com a liberação para o depósito e a previsão de entrega de cada uma. O valor da lista conta só as linhas em andamento.</p></details>';
     return h;
   }
@@ -868,7 +868,7 @@
     h += secDados(doc, ent, 'Dados da nota');
     h += '<details class="sd-dw-card sd-dw-mais"><summary><h5>Como entra nesta lista</h5></summary>'
       + '<p class="sd-dw-p">Entram as notas fiscais com data de <b>hoje</b> (horário de Brasília): a lista não muda com o período escolhido no filtro lá em cima.</p>'
-      + '<p class="sd-dw-p">Fora intercompany, só operações que geram fatura a receber e sem as notas ocultadas pelo negócio — as mesmas regras do faturamento do relatório. Os filtros de <b>Empresa</b> e <b>Tipo de Cliente</b> valem aqui.</p></details>';
+      + '<p class="sd-dw-p">Fora intercompany, só operações que geram fatura a receber e sem as notas ocultadas pelo negócio — as mesmas regras do faturamento do relatório. Só a empresa <b>MSB</b>; o filtro de <b>Tipo de Cliente</b> vale aqui.</p></details>';
     return h;
   }
 

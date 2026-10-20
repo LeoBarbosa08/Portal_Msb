@@ -39,9 +39,12 @@
      7. TRAVA DE ACESSO (PBIQ.trava) — ver o bloco "TRAVA" mais abaixo: quem
         não está em nenhum grupo de segurança (RLS) do modelo ou não tem
         Build não vê NADA da tela de BI, só o aviso com o motivo.
+     8. RECORTE MSB (PBIQ.recorte) — ver o bloco "RECORTE MSB" mais abaixo:
+        TODA consulta sai filtrada na empresa MSB, em qualquer tela.
 
    F12:  PBIQ.stats()   → fila, cache, descartadas, 429, OLS, trava
          PBIQ.trava()   → estado da trava de acesso
+         PBIQ.recorte() → coluna e filtro de empresa de cada modelo
          PBIQ.limpar()  → esvazia o cache e a memória de OLS (força dados novos)
          PBIQ.solta()   → libera o freio de 429 na mão
    ================================================================ */
@@ -140,7 +143,7 @@
       _barT = setTimeout(pintar, 1000);
       return;
     }
-    faixa('');
+    faixa(_rcAviso);   // sem fila: só o aviso do recorte MSB, quando houver
   }
 
   // ── identidade (o cache NÃO pode cruzar usuário: tem RLS) ──────
@@ -209,7 +212,7 @@
   function enfileirar(t) {
     for (var i = 0; i < _fila.length; i++) {
       var q = _fila[i];
-      if (!q.morta && q.gen < t.gen && q.key !== t.key && q.forma === t.forma) {
+      if (!q.morta && !q.fixa && q.gen < t.gen && q.key !== t.key && q.forma === t.forma) {
         q.morta = true; _st.descartadas++; _voo['delete'](q.key);
         // de propósito: a promessa da rajada superada NÃO resolve — a página
         // não repinta um estado que a pessoa já trocou (é o mesmo efeito do
@@ -550,12 +553,152 @@
     return { ativa: !!CFG.trava, fechada: _tv.fechada, leuBI: _tv.ok, negado: _tv.negado };
   }
 
+  // ── RECORTE MSB ────────────────────────────────────────────────
+  // 20/10/2026, pedido do dono do portal: "todos os relatórios, todos mesmos,
+  // só podem ser empresa MSB". O filtro de Empresa de cada tela não basta:
+  // são mais de 20 telas, cada uma com o seu motor, e listas de opção,
+  // detalhes de pedido e telas sem filtro de Empresa nem passavam por ele.
+  // Por isso o recorte mora AQUI, por onde passa toda consulta do portal ao
+  // Power BI (telas, listas, detalhes, exportações e o assistente de voz):
+  // cada EVALUATE vira
+  //     EVALUATE CALCULATETABLE(<consulta>, 'Empresas'[Código da empresa] IN { "MSB" })
+  // A coluna e o valor são descobertos uma vez por modelo: a primeira coluna
+  // de RC.cols que existe no modelo e, nela, o valor "MSB" (ou, sem ele, o
+  // que tiver MSB / MEDICAL SYSTEM no nome).
+  //   - modelo com a coluna mas sem a MSB → a consulta NÃO vai e volta erro:
+  //     melhor tela vazia do que número de outra empresa;
+  //   - modelo sem tabela de empresa → a consulta vai como está (não há o
+  //     que recortar) e aparece em PBIQ.recorte();
+  //   - tabela sem relação com 'Empresas' (preços, ruptura…) não é recortada:
+  //     no Power BI o filtro só desce pelas relações do modelo.
+  // Fica de fora só metadado (INFO.*, COLUMNSTATISTICS), que não tem empresa.
+  // Um filtro de empresa POR DENTRO da consulta (CALCULATE(…, "BIO")) passa
+  // por cima do recorte — por isso nenhuma tela oferece outra empresa.
+  var RC = {
+    cols:  ["'Empresas'[Código da empresa]", "'Empresas'[Empresa]", "'Empresa'[Empresa]"],
+    valor: 'MSB',
+    nome:  /\bMSB\b|MEDICAL\s+SYSTEM/i
+  };
+  var RX_META = /\b(?:INFO(?:\.[A-Z]+)+|COLUMNSTATISTICS)\s*\(/i;
+  var _rc = {}, _rcVisto = {};   // modelo -> Promise / último resultado (PBIQ.recorte)
+  var _rcAviso = '';             // faixa fixa quando um modelo da tela não tem a MSB
+
+  // EVALUATE <x> [ORDER BY …] [START AT …] → EVALUATE CALCULATETABLE(<x>, filtro) …
+  // Pula texto, nomes entre aspas ou colchetes e comentários; só o nível 0
+  // (fora de parênteses e chaves) delimita a consulta.
+  function embrulhar(dax, filtro) {
+    var s = String(dax), n = s.length, out = [], i = 0, nivel = 0, ini = -1, ult = 0;
+    function eh(k) {
+      return s.substr(i, k.length).toUpperCase() === k &&
+             !/[\w.]/.test(s.charAt(i - 1)) && !/[\w.]/.test(s.charAt(i + k.length));
+    }
+    function fecha(fim) {
+      if (ini < 0) return;
+      while (fim > ini && /\s/.test(s.charAt(fim - 1))) fim--;
+      // o filtro vai na linha de baixo: um "-- comentário" no fim não o engole
+      out.push(s.slice(ult, ini), 'CALCULATETABLE(', s.slice(ini, fim), '\n, ', filtro, ')');
+      ult = fim; ini = -1;
+    }
+    while (i < n) {
+      var c = s.charAt(i), d = s.charAt(i + 1);
+      if (c === '"' || c === "'" || c === '[') {
+        var f = c === '[' ? ']' : c;            // "" '' ]] são o próprio caractere
+        for (i++; i < n; i++) { if (s.charAt(i) === f) { if (s.charAt(i + 1) !== f) break; i++; } }
+        i++; continue;
+      }
+      if ((c === '/' && d === '/') || (c === '-' && d === '-')) { while (i < n && s.charAt(i) !== '\n') i++; continue; }
+      if (c === '/' && d === '*') { var e = s.indexOf('*/', i + 2); i = e < 0 ? n : e + 2; continue; }
+      if (c === '(' || c === '{') { nivel++; i++; continue; }
+      if (c === ')' || c === '}') { nivel--; i++; continue; }
+      if (nivel === 0 && /[A-Za-z]/.test(c)) {
+        if (eh('EVALUATE')) { fecha(i); i += 8; while (i < n && /\s/.test(s.charAt(i))) i++; ini = i; continue; }
+        if (ini >= 0 && (eh('ORDER') || eh('START'))) fecha(i);
+        while (i < n && /[\w.]/.test(s.charAt(i))) i++;
+        continue;
+      }
+      i++;
+    }
+    fecha(n);
+    out.push(s.slice(ult));
+    return out.join('');
+  }
+
+  function modeloDe(u) { return /\/api\/pbi-query/.test(u) ? 'api' : dsDe(u); }
+  // o mesmo pedido da página, com outro DAX (executeQueries: queries[0].query; /api/pbi-query: dax)
+  function comDax(init, dax) {
+    var o = JSON.parse(init.body), novo = {};
+    if (o.queries && o.queries[0]) o.queries[0].query = dax; else o.dax = dax;
+    for (var k in init) novo[k] = init[k];
+    novo.body = JSON.stringify(o);
+    return novo;
+  }
+  function linhasDe(txt) {
+    try {
+      var j = JSON.parse(txt);
+      if (j && j.data && j.data.results) j = j.data;   // /api/pbi-query embrulha em { ok, data }
+      return j.results[0].tables[0].rows || null;
+    } catch (e) { return null; }
+  }
+  function recusaRC(col, vals) {
+    var msg = 'Recorte MSB: o modelo do Power BI desta tela não tem a empresa MSB em ' + col +
+              ' (valores: ' + (vals.slice(0, 6).join(', ') || 'nenhum') + '). Neste portal nenhum relatório mostra outra empresa.';
+    return { status: 400, statusText: 'Recorte MSB', ctype: 'application/json',
+             text: JSON.stringify({ error: { code: 'RecorteMSB', message: msg } }) };
+  }
+  // resolve { filtro } | { semEmpresa } | { recusa } (modelo sem a MSB) | { momento } (acesso, 429, rede…)
+  function descobrir(u, init, i) {
+    if (i >= RC.cols.length) return Promise.resolve({ semEmpresa: true });
+    var col = RC.cols[i];
+    var dax = 'EVALUATE SELECTCOLUMNS(VALUES(' + col + '), "v", ' + col + ')';
+    return enviar(u, comDax(init, dax), dax, true).then(function (o) {
+      var rows = (o.status === 200 && o.text.indexOf('"error"') < 0) ? linhasDe(o.text) : null;
+      if (rows) {
+        var vals = rows.map(function (r) { return r && r['[v]']; })
+                       .filter(function (v) { return v != null; }).map(String);
+        var msb = vals.filter(function (v) { return v.trim().toUpperCase() === RC.valor; });
+        if (!msb.length) msb = vals.filter(function (v) { return RC.nome.test(v); });
+        if (!msb.length) return { col: col, recusa: recusaRC(col, vals) };
+        return { col: col, filtro: col + ' IN { ' + msb.map(function (v) { return '"' + v.replace(/"/g, '""') + '"'; }).join(', ') + ' }' };
+      }
+      // erro do MODELO (a coluna não existe aqui) → tenta a próxima; o resto
+      // (acesso negado, 429 esgotado, 5xx, 404 da URL errada) volta para a
+      // página como veio e a descoberta recomeça na consulta seguinte
+      if ((o.status === 400 || o.status === 200) && !classe(o.status, o.text)) return descobrir(u, init, i + 1);
+      return { momento: o };
+    });
+  }
+  function recorteDe(u, init) {
+    var m = modeloDe(u);
+    if (!_rc[m]) {
+      _rc[m] = descobrir(u, init, 0);
+      _rc[m].then(function (r) {
+        if (r.momento) { delete _rc[m]; return; }
+        _rcVisto[m] = r.filtro ? { filtro: r.filtro } : r.recusa ? { semMSB: r.col } : { semEmpresa: true };
+        if (!r.filtro) console.warn('[PBIQ] recorte MSB · modelo ' + m + ': ' + (r.recusa ? 'sem a MSB em ' + r.col + ' — consultas recusadas' : 'sem tabela de empresa — consultas vão sem recorte'));
+        if (r.recusa) {
+          _rcAviso = '<b>Este relatório não tem dados da MSB no Power BI.</b> Neste portal nada de outra empresa aparece, então a tela fica sem números.';
+          pintar();
+        }
+      }, function () { delete _rc[m]; });
+    }
+    return _rc[m];
+  }
+  function recortar(u, init, dax) {
+    return recorteDe(u, init).then(function (rc) {
+      if (rc.recusa || rc.momento) return resposta(rc.recusa || rc.momento);
+      if (!rc.filtro) return despachar(u, init, dax);
+      var d2 = embrulhar(dax, rc.filtro);
+      return despachar(u, comDax(init, d2), d2);
+    });
+  }
+
   // ── entrada ────────────────────────────────────────────────────
-  function despachar(u, init, dax) {
+  // fixa: consulta do próprio freio (descoberta do recorte) — nenhuma rajada a descarta
+  function enviar(u, init, dax, fixa) {
     _st.pedidos++;
     // tela trancada: o modelo negado responde a mesma recusa, sem ir à rede
     var negada = _tv.fechada && u.indexOf('/executeQueries') > -1 && _tv.negados[dsDe(u)];
-    if (negada) return Promise.resolve(resposta(negada));
+    if (negada) return Promise.resolve(negada);
     var id = idDe(init), em = emailPortal();
     if (id !== _idAtual || em !== _emAtual) { _idAtual = id; _emAtual = em; lsSet(K_QUEM, JSON.stringify({ id: id, em: em })); }
     var key = id + '|' + u + '|' + dax;
@@ -570,33 +713,37 @@
       if (c && (Date.now() - c.t) < CFG.ttl) {
         _st.cache++;
         if (u.indexOf('/executeQueries') > -1) acessoOk();   // só guarda 200 sem erro
-        return Promise.resolve(resposta(c));
+        return Promise.resolve(c);
       }
       if (c) { _cache['delete'](key); _bytes -= c.len; }
       var v = _voo.get(key);
-      if (v) { _st.juntadas++; return v.then(resposta); }
+      if (v) { _st.juntadas++; return v; }
     }
 
-    var t = { url: u, init: init, key: key, forma: forma(dax), gen: _gen, tent: 1, cacheavel: !fresco, morta: false };
+    var t = { url: u, init: init, key: key, forma: forma(dax), gen: _gen, tent: 1, cacheavel: !fresco, morta: false, fixa: !!fixa };
     var p = new Promise(function (res, rej) { t.ok = res; t.erro = rej; });
     _voo.set(key, p);
     var solta = function () { if (_voo.get(key) === p) _voo['delete'](key); };
     p.then(solta, solta);
     enfileirar(t);
-    return p.then(resposta);
+    return p;
   }
+  function despachar(u, init, dax) { return enviar(u, init, dax).then(resposta); }
 
   window.fetch = function (url, init) {
+    var u, dax;
     try {
-      var u = (typeof url === 'string') ? url : (url && url.url) || '';
+      u = (typeof url === 'string') ? url : (url && url.url) || '';
       var m = String((init && init.method) || (url && url.method) || 'GET').toUpperCase();
       if (m !== 'POST' || !u) return _fetch(url, init);
       var alvo = (u.indexOf('/executeQueries') > -1) || /\/api\/pbi-query(\?|$)/.test(u);
       if (!alvo || !init || typeof init.body !== 'string') return _fetch(url, init);
-      var dax = daxDe(init.body);
+      dax = daxDe(init.body);
       if (!dax) return _fetch(url, init);
-      return despachar(u, init, dax);
+      if (RX_META.test(dax)) return despachar(u, init, dax);
     } catch (e) { return _fetch(url, init); }
+    // daqui em diante uma falha NUNCA cai no fetch cru: sem recorte, não vai
+    return Promise.resolve().then(function () { return recortar(u, init, dax); });
   };
 
   // Cada interação abre uma GERAÇÃO nova: o que ficou na fila da geração
@@ -617,6 +764,7 @@
                olsAprendidas: _st.ols, olsBloqueadas: OLS.lista(), trava: estadoTrava() };
     },
     trava:  estadoTrava,
+    recorte: function () { return JSON.parse(JSON.stringify(_rcVisto)); },
     limpar: function () { _cache.clear(); _bytes = 0; lsSet(K_OLS, '{}'); return 'cache do BI e memória de OLS limpos'; },
     ols:    OLS,
     solta:  function () { lsSet(K_COOL, '0'); pintar(); return 'freio liberado'; },

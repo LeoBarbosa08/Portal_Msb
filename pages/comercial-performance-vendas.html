@@ -9,7 +9,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link rel="stylesheet" href="../dash-v2.css?v=3">
   <script src="https://unpkg.com/@azure/msal-browser@2.38.3/lib/msal-browser.min.js"></script>
-<script src="../pbi-throttle.js?v=3"></script>
+<script src="../pbi-throttle.js?v=4"></script>
   <!-- Layout v3 (Claude Design · animado): fonte + camada visual + motor de animações -->
   <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300..900&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="../portal-v3.css?v=2">
@@ -260,6 +260,9 @@
             .av-dd-btn:hover{border-color:var(--bm-blue-500);}
             .av-dd-btn.has{border-color:var(--bm-blue-600);background:var(--bm-blue-50);color:var(--bm-blue-800);}
             .av-dd-btn .cnt{background:var(--bm-blue-600);color:#fff;border-radius:999px;padding:0 7px;font-size:11px;}
+            /* Empresa fixa (recorte MSB): mesmo visual do dropdown, sem abrir */
+            .av-dd-fixa .av-dd-btn{cursor:default;}
+            .av-dd-fixa .av-dd-btn .fixo{font-weight:800;}
             .av-dd-panel{position:absolute;z-index:40;top:calc(100% + 4px);left:0;width:270px;max-height:340px;display:none;flex-direction:column;background:#fff;border:1px solid var(--border);border-radius:10px;box-shadow:var(--shadow);overflow:hidden;}
             .av-dd.open .av-dd-panel{display:flex;}
             .av-dd-search{padding:8px;border-bottom:1px solid var(--border);}
@@ -373,11 +376,10 @@
               </div>
               <div class="fx-fdiv"></div>
 
-              <!-- Filtros de valor · um dropdown SEPARADO por campo (Empresa,
-                   Tipo de Cliente, Unidade de Negócio). Antes Empresa e Tipo
-                   dividiam um único menu e a Unidade era um <select>; agora os
-                   três usam o mesmo componente da Análise de Vendas
-                   (multi-seleção, busca e contador), montado por pvMontarToolbar(). -->
+              <!-- Filtros de valor · Empresa fixa em MSB (recorte MSB) + um dropdown
+                   SEPARADO por campo (Tipo de Cliente, Unidade de Negócio), com o
+                   mesmo componente da Análise de Vendas (multi-seleção, busca e
+                   contador), montado por pvMontarToolbar(). -->
               <div class="av-toolbar av-row" id="av-toolbar-filtros" style="gap:8px;flex-wrap:wrap;"></div>
             </div>
 
@@ -572,6 +574,7 @@
     semNfOculta: `FILTER(ALL('Faturamentos'[Número da fatura]), NOT(('Faturamentos'[Número da fatura] & "") IN { ${NF_OCULTAS.map(n => '"' + n + '"').join(', ')} }))`,
     geraFatura:      "'Operações'[Gera Fatura a receber?] = \"SIM\"",
     segCol:          "'Empresas'[Código da empresa]",
+    segMsb:          "MSB",   // o portal da MSB só mostra a MSB
     tipoClienteCol:  "'Clientes'[Tipo de cliente (Revisado)]",
     unidadeCol:      "'DIM_UNIDADE_DE_NEGOCIO_V2'[UNIDADE_DE_NEGOCIO]"
   };
@@ -581,17 +584,17 @@
   const MES_LBL = ['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];
   let _pvReady = false, _pvChart = null;
   let _pvDrillChart = null, _pvDrillLevel = 0, _pvDrillEstr = null;
-  // só o PERÍODO vive aqui; Empresa, Tipo de Cliente e Unidade ficam em window._pvSel (dropdowns .av-dd)
+  // só o PERÍODO vive aqui; Tipo de Cliente e Unidade ficam em window._pvSel (dropdowns .av-dd); Empresa é sempre MSB
   window._pvFiltro = { mes:(new Date().getMonth()+1), ano:2026, sem:null, tri:null };   // padrão = mês atual (calendário)
-  /* ── Filtros de valor (Empresa · Tipo de Cliente · Unidade de Negócio) ──
+  /* ── Filtros de valor (Tipo de Cliente · Unidade de Negócio) ──
      Um dropdown SEPARADO por campo, com o componente da Análise de Vendas.
      `fallback` só entra em cena se a query de valores falhar. */
-  // Empresa e Tipo de Cliente: valores FIXOS, os mesmos que já estavam nos
-  // botões desta página. Unidade de Negócio continua vindo de VALUES() no
-  // modelo — era assim que o <select> antigo se enchia (pvPopularUnidades).
+  // Tipo de Cliente: valores FIXOS, os mesmos que já estavam nos botões desta
+  // página. Unidade de Negócio continua vindo de VALUES() no modelo — era
+  // assim que o <select> antigo se enchia (pvPopularUnidades).
+  // RECORTE MSB: Empresa não é mais escolha — é sempre MSB (pvFiltrosValor e o
+  // freio pbi-throttle.js); na barra fica só o rótulo fixo.
   const PV_FILTROS = [
-    { id:'empresa',     label:'Empresa',            col:"'Empresas'[Código da empresa]",
-      valores:['BIO','MSB'] },
     { id:'tipoCliente', label:'Tipo de Cliente',    col:"'Clientes'[Tipo de cliente (Revisado)]",
       valores:['Distribuidor','Órgão Público','Representante','Venda Direta'] },
     { id:'unidade',     label:'Unidade de Negócio', col:"'DIM_UNIDADE_DE_NEGOCIO_V2'[UNIDADE_DE_NEGOCIO]",
@@ -618,8 +621,8 @@
     if (!v.length) return null;
     return DaxLit.em(ft.col, v, ft._tipo);
   }
-  // devolve os predicados dos 3 filtros de valor, já sem os vazios
-  const pvFiltrosValor = () => PV_FILTROS.map(f => pvPredicado(f.id)).filter(Boolean);
+  // devolve a Empresa (sempre MSB) + os predicados dos filtros de valor, já sem os vazios
+  const pvFiltrosValor = () => [`${MEDIDAS.segCol} = "${MEDIDAS.segMsb}"`].concat(PV_FILTROS.map(f => pvPredicado(f.id)).filter(Boolean));
 
   // ── Formatadores ──
   const _n = x => (x==null||x===''||isNaN(Number(x)))?null:Number(x);
@@ -1080,7 +1083,7 @@
   function pvMontarToolbar(){
     const tb = document.getElementById('av-toolbar-filtros');
     if (!tb) return;
-    tb.innerHTML = '';
+    tb.innerHTML = '<div class="av-dd av-dd-fixa"><span class="av-dd-btn has" title="Neste portal todos os relatórios são da MSB"><span>Empresa</span><span class="fixo">MSB</span></span></div>';
     PV_FILTROS.forEach(ft => tb.appendChild(pvMakeDropdown({
       label: ft.label,
       getOptions: () => pvCarregarValores(ft),
@@ -1101,7 +1104,7 @@
   };
 
   document.addEventListener('DOMContentLoaded', async () => {
-    pvMontarToolbar();   // dropdowns de valor (Empresa · Tipo de Cliente · Unidade de Negócio)
+    pvMontarToolbar();   // Empresa fixa (MSB) + dropdowns de valor (Tipo de Cliente · Unidade de Negócio)
     const banner = document.getElementById('pv-banner');
     try {
       await pbiConnect();

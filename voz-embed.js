@@ -432,6 +432,9 @@
             } else {
               try {
                 var dax = JSON.parse(tc.function.arguments).dax;
+                // RECORTE MSB: o freio (pbi-throttle.js) já recorta tudo na MSB, mas um
+                // filtro de outra empresa DENTRO da consulta passaria por cima — nem vai
+                if (/"\s*BIO\s*"/i.test(dax)) throw new Error('neste portal os relatórios são só da empresa MSB — não consulte a BIO nem outra empresa');
                 setState('thinking', 'Consultando o Power BI…');
                 var rows = await window.VOZPBI.query(dax);
                 res = JSON.stringify(rows).slice(0, 20000);
