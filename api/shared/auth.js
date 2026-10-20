@@ -29,10 +29,11 @@ const CLIENT         = process.env.PORTAL_CLIENT_ID || '129978ce-ff3b-431d-98b3-
 const AAD_SECRET     = process.env.PORTAL_CLIENT_SECRET;
 const ENFORCE        = String(process.env.AUTH_ENFORCE || '').toLowerCase() === 'true';
 // Domínios aceitos no login. bio-id.com entrou em 19/10/2026 (contas da
-// BIO.ID no mesmo tenant). A env SOMA domínios, não substitui: um App
-// Setting antigo "biomedical.com.br" não tira o bio-id.com de volta.
+// BIO.ID no mesmo tenant); msbbrasil.com em 20/10/2026 (contas da MSB no
+// Azure AD). A env SOMA domínios, não substitui: um App Setting antigo
+// "biomedical.com.br" não tira os outros de volta.
 // O front (auth.js da raiz) tem a mesma lista em AUTH.allowedDomains.
-const ALLOWED_DOMAINS = ['biomedical.com.br', 'bio-id.com']
+const ALLOWED_DOMAINS = ['biomedical.com.br', 'bio-id.com', 'msbbrasil.com']
   .concat(String(process.env.PORTAL_ALLOWED_DOMAIN || '').split(','))
   .map(d => d.trim().toLowerCase().replace(/^@/, ''))
   .filter((d, i, a) => d && a.indexOf(d) === i);

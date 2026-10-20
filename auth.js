@@ -1,6 +1,6 @@
 // ================================================================
 // auth.js — Portal Biomedical · Authentication Guard
-// Bloqueia acesso total sem login @biomedical.com.br ou @bio-id.com
+// Bloqueia acesso total sem login @biomedical.com.br, @bio-id.com ou @msbbrasil.com
 // Layout da tela de login: "Login Desktop/Mobile" (Claude Design) com o
 // painel da marca do Layout v3 — BioNiko 3D (home-scene.js), balão de fala,
 // piso em perspectiva, status/aviso e entrada em cascata.
@@ -96,8 +96,9 @@
     clientId:      '129978ce-ff3b-431d-98b3-66a1bcb766b1',
     tenantId:      'c311c9e6-6017-42a9-b306-4057beba5786',
     // bio-id.com entrou em 19/10/2026 (contas da BIO.ID no mesmo tenant).
+    // msbbrasil.com entrou em 20/10/2026 (contas da MSB no Azure AD).
     // O servidor tem a mesma lista em api/shared/auth.js (ALLOWED_DOMAINS).
-    allowedDomains: ['biomedical.com.br', 'bio-id.com'],
+    allowedDomains: ['biomedical.com.br', 'bio-id.com', 'msbbrasil.com'],
     scopes: [
       'openid', 'profile', 'User.Read',
       'GroupMember.Read.All', 'Sites.ReadWrite.All',
@@ -538,7 +539,7 @@
         <div class="pa-badge">${IC_LOCK} ACESSO RESTRITO</div>
         <h2>Bem-vindo de volta</h2>
         <p class="pa-lead">Entre com sua conta corporativa Microsoft para continuar no Portal Corporativo.</p>
-        <div class="pa-email">${IC_MAIL} @biomedical.com.br · @bio-id.com</div>
+        <div class="pa-email">${IC_MAIL} @biomedical.com.br · @bio-id.com · @msbbrasil.com</div>
         <button type="button" id="portal-auth-btn">${BTN_DEFAULT}</button>
         <div id="portal-auth-error"></div>
         <div class="pa-divider"><span></span>AUTENTICAÇÃO MICROSOFT 365<span></span></div>
