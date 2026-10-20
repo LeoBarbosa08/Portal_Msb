@@ -1,0 +1,71 @@
+{
+  "routes": [
+    {
+      "route": "/.auth/login/github",
+      "statusCode": 404
+    },
+    {
+      "route": "/.auth/login/twitter",
+      "statusCode": 404
+    },
+    {
+      "route": "/.claude/*",
+      "statusCode": 404
+    },
+    {
+      "route": "/docs/*",
+      "statusCode": 404
+    },
+    {
+      "route": "/scripts/*",
+      "statusCode": 404
+    },
+    {
+      "route": "/salesforce/*",
+      "statusCode": 404
+    },
+    {
+      "route": "/*.md",
+      "statusCode": 404
+    },
+    {
+      "route": "/*.py",
+      "statusCode": 404
+    },
+    {
+      "route": "/*.xlsx",
+      "statusCode": 404
+    },
+    {
+      "route": "/*.csv",
+      "statusCode": 404
+    },
+    {
+      "route": "/*.xlsm",
+      "statusCode": 404
+    },
+    {
+      "route": "/api/*",
+      "allowedRoles": ["anonymous"]
+    },
+    {
+      "route": "/.auth/*",
+      "allowedRoles": ["anonymous"]
+    },
+    {
+      "route": "/*",
+      "allowedRoles": ["anonymous"]
+    }
+  ],
+  "globalHeaders": {
+    "Strict-Transport-Security": "max-age=31536000; includeSubDomains",
+    "X-Content-Type-Options": "nosniff",
+    "X-Frame-Options": "SAMEORIGIN",
+    "Referrer-Policy": "strict-origin-when-cross-origin",
+    "Permissions-Policy": "geolocation=(), camera=(), microphone=(self), payment=()",
+    "Content-Security-Policy-Report-Only": "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://unpkg.com https://cdn.jsdelivr.net https://cdnjs.cloudflare.com https://cdn.botframework.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdn.jsdelivr.net https://cdnjs.cloudflare.com; font-src 'self' data: https://fonts.gstatic.com https://cdnjs.cloudflare.com; img-src 'self' data: blob: https:; connect-src 'self' https://graph.microsoft.com https://login.microsoftonline.com https://*.analysis.windows.net https://api.powerbi.com https://*.powerbi.com https://*.powerplatform.com https://*.dynamics.com https://*.salesforce.com https://*.force.com https://*.saude.gov.br https://pncp.gov.br https://*.pncp.gov.br https://directline.botframework.com; frame-src 'self' blob: https://app.powerbi.com https://login.microsoftonline.com https://*.sharepoint.com https://*.powerbi.com https://*.officeapps.live.com; frame-ancestors 'self'; object-src 'none'; base-uri 'self'; form-action 'self'"
+  },
+  "platform": {
+    "apiRuntime": "node:18"
+  }
+}

@@ -1,0 +1,847 @@
+﻿<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Novos Negócios · Comercial · Biomedical</title>
+  <link rel="stylesheet" href="../styles.css?v=14">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../dash-v2.css?v=3">
+  <script src="https://unpkg.com/@azure/msal-browser@2.38.3/lib/msal-browser.min.js"></script>
+<script src="../pbi-throttle.js?v=3"></script>
+  <!-- Layout v3 (Claude Design · animado): fonte + camada visual + motor de animações -->
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300..800&family=Manrope:wght@400..800&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../portal-v3.css?v=2">
+  <script src="../portal-motion.js?v=3" defer></script>
+  <!-- Tema claro/escuro (menu do avatar): marca o <html> antes de pintar + camada escura -->
+  <script>try{if(localStorage.getItem('bm-tema')==='escuro')document.documentElement.setAttribute('data-tema','escuro')}catch(e){}</script>
+  <link rel="stylesheet" href="../portal-tema.css?v=1">
+  <script src="../portal-tema.js?v=1" defer></script>
+  <!-- Celular (varredura 15/10/26): só vale em tela < 768px; no computador não se aplica -->
+  <link rel="stylesheet" href="../portal-mobile.css?v=1" media="(max-width: 767.98px)">
+  <script src="../portal-mobile.js?v=1" defer></script>
+</head>
+<body class="dept">
+
+  <header class="site-header">
+    <div class="container">
+      <a href="../index.html" class="brand" aria-label="Biomedical — Portal Corporativo">
+        <img class="brand-logo" src="/icons/icon-192.png" alt="Biomedical" onerror="this.dataset.failed='true'">
+        <span class="brand-fallback">Biomedical</span>
+      </a>
+      <nav class="header-nav">
+        <a href="../index.html">Início</a>
+        <a href="../index.html#areas">Áreas</a>
+        <a href="../index.html#sistemas">Sistemas</a>
+        <a href="../index.html#avisos">Avisos</a>
+        <a href="../index.html#contato">Contato</a>
+      </nav>
+    </div>
+  </header>
+
+  <div class="area-body">
+    <div class="container">
+      <div class="area-grid">
+
+        <aside class="area-sidebar">
+          <div class="sb-card">
+            <div class="sb-head">
+              <span class="sb-ic"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="8.5" cy="7" r="4"/><path d="M20 8v6"/><path d="M23 11h-6"/></svg></span>
+              <div><div class="sb-tt">Comercial</div><div class="sb-st">Departamento</div></div>
+            </div>
+            <nav></nav>
+          </div>
+          <a href="../index.html" class="sb-back"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></svg>Voltar ao Portal</a>
+        </aside>
+
+        <div class="area-main">
+
+          <!-- ═══ Cabeçalho + abas de submódulo (Claude Design) ═══ -->
+          <style>
+            .fx-head{display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap;padding:22px 0 4px;}
+            .fx-bc{display:flex;align-items:center;gap:6px;font-size:12px;color:#7C93A8;}
+            .fx-title{margin:4px 0 0;font-size:23px;font-weight:800;letter-spacing:-0.5px;color:#0A2E5C;}
+            .fx-head-right{display:flex;align-items:center;gap:12px;flex-wrap:wrap;}
+            .fx-tabs{display:flex;align-items:center;background:#FFFFFF;border:1px solid #E3EAF2;border-radius:11px;padding:3px;flex-wrap:wrap;}
+            .fx-tabs a,.fx-tabs span{padding:8px 14px;border-radius:8px;font-size:12.5px;font-weight:600;color:#5B7189;text-decoration:none;white-space:nowrap;}
+            .fx-tabs a:hover{color:#0A2E5C;}
+            .fx-tabs .active{background:#0A2E5C;font-weight:700;color:#fff;}
+            .fx-filters{display:flex;align-items:center;gap:10px;flex-wrap:wrap;padding:12px 14px;background:#fff;border:1px solid #E3EAF2;border-radius:12px;}
+            .fx-fdiv{width:1px;height:24px;background:#E3EAF2;}
+            .fx-fbtn{display:inline-flex;align-items:center;gap:8px;padding:8px 12px;border-radius:9px;border:1px solid #E3EAF2;background:#fff;font-size:12.5px;font-weight:600;color:#33495E;cursor:pointer;font-family:inherit;white-space:nowrap;}
+            .fx-fbtn:hover{border-color:#1272C4;}
+            .fx-fbtn .fx-fk{font-weight:700;color:#93A7BA;}
+            .fx-fbtn svg{flex-shrink:0;}
+            .fx-flimpar{margin-left:auto;display:inline-flex;align-items:center;gap:6px;padding:8px 12px;border-radius:9px;border:none;background:transparent;font-size:12.5px;font-weight:600;color:#5B7189;cursor:pointer;font-family:inherit;white-space:nowrap;}
+            .fx-flimpar:hover{color:#B54545;}
+            .fxdd{position:relative;display:inline-block;}
+            .fxdd-panel{position:absolute;z-index:50;top:calc(100% + 6px);left:0;display:none;flex-direction:column;background:#fff;border:1px solid #E3EAF2;border-radius:12px;box-shadow:0 10px 30px rgba(10,46,92,0.14);padding:12px;}
+            .fxdd.open .fxdd-panel{display:flex;}
+            .fxdd-sec{font-size:10.5px;font-weight:800;letter-spacing:0.8px;text-transform:uppercase;color:#93A7BA;margin:2px 2px 8px;}
+            .fxdd-sec.mt{margin-top:12px;}
+            .fxdd-hint{font-size:11px;color:#93A7BA;margin-top:10px;}
+            /* painel Mês/Ano: largura confortável no desktop (NUNCA inline — o
+               mobile precisa poder zerar o min-width, e inline venceria a regra) */
+            #fx-mesano .fxdd-panel{min-width:430px;}
+            @media(max-width:767.98px){
+              .fx-head{align-items:flex-start;padding-top:14px;}
+              .fx-title{font-size:17px;}
+              .fx-head-right{width:100%;}
+              .fx-tabs{width:100%;flex-wrap:nowrap;overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none;background:#F0F4F9;border:none;}
+              .fx-tabs::-webkit-scrollbar{display:none;}
+              .fx-tabs a,.fx-tabs span{flex:0 0 auto;}
+              /* ── FILTROS mobile: controles empilhados em largura total; cada
+                    painel abre como accordion (sem recorte por overflow-x, sem
+                    rolagem horizontal escondendo filtros). O layout novo (.fx-filters)
+                    tem dropdown próprio — o nav-sidebar.js não o converte em <select>. ── */
+              .fx-filters{flex-direction:column;align-items:stretch;flex-wrap:nowrap;overflow:visible;gap:8px;}
+              .fx-filters .fx-fdiv{display:none;}
+              .fx-filters .fxdd{width:100%;position:static;display:block;}
+              .fx-filters .fx-fbtn,.fx-filters .av-dd-btn{width:100%;min-width:0;box-sizing:border-box;justify-content:space-between;}
+              .fx-filters .fx-fbtn{padding:11px 14px;font-size:13.5px;}
+              .fx-fbtn svg{transition:transform .18s;}
+              .fxdd.open .fx-fbtn svg{transform:rotate(180deg);}
+              .fx-filters .av-sel{flex:1 1 auto;min-width:0;box-sizing:border-box;}
+              /* dropdowns de valor (.av-dd) empilhados em largura total, igual aos .fxdd */
+              .fx-filters .av-row{width:100%;}
+              .fx-filters .av-dd{width:100%;position:relative;display:block;}
+              .fx-filters .av-dd-panel{width:100%;min-width:0;max-width:none;}
+              /* painel accordion: flui abaixo do botão, largura total, sem sombra flutuante */
+              .fx-filters .fxdd-panel{position:static;width:100%;min-width:0;max-width:none;box-shadow:none;margin-top:2px;box-sizing:border-box;}
+              /* ID p/ vencer o #fx-mesano do desktop (especificidade de id) */
+              #fx-mesano .fxdd-panel{width:100%;min-width:0;}
+              /* vence a regra global mobile (.sr-row{flex-wrap:nowrap} do styles.css)
+                 para os botões QUEBRAREM em grade dentro do painel, em vez de rolar */
+              .fxdd-panel .sr-row,.fxdd-panel .av-row,.fxdd-panel .pv-row{flex-wrap:wrap !important;overflow:visible !important;padding-bottom:0 !important;max-width:none !important;gap:6px !important;row-gap:8px !important;}
+              /* rótulos (Mês/Ano) ocupam a linha inteira — viram títulos de grupo */
+              .fxdd-panel .sr-label,.fxdd-panel .av-label,.fxdd-panel .pv-label{flex:0 0 100%;margin:4px 0 0;}
+              /* divisores viram quebra de linha, separando os grupos */
+              .fxdd-panel .sr-divider,.fxdd-panel .av-divider,.fxdd-panel .pv-divider{flex:0 0 100%;width:100% !important;height:0 !important;border:0 !important;background:transparent !important;margin:0 !important;}
+              /* botões preenchem a largura numa grade uniforme (sobrepõe flex-shrink:0 global) */
+              .fxdd-panel .sr-btn,.fxdd-panel .av-btn,.fxdd-panel .pv-btn{flex:1 1 auto !important;min-width:52px;text-align:center;padding:8px 6px;}
+              .fx-filters .fx-flimpar{width:100%;justify-content:center;margin:2px 0 0;padding:11px;border:1px solid #E3EAF2;border-radius:9px;}
+            }
+          </style>
+
+          <div class="fx-head">
+            <div>
+              <div class="fx-bc"><span>Comercial</span><span>›</span><span>Sales Report</span></div>
+              <h1 class="fx-title">Novos Negócios</h1>
+            </div>
+            <div class="fx-head-right">
+              <div class="fx-tabs">
+                <a href="comercial-sales-report.html">Visão Geral</a>
+                <a href="comercial-performance-vendas.html">Performance de Vendas</a>
+                <a href="comercial-vendas.html">Análise de Vendas</a>
+                <a href="comercial-clientes.html">Análise de Pedidos</a>
+                <a href="comercial-base-notas-fiscais.html">Base de Notas Fiscais</a>
+                <span class="active">Novos Negócios</span>
+                <a href="comercial-clientes-perdidos.html">Clientes Perdidos</a>
+                <a href="comercial-comportamento-clientes.html">Comportamento de Clientes</a>
+                <a href="comercial-calendario-cirurgico.html">Calendário Cirúrgico</a>
+              </div>
+            </div>
+          </div>
+          <script>
+          /* barra de filtros fx — dropdowns compactos (Claude Design) */
+          (function(){
+            window.fxTogglePanel = function(btn){
+              var dd = btn.closest('.fxdd'); if(!dd) return;
+              var open = dd.classList.contains('open');
+              document.querySelectorAll('.fxdd.open').forEach(function(d){ d.classList.remove('open'); });
+              if(!open) dd.classList.add('open');
+            };
+            document.addEventListener('DOMContentLoaded', function(){
+              document.querySelectorAll('.fx-filters .fxdd-panel').forEach(function(p){
+                p.addEventListener('click', function(e){ e.stopPropagation(); });
+              });
+              document.addEventListener('click', function(e){ if(e.target.closest && e.target.closest('.fxdd')) return; document.querySelectorAll('.fxdd.open').forEach(function(d){ d.classList.remove('open'); }); });
+            });
+          })();
+          </script>
+
+          <!-- ═══════════ NOVOS NEGÓCIOS ═══════════ -->
+          <style>
+            .av-wrap{padding:4px 0 48px;display:flex;flex-direction:column;gap:14px;}
+            .av-row{display:flex;align-items:center;gap:8px;flex-wrap:wrap;}
+            .av-label{font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--text-4);margin-right:4px;}
+            .av-btn{padding:5px 11px;border-radius:6px;border:1px solid var(--border);background:#fff;font-size:12px;font-weight:500;color:var(--text-2);cursor:pointer;font-family:var(--font-body);transition:all .15s;}
+            .av-btn:hover{border-color:var(--bm-blue-500);color:var(--bm-blue-700);}
+            .av-btn.active{background:var(--bm-blue-900);color:#fff;border-color:var(--bm-blue-900);}
+            .av-btn.active-green{background:var(--bm-green-600);color:#fff;border-color:var(--bm-green-600);}
+            .av-divider{width:1px;height:22px;background:var(--border-2);flex-shrink:0;}
+            /* <select> do Período de Análise · mesmas medidas do .av-dd-btn */
+            .av-sel{padding:7px 12px;border-radius:8px;border:1px solid var(--border);background:#fff;font-size:12.5px;font-weight:600;color:var(--text-2);cursor:pointer;min-width:150px;font-family:inherit;}
+            .av-sel:hover{border-color:var(--bm-blue-500);}
+            .av-kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;}
+            .av-kpi{background:#fff;border:1px solid var(--border);border-radius:var(--radius);padding:14px 16px;position:relative;overflow:hidden;}
+            .av-kpi::before{content:'';position:absolute;left:0;top:0;bottom:0;width:4px;background:var(--bm-blue-600);}
+            .av-kpi.g::before{background:var(--bm-green-600);}
+            .av-kpi.w::before{background:var(--warning);}
+            .av-kpi-l{font-size:10.5px;font-weight:600;text-transform:uppercase;letter-spacing:.05em;color:var(--text-3);margin-bottom:6px;}
+            .av-kpi-v{font-family:var(--font-display);font-size:22px;font-weight:800;color:var(--bm-blue-900);line-height:1;}
+            @media(max-width:1100px){.av-kpis{grid-template-columns:repeat(2,1fr);}}
+            @media(max-width:640px){.av-kpis{grid-template-columns:1fr;}}
+            .av-toolbar{display:flex;gap:8px;flex-wrap:wrap;align-items:center;}
+            .av-dd{position:relative;display:inline-block;}
+            .av-dd-btn{padding:7px 12px;border-radius:8px;border:1px solid var(--border);background:#fff;font-size:12.5px;font-weight:600;color:var(--text-2);cursor:pointer;display:inline-flex;align-items:center;gap:10px;min-width:150px;justify-content:space-between;font-family:inherit;}
+            .av-dd-btn:hover{border-color:var(--bm-blue-500);}
+            .av-dd-btn.has{border-color:var(--bm-blue-600);background:var(--bm-blue-50);color:var(--bm-blue-800);}
+            .av-dd-btn .cnt{background:var(--bm-blue-600);color:#fff;border-radius:999px;padding:0 7px;font-size:11px;}
+            .av-dd-panel{position:absolute;z-index:40;top:calc(100% + 4px);left:0;width:270px;max-height:340px;display:none;flex-direction:column;background:#fff;border:1px solid var(--border);border-radius:10px;box-shadow:var(--shadow);overflow:hidden;}
+            .av-dd.open .av-dd-panel{display:flex;}
+            .av-dd-search{padding:8px;border-bottom:1px solid var(--border);}
+            .av-dd-search input{width:100%;padding:6px 8px;border:1px solid var(--border);border-radius:6px;font-size:12px;font-family:var(--font-body);box-sizing:border-box;}
+            .av-dd-list{overflow-y:auto;padding:4px;}
+            .av-dd-opt{display:flex;align-items:center;gap:8px;padding:6px 8px;border-radius:6px;font-size:12.5px;color:var(--text-2);cursor:pointer;}
+            .av-dd-opt:hover{background:var(--bm-blue-50);}
+            .av-dd-foot{display:flex;justify-content:space-between;padding:6px 10px;border-top:1px solid var(--border);}
+            .av-dd-foot button{font-size:11.5px;color:var(--bm-blue-700);background:none;border:none;cursor:pointer;font-weight:600;font-family:inherit;}
+            .av-tbl-wrap{background:#fff;border:1px solid var(--border);border-radius:var(--radius);overflow:hidden;}
+            .av-tbl-head{display:flex;align-items:center;justify-content:space-between;padding:12px 16px;border-bottom:1px solid var(--border);gap:10px;flex-wrap:wrap;}
+            .av-tbl-head h4{font-size:14px;font-weight:600;margin:0;color:var(--text);}
+            .av-scroll{max-height:640px;overflow:auto;}
+            table.av-tbl{width:100%;border-collapse:collapse;font-size:12.5px;}
+            table.av-tbl thead th{position:sticky;top:0;z-index:1;background:var(--bm-blue-900);color:rgba(255,255,255,.9);text-align:right;padding:9px 12px;font-size:10.5px;font-weight:600;letter-spacing:.03em;text-transform:uppercase;white-space:nowrap;}
+            table.av-tbl thead th.dim{text-align:left;}
+            table.av-tbl tbody td{padding:8px 12px;border-bottom:1px solid var(--border);text-align:right;font-variant-numeric:tabular-nums;color:var(--text-2);white-space:nowrap;}
+            table.av-tbl tbody td.dim{text-align:left;color:var(--text);font-weight:700;white-space:normal;}
+            table.av-tbl tbody tr:hover td{background:var(--bm-blue-50);}
+            table.av-tbl tbody tr.av-total td{background:var(--bm-blue-50);font-weight:700;border-top:2px solid var(--border-2);}
+            /* matriz drill-down */
+            .nn-tg{cursor:pointer;display:inline-block;width:14px;color:var(--bm-blue-600);font-size:11px;user-select:none;}
+            .nn-seg{display:inline-flex;border:1px solid var(--border);border-radius:8px;overflow:hidden;}
+            .nn-seg button{padding:6px 14px;border:none;background:#fff;font-size:12px;font-weight:600;color:var(--text-2);cursor:pointer;font-family:var(--font-body);}
+            .nn-seg button.active{background:var(--bm-blue-900);color:#fff;}
+          </style>
+
+          <div class="av-wrap">
+
+            <div id="av-banner" style="padding:11px 16px;border-radius:8px;font-size:13px;display:flex;align-items:center;gap:10px;background:#EFF6FF;border:1px solid #BFDBFE;color:#1E40AF;">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+              Conectando ao Power BI…
+            </div>
+
+            <!-- ── FILTROS · barra horizontal (Claude Design) ── -->
+            <div class="fx-filters">
+              <!-- Período de Análise · 'PeriodoAnalise'[Periodo] -->
+              <div style="display:inline-flex;align-items:center;gap:8px;" title="'PeriodoAnalise'[Periodo] — entra no contexto ANTES da medida do filtro">
+                <span class="fx-fk" style="font-size:12.5px;font-weight:700;color:#93A7BA;">Período de Análise</span>
+                <select class="av-sel" id="nn-periodo" onchange="nnSetPeriodo(this.value)"></select>
+              </div>
+              <div class="fx-fdiv"></div>
+
+              <!-- Mês / Ano · custom (Calendário) -->
+              <div class="fxdd" id="fx-mesano">
+                <button type="button" class="fx-fbtn" onclick="fxTogglePanel(this)">
+                  <span class="fx-fk">Mês / Ano</span><span id="fx-mesano-lbl">Todos</span>
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
+                </button>
+                <div class="fxdd-panel">
+                  <div class="fxdd-sec">Mês</div>
+                  <div class="av-row" id="nn-row-mes"></div>
+                  <div class="fxdd-sec mt">Ano</div>
+                  <div class="av-row" id="nn-row-ano"></div>
+                  <div class="fxdd-hint">Ctrl (ou ⌘) + clique seleciona mais de um.</div>
+                </div>
+              </div>
+              <div class="fx-fdiv"></div>
+
+              <!-- Campos da matriz + filtros por dimensão -->
+              <div class="av-toolbar" id="av-toolbar" style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;"></div>
+            </div>
+
+            <!-- ── KPIs de faturamento ── -->
+            <div class="av-kpis">
+              <div class="av-kpi">
+                <div class="av-kpi-l">Faturamento</div>
+                <div class="av-kpi-v" id="kpi-fat">—</div>
+              </div>
+              <div class="av-kpi g">
+                <div class="av-kpi-l">Quantidade</div>
+                <div class="av-kpi-v" id="kpi-qtd">—</div>
+              </div>
+              <div class="av-kpi w">
+                <div class="av-kpi-l">Clientes</div>
+                <div class="av-kpi-v" id="kpi-cli">—</div>
+              </div>
+              <div class="av-kpi">
+                <div class="av-kpi-l">Ticket médio</div>
+                <div class="av-kpi-v" id="kpi-tkt">—</div>
+              </div>
+            </div>
+
+            <!-- ── TABELA ANALÍTICA (matriz) ── -->
+            <div class="av-tbl-wrap">
+              <div class="av-tbl-head">
+                <h4>Tabela matriz</h4>
+                <div style="display:flex;align-items:center;gap:10px;">
+                  <span style="font-size:11px;color:var(--text-3);" id="av-tbl-info">—</span>
+                  <div class="nn-seg">
+                    <button class="active" id="nn-btn-matriz" onclick="nnSetTableMode('matriz')">Matriz</button>
+                    <button id="nn-btn-tabular" onclick="nnSetTableMode('tabular')">Tabular</button>
+                  </div>
+                </div>
+              </div>
+              <div class="av-scroll">
+                <table class="av-tbl">
+                  <thead id="av-thead"></thead>
+                  <tbody id="av-tbody"><tr><td style="text-align:center;color:var(--text-3);padding:20px;">Carregando…</td></tr></tbody>
+                </table>
+              </div>
+            </div>
+
+          </div><!-- /av-wrap -->
+
+        </div><!-- /area-main -->
+      </div><!-- /area-grid -->
+    </div><!-- /container -->
+  </div><!-- /area-body -->
+
+  <footer class="site-footer">
+    <div class="container">
+      <div class="bm-footer-bottom">
+        <span>© <span id="year"></span> Biomedical · Portal Corporativo Interno</span>
+        <span class="bm-footer-meta">Belo Horizonte · São Paulo · Rio de Janeiro · Curitiba · Recife · Porto Alegre</span>
+      </div>
+    </div>
+  </footer>
+
+  <script src="../script.js?v=8"></script>
+  <script src="../nav-sidebar.js?v=52"></script>
+  <script src="../dax-lit.js?v=1"></script>
+  <script src="../sr-intercompany.js?v=1"></script>
+  <script>
+  // ================================================================
+  // NOVOS NEGÓCIOS — matriz analítica · [ClienteComprouSoUmaVez_PERIODO] = 1
+  //
+  //  MATRIZ (ordem exata pedida):
+  //    Código da empresa › Unidade de Negócio › Família › Cód. Cliente ›
+  //    Cliente › Cód. produto › Produto › Tipo de cliente (Revisado)
+  //
+  //  VALORES: SOMA de 'FAT_CLIENTES_PERDIDOS'[MEDIA_COMPRA] e [MEDIA_QUANTIDADE].
+  //    ATENÇÃO: "MEDIA" é só o NOME da coluna — o cálculo é SUM (soma), não média.
+  //
+  //  FILTROS DO TOPO: Mês e Ano (custom, sobre a 'Calendário') +
+  //    Período de Análise = 'PeriodoAnalise'[Periodo].
+  //
+  //  FILTRO INTERNO DA TABELA: a medida [ClienteComprouSoUmaVez_PERIODO] = 1.
+  //
+  //  ── DUAS ARMADILHAS JÁ QUEIMADAS, RESOLVIDAS AQUI ──
+  //  1) NOME DA MEDIDA: o erro DAX "Column 'X' cannot be found" NÃO quer dizer
+  //     "não é medida" — quer dizer que a GRAFIA enviada não bateu. Resolvemos o
+  //     nome EXATO pelo catálogo do modelo (INFO.VIEW.MEASURES), sem depender de
+  //     acento/caixa. E SEM "probe" de validação: medida contextual dá
+  //     FALSO-NEGATIVO no teste EVALUATE ROW (foi o que fez a versão anterior
+  //     dizer "não localizei ClienteComprouSoUmaVez_PERIODO no modelo").
+  //  2) GRANULARIDADE DO FILTRO DA MEDIDA: no BI, "[medida] é 1" é filtro DE
+  //     VISUAL — avaliado LINHA A LINHA da tabela. Aplicar no nível do CLIENTE
+  //     (KEEPFILTERS(FILTER(VALUES(SURRKEY), [medida]=1)), como faz o irmão
+  //     Clientes Perdidos) é MAIS RESTRITIVO e devolve um total MENOR que o do
+  //     BI (deu 51.648 contra 261.925). Por isso a medida entra como COLUNA da
+  //     base — ADDCOLUMNS(SUMMARIZE(...), "@f", [medida]) + FILTER([@f]=1) —
+  //     na granularidade das dims exibidas, e só depois agregamos por nível.
+  //     Efeito colateral bom: como a medida está na EXPRESSÃO (e não como
+  //     argumento de filtro, que o DAX avalia ANTES dos filtros irmãos), ela já
+  //     enxerga o Período de Análise — não precisa mais aninhar CALCULATETABLE.
+  // ================================================================
+  const PBI_CFG = {
+    clientId:'129978ce-ff3b-431d-98b3-66a1bcb766b1', tenantId:'c311c9e6-6017-42a9-b306-4057beba5786',
+    workspaceId:'8535f0a1-8dc6-4da0-93ce-bf20c1c14e27', reportId:'10a505aa-759e-4f20-a130-98c0736ba42d',
+    scopes:['https://analysis.windows.net/powerbi/api/Dataset.Read.All','https://analysis.windows.net/powerbi/api/Report.Read.All']
+  };
+  let _pbi=null,_token=null,_datasetId=null,_ready=false;
+
+  const FAT = 'FAT_CLIENTES_PERDIDOS';
+
+  // ── helpers ──
+  const avDax = s => String(s==null?'':s).replace(/"/g,'""');
+  const avEsc = s => String(s==null?'':s).replace(/"/g,'&quot;');
+  const escH  = s => String(s==null?'':s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+  const _numN = x => (x==null||x===''||x==='-'||isNaN(Number(x)))?null:Number(x);
+  const _norm = s => String(s==null?'':s).normalize('NFD').replace(/[̀-ͯ]/g,'').toLowerCase().replace(/\s+/g,' ').trim();
+  const _alnum = s => _norm(s).replace(/[^a-z0-9]/g,'');
+  const fBRL = v => v==null?'—':'R$ '+Number(v).toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2});
+  const fNUM = v => v==null?'—':Number(v).toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2});
+  const fINT = v => v==null?'—':Number(v).toLocaleString('pt-BR',{maximumFractionDigits:0});
+  const setTxt = (id,t)=>{const el=document.getElementById(id);if(el)el.textContent=t;};
+
+  // ── DIMENSÕES da matriz — ordem EXATA pedida ──
+  //    cands = [tabela, coluna]; o catálogo resolve a grafia real do modelo.
+  const DIMS = [
+    { id:'codempresa', label:'Código da empresa',            cands:[['Empresas','Código da empresa']] },
+    { id:'unidade',    label:'Unidade de Negócio',           cands:[['DIM_UNIDADE_DE_NEGOCIO_V2','UNIDADE_DE_NEGOCIO']] },
+    { id:'familia',    label:'Família',                      cands:[['Produtos','Família']] },
+    { id:'codcliente', label:'Cód. Cliente',                 cands:[['Clientes','Cód. Cliente']] },
+    { id:'cliente',    label:'Cliente',                      cands:[['Clientes','Cliente']] },
+    { id:'codproduto', label:'Cód. produto',                 cands:[['Produtos','Cód. produto']] },
+    { id:'produto',    label:'Produto',                      cands:[['Produtos','Produto']] },
+    { id:'tipo',       label:'Tipo de cliente (Revisado)',   cands:[['Clientes','Tipo de cliente (Revisado)']] }
+  ];
+  // colunas de valor (SOMA) e chave do cliente
+  const COL_COMPRA = { cands:[[FAT,'MEDIA_COMPRA']] };
+  const COL_QTDE   = { cands:[[FAT,'MEDIA_QUANTIDADE']] };
+  // Período de Análise (parâmetro) e Calendário (mês/ano)
+  const COL_PERIODO = { cands:[['PeriodoAnalise','Periodo'],['PeriodoAnalise','Período'],['PeriodoAnálise','Periodo']] };
+  const COL_DATA    = { cands:[['Calendário','Data'],['Calendario','Data']] };
+  // a MEDIDA que filtra a tabela
+  const FLAG_CANDS = ['ClienteComprouSoUmaVez_PERIODO','ClienteComprouSóUmaVez_PERIODO','ClienteComprouSoUmaVez_Periodo','ClienteComprouSóUmaVez_Periodo'];
+
+  // ── estado ──
+  window._nnPeriodo = '';                 // valor de 'PeriodoAnalise'[Periodo]
+  window._nnMes = ''; window._nnAno = '';
+  let _nnMode = 'matriz';                 // matriz | tabular
+  window._avDims = DIMS.map(d=>d.id);     // todas, na ordem pedida
+  window._avSel = {}; DIMS.forEach(d => window._avSel[d.id] = new Set());
+  let _flagRef = null, _flagInfo = '', _dateOK = false, _periodoOK = false;
+  const MESES = [['Jan',1],['Fev',2],['Mar',3],['Abr',4],['Mai',5],['Jun',6],['Jul',7],['Ago',8],['Set',9],['Out',10],['Nov',11],['Dez',12]];
+
+  // ── conexão Power BI (MSAL) ──
+  async function pbiConnect(){
+    if (window._msalAuth){ _pbi = window._msalAuth; }
+    else { _pbi = new msal.PublicClientApplication({ auth:{ clientId:PBI_CFG.clientId, authority:`https://login.microsoftonline.com/${PBI_CFG.tenantId}`, redirectUri:window.location.origin+'/' }, cache:{ cacheLocation:'localStorage', storeAuthStateInCookie:true } }); if(_pbi.initialize) await _pbi.initialize(); await _pbi.handleRedirectPromise().catch(()=>{}); }
+    const accounts = _pbi.getAllAccounts();
+    try { const r = await _pbi.acquireTokenSilent({ scopes:PBI_CFG.scopes, account:accounts[0] }); _token = r.accessToken; }
+    catch { const r = await _pbi.loginPopup({ scopes:PBI_CFG.scopes }); _token = r.accessToken; }
+    const acc = _pbi.getAllAccounts()[0]; if (acc && typeof window.setSidebarUser==='function') window.setSidebarUser(acc.name||acc.username, acc.username);
+  }
+  async function pbiDataset(){
+    if (_datasetId) return _datasetId;
+    let r = await fetch(`https://api.powerbi.com/v1.0/myorg/groups/${PBI_CFG.workspaceId}/reports/${PBI_CFG.reportId}`,{headers:{Authorization:`Bearer ${_token}`}});
+    if (r.ok){ const j=await r.json(); if(j.datasetId){_datasetId=j.datasetId;return _datasetId;} }
+    r = await fetch(`https://api.powerbi.com/v1.0/myorg/reports/${PBI_CFG.reportId}`,{headers:{Authorization:`Bearer ${_token}`}});
+    if (r.ok){ const j=await r.json(); if(j.datasetId){_datasetId=j.datasetId;return _datasetId;} }
+    throw new Error('Dataset não encontrado.');
+  }
+  function _pbiErr(text){
+    try { const j=JSON.parse(text); const e=j.error||{}; const pe=e['pbi.error']||{}; const det=(pe.details||[]).map(d=>d.detail&&d.detail.value).filter(Boolean).join(' | '); return det||e.message||pe.code||text.substring(0,200); }
+    catch { return text.substring(0,200); }
+  }
+  async function pbiQuery(dax){
+    const dsId = await pbiDataset();
+    const u1=`https://api.powerbi.com/v1.0/myorg/groups/${PBI_CFG.workspaceId}/datasets/${dsId}/executeQueries`;
+    const u2=`https://api.powerbi.com/v1.0/myorg/datasets/${dsId}/executeQueries`;
+    const body=JSON.stringify({queries:[{query:dax}],serializerSettings:{includeNulls:true}});
+    const headers={Authorization:`Bearer ${_token}`,'Content-Type':'application/json'};
+    let r=await fetch(u1,{method:'POST',headers,body});
+    if(r.status===401||r.status===403) r=await fetch(u2,{method:'POST',headers,body});
+    if(r.status===401||r.status===403){
+      try{ const _a=_pbi.getAllAccounts()[0]; const _t=await _pbi.acquireTokenSilent({scopes:PBI_CFG.scopes,account:_a,forceRefresh:true}); _token=_t.accessToken; }
+      catch(_e){ try{ const _t=await _pbi.loginPopup({scopes:PBI_CFG.scopes}); _token=_t.accessToken; }catch(__e){} }
+      const h2={Authorization:`Bearer ${_token}`,'Content-Type':'application/json'};
+      r=await fetch(u1,{method:'POST',headers:h2,body}); if(r.status===401||r.status===403) r=await fetch(u2,{method:'POST',headers:h2,body});
+    }
+    const text=await r.text();
+    if(!r.ok) throw new Error(`HTTP ${r.status}: ${_pbiErr(text)}`);
+    const d=JSON.parse(text); if(d.error) throw new Error(_pbiErr(text));
+    return d.results[0].tables[0].rows;
+  }
+  window.PBIData={connect:pbiConnect,query:pbiQuery};
+
+  // ── catálogo do modelo → nomes EXATOS (sem depender de acento/grafia) ──
+  let _colCat=null, _meaCat=null, _unresolved=[];
+  function _indexCols(rows, tk, nk){ const idx={}; rows.forEach(r=>{ const t=r[tk], n=r[nk]; if(t==null||n==null)return; const tn=_norm(t); (idx[tn]=idx[tn]||{})[_norm(n)]=String(n); }); return idx; }
+  function _setRef(c,t,n){ c._t=t; c._n=n; c._ref=`'${t}'[${n}]`; c._out=`${t}[${n}]`; }
+  function resolveColSpec(c){
+    c._t=c._n=c._ref=c._out=null;
+    if(_colCat){
+      // 1) casamento exato (normalizado)
+      for(const [t,n] of c.cands){ const tb=_colCat[_norm(t)]; if(tb&&tb[_norm(n)]){ _setRef(c,t,tb[_norm(n)]); return; } }
+      // 2) fuzzy: todos os tokens da coluna aparecem no nome real
+      for(const [t,n] of c.cands){
+        const tb=_colCat[_norm(t)]; if(!tb) continue;
+        const toks=_norm(n).split(' ').filter(w=>w.length>2); if(!toks.length) continue;
+        let best=null; for(const nn in tb){ if(toks.every(w=>nn.includes(w))){ if(best===null||nn.length<best.length) best=nn; } }
+        if(best!==null){ _setRef(c,t,tb[best]); return; }
+      }
+    }
+    // 3) fallback literal — o catálogo pode vir INCOMPLETO (INFO.VIEW.COLUMNS truncado);
+    //    melhor tentar o 1º candidato do que descartar a coluna.
+    const [t,n]=c.cands[0]; _setRef(c,t,n);
+  }
+  // MEDIDA do filtro: resolve pelo catálogo, SEM probe (probe dá falso-negativo)
+  function resolveFlag(){
+    if(!_meaCat) return null;
+    for(const nm of FLAG_CANDS){ const h=_meaCat[_norm(nm)]; if(h) return h; }
+    let best=null;
+    for(const k in _meaCat){ const kk=_alnum(k); if(kk.includes('comprou')&&kk.includes('periodo')){ if(best===null||k.length<best.length) best=k; } }
+    if(best!==null) return _meaCat[best];
+    for(const k in _meaCat){ const kk=_alnum(k); if(kk.includes('comprou')&&kk.includes('umavez')) return _meaCat[k]; }
+    return null;
+  }
+  async function carregarCatalogo(){
+    try { const rows=await pbiQuery(`EVALUATE SELECTCOLUMNS(INFO.VIEW.COLUMNS(), "T",[Table], "N",[Name])`); if(rows&&rows.length) _colCat=_indexCols(rows,'[T]','[N]'); }
+    catch(e){ console.warn('[NN] INFO.VIEW.COLUMNS:', e.message); }
+    if(!_colCat){ try { const rows=await pbiQuery(`EVALUATE SELECTCOLUMNS(COLUMNSTATISTICS(), "T",[Table Name], "N",[Column Name])`); if(rows&&rows.length) _colCat=_indexCols(rows,'[T]','[N]'); } catch(e){ console.warn('[NN] COLUMNSTATISTICS:', e.message); } }
+    try { const rows=await pbiQuery(`EVALUATE SELECTCOLUMNS(INFO.VIEW.MEASURES(), "N",[Name])`); if(rows&&rows.length){ _meaCat={}; rows.forEach(r=>{ const n=r['[N]']; if(n!=null)_meaCat[_norm(n)]=String(n); }); } }
+    catch(e){ console.warn('[NN] INFO.VIEW.MEASURES:', e.message); }
+    if(!_meaCat){ try { const rows=await pbiQuery(`EVALUATE SELECTCOLUMNS(INFO.MEASURES(), "N",[Name])`); if(rows&&rows.length){ _meaCat={}; rows.forEach(r=>{ const n=r['[N]']; if(n!=null)_meaCat[_norm(n)]=String(n); }); } } catch(e){ console.warn('[NN] INFO.MEASURES:', e.message); } }
+
+    DIMS.forEach(resolveColSpec);
+    [COL_COMPRA,COL_QTDE,COL_PERIODO,COL_DATA].forEach(resolveColSpec);
+
+    const f = resolveFlag();
+    if(f){ _flagRef=f; _flagInfo=`medida "${f}"`; }
+    else { _flagRef=null; _flagInfo='NÃO ENCONTRADA'; }
+    console.log('[NN] filtro da tabela =', _flagInfo);
+
+    // o que o catálogo NÃO confirmou (segue no literal, mas avisamos)
+    _unresolved=[];
+    if(_colCat){
+      DIMS.forEach(d=>{ const tb=_colCat[_norm(d.cands[0][0])]; if(!tb||!Object.values(tb).some(v=>v===d._n)) _unresolved.push(d.label); });
+    }
+  }
+  // diagnóstico no console: nomes que a página realmente vai usar
+  window.nnCampos = () => ({
+    filtro:_flagInfo,
+    periodo:COL_PERIODO._ref+(_periodoOK?' (ok)':' (indisponível)'),
+    data:COL_DATA._ref+(_dateOK?' (ok)':' (indisponível)'),
+    valores:[COL_COMPRA._ref, COL_QTDE._ref],
+    dims:DIMS.map(d=>d.label+' = '+d._ref)
+  });
+
+  // ── dimensões selecionadas (granularidade da tabela) ──
+  const selDims = () => window._avDims.map(id=>DIMS.find(d=>d.id===id)).filter(Boolean);
+
+  // ── BASE: as linhas da tabela, com o filtro da medida aplicado LINHA A LINHA ──
+  //  É assim que o Power BI aplica um filtro de medida no VISUAL: ele avalia a
+  //  medida na granularidade das linhas exibidas e descarta as que não passam.
+  //  (Aplicar no nível do CLIENTE — KEEPFILTERS(FILTER(VALUES(SURRKEY),…)) — é
+  //  MAIS RESTRITIVO e devolve um total menor que o do BI. Foi o que causou a
+  //  divergência 51.648 × 261.925.)
+  //  Como a medida entra na EXPRESSÃO (e não como argumento de filtro), ela já
+  //  enxerga todos os filtros do CALCULATETABLE — inclusive o Período de Análise.
+  function baseExpr(dims){
+    const cols = dims.map(d=>d._ref).join(', ');
+    let add = `ADDCOLUMNS(SUMMARIZE(${FAT}, ${cols})`
+            + `, "@c", CALCULATE(SUM(${COL_COMPRA._ref}))`
+            + `, "@q", CALCULATE(SUM(${COL_QTDE._ref}))`;
+    if(_flagRef) add += `, "@f", [${_flagRef}]`;
+    add += ')';
+    return _flagRef ? `FILTER(${add}, [@f] = 1)` : add;
+  }
+
+  // ── contexto de filtro (um só CALCULATETABLE: a medida está na expressão) ──
+  function allFilters(pathFilters){
+    const f = [];
+    const pv = window._nnPeriodo;
+    if(_periodoOK && pv!=='' && pv!=null){
+      const ref = COL_PERIODO._ref;
+      f.push(isNaN(Number(pv)) ? `${ref} = "${avDax(pv)}"` : `${ref} = ${pv}`);
+    }
+    if(_dateOK){ const dc = dateCond(); if(dc) f.push(`FILTER(ALL(${COL_DATA._ref}), ${dc})`); }
+    // filtro-base do Sales Report: 'Faturamentos'[É intercompany?] = "NÃO"
+    // (../sr-intercompany.js). O fato aqui é FAT_CLIENTES_PERDIDOS: o filtro
+    // chega aos números pela medida da base e pelas relações do modelo.
+    f.push(...SRInterco.filtros());
+    // literal pelo TIPO da coluna (d._tipo, lido em carregarValores): cód.
+    // cliente/produto são NÚMERO no modelo e entre aspas o BI recusa a consulta
+    DIMS.forEach(d=>{ if(!d._ref) return; const t=DaxLit.treatas(d._ref, [...window._avSel[d.id]], d._tipo); if(t) f.push(t); });
+    (pathFilters||[]).forEach(x=>f.push(x));
+    return f;
+  }
+  function dateCond(){
+    const YR = `YEAR(${COL_DATA._ref})`, MO = `MONTH(${COL_DATA._ref})`;
+    const meses = window._nnMes ? [].concat(window._nnMes).map(Number) : [];
+    const anos  = window._nnAno ? [].concat(window._nnAno).map(Number) : [];
+    const mCond = meses.length ? (meses.length===1?`${MO} = ${meses[0]}`:`${MO} IN { ${meses.join(', ')} }`) : '';
+    const yCond = anos.length  ? (anos.length===1 ?`${YR} = ${anos[0]}` :`${YR} IN { ${anos.join(', ')} }`)  : '';
+    return [yCond, mCond].filter(Boolean).join(' && ');
+  }
+  const ctable = (expr, filters) => filters.length ? `CALCULATETABLE(${expr}, ${filters.join(', ')})` : expr;
+  // a BASE já filtrada, pronta p/ ser agregada por nível (VAR _base da query)
+  const baseDax = (dims, pathFilters) => ctable(baseExpr(dims), allFilters(pathFilters));
+
+  const _vRe = (r,re)=>{ const k=Object.keys(r).find(x=>re.test(x)); return k?r[k]:null; };
+  const rowKeyMap = row => { const m={}; Object.keys(row||{}).forEach(k=>{ m[_norm(k)]=k; }); return m; };
+  function cellVal(r, d, km){ if(d._out in r) return r[d._out]; const k=km[_norm(d._out)]; return k===undefined?null:r[k]; }
+
+  async function carregarValores(d){
+    if(!d._ref) return [];
+    const rows = await pbiQuery(`EVALUATE VALUES(${d._ref})`);
+    if(!rows||!rows.length) return [];
+    const key = Object.keys(rows[0])[0];
+    const brutos = rows.map(r=>r[key]).filter(v=>v!=null&&v!=='');
+    if(d._tipo==null && brutos.length) d._tipo = DaxLit.tipoDe(brutos[0]);
+    return brutos.map(v=>({value:String(v),label:String(v)})).sort((a,b)=>a.label.localeCompare(b.label,'pt-BR',{numeric:true}));
+  }
+
+  // ── KPIs — somam a MESMA base da tabela (batem com o total da matriz) ──
+  async function carregarKPIs(){
+    try {
+      const dims = selDims();
+      if(!dims.length){ ['kpi-fat','kpi-qtd','kpi-cli','kpi-tkt'].forEach(id=>setTxt(id,'—')); return; }
+      const cli = dims.find(d=>d.id==='codcliente') || dims.find(d=>d.id==='cliente');
+      const ret = `ROW("Compra", SUMX(_base, [@c]), "Qtde", SUMX(_base, [@q])`
+                + (cli ? `, "Clientes", COUNTROWS(SUMMARIZE(_base, ${cli._ref}))` : '') + ')';
+      const rows = await pbiQuery(`EVALUATE\nVAR _base = ${baseDax(dims, [])}\nRETURN ${ret}`);
+      const r = rows && rows[0] ? rows[0] : {};
+      const fat = _numN(_vRe(r,/\[Compra\]$/)), qtd = _numN(_vRe(r,/\[Qtde\]$/)), nc = _numN(_vRe(r,/\[Clientes\]$/));
+      setTxt('kpi-fat', fBRL(fat)); setTxt('kpi-qtd', fNUM(qtd)); setTxt('kpi-cli', cli ? fINT(nc) : '—');
+      setTxt('kpi-tkt', (fat!=null && nc) ? fBRL(fat/nc) : '—');
+    } catch(e){ console.error('[NN] KPIs:', e.message); ['kpi-fat','kpi-qtd','kpi-cli','kpi-tkt'].forEach(id=>setTxt(id,'—')); }
+  }
+
+  // ── 1 nível da matriz ──
+  //  A base é montada na granularidade COMPLETA (todas as dims selecionadas),
+  //  o filtro da medida é aplicado ali, e só depois agregamos para o nível
+  //  pedido. Assim o total do 1º nível = total da tabela do BI, e cada nível
+  //  fecha com a soma dos filhos.
+  async function nnNivel(dim, pathFilters){
+    if(!dim || !dim._ref) return [];
+    const dims = selDims(); if(!dims.length) return [];
+    const roll = `GROUPBY(_base, ${dim._ref}, "Compra", SUMX(CURRENTGROUP(), [@c]), "Qtde", SUMX(CURRENTGROUP(), [@q]))`;
+    const dax = `EVALUATE\nVAR _base = ${baseDax(dims, pathFilters)}\nRETURN TOPN(3000, ${roll}, [Compra], DESC)\nORDER BY [Compra] DESC`;
+    const rows = await pbiQuery(dax);
+    return rows.map(r=>{ const km=rowKeyMap(r); return { nome:cellVal(r,dim,km), compra:_numN(_vRe(r,/\[Compra\]$/)), qtde:_numN(_vRe(r,/\[Qtde\]$/)) }; })
+               .filter(x=>(x.compra||0)!==0 || (x.qtde||0)!==0);
+  }
+
+  // ── MATRIZ (drill-down na ordem das dimensões) ──
+  let _nnDims=[], _nnSeq=0; const _nnPath={};
+  // nível EM BRANCO também filtra: antes o predicado virava null e o filho
+  // saía com os números do pai (sem recorte nenhum)
+  const _pf = (d,value)=> d._ref ? DaxLit.treatas(d._ref, [value], d._tipo) : null;
+  function nnCells(d){ return `<td style="font-weight:600;color:var(--bm-blue-900);">${fBRL(d.compra)}</td><td>${fNUM(d.qtde)}</td>`; }
+  function nnRowMatriz(item, level, path){
+    const expandable = level < _nnDims.length - 1;
+    const ind = level*18;
+    const tg = expandable ? `<span class="nn-tg">▶</span>` : `<span style="display:inline-block;width:14px;"></span>`;
+    const idx=_nnSeq++; _nnPath[idx]=path;
+    const st = 'font-weight:700;' + (level===0?'':'color:var(--text-2);');
+    return `<tr class="nn-mrow" data-level="${level}" data-pathidx="${idx}"><td class="dim" style="padding-left:${12+ind}px;${st}">${tg} ${escH(item.nome ?? '—')}</td>${nnCells(item)}</tr>`;
+  }
+  async function nnRenderMatriz(){
+    _nnDims = window._avDims.map(id=>DIMS.find(d=>d.id===id)).filter(Boolean);
+    _nnSeq=0; for(const k in _nnPath) delete _nnPath[k];
+    const thead=document.getElementById('av-thead'), tbody=document.getElementById('av-tbody');
+    const titulo = _nnDims.length ? _nnDims.map(d=>d.label).join(' › ') : 'Dimensão';
+    thead.innerHTML = `<tr><th class="dim">${escH(titulo)}</th><th>Faturamento</th><th>Quantidade</th></tr>`;
+    if(!_nnDims.length){ tbody.innerHTML='<tr><td colspan="3" style="text-align:center;color:var(--text-3);padding:18px;">Selecione ao menos um campo.</td></tr>'; setTxt('av-tbl-info','0 linhas'); return; }
+    tbody.innerHTML='<tr><td colspan="3" style="text-align:center;color:var(--text-3);padding:18px;">Carregando…</td></tr>';
+    try {
+      const rows = await nnNivel(_nnDims[0], []);
+      if(!rows.length){ tbody.innerHTML='<tr><td colspan="3" style="text-align:center;color:var(--text-3);padding:18px;">Sem dados no período.</td></tr>'; setTxt('av-tbl-info','0 linhas'); return; }
+      tbody.innerHTML = rows.map(r=>nnRowMatriz(r,0,[{dim:_nnDims[0],value:r.nome}])).join('');
+      setTxt('av-tbl-info', `${rows.length} no 1º nível`);
+    } catch(e){ console.error('[NN] matriz:', e.message); tbody.innerHTML=`<tr><td colspan="3" style="text-align:center;color:var(--danger);padding:18px;">Erro: ${escH(e.message.substring(0,180))}</td></tr>`; }
+  }
+  document.addEventListener('click', async (ev)=>{
+    const tg = ev.target.closest && ev.target.closest('.nn-tg');
+    if(!tg) return;
+    const tr = tg.closest('tr'); if(!tr || !tr.classList.contains('nn-mrow')) return;
+    const level = +tr.dataset.level;
+    if(tr.classList.contains('open')){ let n=tr.nextElementSibling; while(n && +n.dataset.level>level){ const nx=n.nextElementSibling; n.remove(); n=nx; } tr.classList.remove('open'); tg.textContent='▶'; return; }
+    if(level >= _nnDims.length-1) return;
+    tg.textContent='…';
+    const path = _nnPath[+tr.dataset.pathidx] || [];
+    const childLevel = level+1;
+    const pathFilters = path.map(p=>_pf(p.dim,p.value)).filter(Boolean);
+    let children=[];
+    try{ children = await nnNivel(_nnDims[childLevel], pathFilters); }catch(e){ console.error('[NN] drill:', e.message); tg.textContent='▶'; return; }
+    tg.textContent='▼'; tr.classList.add('open');
+    const frag = children.map(c=>nnRowMatriz(c, childLevel, path.concat({dim:_nnDims[childLevel], value:c.nome}))).join('');
+    tr.insertAdjacentHTML('afterend', frag);
+  });
+
+  // ── TABULAR (todas as dimensões achatadas) ──
+  async function nnRenderTabular(){
+    const dims = window._avDims.map(id=>DIMS.find(d=>d.id===id)).filter(Boolean);
+    const thead=document.getElementById('av-thead'), tbody=document.getElementById('av-tbody');
+    const ncol = dims.length + 2;
+    thead.innerHTML = '<tr>' + dims.map(d=>`<th class="dim">${escH(d.label)}</th>`).join('') + '<th>Faturamento</th><th>Quantidade</th></tr>';
+    if(!dims.length){ tbody.innerHTML=`<tr><td colspan="2" style="text-align:center;color:var(--text-3);padding:20px;">Selecione ao menos um campo.</td></tr>`; setTxt('av-tbl-info','0 linhas'); return; }
+    tbody.innerHTML = `<tr><td colspan="${ncol}" style="text-align:center;color:var(--text-3);padding:20px;">Carregando…</td></tr>`;
+    try {
+      // a base JÁ é a tabela achatada; devolvemos ela crua para as colunas de
+      // dimensão manterem o nome nativo do modelo ("Tabela[Coluna]"). Renomear
+      // com SELECTCOLUMNS faria a API devolver "[Tabela[Coluna]]" e o cellVal
+      // não acharia a chave — toda célula de dimensão viraria "—".
+      const dax = `EVALUATE\nVAR _base = ${baseDax(dims, [])}\nRETURN TOPN(5000, _base, [@c], DESC)\nORDER BY [@c] DESC`;
+      const rows = await pbiQuery(dax);
+      const data = rows.map(r=>{ const km=rowKeyMap(r); return { dims:dims.map(d=>cellVal(r,d,km)), compra:_numN(_vRe(r,/\[@c\]$/)), qtde:_numN(_vRe(r,/\[@q\]$/)) }; })
+                       .filter(x=>(x.compra||0)!==0 || (x.qtde||0)!==0);
+      if(!data.length){ tbody.innerHTML=`<tr><td colspan="${ncol}" style="text-align:center;color:var(--text-3);padding:20px;">Sem dados no período.</td></tr>`; setTxt('av-tbl-info','0 linhas'); return; }
+      tbody.innerHTML = data.map(r => '<tr>' + r.dims.map(v=>`<td class="dim">${escH(v ?? '—')}</td>`).join('')
+        + `<td style="font-weight:600;color:var(--bm-blue-900);">${fBRL(r.compra)}</td><td>${fNUM(r.qtde)}</td></tr>`).join('');
+      setTxt('av-tbl-info', `${data.length} linhas`);
+    } catch(e){ console.error('[NN] tabular:', e.message); tbody.innerHTML=`<tr><td colspan="${ncol}" style="text-align:center;color:var(--danger);padding:20px;">Erro: ${escH(e.message.substring(0,180))}</td></tr>`; }
+  }
+
+  // ── orquestração ──
+  async function nnAplicar(){
+    if(!_ready) return;
+    carregarKPIs();
+    if(_nnMode==='matriz') await nnRenderMatriz(); else await nnRenderTabular();
+  }
+  function nnSetTableMode(m){ _nnMode=m; const a=document.getElementById('nn-btn-matriz'), b=document.getElementById('nn-btn-tabular'); if(a)a.classList.toggle('active',m==='matriz'); if(b)b.classList.toggle('active',m==='tabular'); nnAplicar(); }
+  function nnSetPeriodo(v){ window._nnPeriodo = v || ''; nnAplicar(); }
+  window.nnSetTableMode=nnSetTableMode; window.nnSetPeriodo=nnSetPeriodo;
+
+  // ── Mês / Ano (custom, sobre a 'Calendário') · Ctrl/⌘+clique = múltiplos ──
+  function nnMesAnoLbl(){
+    const meses=window._nnMes?[].concat(window._nnMes):[], anos=window._nnAno?[].concat(window._nnAno):[];
+    const mTxt = meses.length===1 ? (MESES.find(m=>String(m[1])===String(meses[0]))||['',''])[0] : (meses.length?meses.length+' meses':'');
+    const aTxt = anos.length===1 ? String(anos[0]) : (anos.length?anos.length+' anos':'');
+    setTxt('fx-mesano-lbl', [aTxt,mTxt].filter(Boolean).join(' · ') || 'Todos');
+  }
+  function nnToggle(cur, v, multi){
+    if(v==null||v==='') return [];
+    const s = cur.map(String), sv = String(v);
+    if(multi) return s.includes(sv) ? s.filter(x=>x!==sv) : s.concat(sv);
+    return [sv];
+  }
+  function nnSetMes(btn,m,ev){
+    const multi = !!(ev && (ev.ctrlKey||ev.metaKey));
+    const cur = nnToggle(window._nnMes?[].concat(window._nnMes):[], m, multi);
+    window._nnMes = cur.length ? (cur.length===1?cur[0]:cur) : '';
+    document.querySelectorAll('#nn-row-mes .av-btn').forEach(x=>{ const v=x.dataset.v||''; x.classList.toggle('active', v==='' ? !cur.length : cur.includes(v)); });
+    nnMesAnoLbl(); nnAplicar();
+  }
+  function nnSetAno(btn,a,ev){
+    const multi = !!(ev && (ev.ctrlKey||ev.metaKey));
+    const cur = nnToggle(window._nnAno?[].concat(window._nnAno):[], a, multi);
+    window._nnAno = cur.length ? (cur.length===1?cur[0]:cur) : '';
+    document.querySelectorAll('#nn-row-ano .av-btn').forEach(x=>{ const v=x.dataset.v||''; x.classList.toggle('active-green', v==='' ? !cur.length : cur.includes(v)); });
+    nnMesAnoLbl(); nnAplicar();
+  }
+  function montarMesAno(anos){
+    const rm=document.getElementById('nn-row-mes'), ra=document.getElementById('nn-row-ano');
+    if(rm){
+      rm.innerHTML='';
+      const mk=(lbl,v,act)=>{ const b=document.createElement('button'); b.className='av-btn'+(act?' active':''); b.type='button'; b.dataset.v=v; b.textContent=lbl; b.addEventListener('click', e=>nnSetMes(b, v, e)); return b; };
+      rm.appendChild(mk('Todos','',true));
+      MESES.forEach(([lbl,n])=>rm.appendChild(mk(lbl,String(n),false)));
+    }
+    if(ra){
+      ra.innerHTML='';
+      const mk=(lbl,v,act)=>{ const b=document.createElement('button'); b.className='av-btn'+(act?' active-green':''); b.type='button'; b.dataset.v=v; b.textContent=lbl; b.addEventListener('click', e=>nnSetAno(b, v, e)); return b; };
+      ra.appendChild(mk('Todos','',true));
+      anos.forEach(a=>ra.appendChild(mk(String(a),String(a),false)));
+    }
+    nnMesAnoLbl();
+  }
+  // valida a Calendário e devolve os anos existentes (se falhar, mês/ano fica desabilitado)
+  async function nnResolveDate(){
+    if(!COL_DATA._ref) { _dateOK=false; return []; }
+    try {
+      const rows = await pbiQuery(`EVALUATE ROW("mi", YEAR(CALCULATE(MIN(${COL_DATA._ref}))), "ma", YEAR(CALCULATE(MAX(${COL_DATA._ref}))))`);
+      const r = rows && rows[0] ? rows[0] : {};
+      const mi = _numN(_vRe(r,/\[mi\]$/)), ma = _numN(_vRe(r,/\[ma\]$/));
+      _dateOK = true;
+      if(mi && ma && ma>=mi){ const out=[]; for(let y=ma;y>=mi;y--) out.push(y); return out.slice(0,12); }
+      return [];
+    } catch(e){ _dateOK=false; console.warn('[NN] Calendário indisponível:', e.message); return []; }
+  }
+  // carrega os valores de 'PeriodoAnalise'[Periodo] no select
+  async function nnResolvePeriodo(){
+    const sel = document.getElementById('nn-periodo'); if(!sel) return;
+    try {
+      const ps = await carregarValores(COL_PERIODO);
+      if(!ps.length) throw new Error('sem valores');
+      ps.sort((a,b)=>{ const na=Number(a.value), nb=Number(b.value); return (!isNaN(na)&&!isNaN(nb)) ? na-nb : a.label.localeCompare(b.label,'pt-BR',{numeric:true}); });
+      sel.innerHTML='';
+      const opt0=document.createElement('option'); opt0.value=''; opt0.textContent='Todos'; sel.appendChild(opt0);
+      ps.forEach(o=>{ const opt=document.createElement('option'); opt.value=o.value; opt.textContent=o.label; sel.appendChild(opt); });
+      _periodoOK = true;
+      sel.value=''; window._nnPeriodo='';
+    } catch(e){
+      _periodoOK = false;
+      sel.innerHTML='<option value="">indisponível</option>'; sel.disabled=true;
+      console.warn('[NN] PeriodoAnalise:', e.message);
+    }
+  }
+
+  // ── dropdowns (campos da matriz + filtro por dimensão) ──
+  function avMakeDropdown({ label, getOptions, getSelected, setSelected, onChange }){
+    const wrap=document.createElement('div'); wrap.className='av-dd';
+    const btn=document.createElement('button'); btn.className='av-dd-btn'; btn.type='button';
+    const panel=document.createElement('div'); panel.className='av-dd-panel';
+    panel.innerHTML = `<div class="av-dd-search"><input type="text" placeholder="Buscar…"></div><div class="av-dd-list"></div><div class="av-dd-foot"><button type="button" data-act="limpar">Limpar</button><button type="button" data-act="fechar">Fechar</button></div>`;
+    wrap.appendChild(btn); wrap.appendChild(panel);
+    const list=panel.querySelector('.av-dd-list'), search=panel.querySelector('input');
+    let loaded=false, options=[];
+    function refresh(){ const n=getSelected().length; btn.classList.toggle('has',n>0); btn.innerHTML=`<span>${escH(label)}</span>${ n?`<span class="cnt">${n}</span>`:'<span style="color:var(--text-4);font-weight:500;">Todos</span>' }`; }
+    function renderList(){ const q=(search.value||'').toLowerCase(); const sel=new Set(getSelected()); const items=options.filter(o=>!q||String(o.label).toLowerCase().includes(q)); list.innerHTML=items.length?items.map(o=>`<label class="av-dd-opt"><input type="checkbox" value="${avEsc(o.value)}" ${sel.has(o.value)?'checked':''}>${escH(o.label)}</label>`).join(''):'<div style="padding:8px;color:var(--text-3);font-size:12px;">nenhum</div>'; }
+    async function ensure(){ if(loaded) return; list.innerHTML='<div style="padding:10px;color:var(--text-3);font-size:12px;">Carregando…</div>'; try{options=await getOptions();}catch(e){list.innerHTML=`<div style="padding:10px;color:var(--danger);font-size:12px;">erro: ${escH(e.message.substring(0,60))}</div>`;return;} loaded=true; renderList(); }
+    btn.addEventListener('click', async e=>{ e.stopPropagation(); const open=wrap.classList.contains('open'); document.querySelectorAll('.av-dd.open').forEach(d=>d.classList.remove('open')); if(!open){ wrap.classList.add('open'); await ensure(); search.focus(); } });
+    panel.addEventListener('click', e=>e.stopPropagation());
+    list.addEventListener('change', e=>{ if(e.target.matches('input[type=checkbox]')){ setSelected(e.target.value,e.target.checked); refresh(); onChange(); } });
+    search.addEventListener('input', renderList);
+    panel.querySelector('[data-act=limpar]').addEventListener('click', ()=>{ setSelected(null,false,true); renderList(); refresh(); onChange(); });
+    panel.querySelector('[data-act=fechar]').addEventListener('click', ()=>wrap.classList.remove('open'));
+    refresh(); return wrap;
+  }
+  document.addEventListener('click', ()=>document.querySelectorAll('.av-dd.open').forEach(d=>d.classList.remove('open')));
+  function montarToolbar(){
+    const tb=document.getElementById('av-toolbar'); if(!tb) return; tb.innerHTML='';
+    tb.appendChild(avMakeDropdown({
+      label:'➕ Campos',
+      getOptions:async()=>DIMS.map(d=>({value:d.id,label:d.label})),
+      getSelected:()=>window._avDims.slice(),
+      setSelected:(id,ck,clr)=>{ if(clr){window._avDims=[];return;} const i=window._avDims.indexOf(id); if(ck){ if(i<0){ window._avDims.push(id); window._avDims.sort((a,b)=>DIMS.findIndex(d=>d.id===a)-DIMS.findIndex(d=>d.id===b)); } } else if(i>=0) window._avDims.splice(i,1); },
+      onChange:nnAplicar
+    }));
+    DIMS.forEach(d=>tb.appendChild(avMakeDropdown({
+      label:d.label,
+      getOptions:()=>carregarValores(d),
+      getSelected:()=>[...window._avSel[d.id]],
+      setSelected:(v,ck,clr)=>{ const s=window._avSel[d.id]; if(clr){s.clear();return;} if(ck)s.add(v); else s.delete(v); },
+      onChange:nnAplicar
+    })));
+    const limpar=document.createElement('button'); limpar.className='av-btn'; limpar.type='button';
+    limpar.textContent='✕ Limpar'; limpar.style.fontSize='11px';
+    limpar.addEventListener('click', ()=>{
+      DIMS.forEach(d=>window._avSel[d.id].clear());
+      window._nnMes=''; window._nnAno='';
+      document.querySelectorAll('#nn-row-mes .av-btn').forEach(x=>x.classList.toggle('active', (x.dataset.v||'')===''));
+      document.querySelectorAll('#nn-row-ano .av-btn').forEach(x=>x.classList.toggle('active-green', (x.dataset.v||'')===''));
+      const sel=document.getElementById('nn-periodo'); if(sel && !sel.disabled){ sel.value=''; window._nnPeriodo=''; }
+      nnMesAnoLbl(); montarToolbar(); nnAplicar();
+    });
+    tb.appendChild(limpar);
+  }
+
+  // ── boot ──
+  function banner(kind, html){
+    const b=document.getElementById('av-banner'); if(!b) return;
+    const st = kind==='ok'   ? 'background:#F0FDF4;border:1px solid #BBF7D0;color:#14532D;'
+             : kind==='warn' ? 'background:#FEFCE8;border:1px solid #FDE68A;color:#854D0E;'
+             :                 'background:#FEF2F2;border:1px solid #FECACA;color:#7F1D1D;';
+    b.style.cssText='padding:11px 16px;border-radius:8px;font-size:13px;display:flex;align-items:center;gap:10px;'+st;
+    b.innerHTML=html;
+  }
+  document.addEventListener('DOMContentLoaded', async ()=>{
+    montarToolbar();
+    montarMesAno([]);
+    try {
+      await pbiConnect();
+      await carregarCatalogo();
+      await SRInterco.resolver(pbiQuery);   // 'Faturamentos'[É intercompany?] = "NÃO"
+      const anos = await nnResolveDate();
+      montarMesAno(anos);
+      await nnResolvePeriodo();
+      _ready = true;
+
+      const avisos = [];
+      if(!_flagRef)    avisos.push('não localizei a medida <b>ClienteComprouSoUmaVez_PERIODO</b> — a tabela carrega SEM esse filtro');
+      if(!_periodoOK)  avisos.push('<b>PeriodoAnalise[Periodo]</b> indisponível');
+      if(!_dateOK)     avisos.push('<b>Calendário</b> indisponível (Mês/Ano desligados)');
+      if(_unresolved.length) avisos.push('campos não confirmados no catálogo: '+_unresolved.join(', '));
+      if(SRInterco.aviso) avisos.push('filtro <b>\'Faturamentos\'[É intercompany?] = "NÃO"</b> não aplicado — '+escH(SRInterco.aviso));
+
+      if(avisos.length){
+        banner('warn', `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg> Conectado — ${avisos.join(' · ')}.`);
+      } else {
+        banner('ok', `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg> ✅ Conectado ao Power BI · filtro da tabela: ${escH(_flagInfo)}`);
+      }
+      await nnAplicar();
+    } catch(err){
+      banner('err', `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg> ${escH(err.message)}`);
+    }
+  });
+  </script>
+</body>
+</html>

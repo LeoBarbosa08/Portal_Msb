@@ -1,0 +1,878 @@
+﻿<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Tabela de Preços · Comercial · Biomedical</title>
+  <link rel="stylesheet" href="../styles.css?v=14">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../dash-v2.css?v=3">
+  <script src="https://unpkg.com/@azure/msal-browser@2.38.3/lib/msal-browser.min.js"></script>
+<script src="../pbi-throttle.js?v=3"></script>
+  <!-- Layout v3 (Claude Design · animado): fonte + camada visual + motor de animações -->
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300..800&family=Manrope:wght@400..800&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../portal-v3.css?v=2">
+  <script src="../portal-motion.js?v=3" defer></script>
+  <!-- Tema claro/escuro (menu do avatar): marca o <html> antes de pintar + camada escura -->
+  <script>try{if(localStorage.getItem('bm-tema')==='escuro')document.documentElement.setAttribute('data-tema','escuro')}catch(e){}</script>
+  <link rel="stylesheet" href="../portal-tema.css?v=1">
+  <script src="../portal-tema.js?v=1" defer></script>
+  <!-- Celular (varredura 15/10/26): só vale em tela < 768px; no computador não se aplica -->
+  <link rel="stylesheet" href="../portal-mobile.css?v=1" media="(max-width: 767.98px)">
+  <script src="../portal-mobile.js?v=1" defer></script>
+</head>
+<body class="dept">
+
+  <header class="site-header">
+    <div class="container">
+      <a href="../index.html" class="brand" aria-label="Biomedical — Portal Corporativo">
+        <img class="brand-logo" src="/icons/icon-192.png" alt="Biomedical" onerror="this.dataset.failed='true'">
+        <span class="brand-fallback">Biomedical</span>
+      </a>
+      <nav class="header-nav">
+        <a href="../index.html">Início</a>
+        <a href="../index.html#areas">Áreas</a>
+        <a href="../index.html#sistemas">Sistemas</a>
+        <a href="../index.html#avisos">Avisos</a>
+        <a href="../index.html#contato">Contato</a>
+      </nav>
+    </div>
+  </header>
+
+  <section class="area-header">
+    <div class="container">
+      <div class="breadcrumb">
+        <a href="../index.html">Portal</a><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18l6-6-6-6"/></svg>
+        <a href="comercial.html">Comercial</a><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18l6-6-6-6"/></svg>
+        <span>Tabela de Preços</span>
+      </div>
+      <div class="area-header-top">
+        <div>
+          <h1>Tabela de Preços</h1>
+          <p>Preços do Salesforce (CRM) e por convênio — com filtros e busca.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <div class="area-body">
+    <div class="container">
+      <div class="area-grid">
+
+        <aside class="area-sidebar">
+          <div class="sb-card">
+            <div class="sb-head">
+              <span class="sb-ic"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="8.5" cy="7" r="4"/><path d="M20 8v6"/><path d="M23 11h-6"/></svg></span>
+              <div><div class="sb-tt">Comercial</div><div class="sb-st">Departamento</div></div>
+            </div>
+            <nav></nav>
+          </div>
+          <a href="../index.html" class="sb-back"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></svg>Voltar ao Portal</a>
+        </aside>
+
+        <div class="area-main">
+
+          <style>
+            /* ================================================================
+               TABELA DE PREÇOS — visual em cartões (não tabular)
+               ================================================================ */
+            .tp-wrap{padding:22px 0 56px;display:flex;flex-direction:column;gap:13px;
+                     font-family:'Plus Jakarta Sans',var(--font-body);color:var(--text);}
+            .tp-wrap *{box-sizing:border-box;}
+
+            /* ── cartões base ── */
+            .tp-card{background:#fff;border:1px solid #E6ECF3;border-radius:14px;}
+            .tp-lab{font-size:10px;font-weight:700;letter-spacing:.09em;text-transform:uppercase;color:#93A4B8;}
+
+            /* ── abas ── */
+            .tp-tabsbar{background:#fff;border:1px solid #E6ECF3;border-radius:14px;padding:8px 10px;display:flex;gap:4px;}
+            .tp-tab{padding:9px 18px;border:none;border-radius:9px;background:transparent;cursor:pointer;
+                    font-family:inherit;font-size:13px;font-weight:600;color:#5B7189;transition:.15s;}
+            .tp-tab:hover{color:var(--bm-blue-900);background:#F4F8FC;}
+            .tp-tab.on{background:var(--bm-blue-900);color:#fff;font-weight:700;}
+
+            /* ── painel de seleção ── */
+            .tp-panel-head{display:flex;align-items:center;gap:11px;padding:15px 18px;border-bottom:1px solid #EEF2F7;flex-wrap:wrap;}
+            .tp-ic{width:30px;height:30px;border-radius:8px;background:var(--bm-blue-50);color:var(--bm-blue-700);
+                   display:flex;align-items:center;justify-content:center;flex:none;}
+            .tp-panel-head h4{margin:0;font-size:14.5px;font-weight:800;color:var(--bm-blue-900);letter-spacing:-.01em;}
+            .tp-pills{margin-left:auto;display:flex;gap:7px;flex-wrap:wrap;}
+            .tp-pill{font-size:11px;font-weight:700;color:var(--bm-blue-700);background:var(--bm-blue-50);
+                     border:1px solid #DCEAF8;padding:4px 11px;border-radius:999px;white-space:nowrap;}
+            .tp-panel-body{padding:15px 18px 17px;}
+            .tp-seg-row{display:flex;gap:22px;align-items:flex-start;flex-wrap:wrap;}
+            .tp-seg{min-width:0;}
+            .tp-seg.right{margin-left:auto;text-align:right;}
+            .tp-chips{display:flex;gap:8px;flex-wrap:wrap;margin-top:9px;}
+            .tp-seg.right .tp-chips{justify-content:flex-end;}
+            .tp-chip{padding:8px 15px;border:1px solid #E1E8F0;background:#fff;border-radius:999px;cursor:pointer;
+                     font-family:inherit;font-size:11.5px;font-weight:700;color:#4A6076;letter-spacing:.01em;
+                     white-space:nowrap;transition:.15s;}
+            .tp-chip:hover{border-color:var(--bm-blue-500);color:var(--bm-blue-800);}
+            .tp-chip.on{background:var(--bm-blue-900);border-color:var(--bm-blue-900);color:#fff;}
+            .tp-chip.vazio{color:#AFBECE;border-style:dashed;}
+            .tp-chip.vazio.on{color:#fff;border-style:solid;}
+
+            /* ── KPIs ── */
+            .tp-kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;}
+            .tp-kpi{background:#fff;border:1px solid #E6ECF3;border-radius:14px;padding:16px 18px;min-height:96px;
+                    display:flex;flex-direction:column;justify-content:center;}
+            .tp-kpi .k-lab{font-size:10px;font-weight:700;letter-spacing:.09em;text-transform:uppercase;color:#93A4B8;}
+            .tp-kpi .k-val{font-size:22px;font-weight:800;color:#0F2A4A;letter-spacing:-.02em;margin-top:7px;line-height:1.15;}
+            .tp-kpi .k-val.sm{font-size:17px;}
+            .tp-kpi .k-val.blue{color:var(--bm-blue-600);}
+            .tp-kpi .k-sub{font-size:11.5px;color:#8A9AAE;margin-top:6px;}
+            .tp-kpi.dark{background:var(--bm-blue-900);border-color:var(--bm-blue-900);}
+            .tp-kpi.dark .k-lab{color:rgba(255,255,255,.55);}
+            .tp-kpi.dark .k-val{color:#fff;}
+            .tp-kpi.dark .k-sub{color:rgba(255,255,255,.66);}
+
+            /* ── busca ── */
+            .tp-searchrow{background:#fff;border:1px solid #E6ECF3;border-radius:12px;padding:7px 8px 7px 14px;
+                          display:flex;align-items:center;gap:9px;flex-wrap:wrap;}
+            .tp-searchrow svg{color:#A9B8C8;flex:none;}
+            .tp-searchrow input.tp-busca{flex:1 1 220px;min-width:140px;border:none;outline:none;background:transparent;
+                          font-family:inherit;font-size:13px;color:var(--text);padding:7px 0;}
+            .tp-searchrow input.tp-busca::placeholder{color:#A3B2C2;}
+            .tp-count{font-size:11.5px;font-weight:600;color:#93A4B8;white-space:nowrap;padding:0 6px;}
+            .tp-dds{display:flex;gap:7px;flex-wrap:wrap;}
+
+            /* dropdowns herdados (av-dd) */
+            .av-dd{position:relative;display:inline-block;}
+            .av-dd-btn{padding:7px 11px;border-radius:8px;border:1px solid #E1E8F0;background:#fff;font-family:inherit;
+                       font-size:11.5px;font-weight:700;color:#4A6076;cursor:pointer;display:inline-flex;align-items:center;gap:8px;}
+            .av-dd-btn:hover{border-color:var(--bm-blue-500);}
+            .av-dd-btn.has{border-color:var(--bm-blue-600);background:var(--bm-blue-50);color:var(--bm-blue-800);}
+            .av-dd-btn .cnt{background:var(--bm-blue-600);color:#fff;border-radius:999px;padding:0 7px;font-size:10.5px;}
+            .av-dd-panel{position:absolute;z-index:40;top:calc(100% + 5px);right:0;width:320px;max-height:340px;display:none;
+                         flex-direction:column;background:#fff;border:1px solid #E6ECF3;border-radius:11px;box-shadow:var(--shadow-lg);overflow:hidden;}
+            .av-dd.open .av-dd-panel{display:flex;}
+            .av-dd-search{padding:8px;border-bottom:1px solid #EEF2F7;}
+            .av-dd-search input{width:100%;padding:6px 8px;border:1px solid #E1E8F0;border-radius:6px;font-size:12px;font-family:inherit;}
+            .av-dd-list{overflow-y:auto;padding:4px;}
+            .av-dd-opt{display:flex;align-items:center;gap:8px;padding:6px 8px;border-radius:6px;font-size:12px;color:#33495E;cursor:pointer;}
+            .av-dd-opt:hover{background:var(--bm-blue-50);}
+            .av-dd-foot{display:flex;justify-content:space-between;padding:6px 10px;border-top:1px solid #EEF2F7;}
+            .av-dd-foot button{font-size:11.5px;color:var(--bm-blue-700);background:none;border:none;cursor:pointer;font-weight:700;font-family:inherit;}
+
+            /* ── grupos e linhas ── */
+            .tp-groups{display:flex;flex-direction:column;gap:13px;}
+            .tp-group{background:#fff;border:1px solid #E6ECF3;border-radius:14px;overflow:hidden;}
+            .tp-ghead{display:flex;align-items:center;gap:10px;padding:14px 18px;border-bottom:1px solid #EEF2F7;flex-wrap:wrap;}
+            .tp-ghead .g-nm{font-size:14px;font-weight:800;color:#0F2A4A;letter-spacing:-.01em;}
+            .tp-ghead .g-tag{font-size:9.5px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:#5B7189;
+                             background:#F2F6FA;border:1px solid #E6ECF3;border-radius:6px;padding:4px 9px;}
+            .tp-ghead .g-sub{font-size:11.5px;color:#93A4B8;width:100%;margin-top:-4px;}
+            .tp-ghead .g-cnt{margin-left:auto;font-size:11px;font-weight:700;color:#5B7189;background:#F2F6FA;
+                             border:1px solid #E6ECF3;padding:4px 11px;border-radius:999px;white-space:nowrap;}
+
+            .tp-row{display:grid;align-items:center;gap:14px;padding:15px 18px;border-bottom:1px solid #F3F6FA;
+                    cursor:pointer;position:relative;transition:background .12s;}
+            .tp-group>.tp-row:last-child,.tp-group>.tp-row:nth-last-child(2){border-bottom:none;}
+            .tp-row:hover{background:#FAFCFE;}
+            .tp-row.cv{grid-template-columns:78px minmax(180px,1fr) 168px 168px 20px;}
+            .tp-row.sf{grid-template-columns:78px minmax(180px,1fr) 96px 138px 158px 20px;}
+            .tp-cod{font-size:12px;font-weight:700;color:#5B7189;font-variant-numeric:tabular-nums;letter-spacing:.01em;}
+            .tp-nm{font-size:12.5px;font-weight:800;color:#0F2A4A;text-transform:uppercase;letter-spacing:.015em;line-height:1.35;}
+            .tp-sb{font-size:11.5px;color:#93A4B8;margin-top:3px;line-height:1.4;}
+            .tp-meta{font-size:10.5px;color:#A3B2C2;line-height:1.6;text-align:right;font-variant-numeric:tabular-nums;}
+            .tp-lvl{text-align:right;}
+            .tp-lvl .l{font-size:9.5px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:#A3B2C2;}
+            .tp-lvl .v{font-size:14px;font-weight:800;color:var(--bm-blue-600);margin-top:3px;font-variant-numeric:tabular-nums;}
+            .tp-main{text-align:right;}
+            .tp-main .l{font-size:9.5px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:#A3B2C2;}
+            .tp-main .v{font-size:17px;font-weight:800;color:#0F2A4A;letter-spacing:-.02em;margin-top:3px;font-variant-numeric:tabular-nums;}
+            .tp-main .s{font-size:10.5px;color:#93A4B8;margin-top:3px;}
+            .tp-chev{color:#C2CDDA;display:flex;justify-content:flex-end;transition:transform .18s;}
+            .tp-row.open .tp-chev{transform:rotate(180deg);color:var(--bm-blue-600);}
+            .tp-row.open{background:#F8FBFE;}
+
+            /* ── painel expandido ── */
+            .tp-exp{display:none;padding:2px 18px 18px;background:#F8FBFE;border-bottom:1px solid #F3F6FA;}
+            .tp-exp.open{display:block;}
+            .tp-group>.tp-exp:last-child{border-bottom:none;}
+            .tp-exp-lab{font-size:10px;font-weight:700;letter-spacing:.09em;text-transform:uppercase;color:#93A4B8;padding:12px 0 11px;}
+            .tp-cmp{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;}
+            .tp-cmp-c{position:relative;border:1px solid #E6ECF3;border-radius:10px;background:#fff;padding:11px 13px 13px;}
+            .tp-cmp-c .c-n{font-size:9.5px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:#93A4B8;line-height:1.3;}
+            .tp-cmp-c .c-v{font-size:14px;font-weight:800;color:#0F2A4A;margin-top:6px;font-variant-numeric:tabular-nums;}
+            .tp-cmp-c .c-d{position:absolute;right:12px;bottom:11px;font-size:10.5px;font-weight:600;color:#A3B2C2;font-variant-numeric:tabular-nums;}
+            .tp-cmp-c.on{background:var(--bm-blue-50);border-color:#BFDCF5;box-shadow:inset 0 0 0 1px #BFDCF5;}
+            .tp-cmp-c.on .c-v{color:var(--bm-blue-700);}
+            .tp-cmp-c.nulo .c-v{color:#C2CDDA;}
+
+            .tp-ch{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
+            .tp-ch-p{border:1px solid #E6ECF3;border-radius:12px;background:#fff;padding:12px 13px 13px;}
+            .tp-ch-p.on{background:var(--bm-blue-50);border-color:#BFDCF5;}
+            .tp-ch-h{display:flex;align-items:baseline;justify-content:space-between;gap:10px;margin-bottom:10px;}
+            .tp-ch-h .t{font-size:10px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:#4A6076;}
+            .tp-ch-h .r{font-size:10.5px;font-weight:600;color:#A3B2C2;font-variant-numeric:tabular-nums;}
+            .tp-ch-g{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;}
+            .tp-lv{border:1px solid #E6ECF3;border-radius:9px;background:#fff;padding:10px 11px;}
+            .tp-lv .n{font-size:9.5px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:#93A4B8;}
+            .tp-lv .v{font-size:14px;font-weight:800;color:#0F2A4A;margin-top:5px;font-variant-numeric:tabular-nums;}
+            .tp-lv .d{font-size:10.5px;font-weight:600;color:#A3B2C2;margin-top:3px;font-variant-numeric:tabular-nums;}
+            .tp-lv.on{border-color:var(--bm-blue-600);box-shadow:inset 0 0 0 1px var(--bm-blue-600);}
+            .tp-lv.on .v{color:var(--bm-blue-700);}
+
+            /* ── estados ── */
+            .tp-vazio{background:#fff;border:1px solid #E6ECF3;border-radius:14px;padding:40px 20px;text-align:center;
+                      color:#93A4B8;font-size:13px;}
+            .tp-erro{background:#FEF2F2;border:1px solid #FECACA;border-radius:12px;padding:14px 16px;color:#7F1D1D;font-size:12.5px;}
+            .tp-mais{display:flex;justify-content:center;padding:4px 0 0;}
+            .tp-mais button{padding:10px 22px;border-radius:10px;border:1px solid #E1E8F0;background:#fff;font-family:inherit;
+                            font-size:12.5px;font-weight:700;color:var(--bm-blue-700);cursor:pointer;}
+            .tp-mais button:hover{border-color:var(--bm-blue-500);background:var(--bm-blue-50);}
+            .tp-skel{padding:22px 18px;color:#A3B2C2;font-size:12.5px;text-align:center;}
+
+            /* ── responsivo ── */
+            @media (max-width:1100px){
+              .tp-kpis{grid-template-columns:repeat(2,1fr);}
+              .tp-cmp{grid-template-columns:repeat(3,1fr);}
+              .tp-row.cv{grid-template-columns:70px minmax(150px,1fr) 140px 150px 20px;}
+              .tp-row.sf{grid-template-columns:70px minmax(150px,1fr) 80px 120px 140px 20px;}
+            }
+            @media (max-width:768px){
+              .tp-seg.right{margin-left:0;text-align:left;}
+              .tp-seg.right .tp-chips{justify-content:flex-start;}
+              .tp-tabsbar{padding:6px;}
+              .tp-tab{flex:1;padding:9px 6px;font-size:12px;}
+              .tp-row.cv,.tp-row.sf{display:flex;flex-wrap:wrap;align-items:flex-start;gap:5px 14px;padding:14px 40px 14px 15px;}
+              .tp-cod{order:1;width:100%;}
+              .tp-id{order:2;flex:1 1 100%;}
+              .tp-meta{order:3;text-align:left;flex:1 1 100%;margin-top:4px;}
+              .tp-lvl{order:4;text-align:left;margin-top:6px;}
+              .tp-main{order:5;margin-left:auto;margin-top:6px;}
+              .tp-chev{position:absolute;right:14px;top:16px;}
+              .tp-exp{padding:2px 15px 16px;}
+              .tp-cmp{grid-template-columns:repeat(2,1fr);}
+              .tp-ch{grid-template-columns:1fr;}
+              .tp-searchrow{padding:8px 12px;}
+              .av-dd-panel{width:min(320px,86vw);}
+            }
+            @media (max-width:520px){
+              .tp-kpis{grid-template-columns:1fr;}
+              .tp-kpi{min-height:0;padding:14px 16px;}
+              .tp-ch-g{grid-template-columns:1fr;}
+              .tp-chip{padding:7px 12px;font-size:11px;}
+            }
+          </style>
+
+          <div class="tp-wrap">
+
+            <div id="tp-banner" style="padding:11px 16px;border-radius:10px;font-size:12.5px;display:flex;align-items:center;gap:10px;background:#EFF6FF;border:1px solid #BFDBFE;color:#1E40AF;">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+              Conectando ao Power BI…
+            </div>
+
+            <!-- ── ABAS ── -->
+            <div class="tp-tabsbar">
+              <button class="tp-tab on" id="tp-tab-sf" type="button" onclick="tpSetTab('sf')">Salesforce (CRM)</button>
+              <button class="tp-tab" id="tp-tab-cv" type="button" onclick="tpSetTab('cv')">Convênios</button>
+            </div>
+
+            <!-- ════════════════ SALESFORCE ════════════════ -->
+            <section id="tp-view-sf" style="display:flex;flex-direction:column;gap:13px;">
+
+              <div class="tp-card">
+                <div class="tp-panel-head">
+                  <span class="tp-ic"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><path d="M7 14l4-4 3 3 5-5"/></svg></span>
+                  <h4>Tabela de Preços · Salesforce (CRM)</h4>
+                  <div class="tp-pills" id="tp-sf-pills"></div>
+                </div>
+                <div class="tp-panel-body">
+                  <div class="tp-seg-row">
+                    <div class="tp-seg">
+                      <div class="tp-lab">Canal de venda</div>
+                      <div class="tp-chips" id="tp-sf-canais"></div>
+                    </div>
+                    <div class="tp-seg right">
+                      <div class="tp-lab">Nível de aprovação</div>
+                      <div class="tp-chips" id="tp-sf-niveis"></div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div class="tp-kpis" id="tp-sf-kpis"></div>
+
+              <div class="tp-searchrow">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+                <input class="tp-busca" id="tp-sf-busca" type="text" placeholder="Buscar por produto, código, família ou RMS" autocomplete="off">
+                <div class="tp-dds" id="tp-toolbar-sf"></div>
+                <span class="tp-count" id="tp-sf-count">—</span>
+              </div>
+
+              <div class="tp-groups" id="tp-sf-list"><div class="tp-card"><div class="tp-skel">Carregando…</div></div></div>
+            </section>
+
+            <!-- ════════════════ CONVÊNIOS ════════════════ -->
+            <section id="tp-view-cv" style="display:none;flex-direction:column;gap:13px;">
+
+              <div class="tp-card">
+                <div class="tp-panel-head">
+                  <span class="tp-ic"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 5h16"/><path d="M4 12h16"/><path d="M4 19h16"/></svg></span>
+                  <h4>Tabela de Preços · Convênios</h4>
+                  <div class="tp-pills" id="tp-cv-pills"></div>
+                </div>
+                <div class="tp-panel-body">
+                  <div class="tp-lab">Selecione o convênio</div>
+                  <div class="tp-chips" id="tp-cv-chips"></div>
+                </div>
+              </div>
+
+              <div class="tp-kpis" id="tp-cv-kpis"></div>
+
+              <div class="tp-searchrow">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+                <input class="tp-busca" id="tp-cv-busca" type="text" placeholder="Buscar por produto, código ou registro ANVISA" autocomplete="off">
+                <div class="tp-dds" id="tp-toolbar-cv"></div>
+                <span class="tp-count" id="tp-cv-count">—</span>
+              </div>
+
+              <div class="tp-groups" id="tp-cv-list"><div class="tp-card"><div class="tp-skel">Carregando…</div></div></div>
+            </section>
+
+          </div><!-- /tp-wrap -->
+
+        </div><!-- /area-main -->
+      </div><!-- /area-grid -->
+    </div><!-- /container -->
+  </div><!-- /area-body -->
+
+  <footer class="site-footer">
+    <div class="container">
+      <div class="bm-footer-bottom">
+        <span>© <span id="year"></span> Biomedical · Portal Corporativo Interno</span>
+        <span class="bm-footer-meta">Belo Horizonte · São Paulo · Rio de Janeiro · Curitiba · Recife · Porto Alegre</span>
+      </div>
+    </div>
+  </footer>
+
+  <script src="../script.js?v=8"></script>
+  <script src="../nav-sidebar.js?v=52"></script>
+  <script>
+  // ================================================================
+  // TABELA DE PREÇOS — Salesforce (CRM) + Convênios
+  // Visual em cartões: chips de seleção, KPIs, busca e lista agrupada
+  // com comparativo expansível por item.
+  // ================================================================
+  const PBI_CFG = {
+    clientId:'129978ce-ff3b-431d-98b3-66a1bcb766b1', tenantId:'c311c9e6-6017-42a9-b306-4057beba5786',
+    workspaceId:'8535f0a1-8dc6-4da0-93ce-bf20c1c14e27', reportId:'10a505aa-759e-4f20-a130-98c0736ba42d',
+    scopes:['https://analysis.windows.net/powerbi/api/Dataset.Read.All','https://analysis.windows.net/powerbi/api/Report.Read.All']
+  };
+  let _pbi=null,_token=null,_datasetId=null,_ready=false;
+
+  // ── colunas das duas tabelas (todas as marcadas no modelo) ──
+  const T_SF = "'Tabela de preços (Salesforce)'";
+  const T_CV = "'Tabela de Preços (Convênios)'";
+  const COLS_SF = [
+    { label:'Cód. Produto', col:`${T_SF}[Código do produto]`, money:false },
+    { label:'Produto',      col:`${T_SF}[Produto]`,           money:false },
+    { label:'Família',      col:`${T_SF}[Família]`,           money:false },
+    { label:'Linha',        col:`${T_SF}[Linha]`,             money:false },
+    { label:'RMS',          col:`${T_SF}[RMS]`,               money:false },
+    { label:'VD · Mín. gerente',    col:`${T_SF}[VD - Mínimo gerente]`,    money:true },
+    { label:'VD · Mín. supervisor', col:`${T_SF}[VD - Mínimo supervisor]`, money:true },
+    { label:'VD · Preço lista',     col:`${T_SF}[VD - Preço lista]`,       money:true },
+    { label:'VF · Mín. gerente',    col:`${T_SF}[VF - Mínimo gerente]`,    money:true },
+    { label:'VF · Mín. supervisor', col:`${T_SF}[VF - Mínimo supervisor]`, money:true },
+    { label:'VF · Preço lista',     col:`${T_SF}[VF - Preço lista]`,       money:true }
+  ];
+  const COLS_CV = [
+    { label:'Cód. Produto', col:`${T_CV}[Código do Produto]`, money:false },
+    { label:'Produto',      col:`${T_CV}[Produto]`,           money:false },
+    { label:'NCM',          col:`${T_CV}[NCM]`,               money:false },
+    { label:'Anvisa',                col:`${T_CV}[Anvisa]`,                money:false },
+    { label:'Amil',                  col:`${T_CV}[Amil]`,                  money:true },
+    { label:'Bradesco/Conta Hosp.',  col:`${T_CV}[Bradesco/Conta Hospitalar]`, money:true },
+    { label:'Bradesco/Medservice',   col:`${T_CV}[Bradesco/Medservice]`,   money:true },
+    { label:'CASSI',                 col:`${T_CV}[CASSI]`,                 money:true },
+    { label:'Dasa',                  col:`${T_CV}[Dasa]`,                  money:true },
+    { label:'Dasa/Bradesco',         col:`${T_CV}[Dasa/Bradesco]`,         money:true },
+    { label:'GEAP',                  col:`${T_CV}[GEAP]`,                  money:true },
+    { label:'Notredame/Hapvida',     col:`${T_CV}[Notredame/Hapvida]`,     money:true },
+    { label:'Porto Seguro',          col:`${T_CV}[Porto Seguro]`,          money:true },
+    { label:'Postal',                col:`${T_CV}[Postal]`,                money:true },
+    { label:'Prevent Sênior',        col:`${T_CV}[Prevent Sênior]`,        money:true },
+    { label:"Rede D'Or",             col:`${T_CV}[Rede D'Or]`,             money:true },
+    { label:'Santa Catarina',        col:`${T_CV}[Santa Catarina]`,        money:true },
+    { label:'Sul América Saúde',     col:`${T_CV}[Sul América Saúde]`,     money:true },
+    { label:'Unimed Seguros Nac.',   col:`${T_CV}[Unimed Seguros Nacional]`, money:true },
+    { label:'Unimed Mercosul',       col:`${T_CV}[UNIMED_MERCOSUL]`,       money:true },
+    { label:'Unimed Ufenesp',        col:`${T_CV}[Unimed_Ufenesp]`,        money:true }
+  ];
+  const CV_IDX_MONEY = COLS_CV.map((c,i)=>c.money?i:-1).filter(i=>i>=0);
+  const CV_NOMES = CV_IDX_MONEY.map(i=>COLS_CV[i].label);
+  const CV_REF = 'Amil';                       // tabela de referência do comparativo
+
+  // filtros (slicers da página)
+  const COL_PROD_COD = "'Produtos'[Cód. produto]";
+  const COL_PROD_NOME = "'Produtos'[Produto]";
+  const COL_FAMILIA = "'Famílias'[Família]";
+  const COL_ESTRATEGIA = "'Famílias'[Estratégia]";
+  window._tpSel = { produto:new Set(), familia:new Set(), estrategia:new Set() };
+
+  // ── estado da tela ──
+  const CANAIS = [{k:'VD',nome:'VD · Venda Direta',curto:'VD'},{k:'VF',nome:'VF · Venda Faturada',curto:'VF'}];
+  const NIVEIS = [{k:'ger',nome:'Mín. Gerente'},{k:'sup',nome:'Mín. Supervisor'},{k:'lis',nome:'Preço Lista'}];
+  const TPS = {
+    aba:'sf',
+    sf:{ canal:'VD', nivel:'sup', busca:'', limite:150, rows:[], erro:'' },
+    cv:{ conv:CV_REF,             busca:'', limite:150, rows:[], erro:'' }
+  };
+  let _mapaFamilia = new Map();   // cód. produto → {familia, estrategia}
+
+  // ── utilitários ──
+  const avEsc = s => String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+  const avDax = s => String(s==null?'':s).replace(/"/g,'""');
+  const _numN = x => (x==null||x===''||x==='-'||isNaN(Number(x)))?null:Number(x);
+  const _txt  = v => (v==null||v==='')?'':String(v).trim();
+  const fBRL  = v => v==null?'—':'R$ '+Number(v).toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2});
+  const fPct  = v => (v==null||!isFinite(v))?'' : (v>0?'+':v<0?'−':'') + Math.abs(v).toFixed(1).replace('.',',') + '%';
+  const setTxt = (id,t)=>{const el=document.getElementById(id);if(el)el.textContent=t;};
+  const setHtml= (id,h)=>{const el=document.getElementById(id);if(el)el.innerHTML=h;};
+  const norm = s => _txt(s).toLowerCase();
+
+  // ── conexão Power BI ──
+  async function pbiConnect(){
+    if (window._msalAuth){ _pbi = window._msalAuth; }
+    else { _pbi = new msal.PublicClientApplication({ auth:{ clientId:PBI_CFG.clientId, authority:`https://login.microsoftonline.com/${PBI_CFG.tenantId}`, redirectUri:window.location.origin+'/' }, cache:{ cacheLocation:'localStorage', storeAuthStateInCookie:true } }); if(_pbi.initialize) await _pbi.initialize(); await _pbi.handleRedirectPromise().catch(()=>{}); }
+    const accounts = _pbi.getAllAccounts();
+    try { const r = await _pbi.acquireTokenSilent({ scopes:PBI_CFG.scopes, account:accounts[0] }); _token = r.accessToken; }
+    catch { const r = await _pbi.loginPopup({ scopes:PBI_CFG.scopes }); _token = r.accessToken; }
+    const acc = _pbi.getAllAccounts()[0]; if (acc && typeof window.setSidebarUser==='function') window.setSidebarUser(acc.name||acc.username, acc.username);
+  }
+  async function pbiDataset(){
+    if (_datasetId) return _datasetId;
+    let r = await fetch(`https://api.powerbi.com/v1.0/myorg/groups/${PBI_CFG.workspaceId}/reports/${PBI_CFG.reportId}`,{headers:{Authorization:`Bearer ${_token}`}});
+    if (r.ok){ const j=await r.json(); if(j.datasetId){_datasetId=j.datasetId;return _datasetId;} }
+    r = await fetch(`https://api.powerbi.com/v1.0/myorg/reports/${PBI_CFG.reportId}`,{headers:{Authorization:`Bearer ${_token}`}});
+    if (r.ok){ const j=await r.json(); if(j.datasetId){_datasetId=j.datasetId;return _datasetId;} }
+    throw new Error('Dataset não encontrado.');
+  }
+  async function pbiQuery(dax){
+    const dsId = await pbiDataset();
+    const u1=`https://api.powerbi.com/v1.0/myorg/groups/${PBI_CFG.workspaceId}/datasets/${dsId}/executeQueries`;
+    const u2=`https://api.powerbi.com/v1.0/myorg/datasets/${dsId}/executeQueries`;
+    const body=JSON.stringify({queries:[{query:dax}],serializerSettings:{includeNulls:true}});
+    const headers={Authorization:`Bearer ${_token}`,'Content-Type':'application/json'};
+    let r=await fetch(u1,{method:'POST',headers,body});
+    if(r.status===401||r.status===403) r=await fetch(u2,{method:'POST',headers,body});
+    if(r.status===401||r.status===403){
+      try{ const _a=_pbi.getAllAccounts()[0]; const _t=await _pbi.acquireTokenSilent({scopes:PBI_CFG.scopes,account:_a,forceRefresh:true}); _token=_t.accessToken; }
+      catch(_e){ try{ const _t=await _pbi.loginPopup({scopes:PBI_CFG.scopes}); _token=_t.accessToken; }catch(__e){} }
+      const h2={Authorization:`Bearer ${_token}`,'Content-Type':'application/json'};
+      r=await fetch(u1,{method:'POST',headers:h2,body}); if(r.status===401||r.status===403) r=await fetch(u2,{method:'POST',headers:h2,body});
+    }
+    const text=await r.text();
+    if(!r.ok) throw new Error(`HTTP ${r.status}: ${text.substring(0,180)}`);
+    const d=JSON.parse(text); if(d.error) throw new Error(d.error.message);
+    return d.results[0].tables[0].rows;
+  }
+  window.PBIData={connect:pbiConnect,query:pbiQuery};
+
+  // ================================================================
+  // CARGA
+  // ================================================================
+  function tpFiltros(){
+    const f = [];
+    const p = [...window._tpSel.produto]; if (p.length) f.push(`${COL_PROD_COD} IN { ${p.map(v=>'"'+avDax(v)+'"').join(', ')} }`);
+    const fa = [...window._tpSel.familia]; if (fa.length) f.push(`${COL_FAMILIA} IN { ${fa.map(v=>'"'+avDax(v)+'"').join(', ')} }`);
+    const es = [...window._tpSel.estrategia]; if (es.length) f.push(`${COL_ESTRATEGIA} IN { ${es.map(v=>'"'+avDax(v)+'"').join(', ')} }`);
+    return f;
+  }
+  async function tpCarregarTabela(table, cols){
+    const sel = cols.map((c,i)=>`"c${i}", ${c.col}`).join(', ');
+    const inner = `SELECTCOLUMNS(${table}, ${sel})`;
+    const filtros = tpFiltros();
+    const wrapped = filtros.length ? `CALCULATETABLE(${inner}, ${filtros.join(', ')})` : inner;
+    const rows = await pbiQuery(`EVALUATE TOPN(5000, ${wrapped}, [c0], ASC)`);
+    return rows.map(r => cols.map((c,i)=> r['[c'+i+']']));
+  }
+  // mapa cód. produto → família/estratégia (a tabela de convênios não traz família)
+  async function tpCarregarMapa(){
+    try{
+      const rows = await pbiQuery(`EVALUATE SUMMARIZECOLUMNS(${COL_PROD_COD}, ${COL_FAMILIA}, ${COL_ESTRATEGIA})`);
+      if(!rows||!rows.length) return;
+      const ks = Object.keys(rows[0]);
+      const kC = ks.find(k=>/Cód\. produto\]$/i.test(k));
+      const kF = ks.find(k=>/\[Família\]$/i.test(k));
+      const kE = ks.find(k=>/\[Estratégia\]$/i.test(k));
+      rows.forEach(r=>{
+        const c = _txt(r[kC]).toUpperCase(); if(!c) return;
+        _mapaFamilia.set(c, { familia:_txt(r[kF]), estrategia:_txt(r[kE]) });
+      });
+    }catch(_e){ /* sem mapa: os convênios caem em "Outros produtos" */ }
+  }
+
+  async function tpCarregar(){
+    if (!_ready) return;
+    setHtml('tp-sf-list','<div class="tp-card"><div class="tp-skel">Carregando…</div></div>');
+    setHtml('tp-cv-list','<div class="tp-card"><div class="tp-skel">Carregando…</div></div>');
+
+    // ── Salesforce ──
+    try{
+      const raw = await tpCarregarTabela(T_SF, COLS_SF);
+      TPS.sf.erro='';
+      TPS.sf.rows = raw.map(r=>({
+        cod:_txt(r[0]), produto:_txt(r[1])||'—', familia:_txt(r[2]), linha:_txt(r[3]), rms:_txt(r[4]),
+        VD:{ ger:_numN(r[5]), sup:_numN(r[6]), lis:_numN(r[7]) },
+        VF:{ ger:_numN(r[8]), sup:_numN(r[9]), lis:_numN(r[10]) }
+      })).sort((a,b)=> (a.familia||'').localeCompare(b.familia||'','pt-BR') || a.cod.localeCompare(b.cod,'pt-BR'));
+    }catch(e){ TPS.sf.erro = e.message; TPS.sf.rows = []; }
+    tpRenderSF();
+
+    // ── Convênios ──
+    try{
+      const raw = await tpCarregarTabela(T_CV, COLS_CV);
+      TPS.cv.erro='';
+      const iA = COLS_CV.findIndex(c=>c.label==='Anvisa');
+      TPS.cv.rows = raw.map(r=>{
+        const cod=_txt(r[0]);
+        const info=_mapaFamilia.get(cod.toUpperCase())||{familia:'',estrategia:''};
+        const precos={}; CV_IDX_MONEY.forEach(i=>{ precos[COLS_CV[i].label]=_numN(r[i]); });
+        return { cod, produto:_txt(r[1])||'—', ncm:_txt(r[2]), anvisa:_txt(r[iA]),
+                 familia:info.familia, estrategia:info.estrategia, precos };
+      }).sort((a,b)=> (a.familia||'').localeCompare(b.familia||'','pt-BR') || a.cod.localeCompare(b.cod,'pt-BR'));
+    }catch(e){ TPS.cv.erro = e.message; TPS.cv.rows = []; }
+    tpRenderCV();
+  }
+
+  // ================================================================
+  // HELPERS DE RENDER
+  // ================================================================
+  function tpAgrupar(rows, keyFn, subFn, tagFn){
+    const map=new Map();
+    rows.forEach(r=>{ const k=keyFn(r)||'Outros produtos'; if(!map.has(k)) map.set(k,[]); map.get(k).push(r); });
+    return [...map.entries()]
+      .sort((a,b)=>a[0].localeCompare(b[0],'pt-BR'))
+      .map(([nome,itens])=>({ nome, itens, sub:subFn?subFn(itens):'', tag:tagFn?tagFn(itens):'' }));
+  }
+  const tpUnico = (itens,f)=>{ const s=new Set(itens.map(f).filter(Boolean)); return s.size===1?[...s][0]:''; };
+  function tpKpi(o){
+    return `<div class="tp-kpi${o.dark?' dark':''}">
+      <div class="k-lab">${avEsc(o.lab)}</div>
+      <div class="k-val${o.sm?' sm':''}${o.blue?' blue':''}">${o.val}</div>
+      ${o.sub?`<div class="k-sub">${avEsc(o.sub)}</div>`:''}
+    </div>`;
+  }
+  const CHEV = '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>';
+
+  function tpRodape(total, mostrados, lista){
+    if (mostrados>=total) return '';
+    return `<div class="tp-mais"><button type="button" data-mais="${lista}">Mostrar mais ${Math.min(150,total-mostrados)} de ${total-mostrados} restantes</button></div>`;
+  }
+
+  // ================================================================
+  // SALESFORCE
+  // ================================================================
+  function tpFiltrarSF(){
+    const q = norm(TPS.sf.busca);
+    if(!q) return TPS.sf.rows;
+    return TPS.sf.rows.filter(r=> norm(r.cod).includes(q) || norm(r.produto).includes(q) ||
+                                  norm(r.familia).includes(q) || norm(r.linha).includes(q) || norm(r.rms).includes(q));
+  }
+  function tpRenderSF(){
+    const st=TPS.sf, canal=st.canal, nivel=st.nivel;
+    const canalNome=(CANAIS.find(c=>c.k===canal)||CANAIS[0]).nome;
+    const nivelNome=(NIVEIS.find(n=>n.k===nivel)||NIVEIS[1]).nome;
+
+    // chips
+    setHtml('tp-sf-canais', CANAIS.map(c=>`<button type="button" class="tp-chip${c.k===canal?' on':''}" data-canal="${c.k}">${avEsc(c.nome)}</button>`).join(''));
+    setHtml('tp-sf-niveis', NIVEIS.map(n=>`<button type="button" class="tp-chip${n.k===nivel?' on':''}" data-nivel="${n.k}">${avEsc(n.nome)}</button>`).join(''));
+
+    const rows = tpFiltrarSF();
+    const familias = new Set(rows.map(r=>r.familia).filter(Boolean));
+    setHtml('tp-sf-pills', `<span class="tp-pill">${st.rows.length} itens</span><span class="tp-pill">${new Set(st.rows.map(r=>r.familia).filter(Boolean)).size} famílias</span>`);
+    setTxt('tp-sf-count', `${rows.length} de ${st.rows.length} itens`);
+
+    // KPIs
+    const comPiso = rows.filter(r=> r[canal].lis!=null && r[canal][nivel]!=null && r[canal].lis>0);
+    const descMed = comPiso.length ? comPiso.reduce((a,r)=>a+(1-r[canal][nivel]/r[canal].lis),0)/comPiso.length*100 : null;
+    const diverg  = rows.filter(r=> r.VD.lis!=null && r.VF.lis!=null && Math.abs(r.VD.lis-r.VF.lis)>0.005).length;
+    const precificados = rows.filter(r=> r[canal].lis!=null).length;
+    setHtml('tp-sf-kpis',
+      tpKpi({dark:true, lab:'Canal', val:avEsc(canalNome), sm:true, sub:`${familias.size} famílias · ${precificados} itens precificados`}) +
+      tpKpi({lab:'Piso vigente', val:avEsc(nivelNome), sm:true, sub: nivel==='lis'?'nível de referência (sem desconto)':'menor valor aprovável no nível'}) +
+      tpKpi({lab:'Desconto máx. médio', val: nivel==='lis' ? '—' : (descMed==null?'—':fPct(-descMed)), blue:true,
+             sub: nivel==='lis' ? 'preço de lista é a referência' : `média de ${comPiso.length} itens`}) +
+      tpKpi({lab:'Divergência VD × VF', val:String(diverg), sub:'itens com preço lista distinto'})
+    );
+
+    // lista
+    const box=document.getElementById('tp-sf-list');
+    if (st.erro){ box.innerHTML = `<div class="tp-erro">Erro ao consultar o Power BI: ${avEsc(st.erro.substring(0,220))}</div>`; return; }
+    if (!rows.length){ box.innerHTML = `<div class="tp-vazio">Nenhum item para o filtro informado.</div>`; return; }
+
+    const slice = rows.slice(0, st.limite);
+    const grupos = tpAgrupar(slice, r=>r.familia, null, itens=>tpUnico(itens,i=>i.linha));
+    box.innerHTML = grupos.map(g=>`
+      <div class="tp-group">
+        <div class="tp-ghead">
+          <span class="g-nm">${avEsc(g.nome)}</span>
+          ${g.tag?`<span class="g-tag">${avEsc(g.tag)}</span>`:''}
+          <span class="g-cnt">${g.itens.length} ${g.itens.length===1?'item':'itens'}</span>
+        </div>
+        ${g.itens.map(r=>tpLinhaSF(r, canal, nivel)).join('')}
+      </div>`).join('') + tpRodape(rows.length, slice.length, 'sf');
+  }
+  function tpLinhaSF(r, canal, nivel){
+    const p=r[canal], outro = canal==='VD'?'VF':'VD';
+    const lista=p.lis, piso=p[nivel];
+    const desc = (lista!=null && piso!=null && lista>0) ? (1-piso/lista)*100 : null;
+    const idx = TPS.sf.rows.indexOf(r);
+    // coluna do meio: nível escolhido (ou o preço de lista do outro canal, quando o nível já é a lista)
+    const lvl = nivel==='lis'
+      ? `<div class="tp-lvl"><div class="l">${outro} · Preço lista</div><div class="v" style="color:#5B7189;">${fBRL(r[outro].lis)}</div></div>`
+      : `<div class="tp-lvl"><div class="l">${avEsc((NIVEIS.find(n=>n.k===nivel)||{}).nome||'')}</div><div class="v">${fBRL(piso)}</div></div>`;
+    return `<div class="tp-row sf" data-tab="sf" data-i="${idx}">
+        <div class="tp-cod">${avEsc(r.cod)||'—'}</div>
+        <div class="tp-id"><div class="tp-nm">${avEsc(r.produto)}</div>${r.linha?`<div class="tp-sb">${avEsc(r.linha)}</div>`:''}</div>
+        <div class="tp-meta">${r.rms?('RMS '+avEsc(r.rms)):'—'}</div>
+        ${lvl}
+        <div class="tp-main">
+          <div class="l">Preço lista</div>
+          <div class="v">${fBRL(lista)}</div>
+          ${desc!=null&&nivel!=='lis'?`<div class="s">desconto máx. ${Math.abs(desc).toFixed(1).replace('.',',')}%</div>`:'<div class="s">referência</div>'}
+        </div>
+        <span class="tp-chev">${CHEV}</span>
+      </div>
+      <div class="tp-exp" data-exp="sf-${idx}"></div>`;
+  }
+  function tpExpandirSF(r, host){
+    const nivel=TPS.sf.nivel, canal=TPS.sf.canal;
+    const painel = c=>{
+      const p=r[c], vals=[p.ger,p.sup,p.lis].filter(v=>v!=null);
+      const rng = vals.length ? `${fBRL(Math.min(...vals))} – ${fBRL(Math.max(...vals))}` : 'sem preço vigente';
+      const cel = (k,nome)=>{
+        const v=p[k], d=(v!=null&&p.lis!=null&&p.lis>0&&k!=='lis')?(v/p.lis-1)*100:null;
+        return `<div class="tp-lv${(c===canal&&k===nivel)?' on':''}">
+          <div class="n">${avEsc(nome)}</div>
+          <div class="v">${fBRL(v)}</div>
+          <div class="d">${k==='lis'?'referência':(d==null?'—':fPct(d))}</div>
+        </div>`;
+      };
+      return `<div class="tp-ch-p${c===canal?' on':''}">
+        <div class="tp-ch-h"><span class="t">${avEsc((CANAIS.find(x=>x.k===c)||{}).nome||c)}</span><span class="r">${rng}</span></div>
+        <div class="tp-ch-g">${cel('ger','Mín. Gerente')}${cel('sup','Mín. Supervisor')}${cel('lis','Preço Lista')}</div>
+      </div>`;
+    };
+    host.innerHTML = `<div class="tp-exp-lab">Faixas de preço por canal</div>
+      <div class="tp-ch">${painel('VD')}${painel('VF')}</div>`;
+  }
+
+  // ================================================================
+  // CONVÊNIOS
+  // ================================================================
+  function tpFiltrarCV(){
+    const q = norm(TPS.cv.busca);
+    if(!q) return TPS.cv.rows;
+    return TPS.cv.rows.filter(r=> norm(r.cod).includes(q) || norm(r.produto).includes(q) ||
+                                  norm(r.anvisa).includes(q) || norm(r.ncm).includes(q) || norm(r.familia).includes(q));
+  }
+  function tpRenderCV(){
+    const st=TPS.cv, conv=st.conv;
+
+    // chips (convênios sem nenhum preço ficam pontilhados)
+    setHtml('tp-cv-chips', CV_NOMES.map(n=>{
+      const tem = st.rows.some(r=>r.precos[n]!=null);
+      return `<button type="button" class="tp-chip${n===conv?' on':''}${tem?'':' vazio'}" data-conv="${avEsc(n)}">${avEsc(n)}</button>`;
+    }).join(''));
+
+    const rows = tpFiltrarCV();
+    const comPreco = rows.filter(r=>r.precos[conv]!=null);
+    const semPreco = rows.length - comPreco.length;
+    const vals = comPreco.map(r=>r.precos[conv]);
+    const convComDado = CV_NOMES.filter(n=>st.rows.some(r=>r.precos[n]!=null)).length;
+
+    setHtml('tp-cv-pills', `<span class="tp-pill">${st.rows.length} itens</span><span class="tp-pill">${convComDado} convênios precificados</span>`);
+    setTxt('tp-cv-count', `${rows.length} de ${st.rows.length} itens`);
+
+    // delta médio vs. tabela de referência
+    let deltaRef=null;
+    if (conv!==CV_REF){
+      const pares = rows.filter(r=>r.precos[conv]!=null && r.precos[CV_REF]!=null && r.precos[CV_REF]>0);
+      if (pares.length) deltaRef = pares.reduce((a,r)=>a+(r.precos[conv]/r.precos[CV_REF]-1),0)/pares.length*100;
+    }
+    setHtml('tp-cv-kpis',
+      tpKpi({dark:true, lab:'Convênio', val:avEsc(conv), sm:true, sub:`${comPreco.length} itens precificados · ${semPreco} sem preço vigente`}) +
+      tpKpi({lab:'Menor preço', val: vals.length?fBRL(Math.min(...vals)):'—', sub: vals.length?'':'sem preço no filtro atual'}) +
+      tpKpi({lab:'Maior preço', val: vals.length?fBRL(Math.max(...vals)):'—', sub: vals.length?'':'sem preço no filtro atual'}) +
+      tpKpi({lab:`vs. tabela ${CV_REF}`, val: conv===CV_REF?'referência':(deltaRef==null?'—':fPct(deltaRef)), sm:conv===CV_REF, blue:true,
+             sub: conv===CV_REF?'tabela base do comparativo':'média entre itens comparáveis'})
+    );
+
+    const box=document.getElementById('tp-cv-list');
+    if (st.erro){ box.innerHTML = `<div class="tp-erro">Erro ao consultar o Power BI: ${avEsc(st.erro.substring(0,220))}</div>`; return; }
+    if (!rows.length){ box.innerHTML = `<div class="tp-vazio">Nenhum item para o filtro informado.</div>`; return; }
+
+    const slice = rows.slice(0, st.limite);
+    const grupos = tpAgrupar(slice, r=>r.familia, itens=>tpUnico(itens,i=>i.estrategia), null);
+    box.innerHTML = grupos.map(g=>`
+      <div class="tp-group">
+        <div class="tp-ghead">
+          <span class="g-nm">${avEsc(g.nome)}</span>
+          <span class="g-cnt">${g.itens.length} ${g.itens.length===1?'item':'itens'}</span>
+          ${g.sub?`<div class="g-sub">${avEsc(g.sub)}</div>`:''}
+        </div>
+        ${g.itens.map(r=>tpLinhaCV(r, conv)).join('')}
+      </div>`).join('') + tpRodape(rows.length, slice.length, 'cv');
+  }
+  function tpLinhaCV(r, conv){
+    const v=r.precos[conv], ref=r.precos[CV_REF];
+    const d = (conv!==CV_REF && v!=null && ref!=null && ref>0) ? (v/ref-1)*100 : null;
+    const idx = TPS.cv.rows.indexOf(r);
+    const sub = conv===CV_REF ? 'tabela de referência' : (d==null?'sem base de comparação':`${fPct(d)} vs. ${CV_REF}`);
+    return `<div class="tp-row cv" data-tab="cv" data-i="${idx}">
+        <div class="tp-cod">${avEsc(r.cod)||'—'}</div>
+        <div class="tp-id"><div class="tp-nm">${avEsc(r.produto)}</div>${r.estrategia?`<div class="tp-sb">${avEsc(r.estrategia)}</div>`:''}</div>
+        <div class="tp-meta">${r.ncm?('NCM '+avEsc(r.ncm)):'&nbsp;'}<br>${r.anvisa?('ANVISA '+avEsc(r.anvisa)):'&nbsp;'}</div>
+        <div class="tp-main">
+          <div class="v">${fBRL(v)}</div>
+          <div class="s">${avEsc(sub)}</div>
+        </div>
+        <span class="tp-chev">${CHEV}</span>
+      </div>
+      <div class="tp-exp" data-exp="cv-${idx}"></div>`;
+  }
+  function tpExpandirCV(r, host){
+    const conv=TPS.cv.conv, base=r.precos[conv];
+    host.innerHTML = `<div class="tp-exp-lab">Comparativo entre convênios</div>
+      <div class="tp-cmp">${CV_NOMES.map(n=>{
+        const v=r.precos[n];
+        const d=(v!=null&&base!=null&&base>0&&n!==conv)?(v/base-1)*100:null;
+        return `<div class="tp-cmp-c${n===conv?' on':''}${v==null?' nulo':''}">
+          <div class="c-n">${avEsc(n)}</div>
+          <div class="c-v">${fBRL(v)}</div>
+          ${d!=null?`<div class="c-d">${fPct(d)}</div>`:''}
+        </div>`;
+      }).join('')}</div>`;
+  }
+
+  // ================================================================
+  // INTERAÇÕES
+  // ================================================================
+  function tpSetTab(t){
+    TPS.aba=t;
+    document.getElementById('tp-tab-sf').classList.toggle('on', t==='sf');
+    document.getElementById('tp-tab-cv').classList.toggle('on', t==='cv');
+    document.getElementById('tp-view-sf').style.display = t==='sf' ? 'flex' : 'none';
+    document.getElementById('tp-view-cv').style.display = t==='cv' ? 'flex' : 'none';
+  }
+  window.tpSetTab = tpSetTab;
+
+  function tpLigarEventos(){
+    // chips do Salesforce
+    document.getElementById('tp-sf-canais').addEventListener('click', e=>{
+      const b=e.target.closest('[data-canal]'); if(!b) return; TPS.sf.canal=b.dataset.canal; TPS.sf.limite=150; tpRenderSF();
+    });
+    document.getElementById('tp-sf-niveis').addEventListener('click', e=>{
+      const b=e.target.closest('[data-nivel]'); if(!b) return; TPS.sf.nivel=b.dataset.nivel; TPS.sf.limite=150; tpRenderSF();
+    });
+    // chips de convênio
+    document.getElementById('tp-cv-chips').addEventListener('click', e=>{
+      const b=e.target.closest('[data-conv]'); if(!b) return; TPS.cv.conv=b.dataset.conv; TPS.cv.limite=150; tpRenderCV();
+    });
+    // busca
+    let tmr=null;
+    const liga=(id,chave,render)=>{
+      const el=document.getElementById(id); if(!el) return;
+      el.addEventListener('input', ()=>{ clearTimeout(tmr); tmr=setTimeout(()=>{ TPS[chave].busca=el.value; TPS[chave].limite=150; render(); },160); });
+    };
+    liga('tp-sf-busca','sf',tpRenderSF);
+    liga('tp-cv-busca','cv',tpRenderCV);
+    // expandir/recolher + "mostrar mais"
+    const ligaLista=(id,aba)=>{
+      document.getElementById(id).addEventListener('click', e=>{
+        const mais=e.target.closest('[data-mais]');
+        if (mais){ TPS[aba].limite += 150; aba==='sf'?tpRenderSF():tpRenderCV(); return; }
+        const linha=e.target.closest('.tp-row'); if(!linha) return;
+        const exp=linha.nextElementSibling; if(!exp||!exp.classList.contains('tp-exp')) return;
+        const abrir=!linha.classList.contains('open');
+        linha.classList.toggle('open',abrir); exp.classList.toggle('open',abrir);
+        if (abrir && !exp.dataset.pronto){
+          const r = TPS[aba].rows[Number(linha.dataset.i)];
+          if (r){ aba==='sf'?tpExpandirSF(r,exp):tpExpandirCV(r,exp); exp.dataset.pronto='1'; }
+        }
+      });
+    };
+    ligaLista('tp-sf-list','sf');
+    ligaLista('tp-cv-list','cv');
+  }
+
+  // ── dropdowns (filtros do modelo) ──
+  async function tpProdutos(){
+    const rows = await pbiQuery(`EVALUATE SUMMARIZE('Produtos', ${COL_PROD_COD}, ${COL_PROD_NOME})`);
+    const reC = /Cód\. produto\]$/i, reN = /\[Produto\]$/i;
+    const kC = rows.length ? Object.keys(rows[0]).find(k=>reC.test(k)) : null;
+    const kN = rows.length ? Object.keys(rows[0]).find(k=>reN.test(k)) : null;
+    return rows.map(r=>({ value:String(r[kC]??''), label:(r[kC]??'')+' — '+(r[kN]??'') })).filter(o=>o.value).sort((a,b)=>a.label.localeCompare(b.label,'pt-BR'));
+  }
+  async function tpValores(col){
+    const rows = await pbiQuery(`EVALUATE VALUES(${col})`);
+    if(!rows||!rows.length) return [];
+    const key = Object.keys(rows[0])[0];
+    return rows.map(r=>r[key]).filter(v=>v!=null&&v!=='').map(v=>({value:String(v),label:String(v)})).sort((a,b)=>a.label.localeCompare(b.label,'pt-BR'));
+  }
+  function avMakeDropdown({ label, getOptions, getSelected, setSelected, onChange }){
+    const wrap=document.createElement('div'); wrap.className='av-dd';
+    const btn=document.createElement('button'); btn.className='av-dd-btn'; btn.type='button';
+    const panel=document.createElement('div'); panel.className='av-dd-panel';
+    panel.innerHTML = `<div class="av-dd-search"><input type="text" placeholder="Buscar…"></div><div class="av-dd-list"></div><div class="av-dd-foot"><button type="button" data-act="limpar">Limpar</button><button type="button" data-act="fechar">Fechar</button></div>`;
+    wrap.appendChild(btn); wrap.appendChild(panel);
+    const list=panel.querySelector('.av-dd-list'), search=panel.querySelector('input');
+    let loaded=false, options=[];
+    function refresh(){ const n=getSelected().length; btn.classList.toggle('has',n>0); btn.innerHTML=`<span>${label}</span>${ n?`<span class="cnt">${n}</span>`:'<span style="color:#A9B8C8;font-weight:600;">Todos</span>' }`; }
+    function renderList(){ const q=(search.value||'').toLowerCase(); const sel=new Set(getSelected()); const items=options.filter(o=>!q||String(o.label).toLowerCase().includes(q)); list.innerHTML=items.length?items.slice(0,500).map(o=>`<label class="av-dd-opt"><input type="checkbox" value="${avEsc(o.value)}" ${sel.has(o.value)?'checked':''}>${avEsc(o.label)}</label>`).join(''):'<div style="padding:8px;color:#A3B2C2;font-size:12px;">nenhum</div>'; }
+    async function ensure(){ if(loaded) return; list.innerHTML='<div style="padding:10px;color:#A3B2C2;font-size:12px;">Carregando…</div>'; try{options=await getOptions();}catch(e){list.innerHTML=`<div style="padding:10px;color:var(--danger);font-size:12px;">erro: ${avEsc(e.message.substring(0,60))}</div>`;return;} loaded=true; renderList(); }
+    btn.addEventListener('click', async e=>{ e.stopPropagation(); const open=wrap.classList.contains('open'); document.querySelectorAll('.av-dd.open').forEach(d=>d.classList.remove('open')); if(!open){ wrap.classList.add('open'); await ensure(); search.focus(); } });
+    panel.addEventListener('click', e=>e.stopPropagation());
+    list.addEventListener('change', e=>{ if(e.target.matches('input[type=checkbox]')){ setSelected(e.target.value,e.target.checked); refresh(); onChange(); } });
+    search.addEventListener('input', renderList);
+    panel.querySelector('[data-act=limpar]').addEventListener('click', ()=>{ setSelected(null,false,true); renderList(); refresh(); onChange(); });
+    panel.querySelector('[data-act=fechar]').addEventListener('click', ()=>wrap.classList.remove('open'));
+    refresh(); return wrap;
+  }
+  document.addEventListener('click', ()=>document.querySelectorAll('.av-dd.open').forEach(d=>d.classList.remove('open')));
+
+  function tpMontarToolbars(){
+    ['tp-toolbar-sf','tp-toolbar-cv'].forEach(id=>{
+      const tb=document.getElementById(id); if(!tb) return; tb.innerHTML='';
+      const mk=(label,getOptions,chave)=>avMakeDropdown({
+        label, getOptions,
+        getSelected:()=>[...window._tpSel[chave]],
+        setSelected:(v,ck,clr)=>{ const s=window._tpSel[chave]; if(clr){s.clear();return;} if(ck)s.add(v); else s.delete(v); },
+        onChange:()=>{ TPS.sf.limite=150; TPS.cv.limite=150; tpCarregar(); }
+      });
+      tb.appendChild(mk('Produto', tpProdutos, 'produto'));
+      tb.appendChild(mk('Família', ()=>tpValores(COL_FAMILIA), 'familia'));
+      tb.appendChild(mk('Estratégia', ()=>tpValores(COL_ESTRATEGIA), 'estrategia'));
+      const limpar=document.createElement('button'); limpar.className='av-dd-btn'; limpar.type='button'; limpar.textContent='✕ Limpar';
+      limpar.addEventListener('click', ()=>{ window._tpSel.produto.clear(); window._tpSel.familia.clear(); window._tpSel.estrategia.clear(); tpMontarToolbars(); tpCarregar(); });
+      tb.appendChild(limpar);
+    });
+  }
+
+  // ================================================================
+  document.addEventListener('DOMContentLoaded', async ()=>{
+    tpMontarToolbars();
+    tpLigarEventos();
+    const banner=document.getElementById('tp-banner');
+    try {
+      await pbiConnect(); _ready=true;
+      banner.style.cssText='padding:11px 16px;border-radius:10px;font-size:12.5px;display:flex;align-items:center;gap:10px;background:#F0FDF4;border:1px solid #BBF7D0;color:#14532D;';
+      banner.innerHTML=`<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg> Conectado ao Power BI`;
+      await tpCarregarMapa();
+      await tpCarregar();
+    } catch(err){
+      banner.style.cssText='padding:11px 16px;border-radius:10px;font-size:12.5px;display:flex;align-items:center;gap:10px;background:#FEF2F2;border:1px solid #FECACA;color:#7F1D1D;';
+      banner.innerHTML=`<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg> ${avEsc(err.message)}`;
+    }
+  });
+  </script>
+</body>
+</html>

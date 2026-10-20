@@ -1,0 +1,1231 @@
+﻿<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>GMROI · Estoque · Biomedical</title>
+  <link rel="stylesheet" href="../styles.css?v=14">
+  <script src="https://unpkg.com/@azure/msal-browser@2.38.3/lib/msal-browser.min.js"></script>
+<script src="../pbi-throttle.js?v=3"></script>
+<script src="../pbi-modelo.js?v=2"></script>
+  <!-- Layout v3 (Claude Design · animado): fonte + camada visual + motor de animações -->
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300..800&family=Manrope:wght@400..800&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../portal-v3.css?v=2">
+  <script src="../portal-motion.js?v=3" defer></script>
+  <!-- Tema claro/escuro (menu do avatar): marca o <html> antes de pintar + camada escura -->
+  <script>try{if(localStorage.getItem('bm-tema')==='escuro')document.documentElement.setAttribute('data-tema','escuro')}catch(e){}</script>
+  <link rel="stylesheet" href="../portal-tema.css?v=1">
+  <script src="../portal-tema.js?v=1" defer></script>
+  <!-- Celular (varredura 15/10/26): só vale em tela < 768px; no computador não se aplica -->
+  <link rel="stylesheet" href="../portal-mobile.css?v=1" media="(max-width: 767.98px)">
+  <script src="../portal-mobile.js?v=1" defer></script>
+</head>
+<body class="dept">
+
+  <header class="site-header"><div class="container">
+    <a href="../index.html" class="brand" aria-label="Biomedical — Portal Corporativo"><img class="brand-logo" src="/icons/icon-192.png" alt="Biomedical" onerror="this.dataset.failed='true'"><span class="brand-fallback">Biomedical</span></a>
+    <nav class="header-nav"><a href="../index.html">Início</a><a href="../index.html#areas">Áreas</a><a href="../index.html#sistemas">Sistemas</a><a href="../index.html#avisos">Avisos</a><a href="../index.html#contato">Contato</a></nav>
+  </div></header>
+
+  <!-- cabeçalho movido para .fx-head (abas de submódulo, Claude Design) -->
+
+  <div class="area-body"><div class="container"><div class="area-grid">
+    <aside class="area-sidebar">
+      <div class="sb-card"><div class="sb-head"><span class="sb-ic"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="3" width="15" height="13"/><polygon points="16 8 20 8 23 11 23 16 16 16 16 8"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/></svg></span><div><div class="sb-tt">Estoque</div><div class="sb-st">Departamento</div></div></div><nav></nav></div>
+      <a href="../index.html" class="sb-back"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></svg>Voltar ao Portal</a>
+    </aside>
+
+    <div class="area-main">
+          <!-- ═══ Cabeçalho + abas de submódulo (Claude Design) ═══ -->
+          <style>
+            .fx-head{display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap;padding:22px 0 4px;}
+            .fx-bc{display:flex;align-items:center;gap:6px;font-size:12px;color:#7C93A8;}
+            .fx-title{margin:4px 0 0;font-size:23px;font-weight:800;letter-spacing:-0.5px;color:#0A2E5C;}
+            .fx-head-right{display:flex;align-items:center;gap:12px;flex-wrap:wrap;}
+            .fx-tabs{display:flex;align-items:center;background:#FFFFFF;border:1px solid #E3EAF2;border-radius:11px;padding:3px;flex-wrap:wrap;}
+            .fx-tabs a,.fx-tabs span{padding:8px 14px;border-radius:8px;font-size:12.5px;font-weight:600;color:#5B7189;text-decoration:none;white-space:nowrap;}
+            .fx-tabs a:hover{color:#0A2E5C;}
+            .fx-tabs .active{background:#0A2E5C;font-weight:700;color:#fff;}
+            .fx-filters{display:flex;align-items:center;gap:10px;flex-wrap:wrap;padding:12px 14px;background:#fff;border:1px solid #E3EAF2;border-radius:12px;}
+            .fx-fdiv{width:1px;height:24px;background:#E3EAF2;}
+            .fx-fbtn{display:inline-flex;align-items:center;gap:8px;padding:8px 12px;border-radius:9px;border:1px solid #E3EAF2;background:#fff;font-size:12.5px;font-weight:600;color:#33495E;cursor:pointer;font-family:inherit;white-space:nowrap;}
+            .fx-fbtn:hover{border-color:#1272C4;}
+            .fx-fbtn .fx-fk{font-weight:700;color:#93A7BA;}
+            .fx-fbtn svg{flex-shrink:0;}
+            .fx-flimpar{margin-left:auto;display:inline-flex;align-items:center;gap:6px;padding:8px 12px;border-radius:9px;border:none;background:transparent;font-size:12.5px;font-weight:600;color:#5B7189;cursor:pointer;font-family:inherit;white-space:nowrap;}
+            .fx-flimpar:hover{color:#B54545;}
+            .fxdd{position:relative;display:inline-block;}
+            .fxdd-panel{position:absolute;z-index:50;top:calc(100% + 6px);left:0;display:none;flex-direction:column;background:#fff;border:1px solid #E3EAF2;border-radius:12px;box-shadow:0 10px 30px rgba(10,46,92,0.14);padding:12px;min-width:210px;}
+            .fxdd.open .fxdd-panel{display:flex;}
+            .fxdd-sec{font-size:10.5px;font-weight:800;letter-spacing:0.8px;text-transform:uppercase;color:#93A7BA;margin:2px 2px 8px;}
+            .fxdd-sec.mt{margin-top:12px;}
+            .fxdd-hint{font-size:11px;color:#93A7BA;margin-top:10px;}
+            /* esconde a faixa de cards de sub-modulos (estatica OU injetada pelo nav-sidebar.js) — navegacao agora pelas abas */
+            .area-main section:has(.modulo-card){display:none !important;}
+            /* periodo largo/horizontal p/ dropdowns com botoes de mes */
+            #fx-periodo .fxdd-panel{width:720px;max-width:calc(100vw - 48px);}
+            @media(max-width:1100px){#fx-periodo .fxdd-panel{width:560px;}}
+            #fx-periodo .fxdd-panel .sr-row,#fx-periodo .fxdd-panel .av-row,#fx-periodo .fxdd-panel .pv-row,#fx-periodo .fxdd-panel .fn-row-f{max-width:none !important;gap:6px !important;row-gap:8px !important;}
+            #fx-periodo .fxdd-panel .sr-btn,#fx-periodo .fxdd-panel .av-btn,#fx-periodo .fxdd-panel .pv-btn{padding:5px 9px;}
+            #fx-periodo .fxdd-panel .sr-divider:first-of-type,#fx-periodo .fxdd-panel .av-divider:first-of-type,#fx-periodo .fxdd-panel .pv-divider:first-of-type{flex-basis:100%;width:100%;height:0 !important;border:0 !important;background:transparent !important;margin:2px 0 0 !important;}
+            @media(max-width:767.98px){
+              .fx-head{align-items:flex-start;padding-top:14px;}
+              .fx-title{font-size:17px;}
+              .fx-head-right{width:100%;}
+              .fx-tabs{width:100%;flex-wrap:nowrap;overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none;background:#F0F4F9;border:none;}
+              .fx-tabs::-webkit-scrollbar{display:none;}
+              .fx-tabs a,.fx-tabs span{flex:0 0 auto;}
+              .fx-filters{flex-wrap:nowrap;overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none;}
+              .fx-filters::-webkit-scrollbar{display:none;}
+              .fx-filters>*{flex-shrink:0;}
+              .fx-flimpar{margin-left:8px;}
+            }
+          </style>
+
+          <div class="fx-head">
+            <div>
+              <div class="fx-bc"><span>Estoque</span><span>›</span><span>Gestão de Consignação</span></div>
+              <h1 class="fx-title">GMROI</h1>
+            </div>
+            <div class="fx-head-right">
+              <div class="fx-tabs">
+                <a href="estoque-gestao-consignacao.html">Visão Geral</a>
+                <a href="estoque-saldo-consignado.html">Saldo Consignado</a>
+                <a href="estoque-contagem-saldo-nota.html">Contagem · Saldo por Nota</a>
+                <a href="estoque-devolucoes-faturamento.html">Devoluções</a>
+                <a href="estoque-rastreabilidade.html">Rastreabilidade</a>
+                <span class="active">GMROI</span>
+              </div>
+            </div>
+          </div>
+          <script>
+          /* barra de filtros fx — dropdowns compactos (Claude Design) */
+          (function(){
+            window.fxTogglePanel = function(btn){
+              var dd = btn.closest('.fxdd'); if(!dd) return;
+              var open = dd.classList.contains('open');
+              document.querySelectorAll('.fxdd.open').forEach(function(d){ d.classList.remove('open'); });
+              if(!open) dd.classList.add('open');
+            };
+            function txt(id,v){ var el=document.getElementById(id); if(el) el.textContent=v; }
+            window.fxSyncLabels = function(){
+              var per = document.getElementById('fx-periodo');
+              if(per){
+                var mesBtn = per.querySelector('.fxdd-panel button.active');
+                var anoBtns = per.querySelectorAll('.fxdd-panel button.active-green');
+                var ano = anoBtns.length===1 ? anoBtns[0].textContent.trim() : (anoBtns.length>1 ? anoBtns.length+' anos' : '');
+                var mes = mesBtn ? mesBtn.textContent.trim() : '';
+                txt('fx-periodo-lbl', ([ano, (mes && !/^todos$/i.test(mes) ? mes : '')].filter(Boolean).join(' · ')) || 'Todos');
+              }
+              [['fx-empresa','fx-empresa-lbl'],['fx-tipocli','fx-tipocli-lbl']].forEach(function(p){
+                var dd=document.getElementById(p[0]); if(!dd) return;
+                var b=dd.querySelector('.fxdd-panel button.active,.fxdd-panel button.active-green');
+                txt(p[1], b ? b.textContent.trim() : 'Todos');
+              });
+            };
+            window.fxLimpar = function(){
+              document.querySelectorAll('.fx-filters [data-fxdefault]').forEach(function(b){ b.click(); });
+              setTimeout(window.fxSyncLabels, 0);
+            };
+            document.addEventListener('DOMContentLoaded', function(){
+              document.querySelectorAll('.fx-filters .fxdd-panel').forEach(function(p){
+                p.addEventListener('click', function(e){ e.stopPropagation(); setTimeout(window.fxSyncLabels, 0); });
+              });
+              document.addEventListener('click', function(e){ if(e.target.closest && e.target.closest('.fxdd')) return; document.querySelectorAll('.fxdd.open').forEach(function(d){ d.classList.remove('open'); }); });
+              window.fxSyncLabels();
+            });
+          })();
+          </script>
+
+      <style>
+        .cx-wrap{padding:8px 0 48px;display:flex;flex-direction:column;gap:14px;}
+        .cx-card{background:#fff;border:1px solid var(--border);border-radius:var(--radius);padding:14px 16px;}
+        .cx-kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;}
+        @media(max-width:880px){.cx-kpis{grid-template-columns:repeat(2,1fr);}}
+        .cx-kpi{background:#fff;border:1px solid var(--border);border-radius:var(--radius);padding:16px 18px;position:relative;overflow:hidden;}
+        .cx-kpi::before{content:'';position:absolute;left:0;top:0;bottom:0;width:4px;background:var(--bm-blue-600);}
+        .cx-kpi.w::before{background:#b45309;}
+        .cx-kpi.g::before{background:var(--bm-green-600);}
+        .cx-kpi.d::before{background:#0891b2;}
+        .cx-kpi-l{font-size:10.5px;font-weight:600;text-transform:uppercase;letter-spacing:.05em;color:var(--text-3);margin-bottom:6px;}
+        .cx-kpi-v{font-family:var(--font-display);font-size:22px;font-weight:800;color:var(--bm-blue-900);line-height:1;}
+        .cx-panel{background:#fff;border:1px solid var(--border);border-radius:var(--radius);padding:16px 18px;}
+        .cx-panel h3{font-size:14px;font-weight:700;color:var(--text);margin:0 0 4px;}
+        .cx-panel .cx-sub{font-size:11.5px;color:var(--text-3);margin-bottom:14px;}
+        .cx-tbl-wrap{overflow:auto;border:1px solid var(--border);border-radius:10px;max-height:640px;}
+        table.cx-tbl{width:100%;border-collapse:collapse;font-size:12px;}
+        table.cx-tbl thead th{position:sticky;top:0;z-index:3;background:var(--bm-blue-900);color:rgba(255,255,255,.95);text-align:right;padding:9px 12px;font-size:10px;font-weight:600;letter-spacing:.02em;text-transform:uppercase;white-space:nowrap;cursor:pointer;user-select:none;}
+        table.cx-tbl thead th.dim{text-align:left;}
+        table.cx-tbl thead th.unres{color:#FCA5A5;}
+        table.cx-tbl tbody td{padding:7px 12px;border-bottom:1px solid var(--border);text-align:right;font-variant-numeric:tabular-nums;color:var(--text-2);white-space:nowrap;}
+        table.cx-tbl tbody td.dim{text-align:left;color:var(--text);font-weight:600;}
+        table.cx-tbl tbody td.cod{font-family:var(--font-mono,monospace);font-size:11px;color:var(--text-3);text-align:left;}
+        table.cx-tbl tbody td.ctr{text-align:center;}
+        table.cx-tbl tbody td.venc-late{color:var(--danger,#b91c1c);font-weight:700;}
+        table.cx-tbl tbody td.venc-soon{color:#b45309;font-weight:700;}
+        table.cx-tbl tbody tr:hover td{background:var(--bm-blue-50);}
+        table.cx-tbl tbody tr.cx-total td{background:var(--bm-blue-900);color:#fff;font-weight:800;border-top:2px solid var(--border-2);position:sticky;bottom:0;}
+        .search-wrap{position:relative;}
+        .search-wrap svg{position:absolute;left:10px;top:50%;transform:translateY(-50%);color:var(--text-4);}
+        .search-input{padding:7px 10px 7px 32px;border:1px solid var(--border);border-radius:8px;font-size:12.5px;font-family:var(--font-body);width:260px;box-sizing:border-box;}
+        .av-toolbar{display:flex;gap:8px;flex-wrap:wrap;align-items:center;}
+        .av-dd{position:relative;display:inline-block;}
+        .av-dd-btn{padding:7px 12px;border-radius:8px;border:1px solid var(--border);background:#fff;font-size:12.5px;font-weight:600;color:var(--text-2);cursor:pointer;display:inline-flex;align-items:center;gap:10px;min-width:150px;justify-content:space-between;}
+        .av-dd-btn:hover{border-color:var(--bm-blue-500);}
+        .av-dd-btn.has{border-color:var(--bm-blue-600);background:var(--bm-blue-50);color:var(--bm-blue-800);}
+        .av-dd-btn .cnt{background:var(--bm-blue-600);color:#fff;border-radius:999px;padding:0 7px;font-size:11px;}
+        .av-dd-panel{position:absolute;z-index:40;top:calc(100% + 4px);left:0;width:280px;max-height:340px;display:none;flex-direction:column;background:#fff;border:1px solid var(--border);border-radius:10px;box-shadow:var(--shadow);overflow:hidden;}
+        .av-dd.open .av-dd-panel{display:flex;}
+        .av-dd-search{padding:8px;border-bottom:1px solid var(--border);}
+        .av-dd-search input{width:100%;padding:6px 8px;border:1px solid var(--border);border-radius:6px;font-size:12px;font-family:var(--font-body);box-sizing:border-box;}
+        .av-dd-list{overflow-y:auto;padding:4px;}
+        .av-dd-opt{display:flex;align-items:center;gap:8px;padding:6px 8px;border-radius:6px;font-size:12.5px;color:var(--text-2);cursor:pointer;}
+        .av-dd-opt:hover{background:var(--bm-blue-50);}
+        .av-dd-foot{display:flex;justify-content:space-between;padding:6px 10px;border-top:1px solid var(--border);}
+        .av-dd-foot button{font-size:11.5px;color:var(--bm-blue-700);background:none;border:none;cursor:pointer;font-weight:600;}
+        .cx-btn{padding:5px 13px;border-radius:6px;border:1px solid var(--border);background:#fff;font-size:12.5px;font-weight:600;color:var(--text-2);cursor:pointer;font-family:var(--font-body);}
+        /* barra de filtros POR TABELA — cada painel tem a SUA; nao existe filtro geral na pagina */
+        .cx-fix{font-size:11px;color:var(--text-3);line-height:1.6;margin:0 0 10px;}
+        .cx-fix b{color:var(--text-2);font-weight:700;}
+        .cx-fix .cx-fix-w{color:#B45309;font-weight:700;}
+        .cx-kpi-src{display:inline-block;margin-left:6px;padding:1px 6px;border-radius:999px;background:#EFF6FF;color:#1D4ED8;font-size:9px;font-weight:700;letter-spacing:.03em;text-transform:none;vertical-align:middle;}
+        /* ── VISUAIS (graficos) ── */
+        .cx-bars{display:grid;grid-template-columns:1fr 1fr;gap:14px;}
+        @media(max-width:880px){.cx-bars{grid-template-columns:1fr !important;}}
+        .cx-chart-wrap{position:relative;height:300px;}
+        .cx-chart-wrap.tall{height:360px;}
+        .cx-gsec{display:flex;align-items:flex-end;justify-content:space-between;gap:14px;flex-wrap:wrap;}
+        .cx-seg{display:inline-flex;background:#F0F4F9;border:1px solid var(--border);border-radius:9px;padding:3px;gap:2px;}
+        .cx-seg button{padding:6px 12px;border:none;background:transparent;border-radius:7px;font-size:12px;font-weight:700;color:var(--text-3);cursor:pointer;font-family:inherit;white-space:nowrap;}
+        .cx-seg button:hover:not(:disabled){color:var(--bm-blue-800,#0A2E5C);}
+        .cx-seg button.on{background:#fff;color:var(--bm-blue-900);box-shadow:0 1px 3px rgba(10,46,92,.14);}
+        .cx-seg button:disabled{opacity:.45;cursor:not-allowed;}
+        .cx-ph{padding:24px 12px;text-align:center;color:var(--text-3);font-size:12.5px;}
+        .cx-gwarn{font-size:11px;line-height:1.6;color:#B45309;font-weight:700;}
+      </style>
+
+      <div class="cx-wrap">
+
+        <div id="cx-banner" style="padding:11px 16px;border-radius:8px;font-size:13px;display:flex;align-items:center;gap:10px;background:#EFF6FF;border:1px solid #BFDBFE;color:#1E40AF;">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+          Conectando ao Power BI…
+        </div>
+
+        <!-- faixa de RITMO: o Power BI limita consultas por usuario/minuto (HTTP 429).
+             Fica escondida; aparece com a contagem regressiva quando a espera acontece. -->
+        <div id="cx-ritmo" style="display:none;padding:10px 14px;border-radius:8px;font-size:12.5px;font-weight:600;background:#FFFBEB;border:1px solid #FDE68A;color:#92400E;"></div>
+
+        <!-- filtros: NAO existe barra geral — cada tabela tem a sua barra, dentro do proprio painel -->
+
+        <div class="fx-filters"><div class="av-toolbar" id="cx-toolbar" style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;"></div></div>
+
+        <div class="cx-kpis">
+          <div class="cx-kpi"><div class="cx-kpi-l">GMROI</div><div class="cx-kpi-v" id="cx-k-gmroi">—</div></div>
+          <div class="cx-kpi w"><div class="cx-kpi-l">Margem média do item (venda futura · 6m)</div><div class="cx-kpi-v" id="cx-k-margem">—</div></div>
+          <div class="cx-kpi g"><div class="cx-kpi-l">Saldo de Remessas (Custo)</div><div class="cx-kpi-v" id="cx-k-custo">—</div></div>
+          <div class="cx-kpi d"><div class="cx-kpi-l">Clientes</div><div class="cx-kpi-v" id="cx-k-clientes">—</div></div>
+        </div>
+
+        <!-- ═══ VISUAIS · quebra por dimensao ═══
+             Os paineis usam o MESMO recorte da tabela desta aba (os filtros fixos dela
+             + a barra de filtros do topo), que e o recorte dos KPIs — por isso o
+             "% do total" de cada painel fecha com o card. -->
+        <div class="cx-panel">
+          <div class="cx-gsec">
+            <div>
+              <h3 style="margin:0;">GMROI por dimensão</h3>
+              <div class="cx-sub" style="margin:2px 0 0;">GMROI, margem média do item e saldo em custo por dimensão · mesmo recorte da tabela abaixo (os filtros fixos da aba + a barra de filtros do topo)</div>
+            </div>
+            <div class="cx-seg" id="cx-gseg">
+              <button type="button" data-m="g" class="on">GMROI</button>
+              <button type="button" data-m="m">Margem média (6m)</button>
+              <button type="button" data-m="c">Saldo em custo (R$)</button>
+            </div>
+          </div>
+          <div class="cx-gwarn" id="cx-gfix" style="display:none;margin:10px 0 0;"></div>
+        </div>
+
+        <div class="cx-bars" id="cx-graficos"></div>
+
+        <!-- ── GMROI (fato 'Consignação - Remessas') ── -->
+        <div class="cx-panel">
+          <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;margin-bottom:12px;">
+            <div><h3 style="margin:0;">GMROI por cliente e família</h3><div class="cx-sub" style="margin:0;" id="cx-gm-info">—</div></div>
+            <div class="search-wrap"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg><input class="search-input" id="cx-search-gm" type="text" placeholder="Buscar cliente, família…"></div>
+          </div>
+
+          <div class="cx-fix" id="cx-fix-gm">Filtros fixos: lendo o modelo…</div>
+
+          <div class="cx-tbl-wrap">
+            <table class="cx-tbl" id="cx-tbl-gm">
+              <thead><tr id="cx-gm-head"></tr></thead>
+              <tbody id="cx-gm-rows"><tr><td style="padding:20px;text-align:center;color:var(--text-3);">Carregando…</td></tr></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div></div></div>
+
+  <footer class="site-footer"><div class="container"><p>© Biomedical — Portal Corporativo</p></div></footer>
+
+  <script src="../script.js?v=8"></script>
+  <script src="../nav-sidebar.js?v=52"></script>
+  <script src="../dw-pill.js?v=4"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+  <script>
+  // ================================================================
+  // SALDO CONSIGNADO — "Saldo por Nota" (fato 'Consignação - Remessas')
+  //   KPIs no topo + tabela única com as colunas/medidas pedidas.
+  //
+  //   Os nomes de coluna/medida são resolvidos para o nome EXATO do
+  //   modelo (via INFO.VIEW.COLUMNS / INFO.VIEW.MEASURES), sem depender
+  //   de acento/grafia — foi o que quebrava 'Cód. do estado'. Se o
+  //   modelo não tiver alguma coluna, ela é descartada da query (a
+  //   tabela continua funcionando) e sinalizada no cabeçalho + banner.
+  // ================================================================
+  const PBI_CFG = {
+    clientId:'129978ce-ff3b-431d-98b3-66a1bcb766b1', tenantId:'c311c9e6-6017-42a9-b306-4057beba5786',
+    workspaceId:'8535f0a1-8dc6-4da0-93ce-bf20c1c14e27',
+    scopes:['https://analysis.windows.net/powerbi/api/Dataset.Read.All','https://analysis.windows.net/powerbi/api/Report.Read.All']
+  };
+  let _pbi=null,_token=null,_dsId=null,_ready=false;
+  // token/dataset expostos p/ o dw-pill.js ler o histórico de refresh do dataset
+  window.bmDwInfo = () => ({ token:_token, ws:PBI_CFG.workspaceId, ds:_dsId });
+  // modelo de Consignação FIXADO — o workspace tem CÓPIAS "(N)" do mesmo modelo com as
+  // mesmas tabelas, e a varredura podia cair numa cópia velha/incompleta (foi o que
+  // zerou a aba Devoluções). Cache/varredura ficam só como reserva.
+  const DS_PINNED = '960d8415-9844-40aa-a502-07a8b3eea240';
+  const DS_CACHE_KEY='bio_ds_consignado';
+  const FATO = "'Consignação - Remessas'";   // fato da Nota (usado p/ achar o dataset)
+
+  // ── helpers de formatação / escape ──
+  const avDax = s => String(s==null?'':s).replace(/"/g,'""');
+  const avEsc = s => String(s==null?'':s).replace(/"/g,'&quot;');
+  const escH  = s => String(s==null?'':s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+  const _numN = x => (x==null||x===''||x==='-'||isNaN(Number(x)))?null:Number(x);
+  const bareRef = r => String(r==null?'':r).replace(/^\[/,'').replace(/\]$/,'');   // "[Medida]" -> "Medida"
+  const setTxt=(id,t)=>{const el=document.getElementById(id);if(el)el.textContent=t;};
+  const fBRL = v => v==null?'—':'R$ '+Number(v).toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2});
+  function fMi(v){ if(v==null)return '—'; const a=Math.abs(v); if(a>=1e6) return 'R$ '+(v/1e6).toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2})+' Mi'; if(a>=1e3) return 'R$ '+(v/1e3).toLocaleString('pt-BR',{maximumFractionDigits:1})+'k'; return fBRL(v); }
+  const fNUM = v => v==null?'—':Number(v).toLocaleString('pt-BR',{maximumFractionDigits:2});
+  // % : a medida do modelo devolve a RAZÃO (0-1) na API, então multiplico por 100 aqui.
+  //   Se vier já em 0-100, é só tirar o *100 desta linha.
+  const fPCT = v => v==null?'—':(Number(v)*100).toLocaleString('pt-BR',{maximumFractionDigits:1})+'%';
+  const fTXT = v => (v==null||v==='')?'—':String(v);
+  const fIDX = v => v==null?'—':Number(v).toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2});
+  function fDate(v){ if(v==null||v==='') return '—'; const m=String(v).match(/^(\d{4})-(\d{2})-(\d{2})/); return m?`${m[3]}/${m[2]}/${m[1]}`:String(v); }
+  function dateObj(v){ if(v==null||v==='') return null; const m=String(v).match(/^(\d{4})-(\d{2})-(\d{2})/); return m?new Date(+m[1],+m[2]-1,+m[3]):null; }
+  // normaliza p/ casar nomes sem acento/caixa/espaços duplicados
+  const _norm = s => String(s==null?'':s).normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().replace(/\s+/g,' ').trim();
+
+  // ── COLUNAS pedidas (na ordem). cands = [tabela, coluna] em ordem de
+  //    preferência; o 1º que existir no modelo (por nome normalizado) vence. ──
+  const COLS = [
+    { key:'codcli',   header:'Cód. Cliente',    kind:'cod',  cands:[['Clientes','Cód. do Cliente'],['Clientes','Cód. Cliente'],['Clientes','Cód. do cliente']] },
+    { key:'cliente',  header:'Cliente',         kind:'dim',  cands:[['Clientes','Cliente']] },
+    { key:'tipocli',  header:'Tipo de Cliente', kind:'dim',  cands:[['Clientes','Tipo de cliente'],['Clientes','Tipo de Cliente']] },
+    { key:'familia',  header:'Família',         kind:'dim',  cands:[['Famílias','Família'],['Produtos','Família']] }
+  ];
+  // MEAS: a 1ª manda no TOPN. `txt` = medida que devolve TEXTO (não numifica, não soma no
+  //   rodapé); `pct` = razão formatada em % (também não soma: somar razão não quer dizer nada).
+  // `txt` = medida de texto (não numifica, não soma); `nosoma` = número que NÃO faz sentido
+  //   somar no rodapé (índice/razão). A 1ª medida manda na ordenação do TOPN.
+  const MEAS = [
+    // [GMROI] É porcentagem (razão do modelo → ×100 na exibição, sem total no rodapé).
+    { key:'gmroi',   header:'GMROI',                  fmt:fPCT, strong:'font-weight:700;color:var(--bm-blue-900);',         pct:true,    cands:['GMROI'] },
+    // a média da margem NÃO é porcentagem: número normal. Média não soma → `nosoma`.
+    { key:'margem',  header:'Margem média item (6m)', fmt:fIDX, strong:'',                                                   nosoma:true, cands:['GMROI - Média da margem item (venda futura - 6 meses)','GMROI - Media da margem item (venda futura - 6 meses)'] },
+    { key:'custo',   header:'Saldo Remessas (Custo)', fmt:fBRL, strong:'font-weight:700;color:var(--bm-green-700,#15803d);', cands:['GMROI - Saldo de remessas (custo)'] },
+    { key:'assinou', header:'Assinou?',               fmt:fTXT, strong:'',                                                   txt:true,    cands:['ASSINOU','Assinou'] },
+    // pedida só p/ o filtro de linha ([GMROI validacao] = 2): entra na consulta e
+    // NÃO aparece como coluna (`hide`) — o usuário não pediu ela na tabela.
+    { key:'gmroival',header:'GMROI validação',        fmt:fIDX, strong:'', hide:true, nosoma:true, cands:['GMROI validacao','GMROI validação'] }
+  ];
+  const KPI = [
+    { id:'cx-k-gmroi',   al:'kGmroi', fmt:fPCT, tbl:'gm', gk:'gmroi',  cands:['GMROI'] },
+    { id:'cx-k-margem',  al:'kMarg',  fmt:fIDX, tbl:'gm', gk:'margem', cands:['GMROI - Média da margem item (venda futura - 6 meses)','GMROI - Media da margem item (venda futura - 6 meses)'] },
+    { id:'cx-k-custo',   al:'kCusto', fmt:fMi,  tbl:'gm', gk:'custo',  cands:['GMROI - Saldo de remessas (custo)'] },
+    { id:'cx-k-clientes',al:'kCli',   fmt:fNUM, tbl:'gm', cands:['__contagem_clientes__'] }
+  ];
+
+  // ── FILTROS FIXOS ──
+  //   O relatório de origem no Power BI tem DOIS VISUAIS, com filtros de VISUAL
+  //   diferentes. Então aqui também: cada tabela carrega o SEU conjunto (T.fixos) e
+  //   só o que está em GLOBAL vale para as duas (= "Filtros nesta página" do relatório).
+  //   Cada coluna é resolvida p/ o nome EXATO do modelo (mesmo motor do COLS).
+  //      op:'in'          → coluna ∈ {vals}  (blank:true inclui "(Em branco)")
+  //      op:'notin'       → coluna ∉ {vals}  ("(Em branco)" entra, pois não está na lista)
+  //      op:'notblank'    → coluna preenchida
+  //      op:'notcontains' → coluna NÃO contém o texto (vazio passa, como no BI)
+  //   `chip` = como o filtro aparece na linha "Filtros fixos" de cada tabela.
+  // ── FILTROS FIXOS (ditados pelo usuário em 20/08) ──
+  //   O 4º da lista dele, `[GMROI validacao] é 2`, é filtro de MEDIDA e vive em
+  //   TBL_GM.rowFilter (a medida vai na consulta oculta, só p/ o FILTER poder citá-la).
+  const FX = {
+    grupodep: { label:'Grupo de depósitos', chip:'Grupo de depósitos = ESTOQUE CONSIGNADO/COMODATO', op:'in', vals:['ESTOQUE CONSIGNADO/COMODATO'],
+                cands:[['Depósitos','Grupo de depósitos'],['Depósitos','Grupo de depósito'],['Depósitos','Grupo depósitos']] },
+    exibir  : { label:'Exibir no BI', chip:'Exibir no BI = Sim', op:'in', vals:['Sim'],
+                cands:[['Consignação - Remessas','Exibir no BI']] },
+    // "não é Representante": o DAX compara texto sem diferenciar maiúscula/minúscula,
+    // então a grafia do modelo (REPRESENTANTE/Representante) não muda o resultado.
+    tipocli : { label:'Tipo de cliente', chip:'Tipo de cliente ≠ Representante', op:'notin', vals:['Representante'],
+                cands:[['Clientes','Tipo de cliente'],['Clientes','Tipo de Cliente']] }
+  };
+  const GLOBAL = [];
+  const FIX_GM = [FX.grupodep, FX.exibir, FX.tipocli];
+
+  // candidatos das dimensões compartilhadas do modelo de Consignação (os mesmos do
+  //   Saldo Consignado). Servem aos painéis de gráfico E aos dropdowns de filtro.
+  const CBASE = {
+    empresa   :[['Empresas','Empresa']],
+    unidade   :[['DIM_UNIDADE_DE_NEGOCIO_V2','UNIDADE_DE_NEGOCIO']],
+    salesv    :[['Sales Vertical','Sales Vertical']],
+    codcli    :[['Clientes','Cód. do Cliente'],['Clientes','Cód. Cliente'],['Clientes','Cód. do cliente']],
+    cliente   :[['Clientes','Cliente']],
+    tipocli   :[['Clientes','Tipo de cliente'],['Clientes','Tipo de Cliente']],
+    coddep    :[['Depósitos','Cód. do depósito'],['Depósitos','Cód. depósito'],['Depósitos','Código do depósito']],
+    familia   :[['Famílias','Família'],['Produtos','Família']],
+    estrategia:[['Famílias','Estratégia'],['Produtos','Estratégia']],
+    linha     :[['Linhas','Linha'],['Produtos','Linha']],
+    codprod   :[['Produtos','Cód. do produto'],['Produtos','Cód. produto'],['Produtos','Código do produto']],
+    produto   :[['Produtos','Produto']],
+    lote      :[['Lotes','Lote']],
+    lotevenc  :[['Lotes','Lote vencido?'],['Lotes','Lote vencido']],
+    tipoop    :[['Operações','Tipo de operação'],['Operações','Tipo de Operação'],['Operações','Tipo operação']]
+  };
+
+  // ══ VISUAIS (gráficos) ══
+  const GMEAS = [
+    // GMROI e margem média são índice/razão: somar não quer dizer nada (`nosoma`)
+    { m:'g', key:'gmroi',  mk:'gmroi',  label:'GMROI',             fmt:fPCT, tick:v=>fPCT(v), cor:'rgba(18,114,196,.85)', nosoma:true },
+    { m:'m', key:'margem', mk:'margem', label:'Margem média (6m)', fmt:fIDX, tick:v=>fIDX(v), cor:'rgba(180,83,9,.85)',   nosoma:true },
+    { m:'c', key:'custo',  mk:'custo',  label:'Saldo em custo',    fmt:fBRL, tick:v=>fMi(v),  cor:'rgba(21,128,61,.85)'  }
+  ];
+  const GTOP   = 12;    // barras exibidas por painel
+  const GTOP_Q = 300;   // categorias buscadas por consulta
+  const GRAFS = [
+    { key:'familia',    label:'Família',            cands:CBASE.familia    },
+    { key:'estrategia', label:'Estratégia',         cands:CBASE.estrategia },
+    { key:'linha',      label:'Linha',              cands:CBASE.linha      },
+    { key:'cliente',    label:'Cliente',            cands:CBASE.cliente    },
+    { key:'tipocli',    label:'Tipo de Cliente',    cands:CBASE.tipocli    },
+    { key:'codprod',    label:'Cód. Produto',       cands:CBASE.codprod    },
+    { key:'unidade',    label:'Unidade de Negócio', cands:CBASE.unidade    },
+    { key:'salesv',     label:'Sales Vertical',     cands:CBASE.salesv     },
+    { key:'coddep',     label:'Cód. Depósito',      cands:CBASE.coddep     }
+  ];
+  // valor dos KPIs (já consultados) — denominador do "% do total" dos painéis
+  const _kpiVal = {};
+  // ── ADAPTADORES da aba (o motor mais abaixo é idêntico nas 4 abas) ──
+  const gRefDe     = x => (MEAS.find(m=>m.key===x.mk)||{})._ref;
+  const gFiltros   = () => baseFilters(TBL_GM);
+  // `[GMROI validacao] = 2` é filtro de MEDIDA do visual (ditado pelo usuário): esconde a
+  //   linha E entra no número, então o painel também aplica. A medida entra na consulta
+  //   só para o FILTER poder citá-la — não vira barra.
+  const gExtraMeas = () => { const m=MEAS.find(x=>x.key==='gmroival'); return (m && m._ref && !_badMeas.has(m._ref)) ? [{key:'gmroival', ref:m._ref}] : []; };
+  const gRowFilter = () => gExtraMeas().length ? '[gmroival] = 2' : '';
+  const FIXOS  = Object.keys(FX).map(k=>FX[k]);
+
+  // ── CAMPOS DE FILTRO (dropdowns) ──
+  //   O filtro NAO e geral: cada tabela tem a SUA barra e a SUA selecao (T.sel).
+  //   O campo resolve a PROPRIA coluna no modelo (cands reaproveitados do COLS) em
+  //   vez de depender da coluna exibida na tabela — assim um campo pode estar numa
+  //   barra e nao na outra. Sao dims compartilhadas: cada barra filtra o SEU fato.
+  //   `fb` = candidatos PRÓPRIOS para o campo que não é coluna da tabela desta aba. Sem
+  //   ele o dropdown resolvia com `cands:[]` e morria CALADO — era o caso de 6 dos 11
+  //   daqui (a tabela desta aba tem menos colunas que a do Saldo Consignado, de onde o
+  //   FCAMPOS foi copiado). Agora todos caem no CBASE.
+  const _cands = (list,k,fb) => { const c=list.find(x=>x.key===k); if(c) return c.cands; if(fb) return fb; console.warn('[CONSIG] campo de filtro sem coluna base:',k); return []; };
+  const FCAMPOS = {
+    empresa : { id:'empresa',  label:'Empresa',            cands:CBASE.empresa },
+    unidade : { id:'unidade',  label:'Unidade de Negócio', cands:_cands(COLS,'unidade', CBASE.unidade)  },
+    salesv  : { id:'salesv',   label:'Sales Vertical',     cands:_cands(COLS,'salesv',  CBASE.salesv)   },
+    codcli  : { id:'codcli',   label:'Cód. Cliente',       cands:_cands(COLS,'codcli',  CBASE.codcli)   },
+    cliente : { id:'cliente',  label:'Cliente',            cands:_cands(COLS,'cliente', CBASE.cliente)  },
+    coddep  : { id:'coddep',   label:'Cód. Depósito',      cands:_cands(COLS,'coddep',  CBASE.coddep)   },
+    familia : { id:'familia',  label:'Família',            cands:_cands(COLS,'familia', CBASE.familia)  },
+    linha   : { id:'linha',    label:'Linha',              cands:CBASE.linha },
+    codprod : { id:'codprod',  label:'Cód. Produto',       cands:_cands(COLS,'codprod', CBASE.codprod)  },
+    lote    : { id:'lote',     label:'Lote',               cands:_cands(COLS,'lote',    CBASE.lote)     },
+    lotevenc: { id:'lotevenc', label:'Lote vencido?',      cands:_cands(COLS,'lotevenc',CBASE.lotevenc) }
+  };
+  const FILTROS = Object.keys(FCAMPOS).map(k=>FCAMPOS[k]);   // todos — p/ resolver no catálogo
+  // Os dropdowns são os MESMOS nas duas barras (pedido do usuário), mas a SELEÇÃO é de
+  // cada tabela (T.sel). Para dar campos diferentes a uma barra, muda a lista dela.
+  const CAMPOS = ['empresa','unidade','salesv','codcli','cliente','coddep','familia','linha','codprod','lote','lotevenc'];
+  const FILTROS_GM = CAMPOS.map(k=>FCAMPOS[k]);
+  // seleção dos dropdowns (esta aba tem uma tabela só; o objeto é o mesmo padrão das irmãs)
+  const SEL_COMUM = {}; CAMPOS.forEach(k=>{ SEL_COMUM[k] = new Set(); });
+
+  // ── descritores das 2 tabelas — a MESMA lógica genérica serve às duas ──
+  const novaTabela = cfg => {
+    const T = Object.assign({ rows:[], tot:null, trunc:false, sort:{k:cfg.meas[0].key, dir:'desc'}, measkeys:cfg.meas.filter(m=>!m.txt && !m.hide).map(m=>m.key), filtros:[] }, cfg);
+    T.sel = SEL_COMUM;
+    return T;
+  };
+  const TBL_GM = novaTabela({ name:'gm', fato:"'Consignação - Remessas'", cols:COLS, meas:MEAS, filtros:FILTROS_GM, fixos:FIX_GM,
+    rowFilter:{key:'gmroival', op:'eq', val:2, chip:'GMROI validação = 2'},
+    emptyMsg:'Sem dados de GMROI para os filtros atuais.',
+    ids:{head:'cx-gm-head', rows:'cx-gm-rows', info:'cx-gm-info', search:'cx-search-gm', fix:'cx-fix-gm'} });
+  const TABLES = [TBL_GM];
+  window._avSel = SEL_COMUM;   // só p/ inspeção no console
+
+  // ── conexão / execução Power BI (MSAL delegado) ──
+  async function pbiConnect(){
+    if (window._msalAuth){ _pbi = window._msalAuth; }
+    else { _pbi = new msal.PublicClientApplication({ auth:{ clientId:PBI_CFG.clientId, authority:`https://login.microsoftonline.com/${PBI_CFG.tenantId}`, redirectUri:window.location.origin+'/' }, cache:{ cacheLocation:'localStorage', storeAuthStateInCookie:true } }); if(_pbi.initialize) await _pbi.initialize(); await _pbi.handleRedirectPromise().catch(()=>{}); }
+    const accounts = _pbi.getAllAccounts();
+    try { const r = await _pbi.acquireTokenSilent({ scopes:PBI_CFG.scopes, account:accounts[0] }); _token = r.accessToken; }
+    catch { const r = await _pbi.loginPopup({ scopes:PBI_CFG.scopes }); _token = r.accessToken; }
+    const acc = _pbi.getAllAccounts()[0]; if (acc && typeof window.setSidebarUser==='function') window.setSidebarUser(acc.name||acc.username, acc.username);
+  }
+  function _pbiErr(text){ try { const j=JSON.parse(text); const e=j.error||{}; const pe=e['pbi.error']||{}; const det=(pe.details||[]).map(d=>d.detail&&d.detail.value).filter(Boolean).join(' | '); return det||e.message||pe.code||text.substring(0,200); } catch { return text.substring(0,200); } }
+  // -- RITMO: o Power BI limita as consultas por usuário/minuto --
+  //   Uma aplicação de filtro aqui dispara os KPIs + a tabela + os painéis de gráfico.
+  //   Sem freio isso vira HTTP 429 — e 429 tem a cara EXATA de "sem dados" (KPI em
+  //   "—", gráfico vazio). Então 429 deixa de ser erro: vira espera com contagem
+  //   regressiva, a consulta se repete sozinha e o cooldown sobrevive ao F5.
+  const RX_429 = /HTTP 429|exceeded the amount of requests/i;
+  const _dorme = ms => new Promise(r=>setTimeout(r, ms));
+  let _cool=0, _coolT=null;
+  try { _cool=Number(sessionStorage.getItem('cx_cool'))||0; } catch(e){}
+  function _coolBanner(){
+    clearTimeout(_coolT); _coolT=null;
+    const b=document.getElementById('cx-ritmo'); if(!b) return;
+    const falta=Math.ceil((_cool-Date.now())/1000);
+    if(falta<=0){ b.style.display='none'; return; }
+    b.style.display='block';
+    b.textContent=`O Power BI limitou o ritmo das consultas. Retomando em ${falta}s — os números voltam sozinhos, não precisa mexer nos filtros.`;
+    _coolT=setTimeout(_coolBanner, 1000);
+  }
+  function _marcarRitmo(txt, retryAfter){
+    let seg=Number(retryAfter)||0;
+    if(!seg){ const m=/retry in (\d+)/i.exec(String(txt||'')); seg=m?+m[1]:20; }
+    seg=Math.max(5, Math.min(65, seg));
+    _cool=Math.max(_cool, Date.now()+seg*1000);
+    try { sessionStorage.setItem('cx_cool', String(_cool)); } catch(e){}
+    _coolBanner();
+  }
+  async function _aguardarRitmo(){ while(Date.now()<_cool){ _coolBanner(); await _dorme(Math.min(1000, Math.max(120, _cool-Date.now()+50))); } }
+  async function execQuery(dsId, dax){
+    const body=JSON.stringify({queries:[{query:dax}],serializerSettings:{includeNulls:true}});
+    for(let tent=1; ; tent++){
+      await _aguardarRitmo();
+      const r=await PBIModelo.post(PBI_CFG.workspaceId, dsId, {method:'POST',headers:{Authorization:`Bearer ${_token}`,'Content-Type':'application/json'},body});
+      const text=await r.text();
+      if(r.status===429){
+        _marcarRitmo(text, r.headers.get('Retry-After'));
+        if(tent<3) continue;                     // espera o tempo pedido e repete
+        throw new Error(`HTTP 429: ${_pbiErr(text)}`);
+      }
+      if(!r.ok) throw new Error(`HTTP ${r.status}: ${_pbiErr(text)}`);
+      const d=JSON.parse(text); if(d.error) throw new Error(_pbiErr(text));
+      return d.results[0].tables[0].rows;
+    }
+  }
+  async function resolveDataset(){
+    const falhas = [];
+    const cands = [DS_PINNED, localStorage.getItem(DS_CACHE_KEY)].filter(Boolean).filter((v,i,a)=>a.indexOf(v)===i);
+    for (const id of cands){ try { await execQuery(id, PBIModelo.sonda(FATO)); localStorage.setItem(DS_CACHE_KEY, id); return (_dsId=id); } catch(e){ falhas.push(['modelo '+id, e]); } }
+    const list = await PBIModelo.candidatos(PBI_CFG.workspaceId, _token);
+    for (const ds of list){ if (cands.indexOf(ds.id)>=0) continue; try { await execQuery(ds.id, PBIModelo.sonda(FATO)); localStorage.setItem(DS_CACHE_KEY, ds.id); return (_dsId=ds.id); } catch(e){ falhas.push([ds.name, e]); } }
+    throw PBIModelo.motivo(FATO, falhas);
+  }
+  async function pbiQuery(dax){ if(!_dsId) await resolveDataset(); return execQuery(_dsId, dax); }
+
+  // ── catálogo do modelo → resolve nomes EXATOS ──
+  let _colCat=null, _meaCat=null, _unresolved=[], _measUnresolved=[], _badMeas=new Set(), _globalUnresolved=[], _filtroUnresolved=[], _grafUnresolved=[];
+  function _indexCols(rows, tk, nk){ const idx={}; rows.forEach(r=>{ const t=r[tk], n=r[nk]; if(t==null||n==null)return; const tn=_norm(t); (idx[tn]=idx[tn]||{})[_norm(n)]=String(n); }); return idx; }
+  function _setRef(c,t,n){ c._t=t; c._n=n; c._ref=`'${t}'[${n}]`; c._out=`${t}[${n}]`; c._include=true; }
+  // resolve c.cands ([tabela,coluna][]) → _t/_n/_ref/_out/_include usando o catálogo (exato→fuzzy)
+  function resolveColSpec(c){
+    c._t=c._n=c._ref=c._out=null; c._include=false;
+    if(_colCat){
+      for(const [t,n] of c.cands){ const tb=_colCat[_norm(t)]; if(tb&&tb[_norm(n)]){ _setRef(c,t,tb[_norm(n)]); break; } }
+      if(!c._include){ for(const [t,n] of c.cands){ const tb=_colCat[_norm(t)]; if(!tb)continue; const toks=_norm(n).split(' ').filter(w=>w.length>2); if(!toks.length)continue; let best=null; for(const nn in tb){ if(toks.every(w=>nn.includes(w))){ if(best===null||nn.length<best.length)best=nn; } } if(best!==null){ _setRef(c,t,tb[best]); break; } } }
+    } else {
+      const [t,n]=c.cands[0]; _setRef(c,t,n);   // sem catálogo: melhor esforço com o 1º candidato
+    }
+  }
+  // monta a expressão DAX de um filtro fixo (TREATAS p/ 'in' simples; FILTER(ALL) p/ blank/notin)
+  function globalFilterDax(g){
+    const ref=g._ref, list=(g.vals||[]).map(v=>'"'+avDax(v)+'"').join(', ');
+    if(g.op==='notin')    return `FILTER(ALL(${ref}), NOT(${ref} IN {${list}}))`;
+    if(g.op==='notstartswith'){ const v=(g.vals||[''])[0]; return `FILTER(ALL(${ref}), NOT(LEFT(${ref}, ${String(v).length}) = "${avDax(v)}"))`; }
+    if(g.op==='notblank') return `FILTER(ALL(${ref}), NOT(ISBLANK(${ref})) && LEN(TRIM(${ref})) > 0)`;   // "não está vazio": exclui BLANK/nulo, "" e só-espaços (TRIM). Igual à Rastreabilidade.
+    // "não contém": no BI o vazio PASSA (CONTAINSSTRING(BLANK(),x) é falso) — não inverter isso.
+    if(g.op==='gt')          return `FILTER(ALL(${ref}), ${ref} > ${Number(g.num)||0})`;   // comparacao NUMERICA: sem quotes no valor
+    if(g.op==='notcontains') return `FILTER(ALL(${ref}), ${(g.vals||[]).map(v=>`NOT(CONTAINSSTRING(${ref}, "${avDax(v)}"))`).join(' && ')})`;
+    if(g.blank){ const eqs=(g.vals||[]).map(v=>`${ref} = "${avDax(v)}"`).join(' || '); return `FILTER(ALL(${ref}), ${eqs}${eqs?' || ':''}ISBLANK(${ref}))`; }
+    return `TREATAS({${list}}, ${ref})`;
+  }
+  // resolve o nome EXATO de uma MEDIDA nomeada → "[Medida]" (com fallback literal)
+  function resolveM(cands){
+    if(_meaCat){
+      for(const nm of cands){ const h=_meaCat[_norm(nm)]; if(h)return `[${h}]`; }
+      const toks=_norm(cands[0]).split(' ').filter(w=>w.length>2); let best=null;
+      for(const nn in _meaCat){ if(toks.length&&toks.every(w=>nn.includes(w))){ if(best===null||nn.length<best.length)best=nn; } }
+      if(best!==null)return `[${_meaCat[best]}]`;
+    }
+    return `[${cands[0]}]`;
+  }
+  // resolve o _ref de um item de MEAS: medida nomeada ([X]) OU agregação de coluna (SUM(col))
+  function resolveMeasSpec(m){
+    if(m.agg){ const c={cands:m.cands}; resolveColSpec(c); m._colref=c._ref; m._ref = c._ref ? `${m.agg}(${c._ref})` : null; }
+    else { m._ref = resolveM(m.cands); }
+    m._include = !!m._ref;
+  }
+  async function carregarCatalogo(){
+    // colunas — INFO.VIEW.COLUMNS (padrão do portal) e fallback COLUMNSTATISTICS
+    try { const rows=await pbiQuery(`EVALUATE SELECTCOLUMNS(INFO.VIEW.COLUMNS(), "T",[Table], "N",[Name])`); if(rows&&rows.length) _colCat=_indexCols(rows,'[T]','[N]'); } catch(e){ console.warn('[CONSIG] INFO.VIEW.COLUMNS:', e.message); }
+    if(!_colCat){ try { const rows=await pbiQuery(`EVALUATE SELECTCOLUMNS(COLUMNSTATISTICS(), "T",[Table Name], "N",[Column Name])`); if(rows&&rows.length) _colCat=_indexCols(rows,'[T]','[N]'); } catch(e){ console.warn('[CONSIG] COLUMNSTATISTICS:', e.message); } }
+    // medidas — INFO.VIEW.MEASURES (padrão) e fallback INFO.MEASURES (engines sem INFO.VIEW).
+    //   Sem esse catálogo, medida inexistente vira ref de coluna e quebra a query toda.
+    try { const rows=await pbiQuery(`EVALUATE SELECTCOLUMNS(INFO.VIEW.MEASURES(), "N",[Name])`); if(rows&&rows.length){ _meaCat={}; rows.forEach(r=>{ const n=r['[N]']; if(n!=null)_meaCat[_norm(n)]=String(n); }); } } catch(e){ console.warn('[CONSIG] INFO.VIEW.MEASURES:', e.message); }
+    if(!_meaCat){ try { const rows=await pbiQuery(`EVALUATE SELECTCOLUMNS(INFO.MEASURES(), "N",[Name])`); if(rows&&rows.length){ _meaCat={}; rows.forEach(r=>{ const n=r['[N]']; if(n!=null)_meaCat[_norm(n)]=String(n); }); } } catch(e){ console.warn('[CONSIG] INFO.MEASURES:', e.message); } }
+
+    // resolve as colunas de TODAS as tabelas (auto-heal remove depois o que não existir)
+    _unresolved=[];
+    TABLES.forEach(T=> T.cols.forEach(c=>{ resolveColSpec(c); if(!c._include && _unresolved.indexOf(c.header)<0) _unresolved.push(c.header); }));
+    // resolve TODOS os filtros fixos (página + de cada tabela) e guarda o DAX em cada um.
+    //   Quem usa cada filtro é decidido em fixosDe(T) — GLOBAL vale p/ as duas, T.fixos só p/ ela.
+    _globalUnresolved=[];
+    FIXOS.forEach(g=>{
+      g._dax=null;
+      try { resolveColSpec(g); } catch(e){ console.warn('[CONSIG] filtro fixo', g.label, e.message); }
+      if(!g._ref){ _globalUnresolved.push(g.label); console.warn('[CONSIG] filtro fixo sem coluna no modelo:', g.label); return; }
+      g._dax = globalFilterDax(g);
+    });
+    // resolve a coluna de cada CAMPO de filtro (dropdowns), independente das tabelas.
+    //   try/catch: exceção aqui derrubaria a página inteira (_ready nunca vira true).
+    _filtroUnresolved=[];
+    FILTROS.forEach(f=>{
+      try { resolveColSpec(f); } catch(e){ console.warn('[CONSIG] filtro', f.label, e.message); }
+      if(!f._ref){ _filtroUnresolved.push(f.label); console.warn('[CONSIG] campo de filtro sem coluna no modelo:', f.label); }
+    });
+    // resolve a dimensão de cada PAINEL de gráfico (try/catch por item: exceção
+    //   aqui derrubaria a página inteira — _ready nunca viraria true).
+    _grafUnresolved=[];
+    GRAFS.forEach(g=>{
+      try { resolveColSpec(g); } catch(e){ console.warn('[CONSIG] gráfico', g.label, e.message); }
+      if(!g._ref){ _grafUnresolved.push(g.label); console.warn('[CONSIG] painel sem coluna no modelo:', g.label); }
+    });
+    // resolve medidas de TODAS as tabelas + KPI
+    TABLES.forEach(T=> T.meas.forEach(resolveMeasSpec));
+    KPI.forEach(m=> m._ref=resolveM(m.cands));
+  }
+
+  // ── confere os VALORES dos filtros fixos de igualdade ──
+  //   Filtro com valor que não existe na coluna não dá erro: só casa NADA e a tabela vem
+  //   vazia sem explicação (foi o que aconteceu na aba Devoluções). Aqui leio os valores
+  //   reais (VALUES) e, se NENHUM dos pedidos existir, NÃO aplico e reporto em âmbar.
+  async function validarValoresFixos(){
+    for(const g of FIXOS){
+      if(g.op!=='in' || !g._ref || !(g.vals||[]).length) continue;
+      try {
+        const rows = await pbiQuery(`EVALUATE VALUES(${g._ref})`);
+        const k = (rows&&rows.length)?Object.keys(rows[0])[0]:null;
+        const present = k ? rows.map(r=>_norm(r[k])) : [];
+        if(!present.length) continue;                       // coluna sem valores: não julgo
+        const achou = g.vals.filter(v=>present.indexOf(_norm(v))>=0);
+        if(!achou.length){
+          g._dax=null; _globalUnresolved.push(g.label+' (valor não existe na coluna)');
+          console.warn('[CONSIG] filtro fixo com valor inexistente:', g.label, '| pedidos:', g.vals, '| exemplos no modelo:', rows.slice(0,12).map(r=>r[k]));
+        } else if(achou.length < g.vals.length){
+          console.warn('[CONSIG] filtro fixo parcial:', g.label, '| casaram:', achou, '| não casaram:', g.vals.filter(v=>achou.indexOf(v)<0));
+        }
+      } catch(e){ console.warn('[CONSIG] VALUES de', g.label, e.message); }
+    }
+  }
+
+  // ── valida cada MEDIDA no modelo ──
+  //   Uma medida cujo nome não existe é interpretada pelo DAX como
+  //   referência de COLUNA e derruba a query inteira com
+  //   "...no current row for this column". Aqui provamos cada medida
+  //   isoladamente (ROW) e isolamos a(s) que faltam, mantendo o resto
+  //   do visual vivo — igual ao tratamento das colunas.
+  // NÃO provo mais cada medida num contexto VAZIO (EVALUATE ROW): isso dava
+  // FALSO-NEGATIVO em medidas pesadas/contextuais (Saldo Real, custo, qtde…),
+  // marcando como "não encontrada" algo que existe e funciona na query real.
+  // Agora só reporto o que nem resolveu (agregação cuja COLUNA não existe);
+  // medidas nomeadas sempre entram (têm ref) e são validadas na query real —
+  // os KPIs resilientes e o auto-heal da tabela isolam qualquer medida que
+  // realmente falhe, sem derrubar o visual.
+  async function validarMedidas(){
+    _measUnresolved=[]; _badMeas=new Set();
+    TABLES.forEach(T=> T.meas.forEach(m=>{
+      m._include = !!m._ref;
+      if(!m._ref){ const nm=m.header||'?'; if(_measUnresolved.indexOf(nm)<0)_measUnresolved.push(nm); }
+    }));
+  }
+
+  // chave da linha ↔ coluna por nome NORMALIZADO: a API devolve "Tabela[Coluna]" com a
+  // grafia do MODELO e o `_out` pode vir do candidato (catálogo incompleto) — o literal
+  // não acha a chave e a coluna inteira viraria "—" (caso do 'Cód. do Cliente').
+  const rowKeyMap = row => { const m={}; Object.keys(row||{}).forEach(k=>{ m[_norm(k)]=k; }); return m; };
+  function cellVal(r, c, km){ if(c._out in r) return r[c._out]; const k=km[_norm(c._out)]; return k===undefined?null:r[k]; }
+
+  const activeCols = T => T.cols.filter(c=>c._include);
+
+  // diagnóstico por URL: ?nofilters=1 ignora os filtros fixos; ?debug=1 loga DAX+1ª linha;
+  //   ?diag=1 mostra na página quais colunas trazem valor (cada uma sozinha + a medida)
+  const NOFILT = /[?&]nofilters\b/i.test(location.search);
+  // ?fixosgeral=1 → volta ao comportamento antigo (o conjunto da página + o da NOTA
+  //   valendo p/ as DUAS tabelas). Serve p/ comparar total antes/depois da separação.
+  const FIXGERAL = /[?&]fixosgeral\b/i.test(location.search);
+  // ?op7=1 → devolve o filtro dos 7 códigos de operação ao visual da Nota. Ele NÃO está
+  //   na lista do usuário (zerava [Consignado - Saldo de remessas]); fica só p/ diagnóstico.
+  const OP7 = /[?&]op7\b/i.test(location.search);
+  const DIAG   = /[?&]diag\b/i.test(location.search);
+  const DBG    = NOFILT || DIAG || /[?&]debug\b/i.test(location.search);
+
+  // testa CADA coluna isolada (SUMMARIZECOLUMNS(col, "m", medida)) — SEM filtros fixos —
+  // para revelar quais dimensões realmente se ligam ao fato da tabela.
+  async function diagRelacionamento(T){
+    const lm = T.meas.find(m=>m._ref && !_badMeas.has(m._ref));
+    const meaRef = lm ? lm._ref : (T.meas[0] && T.meas[0]._ref) || '[Consignado - Saldo de remessas]';
+    const linhas=[];
+    for(const c of T.cols){
+      let s, d;
+      if(!c._ref){ s='— não resolvida'; d=''; }
+      else {
+        try {
+          const rows = await pbiQuery(`EVALUATE TOPN(5, SUMMARIZECOLUMNS(${c._ref}, "m", ${meaRef}))`);
+          const kmd = rowKeyMap(rows[0]);
+          const vals = rows.map(r=>cellVal(r,c,kmd)).filter(v=>v!=null&&v!=='');   // por chave normalizada: senão o diagnóstico acusa "VAZIA" só por grafia
+          s = vals.length ? `OK · ${rows.length} linha(s)` : `VAZIA · ${rows.length} linha(s)`;
+          d = vals.slice(0,3).map(v=>String(v)).join('  |  ');
+        } catch(e){ s='ERRO'; d=(e.message||'').replace(/<\/?oii>/g,'').slice(0,140); }
+      }
+      const bad = /VAZIA|ERRO|resolv/.test(s);
+      linhas.push(`<tr><td style="padding:5px 10px;border-bottom:1px solid #eee;font-weight:600;">${escH(c.header)}</td><td style="padding:5px 10px;border-bottom:1px solid #eee;font-family:monospace;font-size:11px;color:#64748b;">${escH(c._ref||'')}</td><td style="padding:5px 10px;border-bottom:1px solid #eee;font-weight:700;color:${bad?'#b91c1c':'#15803d'};">${escH(s)}</td><td style="padding:5px 10px;border-bottom:1px solid #eee;color:#475569;">${escH(d)}</td></tr>`);
+    }
+    return `<div style="background:#fff;border:1px solid #E3EAF2;border-radius:12px;padding:16px;margin-bottom:14px;overflow:auto;">
+      <h3 style="margin:0 0 4px;">🔎 Diagnóstico "${escH(T.name)}" — cada coluna SOZINHA + medida <code>${escH(bareRef(meaRef))}</code> (sem filtros fixos)</h3>
+      <div style="font-size:12px;color:#64748b;margin-bottom:12px;">"VAZIA" = a coluna existe mas não traz valor junto com a medida → a dimensão não está ligada a esse fato por esse caminho.</div>
+      <table style="width:100%;border-collapse:collapse;font-size:12.5px;"><thead><tr>
+        <th style="text-align:left;padding:5px 10px;border-bottom:2px solid #E3EAF2;">Coluna</th>
+        <th style="text-align:left;padding:5px 10px;border-bottom:2px solid #E3EAF2;">Referência DAX</th>
+        <th style="text-align:left;padding:5px 10px;border-bottom:2px solid #E3EAF2;">Resultado</th>
+        <th style="text-align:left;padding:5px 10px;border-bottom:2px solid #E3EAF2;">Exemplos</th>
+      </tr></thead><tbody>${linhas.join('')}</tbody></table></div>`;
+  }
+
+  // mostra o CATÁLOGO (medidas/colunas do modelo) + probe de cada medida (valor OU erro),
+  // p/ achar os nomes exatos quando algo é reportado como "não encontrado".
+  async function diagModelo(){
+    const relev=['saldo','custo','real','aguard','qtde','disponiv','remessa','faturam','estoque'];
+    let meaHtml;
+    if(_meaCat){ const nomes=Object.values(_meaCat); const match=nomes.filter(n=>relev.some(t=>_norm(n).includes(t))); meaHtml=`<b>${nomes.length}</b> medidas no modelo. Com termos-chave: <b>${match.map(escH).join(' · ')||'(nenhuma casou)'}</b>`; }
+    else meaHtml='<b style="color:#b91c1c">null</b> — INFO.VIEW.MEASURES e INFO.MEASURES falharam/vazias (medidas caem no nome literal).';
+    const seen={}, proberows=[];
+    for(const T of TABLES){ for(const m of T.meas){
+      const ref=m._ref; let res;
+      if(!ref) res='— não resolvida';
+      else if(ref in seen) res=seen[ref];
+      else { try { const r=(await pbiQuery(`EVALUATE ROW("v", ${ref})`))[0]||{}; res='OK · '+String(r['[v]']); } catch(e){ res='ERRO · '+(e.message||'').replace(/<\/?oii>/g,'').slice(0,90); } seen[ref]=res; }
+      const ok=/^OK/.test(res);
+      proberows.push(`<tr><td style="padding:4px 10px;border-bottom:1px solid #eee;">${escH(T.name)}</td><td style="padding:4px 10px;border-bottom:1px solid #eee;font-weight:600;">${escH(m.header)}</td><td style="padding:4px 10px;border-bottom:1px solid #eee;font-family:monospace;font-size:11px;">${escH(ref||'')}</td><td style="padding:4px 10px;border-bottom:1px solid #eee;color:${ok?'#15803d':'#b91c1c'};font-weight:700;">${escH(res)}</td></tr>`);
+    }}
+    const aggMiss=[];
+    TABLES.forEach(T=>T.meas.forEach(m=>{ if(m.agg && !m._ref){ const tbl=m.cands[0][0]; const tb=_colCat&&_colCat[_norm(tbl)]; const cols=tb?Object.values(tb).filter(c=>['qtde','disponiv','custo','quant','saldo','medio','estoque'].some(t=>_norm(c).includes(t))):[]; aggMiss.push(`<div style="margin:2px 0;"><b>${escH(m.header)}</b> — tabela <code>${escH(tbl)}</code>: ${tb?'existe':'<span style="color:#b91c1c">NÃO existe</span>'}; colunas parecidas: <b>${cols.map(escH).join(' · ')||'(nenhuma)'}</b></div>`); } }));
+    return `<div style="background:#fff;border:1px solid #E3EAF2;border-radius:12px;padding:16px;margin-bottom:14px;overflow:auto;">
+      <h3 style="margin:0 0 8px;">🔎 Catálogo — medidas & colunas do modelo</h3>
+      <div style="font-size:12.5px;margin-bottom:6px;">Colunas (_colCat): <b>${_colCat?Object.keys(_colCat).length+' tabelas':'<span style="color:#b91c1c">null</span>'}</b></div>
+      <div style="font-size:12.5px;margin-bottom:10px;">Medidas (_meaCat): ${meaHtml}</div>
+      ${aggMiss.length?`<div style="font-size:12.5px;background:#FFFBEB;border:1px solid #FDE68A;border-radius:8px;padding:8px;margin-bottom:10px;">${aggMiss.join('')}</div>`:''}
+      <table style="width:100%;border-collapse:collapse;font-size:12.5px;"><thead><tr>
+        <th style="text-align:left;padding:4px 10px;border-bottom:2px solid #E3EAF2;">Tabela</th><th style="text-align:left;padding:4px 10px;border-bottom:2px solid #E3EAF2;">Medida</th><th style="text-align:left;padding:4px 10px;border-bottom:2px solid #E3EAF2;">Ref resolvida</th><th style="text-align:left;padding:4px 10px;border-bottom:2px solid #E3EAF2;">Probe (valor / erro)</th>
+      </tr></thead><tbody>${proberows.join('')}</tbody></table></div>`;
+  }
+
+  // ── FILTROS DE UMA QUERY = fixos da página (GLOBAL) + dropdowns DAQUELA tabela ──
+  //   Sem T (ou sem seleção) só os fixos entram. Os FIXOS são por tabela (T.fixos); os
+  //   DROPDOWNS são comunitários (T.sel é o mesmo objeto nas duas) — pedido do usuário.
+  //   fixos que valem p/ a tabela T = os da PÁGINA (GLOBAL) + os do VISUAL dela (T.fixos)
+  function fixosDe(T){
+    if(NOFILT) return [];
+    const lista = GLOBAL.concat(FIXGERAL ? FIX_NOTA : ((T&&T.fixos)||[]))
+                        .concat((OP7 && T && T.name==='nota') ? [FX.op7] : []);
+    const vis=[], vistos=new Set();
+    lista.forEach(g=>{ if(g._dax && !vistos.has(g._dax)){ vistos.add(g._dax); vis.push(g); } });   // dedup: modelo55 está nas duas listas
+    return vis;
+  }
+  function baseFilters(T){
+    const f = fixosDe(T).map(g=>g._dax);
+    if(T) (T.filtros||[]).forEach(d=>{
+      if(!d._ref) return;
+      const vals=[...(T.sel[d.id]||[])];
+      if(vals.length) f.push(`TREATAS({ ${vals.map(v=>'"'+avDax(v)+'"').join(', ')} }, ${d._ref})`);
+    });
+    return f;
+  }
+  function ctWrap(inner,T){ const f=baseFilters(T); return f.length?`CALCULATETABLE(${inner}, ${f.join(', ')})`:inner; }
+  async function avCarregarValores(d){
+    if(!d||!d._ref) return [];
+    const rows = await pbiQuery(`EVALUATE VALUES(${d._ref})`);
+    if(!rows||!rows.length) return [];
+    const k=Object.keys(rows[0])[0];
+    return rows.map(r=>r[k]).filter(v=>v!=null&&v!=='').map(v=>({value:String(v),label:String(v)})).sort((a,b)=>a.label.localeCompare(b.label,'pt-BR'));
+  }
+
+  async function carregarKPIs(only){
+    // Um grupo de KPIs por TABELA: cada grupo roda com os filtros DAQUELA barra
+    // (`only` = recarregar só os KPIs da tabela que o usuário acabou de filtrar).
+    for(const T of (only?[only]:TABLES)){
+      const grupo = KPI.filter(m=>m.tbl===T.name);
+      if(!grupo.length) continue;
+      // KPI de contagem: não é medida do modelo, é DISTINCTCOUNT da coluna de cliente
+      grupo.forEach(m=>{ if(m.cands[0]==='__contagem_clientes__'){ const c=T.cols.find(x=>x.key==='codcli'); m._ref = (c&&c._ref)?`DISTINCTCOUNT(${c._ref})`:null; } });
+      const live = grupo.filter(m=>m._ref && !_badMeas.has(m._ref));
+      // caminho rápido: 1 query só quando todas as medidas vivas do grupo são válidas
+      if(live.length){
+        try {
+          const parts = live.map(m=>`"${m.al}", ${m._ref}`).join(', ');
+          const r=(await pbiQuery(`EVALUATE ${ctWrap(`ROW(${parts})`,T)}`))[0]||{};
+          grupo.forEach(m=>{
+            const ok = m._ref && !_badMeas.has(m._ref);
+            const v  = ok ? _numN(r['['+m.al+']']) : null;
+            setTxt(m.id, ok ? m.fmt(v) : '—');
+            if(m.gk) _kpiVal[m.gk]=v;   // denominador do % dos paineis
+          });
+          continue;
+        } catch(e){
+          const msg=(e.message||'').replace(/<\/?oii>/g,'');
+          // no 429 o leque medida a medida MULTIPLICA as requisicoes e piora a punicao
+          if(RX_429.test(msg)){ grupo.forEach(m=>{ if(m.gk) _kpiVal[m.gk]=null; }); console.warn('[CONSIG] kpi ('+T.name+') no limite de ritmo:', msg); continue; }
+          console.warn('[CONSIG] kpi combinado ('+T.name+') falhou, indo medida-a-medida:', msg);
+        }
+      }
+      // fallback resiliente: cada KPI isolado — uma medida ruim não zera as outras
+      for(const m of grupo){
+        if(!m._ref || _badMeas.has(m._ref)){ setTxt(m.id,'—'); if(m.gk) _kpiVal[m.gk]=null; continue; }
+        try { const r=(await pbiQuery(`EVALUATE ${ctWrap(`ROW("v", ${m._ref})`,T)}`))[0]||{}; const v=_numN(r['[v]']); setTxt(m.id, m.fmt(v)); if(m.gk) _kpiVal[m.gk]=v; }
+        catch(e){
+          setTxt(m.id,'—'); if(m.gk) _kpiVal[m.gk]=null;
+          // 429 nao e medida inexistente: marcar como ruim tiraria a medida da tela ate o F5
+          if(RX_429.test((e.message||''))) continue;
+          _badMeas.add(m._ref); const nm=bareRef(m._ref); if(_measUnresolved.indexOf(nm)<0)_measUnresolved.push(nm);
+        }
+      }
+    }
+  }
+
+  const activeMeas = T => T.meas.filter(m=>m._include!==false && m._ref && !_badMeas.has(m._ref));
+  const LIMITE = 5000;   // teto de linhas do TOPN (o total do rodapé é corrigido se cortar)
+
+  // ── filtro de LINHA sobre MEDIDA ──
+  //   É filtro do VISUAL no BI: esconde a linha E entra no total (o total do BI é a soma
+  //   das linhas que sobraram). Por isso vai no DAX, não no JS.
+  //     'nz'  → medida ≠ 0   (o "> 0 ou < 0" do painel)
+  //     'gt0' → medida > 0
+  function rowFilterDax(T, ms){
+    const rf=T.rowFilter; if(!rf) return '';
+    if(!ms.some(m=>m.key===rf.key)) return '';   // medida caiu no auto-heal → sem o filtro
+    const k=`[${rf.key}]`;
+    if(rf.op==='nz')  return `(${k} > 0 || ${k} < 0)`;
+    if(rf.op==='gt0') return `${k} > 0`;
+    if(rf.op==='eq')  return `${k} = ${Number(rf.val)}`;
+    return '';
+  }
+  // total REAL do rodapé quando o TOPN cortou: SUMX sobre o MESMO conjunto, sem o corte.
+  async function carregarTotais(T, ms, baseDax){
+    const soma = ms.filter(m=>!m.txt && !m.pct && !m.nosoma && !m.hide);   // texto não soma; % é razão, somar não quer dizer nada
+    if(!soma.length) return null;
+    const parts = soma.map(m=>`"${m.key}", SUMX(B, [${m.key}])`).join(', ');
+    const r = (await pbiQuery(`EVALUATE VAR B = ${baseDax} RETURN ROW(${parts})`))[0]||{};
+    const o={}; soma.forEach(m=>{ o[m.key]=_numN(r['['+m.key+']'])||0; }); return o;
+  }
+
+  async function carregarTabela(T){
+    let attempts=0; const maxTry=T.cols.length+T.meas.length+2;
+    while(true){
+      const cols = activeCols(T).map(c=>c._ref).join(', ');
+      if(!cols){ T.rows=[]; return; }
+      const ms = activeMeas(T);
+      if(!ms.length){ T.rows=[]; return; }   // nenhuma medida válida para pedir
+      const flt = baseFilters(T); const fstr = flt.length ? flt.join(', ')+', ' : '';
+      const meas = ms.map(m=>`"${m.key}", ${m._ref}`).join(', ');
+      const sc   = `SUMMARIZECOLUMNS(${cols}, ${fstr}${meas})`;
+      const rfx  = rowFilterDax(T, ms);
+      const base = rfx ? `FILTER(${sc}, ${rfx})` : sc;
+      // com saldo negativo em jogo, ordenar por ABS: senão o corte do TOPN come justo os negativos
+      const ord  = rfx ? `ABS([${ms[0].key}])` : `[${ms[0].key}]`;
+      const dax  = `EVALUATE TOPN(${LIMITE}, ${base}, ${ord}, DESC)`;
+      if(DBG) console.log('[CONSIG]', T.name, 'DAX >>', dax);
+      try {
+        const raw = await pbiQuery(dax);
+        if(DBG) console.log('[CONSIG]', T.name, 'linhas:', raw.length, '| 1ª linha (chaves→valores):', raw[0]);
+        const km = rowKeyMap(raw[0]);
+        if(raw.length) activeCols(T).forEach(c=>{ if(!(c._out in raw[0]) && km[_norm(c._out)]===undefined) console.warn('[CONSIG] sem chave no resultado:', c.header, '·', c._out, '| chaves:', Object.keys(raw[0]).join(' , ')); });
+        T.rows = raw.map(r=>{
+          const o={};
+          activeCols(T).forEach(c=>{ o[c.key]=cellVal(r,c,km); });
+          ms.forEach(m=>{ const raw2=r['['+m.key+']']; o[m.key] = m.txt ? (raw2==null?null:raw2) : (_numN(raw2)||0); });
+          return o;
+        }).filter(x=> ms.some(m=>!m.txt && (x[m.key]||0)!==0));
+        // se o TOPN cortou, o rodapé não pode somar só o que veio — busca o total real
+        T.trunc = raw.length >= LIMITE; T.tot = null;
+        if(T.trunc){ try { T.tot = await carregarTotais(T, ms, base); } catch(e){ console.warn('[CONSIG] total real', T.name+':', (e.message||'')); } }
+        return;
+      } catch(e){
+        const msg=(e.message||'').replace(/<\/?oii>/g,'');
+        // auto-heal 1: coluna inexistente → descarta a coluna e retenta
+        const mc=/Column '([^']+)' in table '([^']+)' cannot be found/i.exec(msg);
+        if(mc && attempts<maxTry){
+          attempts++;
+          const badN=_norm(mc[1]), badT=_norm(mc[2]);
+          const victim = activeCols(T).find(c=> _norm(c._t)===badT && _norm(c._n)===badN)
+                      || activeCols(T).find(c=> _norm(c._n)===badN);
+          if(victim){ victim._include=false; if(_unresolved.indexOf(victim.header)<0) _unresolved.push(victim.header); renderHeadT(T); continue; }
+        }
+        // auto-heal 2: MEDIDA tratada como coluna (nome inexistente) → descarta a medida e retenta
+        const mm=/(?:The value for|A single value for column|A single value for measure|Cannot find name) '([^']+)'/i.exec(msg)
+              || /'([^']+)'\s+cannot be determined/i.exec(msg);
+        if(mm && attempts<maxTry){
+          attempts++;
+          const bad=_norm(mm[1]);
+          const victim = activeMeas(T).find(m=> _norm(bareRef(m._ref))===bad)
+                      || activeMeas(T).find(m=> _norm(m.header)===bad);
+          if(victim){ _badMeas.add(victim._ref); victim._include=false; const nm=bareRef(victim._ref); if(_measUnresolved.indexOf(nm)<0)_measUnresolved.push(nm); renderHeadT(T); continue; }
+        }
+        throw e;
+      }
+    }
+  }
+
+  function vencCls(v){ const d=dateObj(v); if(!d) return ''; const t=new Date(); t.setHours(0,0,0,0); const diff=(d-t)/86400000; if(diff<0) return 'venc-late'; if(diff<=90) return 'venc-soon'; return ''; }
+  function sortRowsT(T,rows){ const dir=T.sort.dir==='desc'?-1:1,k=T.sort.k; return rows.sort((a,b)=>{ const av=a[k],bv=b[k]; if(T.measkeys.includes(k)) return ((av||0)-(bv||0))*dir; return String(av==null?'':av).localeCompare(String(bv==null?'':bv),'pt-BR')*dir; }); }
+
+  function renderHeadT(T){
+    const tr=document.getElementById(T.ids.head); if(!tr) return;
+    let h='';
+    T.cols.forEach(c=>{
+      const left = (c.kind==='dim'||c.kind==='cod'||c.kind==='date'||c.kind==='ctr');
+      const ok = c._include!==false;   // otimista: só marca ⚠ depois que o catálogo provar que falta
+      const cls = (left?'dim':'') + (ok?'':' unres');
+      const tt = ok? '' : ' title="Coluna não encontrada no modelo"';
+      h += `<th class="${cls.trim()}" data-k="${c.key}"${tt}>${escH(c.header)}${ok?'':' ⚠'}</th>`;
+    });
+    T.meas.filter(m=>!m.hide).forEach(m=>{ const ok=(m._include!==false && !_badMeas.has(m._ref)); h += `<th class="${ok?'':'unres'}" data-k="${m.key}"${ok?'':' title="Medida não encontrada no modelo"'}>${escH(m.header)}${ok?'':' ⚠'}</th>`; });
+    tr.innerHTML=h;
+    tr.querySelectorAll('th').forEach(th=>th.addEventListener('click', ()=>{
+      const k=th.getAttribute('data-k'); if(!k) return;
+      if(T.sort.k===k) T.sort.dir=T.sort.dir==='desc'?'asc':'desc';
+      else { T.sort.k=k; T.sort.dir=T.measkeys.includes(k)?'desc':'asc'; }
+      renderTabela(T);
+    }));
+  }
+
+  function cellFor(c,x){
+    const v=x[c.key];
+    if(c.kind==='date') return `<td class="ctr ${c.venc?vencCls(v):''}">${fDate(v)}</td>`;
+    if(c.kind==='ctr')  return `<td class="ctr">${escH(v==null?'—':v)}</td>`;
+    if(c.kind==='cod')  return `<td class="cod">${escH(v==null?'—':v)}</td>`;
+    return `<td class="dim">${escH(v==null?'—':v)}</td>`;
+  }
+
+  function renderTabela(T){
+    const tbody=document.getElementById(T.ids.rows); if(!tbody) return;
+    const si=document.getElementById(T.ids.search);
+    const q=((si&&si.value)||'').trim().toLowerCase();
+    let rows=T.rows.slice();
+    if(q) rows=rows.filter(x=>T.cols.some(c=>String(x[c.key]==null?'':x[c.key]).toLowerCase().includes(q)));
+    sortRowsT(T,rows);
+    const ncols = T.cols.length + T.meas.filter(m=>!m.hide).length;
+    if(!rows.length){ tbody.innerHTML=`<tr><td colspan="${ncols}" style="padding:20px;text-align:center;color:var(--text-3);">${escH(T.emptyMsg||'Sem dados.')}</td></tr>`; setTxt(T.ids.info,'0 linhas'); return; }
+    const tot={}; T.meas.forEach(m=>tot[m.key]=(m.txt||m.pct||m.nosoma||m.hide||m._include===false||!m._ref||_badMeas.has(m._ref))?null:0);
+    if(T.tot) T.meas.forEach(m=>{ if(tot[m.key]!==null && T.tot[m.key]!=null) tot[m.key]=T.tot[m.key]; });
+    else T.rows.forEach(x=>T.meas.forEach(m=>{ if(tot[m.key]!==null) tot[m.key]+=(x[m.key]||0); }));
+    tbody.innerHTML = rows.map(x=>'<tr>'
+        + T.cols.map(c=>cellFor(c,x)).join('')
+        + T.meas.filter(m=>!m.hide).map(m=>`<td${m.strong?` style="${m.strong}"`:''}>${m.fmt(x[m.key])}</td>`).join('')
+        + '</tr>').join('')
+      + `<tr class="cx-total"><td class="dim" colspan="${T.cols.length}">TOTAL · ${T.rows.length} linhas${T.trunc?` (TOP ${LIMITE} exibidas — total real da base)`:''}</td>`
+        + T.meas.filter(m=>!m.hide).map(m=>`<td>${m.fmt(tot[m.key])}</td>`).join('')
+      + `</tr>`;
+    setTxt(T.ids.info, `${rows.length} de ${T.rows.length} linhas · ordenado por ${T.sort.k}`);
+  }
+
+  // mostra, embaixo do título de cada tabela, os filtros fixos que ELA usa
+  function renderFixos(T){
+    const el=document.getElementById(T.ids.fix); if(!el) return;
+    if(NOFILT){ el.innerHTML='<b>Filtros fixos:</b> DESLIGADOS (?nofilters)'; return; }
+    const ativos = fixosDe(T);
+    const faltas = GLOBAL.concat(FIXGERAL?FIX_NOTA:(T.fixos||[])).filter(g=>!g._dax).map(g=>g.label);
+    const chips = ativos.map(g=>escH(g.chip||g.label));
+    if(T.rowFilter&&T.rowFilter.chip) chips.push(escH(T.rowFilter.chip));   // filtro de MEDIDA do visual
+    el.innerHTML = `<b>Filtros fixos desta tabela:</b> ${ chips.length ? chips.join(' · ') : '(nenhum)' }`
+      + (OP7 ? ' <span class="cx-fix-w">· modo ?op7 (7 códigos de operação de volta)</span>' : '')
+      + (FIXGERAL ? ' <span class="cx-fix-w">· modo ?fixosgeral (conjunto único nas duas)</span>' : '')
+      + (faltas.length ? ` <span class="cx-fix-w">⚠ não aplicado(s): ${escH(faltas.join(', '))}</span>` : '');
+  }
+
+  // ══ MOTOR DOS VISUAIS ═══════════════════════════════════════════════════
+  //   Um painel por dimensão (GRAFS). TODAS as medidas do seletor vêm na MESMA
+  //   consulta, então trocar de medida só re-desenha — custa ZERO requisição.
+  //   Os 4 adaptadores (gRefDe / gFiltros / gRowFilter / gExtraMeas) ficam junto
+  //   do GMEAS de cada aba; deste comentário para baixo o motor é IDÊNTICO nas 4.
+  const _charts={}, _gdata={}, _gerr={}, _gtrunc={}, _gcur={};
+  let _gmea=GMEAS[0].m;
+  const gmSel      = () => GMEAS.find(x=>x.m===_gmea) || GMEAS[0];
+  // medidas do seletor realmente disponíveis (uma pode ter caído no auto-heal)
+  const gMeasVivas = () => GMEAS.filter(x=>{ const r=gRefDe(x); return !!(r && !_badMeas.has(r)); });
+  const gCurta     = t => { t=String(t==null?'':t); return t.length>26 ? t.slice(0,26)+'…' : t; };
+  const gPct       = (parte,tot) => (tot!=null && tot!==0) ? ' ('+(parte/tot*100).toLocaleString('pt-BR',{maximumFractionDigits:1})+'% do total)' : '';
+
+  function gMontarPaineis(){
+    const wrap=document.getElementById('cx-graficos'); if(!wrap) return;
+    wrap.innerHTML = GRAFS.map(g=>`<div class="cx-panel">
+        <h3 style="margin:0;">${escH(g.label)}</h3>
+        <div class="cx-sub" id="cx-gs-${g.key}" style="margin:2px 0 12px;">Carregando…</div>
+        <div class="cx-chart-wrap" id="cx-gw-${g.key}"><canvas id="cx-gc-${g.key}"></canvas></div>
+        <div class="cx-ph" id="cx-ge-${g.key}" style="display:none;"></div>
+      </div>`).join('');
+  }
+  // avisa quais dimensões o modelo não tem (painel nunca fica vazio sem explicação)
+  function gAvisoDims(){
+    const el=document.getElementById('cx-gfix'); if(!el) return;
+    if(!_grafUnresolved.length){ el.style.display='none'; el.textContent=''; return; }
+    el.style.display='';
+    el.textContent = `⚠ dimensão não encontrada no modelo: ${_grafUnresolved.join(', ')} — o painel dela fica vazio; o resto não é afetado.`;
+  }
+  // habilita no seletor só as medidas que existem no modelo
+  function gSincronizarSeg(){
+    const seg=document.getElementById('cx-gseg'); if(!seg) return;
+    const vivas=gMeasVivas().map(x=>x.m);
+    if(vivas.length && vivas.indexOf(_gmea)<0) _gmea=vivas[0];
+    seg.querySelectorAll('button').forEach(b=>{
+      const m=b.getAttribute('data-m');
+      b.disabled = vivas.indexOf(m)<0;
+      if(b.disabled) b.title='Medida não encontrada no modelo';
+      b.classList.toggle('on', m===_gmea && !b.disabled);
+    });
+  }
+  // desenha (ou atualiza) barras horizontais. O formatador vive em _gcur[id]: assim a
+  //   troca de medida reaproveita o mesmo Chart e o eixo/tooltip já saem na unidade nova.
+  function gHbar(id, labels, datasets, fmtHolder, legenda, afterBody){
+    const el=document.getElementById(id); if(!el||typeof Chart==='undefined') return;
+    _gcur[id]=fmtHolder;
+    const cfg={ labels, datasets };
+    if(_charts[id]){ _charts[id].data=cfg; _charts[id].options.plugins.legend.display=!!legenda; _charts[id].update(); return; }
+    _charts[id]=new Chart(el.getContext('2d'), { type:'bar', data:cfg, options:{
+      indexAxis:'y', responsive:true, maintainAspectRatio:false, animation:{duration:260},
+      plugins:{
+        legend:{ display:!!legenda, position:'bottom', labels:{boxWidth:10, font:{size:10.5}} },
+        tooltip:{ callbacks:{
+          label:c=>`${c.dataset.label}: ${(_gcur[id]||GMEAS[0]).fmt(c.raw)}`,
+          afterBody: afterBody||undefined } }
+      },
+      scales:{
+        x:{ beginAtZero:true, ticks:{ callback:v=>(_gcur[id]||GMEAS[0]).tick(v), font:{size:10} }, grid:{color:'#EEF3F8'} },
+        y:{ ticks:{font:{size:10}}, grid:{display:false} }
+      } } });
+  }
+  function gVazio(g,msg){ const w=document.getElementById('cx-gw-'+g.key), e=document.getElementById('cx-ge-'+g.key); if(w)w.style.display='none'; if(e){e.style.display='block'; e.textContent=msg;} }
+  function gCheio(g){ const w=document.getElementById('cx-gw-'+g.key), e=document.getElementById('cx-ge-'+g.key); if(w)w.style.display=''; if(e)e.style.display='none'; }
+
+  function gRender(g){
+    const sub=document.getElementById('cx-gs-'+g.key);
+    if(!g._ref){ gVazio(g,'Dimensão não encontrada no modelo.'); if(sub) sub.textContent='—'; return; }
+    if(_gerr[g.key]){ gVazio(g,_gerr[g.key]); if(sub) sub.textContent='—'; return; }
+    const dados=_gdata[g.key];
+    if(!dados){ if(sub) sub.textContent='Carregando…'; return; }   // mantém as barras antigas na tela
+    const gm=gmSel();
+    // corte por |valor|: com número negativo em jogo (devolução/estorno) ordenar pelo
+    // valor descartaria justo a anomalia — mesma razão do ABS no TOPN da tabela.
+    const cats=dados.filter(x=>(x[gm.key]||0)!==0)
+                    .sort((a,b)=>Math.abs(b[gm.key]||0)-Math.abs(a[gm.key]||0)).slice(0,GTOP)
+                    .sort((a,b)=>(b[gm.key]||0)-(a[gm.key]||0));
+    if(!cats.length){ gVazio(g,'Sem '+gm.label.toLowerCase()+' neste filtro.'); if(sub) sub.textContent='—'; return; }
+    gCheio(g);
+    gHbar('cx-gc-'+g.key, cats.map(x=>gCurta(x.cat)),
+      [{ label:gm.label, data:cats.map(x=>x[gm.key]||0), backgroundColor:gm.cor, borderRadius:3 }], gm, false);
+    if(sub){
+      const n=dados.length + (_gtrunc[g.key]?'+':'');
+      if(gm.nosoma){
+        // razão/índice: somar não quer dizer nada — mostro o maior da lista
+        sub.textContent = `${cats.length} de ${n} categorias · maior ${gm.fmt(cats[0][gm.key])}`;
+      } else {
+        const soma=cats.reduce((a,x)=>a+(x[gm.key]||0),0);
+        // `semPct` = contagem DISTINTA (DISTINCTCOUNT): a mesma ordem/NF/paciente conta
+        //   em mais de uma categoria, então a soma das barras passa do total da aba —
+        //   um "% do total" ali daria acima de 100% e enganaria.
+        sub.textContent = `${cats.length} de ${n} categorias · ${gm.semPct?'soma ':''}${gm.fmt(soma)}${gm.semPct?'':gPct(soma,_kpiVal[gm.key])}`;
+        sub.title = gm.semPct ? 'Contagem distinta não soma: a mesma ordem/NF/paciente pode contar em mais de uma categoria, então a soma das barras passa do total da aba.' : '';
+      }
+    }
+  }
+  function gRenderTodos(){ GRAFS.forEach(gRender); if(typeof gRenderMix==='function') gRenderMix(); }
+
+  // uma consulta por painel, no MESMO recorte da tabela desta aba
+  async function gCarregarUm(g){
+    const ms = gMeasVivas().map(x=>({ key:x.key, ref:gRefDe(x) }));
+    if(!ms.length) throw new Error('nenhuma medida do seletor disponível');
+    const todas= ms.concat(gExtraMeas());          // medida que só existe p/ o filtro de linha
+    const flt  = gFiltros(); const fstr = flt.length ? flt.join(', ')+', ' : '';
+    const meas = todas.map(m=>`"${m.key}", ${m.ref}`).join(', ');
+    const sc   = `SUMMARIZECOLUMNS(${g._ref}, ${fstr}${meas})`;
+    const rfx  = gRowFilter();
+    const base = rfx ? `FILTER(${sc}, ${rfx})` : sc;
+    // O TOPN busca as maiores pela 1ª medida do seletor (uma consulta serve as 3);
+    // por isso o rodapé do painel diz "de N+" quando bate no teto.
+    const dax  = `EVALUATE TOPN(${GTOP_Q}, ${base}, ABS([${ms[0].key}]), DESC)`;
+    if(DBG) console.log('[CONSIG] gráfico', g.key, 'DAX >>', dax);
+    const raw = await pbiQuery(dax);
+    const km  = rowKeyMap(raw[0]);
+    _gtrunc[g.key] = raw.length>=GTOP_Q;
+    return raw.map(r=>{
+      const v=cellVal(r,g,km);
+      const o={ cat:(v==null||String(v).trim()==='')?'(em branco)':String(v) };
+      todas.forEach(m=>{ o[m.key]=_numN(r['['+m.key+']'])||0; });
+      return o;
+    });
+  }
+  // marca os painéis como "recarregando" sem apagar as barras que já estão na tela
+  function gMarcarCarregando(){ GRAFS.forEach(g=>{ _gdata[g.key]=null; _gerr[g.key]=null; }); gRenderTodos(); }
+  // Fila de 2 por vez: todas as consultas de uma vez viram HTTP 429 (o limite é por
+  //   usuário/minuto e a aba já gasta as dos KPIs e da tabela). Cada painel pinta
+  //   quando a SUA resposta chega — e no 429 a fila para, porque insistir só piora.
+  async function carregarGraficos(seq){
+    const alvos=GRAFS.filter(g=>g._ref);
+    GRAFS.filter(g=>!g._ref).forEach(gRender);
+    if(!alvos.length){ if(typeof gRenderMix==='function') gRenderMix(); return; }
+    let i=0, freado=false;
+    const worker=async()=>{
+      while(i<alvos.length && !freado){
+        const g=alvos[i++];
+        if(seq!=null && seq!==_apSeq) return;   // aplicação superada: não gasta requisição
+        try { _gdata[g.key]=await gCarregarUm(g); _gerr[g.key]=null; }
+        catch(e){
+          const msg=(e.message||'').replace(/<\/?oii>/g,'');
+          _gerr[g.key]='Erro: '+msg.substring(0,140);
+          console.warn('[CONSIG] gráfico', g.key+':', msg);
+          if(RX_429.test(msg)) freado=true;
+        }
+        if(seq==null || seq===_apSeq){ gRender(g); if(typeof gRenderMix==='function' && g.key==='familia') gRenderMix(); }
+      }
+    };
+    await Promise.all([worker(), worker()]);
+    if(seq!=null && seq!==_apSeq) return;
+    if(freado) alvos.forEach(g=>{ if(!_gdata[g.key] && !_gerr[g.key]){ _gerr[g.key]='Não carregado — o Power BI limitou o ritmo das consultas.'; gRender(g); } });
+    if(typeof gRenderMix==='function') gRenderMix();
+  }
+  // seletor de medida dos painéis — só re-desenha (as medidas já vieram juntas)
+  function gSeletorMedida(){
+    const seg=document.getElementById('cx-gseg'); if(!seg) return;
+    seg.addEventListener('click', e=>{
+      const b=e.target.closest('button'); if(!b || b.disabled) return;
+      _gmea=b.getAttribute('data-m');
+      seg.querySelectorAll('button').forEach(x=>x.classList.toggle('on', x===b));
+      gRenderTodos();
+    });
+  }
+
+  // only = uma tabela (recarrega só ela + os KPIs dela). Sem argumento, recarrega as duas.
+  async function cxAplicar(only){
+    if(!_ready) return;
+    const list = only ? [only] : TABLES;
+    list.forEach(T=>{ const tb=document.getElementById(T.ids.rows); if(tb) tb.innerHTML=`<tr><td colspan="${T.cols.length+T.meas.filter(m=>!m.hide).length}" style="padding:20px;text-align:center;color:var(--text-3);">Carregando…</td></tr>`; });
+    const seq = ++_apSeq;
+    gMarcarCarregando();
+    try { await carregarKPIs(only); } catch(e){ console.error('[CONSIG] kpis:', e.message); }
+    if(seq!==_apSeq) return;   // já tem aplicação mais nova a caminho
+    for(const T of list){
+      try { await carregarTabela(T); renderTabela(T); }
+      catch(e){ console.error(`[CONSIG] ${T.name}:`, e.message); const tb=document.getElementById(T.ids.rows); if(tb) tb.innerHTML=`<tr><td colspan="${T.cols.length+T.meas.filter(m=>!m.hide).length}" style="padding:18px;text-align:center;color:var(--danger);">Erro: ${escH((e.message||'').substring(0,240))}</td></tr>`; }
+      if(seq!==_apSeq) return;
+    }
+    // gráficos por último: quem manda no tempo de tela são os KPIs e a tabela
+    try { await carregarGraficos(seq); } catch(e){ console.error('[CONSIG] gráficos:', e.message); }
+  }
+  // Debounce: marcar 5 caixas no dropdown eram 5 aplicações = dezenas de consultas em
+  //   segundos (= HTTP 429, que na tela vira "sem dados"). Agora vira UMA.
+  let _apSeq=0, _apT=null;
+  function cxAplicarDebounce(ms){ clearTimeout(_apT); _apT=setTimeout(()=>cxAplicar(), ms||600); }
+
+  window.cxAplicar=cxAplicar;
+
+  // ── dropdowns de filtro (genérico) ──
+  function avMakeDropdown({ label, getOptions, getSelected, setSelected, onChange }){
+    const wrap=document.createElement('div'); wrap.className='av-dd';
+    const btn=document.createElement('button'); btn.className='av-dd-btn'; btn.type='button';
+    const panel=document.createElement('div'); panel.className='av-dd-panel';
+    panel.innerHTML = `<div class="av-dd-search"><input type="text" placeholder="Buscar…"></div><div class="av-dd-list"></div><div class="av-dd-foot"><button type="button" data-act="limpar">Limpar</button><button type="button" data-act="fechar">Fechar</button></div>`;
+    wrap.appendChild(btn); wrap.appendChild(panel);
+    const list=panel.querySelector('.av-dd-list'), search=panel.querySelector('input');
+    let loaded=false, options=[];
+    function refresh(){ const n=getSelected().length; btn.classList.toggle('has',n>0); btn.innerHTML=`<span>${label}</span>${ n?`<span class="cnt">${n}</span>`:'<span style="color:var(--text-4);font-weight:500;">Todos</span>' }`; }
+    function renderList(){ const q=(search.value||'').toLowerCase(); const sel=new Set(getSelected()); const items=options.filter(o=>!q||String(o.label).toLowerCase().includes(q)); list.innerHTML=items.length?items.map(o=>`<label class="av-dd-opt"><input type="checkbox" value="${avEsc(o.value)}" ${sel.has(o.value)?'checked':''}>${o.label}</label>`).join(''):'<div style="padding:8px;color:var(--text-3);font-size:12px;">nenhum</div>'; }
+    async function ensure(){ if(loaded) return; list.innerHTML='<div style="padding:10px;color:var(--text-3);font-size:12px;">Carregando…</div>'; try{options=await getOptions();}catch(e){list.innerHTML='<div style="padding:10px;color:var(--danger);font-size:12px;">erro</div>';return;} loaded=true; renderList(); }
+    btn.addEventListener('click', async e=>{ e.stopPropagation(); const open=wrap.classList.contains('open'); document.querySelectorAll('.av-dd.open').forEach(d=>d.classList.remove('open')); if(!open){ wrap.classList.add('open'); await ensure(); search.focus(); } });
+    panel.addEventListener('click', e=>e.stopPropagation());
+    list.addEventListener('change', e=>{ if(e.target.matches('input[type=checkbox]')){ setSelected(e.target.value,e.target.checked); refresh(); onChange(); } });
+    search.addEventListener('input', renderList);
+    panel.querySelector('[data-act=limpar]').addEventListener('click', ()=>{ setSelected(null,false,true); renderList(); refresh(); onChange(); });
+    panel.querySelector('[data-act=fechar]').addEventListener('click', ()=>wrap.classList.remove('open'));
+    refresh(); return wrap;
+  }
+  document.addEventListener('click', ()=>document.querySelectorAll('.av-dd.open').forEach(d=>d.classList.remove('open')));
+  // ── UMA barra de dropdowns, no topo da página (igual aos outros submódulos) ──
+  function avMontarToolbar(){
+    const tb=document.getElementById('cx-toolbar'); if(!tb) return; tb.innerHTML='';
+    CAMPOS.map(k=>FCAMPOS[k]).forEach(d=>tb.appendChild(avMakeDropdown({ label:d.label, getOptions:()=>avCarregarValores(d), getSelected:()=>[...SEL_COMUM[d.id]], setSelected:(v,ck,clr)=>{ const s=SEL_COMUM[d.id]; if(clr){s.clear();return;} if(ck)s.add(v); else s.delete(v); }, onChange:()=>cxAplicarDebounce() })));
+    const limpar=document.createElement('button'); limpar.className='cx-btn'; limpar.type='button'; limpar.textContent='✕ Limpar filtros';
+    limpar.addEventListener('click', ()=>{ CAMPOS.forEach(k=>SEL_COMUM[k].clear()); avMontarToolbar(); cxAplicar(); });
+    tb.appendChild(limpar);
+  }
+
+  TABLES.forEach(T=>{ const si=document.getElementById(T.ids.search); if(si) si.addEventListener('input', ()=>renderTabela(T)); });
+
+  document.addEventListener('DOMContentLoaded', async ()=>{
+    TABLES.forEach(renderHeadT);
+    avMontarToolbar();
+    gMontarPaineis();
+    gSeletorMedida();
+    const banner=document.getElementById('cx-banner');
+    try {
+      await pbiConnect();
+      banner.innerHTML='⏳ Localizando o dataset de consignação…';
+      await resolveDataset();
+      banner.innerHTML='⏳ Lendo o modelo (nomes exatos de colunas e medidas)…';
+      await carregarCatalogo();
+      await validarMedidas();      // confirma que cada MEDIDA existe (isola as que faltam)
+      await validarValoresFixos();  // confirma que o VALOR de cada filtro de igualdade existe
+      TABLES.forEach(renderHeadT);   // re-render marcando colunas/medidas não encontradas
+      TABLES.forEach(renderFixos);   // cada tabela mostra os filtros fixos DELA
+      gSincronizarSeg(); gAvisoDims();   // seletor de medida e avisos dos painéis
+      _ready=true;
+      const faltas = _unresolved.concat(_measUnresolved.map(m=>m+' (medida)')).concat(_filtroUnresolved.map(m=>m+' (filtro)'));
+      const chk  = `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>`;
+      const warn = `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>`;
+      if(_globalUnresolved.length){
+        // filtro fixo NÃO aplicado (coluna não encontrada) → números podem ficar sem filtro: avisa em âmbar
+        banner.style.cssText='padding:11px 16px;border-radius:8px;font-size:13px;display:flex;align-items:center;gap:10px;background:#FFFBEB;border:1px solid #FDE68A;color:#92400E;';
+        banner.innerHTML = `${warn} ⚠ Filtro(s) fixo(s) da página NÃO aplicado(s) — coluna não encontrada no modelo: ${escH(_globalUnresolved.join(', '))}. Os números podem estar SEM esse filtro.${faltas.length?` (também faltam: ${escH(faltas.join(', '))})`:''}`;
+      } else {
+        banner.style.cssText='padding:11px 16px;border-radius:8px;font-size:13px;display:flex;align-items:center;gap:10px;background:#F0FDF4;border:1px solid #BBF7D0;color:#14532D;';
+        banner.innerHTML = faltas.length
+          ? `${chk} ✅ Conectado — filtros fixos ativos · ${faltas.length} campo(s) não encontrados no modelo: ${escH(faltas.join(', '))}`
+          : `${chk} ✅ Conectado ao Power BI · a lista de filtros fixos está na linha "Filtros fixos desta tabela"`;
+      }
+      if(DIAG){
+        banner.innerHTML = '🔎 Rodando diagnóstico de relacionamento (cada coluna sozinha)…';
+        try {
+          let html = await diagModelo(); for(const T of TABLES){ html += await diagRelacionamento(T); }
+          const wrap=document.querySelector('.cx-wrap');
+          const div=document.createElement('div'); div.innerHTML=html;
+          wrap.insertBefore(div, wrap.children[1]||null);   // logo abaixo do banner
+          banner.innerHTML = `${chk} 🔎 Diagnóstico pronto — veja as tabelas abaixo (tire um print e me mande).`;
+        } catch(e){ banner.innerHTML = '🔎 Erro no diagnóstico: '+escH(e.message||''); }
+      }
+      await cxAplicar();
+    } catch(err){
+      banner.style.cssText='padding:11px 16px;border-radius:8px;font-size:13px;display:flex;align-items:center;gap:10px;background:#FEF2F2;border:1px solid #FECACA;color:#7F1D1D;';
+      banner.innerHTML=`<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg> ${escH(err.message)}`;
+    }
+  });
+  </script>
+</body>
+</html>

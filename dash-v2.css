@@ -1,0 +1,504 @@
+/* =====================================================================
+   dash-v2.css — Skin "Claude Design" para os dashboards internos
+   (módulos e submódulos de Comercial e Financeiro).
+   Carregado DEPOIS do styles.css nas páginas de departamento.
+   Referência visual: "Faturamento Dashboard" (handoff Claude Design).
+   Estratégia: seletores prefixados com body.dept para vencer os
+   estilos inline de cada página sem alterar a estrutura/JS.
+   ===================================================================== */
+
+body.dept {
+  /* tokens da referência */
+  --dv-ink: #0A2E5C;
+  --dv-body: #33495E;
+  --dv-muted: #5B7189;
+  --dv-muted2: #7C93A8;
+  --dv-muted3: #93A7BA;
+  --dv-border: #E3EAF2;
+  --dv-border-soft: #EDF2F8;
+  --dv-border-hover: #C8DCEF;
+  --dv-page: #F4F7FB;
+  --dv-headbg: #F7FAFD;
+  --dv-zebra: #F0F5FA;
+  --dv-blue: #1272C4;
+  --dv-navy: #0A2E5C;
+  --dv-green: #2FBF71;
+  --dv-green-ink: #22794C;
+  --dv-green-bg: #EAF8F0;
+  --dv-green-bd: #CFEEDD;
+  --dv-amber: #E8A33D;
+  --dv-amber-ink: #A8541F;
+  --dv-amber-bg: #FDF3E7;
+  --dv-red-ink: #B54545;
+  --dv-red-bg: #FCEDED;
+  --dv-radius: 14px;
+  --dv-shadow: 0 1px 3px rgba(10,46,92,0.05);
+  --dv-shadow-hover: 0 8px 24px rgba(10,46,92,0.10);
+  --dv-font: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
+
+  background: var(--dv-page);
+}
+
+/* Tipografia base do conteúdo */
+body.dept,
+body.dept .area-main,
+body.dept button,
+body.dept input,
+body.dept select,
+body.dept table {
+  font-family: var(--dv-font);
+}
+body.dept .area-main h1, body.dept .area-main h2, body.dept .area-main h3,
+body.dept .area-main h4, body.dept .area-main h5 {
+  font-family: var(--dv-font);
+  color: var(--dv-ink);
+}
+/* O h1 do hero fica FORA de .area-main e caia em --font-display (Poppins),
+   brigando com o Plus Jakarta do conteudo logo abaixo. */
+body.dept .area-header-top h1 { font-family: var(--dv-font); }
+
+/* =====================================================================
+   1. CARDS — raio 14px, borda #E3EAF2, sombra suave (tudo branco)
+   ===================================================================== */
+body.dept .sr-panel,
+body.dept .sr-kpi,
+body.dept .sr-tbl-wrap,
+body.dept .ix-card,
+body.dept .kpi-card,
+body.dept .av-card,
+body.dept .av-panel,
+body.dept .av-panel2,
+body.dept .av-kpi,
+body.dept .fn-panel,
+body.dept .fn-card,
+body.dept .fn-kpi,
+body.dept .ov-card,
+body.dept .ov-kpi,
+body.dept .ng-kpi,
+body.dept .tp-card,
+body.dept .tp-tblwrap,
+body.dept .pv-panel,
+body.dept .pv-card,
+body.dept .ffc-kpi,
+body.dept .ac-card,
+body.dept .fin-tool,
+body.dept .table-wrap,
+body.dept .av-tbl-wrap,
+body.dept .fn-tbl-wrap,
+body.dept .cx-tbl-wrap,
+body.dept .fca-forecast-card,
+body.dept .modulo-card {
+  border-radius: var(--dv-radius);
+  border: 1px solid var(--dv-border);
+  box-shadow: var(--dv-shadow);
+  background: #fff;
+}
+body.dept .table-wrap { border-radius: 0 0 var(--dv-radius) var(--dv-radius); }
+body.dept .kpi-card:hover,
+body.dept .modulo-card:hover {
+  border-color: var(--dv-border-hover);
+  box-shadow: var(--dv-shadow-hover);
+}
+
+/* Títulos internos dos painéis */
+body.dept .sr-panel h4,
+body.dept .sr-tbl-header h4,
+body.dept .ix-card-head,
+body.dept .ix-ped-title,
+body.dept .fin-subhead h2 {
+  color: var(--dv-ink);
+  font-weight: 800;
+  letter-spacing: -0.2px;
+}
+body.dept .fin-subhead h2 { font-size: 18px; }
+body.dept .fin-subhead .sub { color: var(--dv-muted2); }
+
+/* =====================================================================
+   2. KPI CARDS (financeiro etc.) — sem barra lateral; ícone pastel
+   ===================================================================== */
+body.dept .kpi-card::before { display: none; }
+body.dept .kpi-icon { border-radius: 11px; }
+body.dept .kpi-card--danger .kpi-icon   { background: var(--dv-red-bg);   color: var(--dv-red-ink); }
+body.dept .kpi-card--critical .kpi-icon { background: var(--dv-amber-bg); color: var(--dv-amber-ink); }
+body.dept .kpi-card--warning .kpi-icon  { background: var(--dv-amber-bg); color: #C77E22; }
+body.dept .kpi-card--positive .kpi-icon { background: var(--dv-green-bg); color: var(--dv-green-ink); }
+body.dept .kpi-label {
+  font-size: 10.5px; font-weight: 800; letter-spacing: 0.8px;
+  text-transform: uppercase; color: var(--dv-muted2);
+}
+body.dept .kpi-value {
+  font-family: var(--dv-font);
+  font-weight: 800; color: var(--dv-ink); letter-spacing: -0.4px;
+}
+body.dept .kpi-sub { color: var(--dv-muted); }
+
+/* KPIs do Sales Report */
+body.dept .sr-kpi::before { display: none; }
+body.dept .sr-kpi-label { font-weight: 800; letter-spacing: 0.8px; color: var(--dv-muted2); }
+body.dept .sr-kpi-val { font-family: var(--dv-font); font-weight: 800; color: var(--dv-ink); letter-spacing: -0.5px; }
+
+/* KPIs das demais famílias (Análises, Funil, Oportunidades, CR etc.) */
+body.dept .av-kpi-v,
+body.dept .fn-kpi-v,
+body.dept .ov-kpi-v,
+body.dept .ng-kpi-v,
+body.dept .sr-fat-kpi .v {
+  font-family: var(--dv-font);
+  font-weight: 800;
+  color: var(--dv-ink);
+  letter-spacing: -0.4px;
+}
+body.dept .av-kpi-l,
+body.dept .fn-kpi-l,
+body.dept .ov-kpi-l,
+body.dept .ng-kpi-l,
+body.dept .sr-fat-kpi .l {
+  font-size: 10.5px;
+  font-weight: 800;
+  letter-spacing: 0.8px;
+  text-transform: uppercase;
+  color: var(--dv-muted2);
+}
+body.dept .fn-kpi-s,
+body.dept .ng-kpi-s { color: var(--dv-muted); }
+
+/* =====================================================================
+   3. TABELAS — cabeçalho claro (#F7FAFD), nunca azul-marinho
+   ===================================================================== */
+body.dept .sr-tbl thead th,
+body.dept .fin-table thead th,
+body.dept table.sr-compact thead th,
+body.dept .av-tbl thead th,
+body.dept .fn-tbl thead th,
+body.dept .cx-tbl thead th,
+body.dept .area-main table thead th {
+  background: var(--dv-headbg);
+  color: var(--dv-muted2);
+  font-size: 10.5px;
+  font-weight: 800;
+  letter-spacing: 0.8px;
+  text-transform: uppercase;
+  border-top: 1px solid var(--dv-border-soft);
+  border-bottom: 1px solid var(--dv-border-soft);
+}
+body.dept .sr-tbl tbody td,
+body.dept .fin-table tbody td,
+body.dept .area-main table tbody td {
+  border-bottom: 1px solid var(--dv-zebra);
+  color: var(--dv-body);
+}
+body.dept .sr-tbl tbody tr:hover td,
+body.dept .fin-table tbody tr:hover,
+body.dept .fin-table tbody tr:hover td {
+  background: var(--dv-headbg);
+}
+/* linha TOTAL */
+body.dept .sr-tbl tbody tr:last-child td,
+body.dept .sr-fl-total td {
+  background: var(--dv-headbg) !important;
+  font-weight: 800;
+  color: var(--dv-ink);
+  border-top: 1px solid var(--dv-border);
+}
+body.dept table.sr-compact tbody tr:last-child td { background: #fff !important; font-weight: 400; }
+
+/* Barrinhas de % nas tabelas */
+body.dept .sr-pct-track { height: 5px; border-radius: 999px; background: var(--dv-border-soft); }
+body.dept .sr-pct-fill.ok   { background: var(--dv-green); }
+body.dept .sr-pct-fill.warn { background: var(--dv-amber); }
+body.dept .sr-pct-fill.bad  { background: #E27D7D; }
+
+/* =====================================================================
+   4. BADGES / CHIPS — sempre pastel
+   ===================================================================== */
+body.dept .sr-chip,
+body.dept .badge,
+body.dept .dias-badge {
+  border-radius: 999px;
+  font-weight: 800;
+  font-size: 11px;
+  padding: 3px 10px;
+}
+body.dept .sr-chip.up { background: var(--dv-green-bg); color: var(--dv-green-ink); }
+body.dept .sr-chip.dn { background: var(--dv-red-bg); color: var(--dv-red-ink); }
+body.dept .sr-kpi-badge { border-radius: 999px; font-weight: 800; }
+body.dept .sr-kpi-badge.up { background: var(--dv-green-bg); color: var(--dv-green-ink); }
+body.dept .sr-kpi-badge.dn { background: var(--dv-red-bg); color: var(--dv-red-ink); }
+body.dept .badge--critico  { background: var(--dv-red-bg);   color: var(--dv-red-ink); }
+body.dept .badge--grave    { background: var(--dv-amber-bg); color: var(--dv-amber-ink); }
+body.dept .badge--moderado { background: var(--dv-amber-bg); color: #C77E22; }
+body.dept .badge--recente  { background: #EAF2FA; color: var(--dv-blue); }
+body.dept .badge--avencer  { background: var(--dv-green-bg); color: var(--dv-green-ink); }
+body.dept .dias-badge      { background: var(--dv-red-bg);   color: var(--dv-red-ink); }
+body.dept .dias-badge--ok  { background: var(--dv-green-bg); color: var(--dv-green-ink); }
+
+/* =====================================================================
+   5. BOTÕES DE FILTRO / AÇÕES
+   ===================================================================== */
+body.dept .sr-btn,
+body.dept .av-btn,
+body.dept .fn-btn,
+body.dept .pv-btn,
+body.dept .ac-btn,
+body.dept .pill,
+body.dept .action-btn {
+  border-radius: 9px;
+  border: 1px solid var(--dv-border);
+  background: #fff;
+  color: var(--dv-muted);
+  font-weight: 600;
+  font-family: var(--dv-font);
+}
+body.dept .sr-btn:hover,
+body.dept .av-btn:hover,
+body.dept .fn-btn:hover,
+body.dept .pv-btn:hover,
+body.dept .pill:hover {
+  border-color: var(--dv-blue);
+  color: var(--dv-ink);
+}
+body.dept .sr-btn.active,
+body.dept .av-btn.active,
+body.dept .fn-btn.active,
+body.dept .pv-btn.active,
+body.dept .ac-btn.active,
+body.dept .pill.active {
+  background: var(--dv-navy);
+  border-color: var(--dv-navy);
+  color: #fff;
+  font-weight: 700;
+}
+body.dept .sr-btn.active-green,
+body.dept .av-btn.active-green {
+  background: #2E9E63;
+  border-color: #2E9E63;
+  color: #fff;
+  font-weight: 700;
+}
+/* pills de severidade mantêm cor própria quando ativos, em tom sólido suave */
+body.dept .pill--critico.active  { background: #C24545; border-color: #C24545; }
+body.dept .pill--grave.active    { background: #C77E22; border-color: #C77E22; }
+body.dept .pill--moderado.active { background: var(--dv-amber); border-color: var(--dv-amber); }
+body.dept .pill--recente.active  { background: var(--dv-blue); border-color: var(--dv-blue); }
+body.dept .pill--avencer.active  { background: #2E9E63; border-color: #2E9E63; }
+
+/* botão de sucesso (ex.: Excel) — verde pastel como na referência */
+body.dept .action-btn--success,
+body.dept .sr-btn.excel {
+  background: var(--dv-green-bg);
+  border-color: var(--dv-green-bd);
+  color: var(--dv-green-ink);
+  font-weight: 700;
+}
+body.dept .action-btn--success:hover { border-color: #2E9E63; }
+
+body.dept .sr-label { color: var(--dv-muted2); font-weight: 800; letter-spacing: 0.8px; }
+body.dept .search-input { border-radius: 10px; background: #F0F4F9; border-color: var(--dv-border); }
+body.dept .search-input:focus { background: #fff; }
+
+/* dropdowns de filtro (av-dd) */
+body.dept .av-dd-btn {
+  border-radius: 10px; border: 1px solid var(--dv-border);
+  background: #fff; color: var(--dv-ink); font-weight: 700;
+  font-family: var(--dv-font);
+}
+body.dept .av-dd-btn:hover { border-color: var(--dv-blue); }
+body.dept .av-dd-panel { border-radius: 12px; border: 1px solid var(--dv-border); box-shadow: var(--dv-shadow-hover); }
+
+/* =====================================================================
+   6. HERO MSBIO (Sales Report) — card gradiente navy
+   ===================================================================== */
+body.dept .ix-msbio {
+  background: linear-gradient(150deg, #071E3D, #0E4A8A);
+  border: none;
+  color: #fff;
+  position: relative;
+  overflow: hidden;
+}
+body.dept .ix-msbio::after {
+  content: ""; position: absolute; inset: 0; pointer-events: none;
+  background-image: radial-gradient(circle at 90% 10%, rgba(47,191,113,0.16), transparent 45%);
+}
+body.dept .ix-msbio > * { position: relative; z-index: 1; }
+body.dept .ix-msbio .ix-card-head { color: #A8C3DD; font-size: 11.5px; font-weight: 800; letter-spacing: 1px; text-transform: uppercase; }
+body.dept .ix-msbio .ix-card-head svg { color: #4FD98D; }
+body.dept .ix-msbio .ix-period { background: rgba(255,255,255,0.10); color: #DCEAF7; }
+body.dept .ix-msbio .ix-block { border-top-color: rgba(255,255,255,0.10); }
+body.dept .ix-msbio .ix-block::before { background: #2FBF71; }
+body.dept .ix-msbio .ix-block.warn::before { background: var(--dv-amber); }
+body.dept .ix-msbio .ix-block-title { color: #A8C3DD; font-weight: 800; }
+body.dept .ix-msbio .ix-fat { color: #fff; font-family: var(--dv-font); font-size: 30px; letter-spacing: -0.8px; }
+body.dept .ix-msbio .ix-fatpct { color: #4FD98D; font-family: var(--dv-font); font-weight: 800; }
+body.dept .ix-msbio .ix-k { color: #8FAECB; }
+body.dept .ix-msbio .ix-v { color: #fff; }
+body.dept .ix-msbio .ix-v.ix-ok { color: #4FD98D; }
+body.dept .ix-msbio .ix-v.ix-neg { color: #FFB4A8; }
+body.dept .ix-msbio .ix-bar-track {
+  background: rgba(255,255,255,0.14);
+  border: none; height: 8px; border-radius: 999px;
+}
+body.dept .ix-msbio .ix-bar-fill { background: linear-gradient(90deg, #2FBF71, #4FD98D); border-radius: 999px; }
+body.dept .ix-msbio .ix-bar-fill.ix-warn { background: linear-gradient(90deg, #E8A33D, #F2C063); }
+body.dept .ix-msbio .ix-bar-mark { background: rgba(255,255,255,0.5); }
+body.dept .ix-msbio .ix-bar-legend { color: #8FAECB; }
+body.dept .ix-msbio .ix-bar-legend span { color: #8FAECB !important; }
+
+/* Barra do herói MSBio (novo markup inline): estados do JS vencem o inline */
+body.dept #ix-msbio-bar.ix-warn { background: linear-gradient(90deg, #E8A33D, #F2C063) !important; }
+body.dept #ix-msbio-bar.ix-ok  { background: linear-gradient(90deg, #2FBF71, #4FD98D) !important; }
+
+/* Cards Bio/MSB */
+body.dept .ix-card-head.ix-head-blue { color: var(--dv-ink); font-size: 13.5px; }
+body.dept .ix-m-val { font-family: var(--dv-font); font-weight: 800; color: var(--dv-ink); }
+body.dept .ix-m-val2.ix-ok { color: var(--dv-green-ink); }
+body.dept .ix-m-val2.ix-neg { color: var(--dv-red-ink); }
+body.dept .ix-m-val2.ix-warn { color: var(--dv-amber-ink); }
+body.dept .ix-bar-track { border-radius: 999px; background: var(--dv-border-soft); border: none; height: 8px; }
+body.dept .ix-bar-fill { border-radius: 999px; background: linear-gradient(90deg, #2FBF71, #4FD98D); }
+body.dept .ix-bar-fill.ix-warn { background: var(--dv-amber); }
+body.dept .ix-block::before { border-radius: 3px; }
+
+/* =====================================================================
+   7. MODULO CARDS (sub-módulos)
+   ===================================================================== */
+body.dept .mc-name { color: var(--dv-ink); font-weight: 800; font-family: var(--dv-font); }
+body.dept .mc-desc { color: var(--dv-muted); }
+body.dept .mc-open { color: var(--dv-blue); font-weight: 700; }
+
+/* =====================================================================
+   8. MOBILE (<768px) — filtros deslizáveis, cards compactos
+   ===================================================================== */
+@media (max-width: 767.98px) {
+  /* filtros em linha única com scroll horizontal */
+  body.dept .sr-row {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+    padding-bottom: 2px;
+  }
+  body.dept .sr-row::-webkit-scrollbar { display: none; }
+  body.dept .sr-row .sr-btn { flex-shrink: 0; white-space: nowrap; }
+  body.dept .sr-label { flex-shrink: 0; }
+
+  body.dept .av-toolbar {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+  }
+  body.dept .av-toolbar::-webkit-scrollbar { display: none; }
+  body.dept .av-toolbar > * { flex-shrink: 0; }
+
+  /* grids de KPI empilham */
+  body.dept .sr-kpi-row { grid-template-columns: 1fr 1fr !important; }
+  body.dept .ix-grid { grid-template-columns: 1fr !important; }
+  body.dept .ix-metrics { grid-template-columns: repeat(3, 1fr) !important; }
+  body.dept .ix-ped-grid { grid-template-columns: 1fr !important; }
+  body.dept .sr-daily-grid { grid-template-columns: 1fr !important; }
+
+  /* números um pouco menores */
+  body.dept .ix-msbio .ix-fat { font-size: 26px; }
+  body.dept .kpi-value { font-size: 19px; }
+  body.dept .sr-kpi-val { font-size: 21px; }
+
+  /* painéis com respiro menor */
+  body.dept .sr-panel { padding: 16px; }
+  body.dept .ix-card { padding: 16px; }
+
+  /* tabelas: rolagem horizontal suave (nav-sidebar.js já ativa o wrap) */
+  body.dept .sr-scroll,
+  body.dept .table-wrap,
+  body.dept .sr-tbl-wrap { -webkit-overflow-scrolling: touch; }
+}
+
+/* Entre 768–1100px os grids de 4 KPIs viram 2 colunas (já no inline). */
+
+/* =====================================================================
+   9. HOME DO DEPARTAMENTO — Claude Design (hero com ícone + pills,
+      módulos alinhados à esquerda com cards compactos)
+   ===================================================================== */
+@media (min-width: 768px) {
+  /* conteúdo alinhado à esquerda (sem centralização) — igual ao protótipo */
+  body.dept.dshell.dept-home .area-header .container,
+  body.dept.dshell.dept-home .area-body .container {
+    max-width: none;
+    margin: 0;
+  }
+
+  /* hero: ícone do departamento visível também no desktop */
+  body.dept.dshell .area-header-top { align-items: center; gap: 14px; }
+  body.dept.dshell .area-hero-ic {
+    display: grid; place-items: center; width: 48px; height: 48px; flex-shrink: 0;
+    border-radius: 13px; background: rgba(255,255,255,0.10);
+    border: 1px solid rgba(255,255,255,0.16); color: #7FE0A8;
+  }
+  body.dept.dshell .area-hero-ic svg { width: 22px; height: 22px; }
+  body.dept.dshell .area-header-top > div:not(.area-hero-ic):not(.dv-hero-pills) { flex: 1; min-width: 0; }
+}
+
+/* pills do hero ("N módulos" / "N agentes IA") — injetadas pelo nav-sidebar.js */
+body.dept .dv-hero-pills { display: flex; align-items: center; gap: 8px; flex-shrink: 0; }
+body.dept .dv-hero-pill {
+  display: inline-flex; align-items: center; gap: 7px;
+  padding: 7px 13px; border-radius: 999px;
+  background: rgba(255,255,255,0.10); border: 1px solid rgba(255,255,255,0.16);
+  font-size: 12px; font-weight: 700; color: #DCEAF7; white-space: nowrap;
+}
+body.dept .dv-hero-pill svg { width: 14px; height: 14px; color: #A8C3DD; }
+body.dept .dv-hero-pill .dv-dot {
+  width: 7px; height: 7px; border-radius: 999px; background: #2FBF71;
+  box-shadow: 0 0 8px rgba(47,191,113,0.8);
+}
+@media (max-width: 767.98px) { body.dept .dv-hero-pills { display: none; } }
+
+/* cabeçalho da seção Módulos */
+body.dept .fin-subhead h2 { font-size: 19px; font-weight: 800; letter-spacing: -0.4px; }
+body.dept .fin-subhead .sub { font-size: 12.5px; color: var(--dv-muted2); }
+
+/* cards de módulo — visual do protótipo (desktop/tablet) */
+@media (min-width: 768px) {
+  body.dept.dshell .modulos-grid {
+    grid-template-columns: repeat(auto-fill, minmax(270px, 1fr)) !important;
+    gap: 14px !important;
+  }
+  body.dept.dshell .modulo-card {
+    display: flex; flex-direction: column; gap: 10px;
+    min-height: 0; padding: 18px;
+  }
+  body.dept.dshell .modulo-card .mc-top {
+    display: flex; align-items: flex-start; justify-content: space-between; margin: 0;
+  }
+  body.dept.dshell .modulo-card .mc-icon {
+    width: 44px; height: 44px; border-radius: 12px;
+    display: grid; place-items: center;
+  }
+  body.dept.dshell .modulo-card .mc-icon svg { width: 20px; height: 20px; }
+  body.dept.dshell .modulo-card .mc-name { font-size: 15px; font-weight: 800; color: var(--dv-ink); }
+  body.dept.dshell .modulo-card .mc-desc { font-size: 12.5px; color: var(--dv-muted); line-height: 1.5; margin-top: -4px; flex: 1; }
+  body.dept.dshell .modulo-card .mc-open {
+    margin-top: 2px; padding-top: 12px; border-top: 1px solid var(--dv-border-soft);
+    font-size: 12.5px; font-weight: 700; color: var(--dv-blue);
+    display: inline-flex; align-items: center; gap: 6px;
+  }
+  body.dept.dshell .modulo-card .mc-open svg { width: 14px; height: 14px; }
+}
+/* tons pastel dos ícones (sem inverter no hover) */
+body.dept .modulo-card[data-tone="receber"] .mc-icon,
+body.dept .modulo-card:hover[data-tone="receber"] .mc-icon { background: var(--dv-green-bg); color: #2E9E63; }
+body.dept .modulo-card[data-tone="dre"] .mc-icon,
+body.dept .modulo-card:hover[data-tone="dre"] .mc-icon { background: var(--dv-amber-bg); color: #C77E22; }
+body.dept .modulo-card[data-tone="pagar"] .mc-icon,
+body.dept .modulo-card:hover[data-tone="pagar"] .mc-icon { background: var(--dv-red-bg); color: #C24545; }
+body.dept .modulo-card[data-tone="inadim"] .mc-icon,
+body.dept .modulo-card:hover[data-tone="inadim"] .mc-icon { background: #EAF2FA; color: var(--dv-blue); }
+body.dept .modulo-card[data-tone="conciliacao"] .mc-icon,
+body.dept .modulo-card:hover[data-tone="conciliacao"] .mc-icon { background: #EAF2FA; color: var(--dv-blue); }
+body.dept .modulo-card[data-tone="cobranca"] .mc-icon,
+body.dept .modulo-card:hover[data-tone="cobranca"] .mc-icon { background: #F3ECFB; color: #7A4BC4; }
+body.dept .modulo-card[data-tone="nf"] .mc-icon,
+body.dept .modulo-card:hover[data-tone="nf"] .mc-icon { background: var(--dv-green-bg); color: #2E9E63; }
+/* layout Claude Design: cards de módulo sem bloco de estatísticas */
+body.dept .modulo-card .mc-stats { display: none !important; }
+/* badge do card (POWER BI / CRM) */
+body.dept .modulo-card .mc-tag { display: none !important; }

@@ -1,0 +1,476 @@
+﻿<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Gestão de Estoque · Estoque · Biomedical</title>
+  <link rel="stylesheet" href="../styles.css?v=14">
+  <script src="https://unpkg.com/@azure/msal-browser@2.38.3/lib/msal-browser.min.js"></script>
+<script src="../pbi-throttle.js?v=3"></script>
+<script src="../pbi-modelo.js?v=2"></script>
+  <!-- Layout v3 (Claude Design · animado): fonte + camada visual + motor de animações -->
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300..800&family=Manrope:wght@400..800&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../portal-v3.css?v=2">
+  <script src="../portal-motion.js?v=3" defer></script>
+  <!-- Tema claro/escuro (menu do avatar): marca o <html> antes de pintar + camada escura -->
+  <script>try{if(localStorage.getItem('bm-tema')==='escuro')document.documentElement.setAttribute('data-tema','escuro')}catch(e){}</script>
+  <link rel="stylesheet" href="../portal-tema.css?v=1">
+  <script src="../portal-tema.js?v=1" defer></script>
+  <!-- Celular (varredura 15/10/26): só vale em tela < 768px; no computador não se aplica -->
+  <link rel="stylesheet" href="../portal-mobile.css?v=1" media="(max-width: 767.98px)">
+  <script src="../portal-mobile.js?v=1" defer></script>
+</head>
+<body class="dept">
+  <header class="site-header">
+    <div class="container">
+      <a href="../index.html" class="brand" aria-label="Biomedical — Portal Corporativo">
+        <img class="brand-logo" src="/icons/icon-192.png" alt="Biomedical" onerror="this.dataset.failed='true'">
+        <span class="brand-fallback">Biomedical</span>
+      </a>
+      <nav class="header-nav">
+        <a href="../index.html">Início</a>
+        <a href="../index.html#areas">Áreas</a>
+        <a href="../index.html#sistemas">Sistemas</a>
+        <a href="../index.html#avisos">Avisos</a>
+        <a href="../index.html#contato">Contato</a>
+      </nav>
+    </div>
+  </header>
+  <!-- cabeçalho movido para .fx-head (abas de submódulo, Claude Design) -->
+  <div class="area-body">
+    <div class="container">
+      <div class="area-grid">
+        <aside class="area-sidebar">
+          <div class="sb-card">
+            <div class="sb-head">
+              <span class="sb-ic"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="2" width="20" height="8" rx="2"/><rect x="2" y="14" width="20" height="8" rx="2"/><line x1="6" y1="6" x2="6.01" y2="6"/><line x1="6" y1="18" x2="6.01" y2="18"/></svg></span>
+              <div><div class="sb-tt">Estoque</div><div class="sb-st">Departamento</div></div>
+            </div>
+            <nav></nav>
+          </div>
+          <a href="../index.html" class="sb-back"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></svg>Voltar ao Portal</a>
+        </aside>
+        <div class="area-main">
+          <!-- ═══ Cabeçalho + abas de submódulo (Claude Design) ═══ -->
+          <style>
+            .fx-head{display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap;padding:22px 0 4px;}
+            .fx-bc{display:flex;align-items:center;gap:6px;font-size:12px;color:#7C93A8;}
+            .fx-title{margin:4px 0 0;font-size:23px;font-weight:800;letter-spacing:-0.5px;color:#0A2E5C;}
+            .fx-head-right{display:flex;align-items:center;gap:12px;flex-wrap:wrap;}
+            .fx-tabs{display:flex;align-items:center;background:#FFFFFF;border:1px solid #E3EAF2;border-radius:11px;padding:3px;flex-wrap:wrap;}
+            .fx-tabs a,.fx-tabs span{padding:8px 14px;border-radius:8px;font-size:12.5px;font-weight:600;color:#5B7189;text-decoration:none;white-space:nowrap;}
+            .fx-tabs a:hover{color:#0A2E5C;}
+            .fx-tabs .active{background:#0A2E5C;font-weight:700;color:#fff;}
+            .fx-filters{display:flex;align-items:center;gap:10px;flex-wrap:wrap;padding:12px 14px;background:#fff;border:1px solid #E3EAF2;border-radius:12px;}
+            .fx-fdiv{width:1px;height:24px;background:#E3EAF2;}
+            .fx-fbtn{display:inline-flex;align-items:center;gap:8px;padding:8px 12px;border-radius:9px;border:1px solid #E3EAF2;background:#fff;font-size:12.5px;font-weight:600;color:#33495E;cursor:pointer;font-family:inherit;white-space:nowrap;}
+            .fx-fbtn:hover{border-color:#1272C4;}
+            .fx-fbtn .fx-fk{font-weight:700;color:#93A7BA;}
+            .fx-fbtn svg{flex-shrink:0;}
+            .fx-flimpar{margin-left:auto;display:inline-flex;align-items:center;gap:6px;padding:8px 12px;border-radius:9px;border:none;background:transparent;font-size:12.5px;font-weight:600;color:#5B7189;cursor:pointer;font-family:inherit;white-space:nowrap;}
+            .fx-flimpar:hover{color:#B54545;}
+            .fxdd{position:relative;display:inline-block;}
+            .fxdd-panel{position:absolute;z-index:50;top:calc(100% + 6px);left:0;display:none;flex-direction:column;background:#fff;border:1px solid #E3EAF2;border-radius:12px;box-shadow:0 10px 30px rgba(10,46,92,0.14);padding:12px;min-width:210px;}
+            .fxdd.open .fxdd-panel{display:flex;}
+            .fxdd-sec{font-size:10.5px;font-weight:800;letter-spacing:0.8px;text-transform:uppercase;color:#93A7BA;margin:2px 2px 8px;}
+            .fxdd-sec.mt{margin-top:12px;}
+            .fxdd-hint{font-size:11px;color:#93A7BA;margin-top:10px;}
+            /* esconde a faixa de cards de sub-modulos (estatica OU injetada pelo nav-sidebar.js) — navegacao agora pelas abas */
+            .area-main section:has(.modulo-card){display:none !important;}
+            /* periodo largo/horizontal p/ dropdowns com botoes de mes */
+            #fx-periodo .fxdd-panel{width:720px;max-width:calc(100vw - 48px);}
+            @media(max-width:1100px){#fx-periodo .fxdd-panel{width:560px;}}
+            #fx-periodo .fxdd-panel .sr-row,#fx-periodo .fxdd-panel .av-row,#fx-periodo .fxdd-panel .pv-row,#fx-periodo .fxdd-panel .fn-row-f{max-width:none !important;gap:6px !important;row-gap:8px !important;}
+            #fx-periodo .fxdd-panel .sr-btn,#fx-periodo .fxdd-panel .av-btn,#fx-periodo .fxdd-panel .pv-btn{padding:5px 9px;}
+            #fx-periodo .fxdd-panel .sr-divider:first-of-type,#fx-periodo .fxdd-panel .av-divider:first-of-type,#fx-periodo .fxdd-panel .pv-divider:first-of-type{flex-basis:100%;width:100%;height:0 !important;border:0 !important;background:transparent !important;margin:2px 0 0 !important;}
+            @media(max-width:767.98px){
+              .fx-head{align-items:flex-start;padding-top:14px;}
+              .fx-title{font-size:17px;}
+              .fx-head-right{width:100%;}
+              .fx-tabs{width:100%;flex-wrap:nowrap;overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none;background:#F0F4F9;border:none;}
+              .fx-tabs::-webkit-scrollbar{display:none;}
+              .fx-tabs a,.fx-tabs span{flex:0 0 auto;}
+              .fx-filters{flex-wrap:nowrap;overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none;}
+              .fx-filters::-webkit-scrollbar{display:none;}
+              .fx-filters>*{flex-shrink:0;}
+              .fx-flimpar{margin-left:8px;}
+            }
+          </style>
+
+          <div class="fx-head">
+            <div>
+              <div class="fx-bc"><span>Estoque</span><span>›</span><span>Gestão de Estoque</span></div>
+              <h1 class="fx-title">Visão Geral</h1>
+            </div>
+            <div class="fx-head-right">
+              <div class="fx-tabs">
+                <span class="active">Visão Geral</span>
+                <a href="estoque-saldo.html">Saldo de Estoque</a>
+                <a href="estoque-ruptura.html">Ruptura de Estoque</a>
+                <a href="estoque-validade-curta.html">Validade Curta</a>
+                <a href="estoque-movimentacoes.html">Movimentações</a>
+              </div>
+            </div>
+          </div>
+          <script>
+          /* barra de filtros fx — dropdowns compactos (Claude Design) */
+          (function(){
+            window.fxTogglePanel = function(btn){
+              var dd = btn.closest('.fxdd'); if(!dd) return;
+              var open = dd.classList.contains('open');
+              document.querySelectorAll('.fxdd.open').forEach(function(d){ d.classList.remove('open'); });
+              if(!open) dd.classList.add('open');
+            };
+            function txt(id,v){ var el=document.getElementById(id); if(el) el.textContent=v; }
+            window.fxSyncLabels = function(){
+              var per = document.getElementById('fx-periodo');
+              if(per){
+                var mesBtn = per.querySelector('.fxdd-panel button.active');
+                var anoBtns = per.querySelectorAll('.fxdd-panel button.active-green');
+                var ano = anoBtns.length===1 ? anoBtns[0].textContent.trim() : (anoBtns.length>1 ? anoBtns.length+' anos' : '');
+                var mes = mesBtn ? mesBtn.textContent.trim() : '';
+                txt('fx-periodo-lbl', ([ano, (mes && !/^todos$/i.test(mes) ? mes : '')].filter(Boolean).join(' · ')) || 'Todos');
+              }
+              [['fx-empresa','fx-empresa-lbl'],['fx-tipocli','fx-tipocli-lbl']].forEach(function(p){
+                var dd=document.getElementById(p[0]); if(!dd) return;
+                var b=dd.querySelector('.fxdd-panel button.active,.fxdd-panel button.active-green');
+                txt(p[1], b ? b.textContent.trim() : 'Todos');
+              });
+            };
+            window.fxLimpar = function(){
+              document.querySelectorAll('.fx-filters [data-fxdefault]').forEach(function(b){ b.click(); });
+              setTimeout(window.fxSyncLabels, 0);
+            };
+            document.addEventListener('DOMContentLoaded', function(){
+              document.querySelectorAll('.fx-filters .fxdd-panel').forEach(function(p){
+                p.addEventListener('click', function(e){ e.stopPropagation(); setTimeout(window.fxSyncLabels, 0); });
+              });
+              document.addEventListener('click', function(e){ if(e.target.closest && e.target.closest('.fxdd')) return; document.querySelectorAll('.fxdd.open').forEach(function(d){ d.classList.remove('open'); }); });
+              window.fxSyncLabels();
+            });
+          })();
+          </script>
+
+          <section style="padding:8px 0 44px;">
+            <div class="container">
+              <style>
+                .ov-wrap{display:flex;flex-direction:column;gap:16px;}
+                .ov-intro{color:var(--text-3);font-size:13px;max-width:640px;margin:0;}
+                .ov-card{background:#fff;border:1px solid var(--border);border-radius:var(--radius);overflow:hidden;}
+                .ov-head{display:flex;align-items:center;gap:12px;padding:16px 18px;border-bottom:1px solid var(--border);}
+                .ov-ic{width:38px;height:38px;border-radius:10px;display:flex;align-items:center;justify-content:center;flex:0 0 auto;}
+                .ov-ic.saldo{background:#FEF3C7;color:#b45309;}
+                .ov-ic.rup{background:#FEE2E2;color:#b91c1c;}
+                .ov-ic.val{background:#FCE7F3;color:#be185d;}
+                .ov-head h3{margin:0;font-size:15px;font-weight:800;color:var(--bm-blue-900);}
+                .ov-head .ov-sub{font-size:11.5px;color:var(--text-3);margin-top:2px;}
+                .ov-open{margin-left:auto;font-size:12.5px;font-weight:700;color:var(--bm-blue-700);text-decoration:none;white-space:nowrap;display:inline-flex;align-items:center;gap:5px;}
+                .ov-open:hover{color:var(--bm-blue-900);}
+                .ov-body{padding:16px 18px;display:grid;grid-template-columns:1.15fr 1fr;gap:18px;}
+                @media(max-width:900px){.ov-body{grid-template-columns:1fr;}}
+                .ov-kpis{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;align-content:start;}
+                .ov-kpi{border:1px solid var(--border);border-radius:10px;padding:11px 13px;position:relative;overflow:hidden;}
+                .ov-kpi::before{content:'';position:absolute;left:0;top:0;bottom:0;width:3px;background:var(--bm-blue-600);}
+                .ov-kpi.g::before{background:var(--bm-green-600);} .ov-kpi.w::before{background:#b45309;}
+                .ov-kpi.d::before{background:var(--danger,#b91c1c);} .ov-kpi.e::before{background:#0891b2;}
+                .ov-kpi-l{font-size:9.5px;font-weight:700;text-transform:uppercase;letter-spacing:.04em;color:var(--text-3);margin-bottom:5px;}
+                .ov-kpi-v{font-family:var(--font-display);font-size:18px;font-weight:800;color:var(--bm-blue-900);line-height:1;}
+                .ov-chart-wrap{position:relative;height:210px;min-width:0;}
+                .ov-chart-tt{font-size:11.5px;font-weight:700;color:var(--text-2);margin-bottom:8px;}
+                .ov-venc{padding:4px 18px 16px;border-top:1px solid var(--border);margin-top:4px;}
+                .ov-alert{display:flex;gap:8px;flex-wrap:wrap;padding:0 18px 16px;}
+                .ov-pill{display:inline-flex;align-items:center;gap:6px;padding:6px 12px;border-radius:999px;font-size:12px;font-weight:700;}
+                .ov-pill.warn{background:#FEF3C7;color:#92400E;border:1px solid #FDE68A;}
+                .ov-pill.danger{background:#FEE2E2;color:#991B1B;border:1px solid #FECACA;}
+                .ov-pill.soon{background:#FFEDD5;color:#9A3412;border:1px solid #FED7AA;}
+                .ov-pill.muted{background:var(--bm-blue-50);color:var(--text-3);border:1px solid var(--border);}
+                .ov-na{color:var(--text-4);font-style:italic;font-size:12px;padding:8px 0;}
+              </style>
+
+              <div class="ov-wrap">
+
+                <div id="ov-banner" style="padding:11px 16px;border-radius:8px;font-size:13px;display:flex;align-items:center;gap:10px;background:#EFF6FF;border:1px solid #BFDBFE;color:#1E40AF;">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+                  Conectando ao Power BI…
+                </div>
+
+                <p class="ov-intro">Resumo consolidado dos relatórios de estoque. Abra qualquer um pelas abas acima ou pelos atalhos de cada cartão.</p>
+
+                <!-- ── SALDO DE ESTOQUE ── -->
+                <div class="ov-card">
+                  <div class="ov-head">
+                    <span class="ov-ic saldo"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><polyline points="3.27 6.96 12 12.01 20.73 6.96"/><line x1="12" y1="22.08" x2="12" y2="12"/></svg></span>
+                    <div><h3>Saldo de Estoque</h3><div class="ov-sub">Posição física, disponível, reservada e em ordens</div></div>
+                    <a class="ov-open" href="estoque-saldo.html">Abrir relatório <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg></a>
+                  </div>
+                  <div class="ov-body">
+                    <div class="ov-kpis">
+                      <div class="ov-kpi"><div class="ov-kpi-l">Qtde Física</div><div class="ov-kpi-v" id="ov-s-fis">—</div></div>
+                      <div class="ov-kpi g"><div class="ov-kpi-l">Qtde Disponível</div><div class="ov-kpi-v" id="ov-s-disp">—</div></div>
+                      <div class="ov-kpi w"><div class="ov-kpi-l">Qtde Reservada</div><div class="ov-kpi-v" id="ov-s-res">—</div></div>
+                      <div class="ov-kpi e"><div class="ov-kpi-l">Em Ordem Entrada</div><div class="ov-kpi-v" id="ov-s-ent">—</div></div>
+                      <div class="ov-kpi e"><div class="ov-kpi-l">Em Ordem Saída</div><div class="ov-kpi-v" id="ov-s-sai">—</div></div>
+                      <div class="ov-kpi d"><div class="ov-kpi-l">Famílias</div><div class="ov-kpi-v" id="ov-s-fam">—</div></div>
+                    </div>
+                    <div><div class="ov-chart-tt">Top 6 famílias por Qtde Física</div><div class="ov-chart-wrap"><canvas id="ov-ch-saldo"></canvas></div></div>
+                  </div>
+                  <div class="ov-alert" id="ov-s-alert"></div>
+                </div>
+
+                <!-- ── RUPTURA DE ESTOQUE ── (data-bm-modulo: o nav-sidebar.js tira o cartão de quem não abre a Ruptura) -->
+                <div class="ov-card" data-bm-modulo="estoque-ruptura.html">
+                  <div class="ov-head">
+                    <span class="ov-ic rup"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg></span>
+                    <div><h3>Ruptura de Estoque</h3><div class="ov-sub">Itens em ruptura e valor estimado de perda de venda</div></div>
+                    <a class="ov-open" href="estoque-ruptura.html">Abrir relatório <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg></a>
+                  </div>
+                  <div class="ov-body">
+                    <div class="ov-kpis">
+                      <div class="ov-kpi d"><div class="ov-kpi-l">Valor de Ruptura</div><div class="ov-kpi-v" id="ov-r-val">—</div></div>
+                      <div class="ov-kpi w"><div class="ov-kpi-l">Itens em Ruptura</div><div class="ov-kpi-v" id="ov-r-itens">—</div></div>
+                      <div class="ov-kpi"><div class="ov-kpi-l">Qtde em Ruptura</div><div class="ov-kpi-v" id="ov-r-qrup">—</div></div>
+                      <div class="ov-kpi g"><div class="ov-kpi-l">Qtde Disponível</div><div class="ov-kpi-v" id="ov-r-qdisp">—</div></div>
+                    </div>
+                    <div><div class="ov-chart-tt">Top 6 itens por valor de ruptura</div><div class="ov-chart-wrap"><canvas id="ov-ch-rup"></canvas></div></div>
+                  </div>
+                </div>
+
+                <!-- ── PRODUTOS COM VALIDADE CURTA ── -->
+                <div class="ov-card">
+                  <div class="ov-head">
+                    <span class="ov-ic val"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg></span>
+                    <div><h3>Produtos com Validade Curta</h3><div class="ov-sub">Movimentações de lotes próximos do vencimento · risco de perda</div></div>
+                    <a class="ov-open" href="estoque-validade-curta.html">Abrir relatório <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg></a>
+                  </div>
+                  <div class="ov-body">
+                    <div class="ov-kpis">
+                      <div class="ov-kpi w"><div class="ov-kpi-l">Valor Total (ajustado)</div><div class="ov-kpi-v" id="ov-v-val">—</div></div>
+                      <div class="ov-kpi"><div class="ov-kpi-l">Quantidade</div><div class="ov-kpi-v" id="ov-v-qtd">—</div></div>
+                      <div class="ov-kpi d"><div class="ov-kpi-l">Nº de Produtos</div><div class="ov-kpi-v" id="ov-v-prod">—</div></div>
+                      <div class="ov-kpi g"><div class="ov-kpi-l">Nº de Faturas</div><div class="ov-kpi-v" id="ov-v-fat">—</div></div>
+                    </div>
+                    <div><div class="ov-chart-tt">Top 6 estratégias por valor (ajustado)</div><div class="ov-chart-wrap"><canvas id="ov-ch-val"></canvas></div></div>
+                  </div>
+                  <div class="ov-venc">
+                    <div class="ov-chart-tt">Famílias mais próximas do vencimento</div>
+                    <div class="ov-sub" style="margin:-4px 0 8px;">Nº de dias até o vencimento mais próximo — mais urgente no topo</div>
+                    <div class="ov-chart-wrap"><canvas id="ov-ch-venc"></canvas></div>
+                  </div>
+                  <div class="ov-alert" id="ov-v-alert"></div>
+                </div>
+
+              </div>
+            </div>
+          </section>
+        </div>
+      </div>
+    </div>
+  </div>
+  <script src="../script.js?v=8"></script>
+  <script src="../nav-sidebar.js?v=77"></script>
+  <script src="../dw-pill.js?v=4"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+  <script>
+  // ================================================================
+  // VISÃO GERAL — resumo consolidado dos 3 relatórios de estoque
+  //   • Saldo de Estoque        → 'Saldo de estoque'
+  //   • Ruptura de Estoque      → 'TabelaUnicaRuptura'
+  //   • Produtos Validade Curta → 'Movimentações de estoque' ([Produto com validade curta?]="SIM")
+  // Cada fato pode estar em um dataset diferente do mesmo workspace; o id é
+  // descoberto/cacheado por relatório (mesmas chaves das páginas individuais).
+  // ================================================================
+  (function(){
+    const PBI_CFG = {
+      clientId:'129978ce-ff3b-431d-98b3-66a1bcb766b1', tenantId:'c311c9e6-6017-42a9-b306-4057beba5786',
+      workspaceId:'8535f0a1-8dc6-4da0-93ce-bf20c1c14e27',
+      scopes:['https://analysis.windows.net/powerbi/api/Dataset.Read.All','https://analysis.windows.net/powerbi/api/Report.Read.All']
+    };
+    let _pbi=null,_token=null,_dsList=null;
+    // token/dataset expostos p/ o dw-pill.js (usa o dataset do Saldo de estoque)
+    window.bmDwInfo = () => ({ token:_token, ws:PBI_CFG.workspaceId, ds:_dsFor["'Saldo de estoque'"] });
+    const _dsFor={}; // factTable → datasetId
+
+    const _numN = x => (x==null||x===''||x==='-'||isNaN(Number(x)))?null:Number(x);
+    const _v = (r,re)=>{ const k=Object.keys(r).find(x=>re.test(x)); return k?r[k]:null; };
+    const setTxt=(id,t)=>{const el=document.getElementById(id);if(el)el.textContent=t;};
+    const fNUM = v => v==null?'—':Number(v).toLocaleString('pt-BR',{maximumFractionDigits:0});
+    const fBRL = v => v==null?'—':'R$ '+Number(v).toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2});
+    function fMi(v){ if(v==null)return '—'; const a=Math.abs(v); if(a>=1e6) return 'R$ '+(v/1e6).toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2})+' Mi'; if(a>=1e3) return 'R$ '+(v/1e3).toLocaleString('pt-BR',{maximumFractionDigits:1})+'k'; return fBRL(v); }
+    const cut = (s,n)=>{ s=String(s==null?'—':s); return s.length>n?s.slice(0,n-1)+'…':s; };
+
+    async function pbiConnect(){
+      if (window._msalAuth){ _pbi = window._msalAuth; }
+      else { _pbi = new msal.PublicClientApplication({ auth:{ clientId:PBI_CFG.clientId, authority:`https://login.microsoftonline.com/${PBI_CFG.tenantId}`, redirectUri:window.location.origin+'/' }, cache:{ cacheLocation:'localStorage', storeAuthStateInCookie:true } }); if(_pbi.initialize) await _pbi.initialize(); await _pbi.handleRedirectPromise().catch(()=>{}); }
+      const accounts = _pbi.getAllAccounts();
+      try { const r = await _pbi.acquireTokenSilent({ scopes:PBI_CFG.scopes, account:accounts[0] }); _token = r.accessToken; }
+      catch { const r = await _pbi.loginPopup({ scopes:PBI_CFG.scopes }); _token = r.accessToken; }
+      const acc = _pbi.getAllAccounts()[0]; if (acc && typeof window.setSidebarUser==='function') window.setSidebarUser(acc.name||acc.username, acc.username);
+    }
+    function _pbiErr(text){ try { const j=JSON.parse(text); const e=j.error||{}; const pe=e['pbi.error']||{}; const det=(pe.details||[]).map(d=>d.detail&&d.detail.value).filter(Boolean).join(' | '); return det||e.message||pe.code||text.substring(0,200); } catch { return text.substring(0,200); } }
+    async function execQuery(dsId, dax){
+      const body=JSON.stringify({queries:[{query:dax}],serializerSettings:{includeNulls:true}});
+      const r=await PBIModelo.post(PBI_CFG.workspaceId, dsId, {method:'POST',headers:{Authorization:`Bearer ${_token}`,'Content-Type':'application/json'},body});
+      const text=await r.text(); if(!r.ok) throw new Error(`HTTP ${r.status}: ${_pbiErr(text)}`);
+      const d=JSON.parse(text); if(d.error) throw new Error(_pbiErr(text));
+      return d.results[0].tables[0].rows;
+    }
+    // descobre (e cacheia) o dataset que contém uma dada tabela-fato
+    async function resolveDatasetFor(fato, cacheKey){
+      if (_dsFor[fato]) return _dsFor[fato];
+      const falhas = [];
+      const cached = localStorage.getItem(cacheKey);
+      if (cached){ try { await execQuery(cached, PBIModelo.sonda(fato)); _dsFor[fato]=cached; return cached; } catch(e){ falhas.push(['modelo da última visita', e]); localStorage.removeItem(cacheKey); } }
+      if (!_dsList) _dsList = await PBIModelo.candidatos(PBI_CFG.workspaceId, _token);
+      for (const ds of _dsList){ if (ds.id===cached) continue; try { await execQuery(ds.id, PBIModelo.sonda(fato)); localStorage.setItem(cacheKey, ds.id); _dsFor[fato]=ds.id; return ds.id; } catch(e){ falhas.push([ds.name, e]); } }
+      throw PBIModelo.motivo(fato, falhas);
+    }
+    async function queryFato(fato, cacheKey, dax){ const dsId = await resolveDatasetFor(fato, cacheKey); return execQuery(dsId, dax); }
+    // consulta exposta p/ o dw-pill.js (o código desta página vive num IIFE)
+    window.bmDwQuery = dax => queryFato("'Saldo de estoque'", 'bio_ds_saldoestoque', dax);
+
+    // ── gráficos (barras horizontais) ──
+    const _charts={};
+    function hbar(id, labels, data, color, money){
+      const el=document.getElementById(id); if(!el||typeof Chart==='undefined') return;
+      const cfg={ labels, datasets:[{ data, backgroundColor:color, borderRadius:3 }] };
+      if(_charts[id]){ _charts[id].data=cfg; _charts[id].update(); return; }
+      _charts[id]=new Chart(el.getContext('2d'),{ type:'bar', data:cfg,
+        options:{ indexAxis:'y', responsive:true, maintainAspectRatio:false,
+          plugins:{ legend:{display:false}, tooltip:{callbacks:{label:c=>money?fBRL(c.raw):fNUM(c.raw)}} },
+          scales:{ x:{ticks:{callback:v=>money?fMi(v):fNUM(v),font:{size:9}}}, y:{ticks:{font:{size:9}}} } } });
+    }
+
+    // ════════ SALDO DE ESTOQUE ════════
+    async function loadSaldo(){
+      const F="'Saldo de estoque'", KEY='bio_ds_saldoestoque';
+      const FIS=`CALCULATE(SUM(${F}[Qtde (Física)]))`, RES=`CALCULATE(SUM(${F}[Qtde (Reservada)]))`,
+            DISP=`CALCULATE(SUM(${F}[Qtde (Disponível)]))`, ENT=`CALCULATE(SUM(${F}[Qtde (Em ordem de entrada)]))`,
+            SAI=`CALCULATE(SUM(${F}[Qtde (Em ordem de saída)]))`;
+      const PROD="'Produtos'[Produto]";
+      // totais
+      const t = (await queryFato(F, KEY, `EVALUATE ROW("Fis",${FIS},"Res",${RES},"Disp",${DISP},"Ent",${ENT},"Sai",${SAI})`))[0]||{};
+      setTxt('ov-s-fis', fNUM(_numN(_v(t,/\[Fis\]$/))));
+      setTxt('ov-s-res', fNUM(_numN(_v(t,/\[Res\]$/))));
+      setTxt('ov-s-disp',fNUM(_numN(_v(t,/\[Disp\]$/))));
+      setTxt('ov-s-ent', fNUM(_numN(_v(t,/\[Ent\]$/))));
+      setTxt('ov-s-sai', fNUM(_numN(_v(t,/\[Sai\]$/))));
+      // top famílias por física + nº de famílias
+      const FAM="'Famílias'[Família]";
+      const fr = await queryFato(F, KEY, `EVALUATE TOPN(6, ADDCOLUMNS(SUMMARIZE(${F}, ${FAM}), "Fis", ${FIS}), [Fis], DESC)`);
+      const fam = fr.map(r=>({nome:String(_v(r,/\[Família\]/i)??'—'), fis:_numN(_v(r,/\[Fis\]$/))||0})).filter(x=>x.fis!==0).sort((a,b)=>b.fis-a.fis);
+      hbar('ov-ch-saldo', fam.map(x=>cut(x.nome,20)), fam.map(x=>x.fis), 'rgba(180,83,9,.85)', false);
+      try {
+        const cr = (await queryFato(F, KEY, `EVALUATE ROW(`
+          +`"Esg", COUNTROWS(FILTER(ADDCOLUMNS(SUMMARIZE(${F}, ${PROD}), "D", ${DISP}, "Ff", ${FIS}), [Ff] > 0 && [D] <= 0)), `
+          +`"Low", COUNTROWS(FILTER(ADDCOLUMNS(SUMMARIZE(${F}, ${PROD}), "D", ${DISP}), [D] > 0 && [D] <= 10)), `
+          +`"NFam", COUNTROWS(VALUES(${FAM})))`))[0]||{};
+        const esg=_numN(_v(cr,/\[Esg\]$/))||0, low=_numN(_v(cr,/\[Low\]$/))||0, nfam=_numN(_v(cr,/\[NFam\]$/));
+        setTxt('ov-s-fam', fNUM(nfam));
+        const al=document.getElementById('ov-s-alert');
+        if(al) al.innerHTML =
+          `<span class="ov-pill warn">⚠ ${fNUM(low)} produto(s) com pouco estoque (disp. ≤ 10)</span>`
+          +`<span class="ov-pill danger">⛔ ${fNUM(esg)} esgotado(s) · físico sem disponível</span>`;
+      } catch(e){ console.warn('[VG] saldo alerta:', e.message); }
+    }
+
+    // ════════ RUPTURA DE ESTOQUE ════════
+    // Espelha 1:1 a página "Ruptura de Estoque": agrupa por produto (Cód+Produto+Família+Linha),
+    // mantém só os itens EM ruptura (Qtde Ruptura > 0 OU Valor > 0) e soma no cliente — mesma
+    // carga/renderKPIs do relatório. (Antes o resumo somava a tabela INTEIRA, então "Qtde
+    // Disponível" trazia o disponível de TODO o estoque e não o dos itens em ruptura.)
+    async function loadRuptura(){
+      // espera a decisão de acesso do nav-sidebar.js (no máximo 4 s): quem não
+      // abre a Ruptura perde o cartão nela — e aí a consulta nem sai
+      for (let i = 0; i < 40 && !window._portalAccess; i++) await new Promise(r => setTimeout(r, 100));
+      if (!document.getElementById('ov-r-val')) return;
+      const F="'TabelaUnicaRuptura'", KEY='bio_ds_ruptura';
+      const VAL=`CALCULATE(SUM(${F}[Soma Ruptura]))`, QRUP=`CALCULATE(SUM(${F}[Qtde Ruptura]))`, QDISP=`CALCULATE(SUM(${F}[QtdDisponivel]))`;
+      const COD=`${F}[Cód. do produto]`, PROD=`${F}[Produto]`, FAM=`${F}[Família]`, LIN=`${F}[Linha]`;
+      const raw = await queryFato(F, KEY, `EVALUATE TOPN(5000, ADDCOLUMNS(SUMMARIZE(${F}, ${COD}, ${PROD}, ${FAM}, ${LIN}), `
+        +`"Val", ${VAL}, "QRup", ${QRUP}, "QDisp", ${QDISP}), [Val], DESC)`);
+      const items = raw.map(r=>({
+        nome:_v(r,/\[Produto\]$/i), cod:_v(r,/Cód\. do produto/i),
+        val:_numN(_v(r,/\[Val\]$/))||0, qrup:_numN(_v(r,/\[QRup\]$/))||0, qdisp:_numN(_v(r,/\[QDisp\]$/))||0
+      })).filter(x=> x.qrup>0 || x.val>0);   // itens em ruptura (mesmo filtro do relatório)
+      const val  = items.reduce((s,x)=>s+x.val,0);
+      const qrup = items.reduce((s,x)=>s+x.qrup,0);
+      const qdisp= items.reduce((s,x)=>s+x.qdisp,0);
+      setTxt('ov-r-val',  fMi(val));
+      setTxt('ov-r-itens',fNUM(items.length));
+      setTxt('ov-r-qrup', fNUM(qrup));
+      setTxt('ov-r-qdisp',fNUM(qdisp));
+      const top = items.slice().sort((a,b)=>b.val-a.val).slice(0,6);
+      hbar('ov-ch-rup', top.map(x=>cut(String(x.nome||x.cod||'—'),22)), top.map(x=>x.val), 'rgba(185,28,28,.85)', true);
+    }
+
+    // ════════ PRODUTOS COM VALIDADE CURTA ════════
+    async function loadValidade(){
+      const F="'Movimentações de estoque'", KEY='bio_ds_validadecurta';
+      const FIXO=`${F}[Produto com validade curta?] = "SIM"`;
+      const VAL=`CALCULATE(SUM(${F}[Preço Total (ajustado)]))`, QTD=`CALCULATE(SUM(${F}[Quantidade]))`;
+      const FAM="'Famílias'[Família]", ESTR="'Famílias'[Estratégia]", VENC="'Lotes'[Data de vencimento (tratada)]";
+      const t = (await queryFato(F, KEY, `EVALUATE CALCULATETABLE(ROW(`
+        +`"Val",${VAL},"Qtd",${QTD},`
+        +`"NProd", DISTINCTCOUNT('Produtos'[Cód. do produto]),`
+        +`"NFat", DISTINCTCOUNT(${F}[Número da fatura])), ${FIXO})`))[0]||{};
+      setTxt('ov-v-val', fMi(_numN(_v(t,/\[Val\]$/))));
+      setTxt('ov-v-qtd', fNUM(_numN(_v(t,/\[Qtd\]$/))));
+      setTxt('ov-v-prod',fNUM(_numN(_v(t,/\[NProd\]$/))));
+      setTxt('ov-v-fat', fNUM(_numN(_v(t,/\[NFat\]$/))));
+      const fr = await queryFato(F, KEY, `EVALUATE TOPN(6, CALCULATETABLE(ADDCOLUMNS(SUMMARIZE(${F}, ${ESTR}), "Val", ${VAL}), ${FIXO}), [Val], DESC)`);
+      const est = fr.map(r=>({nome:String(_v(r,/\[Estratégia\]/i)??'—'), val:_numN(_v(r,/\[Val\]$/))||0})).filter(x=>x.val>0).sort((a,b)=>b.val-a.val);
+      hbar('ov-ch-val', est.map(x=>cut(x.nome,20)), est.map(x=>x.val), 'rgba(190,24,93,.85)', true);
+      // famílias mais próximas do vencimento (menor nº de dias até o vencimento, mais urgente no topo)
+      try {
+        const nr = await queryFato(F, KEY, `EVALUATE TOPN(6, CALCULATETABLE(FILTER(ADDCOLUMNS(SUMMARIZE(${F}, ${FAM}), "VencMin", CALCULATE(MIN(${VENC}), ${VENC} >= TODAY())), NOT ISBLANK([VencMin])), ${FIXO}), [VencMin], ASC)`);
+        const today = new Date(); today.setHours(0,0,0,0);
+        const near = nr.map(r=>{ const nome=String(_v(r,/\[Família\]/i)??'—'); const vs=_v(r,/\[VencMin\]$/); const d=vs?new Date(vs):null; const dias=d?Math.round((d-today)/86400000):null; return {nome,dias}; })
+          .filter(x=>x.dias!=null && x.dias>=0).sort((a,b)=>a.dias-b.dias).slice(0,6);
+        hbar('ov-ch-venc', near.map(x=>cut(x.nome,20)), near.map(x=>x.dias), 'rgba(217,119,6,.85)', false);
+      } catch(e){ console.warn('[VG] validade vencimento:', e.message); }
+      // risco: valor já vencido e a vencer em ≤90 dias (isolado — se falhar, não quebra o resto)
+      try {
+        const rk = (await queryFato(F, KEY, `EVALUATE CALCULATETABLE(ROW(`
+          +`"Venc", CALCULATE(${VAL}, ${VENC} < TODAY() && ${VENC} <> BLANK()),`
+          +`"V90", CALCULATE(${VAL}, ${VENC} >= TODAY() && ${VENC} < TODAY() + 90)), ${FIXO})`))[0]||{};
+        const venc=_numN(_v(rk,/\[Venc\]$/)), v90=_numN(_v(rk,/\[V90\]$/));
+        const al=document.getElementById('ov-v-alert');
+        if(al) al.innerHTML =
+          `<span class="ov-pill danger">⛔ Já vencido: ${fMi(venc||0)}</span>`
+          +`<span class="ov-pill soon">⏳ Vence em ≤ 90 dias: ${fMi(v90||0)}</span>`;
+      } catch(e){ console.warn('[VG] validade risco:', e.message); }
+    }
+
+    async function loadAll(){
+      // independentes — cada um falha isolado sem derrubar os outros
+      const res = await Promise.allSettled([ loadSaldo(), loadRuptura(), loadValidade() ]);
+      // entrou pelo link direto: o cartão da Ruptura pode sair no meio da carga — falha dele não conta
+      if (!document.getElementById('ov-r-val')) res[1] = { status: 'fulfilled' };
+      const falhou = res.filter(r=>r.status==='rejected').map(r=>r.reason);
+      falhou.forEach(e=>console.warn('[VG] resumo:', e && e.message));
+      return falhou;
+    }
+
+    document.addEventListener('DOMContentLoaded', async ()=>{
+      const banner=document.getElementById('ov-banner');
+      try {
+        await pbiConnect();
+        banner.style.cssText='padding:11px 16px;border-radius:8px;font-size:13px;display:flex;align-items:center;gap:10px;background:#F0FDF4;border:1px solid #BBF7D0;color:#14532D;';
+        banner.innerHTML=`<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg> ✅ Conectado ao Power BI · resumo dos relatórios`;
+        // o "Conectado" acima só diz que o login passou: se o modelo não
+        // respondeu, o motivo tem de aparecer aqui, não só no console
+        const falhou = await loadAll();
+        if (falhou.length === 3) throw falhou[0];
+        if (falhou.length){
+          banner.style.cssText='padding:11px 16px;border-radius:8px;font-size:13px;display:flex;align-items:center;gap:10px;background:#FFFBEB;border:1px solid #FDE68A;color:#92400E;';
+          banner.textContent=`⚠ ${falhou.length} de 3 resumos não carregaram — ${String((falhou[0]&&falhou[0].message)||falhou[0]).replace(/<[^>]*>/g,'')}`;
+        }
+      } catch(err){
+        banner.style.cssText='padding:11px 16px;border-radius:8px;font-size:13px;display:flex;align-items:center;gap:10px;background:#FEF2F2;border:1px solid #FECACA;color:#7F1D1D;';
+        banner.innerHTML=`<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg> ${err.message}`;
+      }
+    });
+  })();
+  </script>
+</body>
+</html>

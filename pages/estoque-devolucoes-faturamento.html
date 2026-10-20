@@ -1,0 +1,1113 @@
+﻿<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Devoluções · Estoque · Biomedical</title>
+  <link rel="stylesheet" href="../styles.css?v=14">
+  <script src="https://unpkg.com/@azure/msal-browser@2.38.3/lib/msal-browser.min.js"></script>
+<script src="../pbi-throttle.js?v=3"></script>
+<script src="../pbi-modelo.js?v=2"></script>
+  <!-- Layout v3 (Claude Design · animado): fonte + camada visual + motor de animações -->
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300..800&family=Manrope:wght@400..800&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../portal-v3.css?v=2">
+  <script src="../portal-motion.js?v=3" defer></script>
+  <!-- Tema claro/escuro (menu do avatar): marca o <html> antes de pintar + camada escura -->
+  <script>try{if(localStorage.getItem('bm-tema')==='escuro')document.documentElement.setAttribute('data-tema','escuro')}catch(e){}</script>
+  <link rel="stylesheet" href="../portal-tema.css?v=1">
+  <script src="../portal-tema.js?v=1" defer></script>
+  <!-- Celular (varredura 15/10/26): só vale em tela < 768px; no computador não se aplica -->
+  <link rel="stylesheet" href="../portal-mobile.css?v=1" media="(max-width: 767.98px)">
+  <script src="../portal-mobile.js?v=1" defer></script>
+</head>
+<body class="dept">
+
+  <header class="site-header"><div class="container">
+    <a href="../index.html" class="brand" aria-label="Biomedical — Portal Corporativo"><img class="brand-logo" src="/icons/icon-192.png" alt="Biomedical" onerror="this.dataset.failed='true'"><span class="brand-fallback">Biomedical</span></a>
+    <nav class="header-nav"><a href="../index.html">Início</a><a href="../index.html#areas">Áreas</a><a href="../index.html#sistemas">Sistemas</a><a href="../index.html#avisos">Avisos</a><a href="../index.html#contato">Contato</a></nav>
+  </div></header>
+
+  <!-- cabeçalho movido para .fx-head (abas de submódulo, Claude Design) -->
+
+  <div class="area-body"><div class="container"><div class="area-grid">
+    <aside class="area-sidebar">
+      <div class="sb-card"><div class="sb-head"><span class="sb-ic"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="2" width="20" height="8" rx="2"/><rect x="2" y="14" width="20" height="8" rx="2"/><line x1="6" y1="6" x2="6.01" y2="6"/><line x1="6" y1="18" x2="6.01" y2="18"/></svg></span><div><div class="sb-tt">Estoque</div><div class="sb-st">Departamento</div></div></div><nav></nav></div>
+      <a href="../index.html" class="sb-back"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></svg>Voltar ao Portal</a>
+    </aside>
+
+    <div class="area-main">
+          <!-- ═══ Cabeçalho + abas de submódulo (Claude Design) ═══ -->
+          <style>
+            .fx-head{display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap;padding:22px 0 4px;}
+            .fx-bc{display:flex;align-items:center;gap:6px;font-size:12px;color:#7C93A8;}
+            .fx-title{margin:4px 0 0;font-size:23px;font-weight:800;letter-spacing:-0.5px;color:#0A2E5C;}
+            .fx-head-right{display:flex;align-items:center;gap:12px;flex-wrap:wrap;}
+            .fx-tabs{display:flex;align-items:center;background:#FFFFFF;border:1px solid #E3EAF2;border-radius:11px;padding:3px;flex-wrap:wrap;}
+            .fx-tabs a,.fx-tabs span{padding:8px 14px;border-radius:8px;font-size:12.5px;font-weight:600;color:#5B7189;text-decoration:none;white-space:nowrap;}
+            .fx-tabs a:hover{color:#0A2E5C;}
+            .fx-tabs .active{background:#0A2E5C;font-weight:700;color:#fff;}
+            .fx-filters{display:flex;align-items:center;gap:10px;flex-wrap:wrap;padding:12px 14px;background:#fff;border:1px solid #E3EAF2;border-radius:12px;}
+            .fx-fdiv{width:1px;height:24px;background:#E3EAF2;}
+            .fx-fbtn{display:inline-flex;align-items:center;gap:8px;padding:8px 12px;border-radius:9px;border:1px solid #E3EAF2;background:#fff;font-size:12.5px;font-weight:600;color:#33495E;cursor:pointer;font-family:inherit;white-space:nowrap;}
+            .fx-fbtn:hover{border-color:#1272C4;}
+            .fx-fbtn .fx-fk{font-weight:700;color:#93A7BA;}
+            .fx-fbtn svg{flex-shrink:0;}
+            .fx-flimpar{margin-left:auto;display:inline-flex;align-items:center;gap:6px;padding:8px 12px;border-radius:9px;border:none;background:transparent;font-size:12.5px;font-weight:600;color:#5B7189;cursor:pointer;font-family:inherit;white-space:nowrap;}
+            .fx-flimpar:hover{color:#B54545;}
+            .fxdd{position:relative;display:inline-block;}
+            .fxdd-panel{position:absolute;z-index:50;top:calc(100% + 6px);left:0;display:none;flex-direction:column;background:#fff;border:1px solid #E3EAF2;border-radius:12px;box-shadow:0 10px 30px rgba(10,46,92,0.14);padding:12px;min-width:210px;}
+            .fxdd.open .fxdd-panel{display:flex;}
+            .fxdd-sec{font-size:10.5px;font-weight:800;letter-spacing:0.8px;text-transform:uppercase;color:#93A7BA;margin:2px 2px 8px;}
+            .fxdd-sec.mt{margin-top:12px;}
+            .fxdd-hint{font-size:11px;color:#93A7BA;margin-top:10px;}
+            /* esconde a faixa de cards de sub-modulos (estatica OU injetada pelo nav-sidebar.js) — navegacao agora pelas abas */
+            .area-main section:has(.modulo-card){display:none !important;}
+            @media(max-width:767.98px){
+              .fx-head{align-items:flex-start;padding-top:14px;}
+              .fx-title{font-size:17px;}
+              .fx-head-right{width:100%;}
+              .fx-tabs{width:100%;flex-wrap:nowrap;overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none;background:#F0F4F9;border:none;}
+              .fx-tabs::-webkit-scrollbar{display:none;}
+              .fx-tabs a,.fx-tabs span{flex:0 0 auto;}
+              .fx-filters{flex-wrap:nowrap;overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none;}
+              .fx-filters::-webkit-scrollbar{display:none;}
+              .fx-flimpar{margin-left:8px;}
+            }
+          </style>
+
+          <div class="fx-head">
+            <div>
+              <div class="fx-bc"><span>Estoque</span><span>›</span><span>Gestão de Consignação</span></div>
+              <h1 class="fx-title">Devoluções</h1>
+            </div>
+            <div class="fx-head-right">
+              <div class="fx-tabs">
+                <a href="estoque-gestao-consignacao.html">Visão Geral</a>
+                <a href="estoque-saldo-consignado.html">Saldo Consignado</a>
+                <a href="estoque-contagem-saldo-nota.html">Contagem · Saldo por Nota</a>
+                <span class="active">Devoluções</span>
+                <a href="estoque-rastreabilidade.html">Rastreabilidade</a>
+                <a href="estoque-gmroi.html">GMROI</a>
+              </div>
+            </div>
+          </div>
+
+      <style>
+        .cx-wrap{padding:8px 0 48px;display:flex;flex-direction:column;gap:14px;}
+        .cx-card{background:#fff;border:1px solid var(--border);border-radius:var(--radius);padding:14px 16px;}
+        .cx-kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;}
+        @media(max-width:880px){.cx-kpis{grid-template-columns:repeat(2,1fr);}}
+        .cx-kpi{background:#fff;border:1px solid var(--border);border-radius:var(--radius);padding:16px 18px;position:relative;overflow:hidden;}
+        .cx-kpi::before{content:'';position:absolute;left:0;top:0;bottom:0;width:4px;background:var(--bm-blue-600);}
+        .cx-kpi.w::before{background:#b45309;}
+        .cx-kpi.g::before{background:var(--bm-green-600);}
+        .cx-kpi.d::before{background:#0891b2;}
+        .cx-kpi-l{font-size:10.5px;font-weight:600;text-transform:uppercase;letter-spacing:.05em;color:var(--text-3);margin-bottom:6px;}
+        .cx-kpi-v{font-family:var(--font-display);font-size:22px;font-weight:800;color:var(--bm-blue-900);line-height:1;}
+        .cx-panel{background:#fff;border:1px solid var(--border);border-radius:var(--radius);padding:16px 18px;}
+        .cx-panel h3{font-size:14px;font-weight:700;color:var(--text);margin:0 0 4px;}
+        .cx-panel .cx-sub{font-size:11.5px;color:var(--text-3);margin-bottom:14px;}
+        .cx-tbl-wrap{overflow:auto;border:1px solid var(--border);border-radius:10px;max-height:640px;}
+        table.cx-tbl{width:100%;border-collapse:collapse;font-size:12px;}
+        table.cx-tbl thead th{position:sticky;top:0;z-index:3;background:var(--bm-blue-900);color:rgba(255,255,255,.95);text-align:right;padding:9px 12px;font-size:10px;font-weight:600;letter-spacing:.02em;text-transform:uppercase;white-space:nowrap;cursor:pointer;user-select:none;}
+        table.cx-tbl thead th.dim{text-align:left;}
+        table.cx-tbl thead th.unres{color:#FCA5A5;}
+        table.cx-tbl tbody td{padding:7px 12px;border-bottom:1px solid var(--border);text-align:right;font-variant-numeric:tabular-nums;color:var(--text-2);white-space:nowrap;}
+        table.cx-tbl tbody td.dim{text-align:left;color:var(--text);font-weight:600;}
+        table.cx-tbl tbody td.cod{font-family:var(--font-mono,monospace);font-size:11px;color:var(--text-3);text-align:left;}
+        table.cx-tbl tbody td.ctr{text-align:center;}
+        table.cx-tbl tbody td.venc-late{color:var(--danger,#b91c1c);font-weight:700;}
+        table.cx-tbl tbody td.venc-soon{color:#b45309;font-weight:700;}
+        table.cx-tbl tbody tr:hover td{background:var(--bm-blue-50);}
+        table.cx-tbl tbody tr.cx-total td{background:var(--bm-blue-900);color:#fff;font-weight:800;border-top:2px solid var(--border-2);position:sticky;bottom:0;}
+        .search-wrap{position:relative;}
+        .search-wrap svg{position:absolute;left:10px;top:50%;transform:translateY(-50%);color:var(--text-4);}
+        .search-input{padding:7px 10px 7px 32px;border:1px solid var(--border);border-radius:8px;font-size:12.5px;font-family:var(--font-body);width:280px;box-sizing:border-box;}
+        .av-toolbar{display:flex;gap:8px;flex-wrap:wrap;align-items:center;}
+        .av-dd{position:relative;display:inline-block;}
+        .av-dd-btn{padding:7px 12px;border-radius:8px;border:1px solid var(--border);background:#fff;font-size:12.5px;font-weight:600;color:var(--text-2);cursor:pointer;display:inline-flex;align-items:center;gap:10px;min-width:150px;justify-content:space-between;}
+        .av-dd-btn:hover{border-color:var(--bm-blue-500);}
+        .av-dd-btn.has{border-color:var(--bm-blue-600);background:var(--bm-blue-50);color:var(--bm-blue-800);}
+        .av-dd-btn .cnt{background:var(--bm-blue-600);color:#fff;border-radius:999px;padding:0 7px;font-size:11px;}
+        .av-dd-panel{position:absolute;z-index:40;top:calc(100% + 4px);left:0;width:280px;max-height:340px;display:none;flex-direction:column;background:#fff;border:1px solid var(--border);border-radius:10px;box-shadow:var(--shadow);overflow:hidden;}
+        .av-dd.open .av-dd-panel{display:flex;}
+        .av-dd-search{padding:8px;border-bottom:1px solid var(--border);}
+        .av-dd-search input{width:100%;padding:6px 8px;border:1px solid var(--border);border-radius:6px;font-size:12px;font-family:var(--font-body);box-sizing:border-box;}
+        .av-dd-list{overflow-y:auto;padding:4px;}
+        .av-dd-opt{display:flex;align-items:center;gap:8px;padding:6px 8px;border-radius:6px;font-size:12.5px;color:var(--text-2);cursor:pointer;}
+        .av-dd-opt:hover{background:var(--bm-blue-50);}
+        .av-dd-foot{display:flex;justify-content:space-between;padding:6px 10px;border-top:1px solid var(--border);}
+        .av-dd-foot button{font-size:11.5px;color:var(--bm-blue-700);background:none;border:none;cursor:pointer;font-weight:600;}
+        .cx-btn{padding:5px 13px;border-radius:6px;border:1px solid var(--border);background:#fff;font-size:12.5px;font-weight:600;color:var(--text-2);cursor:pointer;font-family:var(--font-body);}
+        /* ── VISUAIS (graficos) ── */
+        .cx-bars{display:grid;grid-template-columns:1fr 1fr;gap:14px;}
+        @media(max-width:880px){.cx-bars{grid-template-columns:1fr !important;}}
+        .cx-chart-wrap{position:relative;height:300px;}
+        .cx-chart-wrap.tall{height:360px;}
+        .cx-gsec{display:flex;align-items:flex-end;justify-content:space-between;gap:14px;flex-wrap:wrap;}
+        .cx-seg{display:inline-flex;background:#F0F4F9;border:1px solid var(--border);border-radius:9px;padding:3px;gap:2px;}
+        .cx-seg button{padding:6px 12px;border:none;background:transparent;border-radius:7px;font-size:12px;font-weight:700;color:var(--text-3);cursor:pointer;font-family:inherit;white-space:nowrap;}
+        .cx-seg button:hover:not(:disabled){color:var(--bm-blue-800,#0A2E5C);}
+        .cx-seg button.on{background:#fff;color:var(--bm-blue-900);box-shadow:0 1px 3px rgba(10,46,92,.14);}
+        .cx-seg button:disabled{opacity:.45;cursor:not-allowed;}
+        .cx-ph{padding:24px 12px;text-align:center;color:var(--text-3);font-size:12.5px;}
+        .cx-gwarn{font-size:11px;line-height:1.6;color:#B45309;font-weight:700;}
+      </style>
+
+      <div class="cx-wrap">
+
+        <div id="cx-banner" style="padding:11px 16px;border-radius:8px;font-size:13px;display:flex;align-items:center;gap:10px;background:#EFF6FF;border:1px solid #BFDBFE;color:#1E40AF;">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+          Conectando ao Power BI…
+        </div>
+
+        <!-- faixa de RITMO: o Power BI limita consultas por usuario/minuto (HTTP 429).
+             Fica escondida; aparece com a contagem regressiva quando a espera acontece. -->
+        <div id="cx-ritmo" style="display:none;padding:10px 14px;border-radius:8px;font-size:12.5px;font-weight:600;background:#FFFBEB;border:1px solid #FDE68A;color:#92400E;"></div>
+
+        <div class="fx-filters"><div class="av-toolbar" id="cx-toolbar" style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;"></div></div>
+
+        <div class="cx-kpis">
+          <div class="cx-kpi"><div class="cx-kpi-l">Quantidade (Devolução)</div><div class="cx-kpi-v" id="cx-k-qtd">—</div></div>
+          <div class="cx-kpi w"><div class="cx-kpi-l">Ordens de Devolução</div><div class="cx-kpi-v" id="cx-k-ord">—</div></div>
+          <div class="cx-kpi g"><div class="cx-kpi-l">Notas Fiscais (origem)</div><div class="cx-kpi-v" id="cx-k-nf">—</div></div>
+          <div class="cx-kpi d"><div class="cx-kpi-l">Pacientes</div><div class="cx-kpi-v" id="cx-k-pac">—</div></div>
+        </div>
+
+        <!-- ═══ VISUAIS · quebra por dimensao ═══
+             Os paineis usam o MESMO recorte da tabela desta aba (os filtros fixos dela
+             + a barra de filtros do topo), que e o recorte dos KPIs — por isso o
+             "% do total" de cada painel fecha com o card. -->
+        <div class="cx-panel">
+          <div class="cx-gsec">
+            <div>
+              <h3 style="margin:0;">Onde estão as devoluções</h3>
+              <div class="cx-sub" style="margin:2px 0 0;">Quantidade devolvida, ordens, NFs de origem e pacientes por dimensão · mesmo recorte da tabela abaixo (os filtros fixos da aba + a barra de filtros do topo)</div>
+            </div>
+            <div class="cx-seg" id="cx-gseg">
+              <button type="button" data-m="q" class="on">Qtd devolvida</button>
+              <button type="button" data-m="o">Ordens de devolução</button>
+              <button type="button" data-m="n">NFs de origem</button>
+              <button type="button" data-m="p">Pacientes</button>
+            </div>
+          </div>
+          <div class="cx-gwarn" id="cx-gfix" style="display:none;margin:10px 0 0;"></div>
+        </div>
+
+        <div class="cx-bars" id="cx-graficos"></div>
+
+        <!-- ── Devoluções · consulta analítica (fato 'Consignação - Devoluções') ── -->
+        <div class="cx-panel">
+          <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;margin-bottom:12px;">
+            <div><h3 style="margin:0;">Devoluções · consulta analítica</h3><div class="cx-sub" style="margin:0;" id="cx-devol-info">—</div></div>
+            <div class="search-wrap"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg><input class="search-input" id="cx-search-devol" type="text" placeholder="Buscar ordem, NF, paciente, produto, cliente, lote…"></div>
+          </div>
+          <div class="cx-tbl-wrap">
+            <table class="cx-tbl" id="cx-tbl-devol">
+              <thead><tr id="cx-devol-head"></tr></thead>
+              <tbody id="cx-devol-rows"><tr><td style="padding:20px;text-align:center;color:var(--text-3);">Carregando…</td></tr></tbody>
+            </table>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </div></div></div>
+
+  <footer class="site-footer"><div class="container"><p>© Biomedical — Portal Corporativo</p></div></footer>
+
+  <script src="../script.js?v=8"></script>
+  <script src="../nav-sidebar.js?v=52"></script>
+  <script src="../dw-pill.js?v=4"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+  <script>
+  // ================================================================
+  // DEVOLUÇÕES DE CONSIGNAÇÃO — fato 'Consignação - Devoluções'
+  //   KPIs no topo + UMA tabela analítica com as colunas/medida pedidas.
+  //
+  //   Mesmo esquema robusto do "Saldo Consignado": os nomes de coluna/
+  //   medida são resolvidos para o nome EXATO do modelo (via
+  //   INFO.VIEW.COLUMNS / INFO.VIEW.MEASURES), sem depender de acento/
+  //   grafia. Se o modelo não tiver alguma coluna/medida, ela é
+  //   descartada da query (a tabela continua funcionando) e sinalizada
+  //   no cabeçalho + banner.
+  // ================================================================
+  const PBI_CFG = {
+    clientId:'129978ce-ff3b-431d-98b3-66a1bcb766b1', tenantId:'c311c9e6-6017-42a9-b306-4057beba5786',
+    workspaceId:'8535f0a1-8dc6-4da0-93ce-bf20c1c14e27',
+    scopes:['https://analysis.windows.net/powerbi/api/Dataset.Read.All','https://analysis.windows.net/powerbi/api/Report.Read.All']
+  };
+  let _pbi=null,_token=null,_dsId=null,_dsName=null,_ready=false;
+  // token/dataset expostos p/ o dw-pill.js ler o histórico de refresh do dataset
+  window.bmDwInfo = () => ({ token:_token, ws:PBI_CFG.workspaceId, ds:_dsId });
+  // MODELO SEMÂNTICO FIXADO (não sai mais descobrindo por varredura).
+  //   O workspace tem VÁRIAS CÓPIAS do "BI Self Service (Licitações) 2.0 (N)" com as
+  //   MESMAS tabelas de consignação, e a varredura pela âncora pegava a 1ª que
+  //   respondia — caiu numa cópia "(22)" SEM a medida [Quantidade (Devolução)] e SEM
+  //   as colunas "(origem)". Sintoma: KPIs Qtd/NF em "—" e a tabela vazia
+  //   ("Nenhuma devolução encontrada": sem medida válida a tabela nem consulta).
+  //   Id abaixo = modelo de Consignação indicado pelo usuário (11/08/26).
+  const DS_PINNED   = '960d8415-9844-40aa-a502-07a8b3eea240';
+  const DS_OVERRIDE = (location.search.match(/[?&]ds=([0-9a-fA-F-]{36})/)||[])[1] || null;  // ?ds=<guid> p/ testar outro modelo
+  const DS_CACHE_KEY='bio_ds_consignado';            // compartilhado com Saldo Consignado / Rastreabilidade
+  const DS_ANCHOR   = "'Consignação - Remessas'";    // âncora FROUXA (as cópias também têm)
+  const FATO        = "'Consignação - Devoluções'";  // fato consultado nesta página (tabela/medida)
+  // ASSINATURA do modelo completo: só o modelo certo tem a medida + a coluna "(origem)".
+  // Usada apenas na varredura de reserva, p/ não voltar a cair numa cópia incompleta.
+  const DS_SIGN = `EVALUATE TOPN(1, SUMMARIZECOLUMNS(${FATO}[Nota fiscal (origem)], "q", [Quantidade (Devolução)]))`;
+
+  // ── helpers de formatação / escape ──
+  const avDax = s => String(s==null?'':s).replace(/"/g,'""');
+  const avEsc = s => String(s==null?'':s).replace(/"/g,'&quot;');
+  const escH  = s => String(s==null?'':s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+  const _numN = x => (x==null||x===''||x==='-'||isNaN(Number(x)))?null:Number(x);
+  const bareRef = r => String(r==null?'':r).replace(/^\[/,'').replace(/\]$/,'');   // "[Medida]" -> "Medida"
+  const setTxt=(id,t)=>{const el=document.getElementById(id);if(el)el.textContent=t;};
+  const fNUM = v => v==null?'—':Number(v).toLocaleString('pt-BR',{maximumFractionDigits:2});
+  const fINT = v => v==null?'—':Number(v).toLocaleString('pt-BR',{maximumFractionDigits:0});
+  function fDate(v){ if(v==null||v==='') return '—'; const m=String(v).match(/^(\d{4})-(\d{2})-(\d{2})/); return m?`${m[3]}/${m[2]}/${m[1]}`:String(v); }
+  function dateObj(v){ if(v==null||v==='') return null; const m=String(v).match(/^(\d{4})-(\d{2})-(\d{2})/); return m?new Date(+m[1],+m[2]-1,+m[3]):null; }
+  // normaliza p/ casar nomes sem acento/caixa/espaços duplicados
+  const _norm = s => String(s==null?'':s).normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().replace(/\s+/g,' ').trim();
+
+  // ── COLUNAS pedidas (na ordem). cands = [tabela, coluna] em ordem de
+  //    preferência; o 1º que existir no modelo (por nome normalizado) vence. ──
+  const COLS = [
+    { key:'unidade',   header:'Unidade de Negócio', kind:'dim',  cands:[['DIM_UNIDADE_DE_NEGOCIO_V2','UNIDADE_DE_NEGOCIO']] },
+    { key:'codcli',    header:'Cód. Cliente',       kind:'cod',  cands:[['Clientes','Cód. do Cliente'],['Clientes','Cód. Cliente'],['Clientes','Cód. do cliente'],['Clientes','Código do cliente']] },
+    { key:'cliente',   header:'Cliente',            kind:'dim',  cands:[['Clientes','Cliente']] },
+    { key:'tipocli',   header:'Tipo de Cliente',    kind:'dim',  cands:[['Clientes','Tipo de cliente'],['Clientes','Tipo de Cliente']] },
+    { key:'codprod',   header:'Cód. Produto',       kind:'cod',  cands:[['Produtos','Cód. do produto'],['Produtos','Cód. produto'],['Produtos','Código do produto']] },
+    { key:'lote',      header:'Lote',               kind:'cod',  cands:[['Lotes','Lote']] },
+    { key:'datavenc',  header:'Data Vencimento',    kind:'date', venc:true, cands:[['Lotes','Data de vencimento (tratada)'],['Lotes','Data de vencimento']] },
+    { key:'numov',     header:'Ordem Venda (orig.)',kind:'cod',  cands:[['Consignação - Devoluções','Número da ordem de venda (origem)']] },
+    { key:'notaorigem',header:'NF (origem)',        kind:'cod',  cands:[['Consignação - Devoluções','Nota fiscal (origem)']] },
+    { key:'numdev',    header:'Ordem Devolução',    kind:'cod',  cands:[['Consignação - Devoluções','Número da ordem de devolução']] },
+    { key:'dataord',   header:'Data Ordem Devol.',  kind:'date', cands:[['Consignação - Devoluções','Data da ordem de devolução']] },
+    { key:'tipoop',    header:'Tipo de Operação',   kind:'dim',  cands:[['Consignação - Devoluções','Tipo de operação'],['Operações','Tipo de operação']] },
+    { key:'paciente',  header:'Paciente',           kind:'dim',  cands:[['Consignação - Devoluções','Paciente']] }
+  ];
+  // ── MEDIDA da tabela (manda no TOPN/ordenação padrão) ──
+  const MEAS = [
+    { key:'qtd', header:'Qtd Devolução', fmt:fNUM, strong:'font-weight:700;color:var(--bm-blue-900);', cands:['Quantidade (Devolução)'] }
+  ];
+  // ── KPIs: 1 medida + 3 contagens distintas (DISTINCTCOUNT de coluna resolvida) ──
+  const KPI = [
+    { id:'cx-k-qtd', al:'kQtd', fmt:fNUM, gk:'qtd', meas:['Quantidade (Devolução)'] },
+    { id:'cx-k-ord', al:'kOrd', fmt:fINT, gk:'ord', distinct:'numdev' },
+    { id:'cx-k-nf',  al:'kNf',  fmt:fINT, gk:'nf',  distinct:'notaorigem' },
+    { id:'cx-k-pac', al:'kPac', fmt:fINT, gk:'pac', distinct:'paciente' }
+  ];
+
+  // ── FILTROS FIXOS da página (aplicados em TODA query: KPIs + tabela) ──
+  //    Espelham a filtragem do relatório de origem no Power BI. Cada coluna
+  //    é resolvida p/ o nome EXATO do modelo (mesmo motor do COLS).
+  //      op:'in' → coluna ∈ {vals}   (TREATAS)
+  //
+  //    ⚠ HISTÓRICO do 'Consignação - Remessas'[Exibir no BI] = Sim — LER ANTES DE MEXER:
+  //    ele é coluna da REMESSA, não da devolução. Aplicado nas queries desta página,
+  //    filtra o fato 'Consignação - Devoluções' por RELACIONAMENTO — toda devolução sem
+  //    remessa casada (ou com remessa fora do flag) cai fora. Em 13/08/26 foi por isso
+  //    que ele SAIU: o total de ~900 aguardando faturamento virou 69.
+  //    Em 20/08/26 o usuário pediu expressamente que ele VOLTASSE a esta aba (mantendo
+  //    os fixos que já havia). Está de volta abaixo. Se o número afundar de novo, o
+  //    suspeito nº 1 é este filtro: ?diag=1 imprime quanto CADA fixo corta (sem fixo,
+  //    cada um isolado e todos juntos), e tirar só ele é apagar a última entrada de GLOBAL.
+  const GLOBAL = [
+    // recorte da página: devolução aguardando faturamento. Casa por TRECHO e nas DUAS
+    // grafias que aparecem no modelo (APROVAÇÃO / AUTORIZAÇÃO — a tela mostra
+    // "DEVOLUÇÃO SIMBÓLICA AGUARDANDO AUTORIZAÇÃO DE FATURAMENTO"). Se a 1ª coluna não
+    // existir, ou existir SEM esse valor, cai para a próxima candidata (fall-forward em
+    // validarFiltrosFixos) em vez de o filtro ser silenciosamente descartado.
+    { label:'Tipo de devolução',  op:'contains', vals:['AGUARDANDO APROVA','AGUARDANDO AUTORIZA'],
+      cands:[['Consignação - Devoluções','Tipo de devolução'],['Consignação - Devoluções','Tipo de Devolução'],['Consignação - Devoluções','Tipo de operação'],['Operações','Tipo de operação']] },
+    { label:'Grupo de depósitos', op:'in', vals:['ESTOQUE CONSIGNADO/COMODATO'],
+      cands:[['Depósitos','Grupo de depósitos'],['Depósitos','Grupo de depósito'],['Depósitos','Grupo depósitos']] },
+    // pedido do usuário em 20/08/26 — ver o HISTÓRICO no comentário acima antes de tirar/pôr
+    { label:'Exibir no BI', op:'in', vals:['Sim'],
+      cands:[['Consignação - Remessas','Exibir no BI']] },
+    // ── 20/08/26, 2ª rodada: "leve os mesmos filtros que você aplicar no Depósito" ──
+    //   São 3 colunas do fato REMESSAS + 1 de Operações numa página cujo fato é
+    //   'Consignação - Devoluções': chegam aqui por RELACIONAMENTO, o mesmo caminho do
+    //   'Exibir no BI' que em 13/08 levou ~900 → 69. Conferir o total; ?diag=1 mostra
+    //   quanto cada um corta, e cada linha abaixo sai sozinha se precisar.
+    { label:'NF (modelo) = 55', op:'in', vals:['55'],
+      cands:[['Consignação - Remessas','Nota fiscal (modelo)'],['Consignação - Remessas','Nota fiscal modelo']] },
+    { label:'NF (status) = Aprovado', op:'in', vals:['Aprovado'],
+      cands:[['Consignação - Remessas','Nota fiscal (status)'],['Consignação - Remessas','Nota fiscal status']] },
+    { label:'Nota fiscal ≠ vazia', op:'notblank',
+      cands:[['Consignação - Remessas','Nota fiscal'],['Consignação - Remessas','Nota Fiscal']] },
+    { label:"Tipo de operação sem 'VEN'", op:'notcontains', vals:['VEN'],
+      cands:[['Operações','Tipo de operação'],['Operações','Tipo de Operação']] }
+  ];
+
+
+  // ══ VISUAIS (gráficos) ══
+  // candidatos das dimensões compartilhadas do modelo de Consignação (os mesmos do
+  //   Saldo Consignado). Servem aos painéis de gráfico E aos dropdowns de filtro.
+  const CBASE = {
+    empresa   :[['Empresas','Empresa']],
+    unidade   :[['DIM_UNIDADE_DE_NEGOCIO_V2','UNIDADE_DE_NEGOCIO']],
+    salesv    :[['Sales Vertical','Sales Vertical']],
+    codcli    :[['Clientes','Cód. do Cliente'],['Clientes','Cód. Cliente'],['Clientes','Cód. do cliente']],
+    cliente   :[['Clientes','Cliente']],
+    tipocli   :[['Clientes','Tipo de cliente'],['Clientes','Tipo de Cliente']],
+    coddep    :[['Depósitos','Cód. do depósito'],['Depósitos','Cód. depósito'],['Depósitos','Código do depósito']],
+    familia   :[['Famílias','Família'],['Produtos','Família']],
+    estrategia:[['Famílias','Estratégia'],['Produtos','Estratégia']],
+    linha     :[['Linhas','Linha'],['Produtos','Linha']],
+    codprod   :[['Produtos','Cód. do produto'],['Produtos','Cód. produto'],['Produtos','Código do produto']],
+    produto   :[['Produtos','Produto']],
+    lote      :[['Lotes','Lote']],
+    lotevenc  :[['Lotes','Lote vencido?'],['Lotes','Lote vencido']],
+    tipoop    :[['Operações','Tipo de operação'],['Operações','Tipo de Operação'],['Operações','Tipo operação']]
+  };
+  const GMEAS = [
+    // `from:'kpi'` = a referência DAX vem do KPI (DISTINCTCOUNT de coluna), não de MEAS
+    { m:'q', key:'qtd', from:'meas', mk:'qtd',  label:'Qtd devolvida',       fmt:fNUM, tick:v=>fNUM(v), cor:'rgba(18,114,196,.85)' },
+    { m:'o', key:'ord', from:'kpi',  mk:'kOrd', label:'Ordens de devolução', fmt:fINT, tick:v=>fINT(v), cor:'rgba(180,83,9,.85)',  semPct:true },
+    { m:'n', key:'nf',  from:'kpi',  mk:'kNf',  label:'NFs de origem',       fmt:fINT, tick:v=>fINT(v), cor:'rgba(21,128,61,.85)', semPct:true },
+    { m:'p', key:'pac', from:'kpi',  mk:'kPac', label:'Pacientes',           fmt:fINT, tick:v=>fINT(v), cor:'rgba(8,145,178,.85)', semPct:true }
+  ];
+  const GTOP   = 12;    // barras exibidas por painel
+  const GTOP_Q = 300;   // categorias buscadas por consulta
+  const GRAFS = [
+    { key:'cliente',    label:'Cliente',            cands:CBASE.cliente    },
+    { key:'tipocli',    label:'Tipo de Cliente',    cands:CBASE.tipocli    },
+    { key:'familia',    label:'Família',            cands:CBASE.familia    },
+    { key:'estrategia', label:'Estratégia',         cands:CBASE.estrategia },
+    { key:'tipoop',     label:'Tipo de Operação',   cands:[['Consignação - Devoluções','Tipo de operação'],['Operações','Tipo de operação'],['Operações','Tipo de Operação']] },
+    { key:'tipodev',    label:'Tipo de Devolução',  cands:[['Consignação - Devoluções','Tipo de devolução'],['Consignação - Devoluções','Tipo de Devolução']] },
+    { key:'unidade',    label:'Unidade de Negócio', cands:CBASE.unidade    },
+    { key:'codprod',    label:'Cód. Produto',       cands:CBASE.codprod    },
+    { key:'coddep',     label:'Cód. Depósito',      cands:CBASE.coddep     },
+    { key:'paciente',   label:'Paciente',           cands:[['Consignação - Devoluções','Paciente']] }
+  ];
+  // valor dos KPIs (já consultados) — denominador do "% do total" dos painéis
+  const _kpiVal = {};
+  // ── ADAPTADORES da aba (o motor mais abaixo é idêntico nas 4 abas) ──
+  const gRefDe     = x => x.from==='kpi' ? (KPI.find(k=>k.al===x.mk)||{})._ref : (MEAS.find(m=>m.key===x.mk)||{})._ref;
+  const gFiltros   = () => baseFilters();   // esta aba tem UMA tabela: os fixos são da página
+  const gRowFilter = () => '';              // sem filtro de linha sobre medida aqui
+  const gExtraMeas = () => [];
+
+  // ── filtros (dropdowns) — cada um resolve sua PRÓPRIA coluna (nome exato);
+  //    não precisam ser colunas da tabela analítica. ──
+  const FILTROS = [
+    { id:'f_empresa', label:'Empresa',            cands:[['Empresas','Empresa']] },
+    { id:'f_unidade', label:'Unidade de Negócio', cands:[['DIM_UNIDADE_DE_NEGOCIO_V2','UNIDADE_DE_NEGOCIO']] },
+    { id:'f_coddep',  label:'Cód. Depósito',      cands:[['Depósitos','Cód. do depósito'],['Depósitos','Cód. depósito'],['Depósitos','Código do depósito']] },
+    { id:'f_familia', label:'Família',            cands:[['Famílias','Família'],['Produtos','Família']] },
+    { id:'f_codprod', label:'Cód. Produto',       cands:[['Produtos','Cód. do produto'],['Produtos','Cód. produto'],['Produtos','Código do produto']] },
+    { id:'f_lote',    label:'Lote',               cands:[['Lotes','Lote']] },
+    { id:'f_codcli',  label:'Cód. Cliente',       cands:[['Clientes','Cód. do Cliente'],['Clientes','Cód. Cliente'],['Clientes','Cód. do cliente'],['Clientes','Código do cliente']] }
+  ];
+  window._avSel = {}; FILTROS.forEach(f => window._avSel[f.id] = new Set());
+  // dropdowns e filtros fixos reaproveitam colunas resolvidas; busca por key (COLS) OU id (FILTROS)
+  const colByKey = k => COLS.find(c=>c.key===k) || FILTROS.find(f=>f.id===k);
+
+  // ── descritor da tabela — mesma fábrica genérica do Saldo Consignado ──
+  const novaTabela = cfg => Object.assign({ rows:[], tot:null, trunc:false, sort:{k:cfg.meas[0].key, dir:'desc'}, measkeys:cfg.meas.map(m=>m.key) }, cfg);
+  const TBL_DEVOL = novaTabela({ name:'devol', fato:FATO, cols:COLS, meas:MEAS, emptyMsg:'Nenhuma devolução encontrada.', ids:{head:'cx-devol-head', rows:'cx-devol-rows', info:'cx-devol-info', search:'cx-search-devol'} });
+  const TABLES = [TBL_DEVOL];
+
+  // ── conexão / execução Power BI (MSAL delegado) ──
+  async function pbiConnect(){
+    if (window._msalAuth){ _pbi = window._msalAuth; }
+    else { _pbi = new msal.PublicClientApplication({ auth:{ clientId:PBI_CFG.clientId, authority:`https://login.microsoftonline.com/${PBI_CFG.tenantId}`, redirectUri:window.location.origin+'/' }, cache:{ cacheLocation:'localStorage', storeAuthStateInCookie:true } }); if(_pbi.initialize) await _pbi.initialize(); await _pbi.handleRedirectPromise().catch(()=>{}); }
+    const accounts = _pbi.getAllAccounts();
+    try { const r = await _pbi.acquireTokenSilent({ scopes:PBI_CFG.scopes, account:accounts[0] }); _token = r.accessToken; }
+    catch { const r = await _pbi.loginPopup({ scopes:PBI_CFG.scopes }); _token = r.accessToken; }
+    const acc = _pbi.getAllAccounts()[0]; if (acc && typeof window.setSidebarUser==='function') window.setSidebarUser(acc.name||acc.username, acc.username);
+  }
+  function _pbiErr(text){ try { const j=JSON.parse(text); const e=j.error||{}; const pe=e['pbi.error']||{}; const det=(pe.details||[]).map(d=>d.detail&&d.detail.value).filter(Boolean).join(' | '); return det||e.message||pe.code||text.substring(0,200); } catch { return text.substring(0,200); } }
+  // -- RITMO: o Power BI limita as consultas por usuário/minuto --
+  //   Uma aplicação de filtro aqui dispara os KPIs + a tabela + os painéis de gráfico.
+  //   Sem freio isso vira HTTP 429 — e 429 tem a cara EXATA de "sem dados" (KPI em
+  //   "—", gráfico vazio). Então 429 deixa de ser erro: vira espera com contagem
+  //   regressiva, a consulta se repete sozinha e o cooldown sobrevive ao F5.
+  const RX_429 = /HTTP 429|exceeded the amount of requests/i;
+  const _dorme = ms => new Promise(r=>setTimeout(r, ms));
+  let _cool=0, _coolT=null;
+  try { _cool=Number(sessionStorage.getItem('cx_cool'))||0; } catch(e){}
+  function _coolBanner(){
+    clearTimeout(_coolT); _coolT=null;
+    const b=document.getElementById('cx-ritmo'); if(!b) return;
+    const falta=Math.ceil((_cool-Date.now())/1000);
+    if(falta<=0){ b.style.display='none'; return; }
+    b.style.display='block';
+    b.textContent=`O Power BI limitou o ritmo das consultas. Retomando em ${falta}s — os números voltam sozinhos, não precisa mexer nos filtros.`;
+    _coolT=setTimeout(_coolBanner, 1000);
+  }
+  function _marcarRitmo(txt, retryAfter){
+    let seg=Number(retryAfter)||0;
+    if(!seg){ const m=/retry in (\d+)/i.exec(String(txt||'')); seg=m?+m[1]:20; }
+    seg=Math.max(5, Math.min(65, seg));
+    _cool=Math.max(_cool, Date.now()+seg*1000);
+    try { sessionStorage.setItem('cx_cool', String(_cool)); } catch(e){}
+    _coolBanner();
+  }
+  async function _aguardarRitmo(){ while(Date.now()<_cool){ _coolBanner(); await _dorme(Math.min(1000, Math.max(120, _cool-Date.now()+50))); } }
+  async function execQuery(dsId, dax){
+    const body=JSON.stringify({queries:[{query:dax}],serializerSettings:{includeNulls:true}});
+    for(let tent=1; ; tent++){
+      await _aguardarRitmo();
+      const r=await PBIModelo.post(PBI_CFG.workspaceId, dsId, {method:'POST',headers:{Authorization:`Bearer ${_token}`,'Content-Type':'application/json'},body});
+      const text=await r.text();
+      if(r.status===429){
+        _marcarRitmo(text, r.headers.get('Retry-After'));
+        if(tent<3) continue;                     // espera o tempo pedido e repete
+        throw new Error(`HTTP 429: ${_pbiErr(text)}`);
+      }
+      if(!r.ok) throw new Error(`HTTP ${r.status}: ${_pbiErr(text)}`);
+      const d=JSON.parse(text); if(d.error) throw new Error(_pbiErr(text));
+      return d.results[0].tables[0].rows;
+    }
+  }
+  async function resolveDataset(){
+    const anchorProbe = PBIModelo.sonda(DS_ANCHOR);
+    const pinProbe    = PBIModelo.sonda(FATO);   // esta página lê Devoluções: é isso que o modelo precisa ter
+    // 1) ?ds= > PIN > cache. O pin é a fonte da verdade (modelo indicado); só provo
+    //    que ele responde ao fato — não uso a assinatura aqui p/ que uma variação
+    //    de grafia da medida/coluna não faça o código descartar o modelo certo.
+    const falhas = [];
+    const first = [DS_OVERRIDE, DS_PINNED, localStorage.getItem(DS_CACHE_KEY)].filter(Boolean).filter((v,i,a)=>a.indexOf(v)===i);
+    for (const id of first){
+      try { await execQuery(id, pinProbe); if(id!==DS_OVERRIDE) localStorage.setItem(DS_CACHE_KEY, id); return (_dsId=id); }
+      catch(e){ console.warn('[DEVOL] dataset descartado:', id, (e.message||'').replace(/<\/?oii>/g,'').slice(0,140)); falhas.push(['modelo '+id, e]); }
+    }
+    // 2) reserva: varre o workspace exigindo primeiro a ASSINATURA (medida + coluna
+    //    "(origem)"); só se ninguém passar é que aceito quem tem apenas a âncora.
+    const list = (await PBIModelo.candidatos(PBI_CFG.workspaceId, _token)).filter(ds=>first.indexOf(ds.id)<0);
+    for (const probe of [DS_SIGN, anchorProbe]){
+      for (const ds of list){ try { await execQuery(ds.id, probe); localStorage.setItem(DS_CACHE_KEY, ds.id); _dsName=ds.name||null; return (_dsId=ds.id); } catch(e){ if(probe===anchorProbe) falhas.push([ds.name, e]); } }
+    }
+    throw PBIModelo.motivo(DS_ANCHOR, falhas);
+  }
+  // nome do dataset resolvido (p/ mostrar no banner qual MODELO está sendo lido)
+  async function fetchDsName(){
+    if(_dsName||!_dsId) return;
+    try { const r=await fetch(`https://api.powerbi.com/v1.0/myorg/groups/${PBI_CFG.workspaceId}/datasets/${_dsId}`,{headers:{Authorization:`Bearer ${_token}`}}); if(r.ok){ const j=await r.json(); _dsName=j.name||null; } } catch(e){}
+  }
+  async function pbiQuery(dax){ if(!_dsId) await resolveDataset(); return execQuery(_dsId, dax); }
+
+  // ── catálogo do modelo → resolve nomes EXATOS ──
+  let _colCat=null, _meaCat=null, _unresolved=[], _measUnresolved=[], _badMeas=new Set(), _globalUnresolved=[], _globalFilters=[], _globalApplied=[], _grafUnresolved=[];
+  function _indexCols(rows, tk, nk){ const idx={}; rows.forEach(r=>{ const t=r[tk], n=r[nk]; if(t==null||n==null)return; const tn=_norm(t); (idx[tn]=idx[tn]||{})[_norm(n)]=String(n); }); return idx; }
+  function _setRef(c,t,n){ c._t=t; c._n=n; c._ref=`'${t}'[${n}]`; c._out=`${t}[${n}]`; c._include=true; }
+  // resolve c.cands ([tabela,coluna][]) → _t/_n/_ref/_out/_include usando o catálogo (exato→fuzzy)
+  function resolveColSpec(c){
+    c._t=c._n=c._ref=c._out=null; c._include=false;
+    if(_colCat){
+      for(const [t,n] of c.cands){ const tb=_colCat[_norm(t)]; if(tb&&tb[_norm(n)]){ _setRef(c,t,tb[_norm(n)]); break; } }
+      if(!c._include){ for(const [t,n] of c.cands){ const tb=_colCat[_norm(t)]; if(!tb)continue; const toks=_norm(n).split(' ').filter(w=>w.length>2); if(!toks.length)continue; let best=null; for(const nn in tb){ if(toks.every(w=>nn.includes(w))){ if(best===null||nn.length<best.length)best=nn; } } if(best!==null){ _setRef(c,t,tb[best]); break; } } }
+    }
+    // fallback literal: o catálogo pode vir INCOMPLETO (INFO.VIEW.COLUMNS truncado /
+    // COLUMNSTATISTICS sem a coluna) — foi o que sumiu com 'Número da ordem de venda
+    // (origem)' e 'Nota fiscal (origem)'. Usa o 1º candidato (nome confirmado) e deixa a
+    // query REAL + auto-heal provarem se a coluna existe, em vez de descartar às cegas.
+    if(!c._include){ const [t,n]=c.cands[0]; _setRef(c,t,n); }
+  }
+  // monta a expressão DAX de um filtro fixo:
+  //   'contains' → SEARCH (casa por TRECHO, sem depender do texto exato/acentos)
+  //   'notin'    → coluna ∉ {vals};  blank → inclui "(Em branco)";  senão TREATAS ('in')
+  function globalFilterDax(g){
+    const ref=g._ref, list=(g.vals||[]).map(v=>'"'+avDax(v)+'"').join(', ');
+    if(g.op==='contains'){ const conds=(g.vals||[]).map(v=>`SEARCH("${avDax(v)}", ${ref}, 1, 0) > 0`).join(' || '); return `FILTER(ALL(${ref}), ${conds})`; }
+    if(g.op==='notin') return `FILTER(ALL(${ref}), NOT(${ref} IN {${list}}))`;
+    if(g.op==='notblank') return `FILTER(ALL(${ref}), NOT(ISBLANK(${ref})) && LEN(TRIM(${ref})) > 0)`;   // "não está vazio"
+    // "não contém": no BI o vazio PASSA (CONTAINSSTRING(BLANK(),x) é falso) — não inverter isso
+    if(g.op==='notcontains') return `FILTER(ALL(${ref}), ${(g.vals||[]).map(v=>`NOT(CONTAINSSTRING(${ref}, "${avDax(v)}"))`).join(' && ')})`;
+    if(g.blank){ const eqs=(g.vals||[]).map(v=>`${ref} = "${avDax(v)}"`).join(' || '); return `FILTER(ALL(${ref}), ${eqs}${eqs?' || ':''}ISBLANK(${ref}))`; }
+    return `TREATAS({${list}}, ${ref})`;
+  }
+  // resolve o nome EXATO de uma MEDIDA nomeada → "[Medida]" (com fallback literal)
+  function resolveM(cands){
+    if(_meaCat){
+      for(const nm of cands){ const h=_meaCat[_norm(nm)]; if(h)return `[${h}]`; }
+      const toks=_norm(cands[0]).split(' ').filter(w=>w.length>2); let best=null;
+      for(const nn in _meaCat){ if(toks.length&&toks.every(w=>nn.includes(w))){ if(best===null||nn.length<best.length)best=nn; } }
+      if(best!==null)return `[${_meaCat[best]}]`;
+    }
+    return `[${cands[0]}]`;
+  }
+  // resolve o _ref de um item de MEAS: medida nomeada ([X]) OU agregação de coluna (SUM(col))
+  function resolveMeasSpec(m){
+    if(m.agg){ const c={cands:m.cands}; resolveColSpec(c); m._colref=c._ref; m._ref = c._ref ? `${m.agg}(${c._ref})` : null; }
+    else { m._ref = resolveM(m.cands); }
+    m._include = !!m._ref;
+  }
+  // resolve o _ref de um KPI: medida nomeada ([X]) OU contagem distinta de coluna (DISTINCTCOUNT(col))
+  function resolveKpi(m){
+    if(m.meas){ m._ref = resolveM(m.meas); }
+    else if(m.distinct){ const c=colByKey(m.distinct); m._ref = (c && c._ref) ? `DISTINCTCOUNT(${c._ref})` : null; }
+    else { m._ref = null; }
+    m._include = !!m._ref;
+  }
+  async function carregarCatalogo(){
+    // colunas — INFO.VIEW.COLUMNS (padrão do portal) e fallback COLUMNSTATISTICS
+    try { const rows=await pbiQuery(`EVALUATE SELECTCOLUMNS(INFO.VIEW.COLUMNS(), "T",[Table], "N",[Name])`); if(rows&&rows.length) _colCat=_indexCols(rows,'[T]','[N]'); } catch(e){ console.warn('[DEVOL] INFO.VIEW.COLUMNS:', e.message); }
+    if(!_colCat){ try { const rows=await pbiQuery(`EVALUATE SELECTCOLUMNS(COLUMNSTATISTICS(), "T",[Table Name], "N",[Column Name])`); if(rows&&rows.length) _colCat=_indexCols(rows,'[T]','[N]'); } catch(e){ console.warn('[DEVOL] COLUMNSTATISTICS:', e.message); } }
+    // medidas — INFO.VIEW.MEASURES (padrão) e fallback INFO.MEASURES (engines sem INFO.VIEW).
+    //   Sem esse catálogo, medida inexistente vira ref de coluna e quebra a query toda.
+    try { const rows=await pbiQuery(`EVALUATE SELECTCOLUMNS(INFO.VIEW.MEASURES(), "N",[Name])`); if(rows&&rows.length){ _meaCat={}; rows.forEach(r=>{ const n=r['[N]']; if(n!=null)_meaCat[_norm(n)]=String(n); }); } } catch(e){ console.warn('[DEVOL] INFO.VIEW.MEASURES:', e.message); }
+    if(!_meaCat){ try { const rows=await pbiQuery(`EVALUATE SELECTCOLUMNS(INFO.MEASURES(), "N",[Name])`); if(rows&&rows.length){ _meaCat={}; rows.forEach(r=>{ const n=r['[N]']; if(n!=null)_meaCat[_norm(n)]=String(n); }); } } catch(e){ console.warn('[DEVOL] INFO.MEASURES:', e.message); } }
+
+    // resolve as colunas da tabela (auto-heal remove depois o que não existir)
+    _unresolved=[];
+    TABLES.forEach(T=> T.cols.forEach(c=>{ resolveColSpec(c); if(!c._include && _unresolved.indexOf(c.header)<0) _unresolved.push(c.header); }));
+    // resolve as colunas dos dropdowns de filtro (podem NÃO ser colunas da tabela)
+    FILTROS.forEach(resolveColSpec);
+    // resolve os FILTROS FIXOS (as expressões DAX são montadas/validadas em validarFiltrosFixos)
+    _globalUnresolved=[];
+    GLOBAL.forEach(resolveColSpec);
+    // resolve a dimensão de cada PAINEL de gráfico (try/catch por item: exceção
+    //   aqui derrubaria a página inteira — _ready nunca viraria true).
+    _grafUnresolved=[];
+    GRAFS.forEach(g=>{
+      try { resolveColSpec(g); } catch(e){ console.warn('[DEVOL] gráfico', g.label, e.message); }
+      if(!g._ref){ _grafUnresolved.push(g.label); console.warn('[DEVOL] painel sem coluna no modelo:', g.label); }
+    });
+    // resolve medidas da tabela + KPI (KPI depende das colunas já resolvidas p/ DISTINCTCOUNT)
+    TABLES.forEach(T=> T.meas.forEach(resolveMeasSpec));
+    KPI.forEach(resolveKpi);
+  }
+
+  // ── valida cada MEDIDA no modelo ──
+  //   NÃO provo mais cada medida num contexto VAZIO (EVALUATE ROW): isso dava
+  //   FALSO-NEGATIVO em medidas contextuais (ex.: 'Quantidade (Devolução)'),
+  //   marcando como "não encontrada" algo que existe e funciona na query real —
+  //   era o que zerava a tabela (sem medida válida a query nem roda). Agora só
+  //   reporto o que nem resolveu; a medida nomeada sempre entra (tem ref) e é
+  //   validada na query real. Os KPIs resilientes e o auto-heal da tabela isolam
+  //   qualquer medida que realmente falhe, sem derrubar o visual.
+  async function validarMedidas(){
+    _measUnresolved=[]; _badMeas=new Set();
+    TABLES.forEach(T=> T.meas.forEach(m=>{
+      m._include = !!m._ref;
+      if(!m._ref){ const nm=m.header||'?'; if(_measUnresolved.indexOf(nm)<0)_measUnresolved.push(nm); }
+    }));
+  }
+
+  // ── valida os FILTROS FIXOS e monta as expressões DAX ──
+  //   Dois modos de falha zeram a tela: (1) COLUNA inexistente derruba a query;
+  //   (2) VALOR inexistente na coluna faz o filtro casar NADA (foi o caso do
+  //   'Tipo de devolução' — o texto passado não batia com o do modelo). Aqui leio
+  //   os valores reais da coluna (VALUES) e confiro que o pedido existe: coluna OU
+  //   valor ausente → reporto (âmbar) e NÃO aplico o filtro (número fica visível,
+  //   só sem aquele recorte) em vez da tela vazia.
+  //   FALL-FORWARD (13/08/26): não paro no candidato que o catálogo escolheu. Testo os
+  //   candidatos NA ORDEM e fico com o 1º que EXISTE e CONTÉM o valor pedido — antes,
+  //   se o catálogo apontasse uma coluna sem o valor (ou o fallback literal apontasse
+  //   uma coluna inexistente), o filtro era descartado em silêncio e a página mostrava
+  //   um recorte que não era o pedido.
+  async function validarFiltrosFixos(){
+    _globalFilters=[]; _globalApplied=[];
+    const flag=(lbl)=>{ if(_globalUnresolved.indexOf(lbl)<0)_globalUnresolved.push(lbl); };
+    for(const g of GLOBAL){
+      // candidatos a testar: o resolvido pelo catálogo primeiro, depois os declarados
+      const cands=[]; const push=(t,n)=>{ if(t&&n&&!cands.some(c=>_norm(c[0])===_norm(t)&&_norm(c[1])===_norm(n))) cands.push([t,n]); };
+      if(g._t&&g._n) push(g._t,g._n);
+      (g.cands||[]).forEach(([t,n])=>push(t,n));
+      let escolhido=null; const tentados=[];
+      for(const [t,n] of cands){
+        const ref=`'${t}'[${n}]`;
+        let present;
+        try {
+          const rows = await pbiQuery(`EVALUATE VALUES(${ref})`);
+          const k = (rows&&rows.length) ? Object.keys(rows[0])[0] : null;
+          present = k ? rows.map(r=>String(r[k]==null?'':r[k])) : [];
+        } catch(e){ tentados.push(ref+' → coluna não existe'); continue; }
+        // confere que o valor pedido existe (contains=trecho; in=igualdade normalizada; notin não checa)
+        let ok=true;
+        const SEM_CHECK=['notin','notblank','notcontains'];   // negativos/preenchimento não têm valor p/ conferir
+        if(g.op==='contains')                    ok=(g.vals||[]).some(v=> present.some(val=> _norm(val).includes(_norm(v))));
+        else if(SEM_CHECK.indexOf(g.op)<0)       ok=(g.vals||[]).some(v=> present.some(val=> _norm(val)===_norm(v)));
+        if(!ok){ tentados.push(ref+' → sem o valor pedido'); if(DBG) console.log('[DEVOL] valores de',ref,'>>',present.slice(0,40)); continue; }
+        _setRef(g,t,n); escolhido=ref; break;
+      }
+      if(!escolhido){ flag(g.label); console.warn('[DEVOL] filtro fixo NÃO aplicado:', g.label, '· candidatos:', tentados); continue; }
+      const dax=globalFilterDax(g);
+      _globalApplied.push({ label:g.label, ref:escolhido, dax });
+      _globalFilters.push(dax);
+      if(DBG) console.log('[DEVOL] filtro fixo aplicado:', g.label, 'em', escolhido);
+    }
+  }
+
+  // ── diagnóstico ?diag=1 · QUANTO cada filtro fixo corta ──
+  //   Filtro fixo errado não dá erro: só devolve um número menor (foi o caso do
+  //   'Exibir no BI'). Imprime a medida sem fixo, com cada fixo isolado e com todos.
+  async function diagFiltrosFixos(){
+    const ref = (KPI[0]&&KPI[0]._ref) || '[Quantidade (Devolução)]';
+    const tot = async fl => {
+      const inner = `ROW("v", ${ref})`;
+      try { const r=(await pbiQuery(`EVALUATE ${fl.length?`CALCULATETABLE(${inner}, ${fl.join(', ')})`:inner}`))[0]||{}; return _numN(r['[v]']); }
+      catch(e){ return 'ERRO: '+(e.message||'').replace(/<\/?oii>/g,'').slice(0,90); }
+    };
+    const linhas=[{ recorte:'(nenhum fixo)', valor: await tot([]) }];
+    for(const a of _globalApplied) linhas.push({ recorte:'só '+a.label+' · '+a.ref, valor: await tot([a.dax]) });
+    if(_globalApplied.length>1) linhas.push({ recorte:'TODOS os fixos', valor: await tot(_globalApplied.map(a=>a.dax)) });
+    console.table(linhas);
+    await diagPorTipo(ref);
+  }
+  // ── diagnóstico ?diag=1 · a medida ABERTA por tipo, em CADA coluna candidata ──
+  //   Responde de uma vez "qual coluna/valor dá o total que o Power BI mostra"
+  //   (ex.: os ~900 aguardando faturamento) sem depender de eu adivinhar a grafia.
+  async function diagPorTipo(measRef){
+    const g = GLOBAL.find(x=>x.op==='contains'); if(!g) return;
+    const outros = _globalApplied.filter(a=>a.label!==g.label).map(a=>a.dax);   // mantém só os OUTROS fixos
+    const vistos=[];
+    for(const [t,n] of (g.cands||[])){
+      const colRef=`'${t}'[${n}]`, outKey=`${t}[${n}]`;
+      if(vistos.some(v=>_norm(v)===_norm(colRef))) continue; vistos.push(colRef);
+      const fstr = outros.length ? outros.join(', ')+', ' : '';
+      try {
+        const rows = await pbiQuery(`EVALUATE TOPN(40, SUMMARIZECOLUMNS(${colRef}, ${fstr}"q", ${measRef}), [q], DESC)`);
+        const km = rowKeyMap(rows[0]);
+        console.log('[DEVOL] ▼ '+colRef+' (só com os outros fixos: '+(outros.length?_globalApplied.filter(a=>a.label!==g.label).map(a=>a.label).join(' · '):'nenhum')+')');
+        console.table(rows.map(r=>({ valor: (outKey in r ? r[outKey] : r[km[_norm(outKey)]]), qtd: _numN(r['[q]']) })));
+      } catch(e){ console.log('[DEVOL] ▼ '+colRef+' → não dá (', (e.message||'').replace(/<\/?oii>/g,'').slice(0,80), ')'); }
+    }
+  }
+
+  // ── leitura do VALOR da célula (chave da linha ↔ coluna) ──
+  //   A API devolve as chaves como "Tabela[Coluna]" com a grafia do MODELO. Quando o
+  //   catálogo vem incompleto, `_out` fica com o nome do CANDIDATO (fallback literal):
+  //   o DAX roda (referência de coluna ignora caixa) mas o `r[_out]` literal não acha a
+  //   chave e a coluna inteira vira "—" — foi o que aconteceu com 'Cód. do Cliente'.
+  //   Por isso caso a chave por nome NORMALIZADO (sem caixa/acento/espaço duplo).
+  const rowKeyMap = row => { const m={}; Object.keys(row||{}).forEach(k=>{ m[_norm(k)]=k; }); return m; };
+  function cellVal(r, c, km){ if(c._out in r) return r[c._out]; const k=km[_norm(c._out)]; return k===undefined?null:r[k]; }
+
+  const activeCols = T => T.cols.filter(c=>c._include);
+  const activeMeas = T => T.meas.filter(m=>m._include!==false && m._ref && !_badMeas.has(m._ref));
+
+  // diagnóstico por URL: ?nofilters=1 ignora os filtros fixos; ?debug=1 loga DAX + 1ª linha
+  const NOFILT = /[?&]nofilters\b/i.test(location.search);
+  const DBG    = NOFILT || /[?&](debug|diag)\b/i.test(location.search);
+
+  function baseFilters(){
+    const f = NOFILT ? [] : _globalFilters.slice();   // fixos: os do banner (Tipo de devolução · Grupo de depósitos · Exibir no BI · NF modelo/status/≠vazia · op. sem VEN)
+    FILTROS.forEach(d=>{ const col=colByKey(d.id); if(!col||!col._ref) return; const vals=[...window._avSel[d.id]]; if(vals.length) f.push(`TREATAS({ ${vals.map(v=>'"'+avDax(v)+'"').join(', ')} }, ${col._ref})`); });
+    return f;
+  }
+  function ctWrap(inner){ const f=baseFilters(); return f.length?`CALCULATETABLE(${inner}, ${f.join(', ')})`:inner; }
+  async function avCarregarValores(key){
+    const col=colByKey(key); if(!col||!col._ref) return [];
+    const rows = await pbiQuery(`EVALUATE VALUES(${col._ref})`);
+    if(!rows||!rows.length) return [];
+    const k=Object.keys(rows[0])[0];
+    return rows.map(r=>r[k]).filter(v=>v!=null&&v!=='').map(v=>({value:String(v),label:String(v)})).sort((a,b)=>a.label.localeCompare(b.label,'pt-BR'));
+  }
+
+  async function carregarKPIs(){
+    const live = KPI.filter(m=>m._ref && !_badMeas.has(m._ref));
+    // caminho rápido: 1 query só quando todas as refs vivas são válidas
+    if(live.length){
+      try {
+        const parts = live.map(m=>`"${m.al}", ${m._ref}`).join(', ');
+        const r=(await pbiQuery(`EVALUATE ${ctWrap(`ROW(${parts})`)}`))[0]||{};
+        KPI.forEach(m=>{
+          const ok = m._ref && !_badMeas.has(m._ref);
+          const v  = ok ? _numN(r['['+m.al+']']) : null;
+          setTxt(m.id, ok ? m.fmt(v) : '—');
+          if(m.gk) _kpiVal[m.gk]=v;   // denominador do % dos paineis
+        });
+        return;
+      } catch(e){
+        const msg=(e.message||'').replace(/<\/?oii>/g,'');
+        // no 429 o leque medida a medida MULTIPLICA as requisicoes e piora a punicao
+        if(RX_429.test(msg)){ KPI.forEach(m=>{ if(m.gk) _kpiVal[m.gk]=null; }); console.warn('[DEVOL] kpi no limite de ritmo:', msg); return; }
+        console.warn('[DEVOL] kpi combinado falhou, indo um-a-um:', msg);
+      }
+    }
+    // fallback resiliente: cada KPI isolado — uma ref ruim não zera as outras
+    for(const m of KPI){
+      if(!m._ref || _badMeas.has(m._ref)){ setTxt(m.id,'—'); if(m.gk) _kpiVal[m.gk]=null; continue; }
+      try { const r=(await pbiQuery(`EVALUATE ${ctWrap(`ROW("v", ${m._ref})`)}`))[0]||{}; const v=_numN(r['[v]']); setTxt(m.id, m.fmt(v)); if(m.gk) _kpiVal[m.gk]=v; }
+      catch(e){
+        setTxt(m.id,'—'); if(m.gk) _kpiVal[m.gk]=null;
+        // 429 nao e medida inexistente: marcar como ruim tiraria a medida da tela ate o F5
+        if(RX_429.test((e.message||''))) continue;
+        _badMeas.add(m._ref); const nm=bareRef(m._ref); if(_measUnresolved.indexOf(nm)<0)_measUnresolved.push(nm);
+      }
+    }
+  }
+
+  const LIMITE = 5000;   // teto de linhas da consulta (o rodapé é corrigido quando corta)
+
+  // Total REAL do rodapé quando o TOPN cortou: SUMX sobre a MESMA base, sem o corte.
+  //   Sem isto o rodapé soma só as linhas que couberam e sai menor que o BI.
+  async function carregarTotais(T, ms, baseDax){
+    const parts = ms.map(m=>`"${m.key}", SUMX(B, [${m.key}])`).join(', ');
+    const r = (await pbiQuery(`EVALUATE VAR B = ${baseDax} RETURN ROW(${parts})`))[0]||{};
+    const o={}; ms.forEach(m=>{ o[m.key]=_numN(r['['+m.key+']'])||0; }); return o;
+  }
+
+  async function carregarTabela(T){
+    let attempts=0; const maxTry=T.cols.length+T.meas.length+2;
+    while(true){
+      const cols = activeCols(T).map(c=>c._ref).join(', ');
+      if(!cols){ T.rows=[]; return; }
+      const ms = activeMeas(T);
+      if(!ms.length){ T.rows=[]; return; }   // nenhuma medida válida para pedir
+      const flt = baseFilters(); const fstr = flt.length ? flt.join(', ')+', ' : '';
+      const meas = ms.map(m=>`"${m.key}", ${m._ref}`).join(', ');
+      const base = `SUMMARIZECOLUMNS(${cols}, ${fstr}${meas})`;
+      const dax = `EVALUATE TOPN(${LIMITE}, ${base}, [${ms[0].key}], DESC)`;
+      if(DBG) console.log('[DEVOL]', T.name, 'DAX >>', dax);
+      try {
+        const raw = await pbiQuery(dax);
+        if(DBG) console.log('[DEVOL]', T.name, 'linhas:', raw.length, '| 1ª linha:', raw[0]);
+        const km = rowKeyMap(raw[0]);
+        // coluna que veio na query mas cuja chave não casa nem normalizada → avisa (evita "—" silencioso)
+        if(raw.length) activeCols(T).forEach(c=>{ if(!(c._out in raw[0]) && km[_norm(c._out)]===undefined) console.warn('[DEVOL] sem chave no resultado:', c.header, '·', c._out, '| chaves:', Object.keys(raw[0]).join(' , ')); });
+        T.rows = raw.map(r=>{
+          const o={};
+          activeCols(T).forEach(c=>{ o[c.key]=cellVal(r,c,km); });
+          ms.forEach(m=>{ o[m.key]=_numN(r['['+m.key+']'])||0; });
+          return o;
+        }).filter(x=> ms.some(m=>(x[m.key]||0)!==0));
+        T.trunc = raw.length >= LIMITE; T.tot = null;
+        if(T.trunc){ try { T.tot = await carregarTotais(T, ms, base); } catch(e){ console.warn('[DEVOL] total real:', (e.message||'')); } }
+        return;
+      } catch(e){
+        const msg=(e.message||'').replace(/<\/?oii>/g,'');
+        // auto-heal 1: coluna inexistente → descarta a coluna e retenta
+        const mc=/Column '([^']+)' in table '([^']+)' cannot be found/i.exec(msg);
+        if(mc && attempts<maxTry){
+          attempts++;
+          const badN=_norm(mc[1]), badT=_norm(mc[2]);
+          const victim = activeCols(T).find(c=> _norm(c._t)===badT && _norm(c._n)===badN)
+                      || activeCols(T).find(c=> _norm(c._n)===badN);
+          if(victim){ victim._include=false; if(_unresolved.indexOf(victim.header)<0) _unresolved.push(victim.header); renderHeadT(T); continue; }
+        }
+        // auto-heal 2: MEDIDA tratada como coluna (nome inexistente) → descarta a medida e retenta
+        const mm=/(?:The value for|A single value for column|A single value for measure|Cannot find name) '([^']+)'/i.exec(msg)
+              || /'([^']+)'\s+cannot be determined/i.exec(msg);
+        if(mm && attempts<maxTry){
+          attempts++;
+          const bad=_norm(mm[1]);
+          const victim = activeMeas(T).find(m=> _norm(bareRef(m._ref))===bad)
+                      || activeMeas(T).find(m=> _norm(m.header)===bad);
+          if(victim){ _badMeas.add(victim._ref); victim._include=false; const nm=bareRef(victim._ref); if(_measUnresolved.indexOf(nm)<0)_measUnresolved.push(nm); renderHeadT(T); continue; }
+        }
+        throw e;
+      }
+    }
+  }
+
+  function vencCls(v){ const d=dateObj(v); if(!d) return ''; const t=new Date(); t.setHours(0,0,0,0); const diff=(d-t)/86400000; if(diff<0) return 'venc-late'; if(diff<=90) return 'venc-soon'; return ''; }
+  function sortRowsT(T,rows){ const dir=T.sort.dir==='desc'?-1:1,k=T.sort.k; return rows.sort((a,b)=>{ const av=a[k],bv=b[k]; if(T.measkeys.includes(k)) return ((av||0)-(bv||0))*dir; return String(av==null?'':av).localeCompare(String(bv==null?'':bv),'pt-BR')*dir; }); }
+
+  function renderHeadT(T){
+    const tr=document.getElementById(T.ids.head); if(!tr) return;
+    let h='';
+    T.cols.forEach(c=>{
+      const left = (c.kind==='dim'||c.kind==='cod'||c.kind==='date'||c.kind==='ctr');
+      const ok = c._include!==false;   // otimista: só marca ⚠ depois que o catálogo provar que falta
+      const cls = (left?'dim':'') + (ok?'':' unres');
+      const tt = ok? '' : ' title="Coluna não encontrada no modelo"';
+      h += `<th class="${cls.trim()}" data-k="${c.key}"${tt}>${escH(c.header)}${ok?'':' ⚠'}</th>`;
+    });
+    T.meas.forEach(m=>{ const ok=(m._include!==false && !_badMeas.has(m._ref)); h += `<th class="${ok?'':'unres'}" data-k="${m.key}"${ok?'':' title="Medida não encontrada no modelo"'}>${escH(m.header)}${ok?'':' ⚠'}</th>`; });
+    tr.innerHTML=h;
+    tr.querySelectorAll('th').forEach(th=>th.addEventListener('click', ()=>{
+      const k=th.getAttribute('data-k'); if(!k) return;
+      if(T.sort.k===k) T.sort.dir=T.sort.dir==='desc'?'asc':'desc';
+      else { T.sort.k=k; T.sort.dir=T.measkeys.includes(k)?'desc':'asc'; }
+      renderTabela(T);
+    }));
+  }
+
+  function cellFor(c,x){
+    const v=x[c.key];
+    if(c.kind==='date') return `<td class="ctr ${c.venc?vencCls(v):''}">${fDate(v)}</td>`;
+    if(c.kind==='ctr')  return `<td class="ctr">${escH(v==null?'—':v)}</td>`;
+    if(c.kind==='cod')  return `<td class="cod">${escH(v==null?'—':v)}</td>`;
+    return `<td class="dim">${escH(v==null?'—':v)}</td>`;
+  }
+
+  function renderTabela(T){
+    const tbody=document.getElementById(T.ids.rows); if(!tbody) return;
+    const si=document.getElementById(T.ids.search);
+    const q=((si&&si.value)||'').trim().toLowerCase();
+    let rows=T.rows.slice();
+    if(q) rows=rows.filter(x=>T.cols.some(c=>String(x[c.key]==null?'':x[c.key]).toLowerCase().includes(q)));
+    sortRowsT(T,rows);
+    const ncols = T.cols.length + T.meas.length;
+    if(!rows.length){ tbody.innerHTML=`<tr><td colspan="${ncols}" style="padding:20px;text-align:center;color:var(--text-3);">${escH(T.emptyMsg||'Sem dados.')}</td></tr>`; setTxt(T.ids.info,'0 linhas'); return; }
+    const tot={}; T.meas.forEach(m=>tot[m.key]=(m._include===false||!m._ref||_badMeas.has(m._ref))?null:0);
+    // se a consulta cortou no teto, o rodapé usa o total REAL da base
+    if(T.tot) T.meas.forEach(m=>{ if(tot[m.key]!==null && T.tot[m.key]!=null) tot[m.key]=T.tot[m.key]; });
+    else T.rows.forEach(x=>T.meas.forEach(m=>{ if(tot[m.key]!==null) tot[m.key]+=(x[m.key]||0); }));
+    tbody.innerHTML = rows.map(x=>'<tr>'
+        + T.cols.map(c=>cellFor(c,x)).join('')
+        + T.meas.map(m=>`<td${m.strong?` style="${m.strong}"`:''}>${m.fmt(x[m.key])}</td>`).join('')
+        + '</tr>').join('')
+      + `<tr class="cx-total"><td class="dim" colspan="${T.cols.length}">TOTAL · ${T.rows.length} linhas${T.trunc?` (TOP ${LIMITE} exibidas — total real da base)`:''}</td>`
+        + T.meas.map(m=>`<td>${m.fmt(tot[m.key])}</td>`).join('')
+      + `</tr>`;
+    setTxt(T.ids.info, `${rows.length} de ${T.rows.length} linhas · ordenado por ${T.sort.k}`);
+  }
+
+  // ══ MOTOR DOS VISUAIS ═══════════════════════════════════════════════════
+  //   Um painel por dimensão (GRAFS). TODAS as medidas do seletor vêm na MESMA
+  //   consulta, então trocar de medida só re-desenha — custa ZERO requisição.
+  //   Os 4 adaptadores (gRefDe / gFiltros / gRowFilter / gExtraMeas) ficam junto
+  //   do GMEAS de cada aba; deste comentário para baixo o motor é IDÊNTICO nas 4.
+  const _charts={}, _gdata={}, _gerr={}, _gtrunc={}, _gcur={};
+  let _gmea=GMEAS[0].m;
+  const gmSel      = () => GMEAS.find(x=>x.m===_gmea) || GMEAS[0];
+  // medidas do seletor realmente disponíveis (uma pode ter caído no auto-heal)
+  const gMeasVivas = () => GMEAS.filter(x=>{ const r=gRefDe(x); return !!(r && !_badMeas.has(r)); });
+  const gCurta     = t => { t=String(t==null?'':t); return t.length>26 ? t.slice(0,26)+'…' : t; };
+  const gPct       = (parte,tot) => (tot!=null && tot!==0) ? ' ('+(parte/tot*100).toLocaleString('pt-BR',{maximumFractionDigits:1})+'% do total)' : '';
+
+  function gMontarPaineis(){
+    const wrap=document.getElementById('cx-graficos'); if(!wrap) return;
+    wrap.innerHTML = GRAFS.map(g=>`<div class="cx-panel">
+        <h3 style="margin:0;">${escH(g.label)}</h3>
+        <div class="cx-sub" id="cx-gs-${g.key}" style="margin:2px 0 12px;">Carregando…</div>
+        <div class="cx-chart-wrap" id="cx-gw-${g.key}"><canvas id="cx-gc-${g.key}"></canvas></div>
+        <div class="cx-ph" id="cx-ge-${g.key}" style="display:none;"></div>
+      </div>`).join('');
+  }
+  // avisa quais dimensões o modelo não tem (painel nunca fica vazio sem explicação)
+  function gAvisoDims(){
+    const el=document.getElementById('cx-gfix'); if(!el) return;
+    if(!_grafUnresolved.length){ el.style.display='none'; el.textContent=''; return; }
+    el.style.display='';
+    el.textContent = `⚠ dimensão não encontrada no modelo: ${_grafUnresolved.join(', ')} — o painel dela fica vazio; o resto não é afetado.`;
+  }
+  // habilita no seletor só as medidas que existem no modelo
+  function gSincronizarSeg(){
+    const seg=document.getElementById('cx-gseg'); if(!seg) return;
+    const vivas=gMeasVivas().map(x=>x.m);
+    if(vivas.length && vivas.indexOf(_gmea)<0) _gmea=vivas[0];
+    seg.querySelectorAll('button').forEach(b=>{
+      const m=b.getAttribute('data-m');
+      b.disabled = vivas.indexOf(m)<0;
+      if(b.disabled) b.title='Medida não encontrada no modelo';
+      b.classList.toggle('on', m===_gmea && !b.disabled);
+    });
+  }
+  // desenha (ou atualiza) barras horizontais. O formatador vive em _gcur[id]: assim a
+  //   troca de medida reaproveita o mesmo Chart e o eixo/tooltip já saem na unidade nova.
+  function gHbar(id, labels, datasets, fmtHolder, legenda, afterBody){
+    const el=document.getElementById(id); if(!el||typeof Chart==='undefined') return;
+    _gcur[id]=fmtHolder;
+    const cfg={ labels, datasets };
+    if(_charts[id]){ _charts[id].data=cfg; _charts[id].options.plugins.legend.display=!!legenda; _charts[id].update(); return; }
+    _charts[id]=new Chart(el.getContext('2d'), { type:'bar', data:cfg, options:{
+      indexAxis:'y', responsive:true, maintainAspectRatio:false, animation:{duration:260},
+      plugins:{
+        legend:{ display:!!legenda, position:'bottom', labels:{boxWidth:10, font:{size:10.5}} },
+        tooltip:{ callbacks:{
+          label:c=>`${c.dataset.label}: ${(_gcur[id]||GMEAS[0]).fmt(c.raw)}`,
+          afterBody: afterBody||undefined } }
+      },
+      scales:{
+        x:{ beginAtZero:true, ticks:{ callback:v=>(_gcur[id]||GMEAS[0]).tick(v), font:{size:10} }, grid:{color:'#EEF3F8'} },
+        y:{ ticks:{font:{size:10}}, grid:{display:false} }
+      } } });
+  }
+  function gVazio(g,msg){ const w=document.getElementById('cx-gw-'+g.key), e=document.getElementById('cx-ge-'+g.key); if(w)w.style.display='none'; if(e){e.style.display='block'; e.textContent=msg;} }
+  function gCheio(g){ const w=document.getElementById('cx-gw-'+g.key), e=document.getElementById('cx-ge-'+g.key); if(w)w.style.display=''; if(e)e.style.display='none'; }
+
+  function gRender(g){
+    const sub=document.getElementById('cx-gs-'+g.key);
+    if(!g._ref){ gVazio(g,'Dimensão não encontrada no modelo.'); if(sub) sub.textContent='—'; return; }
+    if(_gerr[g.key]){ gVazio(g,_gerr[g.key]); if(sub) sub.textContent='—'; return; }
+    const dados=_gdata[g.key];
+    if(!dados){ if(sub) sub.textContent='Carregando…'; return; }   // mantém as barras antigas na tela
+    const gm=gmSel();
+    // corte por |valor|: com número negativo em jogo (devolução/estorno) ordenar pelo
+    // valor descartaria justo a anomalia — mesma razão do ABS no TOPN da tabela.
+    const cats=dados.filter(x=>(x[gm.key]||0)!==0)
+                    .sort((a,b)=>Math.abs(b[gm.key]||0)-Math.abs(a[gm.key]||0)).slice(0,GTOP)
+                    .sort((a,b)=>(b[gm.key]||0)-(a[gm.key]||0));
+    if(!cats.length){ gVazio(g,'Sem '+gm.label.toLowerCase()+' neste filtro.'); if(sub) sub.textContent='—'; return; }
+    gCheio(g);
+    gHbar('cx-gc-'+g.key, cats.map(x=>gCurta(x.cat)),
+      [{ label:gm.label, data:cats.map(x=>x[gm.key]||0), backgroundColor:gm.cor, borderRadius:3 }], gm, false);
+    if(sub){
+      const n=dados.length + (_gtrunc[g.key]?'+':'');
+      if(gm.nosoma){
+        // razão/índice: somar não quer dizer nada — mostro o maior da lista
+        sub.textContent = `${cats.length} de ${n} categorias · maior ${gm.fmt(cats[0][gm.key])}`;
+      } else {
+        const soma=cats.reduce((a,x)=>a+(x[gm.key]||0),0);
+        // `semPct` = contagem DISTINTA (DISTINCTCOUNT): a mesma ordem/NF/paciente conta
+        //   em mais de uma categoria, então a soma das barras passa do total da aba —
+        //   um "% do total" ali daria acima de 100% e enganaria.
+        sub.textContent = `${cats.length} de ${n} categorias · ${gm.semPct?'soma ':''}${gm.fmt(soma)}${gm.semPct?'':gPct(soma,_kpiVal[gm.key])}`;
+        sub.title = gm.semPct ? 'Contagem distinta não soma: a mesma ordem/NF/paciente pode contar em mais de uma categoria, então a soma das barras passa do total da aba.' : '';
+      }
+    }
+  }
+  function gRenderTodos(){ GRAFS.forEach(gRender); if(typeof gRenderMix==='function') gRenderMix(); }
+
+  // uma consulta por painel, no MESMO recorte da tabela desta aba
+  async function gCarregarUm(g){
+    const ms = gMeasVivas().map(x=>({ key:x.key, ref:gRefDe(x) }));
+    if(!ms.length) throw new Error('nenhuma medida do seletor disponível');
+    const todas= ms.concat(gExtraMeas());          // medida que só existe p/ o filtro de linha
+    const flt  = gFiltros(); const fstr = flt.length ? flt.join(', ')+', ' : '';
+    const meas = todas.map(m=>`"${m.key}", ${m.ref}`).join(', ');
+    const sc   = `SUMMARIZECOLUMNS(${g._ref}, ${fstr}${meas})`;
+    const rfx  = gRowFilter();
+    const base = rfx ? `FILTER(${sc}, ${rfx})` : sc;
+    // O TOPN busca as maiores pela 1ª medida do seletor (uma consulta serve as 3);
+    // por isso o rodapé do painel diz "de N+" quando bate no teto.
+    const dax  = `EVALUATE TOPN(${GTOP_Q}, ${base}, ABS([${ms[0].key}]), DESC)`;
+    if(DBG) console.log('[DEVOL] gráfico', g.key, 'DAX >>', dax);
+    const raw = await pbiQuery(dax);
+    const km  = rowKeyMap(raw[0]);
+    _gtrunc[g.key] = raw.length>=GTOP_Q;
+    return raw.map(r=>{
+      const v=cellVal(r,g,km);
+      const o={ cat:(v==null||String(v).trim()==='')?'(em branco)':String(v) };
+      todas.forEach(m=>{ o[m.key]=_numN(r['['+m.key+']'])||0; });
+      return o;
+    });
+  }
+  // marca os painéis como "recarregando" sem apagar as barras que já estão na tela
+  function gMarcarCarregando(){ GRAFS.forEach(g=>{ _gdata[g.key]=null; _gerr[g.key]=null; }); gRenderTodos(); }
+  // Fila de 2 por vez: todas as consultas de uma vez viram HTTP 429 (o limite é por
+  //   usuário/minuto e a aba já gasta as dos KPIs e da tabela). Cada painel pinta
+  //   quando a SUA resposta chega — e no 429 a fila para, porque insistir só piora.
+  async function carregarGraficos(seq){
+    const alvos=GRAFS.filter(g=>g._ref);
+    GRAFS.filter(g=>!g._ref).forEach(gRender);
+    if(!alvos.length){ if(typeof gRenderMix==='function') gRenderMix(); return; }
+    let i=0, freado=false;
+    const worker=async()=>{
+      while(i<alvos.length && !freado){
+        const g=alvos[i++];
+        if(seq!=null && seq!==_apSeq) return;   // aplicação superada: não gasta requisição
+        try { _gdata[g.key]=await gCarregarUm(g); _gerr[g.key]=null; }
+        catch(e){
+          const msg=(e.message||'').replace(/<\/?oii>/g,'');
+          _gerr[g.key]='Erro: '+msg.substring(0,140);
+          console.warn('[DEVOL] gráfico', g.key+':', msg);
+          if(RX_429.test(msg)) freado=true;
+        }
+        if(seq==null || seq===_apSeq){ gRender(g); if(typeof gRenderMix==='function' && g.key==='familia') gRenderMix(); }
+      }
+    };
+    await Promise.all([worker(), worker()]);
+    if(seq!=null && seq!==_apSeq) return;
+    if(freado) alvos.forEach(g=>{ if(!_gdata[g.key] && !_gerr[g.key]){ _gerr[g.key]='Não carregado — o Power BI limitou o ritmo das consultas.'; gRender(g); } });
+    if(typeof gRenderMix==='function') gRenderMix();
+  }
+  // seletor de medida dos painéis — só re-desenha (as medidas já vieram juntas)
+  function gSeletorMedida(){
+    const seg=document.getElementById('cx-gseg'); if(!seg) return;
+    seg.addEventListener('click', e=>{
+      const b=e.target.closest('button'); if(!b || b.disabled) return;
+      _gmea=b.getAttribute('data-m');
+      seg.querySelectorAll('button').forEach(x=>x.classList.toggle('on', x===b));
+      gRenderTodos();
+    });
+  }
+
+  async function cxAplicar(){
+    if(!_ready) return;
+    TABLES.forEach(T=>{ const tb=document.getElementById(T.ids.rows); if(tb) tb.innerHTML=`<tr><td colspan="${T.cols.length+T.meas.length}" style="padding:20px;text-align:center;color:var(--text-3);">Carregando…</td></tr>`; });
+    const seq = ++_apSeq;
+    gMarcarCarregando();
+    try { await carregarKPIs(); } catch(e){ console.error('[DEVOL] kpis:', e.message); }
+    if(seq!==_apSeq) return;   // já tem aplicação mais nova a caminho
+    for(const T of TABLES){
+      try { await carregarTabela(T); renderTabela(T); }
+      catch(e){ console.error(`[DEVOL] ${T.name}:`, e.message); const tb=document.getElementById(T.ids.rows); if(tb) tb.innerHTML=`<tr><td colspan="${T.cols.length+T.meas.length}" style="padding:18px;text-align:center;color:var(--danger);">Erro: ${escH((e.message||'').substring(0,240))}</td></tr>`; }
+      if(seq!==_apSeq) return;
+    }
+    // gráficos por último: quem manda no tempo de tela são os KPIs e a tabela
+    try { await carregarGraficos(seq); } catch(e){ console.error('[DEVOL] gráficos:', e.message); }
+  }
+  // Debounce: marcar 5 caixas no dropdown eram 5 aplicações = dezenas de consultas em
+  //   segundos (= HTTP 429, que na tela vira "sem dados"). Agora vira UMA.
+  let _apSeq=0, _apT=null;
+  function cxAplicarDebounce(ms){ clearTimeout(_apT); _apT=setTimeout(()=>cxAplicar(), ms||600); }
+  window.cxAplicar=cxAplicar;
+
+  // ── dropdowns de filtro (genérico) ──
+  function avMakeDropdown({ label, getOptions, getSelected, setSelected, onChange }){
+    const wrap=document.createElement('div'); wrap.className='av-dd';
+    const btn=document.createElement('button'); btn.className='av-dd-btn'; btn.type='button';
+    const panel=document.createElement('div'); panel.className='av-dd-panel';
+    panel.innerHTML = `<div class="av-dd-search"><input type="text" placeholder="Buscar…"></div><div class="av-dd-list"></div><div class="av-dd-foot"><button type="button" data-act="limpar">Limpar</button><button type="button" data-act="fechar">Fechar</button></div>`;
+    wrap.appendChild(btn); wrap.appendChild(panel);
+    const list=panel.querySelector('.av-dd-list'), search=panel.querySelector('input');
+    let loaded=false, options=[];
+    function refresh(){ const n=getSelected().length; btn.classList.toggle('has',n>0); btn.innerHTML=`<span>${label}</span>${ n?`<span class="cnt">${n}</span>`:'<span style="color:var(--text-4);font-weight:500;">Todos</span>' }`; }
+    function renderList(){ const q=(search.value||'').toLowerCase(); const sel=new Set(getSelected()); const items=options.filter(o=>!q||String(o.label).toLowerCase().includes(q)); list.innerHTML=items.length?items.map(o=>`<label class="av-dd-opt"><input type="checkbox" value="${avEsc(o.value)}" ${sel.has(o.value)?'checked':''}>${o.label}</label>`).join(''):'<div style="padding:8px;color:var(--text-3);font-size:12px;">nenhum</div>'; }
+    async function ensure(){ if(loaded) return; list.innerHTML='<div style="padding:10px;color:var(--text-3);font-size:12px;">Carregando…</div>'; try{options=await getOptions();}catch(e){list.innerHTML='<div style="padding:10px;color:var(--danger);font-size:12px;">erro</div>';return;} loaded=true; renderList(); }
+    btn.addEventListener('click', async e=>{ e.stopPropagation(); const open=wrap.classList.contains('open'); document.querySelectorAll('.av-dd.open').forEach(d=>d.classList.remove('open')); if(!open){ wrap.classList.add('open'); await ensure(); search.focus(); } });
+    panel.addEventListener('click', e=>e.stopPropagation());
+    list.addEventListener('change', e=>{ if(e.target.matches('input[type=checkbox]')){ setSelected(e.target.value,e.target.checked); refresh(); onChange(); } });
+    search.addEventListener('input', renderList);
+    panel.querySelector('[data-act=limpar]').addEventListener('click', ()=>{ setSelected(null,false,true); renderList(); refresh(); onChange(); });
+    panel.querySelector('[data-act=fechar]').addEventListener('click', ()=>wrap.classList.remove('open'));
+    refresh(); return wrap;
+  }
+  document.addEventListener('click', ()=>document.querySelectorAll('.av-dd.open').forEach(d=>d.classList.remove('open')));
+  function avMontarToolbar(){
+    const tb=document.getElementById('cx-toolbar'); if(!tb) return; tb.innerHTML='';
+    FILTROS.forEach(d=>tb.appendChild(avMakeDropdown({ label:d.label, getOptions:()=>avCarregarValores(d.id), getSelected:()=>[...window._avSel[d.id]], setSelected:(v,ck,clr)=>{ const s=window._avSel[d.id]; if(clr){s.clear();return;} if(ck)s.add(v); else s.delete(v); }, onChange:()=>cxAplicarDebounce() })));
+    const limpar=document.createElement('button'); limpar.className='cx-btn'; limpar.type='button'; limpar.textContent='✕ Limpar filtros';
+    limpar.addEventListener('click', ()=>{ FILTROS.forEach(f=>window._avSel[f.id].clear()); avMontarToolbar(); cxAplicar(); });
+    tb.appendChild(limpar);
+  }
+
+  TABLES.forEach(T=>{ const si=document.getElementById(T.ids.search); if(si) si.addEventListener('input', ()=>renderTabela(T)); });
+
+  document.addEventListener('DOMContentLoaded', async ()=>{
+    TABLES.forEach(renderHeadT);
+    avMontarToolbar();
+    gMontarPaineis();
+    gSeletorMedida();
+    const banner=document.getElementById('cx-banner');
+    try {
+      await pbiConnect();
+      banner.innerHTML='⏳ Localizando o dataset de devoluções…';
+      await resolveDataset();
+      await fetchDsName();   // descobre o NOME do dataset resolvido (mostra qual modelo está lendo)
+      banner.innerHTML=`⏳ Lendo o modelo${_dsName?' “'+escH(_dsName)+'”':''} (nomes exatos de colunas e medidas)…`;
+      await carregarCatalogo();
+      await validarMedidas();        // isola medida que realmente não resolveu (sem falso-negativo)
+      await validarFiltrosFixos();   // prova a coluna de cada filtro fixo e monta as expressões
+      TABLES.forEach(renderHeadT);   // re-render marcando colunas/medidas não encontradas
+      gSincronizarSeg(); gAvisoDims();   // seletor de medida e avisos dos painéis
+      _ready=true;
+      const faltas = _unresolved.concat(_measUnresolved.map(m=>m+' (medida)'));
+      // nome + id no hover: se algum dia voltar a ler outro modelo, dá p/ conferir na hora
+      const dsInfo = _dsName ? ` · dataset: <b title="${escH(_dsId||'')}">${escH(_dsName)}</b>` : '';
+      const chk  = `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>`;
+      const warn = `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>`;
+      // o banner mostra os fixos REALMENTE aplicados (antes era texto fixo: dizia
+      // "ativos" até quando o filtro havia sido descartado por coluna/valor ausente)
+      const fixInfo = NOFILT ? 'filtros fixos IGNORADOS (?nofilters=1)'
+                             : (_globalApplied.length ? 'filtros fixos ativos ('+escH(_globalApplied.map(a=>a.label).join(' · '))+')' : 'sem filtros fixos');
+      if(_globalUnresolved.length){
+        // filtro fixo NÃO aplicado (coluna não encontrada) → números podem ficar sem filtro: avisa em âmbar
+        banner.style.cssText='padding:11px 16px;border-radius:8px;font-size:13px;display:flex;align-items:center;gap:10px;background:#FFFBEB;border:1px solid #FDE68A;color:#92400E;';
+        banner.innerHTML = `${warn} ⚠ Filtro(s) fixo(s) da página NÃO aplicado(s) — coluna não encontrada no modelo: ${escH(_globalUnresolved.join(', '))}. Os números podem estar SEM esse filtro.${faltas.length?` (também faltam: ${escH(faltas.join(', '))})`:''}${dsInfo}`;
+      } else {
+        banner.style.cssText='padding:11px 16px;border-radius:8px;font-size:13px;display:flex;align-items:center;gap:10px;background:#F0FDF4;border:1px solid #BBF7D0;color:#14532D;';
+        banner.innerHTML = (faltas.length
+          ? `${chk} ✅ Conectado — ${fixInfo} · ${faltas.length} campo(s) não encontrados no modelo: ${escH(faltas.join(', '))}`
+          : `${chk} ✅ Conectado ao Power BI · ${fixInfo}`) + dsInfo;
+      }
+      await cxAplicar();
+      if(DBG) await diagFiltrosFixos();   // ?diag=1 → console.table com o corte de cada fixo
+    } catch(err){
+      banner.style.cssText='padding:11px 16px;border-radius:8px;font-size:13px;display:flex;align-items:center;gap:10px;background:#FEF2F2;border:1px solid #FECACA;color:#7F1D1D;';
+      banner.innerHTML=`<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg> ${escH(err.message)}`;
+    }
+  });
+  </script>
+</body>
+</html>

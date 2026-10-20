@@ -1,0 +1,554 @@
+﻿<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Gestão de Consignação · Estoque · Biomedical</title>
+  <link rel="stylesheet" href="../styles.css?v=14">
+  <script src="https://unpkg.com/@azure/msal-browser@2.38.3/lib/msal-browser.min.js"></script>
+<script src="../pbi-throttle.js?v=3"></script>
+<script src="../pbi-modelo.js?v=2"></script>
+  <!-- Layout v3 (Claude Design · animado): fonte + camada visual + motor de animações -->
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300..800&family=Manrope:wght@400..800&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../portal-v3.css?v=2">
+  <script src="../portal-motion.js?v=3" defer></script>
+  <!-- Tema claro/escuro (menu do avatar): marca o <html> antes de pintar + camada escura -->
+  <script>try{if(localStorage.getItem('bm-tema')==='escuro')document.documentElement.setAttribute('data-tema','escuro')}catch(e){}</script>
+  <link rel="stylesheet" href="../portal-tema.css?v=1">
+  <script src="../portal-tema.js?v=1" defer></script>
+  <!-- Celular (varredura 15/10/26): só vale em tela < 768px; no computador não se aplica -->
+  <link rel="stylesheet" href="../portal-mobile.css?v=1" media="(max-width: 767.98px)">
+  <script src="../portal-mobile.js?v=1" defer></script>
+</head>
+<body class="dept">
+  <header class="site-header">
+    <div class="container">
+      <a href="../index.html" class="brand" aria-label="Biomedical — Portal Corporativo">
+        <img class="brand-logo" src="/icons/icon-192.png" alt="Biomedical" onerror="this.dataset.failed='true'">
+        <span class="brand-fallback">Biomedical</span>
+      </a>
+      <nav class="header-nav">
+        <a href="../index.html">Início</a>
+        <a href="../index.html#areas">Áreas</a>
+        <a href="../index.html#sistemas">Sistemas</a>
+        <a href="../index.html#avisos">Avisos</a>
+        <a href="../index.html#contato">Contato</a>
+      </nav>
+    </div>
+  </header>
+  <!-- cabeçalho movido para .fx-head (abas de submódulo, Claude Design) -->
+  <div class="area-body">
+    <div class="container">
+      <div class="area-grid">
+        <aside class="area-sidebar">
+          <div class="sb-card">
+            <div class="sb-head">
+              <span class="sb-ic"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="2" width="20" height="8" rx="2"/><rect x="2" y="14" width="20" height="8" rx="2"/><line x1="6" y1="6" x2="6.01" y2="6"/><line x1="6" y1="18" x2="6.01" y2="18"/></svg></span>
+              <div><div class="sb-tt">Estoque</div><div class="sb-st">Departamento</div></div>
+            </div>
+            <nav></nav>
+          </div>
+          <a href="../index.html" class="sb-back"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></svg>Voltar ao Portal</a>
+        </aside>
+        <div class="area-main">
+          <!-- ═══ Cabeçalho + abas de submódulo (Claude Design) ═══ -->
+          <style>
+            .fx-head{display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap;padding:22px 0 4px;}
+            .fx-bc{display:flex;align-items:center;gap:6px;font-size:12px;color:#7C93A8;}
+            .fx-title{margin:4px 0 0;font-size:23px;font-weight:800;letter-spacing:-0.5px;color:#0A2E5C;}
+            .fx-head-right{display:flex;align-items:center;gap:12px;flex-wrap:wrap;}
+            .fx-tabs{display:flex;align-items:center;background:#FFFFFF;border:1px solid #E3EAF2;border-radius:11px;padding:3px;flex-wrap:wrap;}
+            .fx-tabs a,.fx-tabs span{padding:8px 14px;border-radius:8px;font-size:12.5px;font-weight:600;color:#5B7189;text-decoration:none;white-space:nowrap;}
+            .fx-tabs a:hover{color:#0A2E5C;}
+            .fx-tabs .active{background:#0A2E5C;font-weight:700;color:#fff;}
+            .fx-filters{display:flex;align-items:center;gap:10px;flex-wrap:wrap;padding:12px 14px;background:#fff;border:1px solid #E3EAF2;border-radius:12px;}
+            .fx-fdiv{width:1px;height:24px;background:#E3EAF2;}
+            .fx-fbtn{display:inline-flex;align-items:center;gap:8px;padding:8px 12px;border-radius:9px;border:1px solid #E3EAF2;background:#fff;font-size:12.5px;font-weight:600;color:#33495E;cursor:pointer;font-family:inherit;white-space:nowrap;}
+            .fx-fbtn:hover{border-color:#1272C4;}
+            .fx-fbtn .fx-fk{font-weight:700;color:#93A7BA;}
+            .fx-fbtn svg{flex-shrink:0;}
+            .fx-flimpar{margin-left:auto;display:inline-flex;align-items:center;gap:6px;padding:8px 12px;border-radius:9px;border:none;background:transparent;font-size:12.5px;font-weight:600;color:#5B7189;cursor:pointer;font-family:inherit;white-space:nowrap;}
+            .fx-flimpar:hover{color:#B54545;}
+            .fxdd{position:relative;display:inline-block;}
+            .fxdd-panel{position:absolute;z-index:50;top:calc(100% + 6px);left:0;display:none;flex-direction:column;background:#fff;border:1px solid #E3EAF2;border-radius:12px;box-shadow:0 10px 30px rgba(10,46,92,0.14);padding:12px;min-width:210px;}
+            .fxdd.open .fxdd-panel{display:flex;}
+            .fxdd-sec{font-size:10.5px;font-weight:800;letter-spacing:0.8px;text-transform:uppercase;color:#93A7BA;margin:2px 2px 8px;}
+            .fxdd-sec.mt{margin-top:12px;}
+            .fxdd-hint{font-size:11px;color:#93A7BA;margin-top:10px;}
+            /* esconde a faixa de cards de sub-modulos (estatica OU injetada pelo nav-sidebar.js) — navegacao agora pelas abas */
+            .area-main section:has(.modulo-card){display:none !important;}
+            /* periodo largo/horizontal p/ dropdowns com botoes de mes */
+            #fx-periodo .fxdd-panel{width:720px;max-width:calc(100vw - 48px);}
+            @media(max-width:1100px){#fx-periodo .fxdd-panel{width:560px;}}
+            #fx-periodo .fxdd-panel .sr-row,#fx-periodo .fxdd-panel .av-row,#fx-periodo .fxdd-panel .pv-row,#fx-periodo .fxdd-panel .fn-row-f{max-width:none !important;gap:6px !important;row-gap:8px !important;}
+            #fx-periodo .fxdd-panel .sr-btn,#fx-periodo .fxdd-panel .av-btn,#fx-periodo .fxdd-panel .pv-btn{padding:5px 9px;}
+            #fx-periodo .fxdd-panel .sr-divider:first-of-type,#fx-periodo .fxdd-panel .av-divider:first-of-type,#fx-periodo .fxdd-panel .pv-divider:first-of-type{flex-basis:100%;width:100%;height:0 !important;border:0 !important;background:transparent !important;margin:2px 0 0 !important;}
+            @media(max-width:767.98px){
+              .fx-head{align-items:flex-start;padding-top:14px;}
+              .fx-title{font-size:17px;}
+              .fx-head-right{width:100%;}
+              .fx-tabs{width:100%;flex-wrap:nowrap;overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none;background:#F0F4F9;border:none;}
+              .fx-tabs::-webkit-scrollbar{display:none;}
+              .fx-tabs a,.fx-tabs span{flex:0 0 auto;}
+              .fx-filters{flex-wrap:nowrap;overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none;}
+              .fx-filters::-webkit-scrollbar{display:none;}
+              .fx-filters>*{flex-shrink:0;}
+              .fx-flimpar{margin-left:8px;}
+            }
+          </style>
+
+          <div class="fx-head">
+            <div>
+              <div class="fx-bc"><span>Estoque</span><span>›</span><span>Gestão de Consignação</span></div>
+              <h1 class="fx-title">Visão Geral</h1>
+            </div>
+            <div class="fx-head-right">
+              <div class="fx-tabs">
+                <span class="active">Visão Geral</span>
+                <a href="estoque-saldo-consignado.html">Saldo Consignado</a>
+                <a href="estoque-contagem-saldo-nota.html">Contagem · Saldo por Nota</a>
+                <a href="estoque-devolucoes-faturamento.html">Devoluções</a>
+                <a href="estoque-rastreabilidade.html">Rastreabilidade</a>
+                <a href="estoque-gmroi.html">GMROI</a>
+              </div>
+            </div>
+          </div>
+          <script>
+          /* barra de filtros fx — dropdowns compactos (Claude Design) */
+          (function(){
+            window.fxTogglePanel = function(btn){
+              var dd = btn.closest('.fxdd'); if(!dd) return;
+              var open = dd.classList.contains('open');
+              document.querySelectorAll('.fxdd.open').forEach(function(d){ d.classList.remove('open'); });
+              if(!open) dd.classList.add('open');
+            };
+            function txt(id,v){ var el=document.getElementById(id); if(el) el.textContent=v; }
+            window.fxSyncLabels = function(){
+              var per = document.getElementById('fx-periodo');
+              if(per){
+                var mesBtn = per.querySelector('.fxdd-panel button.active');
+                var anoBtns = per.querySelectorAll('.fxdd-panel button.active-green');
+                var ano = anoBtns.length===1 ? anoBtns[0].textContent.trim() : (anoBtns.length>1 ? anoBtns.length+' anos' : '');
+                var mes = mesBtn ? mesBtn.textContent.trim() : '';
+                txt('fx-periodo-lbl', ([ano, (mes && !/^todos$/i.test(mes) ? mes : '')].filter(Boolean).join(' · ')) || 'Todos');
+              }
+              [['fx-empresa','fx-empresa-lbl'],['fx-tipocli','fx-tipocli-lbl']].forEach(function(p){
+                var dd=document.getElementById(p[0]); if(!dd) return;
+                var b=dd.querySelector('.fxdd-panel button.active,.fxdd-panel button.active-green');
+                txt(p[1], b ? b.textContent.trim() : 'Todos');
+              });
+            };
+            window.fxLimpar = function(){
+              document.querySelectorAll('.fx-filters [data-fxdefault]').forEach(function(b){ b.click(); });
+              setTimeout(window.fxSyncLabels, 0);
+            };
+            document.addEventListener('DOMContentLoaded', function(){
+              document.querySelectorAll('.fx-filters .fxdd-panel').forEach(function(p){
+                p.addEventListener('click', function(e){ e.stopPropagation(); setTimeout(window.fxSyncLabels, 0); });
+              });
+              document.addEventListener('click', function(e){ if(e.target.closest && e.target.closest('.fxdd')) return; document.querySelectorAll('.fxdd.open').forEach(function(d){ d.classList.remove('open'); }); });
+              window.fxSyncLabels();
+            });
+          })();
+          </script>
+
+          <section style="padding:8px 0 44px;">
+            <div class="container">
+              <style>
+                .ov-wrap{display:flex;flex-direction:column;gap:13px;}
+                .ov-intro{color:var(--text-3);font-size:13px;max-width:660px;margin:0;}
+                .ov-card{background:#fff;border:1px solid var(--border);border-radius:var(--radius);overflow:hidden;}
+                .ov-head{display:flex;align-items:center;gap:12px;padding:12px 16px;border-bottom:1px solid var(--border);}
+                .ov-ic{width:34px;height:34px;border-radius:10px;display:flex;align-items:center;justify-content:center;flex:0 0 auto;}
+                .ov-ic.sal{background:#DBEAFE;color:#1D4ED8;}
+                .ov-ic.dev{background:#FEF3C7;color:#b45309;}
+                .ov-ic.ras{background:#DCFCE7;color:#15803d;}
+                .ov-head h3{margin:0;font-size:15px;font-weight:800;color:var(--bm-blue-900);}
+                .ov-head .ov-sub{font-size:11.5px;color:var(--text-3);margin-top:2px;}
+                .ov-open{margin-left:auto;font-size:12.5px;font-weight:700;color:var(--bm-blue-700);text-decoration:none;white-space:nowrap;display:inline-flex;align-items:center;gap:5px;}
+                .ov-open:hover{color:var(--bm-blue-900);}
+                .ov-body{padding:13px 16px;display:grid;grid-template-columns:1.15fr 1fr;gap:16px;}
+                @media(max-width:900px){.ov-body{grid-template-columns:1fr;}}
+                .ov-kpis{display:grid;grid-template-columns:repeat(2,1fr);gap:9px;align-content:stretch;}
+                .ov-kpi{border:1px solid var(--border);border-radius:10px;padding:10px 12px;position:relative;overflow:hidden;display:flex;flex-direction:column;justify-content:center;}
+                .ov-kpi::before{content:'';position:absolute;left:0;top:0;bottom:0;width:3px;background:var(--bm-blue-600);}
+                .ov-kpi.g::before{background:var(--bm-green-600);} .ov-kpi.w::before{background:#b45309;}
+                .ov-kpi.d::before{background:var(--danger,#b91c1c);} .ov-kpi.e::before{background:#0891b2;}
+                .ov-kpi-l{font-size:9.5px;font-weight:700;text-transform:uppercase;letter-spacing:.04em;color:var(--text-3);margin-bottom:5px;}
+                .ov-kpi-v{font-family:var(--font-display);font-size:18px;font-weight:800;color:var(--bm-blue-900);line-height:1;}
+                .ov-chart-wrap{position:relative;height:150px;min-width:0;}
+                .ov-chart-tt{font-size:11.5px;font-weight:700;color:var(--text-2);margin-bottom:6px;}
+                .ov-alert{display:flex;gap:8px;flex-wrap:wrap;padding:0 16px 11px;}
+                .ov-pill{display:inline-flex;align-items:center;gap:6px;padding:6px 12px;border-radius:999px;font-size:12px;font-weight:700;}
+                .ov-pill.warn{background:#FEF3C7;color:#92400E;border:1px solid #FDE68A;}
+                .ov-pill.danger{background:#FEE2E2;color:#991B1B;border:1px solid #FECACA;}
+                .ov-pill.ok{background:#F0FDF4;color:#14532D;border:1px solid #BBF7D0;}
+                .ov-pill.muted{background:var(--bm-blue-50);color:var(--text-3);border:1px solid var(--border);}
+                .ov-fix{font-size:10.5px;color:var(--text-4);padding:0 16px 11px;line-height:1.5;}
+              </style>
+
+              <div class="ov-wrap">
+
+                <div id="ov-banner" style="padding:11px 16px;border-radius:8px;font-size:13px;display:flex;align-items:center;gap:10px;background:#EFF6FF;border:1px solid #BFDBFE;color:#1E40AF;">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+                  Conectando ao Power BI…
+                </div>
+
+                <p class="ov-intro">Resumo consolidado dos três relatórios de consignação. Cada cartão traz os números da própria aba — com os mesmos filtros fixos dela — e o atalho para abrir o relatório completo.</p>
+
+                <!-- ── SALDO CONSIGNADO ── -->
+                <div class="ov-card">
+                  <div class="ov-head">
+                    <span class="ov-ic sal"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><polyline points="3.27 6.96 12 12.01 20.73 6.96"/><line x1="12" y1="22.08" x2="12" y2="12"/></svg></span>
+                    <div><h3>Saldo Consignado</h3><div class="ov-sub">Saldo de remessas por nota e saldo real em depósito de consignação</div></div>
+                    <a class="ov-open" href="estoque-saldo-consignado.html">Abrir relatório <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg></a>
+                  </div>
+                  <div class="ov-body">
+                    <div class="ov-kpis">
+                      <div class="ov-kpi"><div class="ov-kpi-l">Saldo de Remessas (Nota)</div><div class="ov-kpi-v" id="ov-s-saldo">—</div></div>
+                      <div class="ov-kpi w"><div class="ov-kpi-l">Aguardando Faturamento</div><div class="ov-kpi-v" id="ov-s-aguard">—</div></div>
+                      <div class="ov-kpi g"><div class="ov-kpi-l">Saldo de Remessas (Custo)</div><div class="ov-kpi-v" id="ov-s-custo">—</div></div>
+                      <div class="ov-kpi e"><div class="ov-kpi-l">Saldo Real (Estoque)</div><div class="ov-kpi-v" id="ov-s-real">—</div></div>
+                    </div>
+                    <div><div class="ov-chart-tt">Top 6 famílias por saldo de remessas</div><div class="ov-chart-wrap"><canvas id="ov-ch-fam"></canvas></div></div>
+                  </div>
+                  <div class="ov-alert" id="ov-s-alert"></div>
+                  <div class="ov-fix" id="ov-s-fix">—</div>
+                </div>
+
+                <!-- ── DEVOLUÇÕES AGUARD. APROVAÇÃO ── -->
+                <div class="ov-card">
+                  <div class="ov-head">
+                    <span class="ov-ic dev"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"/></svg></span>
+                    <div><h3>Devoluções Aguard. Aprovação</h3><div class="ov-sub">Devolução simbólica esperando autorização de faturamento</div></div>
+                    <a class="ov-open" href="estoque-devolucoes-faturamento.html">Abrir relatório <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg></a>
+                  </div>
+                  <div class="ov-body">
+                    <div class="ov-kpis">
+                      <div class="ov-kpi w"><div class="ov-kpi-l">Quantidade (Devolução)</div><div class="ov-kpi-v" id="ov-d-qtd">—</div></div>
+                      <div class="ov-kpi"><div class="ov-kpi-l">Ordens de Devolução</div><div class="ov-kpi-v" id="ov-d-ord">—</div></div>
+                      <div class="ov-kpi g"><div class="ov-kpi-l">Notas Fiscais (origem)</div><div class="ov-kpi-v" id="ov-d-nf">—</div></div>
+                      <div class="ov-kpi d"><div class="ov-kpi-l">Pacientes</div><div class="ov-kpi-v" id="ov-d-pac">—</div></div>
+                    </div>
+                    <div><div class="ov-chart-tt">Top 6 clientes por quantidade devolvida</div><div class="ov-chart-wrap"><canvas id="ov-ch-dev"></canvas></div></div>
+                  </div>
+                  <div class="ov-alert" id="ov-d-alert"></div>
+                  <div class="ov-fix" id="ov-d-fix">—</div>
+                </div>
+
+                <!-- ── RASTREABILIDADE ── -->
+                <div class="ov-card">
+                  <div class="ov-head">
+                    <span class="ov-ic ras"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><line x1="6" y1="3" x2="6" y2="15"/><circle cx="18" cy="6" r="3"/><circle cx="6" cy="18" r="3"/><path d="M18 9a9 9 0 0 1-9 9"/></svg></span>
+                    <div><h3>Rastreabilidade de Consignação</h3><div class="ov-sub">O ciclo do item: remessa → devolução → venda/reconsignação</div></div>
+                    <a class="ov-open" href="estoque-rastreabilidade.html">Abrir relatório <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg></a>
+                  </div>
+                  <div class="ov-body">
+                    <div class="ov-kpis">
+                      <div class="ov-kpi"><div class="ov-kpi-l">Qtde Remetida</div><div class="ov-kpi-v" id="ov-r-qrem">—</div></div>
+                      <div class="ov-kpi g"><div class="ov-kpi-l">Saldo de Remessas</div><div class="ov-kpi-v" id="ov-r-srem">—</div></div>
+                      <div class="ov-kpi w"><div class="ov-kpi-l">Qtde Devolvida</div><div class="ov-kpi-v" id="ov-r-qdev">—</div></div>
+                      <div class="ov-kpi e"><div class="ov-kpi-l">Qtde Vendida / Recons.</div><div class="ov-kpi-v" id="ov-r-qven">—</div></div>
+                    </div>
+                    <div><div class="ov-chart-tt">Fluxo do consignado (quantidade)</div><div class="ov-chart-wrap"><canvas id="ov-ch-fluxo"></canvas></div></div>
+                  </div>
+                  <div class="ov-alert" id="ov-r-alert"></div>
+                  <div class="ov-fix" id="ov-r-fix">—</div>
+                </div>
+
+              </div>
+            </div>
+          </section>
+        </div>
+      </div>
+    </div>
+  </div>
+  <script src="../script.js?v=8"></script>
+  <script src="../nav-sidebar.js?v=52"></script>
+  <script src="../dw-pill.js?v=4"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+  <script>
+  // ================================================================
+  // VISÃO GERAL — Gestão de Consignação
+  //   Espelha as 3 abas, cada card com os MESMOS filtros fixos da aba dele:
+  //     • Saldo Consignado  → 'Consignação - Remessas' (visual da Nota) +
+  //                           'Saldo de estoque' (visual do Depósito)
+  //     • Devoluções        → 'Consignação - Devoluções' aguardando aprovação
+  //     • Rastreabilidade   → remessa → devolução → venda/reconsignação
+  //   Os 3 relatórios vivem no MESMO dataset (o de consignação, fixado).
+  //   Nomes de coluna/medida são resolvidos p/ o nome EXATO do modelo, como nas
+  //   páginas irmãs: nome errado viraria referência de coluna e derrubaria a query.
+  // ================================================================
+  (function(){
+    const PBI_CFG = {
+      clientId:'129978ce-ff3b-431d-98b3-66a1bcb766b1', tenantId:'c311c9e6-6017-42a9-b306-4057beba5786',
+      workspaceId:'8535f0a1-8dc6-4da0-93ce-bf20c1c14e27',
+      scopes:['https://analysis.windows.net/powerbi/api/Dataset.Read.All','https://analysis.windows.net/powerbi/api/Report.Read.All']
+    };
+    const DS_PINNED = '960d8415-9844-40aa-a502-07a8b3eea240';   // mesmo das 3 abas
+    const FATO = "'Consignação - Remessas'";
+    let _pbi=null, _token=null, _dsId=null, _colCat=null, _meaCat=null;
+
+    const _numN = x => (x==null||x===''||x==='-'||isNaN(Number(x)))?null:Number(x);
+    const _v = (r,re)=>{ const k=Object.keys(r).find(x=>re.test(x)); return k?r[k]:null; };
+    const setTxt=(id,t)=>{const el=document.getElementById(id);if(el)el.textContent=t;};
+    const escH = s => String(s==null?'':s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+    const avDax = s => String(s==null?'':s).replace(/"/g,'""');
+    const fNUM = v => v==null?'—':Number(v).toLocaleString('pt-BR',{maximumFractionDigits:0});
+    const fBRL = v => v==null?'—':'R$ '+Number(v).toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2});
+    function fMi(v){ if(v==null)return '—'; const a=Math.abs(v); if(a>=1e6) return 'R$ '+(v/1e6).toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2})+' Mi'; if(a>=1e3) return 'R$ '+(v/1e3).toLocaleString('pt-BR',{maximumFractionDigits:1})+'k'; return fBRL(v); }
+    const cut = (s,n)=>{ s=String(s==null?'—':s); return s.length>n?s.slice(0,n-1)+'…':s; };
+    const _norm = s => String(s==null?'':s).normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().replace(/\s+/g,' ').trim();
+
+    // ── conexão / execução ──
+    async function pbiConnect(){
+      if (window._msalAuth){ _pbi = window._msalAuth; }
+      else { _pbi = new msal.PublicClientApplication({ auth:{ clientId:PBI_CFG.clientId, authority:`https://login.microsoftonline.com/${PBI_CFG.tenantId}`, redirectUri:window.location.origin+'/' }, cache:{ cacheLocation:'localStorage', storeAuthStateInCookie:true } }); if(_pbi.initialize) await _pbi.initialize(); await _pbi.handleRedirectPromise().catch(()=>{}); }
+      const accounts = _pbi.getAllAccounts();
+      try { const r = await _pbi.acquireTokenSilent({ scopes:PBI_CFG.scopes, account:accounts[0] }); _token = r.accessToken; }
+      catch { const r = await _pbi.loginPopup({ scopes:PBI_CFG.scopes }); _token = r.accessToken; }
+      const acc = _pbi.getAllAccounts()[0]; if (acc && typeof window.setSidebarUser==='function') window.setSidebarUser(acc.name||acc.username, acc.username);
+    }
+    function _pbiErr(text){ try { const j=JSON.parse(text); const e=j.error||{}; const pe=e['pbi.error']||{}; const det=(pe.details||[]).map(d=>d.detail&&d.detail.value).filter(Boolean).join(' | '); return det||e.message||pe.code||text.substring(0,200); } catch { return text.substring(0,200); } }
+    async function execQuery(dsId, dax){
+      const body=JSON.stringify({queries:[{query:dax}],serializerSettings:{includeNulls:true}});
+      const r=await PBIModelo.post(PBI_CFG.workspaceId, dsId, {method:'POST',headers:{Authorization:`Bearer ${_token}`,'Content-Type':'application/json'},body});
+      const text=await r.text(); if(!r.ok) throw new Error(`HTTP ${r.status}: ${_pbiErr(text)}`);
+      const d=JSON.parse(text); if(d.error) throw new Error(_pbiErr(text));
+      return d.results[0].tables[0].rows;
+    }
+    async function resolveDataset(){
+      const falhas = [];
+      try { await execQuery(DS_PINNED, PBIModelo.sonda(FATO)); _dsId=DS_PINNED; return; } catch(e){ console.warn('[VG-CONSIG] dataset fixado não respondeu:', e.message); falhas.push(['modelo '+DS_PINNED, e]); }
+      for (const ds of await PBIModelo.candidatos(PBI_CFG.workspaceId, _token)){ if (ds.id===DS_PINNED) continue; try { await execQuery(ds.id, PBIModelo.sonda(FATO)); _dsId=ds.id; return; } catch(e){ falhas.push([ds.name, e]); } }
+      throw PBIModelo.motivo(FATO, falhas);
+    }
+    const q = dax => execQuery(_dsId, dax);
+    window.bmDwQuery = q;   // exposta p/ o dw-pill.js (este código vive num IIFE)
+    window.bmDwInfo = () => ({ token:_token, ws:PBI_CFG.workspaceId, ds:_dsId });
+
+    // ── catálogo: nome EXATO de coluna e medida ──
+    async function carregarCatalogo(){
+      try { const rows=await q(`EVALUATE SELECTCOLUMNS(INFO.VIEW.COLUMNS(), "T",[Table], "N",[Name])`);
+            if(rows&&rows.length){ _colCat={}; rows.forEach(r=>{ const t=_v(r,/\[T\]$/), n=_v(r,/\[N\]$/); if(t==null||n==null)return; const tn=_norm(t); (_colCat[tn]=_colCat[tn]||{})[_norm(n)]=String(n); }); } }
+      catch(e){ console.warn('[VG-CONSIG] INFO.VIEW.COLUMNS:', e.message); }
+      try { const rows=await q(`EVALUATE SELECTCOLUMNS(INFO.VIEW.MEASURES(), "N",[Name])`);
+            if(rows&&rows.length){ _meaCat={}; rows.forEach(r=>{ const n=_v(r,/\[N\]$/); if(n!=null)_meaCat[_norm(n)]=String(n); }); } }
+      catch(e){ console.warn('[VG-CONSIG] INFO.VIEW.MEASURES:', e.message); }
+      if(!_meaCat){ try { const rows=await q(`EVALUATE SELECTCOLUMNS(INFO.MEASURES(), "N",[Name])`);
+            if(rows&&rows.length){ _meaCat={}; rows.forEach(r=>{ const n=_v(r,/\[N\]$/); if(n!=null)_meaCat[_norm(n)]=String(n); }); } } catch(e){} }
+    }
+    // cands = [[tabela,coluna],…] → "'Tabela'[Coluna]" com a grafia do modelo (null se não achar)
+    function col(cands){
+      for(const [t,n] of cands){
+        if(!_colCat) return `'${t}'[${n}]`;                 // sem catálogo: melhor esforço
+        const tb=_colCat[_norm(t)]; if(tb&&tb[_norm(n)]) return `'${t}'[${tb[_norm(n)]}]`;
+      }
+      return null;
+    }
+    function mea(cands){
+      for(const nm of cands){
+        if(!_meaCat) return `[${nm}]`;
+        const h=_meaCat[_norm(nm)]; if(h) return `[${h}]`;
+      }
+      return null;
+    }
+
+    // ── filtros fixos (mesmos das abas) ──
+    const F_IN   = (ref,vals)=> ref?`TREATAS({${vals.map(v=>'"'+avDax(v)+'"').join(', ')}}, ${ref})`:null;
+    const F_NB   = ref => ref?`FILTER(ALL(${ref}), NOT(ISBLANK(${ref})) && LEN(TRIM(${ref})) > 0)`:null;
+    const F_NCT  = (ref,txt)=> ref?`FILTER(ALL(${ref}), NOT(CONTAINSSTRING(${ref}, "${avDax(txt)}")))`:null;
+    const F_CT   = (ref,vals)=> ref?`FILTER(ALL(${ref}), ${vals.map(v=>`SEARCH("${avDax(v)}", ${ref}, 1, 0) > 0`).join(' || ')})`:null;
+    const ct = (inner,f)=>{ const l=f.filter(Boolean); return l.length?`CALCULATETABLE(${inner}, ${l.join(', ')})`:inner; };
+    const sc = (dims,f,meas)=>`SUMMARIZECOLUMNS(${dims}, ${f.filter(Boolean).map(x=>x+', ').join('')}${meas})`;
+
+    // colunas usadas nos filtros/dimensões
+    let C={}, M={};
+    function montarRefs(){
+      C = {
+        grupodep: col([['Depósitos','Grupo de depósitos'],['Depósitos','Grupo de depósito'],['Depósitos','Grupo depósitos']]),
+        exibir  : col([['Consignação - Remessas','Exibir no BI']]),
+        modelo  : col([['Consignação - Remessas','Nota fiscal (modelo)'],['Consignação - Remessas','Nota fiscal modelo']]),
+        nf      : col([['Consignação - Remessas','Nota fiscal'],['Consignação - Remessas','Nota Fiscal']]),
+        status  : col([['Consignação - Remessas','Nota fiscal (status)'],['Consignação - Remessas','Nota fiscal status']]),
+        qtderem : col([['Consignação - Remessas','Quantidade']]),
+        tipoop  : col([['Operações','Tipo de operação'],['Operações','Tipo de Operação']]),
+        tipodev : col([['Consignação - Devoluções','Tipo de devolução'],['Consignação - Devoluções','Tipo de Devolução'],['Consignação - Devoluções','Tipo de operação']]),
+        numdev  : col([['Consignação - Devoluções','Número da ordem de devolução']]),
+        nforig  : col([['Consignação - Devoluções','Nota fiscal (origem)']]),
+        paciente: col([['Consignação - Devoluções','Paciente']]),
+        familia : col([['Famílias','Família'],['Produtos','Família']]),
+        cliente : col([['Clientes','Cliente']])
+      };
+      M = {
+        saldo   : mea(['Consignado - Saldo de remessas']),
+        aguard  : mea(['Aguardando faturamento']),
+        custo   : mea(['Consignado - Saldo de remessas (custo)']),
+        real    : mea(['SaldoReal','Saldo real','Saldo Real (Estoque)']),
+        qtddev  : mea(['Quantidade (Devolução)','Consignado - Qtde devolvida','Consignado - Quantidade devolvida']),
+        qtdven  : mea(['Quantidade (Venda - reconsignação)','Quantidade (Venda - reconsignacao)','Quantidade (Venda-reconsignação)'])
+      };
+    }
+    // conjuntos de filtro, iguais aos das abas
+    const fNota = ()=>[ F_IN(C.modelo,['55']), F_NB(C.nf), F_IN(C.status,['Aprovado']),
+                        F_IN(C.grupodep,['ESTOQUE CONSIGNADO/COMODATO']), F_IN(C.exibir,['Sim']) ];
+    const fDep  = ()=>[ F_IN(C.grupodep,['ESTOQUE CONSIGNADO/COMODATO']), F_IN(C.exibir,['Sim']),
+                        F_IN(C.modelo,['55']), F_NCT(C.tipoop,'VEN'),
+                        F_IN(C.status,['Aprovado']), F_NB(C.nf) ];
+    // a aba Devoluções leva o MESMO conjunto do Depósito (pedido do usuário) + o recorte dela
+    const fDevol= ()=>[ F_CT(C.tipodev,['AGUARDANDO APROVA','AGUARDANDO AUTORIZA']) ].concat(fDep());
+    const fRasRem=()=>[ F_IN(C.grupodep,['ESTOQUE CONSIGNADO/COMODATO']), F_IN(C.exibir,['Sim']),
+                        F_IN(C.modelo,['55']), F_NB(C.nf) ];
+    const fRasOut=()=>[ F_IN(C.grupodep,['ESTOQUE CONSIGNADO/COMODATO']) ];
+
+    // ── gráfico de barras horizontais (igual à Visão Geral do Estoque) ──
+    const _charts={};
+    function hbar(id, labels, data, color, money){
+      const el=document.getElementById(id); if(!el||typeof Chart==='undefined') return;
+      const cfg={ labels, datasets:[{ data, backgroundColor:color, borderRadius:3 }] };
+      if(_charts[id]){ _charts[id].data=cfg; _charts[id].update(); return; }
+      _charts[id]=new Chart(el.getContext('2d'),{ type:'bar', data:cfg,
+        options:{ indexAxis:'y', responsive:true, maintainAspectRatio:false,
+          plugins:{ legend:{display:false}, tooltip:{callbacks:{label:c=>money?fBRL(c.raw):fNUM(c.raw)}} },
+          scales:{ x:{ticks:{callback:v=>money?fMi(v):fNUM(v),font:{size:9}}}, y:{ticks:{font:{size:9}}} } } });
+    }
+    // roda um ROW de várias medidas; se a query falhar, tenta uma a uma (medida ruim
+    // não zera as outras) — mesmo tratamento resiliente das páginas de detalhe.
+    // Medida que já caiu sozinha (OLS / inexistente) fica na memória do freio
+    // (pbi-throttle.js) e não volta ao ROW: senão todo filtro pagava 1 + N consultas.
+    const _olsMem = (window.PBIQ && window.PBIQ.ols) || { vivas: l => l, aprender: () => {}, leque: () => true };
+    async function linha(pares, filtros){
+      const todas = pares.filter(p=>p.exp), vivas = _olsMem.vivas(todas, p=>p.exp);
+      const viv = vivas.length ? vivas : todas;    // todas "bloqueadas" = memória velha: tenta tudo
+      const out = {};
+      todas.forEach(p=>{ out[p.al]=null; });
+      if(viv.length){
+        try {
+          const r = (await q(`EVALUATE ${ct(`ROW(${viv.map(p=>`"${p.al}", ${p.exp}`).join(', ')})`, filtros)}`))[0]||{};
+          viv.forEach(p=>{ out[p.al]=_numN(_v(r,new RegExp('\\['+p.al+'\\]$'))); });
+          return out;
+        } catch(e){
+          console.warn('[VG-CONSIG] linha combinada falhou, indo uma a uma:', e.message);
+          if(!_olsMem.leque(e)) return out;      // 429/rede: o leque só multiplica requisição
+        }
+      }
+      const falhas = [];
+      for(const p of viv){
+        try { const r=(await q(`EVALUATE ${ct(`ROW("v", ${p.exp})`, filtros)}`))[0]||{}; out[p.al]=_numN(_v(r,/\[v\]$/)); }
+        catch(e){ out[p.al]=null; console.warn('[VG-CONSIG]', p.al, e.message); falhas.push([p.exp, e]); }
+      }
+      _olsMem.aprender(falhas, falhas.length < viv.length);
+      return out;
+    }
+    // mostra embaixo do card quais filtros fixos entraram (e o que faltou resolver)
+    function fixInfo(id, itens){
+      const ok=itens.filter(x=>x.ref).map(x=>x.lbl), falta=itens.filter(x=>!x.ref).map(x=>x.lbl);
+      setTxt(id, 'Filtros fixos: '+(ok.length?ok.join(' · '):'(nenhum)')+(falta.length?'  ⚠ não aplicado(s): '+falta.join(', '):''));
+    }
+
+    // ════════ 1 · SALDO CONSIGNADO ════════
+    async function loadSaldo(){
+      const t = await linha([{al:'kSaldo',exp:M.saldo},{al:'kAguard',exp:M.aguard},{al:'kCusto',exp:M.custo}], fNota());
+      setTxt('ov-s-saldo',  fNUM(t.kSaldo));
+      setTxt('ov-s-aguard', fNUM(t.kAguard));
+      setTxt('ov-s-custo',  fMi(t.kCusto));
+      const d = await linha([{al:'kReal',exp:M.real}], fDep());
+      setTxt('ov-s-real', fNUM(d.kReal));
+      fixInfo('ov-s-fix', [
+        {lbl:'Modelo NF = 55',ref:C.modelo},{lbl:'NF ≠ vazia',ref:C.nf},{lbl:'Status NF = Aprovado',ref:C.status},
+        {lbl:'Grupo de depósitos',ref:C.grupodep},{lbl:'Exibir no BI = Sim',ref:C.exibir},
+        {lbl:"Depósito: op. sem 'VEN'",ref:C.tipoop}
+      ]);
+      if(C.familia && M.saldo){
+        const fr = await q(`EVALUATE TOPN(6, ${sc(C.familia, fNota(), `"V", ${M.saldo}`)}, [V], DESC)`);
+        const fam = fr.map(r=>({nome:String(_v(r,/\[Fam/i)??'—'), v:_numN(_v(r,/\[V\]$/))||0})).filter(x=>x.v!==0).sort((a,b)=>Math.abs(b.v)-Math.abs(a.v));
+        hbar('ov-ch-fam', fam.map(x=>cut(x.nome,20)), fam.map(x=>x.v), 'rgba(29,78,216,.85)', false);
+      }
+      if(C.cliente && M.saldo){
+        try {
+          const cr = (await q(`EVALUATE ${ct(`ROW("N", DISTINCTCOUNT(${C.cliente}))`, fNota())}`))[0]||{};
+          const nf = C.nf ? (await q(`EVALUATE ${ct(`ROW("N", DISTINCTCOUNT(${C.nf}))`, fNota())}`))[0]||{} : {};
+          const al=document.getElementById('ov-s-alert');
+          if(al) al.innerHTML = `<span class="ov-pill muted">👥 ${fNUM(_numN(_v(cr,/\[N\]$/)))} cliente(s) com consignado</span>`
+                              + (C.nf?`<span class="ov-pill muted">🧾 ${fNUM(_numN(_v(nf,/\[N\]$/)))} nota(s) fiscal(is)</span>`:'');
+        } catch(e){ console.warn('[VG-CONSIG] pills saldo:', e.message); }
+      }
+    }
+
+    // ════════ 2 · DEVOLUÇÕES AGUARD. APROVAÇÃO ════════
+    async function loadDevol(){
+      const pares=[{al:'kQtd',exp:M.qtddev}];
+      if(C.numdev)   pares.push({al:'kOrd', exp:`DISTINCTCOUNT(${C.numdev})`});
+      if(C.nforig)   pares.push({al:'kNf',  exp:`DISTINCTCOUNT(${C.nforig})`});
+      if(C.paciente) pares.push({al:'kPac', exp:`DISTINCTCOUNT(${C.paciente})`});
+      const t = await linha(pares, fDevol());
+      setTxt('ov-d-qtd', fNUM(t.kQtd));
+      setTxt('ov-d-ord', fNUM(t.kOrd));
+      setTxt('ov-d-nf',  fNUM(t.kNf));
+      setTxt('ov-d-pac', fNUM(t.kPac));
+      fixInfo('ov-d-fix', [
+        {lbl:'Tipo de devolução aguardando aprovação/autorização',ref:C.tipodev},
+        {lbl:'Grupo de depósitos',ref:C.grupodep},{lbl:'Exibir no BI = Sim',ref:C.exibir},
+        {lbl:'Modelo NF = 55',ref:C.modelo},{lbl:"op. sem 'VEN'",ref:C.tipoop},
+        {lbl:'Status NF = Aprovado',ref:C.status},{lbl:'NF ≠ vazia',ref:C.nf}
+      ]);
+      if(C.cliente && M.qtddev){
+        const cr = await q(`EVALUATE TOPN(6, ${sc(C.cliente, fDevol(), `"V", ${M.qtddev}`)}, [V], DESC)`);
+        const cli = cr.map(r=>({nome:String(_v(r,/\[Cliente\]/i)??'—'), v:_numN(_v(r,/\[V\]$/))||0})).filter(x=>x.v>0).sort((a,b)=>b.v-a.v);
+        hbar('ov-ch-dev', cli.map(x=>cut(x.nome,22)), cli.map(x=>x.v), 'rgba(180,83,9,.85)', false);
+      }
+      const al=document.getElementById('ov-d-alert');
+      if(al) al.innerHTML = `<span class="ov-pill warn">⏳ Fila de devolução simbólica esperando autorização de faturamento</span>`;
+    }
+
+    // ════════ 3 · RASTREABILIDADE ════════
+    async function loadRastreio(){
+      const rem = await linha([
+        {al:'kQtd',   exp: C.qtderem?`SUM(${C.qtderem})`:null},
+        {al:'kSaldo', exp: M.saldo}
+      ], fRasRem());
+      setTxt('ov-r-qrem', fNUM(rem.kQtd));
+      setTxt('ov-r-srem', fNUM(rem.kSaldo));
+      const dev = await linha([{al:'kDev', exp:M.qtddev}], fRasOut());
+      const ven = await linha([{al:'kVen', exp:M.qtdven}], fRasOut());
+      setTxt('ov-r-qdev', fNUM(dev.kDev));
+      setTxt('ov-r-qven', fNUM(ven.kVen));
+      fixInfo('ov-r-fix', [
+        {lbl:'Grupo de depósitos (as 3 tabelas)',ref:C.grupodep},
+        {lbl:'Remessa: Exibir no BI = Sim',ref:C.exibir},{lbl:'Remessa: Modelo NF = 55',ref:C.modelo},{lbl:'Remessa: NF ≠ vazia',ref:C.nf}
+      ]);
+      const labels=['Remessas','Devoluções','Vendas/Recons.'];
+      const vals=[rem.kQtd||0, dev.kDev||0, ven.kVen||0];
+      hbar('ov-ch-fluxo', labels, vals, ['rgba(29,78,216,.85)','rgba(180,83,9,.85)','rgba(21,128,61,.85)'], false);
+      const al=document.getElementById('ov-r-alert');
+      if(al && (rem.kQtd||0)>0){
+        const pct = v => (100*(v||0)/rem.kQtd).toLocaleString('pt-BR',{maximumFractionDigits:1})+'%';
+        al.innerHTML = `<span class="ov-pill muted">↩ Devolvido: ${pct(dev.kDev)} do remetido</span>`
+                     + `<span class="ov-pill ok">💰 Vendido/reconsignado: ${pct(ven.kVen)} do remetido</span>`;
+      }
+    }
+
+    document.addEventListener('DOMContentLoaded', async ()=>{
+      const banner=document.getElementById('ov-banner');
+      try {
+        await pbiConnect();
+        banner.innerHTML='⏳ Localizando o dataset de consignação…';
+        await resolveDataset();
+        banner.innerHTML='⏳ Lendo o modelo (nomes exatos de colunas e medidas)…';
+        await carregarCatalogo();
+        montarRefs();
+        const faltaM = Object.keys(M).filter(k=>!M[k]);
+        banner.style.cssText='padding:11px 16px;border-radius:8px;font-size:13px;display:flex;align-items:center;gap:10px;background:#F0FDF4;border:1px solid #BBF7D0;color:#14532D;';
+        banner.innerHTML=`<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg> ✅ Conectado ao Power BI · resumo das 3 abas`
+          + (faltaM.length?` · ⚠ medida(s) não encontrada(s): ${escH(faltaM.join(', '))}`:'');
+        // cada card falha isolado, sem derrubar os outros
+        await Promise.allSettled([ loadSaldo(), loadDevol(), loadRastreio() ]);
+      } catch(err){
+        banner.style.cssText='padding:11px 16px;border-radius:8px;font-size:13px;display:flex;align-items:center;gap:10px;background:#FEF2F2;border:1px solid #FECACA;color:#7F1D1D;';
+        banner.innerHTML=`<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg> ${escH(err.message)}`;
+      }
+    });
+  })();
+  </script>
+</body>
+</html>

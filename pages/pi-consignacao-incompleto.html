@@ -1,0 +1,473 @@
+﻿<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>PI · Consignação (INCOMPLETO) · Biomedical</title>
+  <link rel="stylesheet" href="../styles.css?v=14">
+  <script src="https://unpkg.com/@azure/msal-browser@2.38.3/lib/msal-browser.min.js"></script>
+  <script src="../auth.js?v=7"></script>
+  <style>
+    .pi-card { background: #fff; border: 1px solid var(--border); border-radius: 16px; box-shadow: var(--shadow-lg); overflow: hidden; }
+    .pi-head { background: var(--bm-blue-900); padding: 16px 22px; color: #fff; display: flex; align-items: center; gap: 12px; }
+    .pi-head .pi-ic { width: 38px; height: 38px; border-radius: 50%; flex-shrink: 0; background: rgba(255,255,255,.15); border: 1px solid rgba(255,255,255,.25); display: inline-flex; align-items: center; justify-content: center; color: var(--bm-green-500); }
+    .pi-head .pi-tt { font-family: var(--font-display); font-size: 15px; font-weight: 600; }
+    .pi-head .pi-st { font-size: 12px; color: rgba(255,255,255,.7); margin-top: 2px; }
+    .pi-steps { display: flex; gap: 6px; flex-wrap: wrap; padding: 14px 22px; border-bottom: 1px solid var(--border); background: #f8fafc; }
+    .pi-step { font-size: 12px; font-weight: 600; color: var(--text-3); padding: 6px 12px; border-radius: 999px; border: 1px solid var(--border); background: #fff; }
+    .pi-step.atual { color: #fff; background: var(--bm-blue-900); border-color: var(--bm-blue-900); }
+    .pi-step.feito { color: var(--bm-blue-900); border-color: var(--bm-blue-900); background: #eef4fb; }
+    .pi-body { padding: 26px 22px 30px; }
+    .pi-body h3 { margin: 0 0 6px; font-family: var(--font-display); font-size: 17px; color: var(--text-1); }
+    .pi-sub { font-size: 13.5px; color: var(--text-3); margin: 0 0 18px; line-height: 1.55; }
+    .pi-msg { display: none; margin: 14px 0 0; padding: 12px 14px; border-radius: 10px; font-size: 13.5px; line-height: 1.5; background: #eef4fb; border: 1px solid #c6dbf2; color: var(--bm-blue-900, #0C547C); }
+    .pi-msg-err { background: #fef2f2; border-color: #fecaca; color: #b91c1c; }
+    .pi-msg-ok  { background: #f0fdf4; border-color: #bbf7d0; color: #15803d; }
+    .pi-spin { display: inline-block; width: 13px; height: 13px; vertical-align: -2px; border: 2px solid rgba(12,84,124,.25); border-top-color: var(--bm-blue-900, #0C547C); border-radius: 50%; animation: pi-spin .65s linear infinite; }
+    @keyframes pi-spin { to { transform: rotate(360deg); } }
+    .pi-drop { border: 2px dashed #b9cfe2; border-radius: 14px; padding: 44px 20px; text-align: center; cursor: pointer; transition: background .15s, border-color .15s; color: var(--text-3); }
+    .pi-drop:hover, .pi-drop.drag { background: #eef4fb; border-color: var(--bm-blue-900); }
+    .pi-drop .pi-drop-ic { color: var(--bm-blue-900); margin-bottom: 10px; }
+    .pi-drop strong { color: var(--text-1); }
+    .pi-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px 16px; }
+    .pi-field { display: flex; flex-direction: column; gap: 5px; }
+    .pi-field.full { grid-column: 1 / -1; }
+    .pi-field label { font-size: 12.5px; font-weight: 600; color: var(--text-2, #334155); }
+    .pi-field label .req { color: #dc2626; }
+    .pi-field input, .pi-field select, .pi-field textarea { font: inherit; font-size: 14px; color: var(--text-1); border: 1px solid var(--border); border-radius: 9px; padding: 9px 11px; background: #fff; outline: none; width: 100%; }
+    .pi-field input:focus, .pi-field select:focus, .pi-field textarea:focus { border-color: var(--bm-blue-900); box-shadow: 0 0 0 3px rgba(12,84,124,.12); }
+    .pi-field textarea { resize: vertical; min-height: 64px; }
+    .pi-actions { display: flex; gap: 10px; margin-top: 22px; flex-wrap: wrap; }
+    .pi-btn { display: inline-flex; align-items: center; gap: 8px; cursor: pointer; font: inherit; font-size: 14px; font-weight: 600; border-radius: 10px; padding: 11px 20px; border: 1px solid transparent; transition: opacity .15s; }
+    .pi-btn:disabled { opacity: .45; cursor: not-allowed; }
+    .pi-btn-pri { background: var(--bm-blue-900); color: #fff; }
+    .pi-btn-pri:hover:not(:disabled) { opacity: .9; }
+    .pi-btn-ghost { background: #fff; color: var(--text-2); border-color: var(--border); }
+    .pi-btn-ghost:hover { background: #f8fafc; }
+    .pi-table-wrap { overflow-x: auto; }
+    .pi-table { width: 100%; border-collapse: collapse; font-size: 13.5px; min-width: 720px; }
+    .pi-table th { text-align: left; font-size: 11.5px; text-transform: uppercase; letter-spacing: .04em; color: var(--text-3); padding: 8px 10px; border-bottom: 2px solid var(--border); }
+    .pi-table td { padding: 8px 10px; border-bottom: 1px solid var(--border); vertical-align: middle; }
+    .pi-table .pi-in { font: inherit; font-size: 13.5px; border: 1px solid var(--border); border-radius: 7px; padding: 7px 9px; width: 100%; min-width: 90px; outline: none; }
+    .pi-table .pi-in:focus { border-color: var(--bm-blue-900); }
+    .pi-in-num { text-align: right; }
+    .pi-td-nome { max-width: 300px; }
+    .pi-td-tot { text-align: right; font-weight: 600; white-space: nowrap; }
+    .pi-td-st { width: 30px; text-align: center; }
+    .pi-td-st input { width: 16px; height: 16px; accent-color: var(--bm-blue-900); cursor: pointer; }
+    .pi-num { text-align: right; white-space: nowrap; }
+    .pi-lote-dim { color: var(--text-3); font-size: 11.5px; }
+    .pi-row-off td { opacity: .45; background: #f8fafc; }
+    .pi-total-bar { display: flex; justify-content: flex-end; align-items: baseline; gap: 10px; padding: 14px 10px 0; font-size: 14px; color: var(--text-2); }
+    .pi-total-bar strong { font-size: 20px; color: var(--bm-blue-900); }
+    .pi-rev-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px 20px; margin-bottom: 20px; }
+    .pi-rev-item { display: flex; flex-direction: column; gap: 1px; padding: 8px 10px; background: #f8fafc; border: 1px solid var(--border); border-radius: 8px; }
+    .pi-rev-item span { font-size: 11px; text-transform: uppercase; letter-spacing: .04em; color: var(--text-3); }
+    .pi-rev-item strong { font-size: 13.5px; color: var(--text-1); font-weight: 600; word-break: break-word; }
+    .pi-ok-wrap { text-align: center; padding: 30px 10px 10px; }
+    .pi-ok-ic { width: 74px; height: 74px; border-radius: 50%; margin: 0 auto 18px; background: #f0fdf4; border: 2px solid #86efac; color: #16a34a; display: flex; align-items: center; justify-content: center; font-size: 36px; }
+    .cs-nf-box { display: flex; gap: 10px; align-items: flex-end; flex-wrap: wrap; }
+    .cs-nf-box .pi-field { flex: 1; min-width: 220px; }
+    /* PI · Consignação (processo, 19/10/26): escolha do caminho, devoluções em aberto, nova devolução, OVs */
+    .pi-card [hidden] { display: none !important; }
+    .pi-msg-warn { background: #fffbeb; border-color: #fde68a; color: #92400e; }
+    .pi-head .cs-reiniciar { margin-left: auto; font: inherit; font-size: 12.5px; font-weight: 600; color: #fff; background: rgba(255,255,255,.12); border: 1px solid rgba(255,255,255,.3); border-radius: 999px; padding: 6px 14px; cursor: pointer; white-space: nowrap; }
+    .pi-head .cs-reiniciar:hover { background: rgba(255,255,255,.22); }
+    .cs-opcoes { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+    .cs-op { display: flex; flex-direction: column; align-items: flex-start; gap: 8px; text-align: left; font: inherit; color: inherit; background: #fff; border: 1px solid var(--border); border-radius: 14px; padding: 22px 20px; cursor: pointer; transition: border-color .15s, box-shadow .15s, transform .15s; }
+    .cs-op:hover, .cs-op:focus-visible { border-color: var(--bm-blue-900); box-shadow: 0 8px 22px rgba(12,84,124,.12); transform: translateY(-1px); outline: none; }
+    .cs-op-num { width: 34px; height: 34px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; font-weight: 700; color: var(--bm-blue-900); background: #eef4fb; border: 1px solid #c6dbf2; }
+    .cs-op h4 { margin: 4px 0 0; font-family: var(--font-display); font-size: 16px; color: var(--text-1); }
+    .cs-op p { margin: 0; font-size: 13px; line-height: 1.55; color: var(--text-3); }
+    .cs-op-ir { margin-top: auto; padding-top: 6px; font-size: 13px; font-weight: 700; color: var(--bm-blue-900); }
+    .cs-yn { display: flex; gap: 12px; flex-wrap: wrap; }
+    .cs-yn .pi-btn { min-width: 170px; justify-content: center; font-size: 15px; padding: 14px 24px; }
+    .cs-yn-ajuda { margin: 18px 0 0; padding-left: 18px; font-size: 13px; color: var(--text-3); line-height: 1.7; }
+    .cs-bloco-tt { margin: 22px 0 8px; font-size: 11.5px; font-weight: 700; text-transform: uppercase; letter-spacing: .05em; color: var(--text-3); }
+    .cs-cli-wrap:empty { display: none; }
+    .cs-cli { margin-top: 12px; padding: 12px 14px; border-radius: 10px; border: 1px solid var(--border); background: #f8fafc; font-size: 13.5px; color: var(--text-2); }
+    .cs-cli-ok { background: #f0fdf4; border-color: #bbf7d0; }
+    .cs-cli-err { background: #fef2f2; border-color: #fecaca; color: #b91c1c; }
+    .cs-cli-nome { font-weight: 700; color: var(--text-1); font-size: 14.5px; }
+    .cs-cli-meta { display: flex; flex-wrap: wrap; gap: 6px 14px; align-items: center; margin-top: 4px; font-size: 12.5px; color: var(--text-3); }
+    .cs-cli-aviso { margin-top: 6px; font-size: 12.5px; color: #92400e; }
+    .cs-manual { margin-top: 10px; }
+    .cs-chip { display: inline-block; font-size: 11.5px; font-weight: 700; line-height: 1.5; padding: 1px 9px; border-radius: 999px; background: #eef4fb; color: var(--bm-blue-900); border: 1px solid #c6dbf2; white-space: nowrap; }
+    .cs-chip-ok { background: #f0fdf4; color: #15803d; border-color: #bbf7d0; }
+    .cs-chip-warn { background: #fffbeb; color: #92400e; border-color: #fde68a; }
+    .cs-chip-err { background: #fef2f2; color: #b91c1c; border-color: #fecaca; }
+    .cs-x { width: 28px; height: 28px; border-radius: 8px; border: 1px solid var(--border); background: #fff; color: var(--text-3); font-size: 16px; line-height: 1; cursor: pointer; }
+    .cs-x:hover { color: #b91c1c; border-color: #fecaca; background: #fef2f2; }
+    .cs-add { margin-top: 10px; font: inherit; font-size: 13px; font-weight: 600; color: var(--bm-blue-900); background: none; border: 1px dashed #b9cfe2; border-radius: 9px; padding: 8px 14px; cursor: pointer; }
+    .cs-add:hover { background: #eef4fb; }
+    .cs-conf { margin: 4px 0 6px; border: 1px solid var(--border); border-radius: 12px; padding: 12px 14px; background: #f8fafc; }
+    .cs-conf-head { display: flex; justify-content: space-between; align-items: center; gap: 10px; font-size: 13.5px; color: var(--text-1); }
+    .cs-link { font: inherit; font-size: 12.5px; font-weight: 600; color: var(--bm-blue-900); background: none; border: 0; cursor: pointer; padding: 2px 4px; }
+    .cs-conf-lista { list-style: none; margin: 8px 0 0; padding: 0; display: flex; flex-direction: column; gap: 4px; font-size: 13px; color: var(--text-2); }
+    .cs-conf-lista li { display: flex; gap: 8px; align-items: baseline; }
+    .cs-conf-ic { flex: none; width: 16px; text-align: center; font-weight: 700; }
+    .cs-conf-ok .cs-conf-ic { color: #15803d; }
+    .cs-conf-warn .cs-conf-ic { color: #b45309; }
+    .cs-conf-err .cs-conf-ic { color: #b91c1c; }
+    .cs-dev { margin-top: 14px; border: 1px solid var(--border); border-radius: 12px; overflow: hidden; background: #fff; }
+    .cs-dev-head { display: flex; flex-wrap: wrap; gap: 6px 14px; align-items: center; padding: 10px 14px; background: #f8fafc; border-bottom: 1px solid var(--border); font-size: 13px; color: var(--text-3); }
+    .cs-dev-head strong { font-size: 14px; color: var(--text-1); }
+    .cs-row-sel td { background: #f0f7ff; }
+    .cs-actions-sel { align-items: center; }
+    .cs-contador { margin-left: auto; font-size: 13px; color: var(--text-3); }
+    .cs-vazio { margin-top: 14px; padding: 26px 16px; text-align: center; font-size: 14px; line-height: 1.6; color: var(--text-2); border: 1px dashed var(--border); border-radius: 12px; }
+    .cs-modo { padding: 12px 14px; border-radius: 10px; border: 1px solid; font-size: 13.5px; line-height: 1.5; }
+    .cs-modo-sim { background: #fffbeb; border-color: #fde68a; color: #92400e; }
+    .cs-modo-grava { background: #f0fdf4; border-color: #bbf7d0; color: #15803d; }
+    .cs-modo-bloq { background: #fef2f2; border-color: #fecaca; color: #b91c1c; }
+    .cs-detalhe { margin-top: 16px; border: 1px solid var(--border); border-radius: 10px; padding: 10px 14px; }
+    .cs-detalhe summary { cursor: pointer; font-size: 13.5px; font-weight: 600; color: var(--bm-blue-900); }
+    .cs-map-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-top: 12px; }
+    .cs-map-tt { margin-bottom: 6px; font-size: 12.5px; font-weight: 600; color: var(--text-2); }
+    .cs-map { width: 100%; border-collapse: collapse; font-size: 12.5px; }
+    .cs-map td { padding: 4px 6px; border-bottom: 1px solid var(--border); vertical-align: top; word-break: break-word; }
+    .cs-map td:first-child { color: var(--text-3); white-space: nowrap; }
+    .pi-card code { font-family: 'JetBrains Mono', Consolas, monospace; font-size: .92em; }
+    .cs-json { margin: 12px 0 0; padding: 12px 14px; border-radius: 10px; background: #0f172a; color: #e2e8f0; font: 12px/1.5 'JetBrains Mono', Consolas, monospace; overflow: auto; max-height: 340px; white-space: pre; }
+    .cs-fim-tt { display: flex; gap: 14px; align-items: center; margin-bottom: 16px; }
+    .cs-fim-tt h3 { margin: 0 0 2px; }
+    .cs-fim-ic { flex: none; width: 52px; height: 52px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 24px; color: #16a34a; background: #f0fdf4; border: 2px solid #86efac; }
+    .cs-fim-ic-sim { color: #b45309; background: #fffbeb; border-color: #fde68a; font-size: 18px; }
+    .cs-btn-sm { padding: 6px 12px; font-size: 12.5px; white-space: nowrap; }
+    .cs-ov-lin > td { padding: 10px 14px 14px; background: #f8fafc; }
+    .cs-mini { width: 100%; border-collapse: collapse; font-size: 12.5px; background: #fff; border: 1px solid var(--border); }
+    .cs-mini th { text-align: left; font-size: 11px; text-transform: uppercase; letter-spacing: .04em; color: var(--text-3); padding: 6px 8px; border-bottom: 1px solid var(--border); }
+    .cs-mini td { padding: 6px 8px; border-bottom: 1px solid var(--border); }
+    .cs-mini-tot td { font-weight: 700; color: var(--text-1); border-bottom: 0; }
+    .cs-txt-err { color: #b91c1c; }
+    .cs-situacoes { display: block; margin-top: 4px; font-size: 12.5px; color: var(--text-3); }
+    @media (max-width: 640px) {
+      .pi-grid, .pi-rev-grid { grid-template-columns: 1fr; }
+      .pi-body { padding: 20px 14px 24px; }
+      .pi-steps { padding: 12px 14px; }
+      .cs-opcoes, .cs-map-grid { grid-template-columns: 1fr; }
+      .cs-contador { width: 100%; margin-left: 0; order: -1; }
+      .cs-yn .pi-btn { flex: 1; min-width: 0; }
+    }
+  </style>
+  <!-- Layout v3 (Claude Design · animado): fonte + camada visual + motor de animações -->
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300..800&family=Manrope:wght@400..800&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../portal-v3.css?v=2">
+  <script src="../portal-motion.js?v=3" defer></script>
+  <!-- Tema claro/escuro (menu do avatar): marca o <html> antes de pintar + camada escura -->
+  <script>try{if(localStorage.getItem('bm-tema')==='escuro')document.documentElement.setAttribute('data-tema','escuro')}catch(e){}</script>
+  <link rel="stylesheet" href="../portal-tema.css?v=1">
+  <script src="../portal-tema.js?v=1" defer></script>
+  <!-- Celular (varredura 15/10/26): só vale em tela < 768px; no computador não se aplica -->
+  <link rel="stylesheet" href="../portal-mobile.css?v=1" media="(max-width: 767.98px)">
+  <script src="../portal-mobile.js?v=1" defer></script>
+</head>
+<body class="dept">
+
+  <!-- HEADER -->
+  <header class="site-header">
+    <div class="container">
+      <a href="../index.html" class="brand" aria-label="Biomedical — Portal Corporativo">
+        <img class="brand-logo" src="/icons/icon-192.png" alt="Biomedical" onerror="this.dataset.failed='true'">
+        <span class="brand-fallback">Biomedical</span>
+      </a>
+      <span class="header-divider"></span>
+      <nav class="header-nav">
+        <a href="../index.html">Início</a>
+        <a href="../index.html#areas">Áreas</a>
+        <a href="../index.html#sistemas">Sistemas</a>
+        <a href="../index.html#avisos">Avisos</a>
+        <a href="../index.html#contato">Contato</a>
+      </nav>
+    </div>
+  </header>
+
+  <!-- AREA HEADER -->
+  <section class="area-header comercial">
+    <div class="container">
+      <div class="breadcrumb">
+        <a href="../index.html">Portal</a>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18l6-6-6-6"/></svg>
+        <a href="comercial.html">Comercial</a>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18l6-6-6-6"/></svg>
+        <span>PI · Consignação (INCOMPLETO)</span>
+      </div>
+      <h1>PI · Consignação <span style="font-size:.6em;color:#b45309;background:#fffbeb;border:1px solid #fde68a;border-radius:999px;padding:3px 12px;vertical-align:middle;">INCOMPLETO</span></h1>
+      <p>Dois caminhos: <strong>criar</strong> o processo de consignação (do PDF do consignado à ordem de devolução) ou <strong>faturar</strong> o processo (as ordens de venda em aberto do cliente). Em construção — use para testes.</p>
+    </div>
+  </section>
+
+  <!-- BODY -->
+  <div class="area-body">
+    <div class="container">
+      <div class="area-grid">
+
+        <!-- SIDEBAR -->
+        <aside class="area-sidebar">
+          <div class="sb-card">
+            <div class="sb-head">
+              <span class="sb-ic"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="2" width="20" height="8" rx="2"/><rect x="2" y="14" width="20" height="8" rx="2"/><line x1="6" y1="6" x2="6.01" y2="6"/><line x1="6" y1="18" x2="6.01" y2="18"/></svg></span>
+              <div><div class="sb-tt">PI · Consignação (INCOMPLETO)</div><div class="sb-st">Comercial · Criar e faturar consignação</div></div>
+            </div>
+            <nav>
+              <div class="sb-section">Navegação</div>
+              <a href="comercial.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="8.5" cy="7" r="4"/><path d="M20 8v6"/><path d="M23 11h-6"/></svg>Área Comercial</a>
+              <a href="pedido-inteligente.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>PI · Pedido</a>
+              <div class="sb-divider"></div>
+              <div class="sb-section">Como funciona</div>
+              <div style="padding:4px 12px 10px;font-size:12.5px;color:var(--text-3);line-height:1.55;">
+                <strong>1. Criar processo</strong> — anexe o PDF do consignado.<br>
+                · Já existe ordem de devolução: o agente lista as devoluções <strong>em aberto</strong> do cliente e marca os itens e lotes do PDF.<br>
+                · Não existe: o agente monta e cria a ordem de devolução (cabeçalho + linhas).<br><br>
+                <strong>2. Faturar processo</strong> — informe o CNPJ do cliente para ver as <strong>ordens de venda em aberto</strong>.
+              </div>
+            </nav>
+          </div>
+          <a href="comercial.html" class="sb-back"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></svg>Voltar ao Comercial</a>
+        </aside>
+
+        <!-- MAIN -->
+        <div class="area-main">
+          <section style="padding:32px 0 60px;">
+            <div class="pi-card">
+              <div class="pi-head">
+                <span class="pi-ic">
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="2" width="20" height="8" rx="2"/><rect x="2" y="14" width="20" height="8" rx="2"/><line x1="6" y1="6" x2="6.01" y2="6"/><line x1="6" y1="18" x2="6.01" y2="18"/></svg>
+                </span>
+                <div>
+                  <div class="pi-tt">PI · Consignação</div>
+                  <div class="pi-st" id="cs-subtitulo">Criar ou faturar um processo de consignação</div>
+                </div>
+                <button type="button" class="cs-reiniciar" id="cs-reiniciar" hidden>↺ Início</button>
+              </div>
+
+              <div class="pi-steps" id="cs-trilha"></div>
+
+              <div class="pi-body">
+
+                <!-- 0 · ESCOLHA DO CAMINHO -->
+                <section id="st-inicio">
+                  <h3>O que você quer fazer?</h3>
+                  <p class="pi-sub">Escolha o caminho do processo de consignação.</p>
+                  <div class="cs-opcoes">
+                    <button type="button" class="cs-op" data-caminho="criar">
+                      <span class="cs-op-num">1</span>
+                      <h4>Criar processo de consignação</h4>
+                      <p>A partir do PDF do consignado: encontra a ordem de devolução em aberto do cliente — ou cria a ordem de devolução, se ela ainda não existe.</p>
+                      <span class="cs-op-ir">Começar →</span>
+                    </button>
+                    <button type="button" class="cs-op" data-caminho="fat">
+                      <span class="cs-op-num">2</span>
+                      <h4>Faturar processo de consignação</h4>
+                      <p>Pelo CNPJ do cliente: acha o código dele no Dynamics e lista todas as ordens de venda em aberto.</p>
+                      <span class="cs-op-ir">Começar →</span>
+                    </button>
+                  </div>
+                  <div id="in-aviso"></div>
+                </section>
+
+                <!-- 1 · EXISTE ORDEM DE DEVOLUÇÃO? -->
+                <section id="st-pergunta" hidden>
+                  <h3>Existe ordem de devolução?</h3>
+                  <p class="pi-sub">Antes de começar: a ordem de devolução deste consignado <strong>já foi criada</strong> no Dynamics?</p>
+                  <div class="cs-yn">
+                    <button type="button" class="pi-btn pi-btn-pri" id="pg-sim">Sim, já existe</button>
+                    <button type="button" class="pi-btn pi-btn-ghost" id="pg-nao">Não existe</button>
+                  </div>
+                  <ul class="cs-yn-ajuda">
+                    <li><strong>Sim</strong> — o agente lê o PDF, lista as devoluções em aberto do cliente e marca os itens e lotes do PDF.</li>
+                    <li><strong>Não</strong> — o agente lê o PDF e cria o cabeçalho e as linhas da ordem de devolução.</li>
+                  </ul>
+                  <div class="pi-actions">
+                    <button type="button" class="pi-btn pi-btn-ghost" id="pg-voltar">← Voltar</button>
+                  </div>
+                </section>
+
+                <!-- 2 · PDF -->
+                <section id="st-pdf" hidden>
+                  <h3 id="pdf-titulo">PDF do consignado</h3>
+                  <p class="pi-sub" id="pdf-sub"></p>
+                  <div class="pi-drop" id="pdf-drop" role="button" tabindex="0" aria-label="Escolher o PDF do consignado">
+                    <div class="pi-drop-ic">
+                      <svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+                    </div>
+                    <div><strong>Clique para escolher</strong> ou arraste o PDF aqui</div>
+                    <div style="font-size:12.5px;margin-top:4px;">Somente arquivos .pdf</div>
+                  </div>
+                  <input type="file" id="pdf-file" accept=".pdf,application/pdf" style="display:none;">
+                  <div class="pi-msg" id="st-pdf-msg"></div>
+                  <div class="pi-actions">
+                    <button type="button" class="pi-btn pi-btn-ghost" id="pdf-voltar">← Voltar</button>
+                    <button type="button" class="pi-btn pi-btn-ghost" id="pdf-manual">✍️ Preencher manualmente</button>
+                  </div>
+                </section>
+
+                <!-- 3 · DADOS DO PDF -->
+                <section id="st-dados" hidden>
+                  <h3>Dados do consignado</h3>
+                  <p class="pi-sub"><span id="dd-arquivo"></span> — confira o cliente e os itens (código, lote e quantidade).</p>
+                  <div class="cs-bloco-tt">Cliente no Dynamics</div>
+                  <div class="cs-nf-box">
+                    <div class="pi-field">
+                      <label for="dd-cnpj">CNPJ do cliente <span class="req">*</span></label>
+                      <input id="dd-cnpj" inputmode="numeric" autocomplete="off" placeholder="00.000.000/0000-00">
+                    </div>
+                    <button type="button" class="pi-btn pi-btn-pri" id="dd-buscar">Buscar cliente</button>
+                  </div>
+                  <div id="dd-cliente" class="cs-cli-wrap"></div>
+                  <div class="cs-nf-box cs-manual" id="dd-manual" hidden>
+                    <div class="pi-field">
+                      <label for="dd-codigo">Código do cliente no Dynamics</label>
+                      <input id="dd-codigo" autocomplete="off" placeholder="Ex.: C004512">
+                    </div>
+                    <button type="button" class="pi-btn pi-btn-ghost" id="dd-usar">Usar este código</button>
+                  </div>
+                  <div class="cs-bloco-tt">Do documento</div>
+                  <div class="pi-rev-grid" id="dd-info"></div>
+                  <div class="cs-bloco-tt">Itens do PDF</div>
+                  <div class="pi-table-wrap">
+                    <table class="pi-table">
+                      <thead><tr><th>#</th><th>Código</th><th>Produto</th><th>Lote</th><th style="text-align:right;">Qtd</th><th style="text-align:right;">Vl. unit.</th><th></th></tr></thead>
+                      <tbody id="dd-tbody"></tbody>
+                    </table>
+                  </div>
+                  <button type="button" class="cs-add" id="dd-add">+ Adicionar item</button>
+                  <div class="pi-msg" id="st-dados-msg"></div>
+                  <div class="pi-actions">
+                    <button type="button" class="pi-btn pi-btn-ghost" id="dd-voltar">← Voltar</button>
+                    <button type="button" class="pi-btn pi-btn-pri" id="dd-continuar" disabled>Continuar →</button>
+                  </div>
+                </section>
+
+                <!-- 4a · DEVOLUÇÕES EM ABERTO (existe ordem de devolução) -->
+                <section id="st-devolucoes" hidden>
+                  <h3>Devoluções em aberto do cliente</h3>
+                  <p class="pi-sub" id="dv-resumo"></p>
+                  <div id="dv-avisos"></div>
+                  <div class="cs-conf">
+                    <div class="cs-conf-head"><strong id="dv-conf-tt">Itens do PDF</strong><button type="button" class="cs-link" id="dv-remarcar">↺ Remarcar pelo PDF</button></div>
+                    <ul class="cs-conf-lista" id="dv-conf"></ul>
+                  </div>
+                  <div id="dv-lista"></div>
+                  <div class="pi-msg" id="st-devolucoes-msg"></div>
+                  <div class="pi-actions cs-actions-sel">
+                    <button type="button" class="pi-btn pi-btn-ghost" id="dv-voltar">← Voltar</button>
+                    <span class="cs-contador" id="dv-contador"></span>
+                    <button type="button" class="pi-btn pi-btn-pri" id="dv-concluir" disabled>Concluir seleção →</button>
+                  </div>
+                </section>
+
+                <!-- 4b · NOVA ORDEM DE DEVOLUÇÃO (não existe) -->
+                <section id="st-criar" hidden>
+                  <h3>Nova ordem de devolução</h3>
+                  <p class="pi-sub">O agente cria o <strong>cabeçalho</strong> e uma <strong>linha por item</strong> do PDF no Dynamics.</p>
+                  <div id="cr-modo" class="cs-modo"></div>
+                  <div class="cs-bloco-tt">Cabeçalho</div>
+                  <div class="pi-rev-grid" id="cr-cab"></div>
+                  <div class="cs-bloco-tt">Linhas</div>
+                  <div class="pi-table-wrap">
+                    <table class="pi-table">
+                      <thead><tr><th>#</th><th>Código</th><th>Produto</th><th>Lote</th><th style="text-align:right;">Qtd a devolver</th></tr></thead>
+                      <tbody id="cr-tbody"></tbody>
+                    </table>
+                  </div>
+                  <p class="pi-lote-dim" id="cr-nota-qtd" hidden>No Dynamics a devolução vai com a quantidade <strong>negativa</strong> (como a tela da ordem de devolução mostra).</p>
+                  <div id="cr-avisos"></div>
+                  <details class="cs-detalhe">
+                    <summary>O que vai para o Dynamics</summary>
+                    <div class="cs-map-grid"><div id="cr-map-cab"></div><div id="cr-map-lin"></div></div>
+                    <pre class="cs-json" id="cr-json"></pre>
+                  </details>
+                  <div class="pi-msg" id="st-criar-msg"></div>
+                  <div class="pi-actions">
+                    <button type="button" class="pi-btn pi-btn-ghost" id="cr-voltar">← Voltar</button>
+                    <button type="button" class="pi-btn pi-btn-pri" id="cr-criar">Criar</button>
+                  </div>
+                </section>
+
+                <!-- 5 · FIM (o agente para aqui por enquanto) -->
+                <section id="st-fim" hidden>
+                  <div id="fim-conteudo"></div>
+                  <div class="pi-msg" id="st-fim-msg"></div>
+                  <div class="pi-actions">
+                    <button type="button" class="pi-btn pi-btn-ghost" id="fim-voltar">← Voltar</button>
+                    <button type="button" class="pi-btn pi-btn-ghost" id="fim-copiar">📋 Copiar resumo</button>
+                    <button type="button" class="pi-btn pi-btn-pri" id="fim-novo">Novo processo</button>
+                  </div>
+                </section>
+
+                <!-- F1 · FATURAR: CNPJ DO CLIENTE -->
+                <section id="st-cnpj" hidden>
+                  <h3>Cliente do faturamento</h3>
+                  <p class="pi-sub">Digite o <strong>CNPJ do cliente</strong>. O agente acha o código dele no Dynamics e lista as ordens de venda em aberto.</p>
+                  <div class="cs-nf-box">
+                    <div class="pi-field">
+                      <label for="cnpj-num">CNPJ do cliente <span class="req">*</span></label>
+                      <input id="cnpj-num" inputmode="numeric" autocomplete="off" placeholder="00.000.000/0000-00">
+                    </div>
+                    <button type="button" class="pi-btn pi-btn-pri" id="cnpj-buscar">Buscar ordens de venda</button>
+                  </div>
+                  <div id="cnpj-cliente" class="cs-cli-wrap"></div>
+                  <div class="cs-nf-box cs-manual" id="cnpj-manual" hidden>
+                    <div class="pi-field">
+                      <label for="cnpj-codigo">Código do cliente no Dynamics</label>
+                      <input id="cnpj-codigo" autocomplete="off" placeholder="Ex.: C004512">
+                    </div>
+                    <button type="button" class="pi-btn pi-btn-ghost" id="cnpj-usar">Usar este código</button>
+                  </div>
+                  <div class="pi-msg" id="st-cnpj-msg"></div>
+                  <div class="pi-actions">
+                    <button type="button" class="pi-btn pi-btn-ghost" id="cnpj-voltar">← Voltar</button>
+                  </div>
+                </section>
+
+                <!-- F2 · FATURAR: ORDENS DE VENDA EM ABERTO -->
+                <section id="st-ovs" hidden>
+                  <h3>Ordens de venda em aberto</h3>
+                  <p class="pi-sub" id="ov-resumo"></p>
+                  <div id="ov-avisos"></div>
+                  <div class="pi-table-wrap">
+                    <table class="pi-table">
+                      <thead><tr><th>Ordem de venda</th><th>Criada em</th><th>OC / Referência</th><th>Entrega</th><th>Depósito</th><th>Pool</th><th>Situação</th><th></th></tr></thead>
+                      <tbody id="ov-tbody"></tbody>
+                    </table>
+                  </div>
+                  <div class="pi-msg" id="st-ovs-msg"></div>
+                  <div class="pi-actions">
+                    <button type="button" class="pi-btn pi-btn-ghost" id="ov-voltar">← Outro cliente</button>
+                    <button type="button" class="pi-btn pi-btn-ghost" id="ov-atualizar">↻ Atualizar</button>
+                  </div>
+                </section>
+
+              </div>
+            </div>
+          </section>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+  <!-- FOOTER -->
+  <footer class="site-footer">
+    <div class="container">
+      <div class="bm-footer-bottom">
+        <span>© 2026 Biomedical · Portal Corporativo</span>
+        <a href="comercial.html">← Voltar ao Comercial</a>
+      </div>
+    </div>
+  </footer>
+
+  <script src="../script.js?v=8"></script>
+  <script src="../nav-sidebar.js?v=52"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+  <script>
+    if (window.pdfjsLib) {
+      pdfjsLib.GlobalWorkerOptions.workerSrc =
+        'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+    }
+  </script>
+  <script src="../pi-pdf-texto.js?v=1"></script>
+  <script src="../pi-consignacao-incompleto.js?v=6"></script>
+</body>
+</html>

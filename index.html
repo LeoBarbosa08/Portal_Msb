@@ -1,0 +1,1205 @@
+﻿<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Portal Comercial &amp; Estoque · Biomedical</title>
+  <link rel="icon" type="image/png" href="/icons/icon-192.png">
+  <link rel="stylesheet" href="styles.css?v=14">
+  <!-- Layout v3 (Claude Design · animado) — fonte Outfit + Manrope + JetBrains Mono -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="preconnect" href="https://cdnjs.cloudflare.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300..800&family=Manrope:wght@400..800&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="home-v2.css?v=5">
+  <link rel="stylesheet" href="portal-v3.css?v=2">
+  <link rel="stylesheet" href="home-v3.css?v=1">
+  <script src="portal-motion.js?v=3" defer></script>
+  <!-- Tema claro/escuro (menu do avatar): marca o <html> antes de pintar + camada escura -->
+  <script>try{if(localStorage.getItem('bm-tema')==='escuro')document.documentElement.setAttribute('data-tema','escuro')}catch(e){}</script>
+  <link rel="stylesheet" href="portal-tema.css?v=1">
+  <script src="portal-tema.js?v=1" defer></script>
+  <!-- Celular (varredura 15/10/26): só vale em tela < 768px; no computador não se aplica -->
+  <link rel="stylesheet" href="portal-mobile.css?v=1" media="(max-width: 767.98px)">
+  <script src="portal-mobile.js?v=1" defer></script>
+  <script src="home-v3.js?v=2" defer></script>
+  <!-- PWA -->
+  <link rel="manifest" href="/manifest.webmanifest">
+  <meta name="theme-color" content="#002E5D">
+  <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-title" content="Biomedical">
+  <script src="auth.js?v=7"></script>
+  <script src="area-access.js?v=19" defer></script>
+  <script src="alertas.js?v=3" defer></script>
+  <script src="perfil-sheet.js?v=1" defer></script>
+  <script src="avisos-user.js?v=1"></script>
+  <script src="avisos-data.js?v=2"></script>
+  <script src="/pwa.js" defer></script>
+  <script src="portal-catalogo.js?v=18"></script>
+  <!-- TRAVA DE ACESSO (fail-closed) — a grade de Áreas nasce ESCONDIDA e só
+       aparece quando o /api/my-areas disser o que esta pessoa pode ver. NÃO existe
+       mais "backstop" revelando a grade depois de N segundos: era exatamente essa
+       revelação sem decisão que mostrava os 12 departamentos para quem só tem
+       dois. Quem revela é o area-access.js (evento areaaccess:ready), e o auth.js
+       só tira a tela de login depois da decisão. -->
+  <style>
+    body.acesso-pendente .areas-grid { opacity: 0 !important; pointer-events: none; }
+    body.acesso-pendente .area-card  { display: none !important; }
+    .areas-grid { transition: opacity .22s ease; }
+  </style>
+</head>
+<body class="home-v2 home-v3 acesso-pendente">
+
+  <!-- HEADER GLOBAL -->
+  <header class="site-header">
+    <div class="container">
+      <a href="index.html" class="brand" aria-label="Biomedical — Portal Corporativo">
+        <img class="brand-logo" src="/icons/icon-192.png" alt="Biomedical" onerror="this.dataset.failed='true'">
+        <span class="brand-fallback">Biomedical</span>
+      </a>
+      <span class="header-divider"></span>
+      <nav class="header-nav">
+        <a href="index.html">Início</a>
+        <a href="#areas">Áreas</a>
+        <a href="#sistemas">Sistemas</a>
+        <a href="#avisos">Avisos</a>
+        <a href="#contato">Contato</a>
+      </nav>
+      <span class="header-spacer"></span>
+      <div class="hv-head-actions">
+        <button class="header-search" id="search-trigger" aria-label="Buscar (Ctrl+K)">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+          <span class="ph">Buscar sistemas, áreas…</span>
+          <span class="kbd">Ctrl K</span>
+        </button>
+        <!-- sino: leva para a faixa "Para você" e conta o que espera decisão
+             (quem pinta o contador é o alertas.js) -->
+        <button class="hv-bell" id="hv-bell" type="button" aria-label="Alertas" title="Alertas">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8a6 6 0 1 0-12 0c0 7-3 8-3 8h18s-3-1-3-8"/><path d="M13.7 21a2 2 0 0 1-3.4 0"/></svg>
+          <span class="hv-bell-dot" id="hv-bell-dot" hidden></span>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- HERO (v3 — Claude Design, animado): fundo com grade em perspectiva e
+       orbes, anel de órbita em 3D (home-scene.js, carregado pelo home-v3.js), saudação
+       grande, busca de vidro, "Continue de onde parou" e "Resumo de hoje".
+       Os ids de sempre continuam aqui (hv-greeting, recentes-list, rc-clear). -->
+  <section class="hero hv3-hero" id="inicio">
+    <div class="hv3-bg" aria-hidden="true">
+      <div class="hv3-floor"></div>
+      <span class="hv3-stars"></span>
+      <span class="hv3-orb hv3-orb--a" data-depth="1"></span>
+      <span class="hv3-orb hv3-orb--b" data-depth=".6"></span>
+      <span class="hv3-orb hv3-orb--c" data-depth="1.4"></span>
+    </div>
+    <div class="hv3-canvas" id="hv3-canvas" aria-hidden="true"></div>
+    <div class="hv3-fallback" aria-hidden="true"><span class="hv3-sphere"></span><span class="hv3-ring"></span></div>
+
+    <div class="container hv3-inner">
+      <div class="hv3-copy">
+        <div class="hv-kicker">
+          <span class="dot"></span>
+          <span>PORTAL COMERCIAL &amp; ESTOQUE · ACESSO INTERNO</span>
+        </div>
+        <h1 class="hv-greeting" id="hv-greeting"><span class="hv3-w"><span>Bem-vindo</span></span></h1>
+        <p class="hv-sub">O que você precisa hoje?<span class="hv-sub-extra"> Suas áreas e sistemas estão logo abaixo.</span></p>
+        <button class="hv3-search" id="hv3-search" type="button" aria-label="Buscar sistemas, áreas e módulos (Ctrl K)">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
+          <span>Buscar sistemas, áreas, módulos…</span><kbd>Ctrl K</kbd>
+        </button>
+
+        <!-- CONTINUE DE ONDE PAROU (recentes dentro do hero) -->
+        <div class="hv-recentes">
+          <span class="hv-recentes-label">
+            CONTINUE DE ONDE PAROU
+            <button type="button" class="rc-clear" id="rc-clear" style="display:none;">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+              Limpar
+            </button>
+          </span>
+          <div class="recentes-list" id="recentes-list"></div>
+        </div>
+      </div>
+
+      <!-- RESUMO DE HOJE — números reais: aprovações e alertas vêm do
+           /api/alertas (alertas.js → evento alertas:pintado); áreas = cartões
+           que o area-access.js deixou à vista. Sem resposta, fica "—". -->
+      <aside class="hv3-pulse-wrap" aria-label="Resumo de hoje">
+        <div class="hv3-pulse" id="hv3-pulse">
+          <h2>Resumo de hoje</h2>
+          <a class="hv3-prow" href="#alertas"><b id="hv3-n-aprov">—</b><span>aprovações pendentes</span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg></a>
+          <a class="hv3-prow" href="#alertas"><b id="hv3-n-alertas">—</b><span>alertas para você</span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg></a>
+          <a class="hv3-prow" href="#areas"><b id="hv3-n-areas">—</b><span>áreas liberadas para você</span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg></a>
+        </div>
+      </aside>
+    </div>
+  </section>
+
+  <!-- CORPO — coluna principal (Para você, Departamentos, Sistemas, Suporte)
+       + trilho de Avisos à direita. As seções continuam sendo section com
+       os mesmos ids (âncoras do menu e da tab bar); quem faz a largura e o
+       recuo agora é a .hv-shell-grid, e os .container de dentro são
+       neutralizados no CSS. -->
+  <div class="hv-shell">
+    <div class="hv-shell-grid">
+      <div class="hv-col-main">
+
+  <!-- PARA VOCÊ (alertas) — aprovações, prazos e novidades da PESSOA logada.
+       Conteúdo vem do /api/alertas e é desenhado pelo alertas.js; o que cada
+       um vê é decidido no BACKEND (área do grupo do Entra + alçada). Nasce
+       oculta: sem resposta confirmada, a faixa não aparece. -->
+  <section class="hv-alertas-section" id="alertas" hidden aria-label="Alertas para você">
+    <div class="container">
+      <div class="section-header">
+        <div class="left">
+          <h2>Para você</h2>
+          <span class="hv-count" id="al-count"></span>
+        </div>
+        <div class="hv-al-actions">
+          <button type="button" class="hv-al-refresh" id="al-refresh" title="Buscar alertas agora">↻ Atualizar</button>
+        </div>
+      </div>
+      <!-- UMA caixa branca só, uma LINHA por alerta. O "mostrar o resto" saiu
+           do cabeçalho e virou o rodapé da própria caixa — é onde a lista
+           acaba que se pergunta se falta alguma coisa. -->
+      <div class="hv-al-box">
+        <div class="hv-al-grid" id="al-grid" aria-live="polite"></div>
+        <button type="button" class="hv-al-toggle" id="al-toggle" hidden>Ver todos</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- ÁREAS -->
+  <section class="areas-section" id="areas">
+    <div class="container">
+      <div class="section-header">
+        <div class="left">
+          <span class="section-tag">Áreas</span>
+          <h2>Departamentos</h2>
+          <span class="hv-count" id="hv-count"></span>
+          <p>Acesse a área correspondente à sua função.</p>
+        </div>
+        <button type="button" class="hv-areas-toggle" id="hv-areas-toggle">Ver todos</button>
+      </div>
+
+      <div class="areas-grid">
+
+        <a href="pages/comercial.html" class="area-card" data-area="comercial">
+          <span class="area-card-icon">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="8.5" cy="7" r="4"/><path d="M20 8v6"/><path d="M23 11h-6"/></svg>
+            </span>
+          <h3>Comercial</h3>
+          <p>Vendas, cotações, clientes e processos comerciais.</p>
+          <span class="area-card-arrow">Acessar
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+          </span>
+        </a>
+
+        <a href="pages/estoque.html" class="area-card" data-area="estoque">
+          <span class="area-card-icon">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><polyline points="3.27 6.96 12 12.01 20.73 6.96"/><line x1="12" y1="22.08" x2="12" y2="12"/></svg>
+            </span>
+          <h3>Estoque</h3>
+          <p>Gestão de estoque, inventário, entradas e saídas de materiais.</p>
+          <span class="area-card-arrow">Acessar
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+          </span>
+        </a>
+
+      </div>
+    </div>
+  </section>
+
+  <!-- SISTEMAS -->
+  <section class="sistemas-section" id="sistemas">
+    <div class="container">
+      <div class="section-header">
+        <div class="left">
+          <span class="section-tag">Sistemas</span>
+          <h2>Sistemas &amp; Links</h2>
+          <span class="hv-count" id="hv-sis-count"></span>
+          <p>Atalhos para sistemas internos, plataformas e canais oficiais da Biomedical.</p>
+        </div>
+        <a href="#sistemas" class="hv-seeall">Ver todos →</a>
+      </div>
+
+      <!-- chips de categoria (o filtro é o script "sistemas-tabs" do fim da página;
+           as contagens são do home-v3.js, depois que o acesso é decidido) -->
+      <div class="hv3-chips" id="sistemas-tabs" role="toolbar" aria-label="Filtrar sistemas por categoria">
+        <button type="button" class="sistemas-tab active" data-tab="todos">Todos</button>
+        <button type="button" class="sistemas-tab" data-tab="erp">ERP &amp; CRM</button>
+        <button type="button" class="sistemas-tab" data-tab="ms">Microsoft 365</button>
+        <button type="button" class="sistemas-tab" data-tab="rh">Pessoas</button>
+        <button type="button" class="sistemas-tab" data-tab="bi">Dados</button>
+        <button type="button" class="sistemas-tab" data-tab="suporte">Suporte</button>
+        <button type="button" class="sistemas-tab" data-tab="site">Sites</button>
+      </div>
+
+      <div class="sistemas-grid" id="sistemas-grid">
+
+        <a href="https://mlb.operations.dynamics.com/" class="sistema-card" data-cat="erp" target="_blank" rel="noopener">
+          <span class="icon"><img src="https://www.google.com/s2/favicons?domain=dynamics.com&amp;sz=64" alt=""></span>
+          <div class="body"><span class="name">Dynamics 365</span><span class="desc">ERP · F&amp;O</span></div>
+          <svg class="ext-mark" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+        </a>
+        <a href="https://biomedical.lightning.force.com/lightning/page/home" class="sistema-card" data-cat="erp" target="_blank" rel="noopener">
+          <span class="icon"><img src="https://www.google.com/s2/favicons?domain=salesforce.com&amp;sz=64" alt=""></span>
+          <div class="body"><span class="name">Salesforce</span><span class="desc">CRM Comercial</span></div>
+          <svg class="ext-mark" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+        </a>
+
+        <a href="https://outlook.cloud.microsoft/mail/" class="sistema-card" data-cat="ms" target="_blank" rel="noopener">
+          <span class="icon"><img src="https://www.google.com/s2/favicons?domain=outlook.com&amp;sz=64" alt=""></span>
+          <div class="body"><span class="name">Outlook · E-mail</span><span class="desc">Microsoft 365</span></div>
+          <svg class="ext-mark" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+        </a>
+        <a href="https://tibiomedical.sharepoint.com/sites/BioPortal" class="sistema-card" data-cat="ms" target="_blank" rel="noopener">
+          <span class="icon"><img src="https://www.google.com/s2/favicons?domain=sharepoint.com&amp;sz=64" alt=""></span>
+          <div class="body"><span class="name">BioPortal</span><span class="desc">Intranet</span></div>
+          <svg class="ext-mark" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+        </a>
+        <a href="https://tibiomedical.sharepoint.com/sites/BioPortal/SitePages/ArquivosEmRede.aspx" class="sistema-card" data-cat="ms" target="_blank" rel="noopener">
+          <span class="icon"><img src="https://www.google.com/s2/favicons?domain=sharepoint.com&amp;sz=64" alt=""></span>
+          <div class="body"><span class="name">Arquivos em Rede</span><span class="desc">SharePoint</span></div>
+          <svg class="ext-mark" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+        </a>
+
+        <a href="https://hros.flashapp.com.br/" class="sistema-card" data-cat="rh" target="_blank" rel="noopener">
+          <span class="icon"><img src="https://www.google.com/s2/favicons?domain=flashapp.com.br&amp;sz=64" alt=""></span>
+          <div class="body"><span class="name">Flash · Ponto &amp; DP</span><span class="desc">Pessoas</span></div>
+          <svg class="ext-mark" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+        </a>
+        <a href="https://app.feedz.com.br/" class="sistema-card" data-cat="rh" target="_blank" rel="noopener">
+          <span class="icon"><img src="https://www.google.com/s2/favicons?domain=feedz.com.br&amp;sz=64" alt=""></span>
+          <div class="body"><span class="name">Feedz</span><span class="desc">Pessoas</span></div>
+          <svg class="ext-mark" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+        </a>
+
+        <a href="https://app.powerbi.com/home?experience=power-bi" class="sistema-card" data-cat="bi" target="_blank" rel="noopener">
+          <span class="icon"><img src="https://www.google.com/s2/favicons?domain=powerbi.com&amp;sz=64" alt=""></span>
+          <div class="body"><span class="name">Power BI</span><span class="desc">Dados</span></div>
+          <svg class="ext-mark" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+        </a>
+
+        <a href="https://biomedical.zendesk.com/hc/pt-br/requests/new" class="sistema-card" data-cat="suporte" target="_blank" rel="noopener">
+          <span class="icon"><img src="https://www.google.com/s2/favicons?domain=zendesk.com&amp;sz=64" alt=""></span>
+          <div class="body"><span class="name">Chamados TI</span><span class="desc">Suporte · Zendesk</span></div>
+          <svg class="ext-mark" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+        </a>
+        <a href="https://tibiomedical.sharepoint.com/sites/BioPortal/SitePages/PROCEDIMENTOS-OPERACIONAIS-PADR%C3%83O.aspx" class="sistema-card" data-cat="suporte" target="_blank" rel="noopener">
+          <span class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg></span>
+          <div class="body"><span class="name">P.O.P</span><span class="desc">Documentos</span></div>
+          <svg class="ext-mark" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+        </a>
+
+        <a href="https://biomedical.com.br/" class="sistema-card" data-cat="site" target="_blank" rel="noopener">
+          <span class="icon"><img src="https://www.google.com/s2/favicons?domain=biomedical.com.br&amp;sz=64" alt=""></span>
+          <div class="body"><span class="name">Site Biomedical</span><span class="desc">Site</span></div>
+          <svg class="ext-mark" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+        </a>
+        <a href="https://msbbrasil.com/" class="sistema-card" data-cat="site" target="_blank" rel="noopener">
+          <span class="icon"><img src="https://www.google.com/s2/favicons?domain=msbbrasil.com&amp;sz=64" alt=""></span>
+          <div class="body"><span class="name">Site MSB</span><span class="desc">Site</span></div>
+          <svg class="ext-mark" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+        </a>
+
+      </div>
+    </div>
+  </section>
+
+  <!-- CONTATO -->
+  <section class="contato-section" id="contato">
+    <div class="container">
+      <div class="section-header">
+        <div class="left">
+          <span class="section-tag">Contato</span>
+          <h2>Suporte interno</h2>
+          <p>Canais de atendimento para colaboradores.</p>
+        </div>
+      </div>
+
+      <div class="contato-grid">
+        <div class="contato-card">
+          <div class="hv3-sup-top">
+            <h4>Help Desk · TI</h4>
+            <span class="hv3-sup-ic" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/></svg></span>
+          </div>
+          <div class="hv3-mail"><a href="mailto:chamados.ti@biomedical.com.br">chamados.ti@biomedical.com.br</a><button type="button" class="hv3-copybtn" data-copy="chamados.ti@biomedical.com.br" aria-label="Copiar e-mail do Help Desk"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg><span>Copiar</span></button></div>
+          <ul class="hv3-lines">
+            <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6A19.79 19.79 0 0 1 2.12 4.18 2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.13.96.36 1.9.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.91.34 1.85.57 2.81.7A2 2 0 0 1 22 16.92z"/></svg>Ramal 4000</li>
+            <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>Seg–Sex · 08h às 18h</li>
+          </ul>
+          <a class="hv3-btn" href="https://biomedical.zendesk.com/hc/pt-br/requests/new" target="_blank" rel="noopener">Abrir chamado<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg></a>
+        </div>
+        <div class="contato-card">
+          <div class="hv3-sup-top">
+            <h4>Pessoas &amp; Cultura</h4>
+            <span class="hv3-sup-ic" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg></span>
+          </div>
+          <div class="hv3-mail"><a href="mailto:rh@biomedical.com.br">rh@biomedical.com.br</a><button type="button" class="hv3-copybtn" data-copy="rh@biomedical.com.br" aria-label="Copiar e-mail de Pessoas &amp; Cultura"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg><span>Copiar</span></button></div>
+          <ul class="hv3-lines">
+            <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6A19.79 19.79 0 0 1 2.12 4.18 2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.13.96.36 1.9.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.91.34 1.85.57 2.81.7A2 2 0 0 1 22 16.92z"/></svg>Ramal 2100</li>
+            <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>Seg–Sex · 09h às 17h</li>
+          </ul>
+          <a class="hv3-btn" href="mailto:rh@biomedical.com.br">Enviar e-mail<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg></a>
+        </div>
+        <div class="contato-card">
+          <div class="hv3-sup-top">
+            <h4>Compliance &amp; Ética</h4>
+            <span class="hv3-sup-ic" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><path d="M9 12l2 2 4-4"/></svg></span>
+          </div>
+          <div class="hv3-mail"><a href="mailto:compliance@biomedical.com.br">compliance@biomedical.com.br</a><button type="button" class="hv3-copybtn" data-copy="compliance@biomedical.com.br" aria-label="Copiar e-mail de Compliance"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg><span>Copiar</span></button></div>
+          <ul class="hv3-lines">
+            <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>Canal confidencial 24h</li>
+          </ul>
+          <a class="hv3-btn" href="https://biomedical.com.br/canal-de-denuncias/" target="_blank" rel="noopener">Canal de denúncias<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg></a>
+        </div>
+      </div>
+    </div>
+  </section>
+
+      </div><!-- /.hv-col-main -->
+
+      <!-- TRILHO DIREITO — Avisos acompanham a coluna toda -->
+      <aside class="hv-col-rail">
+
+  <!-- AVISOS & COMUNICADOS -->
+  <section class="avisos-section" id="avisos">
+    <div class="container">
+      <div class="section-header">
+        <div class="left">
+          <span class="section-tag">Mural</span>
+          <h2>Avisos</h2>
+          <p>Comunicados da diretoria, novidades de RH, eventos e atualizações internas.</p>
+        </div>
+        <div class="hv-avisos-actions">
+          <button type="button" id="btn-novo-aviso" class="hv-novo-aviso" title="Publicar um novo aviso">+ Novo</button>
+          <a href="central-avisos.html" class="hv-seeall">Central de Avisos →</a>
+        </div>
+      </div>
+
+      <div class="avisos-grid" id="avisos-grid">
+
+        <!-- Mural vazio por padrão: os avisos de demonstração saíram em
+             03/09/26. Daqui em diante todo cartão vem do /api/avisos (montado
+             pelo buildCard, mais abaixo) e este bloco some no primeiro deles. -->
+        <div class="aviso-vazio" id="avisos-vazio">
+          <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+          <p>Nenhum aviso publicado ainda.</p>
+          <span>Clique em <b>+ Novo</b> para publicar o primeiro comunicado.</span>
+        </div>
+
+      </div>
+    </div>
+  </section>
+
+      </aside><!-- /.hv-col-rail -->
+    </div><!-- /.hv-shell-grid -->
+  </div><!-- /.hv-shell -->
+
+  <!-- FOOTER — réplica do site biomedical.com.br -->
+  <footer class="site-footer">
+    <div class="container">
+      <div class="bm-footer-grid">
+
+        <div class="bm-footer-col">
+          <img class="footer-logo" src="/icons/icon-192.png" alt="Biomedical">
+          <h5>Unidades</h5>
+          <div class="bm-units">
+            <div class="bm-unit"><span class="city">Belo Horizonte</span><a href="tel:+553121294000">(31) 2129-4000</a></div>
+            <div class="bm-unit"><span class="city">São Paulo</span><a href="tel:+551136626263">(11) 3662-6263</a></div>
+            <div class="bm-unit"><span class="city">Rio de Janeiro</span><a href="tel:+552133115376">(21) 3311-5376</a></div>
+            <div class="bm-unit"><span class="city">Curitiba</span><a href="tel:+554132093960">(41) 3209-3960</a></div>
+            <div class="bm-unit"><span class="city">Recife</span><a href="tel:+558130978110">(81) 3097-8110</a></div>
+            <div class="bm-unit"><span class="city">Porto Alegre</span><a href="tel:+555135739515">(51) 3573-9515</a></div>
+          </div>
+          <a href="https://api.whatsapp.com/send?phone=553121294000&amp;text=Ol%C3%A1,%20gostaria%20de%20mais%20informa%C3%A7%C3%B5es%20sobre%20a%20Biomedical." target="_blank" rel="noopener" class="bm-whatsapp">
+            <svg viewBox="0 0 24 24" fill="currentColor"><path d="M.057 24l1.687-6.163a11.867 11.867 0 0 1-1.587-5.946C.16 5.335 5.495 0 12.05 0a11.817 11.817 0 0 1 8.413 3.488 11.824 11.824 0 0 1 3.48 8.414c-.003 6.557-5.338 11.892-11.893 11.892a11.9 11.9 0 0 1-5.688-1.448L.057 24zm6.597-3.807c1.676.995 3.276 1.591 5.392 1.592 5.448 0 9.886-4.434 9.889-9.885.002-5.462-4.415-9.89-9.881-9.892-5.452 0-9.887 4.434-9.889 9.884a9.86 9.86 0 0 0 1.515 5.26l-.999 3.648 3.973-1.042zm11.387-5.464c-.074-.124-.272-.198-.57-.347-.297-.149-1.758-.868-2.031-.967-.272-.099-.47-.149-.669.149-.198.297-.768.967-.941 1.165-.173.198-.347.223-.644.074-.297-.149-1.255-.462-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.297-.347.446-.521.151-.172.2-.296.3-.495.099-.198.05-.372-.025-.521-.075-.148-.669-1.611-.916-2.206-.242-.579-.487-.501-.669-.51l-.57-.01c-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.095 3.2 5.076 4.487.71.306 1.263.489 1.694.626.712.226 1.36.194 1.872.118.571-.085 1.758-.719 2.006-1.413.248-.695.248-1.29.173-1.414z"/></svg>
+            Entre em contato!
+          </a>
+        </div>
+
+        <div class="bm-footer-col">
+          <h5>Sobre</h5>
+          <ul>
+            <li><a href="https://biomedical.com.br/institucional/" target="_blank" rel="noopener">Nosso Legado</a></li>
+            <li><a href="https://biomedical.com.br/#hub" target="_blank" rel="noopener">HUB de Negócios</a></li>
+            <li><a href="https://biomedical.com.br/fale-conosco/" target="_blank" rel="noopener">Grupo MSBIO</a></li>
+            <li><a href="https://biomedical.com.br/institucional/#certificacoes" target="_blank" rel="noopener">Certificações</a></li>
+            <li><a href="https://biomedical.com.br/fale-conosco/" target="_blank" rel="noopener">Imprensa</a></li>
+            <li><a href="https://vemprabiomedical.gupy.io/" target="_blank" rel="noopener">Carreira</a></li>
+          </ul>
+        </div>
+
+        <div class="bm-footer-col">
+          <h5>Contatos</h5>
+          <ul>
+            <li><a href="https://biomedical.com.br/wp-content/uploads/2023/08/Codigo-de-Etica-e-Conduta-Biomedical.pdf" target="_blank" rel="noopener">Ética e Compliance</a></li>
+            <li><a href="https://biomedical.com.br/institucional/#certificacoes" target="_blank" rel="noopener">Segurança e Certificações</a></li>
+            <li><a href="https://biomedical.com.br/fale-conosco/" target="_blank" rel="noopener">Central de Vendas</a></li>
+            <li><a href="https://api.whatsapp.com/send?phone=553121294000" target="_blank" rel="noopener">Fale com a gente</a></li>
+            <li><a href="https://biomedical.com.br/canal-de-denuncias/" target="_blank" rel="noopener">Ouvidoria</a></li>
+          </ul>
+        </div>
+
+        <div class="bm-footer-col">
+          <h5>Produtos</h5>
+          <ul>
+            <li><a href="https://biomedical.com.br/produtos/" target="_blank" rel="noopener">Vascular</a></li>
+            <li><a href="https://biomedical.com.br/produtos/" target="_blank" rel="noopener">Heart e Rhythm</a></li>
+            <li><a href="https://biomedical.com.br/produtos/" target="_blank" rel="noopener">Intensive Care</a></li>
+            <li><a href="https://biomedical.com.br/produtos/" target="_blank" rel="noopener">Dialysis</a></li>
+            <li><a href="https://biomedical.com.br/produtos/" target="_blank" rel="noopener">Accessories</a></li>
+            <li><a href="https://biomedical.com.br/produtos/" target="_blank" rel="noopener">Guidewires</a></li>
+            <li><a href="https://biomedical.com.br/produtos/" target="_blank" rel="noopener">Cath Lab</a></li>
+            <li><a href="https://biomedical.com.br/produtos/" target="_blank" rel="noopener">Segurança do Paciente</a></li>
+          </ul>
+        </div>
+
+      </div>
+
+      <div class="bm-footer-bottom">
+        <span>© <span id="year"></span> Biomedical · Portal Corporativo Interno</span>
+        <span class="bm-footer-meta">Belo Horizonte · São Paulo · Rio de Janeiro · Curitiba · Recife · Porto Alegre</span>
+        <span class="hv3-fbtns">
+          <button type="button" class="hv3-fbtn" id="hv3-top"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 19V5"/><path d="m5 12 7-7 7 7"/></svg>Voltar ao topo</button>
+          <button type="button" class="hv3-fbtn" id="hv3-motion" aria-pressed="false"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg><span>Reduzir animações</span></button>
+        </span>
+      </div>
+    </div>
+  </footer>
+
+  <!-- MODAL NOVO AVISO -->
+  <div class="cmdk-overlay" id="novo-aviso-overlay" aria-modal="true" aria-label="Novo aviso">
+    <div class="cmdk" style="max-width:580px;animation:cmdk-in .18s var(--ease);">
+      <div class="cmdk-input-wrap" style="justify-content:space-between;">
+        <span style="font-size:15px;font-weight:600;color:var(--text);letter-spacing:-.01em;">Novo Aviso</span>
+        <button id="btn-fechar-aviso" class="btn-browse" style="background:transparent;color:var(--text-3);border:1px solid var(--border);padding:5px 10px;font-size:12px;border-radius:6px;">✕ Fechar</button>
+      </div>
+      <div style="padding:20px 22px 24px;display:flex;flex-direction:column;gap:14px;">
+
+        <!-- Perfil conectado (read-only) -->
+        <div style="display:flex;align-items:center;gap:10px;background:var(--surface-2);border:1px solid var(--border);border-radius:8px;padding:10px 14px;">
+          <div style="width:34px;height:34px;border-radius:50%;background:var(--bm-blue-900);color:#fff;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:13px;flex-shrink:0;" id="aviso-avatar">US</div>
+          <div>
+            <div style="font-size:13px;font-weight:600;color:var(--text);" id="aviso-autor-nome">Usuário Portal</div>
+            <div style="font-size:11.5px;color:var(--text-3);" id="aviso-autor-setor">TI &amp; Sistemas</div>
+          </div>
+          <span style="margin-left:auto;font-family:var(--font-mono);font-size:10px;color:var(--text-4);">Perfil conectado</span>
+        </div>
+
+        <!-- Assunto -->
+        <div>
+          <label style="font-family:var(--font-mono);font-size:10.5px;text-transform:uppercase;letter-spacing:.07em;color:var(--text-3);font-weight:600;display:block;margin-bottom:6px;">Assunto *</label>
+          <input id="aviso-assunto" type="text" placeholder="Título do comunicado…" style="width:100%;border:1px solid var(--border);border-radius:8px;padding:9px 12px;font-size:14px;font-family:var(--font-body);color:var(--text);outline:none;transition:border-color .15s;" onfocus="this.style.borderColor='var(--bm-blue-600)'" onblur="this.style.borderColor='var(--border)'">
+        </div>
+
+        <!-- Categoria -->
+        <div>
+          <label style="font-family:var(--font-mono);font-size:10.5px;text-transform:uppercase;letter-spacing:.07em;color:var(--text-3);font-weight:600;display:block;margin-bottom:6px;">Categoria</label>
+          <select id="aviso-cat" style="width:100%;border:1px solid var(--border);border-radius:8px;padding:9px 12px;font-size:14px;font-family:var(--font-body);color:var(--text);outline:none;background:#fff;appearance:none;background-image:url('data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 width=%2712%27 height=%278%27 viewBox=%270 0 12 8%27%3E%3Cpath d=%27M1 1l5 5 5-5%27 stroke=%27%236B7280%27 stroke-width=%271.5%27 fill=%27none%27 stroke-linecap=%27round%27/%3E%3C/svg%3E');background-repeat:no-repeat;background-position:right 12px center;padding-right:32px;">
+            <option value="diretoria">Diretoria</option>
+            <option value="pessoas">RH &amp; Pessoas</option>
+            <option value="eventos">Eventos</option>
+            <option value="qualidade">Qualidade</option>
+            <option value="ti" selected>TI</option>
+            <option value="comercial">Comercial</option>
+            <option value="financeiro">Financeiro</option>
+            <option value="logistica">Logística</option>
+            <option value="estoque">Estoque</option>
+          </select>
+        </div>
+
+        <!-- Corpo -->
+        <div>
+          <label style="font-family:var(--font-mono);font-size:10.5px;text-transform:uppercase;letter-spacing:.07em;color:var(--text-3);font-weight:600;display:block;margin-bottom:6px;">Mensagem *</label>
+          <textarea id="aviso-corpo" rows="5" placeholder="Escreva o comunicado aqui…" style="width:100%;border:1px solid var(--border);border-radius:8px;padding:10px 12px;font-size:14px;font-family:var(--font-body);color:var(--text);resize:vertical;outline:none;line-height:1.55;transition:border-color .15s;" onfocus="this.style.borderColor='var(--bm-blue-600)'" onblur="this.style.borderColor='var(--border)'"></textarea>
+        </div>
+
+        <!-- Anexo -->
+        <div>
+          <label style="font-family:var(--font-mono);font-size:10.5px;text-transform:uppercase;letter-spacing:.07em;color:var(--text-3);font-weight:600;display:block;margin-bottom:6px;">Anexo <span style="font-weight:400;text-transform:none;">(opcional)</span></label>
+          <div id="aviso-drop" style="border:1.5px dashed var(--border-2);border-radius:8px;padding:14px 16px;display:flex;align-items:center;gap:12px;cursor:pointer;transition:all .15s;" onclick="document.getElementById('aviso-file').click()" ondragover="event.preventDefault();this.style.borderColor='var(--bm-blue-600)'" ondragleave="this.style.borderColor='var(--border-2)'" ondrop="avisoHandleDrop(event)">
+            <input type="file" id="aviso-file" hidden multiple accept=".pdf,.docx,.xlsx,.pptx,.png,.jpg,.jpeg" onchange="avisoHandleFile(this.files)">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--text-3)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+            <span id="aviso-file-label" style="font-size:13px;color:var(--text-3);">Arraste ou clique para anexar</span>
+          </div>
+        </div>
+
+        <!-- Erro -->
+        <div id="aviso-erro" style="display:none;background:var(--danger-bg);color:var(--danger);border:1px solid #FCA5A5;border-radius:6px;padding:9px 13px;font-size:13px;"></div>
+
+        <!-- Ações -->
+        <div style="display:flex;gap:10px;justify-content:flex-end;padding-top:4px;">
+          <button onclick="document.getElementById('novo-aviso-overlay').classList.remove('open')" style="padding:9px 16px;border:1px solid var(--border);background:#fff;border-radius:8px;font-size:13px;font-weight:500;cursor:pointer;font-family:var(--font-body);color:var(--text-2);">Cancelar</button>
+          <button id="btn-publicar-aviso" class="btn-browse" style="border-radius:8px;padding:10px 20px;font-size:14px;">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+            Publicar Aviso
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- TOAST -->
+  <div class="cob-toast" id="aviso-toast">
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+    Aviso publicado com sucesso!
+  </div>
+
+  <!-- MODAL ÁREA INDISPONÍVEL -->
+  <div class="cmdk-overlay" id="indisponivel-overlay" aria-modal="true" aria-label="Área indisponível">
+    <div class="cmdk" style="max-width:420px;animation:cmdk-in .18s var(--ease);">
+      <div style="padding:32px 30px 28px;display:flex;flex-direction:column;align-items:center;text-align:center;gap:16px;">
+        <div style="width:56px;height:56px;border-radius:50%;background:var(--surface-2);border:1px solid var(--border);display:flex;align-items:center;justify-content:center;color:var(--text-3);">
+          <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+        </div>
+        <h3 style="font-size:18px;font-weight:600;color:var(--text);letter-spacing:-.01em;margin:0;">Área indisponível</h3>
+        <p id="indisponivel-msg" style="font-size:14px;color:var(--text-2);line-height:1.55;margin:0;">Este departamento ainda não está disponível.</p>
+        <button id="indisponivel-ok" class="btn-browse" style="border-radius:8px;padding:10px 24px;font-size:14px;margin-top:4px;">Entendi</button>
+      </div>
+    </div>
+  </div>
+  <div class="cmdk-overlay" id="cmdk-overlay">
+    <div class="cmdk" role="dialog" aria-modal="true" aria-label="Busca global">
+      <div class="cmdk-input-wrap">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+        <input type="text" class="cmdk-input" id="cmdk-input" placeholder="Buscar sistemas, áreas e ferramentas…" autocomplete="off">
+        <span class="cmdk-esc">ESC</span>
+      </div>
+      <div class="cmdk-results" id="cmdk-results"></div>
+    </div>
+  </div>
+
+  <!-- TAB BAR INFERIOR (mobile) — Claude Design v2 -->
+  <nav class="hv-tabbar" aria-label="Navegação">
+    <a href="#inicio" class="hv-tab active">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 10.5 12 3l9 7.5"/><path d="M5 9.5V21h14V9.5"/></svg>
+      <span>Início</span>
+    </a>
+    <a href="#areas" class="hv-tab">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg>
+      <span>Áreas</span>
+    </a>
+    <a href="#sistemas" class="hv-tab">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="4" width="20" height="13" rx="2"/><path d="M8 21h8M12 17v4"/></svg>
+      <span>Sistemas</span>
+    </a>
+    <a href="#avisos" class="hv-tab">
+      <span class="hv-tab-dot"></span>
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/></svg>
+      <span>Avisos</span>
+    </a>
+  </nav>
+
+  <script>
+  // ================================================================
+  // HOME v2 — Saudação dinâmica (horário + nome) e contagem de áreas
+  // ================================================================
+  (function () {
+    var gEl = document.getElementById('hv-greeting');
+    function firstName(n) {
+      if (!n) return '';
+      n = String(n).trim();
+      // "Sobrenome, Nome" (formato AD) → pega o nome
+      if (n.indexOf(',') > -1) n = n.split(',')[1] ? n.split(',')[1].trim() : n;
+      return n.split(/\s+/)[0] || '';
+    }
+    function saudacao() {
+      var h = new Date().getHours();
+      return h < 12 ? 'Bom dia' : h < 18 ? 'Boa tarde' : 'Boa noite';
+    }
+    // Layout v3: "Boa noite," + nome em gradiente, cada parte numa máscara
+    // (.hv3-w) para a entrada palavra por palavra do home-v3.js
+    function escHtml(s) { return String(s).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); }
+    function render() {
+      if (!gEl) return;
+      var nome = firstName(window._portalUser && window._portalUser.name);
+      var html = '<span class="hv3-w"><span>' + escHtml(saudacao() + (nome ? ',' : '')) + '</span></span>' +
+        (nome ? ' <span class="hv3-w hv3-name"><span>' + escHtml(nome) + '</span></span>' : '');
+      if (gEl.__html === html) return;
+      gEl.__html = html; gEl.innerHTML = html;
+      gEl.setAttribute('aria-label', saudacao() + (nome ? ', ' + nome : ''));
+    }
+    render();
+    // Aguarda o auth.js definir o usuário
+    var n = 0, iv = setInterval(function () {
+      if (window._portalUser) { clearInterval(iv); render(); }
+      else if (++n > 200) clearInterval(iv);
+    }, 60);
+
+    // Contagem de departamentos visíveis (respeita o area-access.js)
+    var cEl = document.getElementById('hv-count');
+    function count() {
+      if (!cEl) return;
+      var vis = Array.prototype.filter.call(
+        document.querySelectorAll('#areas .area-card'),
+        function (c) { return getComputedStyle(c).display !== 'none'; }
+      ).length;
+      cEl.textContent = vis + (vis === 1 ? ' área' : ' áreas');
+    }
+    count();
+    document.addEventListener('areaaccess:ready', count);
+
+    // Contagem de atalhos de "Sistemas & Links" (o area-access REMOVE do DOM
+    // os cards de página interna que a pessoa não abre, então basta contar)
+    var sEl = document.getElementById('hv-sis-count');
+    function countSis() {
+      if (!sEl) return;
+      var n = document.querySelectorAll('#sistemas-grid .sistema-card').length;
+      sEl.textContent = n + (n === 1 ? ' acesso' : ' acessos');
+    }
+    countSis();
+    document.addEventListener('areaaccess:ready', countSis);
+
+    // Mobile: 8 áreas visíveis, resto atrás de "Ver todos" (Claude Design)
+    var tg = document.getElementById('hv-areas-toggle');
+    function markExtras() {
+      var shown = 0;
+      document.querySelectorAll('#areas .area-card').forEach(function (c) {
+        c.classList.remove('hv-extra');
+        if (c.style.display === 'none') return;      // escondido pelo area-access
+        shown++;
+        if (shown > 8) c.classList.add('hv-extra');
+      });
+      if (tg) tg.style.visibility = shown > 8 ? '' : 'hidden';
+    }
+    markExtras();
+    document.addEventListener('areaaccess:ready', markExtras);
+    if (tg) tg.addEventListener('click', function () {
+      var open = document.body.classList.toggle('hv-areas-open');
+      tg.textContent = open ? 'Ver menos' : 'Ver todos';
+    });
+  })();
+  </script>
+
+  <script src="script.js?v=8"></script>
+  <script>
+  // ================================================================
+  // RECENTES — registra cliques e renderiza (localStorage)
+  // ================================================================
+  (function () {
+    const KEY = 'bm_recentes';
+    const MAX = 6;
+    const listEl = document.getElementById('recentes-list');
+    const clearEl = document.getElementById('rc-clear');
+    if (!listEl) return;
+
+    // Páginas que saíram do portal não voltam como atalho nos Recentes
+    // (Funil de Conversão da Licitação, removido em 15/10/2026)
+    const REMOVIDAS = ['pages/licitacao-funil-vendas.html', 'pages/licitacao-funil-vendas-analitico.html'];
+    const read = () => {
+      let arr;
+      try { arr = JSON.parse(localStorage.getItem(KEY)) || []; } catch (e) { arr = []; }
+      return arr.filter(x => REMOVIDAS.indexOf(x.href) === -1);
+    };
+    const write = (arr) => { try { localStorage.setItem(KEY, JSON.stringify(arr)); } catch (e) {} };
+
+    // Sugestões padrão (quando ainda não há histórico)
+    const defaults = [
+      { name: 'Comercial', meta: 'Departamento', href: 'pages/comercial.html', ext: false,
+        iconHTML: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="8.5" cy="7" r="4"/><path d="M20 8v6"/><path d="M23 11h-6"/></svg>' },
+      { name: 'Estoque', meta: 'Departamento', href: 'pages/estoque.html', ext: false,
+        iconHTML: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="2" width="20" height="8" rx="2"/><rect x="2" y="14" width="20" height="8" rx="2"/><line x1="6" y1="6" x2="6.01" y2="6"/><line x1="6" y1="18" x2="6.01" y2="18"/></svg>' },
+      { name: 'Outlook · E-mail', meta: 'Microsoft 365', href: 'https://outlook.cloud.microsoft/mail/', ext: true,
+        iconHTML: '<img src="https://www.google.com/s2/favicons?domain=outlook.com&amp;sz=64" alt="">' },
+      { name: 'Power BI', meta: 'Dados', href: 'https://app.powerbi.com/home?experience=power-bi', ext: true,
+        iconHTML: '<img src="https://www.google.com/s2/favicons?domain=powerbi.com&amp;sz=64" alt="">' },
+    ];
+
+    function record(item) {
+      let arr = read().filter(x => x.href !== item.href);
+      arr.unshift({ ...item, ts: Date.now() });
+      arr = arr.slice(0, MAX);
+      write(arr);
+    }
+
+    function relTime(ts) {
+      if (!ts) return 'sugerido';
+      const m = Math.floor((Date.now() - ts) / 60000);
+      if (m < 1) return 'agora';
+      if (m < 60) return `há ${m} min`;
+      const h = Math.floor(m / 60);
+      if (h < 24) return `há ${h}h`;
+      const d = Math.floor(h / 24);
+      return d === 1 ? 'ontem' : `há ${d} dias`;
+    }
+
+    // Sugestões e histórico também respeitam o perfil de acesso: um atalho para
+    // uma área que a pessoa não tem (guardado no localStorage antes de perder o
+    // acesso, ou vindo dos `defaults`) vazaria o nome do departamento.
+    const AREAS_IDS = ['comercial','financeiro','logistica','marketing','estoque','contabil',
+      'licitacao','administrativo','produtos','pessoas','qualidade','ti','diretoria','vendedor','gerencial','atendimento','compras'];
+    function areaDoHref(href) {
+      const f = String(href || '').split('/').pop().split('#')[0].split('?')[0].replace(/\.html$/i, '').toLowerCase();
+      for (let i = 0; i < AREAS_IDS.length; i++) {
+        const a = AREAS_IDS[i];
+        if (f === a || f.indexOf(a + '-') === 0) return a;
+      }
+      return null;
+    }
+    function permitido(it) {
+      if (it.ext) return true;                 // link externo (Outlook, Power BI…)
+      // bmHrefPermitido (area-access.js) conhece TAMBÉM as páginas cujo nome
+      // não começa pela área — cobranca-automatica, lici, pi-*, agente-*.
+      // Sem ele, o atalho vazava o módulo de outro departamento.
+      if (typeof window.bmHrefPermitido === 'function') return window.bmHrefPermitido(it.href, false);
+      const a = areaDoHref(it.href);
+      if (!a) return true;                     // página sem área (avisos, agentes…)
+      // undefined = acesso AINDA NÃO decidido -> não mostra área nenhuma;
+      // null = decidido e sem restrição; Set = decidido e restrito.
+      const allow = window._allowedAreas;
+      if (typeof allow === 'undefined') return false;
+      return allow ? allow.has(a) : true;
+    }
+
+    function render() {
+      const stored = read().filter(permitido);
+      const items = stored.length ? stored : defaults.filter(permitido);
+      const isEmpty = stored.length === 0;
+      clearEl.style.display = isEmpty ? 'none' : '';
+
+      listEl.innerHTML = items.map(it => `
+        <a href="${it.href}" class="recente-chip"${it.ext ? ' target="_blank" rel="noopener"' : ''} data-page="${it.href}">
+          <span class="rc-ic">${it.iconHTML}</span>
+          <span class="rc-name">${it.name}</span>
+          <span class="rc-meta">· ${isEmpty ? 'sugerido' : relTime(it.ts)}</span>
+          ${it.ext ? '<svg class="rc-ext" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>' : ''}
+        </a>`).join('');
+    }
+
+    // Registra cliques em departamentos e sistemas
+    function bind(card, type) {
+      card.addEventListener('click', () => {
+        const isArea = type === 'area';
+        const name = (isArea ? card.querySelector('h3') : card.querySelector('.name')).textContent.trim();
+        const meta = isArea ? 'Departamento' : (card.querySelector('.desc') ? card.querySelector('.desc').textContent.trim() : 'Sistema');
+        const iconHTML = (isArea ? card.querySelector('.area-card-icon') : card.querySelector('.icon')).innerHTML;
+        const ext = card.getAttribute('target') === '_blank';
+        record({ name, meta, href: card.getAttribute('href'), ext, iconHTML });
+      });
+    }
+    document.querySelectorAll('#areas .area-card').forEach(c => bind(c, 'area'));
+    document.querySelectorAll('#sistemas-grid .sistema-card').forEach(c => bind(c, 'sistema'));
+
+    clearEl.addEventListener('click', () => { write([]); render(); });
+    render();
+    // redesenha quando o perfil de acesso for decidido (o 1º render roda antes)
+    document.addEventListener('areaaccess:ready', render);
+  })();
+  </script>
+  <script>
+  // ================================================================
+  // NOVO AVISO — Modal de criação
+  // ================================================================
+  (function () {
+    const overlay = document.getElementById('novo-aviso-overlay');
+    const btnNovo = document.getElementById('btn-novo-aviso');
+    const btnPub  = document.getElementById('btn-publicar-aviso');
+    const btnFec  = document.getElementById('btn-fechar-aviso');
+    const toast   = document.getElementById('aviso-toast');
+    if (!overlay || !btnNovo) return;
+
+    // Autoria: identidade do login (e-mail) + área do grupo de segurança.
+    // O autor exibido é o E-MAIL de quem publica (definido pelo auth.js/MSAL).
+    var PERFIL = { nome: 'Usuário Portal', setor: '', sigla: 'US', cat: null, email: '' };
+    if (window.bmAvisoUser) {
+      window.bmAvisoUser().then(function (p) {
+        if (!p || !p.email) return;
+        PERFIL = { nome: p.nome, setor: p.setor, sigla: p.sigla, cat: p.cat, email: p.email };
+        document.getElementById('aviso-autor-nome').textContent = p.email;   // "usuário" = e-mail
+        document.getElementById('aviso-autor-setor').textContent = p.setor;
+        document.getElementById('aviso-avatar').textContent = p.sigla;
+        if (p.cat) document.getElementById('aviso-cat').value = p.cat;
+      });
+    }
+
+    // Persistência/lista compartilhada com a Central de Avisos vem do
+    // backend /api/avisos (com fallback localStorage) via window.bmAvisos.
+
+    var anexos = [];
+    window.avisoHandleFile = function(files) {
+      anexos = Array.from(files);
+      const lbl = document.getElementById('aviso-file-label');
+      lbl.textContent = anexos.length === 1 ? anexos[0].name : anexos.length + ' arquivos selecionados';
+      lbl.style.color = 'var(--bm-blue-700)';
+    };
+    window.avisoHandleDrop = function(e) {
+      e.preventDefault();
+      document.getElementById('aviso-drop').style.borderColor = 'var(--border-2)';
+      if (e.dataTransfer && e.dataTransfer.files.length) avisoHandleFile(e.dataTransfer.files);
+    };
+
+    function openModal() {
+      overlay.classList.add('open');
+      document.getElementById('aviso-assunto').value = '';
+      document.getElementById('aviso-corpo').value = '';
+      document.getElementById('aviso-file-label').textContent = 'Arraste ou clique para anexar';
+      document.getElementById('aviso-file-label').style.color = 'var(--text-3)';
+      document.getElementById('aviso-erro').style.display = 'none';
+      anexos = [];
+      setTimeout(() => document.getElementById('aviso-assunto').focus(), 80);
+    }
+
+    btnNovo.addEventListener('click', openModal);
+    btnFec.addEventListener('click', () => overlay.classList.remove('open'));
+    overlay.addEventListener('click', e => { if (e.target === overlay) overlay.classList.remove('open'); });
+    document.addEventListener('keydown', e => { if (e.key === 'Escape' && overlay.classList.contains('open')) overlay.classList.remove('open'); });
+
+    const CAT_MAP = {
+      diretoria: { label: 'Diretoria', cls: 'b-diretoria' },
+      pessoas:   { label: 'RH & Pessoas', cls: 'b-pessoas' },
+      eventos:   { label: 'Eventos', cls: 'b-eventos' },
+      qualidade: { label: 'Qualidade', cls: 'b-qualidade' },
+      ti:        { label: 'TI', cls: 'b-ti' },
+      comercial: { label: 'Comercial', cls: 'b-pessoas' },
+      financeiro:{ label: 'Financeiro', cls: 'b-diretoria' },
+      logistica: { label: 'Logística', cls: 'b-eventos' },
+      estoque:   { label: 'Estoque', cls: 'b-qualidade' }
+    };
+
+    function initials(name) {
+      return name.split(' ').slice(0,2).map(w=>w[0]).join('').toUpperCase();
+    }
+    function dataHoje() {
+      return new Date().toLocaleDateString('pt-BR',{day:'2-digit',month:'short',year:'numeric'}).toUpperCase();
+    }
+    function escapeHtml(s) {
+      return (s||'').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+    }
+
+    // Monta um card de aviso na grade da home (ao publicar e ao carregar).
+    function buildCard(a) {
+      const meta = CAT_MAP[a.cat] || CAT_MAP.ti;
+      const anexosArr = (a.anexos || []).map(x => (typeof x === 'string' ? x : (x && x.name) || '')).filter(Boolean);
+      const extLink = anexosArr.length ? `<span class="aviso-attach" style="font-size:12.5px;display:inline-flex;align-items:center;gap:4px;color:var(--bm-blue-700);margin-top:8px;"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"/></svg>${escapeHtml(anexosArr.join(', '))}</span>` : '';
+      const corpo = a.corpo || '';
+      const card = document.createElement('article');
+      card.className = 'aviso-card';
+      card.dataset.cat = a.cat;
+      card.innerHTML = `
+        <div class="aviso-top">
+          <span class="aviso-badge ${meta.cls}">${escapeHtml(meta.label)}</span>
+          <span class="aviso-date">${escapeHtml(a.data || dataHoje())}</span>
+        </div>
+        <h3 class="aviso-title">${escapeHtml(a.assunto)}</h3>
+        <p class="aviso-excerpt">${escapeHtml(corpo.slice(0,160))}${corpo.length>160?'…':''}</p>
+        ${extLink}
+        <div class="aviso-author">
+          <span class="av">${escapeHtml(a.sigla || initials(a.autor || ''))}</span>
+          <span>${escapeHtml(a.autor || '')}${a.setor ? ' · ' + escapeHtml(a.setor) : ''}</span>
+          <a href="central-avisos.html" class="aviso-readmore">Ler mais →</a>
+        </div>`;
+      return card;
+    }
+
+    function insertCard(card) {
+      const grid = document.getElementById('avisos-grid');
+      const vazio = document.getElementById('avisos-vazio');
+      if (vazio) vazio.style.display = 'none';   // chegou aviso: o "mural vazio" sai
+      const featured = grid.querySelector('.featured');
+      if (featured && featured.nextSibling) grid.insertBefore(card, featured.nextSibling);
+      else grid.prepend(card);
+    }
+
+    btnPub.addEventListener('click', () => {
+      const assunto = document.getElementById('aviso-assunto').value.trim();
+      const corpo   = document.getElementById('aviso-corpo').value.trim();
+      const cat     = document.getElementById('aviso-cat').value;
+      const erro    = document.getElementById('aviso-erro');
+
+      if (!assunto) { erro.textContent = 'Informe o assunto do aviso.'; erro.style.display = 'block'; return; }
+      if (!corpo)   { erro.textContent = 'A mensagem não pode ficar em branco.'; erro.style.display = 'block'; return; }
+      erro.style.display = 'none';
+
+      // Publica via /api/avisos — autor (e-mail) e setor definidos NO SERVIDOR
+      // (identidade validada + grupo de segurança). Fallback localStorage se
+      // não houver backend. Aparece também na Central de Avisos.
+      btnPub.disabled = true;
+      window.bmAvisos.create({ assunto: assunto, corpo: corpo, cat: cat, anexos: anexos.map(f => f.name) }).then((res) => {
+        btnPub.disabled = false;
+        if (!res || res.error || !res.aviso) {
+          erro.textContent = (res && res.error) || 'Não foi possível publicar o aviso.';
+          erro.style.display = 'block';
+          return;
+        }
+        insertCard(buildCard(res.aviso));
+        overlay.classList.remove('open');
+        toast.classList.add('show');
+        setTimeout(() => toast.classList.remove('show'), 3200);
+      });
+    });
+
+    // Ao carregar a home: busca a lista compartilhada (/api/avisos, com fallback
+    // localStorage) e injeta na grade os avisos PUBLICADOS por usuários (id 'u…').
+    // O filtro de 'u…' segue valendo só para descartar resíduo de cache antigo:
+    // não existe mais aviso de demonstração ('s…') nem na home nem no backend.
+    // Ordena por data crescente para que, inserindo cada um no topo, o mais
+    // recente termine em primeiro.
+    if (window.bmAvisos && window.bmAvisos.list) {
+      window.bmAvisos.list().then((res) => {
+        const user = (res && res.itens || []).filter(a => a && typeof a.id === 'string' && a.id.charAt(0) === 'u');
+        user.sort((a, b) => (a.ts || 0) - (b.ts || 0));
+        user.forEach(a => insertCard(buildCard(a)));
+      });
+    }
+  })();
+
+  (function () {
+    const tabs = document.querySelectorAll('#sistemas-tabs .sistemas-tab');
+    const cards = document.querySelectorAll('#sistemas-grid .sistema-card');
+    tabs.forEach(tab => {
+      tab.addEventListener('click', () => {
+        const cat = tab.dataset.tab;
+        tabs.forEach(t => t.classList.remove('active'));
+        tab.classList.add('active');
+        cards.forEach(card => {
+          card.style.display = (cat === 'todos' || card.dataset.cat === cat) ? '' : 'none';
+        });
+      });
+    });
+  })();
+
+  // ================================================================
+  // AVISOS — Filtro por categoria
+  // ================================================================
+  (function () {
+    const tabs = document.querySelectorAll('#avisos-tabs .avisos-tab');
+    const cards = document.querySelectorAll('#avisos-grid .aviso-card');
+    tabs.forEach(tab => {
+      tab.addEventListener('click', () => {
+        const cat = tab.dataset.tab;
+        tabs.forEach(t => t.classList.remove('active'));
+        tab.classList.add('active');
+        cards.forEach(card => {
+          card.style.display = (cat === 'todos' || card.dataset.cat === cat) ? '' : 'none';
+        });
+      });
+    });
+  })();
+
+  // ================================================================
+  // COMMAND PALETTE (Ctrl+K / ⌘K)
+  // ================================================================
+  (function () {
+    const overlay = document.getElementById('cmdk-overlay');
+    const input   = document.getElementById('cmdk-input');
+    const results = document.getElementById('cmdk-results');
+    const trigger = document.getElementById('search-trigger');
+    if (!overlay) return;
+
+    // ÍNDICE = CATÁLOGO ÚNICO (portal-catalogo.js): áreas, sistemas, módulos,
+    // submódulos, automações e agentes de IA. A home e as páginas internas
+    // (script.js) leem a MESMA lista — não há mais catálogo duplicado aqui,
+    // que era o que deixava a busca oferecendo módulo/agente/automação que
+    // já saíram do portal.
+    const CAT = window.PORTAL_CATALOGO;
+    if (!CAT) { console.warn('[busca] portal-catalogo.js não carregou; palette desligado'); return; }
+    var _icBack = CAT.ic.back, _icGrid = CAT.ic.grid;
+    const catalogo  = CAT.build('pages/');
+    const index     = catalogo.itens;
+    const areaDrill = catalogo.drill;
+    let active = 0;
+    let filtered = index.slice();
+    let view = null; // null = raiz; ou nome da área (drill-down)
+
+    function sourceList() {
+      if (!view) return index;
+      const d = areaDrill[view];
+      const back     = { group: '', name: '← Todas as áreas e sistemas', cat: 'Voltar', href: '#', back: true, iconHTML: _icBack };
+      const openArea = { group: view, name: 'Abrir ' + view + ' · visão geral', cat: 'Departamento', href: d.page, ext: false, iconHTML: _icGrid };
+      const marca = (arr, g) => (arr || []).map(m => Object.assign({ group: g + ' · ' + view, ext: false }, m));
+      return [back, openArea]
+        .concat(marca(d.items,      'Módulos'))
+        .concat(marca(d.automacoes, 'Automações'))
+        .concat(marca(d.agentes,    'Agentes de IA'));
+    }
+
+    function render() {
+      if (!filtered.length) {
+        results.innerHTML = '<div class="cmdk-empty">Nenhum resultado encontrado.</div>';
+        return;
+      }
+      let html = '';
+      let lastGroup = '\u0000';
+      filtered.forEach((item, i) => {
+        if (item.group !== lastGroup) {
+          if (item.group) html += `<div class="cmdk-group-label">${item.group}</div>`;
+          lastGroup = item.group;
+        }
+        const arrow = item.back
+          ? '<polyline points="15 18 9 12 15 6"/>'
+          : (item.ext ? '<path d="M7 17L17 7"/><polyline points="7 7 17 7 17 17"/>' : '<polyline points="9 18 15 12 9 6"/>');
+        html += `
+          <div class="cmdk-item ${i === active ? 'active' : ''}" data-i="${i}">
+            <span class="ci-icon">${item.iconHTML}</span>
+            <div class="ci-body">
+              <div class="ci-name">${item.name}</div>
+              <div class="ci-cat">${item.cat}</div>
+            </div>
+            <svg class="ci-arrow" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${arrow}</svg>
+          </div>`;
+      });
+      results.innerHTML = html;
+    }
+
+    function filter(q) {
+      q = String(q || '').trim();
+      // Mesmo portão do guard das páginas: área do href x áreas liberadas.
+      // (bmHrefPermitido vem do area-access.js; _allowedAreas é o fallback.
+      //  undefined = acesso ainda não decidido -> não mostra Área nenhuma.)
+      const allow = window._allowedAreas;
+      const podeVer = (it) => it.back || ((typeof window.bmHrefPermitido === 'function')
+        ? window.bmHrefPermitido(it.href, it.ext)
+        : (it.group !== 'Áreas' || (typeof allow === 'undefined' ? false : (allow ? allow.has(it.area) : true))));
+      if (!view) {
+        filtered = index.filter(it => podeVer(it) && CAT.casa(it, q));
+        active = 0;
+      } else {
+        // o drill-down também passa pelo portão: área bloqueada não expõe
+        // nem o NOME dos seus módulos.
+        const src = sourceList(), back = src[0];
+        const f = src.slice(1).filter(it => podeVer(it) && CAT.casa(it, q));
+        filtered = [back].concat(f);
+        active = filtered.length > 1 ? 1 : 0;
+      }
+      render();
+    }
+
+    function go(item) {
+      if (!item) return;
+      if (item.back) { view = null; input.value = ''; filter(''); input.focus(); return; }
+      if (item.drillKey) { view = item.drillKey; input.value = ''; filter(''); input.focus(); return; }
+      if (!item.ext && window.bmIsBlockedArea && window.bmIsBlockedArea(item.href)) {
+        close();
+        window.bmShowIndisponivel(item.name && item.group === 'Áreas' ? item.name : '');
+        return;
+      }
+      close();
+      if (item.ext) window.open(item.href, '_blank', 'noopener');
+      else window.location.href = item.href;
+    }
+
+    function open() {
+      overlay.classList.add('open');
+      view = null;
+      input.value = '';
+      filter('');
+      setTimeout(() => input.focus(), 30);
+    }
+    function close() { overlay.classList.remove('open'); view = null; }
+
+    trigger.addEventListener('click', open);
+    input.addEventListener('input', () => filter(input.value));
+
+    results.addEventListener('click', e => {
+      const el = e.target.closest('.cmdk-item');
+      if (el) go(filtered[parseInt(el.dataset.i, 10)]);
+    });
+    results.addEventListener('mousemove', e => {
+      const el = e.target.closest('.cmdk-item');
+      if (el) { active = parseInt(el.dataset.i, 10); render(); }
+    });
+
+    overlay.addEventListener('click', e => { if (e.target === overlay) close(); });
+
+    document.addEventListener('keydown', e => {
+      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'k') { e.preventDefault(); overlay.classList.contains('open') ? close() : open(); return; }
+      if (!overlay.classList.contains('open')) return;
+      if (e.key === 'Escape') { if (view) { view = null; input.value = ''; filter(''); } else { close(); } }
+      else if (e.key === 'ArrowDown') { e.preventDefault(); active = Math.min(active + 1, filtered.length - 1); render(); scrollActive(); }
+      else if (e.key === 'ArrowUp')   { e.preventDefault(); active = Math.max(active - 1, 0); render(); scrollActive(); }
+      else if (e.key === 'Enter')     { e.preventDefault(); go(filtered[active]); }
+    });
+
+    function scrollActive() {
+      const el = results.querySelector('.cmdk-item.active');
+      if (el) el.scrollIntoView({ block: 'nearest' });
+    }
+  })();
+
+  // ================================================================
+  // ÁREAS INDISPONÍVEIS — popup ao clicar (mantém o conteúdo, bloqueia acesso)
+  // ================================================================
+  (function () {
+    // Áreas liberadas: Comercial, Financeiro, Produtos, TI & Sistemas, Contábil, Estoque, Qualidade, Licitação, Logística e Administrativo.
+    // Todas as demais permanecem visíveis, porém exibem um popup de indisponível.
+    const BLOCKED = ['marketing', 'pessoas'];
+    const BLOCKED_RE = new RegExp('(?:^|/)(?:' + BLOCKED.join('|') + ')(?:[-.]|$)', 'i');
+
+    // PRÉVIA POR PESSOA — e-mails que já podem abrir uma área ainda bloqueada
+    // (validação interna antes do lançamento). Para todos os demais o popup
+    // continua igual. área → [e-mails em minúsculo].
+    const PREVIEW = {
+      administrativo: ['ia@biomedical.com.br', 'leonardo.barbosa@biomedical.com.br']
+    };
+
+    const overlay = document.getElementById('indisponivel-overlay');
+    const msgEl   = document.getElementById('indisponivel-msg');
+    const okBtn   = document.getElementById('indisponivel-ok');
+
+    // e-mail logado (definido pelo auth.js/MSAL); '' enquanto o login não conclui
+    function emailLogado() {
+      return ((window._portalUser && window._portalUser.email) || '').trim().toLowerCase();
+    }
+    // qual área bloqueada este href atinge? (mesma regra do BLOCKED_RE)
+    function areaBloqueadaDe(href) {
+      if (!href) return null;
+      const file = (href.split('/').pop() || href).toLowerCase(); // ex.: "administrativo-requisicoes.html"
+      if (!BLOCKED_RE.test(file)) return null;
+      for (let i = 0; i < BLOCKED.length; i++) {
+        const a = BLOCKED[i];
+        if (file === a || file.indexOf(a + '-') === 0 || file.indexOf(a + '.') === 0) return a;
+      }
+      return null;
+    }
+
+    // href aponta para uma página de área bloqueada?
+    function isBlockedHref(href) {
+      const area = areaBloqueadaDe(href);
+      if (!area) return false;
+      return (PREVIEW[area] || []).indexOf(emailLogado()) < 0;   // liberado p/ quem está na prévia
+    }
+
+    function show(name) {
+      if (!overlay) return;
+      msgEl.innerHTML = name
+        ? 'O departamento <strong>' + name + '</strong> ainda não está disponível. Em breve estará liberado no portal.'
+        : 'Este departamento ainda não está disponível. Em breve estará liberado no portal.';
+      overlay.classList.add('open');
+    }
+    function hide() { if (overlay) overlay.classList.remove('open'); }
+
+    // Exposto para o command palette (navegação via JS)
+    window.bmIsBlockedArea = isBlockedHref;
+    window.bmShowIndisponivel = show;
+
+    if (okBtn) okBtn.addEventListener('click', hide);
+    if (overlay) {
+      overlay.addEventListener('click', e => { if (e.target === overlay) hide(); });
+    }
+    document.addEventListener('keydown', e => {
+      if (e.key === 'Escape' && overlay && overlay.classList.contains('open')) hide();
+    });
+
+    // Intercepta cliques em qualquer link que leve a uma área bloqueada
+    // (cards de departamento, chips de recentes, etc.) — fase de captura.
+    document.addEventListener('click', e => {
+      const a = e.target.closest('a[href]');
+      if (!a) return;
+      if (isBlockedHref(a.getAttribute('href'))) {
+        e.preventDefault();
+        e.stopPropagation();
+        const card = a.closest('.area-card');
+        const nm = card && card.querySelector('h3') ? card.querySelector('h3').textContent.trim() : '';
+        show(nm);
+      }
+    }, true);
+  })();
+
+  </script>
+</body>
+</html>

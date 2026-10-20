@@ -1,0 +1,844 @@
+/* =====================================================================
+   portal-v3.css — Layout v3 do Portal Biomedical (Claude Design, animado)
+   ---------------------------------------------------------------------
+   Vale para TODAS as páginas (home, departamentos, módulos, agentes e
+   automações). É o ÚLTIMO <link> do <head>, então empata especificidade
+   com styles.css / dash-v2.css / <style> do head e ganha por ordem; onde
+   a página tem <style> no corpo, os seletores levam `body.dept` (ou mais)
+   para vencer sem precisar mexer na página.
+   Fontes: Outfit (títulos e números) + Manrope (texto) + JetBrains Mono.
+   Tokens: protótipo "Portal Biomedical · novo layout" (navy + azul + âmbar).
+   Quem anima é o portal-motion.js — este arquivo só dá o estado final e
+   os keyframes. Com movimento reduzido tudo fica parado (bloco no fim).
+   ===================================================================== */
+
+/* ---------------------------------------------------------------------
+   0. TOKENS — prefixo --bm3- para não colidir com variáveis das páginas.
+      Os tokens legados (--font-*, --bm-blue-*, --dv-*) passam a apontar
+      para a paleta nova: é isso que leva o layout às ~130 páginas.
+   --------------------------------------------------------------------- */
+:root {
+  --bm3-navy-950: #051329; --bm3-navy-900: #0A2447; --bm3-navy-800: #0E3263; --bm3-navy-700: #13407D;
+  --bm3-blue-700: #1554B0; --bm3-blue-600: #1A66D2; --bm3-blue-500: #2F7FE6; --bm3-blue-300: #8DBBF5;
+  --bm3-blue-100: #E1EDFD; --bm3-blue-50: #EEF4FE;
+  --bm3-cyan-300: #7FE3F0;
+  --bm3-amber-500: #F4A62A; --bm3-amber-100: #FEF1DA; --bm3-amber-800: #8A4B00;
+  --bm3-red-600: #CF3434; --bm3-red-700: #A82424; --bm3-red-100: #FDE7E7;
+  --bm3-green-600: #138A4B; --bm3-green-700: #0F7A43; --bm3-green-100: #DDF5E7;
+  --bm3-violet-600: #5A3BC4; --bm3-violet-100: #EEE8FD;
+  --bm3-ink: #0B1B30; --bm3-ink-2: #3A4A60; --bm3-muted: #56657A;
+  --bm3-line: #E3E9F2; --bm3-line-2: #D3DCE9;
+  --bm3-page: #F3F6FB; --bm3-surface: #FFFFFF; --bm3-surface-2: #F7F9FC;
+  --bm3-r-xl: 28px; --bm3-r-lg: 22px; --bm3-r: 16px; --bm3-r-sm: 12px;
+  --bm3-shadow-1: 0 1px 2px rgba(11,27,48,.05), 0 6px 18px -8px rgba(11,27,48,.10);
+  --bm3-shadow-2: 0 2px 6px rgba(11,27,48,.05), 0 24px 48px -20px rgba(11,27,48,.25);
+  --bm3-shadow-3: 0 30px 80px -24px rgba(5,19,41,.45);
+  --bm3-ease-out: cubic-bezier(.22,1,.36,1);
+  --bm3-ease-io: cubic-bezier(.65,0,.35,1);
+  --bm3-font-display: 'Outfit', 'Segoe UI', system-ui, -apple-system, sans-serif;
+  --bm3-font-text: 'Manrope', 'Segoe UI', system-ui, -apple-system, sans-serif;
+  --bm3-font-mono: 'JetBrains Mono', ui-monospace, 'Cascadia Mono', Consolas, monospace;
+  --bm3-header-h: 72px;
+
+  /* legados → paleta/fonte nova */
+  --font-display: var(--bm3-font-display);
+  --font-body: var(--bm3-font-text);
+  --font-mono: var(--bm3-font-mono);
+  --font: var(--bm3-font-text);            /* InventarIA / inventário */
+  --font-title: var(--bm3-font-display);
+  --bm-blue-900: #0A2447;
+  --bm-blue-800: #0E3263;
+  --bm-blue-700: #1554B0;
+  --bm-blue-600: #1A66D2;
+  --bm-blue-500: #2F7FE6;
+  --bm-blue-100: #E1EDFD;
+  --bm-blue-50:  #EEF4FE;
+  --text: #0B1B30; --text-2: #3A4A60; --text-3: #56657A;
+  --border: #E3E9F2; --border-2: #D3DCE9;
+  --surface-2: #F3F6FB;
+  --shadow: var(--bm3-shadow-1);
+  --shadow-lg: var(--bm3-shadow-2);
+  --ring: 0 0 0 4px rgba(47,127,230,.14);
+  --ease: var(--bm3-ease-out);
+}
+body.dept {
+  --dv-ink: #0A2447;
+  --dv-body: #3A4A60;
+  --dv-muted: #56657A;
+  --dv-muted2: #6B7A90;
+  --dv-muted3: #8C99AD;
+  --dv-border: #E3E9F2;
+  --dv-border-soft: #EDF1F7;
+  --dv-border-hover: #8DBBF5;
+  --dv-page: #F3F6FB;
+  --dv-headbg: #F8FAFD;
+  --dv-zebra: #F1F4F9;
+  --dv-blue: #1A66D2;
+  --dv-navy: #0A2447;
+  --dv-radius: 20px;
+  --dv-shadow: var(--bm3-shadow-1);
+  --dv-shadow-hover: var(--bm3-shadow-2);
+  --dv-font: var(--bm3-font-text);
+  background: var(--bm3-page);
+}
+
+/* ---------------------------------------------------------------------
+   1. BASE — tipografia, foco, seleção, rolagem
+   --------------------------------------------------------------------- */
+html, body { font-family: var(--bm3-font-text); color: var(--bm3-ink); -webkit-font-smoothing: antialiased; }
+body.dept, body.dept button, body.dept input, body.dept select, body.dept textarea, body.dept table,
+body.home-v2, body.home-v2 button, body.home-v2 input, body.home-v2 select, body.home-v2 textarea {
+  font-family: var(--bm3-font-text);
+}
+h1, h2, h3, h4,
+body.dept .area-main h1, body.dept .area-main h2, body.dept .area-main h3, body.dept .area-main h4,
+body.dept .area-header-top h1, .home-v2 h1, .home-v2 h2, .home-v2 h3, .home-v2 h4, .home-v2 .hv-greeting {
+  font-family: var(--bm3-font-display);
+  letter-spacing: -.015em;
+}
+::selection { background: rgba(47,127,230,.22); color: inherit; }
+:focus-visible { outline: 2px solid var(--bm3-blue-500); outline-offset: 3px; border-radius: 10px; }
+button:focus:not(:focus-visible), a:focus:not(:focus-visible) { outline: none; }
+kbd, code, pre, .mono { font-family: var(--bm3-font-mono); }
+/* números alinhados em toda tabela e KPI */
+table, .kpi-value, .sr-kpi-val, .av-kpi-v, .fn-kpi-v, .ov-kpi-v, .ng-kpi-v, .ix-fat, .ix-m-val { font-variant-numeric: tabular-nums; }
+
+/* rolagem fina e arredondada (Chrome/Edge) */
+body.dept .dept-main::-webkit-scrollbar, .bm3-scroll::-webkit-scrollbar { width: 10px; height: 10px; }
+body.dept .dept-main::-webkit-scrollbar-thumb { background: #CBD5E3; border-radius: 10px; border: 3px solid var(--bm3-page); }
+body.dept .dept-main::-webkit-scrollbar-thumb:hover { background: #AEBBCD; }
+body.dept .dept-main::-webkit-scrollbar-track { background: transparent; }
+body.dept .dept-main { scrollbar-width: thin; scrollbar-color: #CBD5E3 transparent; scroll-behavior: smooth; }
+
+/* ---------------------------------------------------------------------
+   2. CABEÇALHO GLOBAL (todas as páginas) — 72px, vidro, marca + menu com
+      "tinta" deslizante + busca Ctrl K + sino + avatar
+   --------------------------------------------------------------------- */
+.site-header {
+  background: rgba(255,255,255,.92);
+  -webkit-backdrop-filter: saturate(1.6) blur(18px); backdrop-filter: saturate(1.6) blur(18px);
+  border-bottom: 1px solid var(--bm3-line);
+  box-shadow: 0 1px 0 rgba(11,27,48,.03);
+}
+.site-header .container { height: var(--bm3-header-h); gap: 20px; }
+.site-header .brand { gap: 10px; border-radius: 12px; padding: 4px; margin-left: -4px; }
+.site-header .brand-logo {
+  width: 36px; height: 36px; border-radius: 11px; object-fit: cover;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.35), 0 6px 14px -6px rgba(19,64,125,.8);
+  transition: transform .5s var(--bm3-ease-out);
+}
+.site-header .brand:hover .brand-logo { transform: rotate(-8deg) scale(1.06); }
+.site-header .brand-fallback {
+  font-family: var(--bm3-font-display); font-weight: 700; font-size: 20px;
+  letter-spacing: -.02em; color: var(--bm3-navy-900);
+}
+.site-header .header-nav { position: relative; gap: 2px; margin-left: 8px; }
+.site-header .header-nav a {
+  position: relative; z-index: 1;
+  padding: 8px 14px; border-radius: 10px;
+  font-family: var(--bm3-font-text); font-weight: 600; font-size: 14.5px;
+  color: var(--bm3-ink-2); background: transparent;
+  transition: color .2s, background-color .2s;
+}
+.site-header .header-nav a:hover { background: rgba(11,27,48,.05); color: var(--bm3-ink); }
+.site-header .header-nav a.active,
+.site-header .header-nav a[aria-current="page"] { background: transparent; color: var(--bm3-ink); font-weight: 600; }
+/* a "tinta" (sublinhado que desliza) — injetada pelo portal-motion.js */
+.bm3-ink {
+  position: absolute; left: 0; bottom: 2px; height: 2px; width: 0; border-radius: 2px;
+  background: var(--bm3-blue-500); pointer-events: none; opacity: 0;
+  transition: transform .5s var(--bm3-ease-out), width .5s var(--bm3-ease-out), opacity .3s;
+}
+.site-header .header-nav.bm3-has-ink a.active { background: transparent; }
+
+.site-header .header-search {
+  width: 300px; min-width: 0; height: 42px; padding: 0 10px 0 14px; gap: 10px;
+  border-radius: 12px; background: rgba(11,27,48,.04); border: 1px solid var(--bm3-line);
+  color: var(--bm3-muted); font-size: 14px; font-family: var(--bm3-font-text);
+  transition: background-color .2s, border-color .2s, box-shadow .25s, width .4s var(--bm3-ease-out);
+}
+.site-header .header-search:hover { border-color: var(--bm3-blue-300); background: #fff; box-shadow: 0 0 0 4px rgba(47,127,230,.12); }
+.site-header .header-search svg { color: var(--bm3-muted); width: 18px; height: 18px; }
+.site-header .header-search .ph { color: var(--bm3-muted); font-size: 14px; }
+.site-header .header-search .kbd {
+  font-family: var(--bm3-font-mono); font-size: 11px; font-weight: 500; line-height: 1;
+  padding: 4px 6px; border-radius: 6px; border: 1px solid currentColor; background: transparent;
+  color: var(--bm3-muted); opacity: .75; white-space: nowrap;
+}
+
+/* a busca (script.js) chega depois do sino/avatar: a ordem visual é fixa */
+.site-header .container > .header-spacer { order: 7; }
+.site-header .container > .header-search { order: 8; }
+.site-header .container > .bm3-hd-actions { order: 9; }
+
+/* sino + avatar (portal-motion.js injeta nas páginas internas) */
+.bm3-hd-actions { display: flex; align-items: center; gap: 8px; flex-shrink: 0; position: relative; }
+.bm3-iconbtn {
+  position: relative; display: grid; place-items: center; width: 42px; height: 42px;
+  border-radius: 12px; color: var(--bm3-ink-2); background: transparent; border: 0; cursor: pointer;
+  transition: background-color .2s, color .2s, transform .18s;
+}
+.bm3-iconbtn:hover { background: rgba(11,27,48,.06); color: var(--bm3-ink); }
+.bm3-iconbtn:active { transform: scale(.94); }
+.bm3-iconbtn svg { width: 20px; height: 20px; }
+.bm3-iconbtn .bm3-badge {
+  position: absolute; top: 5px; right: 5px; min-width: 18px; height: 18px; padding: 0 5px;
+  border-radius: 9px; background: var(--bm3-amber-500); color: var(--bm3-ink);
+  font-size: 11px; font-weight: 800; display: grid; place-items: center; box-shadow: 0 0 0 2px #fff;
+}
+.bm3-iconbtn .bm3-badge[hidden] { display: none; }
+.bm3-bell.bm3-ring svg { animation: bm3-ring .9s var(--bm3-ease-out); transform-origin: 50% 10%; }
+.bm3-avatar {
+  width: 40px; height: 40px; border-radius: 50%; border: 0; cursor: pointer; padding: 0;
+  display: grid; place-items: center; font-family: var(--bm3-font-text); font-weight: 800; font-size: 13px;
+  color: #fff; background: linear-gradient(145deg, var(--bm3-blue-500), var(--bm3-navy-800));
+  box-shadow: 0 0 0 2px #fff, 0 6px 14px -6px rgba(10,36,71,.7);
+  transition: transform .2s var(--bm3-ease-out);
+}
+.bm3-avatar:hover { transform: scale(1.06); }
+.bm3-menu {
+  position: absolute; top: 54px; right: 0; z-index: 1200; width: min(300px, calc(100vw - 32px));
+  background: #fff; color: var(--bm3-ink); border: 1px solid var(--bm3-line); border-radius: 18px;
+  box-shadow: var(--bm3-shadow-3); overflow: hidden; transform-origin: top right;
+  animation: bm3-pop .35s var(--bm3-ease-out);
+}
+.bm3-menu[hidden] { display: none; }
+.bm3-menu-head { display: flex; align-items: center; gap: 12px; padding: 16px 16px 14px; border-bottom: 1px solid var(--bm3-line); }
+.bm3-menu-head .bm3-avatar { box-shadow: none; flex: none; cursor: default; }
+.bm3-menu-head .bm3-avatar:hover { transform: none; }
+.bm3-menu-head strong { display: block; font-size: 14px; font-weight: 800; line-height: 1.3; }
+.bm3-menu-head small { display: block; font-size: 12px; color: var(--bm3-muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 200px; }
+.bm3-menu a, .bm3-menu button.bm3-menu-item {
+  display: flex; align-items: center; gap: 10px; width: 100%; padding: 12px 16px;
+  font-size: 14px; font-weight: 600; color: var(--bm3-ink-2); background: none; border: 0;
+  text-align: left; cursor: pointer; font-family: inherit; text-decoration: none; transition: background-color .2s, color .2s;
+}
+.bm3-menu a:hover, .bm3-menu button.bm3-menu-item:hover { background: var(--bm3-surface-2); color: var(--bm3-ink); }
+.bm3-menu button.bm3-menu-item.is-danger:hover { background: var(--bm3-red-100); color: var(--bm3-red-700); }
+.bm3-menu svg { width: 16px; height: 16px; flex: none; }
+
+@media (max-width: 1180px) {
+  .site-header .header-search { width: 44px; padding: 0; justify-content: center; }
+  .site-header .header-search .ph, .site-header .header-search .kbd { display: none; }
+}
+@media (max-width: 767.98px) {
+  :root { --bm3-header-h: 60px; }
+  .site-header .brand-logo { width: 34px; height: 34px; }
+  .site-header .brand-fallback { font-size: 18px; }
+  .bm3-hd-actions { gap: 4px; }
+  .bm3-hd-actions .bm3-avatar { display: none; }
+  .site-header .header-search { width: 40px; height: 40px; }
+}
+
+/* ---------------------------------------------------------------------
+   3. SIDEBAR (app shell) — 284px aberta / 84px recolhida, altura inteira
+   --------------------------------------------------------------------- */
+@media (min-width: 768px) {
+  body.dept.dshell .area-sidebar { width: var(--bm-sb-w, 284px); transition: width .5s var(--bm3-ease-out); }
+  body.dept.dshell.sb-collapsed { --bm-sb-w: 84px; }
+  body.dept.dshell .area-sidebar .sb-card { box-shadow: 6px 0 24px -18px rgba(11,27,48,.25); }
+}
+body.dshell .area-sidebar .sb-card { border-right-color: var(--bm3-line); }
+body.dshell .area-sidebar .sb-head { padding: 16px 14px 14px; gap: 12px; border-bottom-color: var(--bm3-line); }
+body.dshell .area-sidebar .sb-head .sb-ic {
+  width: 44px; height: 44px; border-radius: 14px;
+  background: linear-gradient(145deg, var(--bm3-blue-500), var(--bm3-navy-800));
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.3), 0 8px 18px -10px rgba(10,36,71,.8);
+}
+body.dshell .area-sidebar .sb-head .sb-ic svg { width: 20px; height: 20px; }
+body.dshell .area-sidebar .sb-head .sb-tt { font-family: var(--bm3-font-display); font-size: 17px; font-weight: 600; letter-spacing: -.01em; color: var(--bm3-ink); }
+body.dshell .area-sidebar .sb-head .sb-st { font-size: 12.5px; font-weight: 500; color: var(--bm3-muted); margin-top: 1px; }
+body.dshell .area-sidebar .sb-toggle {
+  width: 32px; height: 32px; border-radius: 10px; border: 1px solid var(--bm3-line); background: #fff;
+  color: var(--bm3-muted); transition: background-color .2s, color .2s;
+}
+body.dshell .area-sidebar .sb-toggle:hover { background: var(--bm3-surface-2); color: var(--bm3-ink); }
+body.dshell .area-sidebar .sb-toggle svg { width: 15px; height: 15px; transition: transform .4s var(--bm3-ease-out); }
+
+body.dshell .area-sidebar nav { padding: 10px 10px 12px; gap: 2px; }
+body.dshell .area-sidebar .sb-section {
+  font-size: 11px; font-weight: 800; letter-spacing: .14em; color: var(--bm3-muted);
+  padding: 14px 10px 6px;
+}
+body.dshell .area-sidebar nav > .sb-section:first-child { padding-top: 6px; }
+body.dshell .area-sidebar .sb-divider { background: transparent; margin: 4px 6px; height: 1px; }
+
+body.dshell .area-sidebar nav a,
+body.dshell .area-sidebar .sb-parent {
+  min-height: 40px; padding: 0 10px; gap: 12px; border-radius: 12px;
+  font-size: 14px; font-weight: 600; color: var(--bm3-ink-2);
+  transition: background-color .2s, color .2s, transform .25s var(--bm3-ease-out);
+}
+body.dshell .area-sidebar nav a > svg,
+body.dshell .area-sidebar .sb-parent > svg:first-child { width: 20px; height: 20px; color: currentColor; stroke-width: 1.75; }
+body.dshell .area-sidebar nav a:hover,
+body.dshell .area-sidebar .sb-parent:hover { background: var(--bm3-surface-2); color: var(--bm3-ink); }
+body.dshell .area-sidebar nav a:active,
+body.dshell .area-sidebar .sb-parent:active { transform: scale(.985); }
+body.dshell .area-sidebar nav a.active { background: var(--bm3-blue-50); color: var(--bm3-blue-700); font-weight: 700; }
+body.dshell .area-sidebar nav a.active > svg { color: var(--bm3-blue-700); }
+body.dshell .area-sidebar nav a.active::before { display: none; }
+body.dshell .area-sidebar .sb-group.open > .sb-parent { color: var(--bm3-blue-700); background: var(--bm3-blue-50); }
+body.dshell .area-sidebar .sb-parent .sb-caret { width: 16px; height: 16px; color: var(--bm3-muted); transition: transform .35s var(--bm3-ease-out); }
+body.dshell .area-sidebar .sb-group.open .sb-parent .sb-caret { color: var(--bm3-blue-700); }
+body.dshell .area-sidebar .sb-children { margin: 4px 0 6px 20px; padding-left: 12px; border-left: 1px solid var(--bm3-line); gap: 2px; }
+body.dshell .area-sidebar .sb-group.open .sb-children { animation: bm3-drop .45s var(--bm3-ease-out); }
+body.dshell .area-sidebar .sb-children a {
+  min-height: 34px; padding: 0 10px; border-radius: 10px;
+  font-size: 13.5px; font-weight: 600; color: var(--bm3-muted);
+}
+body.dshell .area-sidebar .sb-children a:hover { background: var(--bm3-surface-2); color: var(--bm3-ink); }
+body.dshell .area-sidebar .sb-children a.active { background: var(--bm3-blue-50); color: var(--bm3-blue-700); }
+body.dshell .area-sidebar .sb-badge {
+  font-size: 10.5px; font-weight: 800; color: var(--bm3-green-700); background: var(--bm3-green-100);
+  border-radius: 6px; padding: 2px 6px; letter-spacing: .02em; opacity: 1;
+}
+body.dshell .area-sidebar nav a.active .sb-badge-ia { background: #fff; box-shadow: 0 0 0 1px var(--bm3-green-100); }
+body.dshell .area-sidebar .sb-back-in {
+  border-top: 1px solid var(--bm3-line); padding: 12px 20px; gap: 12px;
+  font-size: 14px; font-weight: 600; color: var(--bm3-ink-2);
+  transition: background-color .2s, color .2s;
+}
+body.dshell .area-sidebar .sb-back-in svg { width: 20px; height: 20px; transition: transform .35s var(--bm3-ease-out); }
+body.dshell .area-sidebar .sb-back-in:hover { background: var(--bm3-surface-2); color: var(--bm3-ink); }
+body.dshell .area-sidebar .sb-back-in:hover svg { transform: translateX(-3px); }
+body.dshell .area-sidebar .sb-user-footer { border-top: 1px solid var(--bm3-line); padding: 10px 12px 12px; }
+body.dshell .area-sidebar .sb-user-avatar {
+  width: 36px; height: 36px; border-radius: 50%; font-weight: 800; font-size: 12.5px;
+  background: linear-gradient(145deg, var(--bm3-blue-500), var(--bm3-navy-800)); color: #fff;
+}
+body.dshell .area-sidebar .sb-user-name { color: var(--bm3-ink); font-size: 13.5px; font-weight: 700; }
+body.dshell .area-sidebar .sb-user-email { color: var(--bm3-muted); font-size: 12px; }
+body.dshell .area-sidebar .sb-logout-btn {
+  height: 34px; padding: 0 12px; border-radius: 10px; background: #fff; border: 1px solid var(--bm3-line-2);
+  color: var(--bm3-ink-2); font-size: 13px; font-weight: 600; font-family: inherit;
+  transition: background-color .2s, border-color .2s, color .2s, transform .18s;
+}
+body.dshell .area-sidebar .sb-logout-btn:hover { background: var(--bm3-red-100); border-color: #F1B5B5; color: var(--bm3-red-700); }
+body.dshell .area-sidebar .sb-logout-btn:active { transform: scale(.96); }
+
+/* ---------------------------------------------------------------------
+   4. MIOLO das páginas de departamento
+   --------------------------------------------------------------------- */
+body.dept.dshell .dept-main { background: var(--bm3-page); }
+body.dept.dshell .area-body { background: transparent; }
+
+/* ---------------------------------------------------------------------
+   5. HERO DO DEPARTAMENTO (.area-header) → cartão navy com camadas de
+      vidro que seguem o mouse (as camadas são injetadas pelo motion.js)
+   --------------------------------------------------------------------- */
+body.dept.dshell .area-header {
+  position: relative; overflow: hidden; isolation: isolate;
+  margin: 24px clamp(20px, 3vw, 48px) 0 clamp(16px, 1.6vw, 28px);
+  padding: 32px 0 30px; border-radius: var(--bm3-r-xl); color: #fff;
+  background:
+    radial-gradient(600px 300px at 88% 10%, rgba(47,127,230,.5), transparent 70%),
+    linear-gradient(120deg, #0A2447 0%, #0E3263 60%, #13407D 100%);
+  box-shadow: var(--bm3-shadow-2);
+}
+body.dept.dshell .area-header::before,
+body.dept.dshell .area-header::after { display: none; }
+body.dept.dshell .area-header > .container { position: relative; z-index: 1; padding-left: 40px; padding-right: 40px; max-width: none; margin: 0; }
+body.dept.dshell .area-header .breadcrumb {
+  display: flex; align-items: center; gap: 8px; margin-bottom: 14px;
+  font-size: 13.5px; color: rgba(255,255,255,.7); font-weight: 500;
+}
+body.dept.dshell .area-header .breadcrumb a { color: rgba(255,255,255,.7); }
+body.dept.dshell .area-header .breadcrumb a:hover { color: #fff; text-decoration: underline; text-underline-offset: 3px; }
+body.dept.dshell .area-header .breadcrumb svg { width: 14px; height: 14px; opacity: .6; }
+body.dept.dshell .area-header .breadcrumb span { color: #fff; font-weight: 700; }
+body.dept.dshell .area-header-top { display: flex; align-items: center; justify-content: flex-start; gap: 18px; flex-wrap: wrap; }
+body.dept.dshell .area-header-top > div:not(.area-hero-ic):not(.dv-hero-pills) { flex: 1 1 320px; min-width: 0; }
+body.dept.dshell .area-header h1 {
+  font-family: var(--bm3-font-display); font-size: clamp(30px, 3.4vw, 44px); font-weight: 600;
+  letter-spacing: -.03em; line-height: 1.08; color: #fff; margin: 0;
+}
+body.dept.dshell .area-header p { color: rgba(255,255,255,.78); font-size: 15px; margin-top: 6px; line-height: 1.55; }
+body.dept.dshell .area-hero-ic {
+  display: grid; place-items: center; width: 60px; height: 60px; flex-shrink: 0; border-radius: 18px;
+  background: rgba(255,255,255,.1); border: 1px solid rgba(255,255,255,.18); color: #fff;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.2);
+  -webkit-backdrop-filter: blur(6px); backdrop-filter: blur(6px);
+}
+body.dept.dshell .area-hero-ic svg { width: 26px; height: 26px; }
+body.dept.dshell .dv-hero-pills { gap: 8px; margin-left: auto; flex-wrap: wrap; }
+body.dept.dshell .dv-hero-pill {
+  height: 34px; padding: 0 14px; border-radius: 999px; gap: 8px;
+  background: rgba(255,255,255,.12); border: 1px solid rgba(255,255,255,.18);
+  font-size: 13px; font-weight: 700; color: #fff;
+  -webkit-backdrop-filter: blur(8px); backdrop-filter: blur(8px);
+}
+body.dept.dshell .dv-hero-pill svg { width: 15px; height: 15px; color: rgba(255,255,255,.8); }
+body.dept.dshell .dv-hero-pill .dv-dot { position: relative; background: #3DDC84; box-shadow: none; }
+body.dept.dshell .dv-hero-pill .dv-dot::after,
+.bm3-live::after {
+  content: ""; position: absolute; inset: -4px; border-radius: 50%; border: 2px solid #3DDC84;
+  animation: bm3-live 2.2s var(--bm3-ease-out) infinite;
+}
+/* camadas de vidro 3D */
+.bm3-hero-layers { position: absolute; inset: 0; z-index: 0; pointer-events: none; perspective: 800px; }
+.bm3-glass {
+  position: absolute; border-radius: 22px;
+  background: linear-gradient(150deg, rgba(255,255,255,.22), rgba(255,255,255,.03));
+  border: 1px solid rgba(255,255,255,.2);
+  -webkit-backdrop-filter: blur(6px); backdrop-filter: blur(6px);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.25);
+  transition: translate .8s var(--bm3-ease-out);
+}
+.bm3-glass--1 { width: 130px; height: 130px; right: 9%; top: -24px; transform: rotateX(28deg) rotateZ(18deg); animation: bm3-float 9s ease-in-out infinite; }
+.bm3-glass--2 { width: 74px; height: 74px; right: 24%; bottom: -18px; border-radius: 16px; transform: rotateY(-24deg) rotateZ(-12deg); animation: bm3-float 11s ease-in-out -3s infinite; }
+.bm3-glass--3 { width: 46px; height: 46px; right: 4%; bottom: 26px; border-radius: 12px; transform: rotateZ(30deg);
+  background: linear-gradient(150deg, rgba(244,166,42,.55), rgba(244,166,42,.08)); animation: bm3-float 7s ease-in-out -1s infinite; }
+
+@media (max-width: 767.98px) {
+  body.dept.dshell .area-header-top { flex-wrap: nowrap; gap: 14px; }
+  body.dept.dshell .area-header-top > div:not(.area-hero-ic):not(.dv-hero-pills) { flex: 1 1 0; }
+  body.dept.dshell .area-header { margin: 12px 16px 0; padding: 22px 0 22px; border-radius: 24px; }
+  body.dept.dshell .area-header > .container { padding-left: 20px; padding-right: 20px; }
+  body.dept.dshell .area-header h1 { font-size: 26px; }
+  body.dept.dshell .area-header p { font-size: 13.5px; }
+  body.dept.dshell .area-hero-ic { width: 46px; height: 46px; border-radius: 14px; }
+  body.dept.dshell .area-hero-ic svg { width: 21px; height: 21px; }
+  .bm3-glass--2 { display: none; }
+}
+
+/* ---------------------------------------------------------------------
+   6. MÓDULOS (.modulo-card) + seção de Agentes / Automações / Atalhos
+   --------------------------------------------------------------------- */
+body.dept .fin-subhead { display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: space-between; gap: 6px 16px; }
+body.dept .fin-subhead h2 { font-family: var(--bm3-font-display); font-size: 24px; font-weight: 600; letter-spacing: -.02em; color: var(--bm3-ink); }
+body.dept .fin-subhead .sub { font-size: 14px; color: var(--bm3-muted); font-weight: 500; }
+@media (min-width: 768px) {
+  body.dept.dshell .modulos-grid,
+  body.dept.dshell .bm3-card-grid {
+    display: grid; grid-template-columns: repeat(auto-fill, minmax(290px, 1fr)) !important; gap: 18px !important;
+  }
+  body.dept.dshell .modulo-card {
+    position: relative; display: flex; flex-direction: column; gap: 14px; min-height: 0;
+    padding: 24px; border-radius: 24px; background: #fff;
+    border: 1px solid var(--bm3-line); box-shadow: var(--bm3-shadow-1);
+    transition: border-color .3s, box-shadow .35s var(--bm3-ease-out), transform .6s var(--bm3-ease-out);
+  }
+  body.dept.dshell .modulo-card:hover { border-color: var(--bm3-blue-300); box-shadow: var(--bm3-shadow-2); }
+  body.dept.dshell .modulo-card .mc-icon { width: 54px; height: 54px; border-radius: 16px; transition: transform .5s var(--bm3-ease-out); box-shadow: inset 0 1px 0 rgba(255,255,255,.7); }
+  body.dept.dshell .modulo-card .mc-icon svg { width: 24px; height: 24px; }
+  body.dept.dshell .modulo-card .mc-name { font-family: var(--bm3-font-display); font-size: 20px; font-weight: 600; letter-spacing: -.015em; color: var(--bm3-ink); line-height: 1.2; }
+  body.dept.dshell .modulo-card .mc-desc { font-size: 14.5px; line-height: 1.55; color: var(--bm3-muted); margin-top: -4px; }
+  body.dept.dshell .modulo-card .mc-open {
+    margin-top: auto; padding-top: 14px; border-top: 1px solid var(--bm3-line);
+    font-size: 14px; font-weight: 700; color: var(--bm3-blue-600); gap: 6px;
+  }
+  body.dept.dshell .modulo-card .mc-open svg { transition: transform .3s var(--bm3-ease-out); }
+  body.dept.dshell .modulo-card:hover .mc-open svg { transform: translateX(3px); }
+}
+/* tons (tint) do protótipo */
+body.dept .modulo-card .mc-icon,
+body.dept .modulo-card[data-tone="inadim"] .mc-icon, body.dept .modulo-card:hover[data-tone="inadim"] .mc-icon,
+body.dept .modulo-card[data-tone="conciliacao"] .mc-icon, body.dept .modulo-card:hover[data-tone="conciliacao"] .mc-icon { background: var(--bm3-blue-100); color: var(--bm3-blue-700); }
+body.dept .modulo-card[data-tone="receber"] .mc-icon, body.dept .modulo-card:hover[data-tone="receber"] .mc-icon,
+body.dept .modulo-card[data-tone="nf"] .mc-icon, body.dept .modulo-card:hover[data-tone="nf"] .mc-icon { background: var(--bm3-green-100); color: var(--bm3-green-700); }
+body.dept .modulo-card[data-tone="dre"] .mc-icon, body.dept .modulo-card:hover[data-tone="dre"] .mc-icon { background: var(--bm3-amber-100); color: var(--bm3-amber-800); }
+body.dept .modulo-card[data-tone="pagar"] .mc-icon, body.dept .modulo-card:hover[data-tone="pagar"] .mc-icon { background: var(--bm3-red-100); color: var(--bm3-red-700); }
+body.dept .modulo-card[data-tone="cobranca"] .mc-icon, body.dept .modulo-card:hover[data-tone="cobranca"] .mc-icon,
+body.dept .modulo-card[data-tone="agente"] .mc-icon, body.dept .modulo-card:hover[data-tone="agente"] .mc-icon { background: linear-gradient(145deg, #EEE8FD, #E1EDFD); color: var(--bm3-violet-600); }
+body.dept .modulo-card[data-tone="auto"] .mc-icon, body.dept .modulo-card:hover[data-tone="auto"] .mc-icon { background: linear-gradient(145deg, #FEF1DA, #FDE7E7); color: #B25A00; }
+
+/* seção injetada (Agentes de IA / Automações / Atalhos) */
+.bm3-block { padding: 36px 0 0; }
+.bm3-block .fin-subhead { margin-bottom: 18px; }
+body.dept .modulo-card.bm3-agent { gap: 12px; }
+body.dept .modulo-card.bm3-agent:hover { border-color: #C9BDF5; }
+body.dept .modulo-card.bm3-auto:hover { border-color: #F4C98A; }
+.bm3-agent-top { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+.bm3-tag {
+  display: inline-flex; align-items: center; gap: 6px; height: 24px; padding: 0 10px;
+  border-radius: 999px; font-size: 11.5px; font-weight: 800; letter-spacing: .02em; white-space: nowrap;
+}
+.bm3-tag--ia { background: var(--bm3-green-100); color: var(--bm3-green-700); }
+.bm3-tag--auto { background: var(--bm3-amber-100); color: var(--bm3-amber-800); }
+.bm3-dot { position: relative; width: 7px; height: 7px; border-radius: 50%; background: currentColor; display: inline-block; flex: none; }
+.bm3-shortcut-row { display: flex; flex-wrap: wrap; gap: 12px; }
+.bm3-shortcut {
+  display: inline-flex; align-items: center; gap: 12px; padding: 12px 16px 12px 12px;
+  border-radius: 16px; background: #fff; border: 1px solid var(--bm3-line); box-shadow: var(--bm3-shadow-1);
+  font-weight: 700; font-size: 14px; color: var(--bm3-ink); text-decoration: none;
+  transition: border-color .2s, transform .25s var(--bm3-ease-out), box-shadow .3s;
+}
+.bm3-shortcut:hover { border-color: var(--bm3-blue-300); transform: translateY(-2px); box-shadow: var(--bm3-shadow-2); color: var(--bm3-ink); }
+.bm3-shortcut .bm3-tint { width: 36px; height: 36px; border-radius: 11px; display: grid; place-items: center; background: var(--bm3-blue-100); color: var(--bm3-blue-700); }
+.bm3-shortcut .bm3-tint svg { width: 16px; height: 16px; }
+@media (max-width: 767.98px) {
+  .bm3-block { padding-top: 26px; }
+  .bm3-block .container { padding: 0 16px; }
+  body.dept.dshell .bm3-card-grid { display: grid; grid-template-columns: 1fr !important; gap: 10px !important; }
+  body.dept.dshell .modulo-card.bm3-agent .bm3-agent-top { grid-area: icon; }
+  body.dept.dshell .modulo-card.bm3-agent .bm3-tag { display: none; }
+}
+
+/* ---------------------------------------------------------------------
+   7. CABEÇALHO DE MÓDULO (.fx-head), ABAS (.fx-tabs) e FILTROS (.fx-filters)
+      → linha 1: migalhas + título grande | selos de status
+        linha 2: abas com "pílula" navy que desliza
+        linha 3: barra de filtros de vidro, fixa ao rolar
+   --------------------------------------------------------------------- */
+body.dept .fx-head { flex-wrap: wrap; align-items: flex-end; gap: 14px 16px; padding: 26px 0 6px; }
+body.dept .fx-head > div:first-child { flex: 1 1 auto; min-width: 0; }
+body.dept .fx-head-right { display: contents; }
+body.dept .fx-bc { gap: 8px; font-size: 13.5px; color: var(--bm3-muted); font-weight: 500; margin-bottom: 4px; }
+body.dept .fx-bc span:last-child { color: var(--bm3-ink); font-weight: 700; }
+body.dept .fx-bc a { color: var(--bm3-muted); }
+body.dept .fx-bc a:hover { color: var(--bm3-ink); }
+body.dept .fx-title {
+  font-family: var(--bm3-font-display); font-size: clamp(28px, 3vw, 38px); font-weight: 600;
+  letter-spacing: -.03em; line-height: 1.1; color: var(--bm3-ink); margin: 2px 0 0;
+}
+body.dept .fx-dw {
+  height: 32px; padding: 0 12px; gap: 8px; border-radius: 999px;
+  background: var(--bm3-green-100); border: 0; color: var(--bm3-green-700);
+  font-size: 12.5px; font-weight: 700; align-self: flex-end; margin-bottom: 6px;
+}
+body.dept .fx-dw i { position: relative; width: 7px; height: 7px; background: #1FB866; }
+body.dept .fx-dw i::after { content: ""; position: absolute; inset: -4px; border-radius: 50%; border: 2px solid #1FB866; animation: bm3-live 2.2s var(--bm3-ease-out) infinite; }
+
+/* as abas ficam na linha 2, mas a barra tem o tamanho das abas e encosta à
+   direita: o ::after é a quebra de linha (sem ele, com poucas abas a barra
+   subiria para a linha do título) e o margin-top devolve o gap que a linha
+   vazia dele consome. Mais abas que a tela → a barra para em 100% e rola. */
+body.dept .fx-head:has(.fx-tabs)::after { content: ""; order: 4; flex: 0 0 100%; height: 0; }
+body.dept .fx-head:has(.fx-tabs) .fx-tabs { margin-top: -14px; }
+body.dept .fx-tabs {
+  position: relative; order: 5; flex: 0 1 auto; width: auto; max-width: 100%; min-width: 0;
+  margin-left: auto;
+  display: flex; flex-wrap: nowrap; gap: 2px; padding: 5px;
+  border-radius: 16px; background: #fff; border: 1px solid var(--bm3-line); box-shadow: var(--bm3-shadow-1);
+  overflow-x: auto; overflow-y: hidden; scrollbar-width: none; scroll-behavior: smooth;
+}
+body.dept .fx-tabs::-webkit-scrollbar { display: none; }
+body.dept .fx-tabs.bm3-fade-r { -webkit-mask-image: linear-gradient(90deg, #000 0, #000 calc(100% - 36px), transparent); mask-image: linear-gradient(90deg, #000 0, #000 calc(100% - 36px), transparent); }
+body.dept .fx-tabs.bm3-fade-l { -webkit-mask-image: linear-gradient(90deg, transparent 0, #000 36px, #000 100%); mask-image: linear-gradient(90deg, transparent 0, #000 36px, #000 100%); }
+body.dept .fx-tabs.bm3-fade-l.bm3-fade-r { -webkit-mask-image: linear-gradient(90deg, transparent 0, #000 36px, #000 calc(100% - 36px), transparent); mask-image: linear-gradient(90deg, transparent 0, #000 36px, #000 calc(100% - 36px), transparent); }
+body.dept .fx-tabs a, body.dept .fx-tabs span {
+  position: relative; z-index: 1; flex: none; display: inline-flex; align-items: center;
+  height: 38px; padding: 0 14px; border-radius: 11px; background: transparent;
+  font-size: 14px; font-weight: 700; color: var(--bm3-muted); white-space: nowrap;
+  transition: color .25s, background-color .25s;
+}
+body.dept .fx-tabs a:hover { color: var(--bm3-ink); background: rgba(11,27,48,.035); }
+body.dept .fx-tabs .active { color: #fff !important; background: var(--bm3-navy-900); font-weight: 700; }
+body.dept .fx-tabs.bm3-has-thumb .active { background: transparent; }
+.bm3-tab-thumb {
+  display: block; font-style: normal;
+  position: absolute; z-index: 0; left: 0; top: 0; width: 0; height: 0; border-radius: 11px;
+  background: var(--bm3-navy-900); box-shadow: 0 8px 18px -8px rgba(10,36,71,.7);
+  pointer-events: none; opacity: 0;
+  transition: transform .5s var(--bm3-ease-out), width .5s var(--bm3-ease-out), height .5s var(--bm3-ease-out), opacity .2s;
+}
+
+body.dept .fx-filters {
+  position: relative; gap: 8px; padding: 10px; margin-top: 14px;
+  border-radius: 18px; background: rgba(255,255,255,.86); border: 1px solid var(--bm3-line);
+  -webkit-backdrop-filter: blur(14px) saturate(1.5); backdrop-filter: blur(14px) saturate(1.5);
+  box-shadow: var(--bm3-shadow-1);
+  transition: box-shadow .35s var(--bm3-ease-out), background-color .35s;
+  /* ── NÍVEL DA BARRA (não tire este z-index) ──────────────────────────
+     O vidro da barra (backdrop-filter) abre um contexto de empilhamento
+     próprio: o painel do filtro, que é filho dela, NÃO consegue subir
+     acima do resto da página por conta própria, por mais alto que seja o
+     z-index dele. Sem um nível aqui a barra vale 0, e todo cartão que vem
+     depois no HTML (KPIs, painéis, gráficos — todos position:relative)
+     passa por cima da lista aberta. Era esse o filtro "cortado".
+     Faixa: acima do conteúdo, abaixo do cabeçalho (100) e dos modais. */
+  z-index: 60;
+}
+/* barra com filtro ABERTO: sobe mais um degrau e para de recortar —
+   no celular a barra rola na horizontal (overflow-x:auto) e o recorte
+   cortaria a lista. A classe é posta pelo portal-motion.js. */
+body.dept .fx-filters.bm3-dd-open { z-index: 90; overflow: visible; }
+
+/* mesma proteção para as outras barras de filtro do portal, e para
+   qualquer contêiner que o motion.js flagre como sendo o que prendia o
+   painel (vidro, filtro CSS ou rolagem própria) — só enquanto está aberto. */
+body.dept .av-toolbar.bm3-dd-open, body.dept .az-toolbar.bm3-dd-open,
+body.dept .fca-toolbar.bm3-dd-open, body.dept .table-toolbar.bm3-dd-open,
+body.dept .bm3-fbar.bm3-dd-open { position: relative; z-index: 90; }
+body.dept .bm3-dd-open { overflow: visible !important; }
+@media (min-width: 1024px) {
+  body.dept .fx-filters.bm3-sticky { position: sticky; top: 10px; }
+  body.dept .fx-filters.bm3-stuck { box-shadow: var(--bm3-shadow-2); background: rgba(255,255,255,.9); }
+}
+/* o dropdown aberto fica na frente dos vizinhos da própria barra */
+body.dept .fx-filters .av-dd.open, body.dept .fx-filters .fxdd.open { z-index: 2; }
+body.dept .fx-fdiv { height: 24px; background: var(--bm3-line); margin: 0 4px; }
+body.dept .fx-fbtn, body.dept .fx-filters .av-dd-btn {
+  height: 36px; padding: 0 10px 0 12px; gap: 7px; border-radius: 11px;
+  border: 1px solid var(--bm3-line-2); background: #fff;
+  font-size: 13px; font-weight: 700; color: var(--bm3-ink); font-family: var(--bm3-font-text);
+  transition: border-color .2s, box-shadow .2s, background-color .2s;
+}
+body.dept .fx-fbtn:hover, body.dept .fx-filters .av-dd-btn:hover { border-color: var(--bm3-blue-300); }
+body.dept .fxdd.open > .fx-fbtn, body.dept .av-dd.open > .av-dd-btn { border-color: var(--bm3-blue-500); box-shadow: 0 0 0 4px rgba(47,127,230,.12); }
+body.dept .fx-fbtn .fx-fk { color: var(--bm3-muted); font-weight: 600; }
+body.dept .fx-flimpar {
+  height: 36px; padding: 0 12px; border-radius: 11px; border: 1px solid var(--bm3-line); background: #fff;
+  font-size: 13px; font-weight: 700; color: var(--bm3-ink-2);
+  transition: background-color .2s, border-color .2s, color .2s;
+}
+body.dept .fx-flimpar:hover { color: var(--bm3-red-700); border-color: #F1B5B5; background: var(--bm3-red-100); }
+body.dept .fxdd-panel, body.dept .av-dd-panel {
+  border-radius: 14px; border: 1px solid var(--bm3-line); box-shadow: var(--bm3-shadow-3);
+  transform-origin: top left;
+}
+body.dept .fxdd.open > .fxdd-panel, body.dept .av-dd.open > .av-dd-panel { animation: bm3-pop .3s var(--bm3-ease-out); }
+body.dept .fxdd-sec { font-size: 11px; letter-spacing: .12em; color: var(--bm3-muted); }
+body.dept .av-dd-opt { border-radius: 9px; font-size: 13.5px; font-weight: 600; transition: background-color .15s; }
+body.dept .av-dd-opt:hover { background: var(--bm3-surface-2); }
+@media (max-width: 767.98px) {
+  body.dept .fx-head { padding-top: 16px; }
+  body.dept .fx-title { font-size: 24px; }
+  body.dept .fx-dw { align-self: flex-start; margin-bottom: 0; }
+  body.dept .fx-tabs { background: #fff; border: 1px solid var(--bm3-line); }
+  /* no celular a barra não gruda no topo — mas segue posicionada, senão
+     o z-index não vale e o painel do filtro volta a ficar atrás. */
+  body.dept .fx-filters { position: relative; }
+}
+
+/* ---------------------------------------------------------------------
+   8. CARTÕES — painéis, KPIs e o que o motion.js reconhecer como cartão
+      (.bm3-card): raio grande, borda fina, sombra em duas camadas
+   --------------------------------------------------------------------- */
+body.dept .sr-panel, body.dept .sr-kpi, body.dept .sr-tbl-wrap, body.dept .ix-card, body.dept .kpi-card,
+body.dept .av-card, body.dept .av-panel, body.dept .av-panel2, body.dept .av-kpi, body.dept .fn-panel,
+body.dept .fn-card, body.dept .fn-kpi, body.dept .ov-card, body.dept .ov-kpi, body.dept .ng-kpi,
+body.dept .tp-card, body.dept .tp-tblwrap, body.dept .pv-panel, body.dept .pv-card, body.dept .ffc-kpi,
+body.dept .ac-card, body.dept .fin-tool, body.dept .av-tbl-wrap, body.dept .fn-tbl-wrap, body.dept .cx-tbl-wrap,
+body.dept .fca-forecast-card {
+  border-radius: 22px; border-color: var(--bm3-line); box-shadow: var(--bm3-shadow-1);
+}
+body.dept .table-wrap { border-color: var(--bm3-line); }
+.bm3-card { transition: box-shadow .35s var(--bm3-ease-out), border-color .3s; }
+.bm3-card.bm3-r { border-radius: 22px !important; }
+.bm3-card.bm3-bline { border-color: var(--bm3-line) !important; }
+.bm3-card.bm3-sh { box-shadow: var(--bm3-shadow-1) !important; }
+.bm3-card.bm3-sh:hover { box-shadow: 0 2px 6px rgba(11,27,48,.05), 0 16px 34px -20px rgba(11,27,48,.22) !important; }
+.bm3-track { box-shadow: inset 0 2px 4px rgba(11,27,48,.10), inset 0 -1px 0 rgba(255,255,255,.9); }
+
+/* títulos de painel */
+body.dept .sr-panel h4, body.dept .sr-tbl-header h4, body.dept .ix-card-head, body.dept .ix-ped-title {
+  font-family: var(--bm3-font-display); font-weight: 600; letter-spacing: -.01em; color: var(--bm3-ink);
+}
+
+/* KPIs: números em Outfit, rótulos em caixa alta espaçada */
+body.dept .kpi-value, body.dept .sr-kpi-val, body.dept .av-kpi-v, body.dept .fn-kpi-v, body.dept .ov-kpi-v,
+body.dept .ng-kpi-v, body.dept .sr-fat-kpi .v, body.dept .ix-m-val, body.dept .ix-fat {
+  font-family: var(--bm3-font-display); font-weight: 600; letter-spacing: -.025em; color: var(--bm3-ink);
+}
+body.dept .kpi-label, body.dept .sr-kpi-label, body.dept .av-kpi-l, body.dept .fn-kpi-l, body.dept .ov-kpi-l,
+body.dept .ng-kpi-l, body.dept .sr-fat-kpi .l {
+  font-size: 11.5px; font-weight: 800; letter-spacing: .1em; text-transform: uppercase; color: var(--bm3-muted);
+}
+body.dept .kpi-icon { border-radius: 14px; }
+
+/* ---------------------------------------------------------------------
+   9. CARTÃO-HERÓI (MSBIO e afins) — navy com brilho e barra de vidro 3D
+   --------------------------------------------------------------------- */
+body.dept .ix-msbio {
+  border-radius: 26px;
+  background: radial-gradient(420px 260px at 100% 0%, rgba(47,127,230,.55), transparent 70%),
+              linear-gradient(140deg, #0A2447, #0E3263 60%, #13407D);
+  box-shadow: var(--bm3-shadow-2);
+}
+body.dept .ix-msbio::after { background-image: radial-gradient(circle at 12% 110%, rgba(127,227,240,.14), transparent 45%); }
+body.dept .ix-msbio .ix-fat { font-size: clamp(28px, 2.5vw, 40px); letter-spacing: -.03em; color: #fff; }
+body.dept .ix-msbio .ix-card-head { color: rgba(255,255,255,.72); letter-spacing: .14em; }
+body.dept .ix-msbio .ix-bar-track,
+body.dept .bm3-track-dark {
+  height: 11px; border-radius: 10px; border: 0;
+  background: linear-gradient(180deg, rgba(0,0,0,.22), rgba(255,255,255,.1));
+  box-shadow: inset 0 2px 3px rgba(0,0,0,.25);
+}
+body.dept .ix-msbio .ix-bar-fill, body.dept #ix-msbio-bar.ix-ok, body.dept #ix-msbio-bar.ix-warn, body.dept #ix-msbio-bar {
+  border-radius: 8px;
+  background: linear-gradient(180deg, #E4F9FC 0%, #8FE6F1 35%, #58B7F0 70%, #3D8FE8 100%) !important;
+  box-shadow: 0 0 16px rgba(127,227,240,.45), inset 0 -2px 0 rgba(6,22,49,.2);
+}
+body.dept .ix-bar-track { height: 10px; border-radius: 10px; background: linear-gradient(180deg, #DCE6F3, #EEF3FA); box-shadow: inset 0 2px 3px rgba(11,27,48,.12); }
+body.dept .ix-bar-fill {
+  border-radius: 8px;
+  background: linear-gradient(180deg, #9CC8FF 0%, #4A92EE 32%, #1F6FD6 65%, #1554B0 100%);
+  box-shadow: 0 6px 12px -6px rgba(21,84,176,.8), inset 0 -2px 0 rgba(6,22,49,.2);
+}
+body.dept .ix-bar-fill.ix-warn { background: linear-gradient(180deg, #FFD9A8 0%, #F7A45F 35%, #E4741E 70%, #C75A09 100%); box-shadow: 0 6px 12px -6px rgba(199,90,9,.7), inset 0 -2px 0 rgba(6,22,49,.18); }
+
+/* ---------------------------------------------------------------------
+   10. TABELAS — cabeçalho claro, linhas que acendem ao passar o mouse
+   --------------------------------------------------------------------- */
+body.dept .area-main table thead th, body.dept .sr-tbl thead th, body.dept .fin-table thead th,
+body.dept .av-tbl thead th, body.dept .fn-tbl thead th, body.dept .cx-tbl thead th {
+  background: #F8FAFD; color: var(--bm3-muted);
+  font-family: var(--bm3-font-text); font-size: 11px; font-weight: 800; letter-spacing: .08em; text-transform: uppercase;
+  border-bottom: 1px solid var(--bm3-line); border-top-color: var(--bm3-line);
+}
+body.dept .area-main table tbody td { border-bottom-color: var(--bm3-line); color: var(--bm3-ink-2); }
+body.dept .area-main table tbody tr { transition: background-color .15s; }
+body.dept .area-main table tbody tr:hover > td { background: var(--bm3-blue-50); }
+body.dept .sr-tbl tbody tr:hover td, body.dept .fin-table tbody tr:hover td { background: var(--bm3-blue-50); }
+
+/* ---------------------------------------------------------------------
+   11. BOTÕES, CHIPS E PILLS
+   --------------------------------------------------------------------- */
+body.dept .sr-btn, body.dept .av-btn, body.dept .fn-btn, body.dept .pv-btn, body.dept .ac-btn,
+body.dept .pill, body.dept .action-btn {
+  border-radius: 11px; border-color: var(--bm3-line-2); font-family: var(--bm3-font-text);
+  transition: transform .18s var(--bm3-ease-out), background-color .2s, border-color .2s, color .2s, box-shadow .25s;
+}
+body.dept .sr-btn:hover, body.dept .av-btn:hover, body.dept .fn-btn:hover, body.dept .pv-btn:hover, body.dept .pill:hover { border-color: var(--bm3-blue-300); color: var(--bm3-blue-700); }
+body.dept .sr-btn:active, body.dept .av-btn:active, body.dept .fn-btn:active, body.dept .pv-btn:active,
+body.dept .ac-btn:active, body.dept .pill:active, body.dept .action-btn:active,
+body.dept .fx-fbtn:active, body.dept .av-dd-btn:active, body.dept .fx-flimpar:active { transform: scale(.97); }
+body.dept .sr-btn.active, body.dept .av-btn.active, body.dept .fn-btn.active, body.dept .pv-btn.active,
+body.dept .ac-btn.active, body.dept .pill.active {
+  background: var(--bm3-navy-900); border-color: var(--bm3-navy-900); color: #fff;
+  box-shadow: 0 8px 18px -10px rgba(10,36,71,.7);
+}
+body.dept .action-btn--success, body.dept .sr-btn.excel { background: var(--bm3-green-100); border-color: transparent; color: var(--bm3-green-700); }
+body.dept .search-input { border-radius: 12px; border-color: var(--bm3-line); background: rgba(11,27,48,.035); transition: box-shadow .25s, border-color .2s, background-color .2s; }
+body.dept .search-input:focus { background: #fff; border-color: var(--bm3-blue-500); box-shadow: 0 0 0 4px rgba(47,127,230,.12); }
+body.dept .sr-chip, body.dept .badge, body.dept .dias-badge { border-radius: 999px; font-weight: 800; }
+
+/* botões de ação genéricos das ferramentas (agentes/automações) */
+body.dept .btn-primary, body.dept .btn.btn-primary, body.dept .bm-btn-primary {
+  border-radius: 12px; transition: transform .18s var(--bm3-ease-out), box-shadow .25s, background-color .2s;
+}
+body.dept .btn-primary:active, body.dept .bm-btn-primary:active { transform: scale(.97); }
+
+/* ---------------------------------------------------------------------
+   12. BARRAS — as barras HTML que o motion.js reconhece ganham volume
+       (brilho em cima + sombra embaixo = "cilindro") e crescem ao entrar
+   --------------------------------------------------------------------- */
+.bm3-hbar { border-radius: 999px; box-shadow: inset 0 1.5px 0 rgba(255,255,255,.45), inset 0 -2px 0 rgba(6,22,49,.16), 0 4px 10px -6px rgba(11,27,48,.45); }
+.bm3-hbar.bm3-gloss { background-image: linear-gradient(180deg, rgba(255,255,255,.42) 0%, rgba(255,255,255,.08) 38%, rgba(0,0,0,0) 55%, rgba(0,0,0,.14) 100%) !important; }
+.bm3-vbar { box-shadow: inset 1.5px 0 0 rgba(255,255,255,.4), inset -3px 0 0 rgba(6,22,49,.14), 0 6px 12px -8px rgba(11,27,48,.5); }
+.bm3-vbar.bm3-gloss { background-image: linear-gradient(90deg, rgba(255,255,255,.34) 0%, rgba(255,255,255,.06) 42%, rgba(0,0,0,0) 55%, rgba(0,0,0,.16) 100%) !important; }
+.bm3-grow-x { transform-origin: left center; animation: bm3-grow-x 1.1s var(--bm3-ease-out) both; animation-delay: var(--bm3-d, 0ms); }
+.bm3-grow-y { transform-origin: 50% 100%; animation: bm3-grow-y 1s var(--bm3-ease-out) both; animation-delay: var(--bm3-d, 0ms); }
+.bm3-wait { transform: scaleX(0); }
+.bm3-wait.bm3-vbar { transform: scaleY(0); }
+
+/* ---------------------------------------------------------------------
+   13. PALETA Ctrl+K, BIO, BOTÕES FLUTUANTES, TOAST
+   --------------------------------------------------------------------- */
+.cmdk-overlay { background: rgba(5,19,41,.5); -webkit-backdrop-filter: blur(6px); backdrop-filter: blur(6px); }
+.cmdk-overlay.open { animation: bm3-fade .25s ease; }
+.cmdk { max-width: 660px; border-radius: 22px; border-color: var(--bm3-line); box-shadow: var(--bm3-shadow-3); animation: bm3-pop .35s var(--bm3-ease-out); }
+.cmdk-input-wrap { padding: 0 18px; min-height: 62px; }
+.cmdk-input { font-size: 17px; font-family: var(--bm3-font-text); }
+.cmdk-esc { font-family: var(--bm3-font-mono); border-radius: 6px; }
+.cmdk-group-label { font-size: 11px; font-weight: 800; letter-spacing: .14em; color: var(--bm3-muted); }
+.cmdk-item { border-radius: 12px; padding: 10px; transition: background-color .15s; }
+.cmdk-item:hover, .cmdk-item.active { background: var(--bm3-blue-50); color: var(--bm3-ink); }
+.cmdk-item .ci-icon { width: 36px; height: 36px; border-radius: 11px; background: var(--bm3-blue-100); color: var(--bm3-blue-700); }
+.cmdk-item .ci-name { font-size: 14.5px; font-weight: 700; }
+.cmdk-item .ci-cat { font-size: 12.5px; color: var(--bm3-muted); }
+.cmdk-item.active .ci-arrow { color: var(--bm3-blue-700); transform: translateX(2px); transition: transform .25s var(--bm3-ease-out); }
+
+.fab-stack .fab-btn {
+  width: 56px !important; height: 56px !important; background: var(--bm3-navy-900) !important;
+  box-shadow: 0 16px 30px -12px rgba(5,19,41,.7) !important;
+  transition: transform .25s var(--bm3-ease-out), box-shadow .25s, opacity .2s, background-color .2s !important;
+}
+.fab-stack .fab-btn:hover { transform: translateY(-3px) scale(1.04) !important; background: var(--bm3-navy-800) !important; }
+.fab-stack .fab-btn:active { transform: scale(.95) !important; }
+.fab-stack .fab-top:not(.show) { transform: translateY(8px) !important; }
+@media (max-width: 640px) { .fab-stack .fab-btn { width: 50px !important; height: 50px !important; } }
+
+#cp-widget, #cp-widget * { font-family: var(--bm3-font-text); }
+.cp-name { font-family: var(--bm3-font-display); }
+
+.bm3-toast {
+  position: fixed; left: 50%; bottom: 28px; z-index: 13000; transform: translate(-50%, 24px); opacity: 0; pointer-events: none;
+  display: flex; align-items: center; gap: 10px; max-width: calc(100% - 32px); padding: 12px 16px; border-radius: 14px;
+  background: var(--bm3-navy-950); color: #fff; font-size: 14px; font-weight: 600; box-shadow: var(--bm3-shadow-3);
+  transition: transform .45s var(--bm3-ease-out), opacity .3s;
+}
+.bm3-toast.show { transform: translate(-50%, 0); opacity: 1; }
+
+/* ---------------------------------------------------------------------
+   14. MOBILE — gaveta e barra inferior de vidro
+   --------------------------------------------------------------------- */
+@media (max-width: 767.98px) {
+  body.dept.dshell .area-sidebar { border-radius: 0 24px 24px 0; width: min(304px, 86vw); transition: transform .45s var(--bm3-ease-out); box-shadow: var(--bm3-shadow-3); }
+  body.dept.dshell .hd-burger { border-radius: 12px; border-color: var(--bm3-line); background: #fff; color: var(--bm3-ink); }
+  body.dept.dshell .bm-tabbar { background: rgba(255,255,255,.9); -webkit-backdrop-filter: saturate(1.6) blur(16px); backdrop-filter: saturate(1.6) blur(16px); border-top-color: var(--bm3-line); }
+  body.dept.dshell .bm-tabbar a { color: #8C99AD; transition: color .2s, transform .2s var(--bm3-ease-out); }
+  body.dept.dshell .bm-tabbar a:active { transform: scale(.92); }
+  body.dept.dshell .bm-tabbar a.active { color: var(--bm3-blue-600); }
+  body.dept.dshell .modulo-card { border-radius: 18px; border-color: var(--bm3-line); box-shadow: var(--bm3-shadow-1); }
+  body.dept.dshell .modulo-card .mc-name { font-family: var(--bm3-font-display); font-weight: 600; font-size: 15.5px; color: var(--bm3-ink); }
+  body.dept.dshell .modulo-card .mc-icon { border-radius: 14px; }
+  body.dept .fin-subhead h2 { font-size: 20px; letter-spacing: -.01em; }
+}
+
+/* ---------------------------------------------------------------------
+   15. MOVIMENTO — keyframes + estados que o portal-motion.js liga
+   --------------------------------------------------------------------- */
+@keyframes bm3-pop { from { opacity: 0; transform: translateY(-6px) scale(.97); } to { opacity: 1; transform: none; } }
+@keyframes bm3-fade { from { opacity: 0; } to { opacity: 1; } }
+@keyframes bm3-drop { from { opacity: 0; transform: translateY(-6px); } to { opacity: 1; transform: none; } }
+@keyframes bm3-live { from { transform: scale(.6); opacity: .9; } to { transform: scale(1.8); opacity: 0; } }
+@keyframes bm3-ring { 0%,100% { transform: rotate(0); } 15% { transform: rotate(14deg); } 30% { transform: rotate(-12deg); } 45% { transform: rotate(8deg); } 60% { transform: rotate(-5deg); } 75% { transform: rotate(2deg); } }
+@keyframes bm3-float { 0%,100% { translate: 0 0; } 50% { translate: 0 -10px; } }
+@keyframes bm3-rise { from { opacity: 0; transform: translateY(24px); } to { opacity: 1; transform: none; } }
+@keyframes bm3-rise3d { from { opacity: 0; transform: perspective(900px) translateY(34px) rotateX(-12deg); } to { opacity: 1; transform: none; } }
+@keyframes bm3-left { from { opacity: 0; transform: translateX(-14px); } to { opacity: 1; transform: none; } }
+@keyframes bm3-word { from { transform: translateY(115%); } to { transform: none; } }
+@keyframes bm3-grow-x { from { transform: scaleX(0); } to { transform: scaleX(1); } }
+@keyframes bm3-grow-y { from { transform: scaleY(0); } to { transform: scaleY(1); } }
+@keyframes bm3-shine { from { background-position: -160% 0; } to { background-position: 260% 0; } }
+
+/* revelação ao rolar: .bm3-rv = esperando; .bm3-in = entrando */
+.bm3-rv { opacity: 0; }
+.bm3-in { animation: bm3-rise .9s var(--bm3-ease-out) both; animation-delay: var(--bm3-d, 0ms); }
+.bm3-in.bm3-3d { animation-name: bm3-rise3d; transform-origin: 50% 100%; }
+.bm3-in.bm3-side { animation-name: bm3-left; animation-duration: .6s; }
+
+/* títulos que sobem palavra por palavra (máscara) */
+.bm3-words .bm3-w { display: inline-block; overflow: hidden; vertical-align: top; padding-bottom: .1em; margin-bottom: -.1em; }
+.bm3-words .bm3-w > span { display: inline-block; animation: bm3-word 1.15s var(--bm3-ease-out) both; animation-delay: var(--bm3-d, 0ms); }
+
+/* inclinação 3D (tilt) — só enquanto o ponteiro está em cima */
+.bm3-tilt { transition: transform .6s var(--bm3-ease-out), box-shadow .35s var(--bm3-ease-out), border-color .3s; }
+.bm3-tilt.is-hover {
+  transform: perspective(900px) rotateX(var(--bm3-rx, 0deg)) rotateY(var(--bm3-ry, 0deg)) translateY(-4px) !important;
+  transition: transform .12s linear, box-shadow .35s var(--bm3-ease-out), border-color .3s;
+}
+.bm3-tilt.is-hover .mc-icon, .bm3-tilt.is-hover .area-card-icon, .bm3-tilt.is-hover .kpi-icon,
+.bm3-tilt.is-hover .bm3-pop { transform: translateY(-2px) scale(1.07); }
+.bm3-spot.is-hover { background-image: radial-gradient(520px circle at var(--bm3-gx, 50%) var(--bm3-gy, 50%), rgba(47,127,230,.08), transparent 42%) !important; }
+
+/* números que contam: largura estável enquanto sobem */
+.bm3-counting { font-variant-numeric: tabular-nums; }
+
+/* impressão / exportação: nada escondido esperando rolagem */
+@media print {
+  .bm3-rv, .bm3-in { opacity: 1 !important; animation: none !important; }
+  .bm3-wait { transform: none !important; }
+}
+
+/* ---------------------------------------------------------------------
+   16. MOVIMENTO REDUZIDO — sistema operacional ou botão do rodapé
+   --------------------------------------------------------------------- */
+@media (prefers-reduced-motion: reduce) {
+  .bm3-rv { opacity: 1 !important; }
+  .bm3-in, .bm3-words .bm3-w > span, .bm3-grow-x, .bm3-grow-y, .bm3-glass,
+  .dv-hero-pill .dv-dot::after, .bm3-live::after, body.dept .fx-dw i::after { animation: none !important; }
+  .bm3-wait { transform: none !important; }
+  .bm3-tilt.is-hover { transform: none !important; }
+  .bm3-tab-thumb, .bm3-ink { transition: none !important; }
+}
+html.bm3-reduce .bm3-rv { opacity: 1 !important; }
+html.bm3-reduce .bm3-in, html.bm3-reduce .bm3-words .bm3-w > span, html.bm3-reduce .bm3-grow-x,
+html.bm3-reduce .bm3-grow-y, html.bm3-reduce .bm3-glass, html.bm3-reduce .dv-hero-pill .dv-dot::after,
+html.bm3-reduce .bm3-live::after, html.bm3-reduce body.dept .fx-dw i::after { animation: none !important; }
+html.bm3-reduce .bm3-wait { transform: none !important; }
+html.bm3-reduce .bm3-tilt.is-hover { transform: none !important; }
+html.bm3-reduce .bm3-tab-thumb, html.bm3-reduce .bm3-ink { transition: none !important; }

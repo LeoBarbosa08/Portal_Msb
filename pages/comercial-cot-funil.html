@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Funil de Cotações · Cotações · Biomedical</title>
+  <link rel="stylesheet" href="../styles.css?v=14">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../dash-v2.css?v=3">
+  <!-- o mesmo desenho do Funil de Vendas da Licitação (.fv-*) -->
+  <link rel="stylesheet" href="../licitacao-funil-vendas.css?v=5">
+  <!-- Login BLOQUEANTE: a tela chama /api/cot-casos no boot -->
+  <script src="https://unpkg.com/@azure/msal-browser@2.38.3/lib/msal-browser.min.js"></script>
+  <script src="../auth.js?v=7"></script>
+  <script>window._portalAuthLoaded = true;</script>
+  <!-- Layout v3 (Claude Design · animado): fonte + camada visual + motor de animações -->
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300..800&family=Manrope:wght@400..800&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../portal-v3.css?v=2">
+  <script src="../portal-motion.js?v=3" defer></script>
+  <!-- Tema claro/escuro (menu do avatar): marca o <html> antes de pintar + camada escura -->
+  <script>try{if(localStorage.getItem('bm-tema')==='escuro')document.documentElement.setAttribute('data-tema','escuro')}catch(e){}</script>
+  <link rel="stylesheet" href="../portal-tema.css?v=1">
+  <script src="../portal-tema.js?v=1" defer></script>
+  <!-- Celular (varredura 15/10/26): só vale em tela < 768px; no computador não se aplica -->
+  <link rel="stylesheet" href="../portal-mobile.css?v=1" media="(max-width: 767.98px)">
+  <script src="../portal-mobile.js?v=1" defer></script>
+  <link rel="stylesheet" href="../customer-service.css?v=3">
+  <link rel="stylesheet" href="../cotacoes.css?v=7">
+</head>
+<body class="dept cs-page cot-page" data-cot-pagina="funil">
+
+  <!-- HEADER GLOBAL -->
+  <header class="site-header">
+    <div class="container">
+      <a href="../index.html" class="brand" aria-label="Biomedical — Portal Corporativo">
+        <img class="brand-logo" src="/icons/icon-192.png" alt="Biomedical" onerror="this.dataset.failed='true'">
+        <span class="brand-fallback">Biomedical</span>
+      </a>
+      <nav class="header-nav">
+        <a href="../index.html">Início</a>
+        <a href="../index.html#areas">Áreas</a>
+        <a href="../index.html#sistemas">Sistemas</a>
+        <a href="../index.html#avisos">Avisos</a>
+        <a href="../index.html#contato">Contato</a>
+      </nav>
+    </div>
+  </header>
+
+  <div class="area-body">
+    <div class="container">
+      <div class="area-grid">
+
+        <aside class="area-sidebar">
+          <div class="sb-card">
+            <div class="sb-head">
+              <span class="sb-ic"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="8.5" cy="7" r="4"/><path d="M20 8v6"/><path d="M23 11h-6"/></svg></span>
+              <div><div class="sb-tt">Comercial</div><div class="sb-st">Departamento</div></div>
+            </div>
+            <nav>
+              <div class="sb-section">Navegação</div>
+              <a href="comercial.html">Visão geral</a>
+              <a href="comercial-cot-funil.html" class="active">Cotações</a>
+            </nav>
+          </div>
+          <a href="../index.html" class="sb-back"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></svg>Voltar ao Portal</a>
+        </aside>
+
+        <div class="area-main">
+
+          <div class="fx-head">
+            <div>
+              <div class="fx-bc"><span>Comercial</span><span>›</span><span>Cotações</span><span>›</span><span>Funil de conversão</span></div>
+              <h1 class="fx-title" data-recente="Cotações · Funil de conversão">Funil de Cotações</h1>
+            </div>
+            <div class="fx-head-right">
+              <span class="cs-live" id="cot-live"><i></i><span>Conectando…</span></span>
+              <a class="cs-btn cs-btn-sm cs-btn-p" href="comercial-cot-nova.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>Nova cotação</a>
+              <div class="fx-tabs">
+                <a href="comercial-cot-funil.html" class="active">Funil</a>
+                <a href="comercial-cot-casos.html#lista">Cotações</a>
+                <a href="comercial-cot-casos.html#quadro">Quadro</a>
+              </div>
+            </div>
+          </div>
+
+          <div class="fv-wrap cot-wrap" id="cot-app">
+            <div id="cot-faixa"></div>
+            <div class="cot-filtros" id="cot-filtros"></div>
+
+            <!-- ═══ HERÓI: em andamento + funil ═══ -->
+            <div class="fv-hero">
+              <div class="fv-navy">
+                <div class="fv-navy-k">Em andamento no funil</div>
+                <div class="fv-navy-v"><span class="n" id="h-val">—</span><span class="c" id="h-cnt">—</span></div>
+                <div class="fv-navy-tot" id="h-tot">—</div>
+                <div class="fv-split" id="h-split"></div>
+                <div class="fv-splegs" id="h-legs"></div>
+                <div class="fv-navy-foot">
+                  <div class="fv-nf" style="grid-area:a;"><div class="k">Viraram pedido</div><div class="v pos" id="h-gan">—</div><div class="s" id="h-gan-s">—</div></div>
+                  <div class="fv-nf" style="grid-area:b;"><div class="k">Não viraram</div><div class="v neg" id="h-per">—</div><div class="s" id="h-per-s">—</div></div>
+                  <div class="fv-nf" style="grid-area:c;"><div class="k">Taxa de conversão</div><div class="v" id="h-tx">—</div><div class="s" id="h-tx-s">—</div></div>
+                  <div class="fv-nf" style="grid-area:d;"><div class="k">Ticket médio</div><div class="v" id="h-tick">—</div><div class="s" id="h-tick-s">—</div></div>
+                </div>
+              </div>
+
+              <div class="fv-card fill">
+                <div class="fv-card-h">
+                  <div>
+                    <h3>Funil por fase</h3>
+                    <p class="fv-sub">onde cada cotação está hoje · período pela data de entrada · clique numa fase para ver as cotações dela na lista</p>
+                  </div>
+                  <div class="fv-seg" id="fn-met">
+                    <button type="button" data-met="v" class="on">Valor</button>
+                    <button type="button" data-met="n">Quantidade</button>
+                  </div>
+                </div>
+                <div class="fv-fn" id="fn-host"><div class="fv-empty">Carregando…</div></div>
+                <div class="fv-fn-stats">
+                  <div class="fv-st" style="grid-area:a;"><div class="k">Conversão em valor</div><div class="v pos" id="s-a">—</div><div class="s" id="s-a-s">—</div></div>
+                  <div class="fv-st" style="grid-area:b;"><div class="k">Até virar pedido</div><div class="v" id="s-b">—</div><div class="s" id="s-b-s">—</div></div>
+                  <div class="fv-st" style="grid-area:c;"><div class="k">Prazo vencendo</div><div class="v" id="s-c">—</div><div class="s" id="s-c-s">—</div></div>
+                  <div class="fv-st" style="grid-area:d;"><div class="k">Aguardando o PI</div><div class="v" id="s-d">—</div><div class="s" id="s-d-s">—</div></div>
+                </div>
+              </div>
+            </div>
+
+            <!-- ═══ ATÉ ONDE CHEGAM ═══ -->
+            <div class="fv-card">
+              <div class="fv-card-h">
+                <div>
+                  <h3>Até onde as cotações chegam</h3>
+                  <p class="fv-sub">das cotações que entraram no período, quantas tiveram a proposta enviada ao comprador, viraram pedido e já foram lançadas no Dynamics pelo PI</p>
+                </div>
+              </div>
+              <div class="cot-conv" id="conv-host"></div>
+            </div>
+
+            <!-- ═══ SEMANA A SEMANA ═══ -->
+            <div class="fv-card">
+              <div class="fv-card-h">
+                <div>
+                  <h3>Semana a semana</h3>
+                  <p class="fv-sub">o que <b class="and">entrou</b>, o que <b class="gan">virou pedido</b> e o que foi <b class="per">perdido ou cancelado</b> em cada semana (as 12 últimas) · os demais filtros valem</p>
+                </div>
+                <div class="fv-seg" id="sem-met">
+                  <button type="button" data-met="v" class="on">Valor</button>
+                  <button type="button" data-met="n">Quantidade</button>
+                </div>
+              </div>
+              <div class="fv-mes largo" id="sem-host"><div class="fv-empty">Carregando…</div></div>
+              <div class="cot-tw"><table class="cot-sem-tb" id="sem-tb"></table></div>
+            </div>
+
+            <!-- ═══ RECORTES ═══ -->
+            <div class="fv-row2">
+              <div class="fv-card fill">
+                <div class="fv-card-h"><div><h3>Por portal</h3><p class="fv-sub"><b class="and">em andamento</b> · <b class="gan">viraram pedido</b> · <b class="per">não viraram</b> · conversão = pedidos ÷ encerradas · clique para filtrar</p></div></div>
+                <div class="fv-bars" id="portal-host"><div class="fv-empty">Carregando…</div></div>
+              </div>
+              <div class="fv-card fill">
+                <div class="fv-card-h"><div><h3>Por responsável</h3><p class="fv-sub">quem está acompanhando cada cotação · mesma leitura de cores · clique para filtrar</p></div></div>
+                <div class="fv-bars" id="dono-host"><div class="fv-empty">Carregando…</div></div>
+              </div>
+            </div>
+            <div class="fv-row2">
+              <div class="fv-card fill">
+                <div class="fv-card-h"><div><h3>Por que não viraram pedido</h3><p class="fv-sub">motivo das perdidas, vencidas e canceladas do período</p></div></div>
+                <div class="fv-bars" id="motivo-host"><div class="fv-empty">Carregando…</div></div>
+              </div>
+              <div class="fv-card fill">
+                <div class="fv-card-h"><div><h3>Clientes</h3><p class="fv-sub">os que mais receberam cotação no período, pelo valor cotado</p></div></div>
+                <div class="fv-bars" id="cli-host"><div class="fv-empty">Carregando…</div></div>
+              </div>
+            </div>
+
+            <!-- ═══ LISTA ═══ -->
+            <div class="fv-card">
+              <div class="fv-card-h">
+                <div>
+                  <h3 id="ls-tit">Cotações do período</h3>
+                  <p class="fv-sub" id="ls-sub">clique numa cotação para ver a ficha dela</p>
+                </div>
+                <label class="fv-busca"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg><input type="search" id="ls-busca" placeholder="Buscar cliente, nº, portal…" autocomplete="off" aria-label="Buscar na lista de cotações"></label>
+              </div>
+              <div class="cot-lista-scroll"><table class="cot-lista-tb" id="ls-tb"></table></div>
+            </div>
+          </div>
+
+        </div><!-- /area-main -->
+      </div><!-- /area-grid -->
+    </div><!-- /container -->
+  </div><!-- /area-body -->
+
+  <!-- FOOTER -->
+  <footer class="site-footer">
+    <div class="container">
+      <div class="bm-footer-bottom">
+        <span>© <span id="year"></span> Biomedical · Portal Corporativo Interno</span>
+        <span class="bm-footer-meta">Comercial · Cotações</span>
+      </div>
+    </div>
+  </footer>
+
+  <dialog class="cs-dlg" id="cs-dlg"></dialog>
+  <div class="cs-toasts" id="cs-toasts" aria-live="polite"></div>
+
+  <script src="../script.js?v=8"></script>
+  <script src="../nav-sidebar.js?v=60"></script>
+  <script src="../cotacoes-base.js?v=6"></script>
+  <script src="../cotacoes-ficha.js?v=3"></script>
+  <script src="../cotacoes-funil.js?v=3"></script>
+</body>
+</html>

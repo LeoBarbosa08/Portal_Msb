@@ -1,0 +1,604 @@
+﻿<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Ruptura de Estoque · Estoque · Biomedical</title>
+  <link rel="stylesheet" href="../styles.css?v=14">
+  <script src="https://unpkg.com/@azure/msal-browser@2.38.3/lib/msal-browser.min.js"></script>
+<script src="../pbi-throttle.js?v=3"></script>
+<script src="../pbi-modelo.js?v=2"></script>
+  <!-- Layout v3 (Claude Design · animado): fonte + camada visual + motor de animações -->
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300..800&family=Manrope:wght@400..800&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../portal-v3.css?v=2">
+  <script src="../portal-motion.js?v=3" defer></script>
+  <!-- Tema claro/escuro (menu do avatar): marca o <html> antes de pintar + camada escura -->
+  <script>try{if(localStorage.getItem('bm-tema')==='escuro')document.documentElement.setAttribute('data-tema','escuro')}catch(e){}</script>
+  <link rel="stylesheet" href="../portal-tema.css?v=1">
+  <script src="../portal-tema.js?v=1" defer></script>
+  <!-- Celular (varredura 15/10/26): só vale em tela < 768px; no computador não se aplica -->
+  <link rel="stylesheet" href="../portal-mobile.css?v=1" media="(max-width: 767.98px)">
+  <script src="../portal-mobile.js?v=1" defer></script>
+</head>
+<body class="dept">
+
+  <header class="site-header"><div class="container">
+    <a href="../index.html" class="brand" aria-label="Biomedical — Portal Corporativo"><img class="brand-logo" src="/icons/icon-192.png" alt="Biomedical" onerror="this.dataset.failed='true'"><span class="brand-fallback">Biomedical</span></a>
+    <nav class="header-nav"><a href="../index.html">Início</a><a href="../index.html#areas">Áreas</a><a href="../index.html#sistemas">Sistemas</a><a href="../index.html#avisos">Avisos</a><a href="../index.html#contato">Contato</a></nav>
+  </div></header>
+
+  <!-- cabeçalho movido para .fx-head (abas de submódulo, Claude Design) -->
+
+  <div class="area-body"><div class="container"><div class="area-grid">
+    <aside class="area-sidebar">
+      <div class="sb-card"><div class="sb-head"><span class="sb-ic"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="2" width="20" height="8" rx="2"/><rect x="2" y="14" width="20" height="8" rx="2"/><line x1="6" y1="6" x2="6.01" y2="6"/><line x1="6" y1="18" x2="6.01" y2="18"/></svg></span><div><div class="sb-tt">Estoque</div><div class="sb-st">Departamento</div></div></div><nav></nav></div>
+      <a href="../index.html" class="sb-back"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></svg>Voltar ao Portal</a>
+    </aside>
+
+    <div class="area-main">
+          <!-- ═══ Cabeçalho + abas de submódulo (Claude Design) ═══ -->
+          <style>
+            .fx-head{display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap;padding:22px 0 4px;}
+            .fx-bc{display:flex;align-items:center;gap:6px;font-size:12px;color:#7C93A8;}
+            .fx-title{margin:4px 0 0;font-size:23px;font-weight:800;letter-spacing:-0.5px;color:#0A2E5C;}
+            .fx-head-right{display:flex;align-items:center;gap:12px;flex-wrap:wrap;}
+            .fx-tabs{display:flex;align-items:center;background:#FFFFFF;border:1px solid #E3EAF2;border-radius:11px;padding:3px;flex-wrap:wrap;}
+            .fx-tabs a,.fx-tabs span{padding:8px 14px;border-radius:8px;font-size:12.5px;font-weight:600;color:#5B7189;text-decoration:none;white-space:nowrap;}
+            .fx-tabs a:hover{color:#0A2E5C;}
+            .fx-tabs .active{background:#0A2E5C;font-weight:700;color:#fff;}
+            .fx-filters{display:flex;align-items:center;gap:10px;flex-wrap:wrap;padding:12px 14px;background:#fff;border:1px solid #E3EAF2;border-radius:12px;}
+            .fx-fdiv{width:1px;height:24px;background:#E3EAF2;}
+            .fx-fbtn{display:inline-flex;align-items:center;gap:8px;padding:8px 12px;border-radius:9px;border:1px solid #E3EAF2;background:#fff;font-size:12.5px;font-weight:600;color:#33495E;cursor:pointer;font-family:inherit;white-space:nowrap;}
+            .fx-fbtn:hover{border-color:#1272C4;}
+            .fx-fbtn .fx-fk{font-weight:700;color:#93A7BA;}
+            .fx-fbtn svg{flex-shrink:0;}
+            .fx-flimpar{margin-left:auto;display:inline-flex;align-items:center;gap:6px;padding:8px 12px;border-radius:9px;border:none;background:transparent;font-size:12.5px;font-weight:600;color:#5B7189;cursor:pointer;font-family:inherit;white-space:nowrap;}
+            .fx-flimpar:hover{color:#B54545;}
+            .fxdd{position:relative;display:inline-block;}
+            .fxdd-panel{position:absolute;z-index:50;top:calc(100% + 6px);left:0;display:none;flex-direction:column;background:#fff;border:1px solid #E3EAF2;border-radius:12px;box-shadow:0 10px 30px rgba(10,46,92,0.14);padding:12px;min-width:210px;}
+            .fxdd.open .fxdd-panel{display:flex;}
+            .fxdd-sec{font-size:10.5px;font-weight:800;letter-spacing:0.8px;text-transform:uppercase;color:#93A7BA;margin:2px 2px 8px;}
+            .fxdd-sec.mt{margin-top:12px;}
+            .fxdd-hint{font-size:11px;color:#93A7BA;margin-top:10px;}
+            /* esconde a faixa de cards de sub-modulos (estatica OU injetada pelo nav-sidebar.js) — navegacao agora pelas abas */
+            .area-main section:has(.modulo-card){display:none !important;}
+            /* periodo largo/horizontal p/ dropdowns com botoes de mes */
+            #fx-periodo .fxdd-panel{width:720px;max-width:calc(100vw - 48px);}
+            @media(max-width:1100px){#fx-periodo .fxdd-panel{width:560px;}}
+            #fx-periodo .fxdd-panel .sr-row,#fx-periodo .fxdd-panel .av-row,#fx-periodo .fxdd-panel .pv-row,#fx-periodo .fxdd-panel .fn-row-f{max-width:none !important;gap:6px !important;row-gap:8px !important;}
+            #fx-periodo .fxdd-panel .sr-btn,#fx-periodo .fxdd-panel .av-btn,#fx-periodo .fxdd-panel .pv-btn{padding:5px 9px;}
+            #fx-periodo .fxdd-panel .sr-divider:first-of-type,#fx-periodo .fxdd-panel .av-divider:first-of-type,#fx-periodo .fxdd-panel .pv-divider:first-of-type{flex-basis:100%;width:100%;height:0 !important;border:0 !important;background:transparent !important;margin:2px 0 0 !important;}
+            @media(max-width:767.98px){
+              .fx-head{align-items:flex-start;padding-top:14px;}
+              .fx-title{font-size:17px;}
+              .fx-head-right{width:100%;}
+              .fx-tabs{width:100%;flex-wrap:nowrap;overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none;background:#F0F4F9;border:none;}
+              .fx-tabs::-webkit-scrollbar{display:none;}
+              .fx-tabs a,.fx-tabs span{flex:0 0 auto;}
+              .fx-filters{flex-wrap:nowrap;overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none;}
+              .fx-filters::-webkit-scrollbar{display:none;}
+              .fx-filters>*{flex-shrink:0;}
+              .fx-flimpar{margin-left:8px;}
+            }
+          </style>
+
+          <div class="fx-head">
+            <div>
+              <div class="fx-bc"><span>Estoque</span><span>›</span><span>Gestão de Estoque</span></div>
+              <h1 class="fx-title">Ruptura de Estoque</h1>
+            </div>
+            <div class="fx-head-right">
+              <div class="fx-tabs">
+                <a href="estoque-gestao.html">Visão Geral</a>
+                <a href="estoque-saldo.html">Saldo de Estoque</a>
+                <span class="active">Ruptura de Estoque</span>
+                <a href="estoque-validade-curta.html">Validade Curta</a>
+                <a href="estoque-movimentacoes.html">Movimentações</a>
+              </div>
+            </div>
+          </div>
+          <script>
+          /* barra de filtros fx — dropdowns compactos (Claude Design) */
+          (function(){
+            window.fxTogglePanel = function(btn){
+              var dd = btn.closest('.fxdd'); if(!dd) return;
+              var open = dd.classList.contains('open');
+              document.querySelectorAll('.fxdd.open').forEach(function(d){ d.classList.remove('open'); });
+              if(!open) dd.classList.add('open');
+            };
+            function txt(id,v){ var el=document.getElementById(id); if(el) el.textContent=v; }
+            window.fxSyncLabels = function(){
+              var per = document.getElementById('fx-periodo');
+              if(per){
+                var mesBtn = per.querySelector('.fxdd-panel button.active');
+                var anoBtns = per.querySelectorAll('.fxdd-panel button.active-green');
+                var ano = anoBtns.length===1 ? anoBtns[0].textContent.trim() : (anoBtns.length>1 ? anoBtns.length+' anos' : '');
+                var mes = mesBtn ? mesBtn.textContent.trim() : '';
+                txt('fx-periodo-lbl', ([ano, (mes && !/^todos$/i.test(mes) ? mes : '')].filter(Boolean).join(' · ')) || 'Todos');
+              }
+              [['fx-empresa','fx-empresa-lbl'],['fx-tipocli','fx-tipocli-lbl']].forEach(function(p){
+                var dd=document.getElementById(p[0]); if(!dd) return;
+                var b=dd.querySelector('.fxdd-panel button.active,.fxdd-panel button.active-green');
+                txt(p[1], b ? b.textContent.trim() : 'Todos');
+              });
+            };
+            window.fxLimpar = function(){
+              document.querySelectorAll('.fx-filters [data-fxdefault]').forEach(function(b){ b.click(); });
+              setTimeout(window.fxSyncLabels, 0);
+            };
+            document.addEventListener('DOMContentLoaded', function(){
+              document.querySelectorAll('.fx-filters .fxdd-panel').forEach(function(p){
+                p.addEventListener('click', function(e){ e.stopPropagation(); setTimeout(window.fxSyncLabels, 0); });
+              });
+              document.addEventListener('click', function(e){ if(e.target.closest && e.target.closest('.fxdd')) return; document.querySelectorAll('.fxdd.open').forEach(function(d){ d.classList.remove('open'); }); });
+              window.fxSyncLabels();
+            });
+          })();
+          </script>
+
+      <style>
+        .cx-wrap{padding:8px 0 48px;display:flex;flex-direction:column;gap:14px;}
+        .cx-card{background:#fff;border:1px solid var(--border);border-radius:var(--radius);padding:14px 16px;}
+        .cx-kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;}
+        @media(max-width:880px){.cx-kpis{grid-template-columns:repeat(2,1fr);}.cx-bars{grid-template-columns:1fr!important;}}
+        .cx-kpi{background:#fff;border:1px solid var(--border);border-radius:var(--radius);padding:16px 18px;position:relative;overflow:hidden;}
+        .cx-kpi::before{content:'';position:absolute;left:0;top:0;bottom:0;width:4px;background:var(--danger,#b91c1c);}
+        .cx-kpi.b::before{background:var(--bm-blue-600);}
+        .cx-kpi.w::before{background:#b45309;}
+        .cx-kpi.g::before{background:var(--bm-green-600);}
+        .cx-kpi-l{font-size:10.5px;font-weight:600;text-transform:uppercase;letter-spacing:.05em;color:var(--text-3);margin-bottom:6px;}
+        .cx-kpi-v{font-family:var(--font-display);font-size:23px;font-weight:800;color:var(--bm-blue-900);line-height:1;}
+        .cx-panel{background:#fff;border:1px solid var(--border);border-radius:var(--radius);padding:16px 18px;}
+        .cx-panel h3{font-size:14px;font-weight:700;color:var(--text);margin:0 0 4px;}
+        .cx-panel .cx-sub{font-size:11.5px;color:var(--text-3);margin-bottom:14px;}
+        .cx-bars{display:grid;grid-template-columns:1.4fr 1fr;gap:14px;}
+        .cx-chart-wrap{position:relative;height:320px;}
+        .cx-tbl-wrap{overflow:auto;border:1px solid var(--border);border-radius:10px;max-height:560px;}
+        table.cx-tbl{width:100%;border-collapse:collapse;font-size:12.5px;}
+        table.cx-tbl thead th{position:sticky;top:0;z-index:3;background:var(--bm-blue-900);color:rgba(255,255,255,.95);text-align:right;padding:9px 14px;font-size:10.5px;font-weight:600;letter-spacing:.02em;text-transform:uppercase;white-space:nowrap;cursor:pointer;user-select:none;}
+        table.cx-tbl thead th.dim{text-align:left;}
+        table.cx-tbl tbody td{padding:8px 14px;border-bottom:1px solid var(--border);text-align:right;font-variant-numeric:tabular-nums;color:var(--text-2);white-space:nowrap;}
+        table.cx-tbl tbody td.dim{text-align:left;color:var(--text);font-weight:600;}
+        table.cx-tbl tbody td.cod{font-family:var(--font-mono,monospace);font-size:11px;color:var(--text-3);text-align:left;}
+        table.cx-tbl tbody tr:hover td{background:var(--bm-blue-50);}
+        table.cx-tbl tbody tr.cx-total td{background:var(--bm-blue-900);color:#fff;font-weight:800;border-top:2px solid var(--border-2);position:sticky;bottom:0;}
+        .cx-rup-badge{display:inline-block;padding:2px 8px;border-radius:999px;font-size:11px;font-weight:700;background:#FEE2E2;color:#b91c1c;}
+        .search-wrap{position:relative;}
+        .search-wrap svg{position:absolute;left:10px;top:50%;transform:translateY(-50%);color:var(--text-4);}
+        .search-input{padding:7px 10px 7px 32px;border:1px solid var(--border);border-radius:8px;font-size:12.5px;font-family:var(--font-body);width:260px;box-sizing:border-box;}
+        .av-toolbar{display:flex;gap:8px;flex-wrap:wrap;align-items:center;}
+        .av-dd{position:relative;display:inline-block;}
+        .av-dd-btn{padding:7px 12px;border-radius:8px;border:1px solid var(--border);background:#fff;font-size:12.5px;font-weight:600;color:var(--text-2);cursor:pointer;display:inline-flex;align-items:center;gap:10px;min-width:150px;justify-content:space-between;}
+        .av-dd-btn:hover{border-color:var(--bm-blue-500);}
+        .av-dd-btn.has{border-color:var(--bm-blue-600);background:var(--bm-blue-50);color:var(--bm-blue-800);}
+        .av-dd-btn .cnt{background:var(--bm-blue-600);color:#fff;border-radius:999px;padding:0 7px;font-size:11px;}
+        .av-dd-panel{position:absolute;z-index:40;top:calc(100% + 4px);left:0;width:280px;max-height:340px;display:none;flex-direction:column;background:#fff;border:1px solid var(--border);border-radius:10px;box-shadow:var(--shadow);overflow:hidden;}
+        .av-dd.open .av-dd-panel{display:flex;}
+        .av-dd-search{padding:8px;border-bottom:1px solid var(--border);}
+        .av-dd-search input{width:100%;padding:6px 8px;border:1px solid var(--border);border-radius:6px;font-size:12px;font-family:var(--font-body);box-sizing:border-box;}
+        .av-dd-list{overflow-y:auto;padding:4px;}
+        .av-dd-opt{display:flex;align-items:center;gap:8px;padding:6px 8px;border-radius:6px;font-size:12.5px;color:var(--text-2);cursor:pointer;}
+        .av-dd-opt:hover{background:var(--bm-blue-50);}
+        .av-dd-foot{display:flex;justify-content:space-between;padding:6px 10px;border-top:1px solid var(--border);}
+        .av-dd-foot button{font-size:11.5px;color:var(--bm-blue-700);background:none;border:none;cursor:pointer;font-weight:600;}
+        .cx-btn{padding:5px 13px;border-radius:6px;border:1px solid var(--border);background:#fff;font-size:12.5px;font-weight:600;color:var(--text-2);cursor:pointer;font-family:var(--font-body);}
+        /* alternância de visão + exportar */
+        .cx-viewtoggle{display:inline-flex;border:1px solid var(--border);border-radius:8px;overflow:hidden;}
+        .cx-vbtn{padding:7px 14px;font-size:12.5px;font-weight:600;color:var(--text-2);background:#fff;border:none;cursor:pointer;font-family:var(--font-body);}
+        .cx-vbtn.active{background:var(--bm-blue-900);color:#fff;}
+        .cx-vbtn+.cx-vbtn{border-left:1px solid var(--border);}
+        .cx-export{display:inline-flex;align-items:center;gap:6px;padding:7px 13px;border-radius:8px;border:1px solid var(--bm-green-600,#16a34a);background:#f0fdf4;color:#15803d;font-size:12.5px;font-weight:700;cursor:pointer;font-family:var(--font-body);}
+        .cx-export:hover{background:#dcfce7;}
+        /* matriz (drill Família › Linha › Produto) */
+        table.cx-tbl tbody td.dim .cx-tg{cursor:pointer;display:inline-block;width:14px;color:var(--bm-blue-600);font-weight:700;}
+        table.cx-tbl tbody tr.cx-mx-row[data-lvl="0"] td.dim{font-weight:700;color:var(--text);}
+        table.cx-tbl tbody tr.cx-mx-row[data-lvl="1"] td.dim{font-weight:600;color:var(--text-2);}
+        table.cx-tbl tbody tr.cx-mx-row[data-lvl="2"] td.dim{font-weight:500;color:var(--text-2);}
+        .cod-inline{font-family:var(--font-mono,monospace);font-size:10.5px;color:var(--text-4);margin-left:6px;}
+      </style>
+
+      <div class="cx-wrap">
+
+        <div id="cx-banner" style="padding:11px 16px;border-radius:8px;font-size:13px;display:flex;align-items:center;gap:10px;background:#EFF6FF;border:1px solid #BFDBFE;color:#1E40AF;">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+          Conectando ao Power BI…
+        </div>
+
+        <div class="fx-filters"><div class="av-toolbar" id="cx-toolbar" style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;"></div></div>
+
+        <div class="cx-kpis">
+          <div class="cx-kpi"><div class="cx-kpi-l">Valor de Ruptura</div><div class="cx-kpi-v" id="cx-k-val">—</div></div>
+          <div class="cx-kpi w"><div class="cx-kpi-l">Itens em Ruptura</div><div class="cx-kpi-v" id="cx-k-itens">—</div></div>
+          <div class="cx-kpi b"><div class="cx-kpi-l">Qtde em Ruptura</div><div class="cx-kpi-v" id="cx-k-qrup">—</div></div>
+          <div class="cx-kpi g"><div class="cx-kpi-l">Qtde Disponível</div><div class="cx-kpi-v" id="cx-k-qdisp">—</div></div>
+        </div>
+
+        <div class="cx-bars">
+          <div class="cx-panel"><h3>Principais itens em ruptura</h3><div class="cx-sub">Top 12 produtos por valor de ruptura</div><div class="cx-chart-wrap"><canvas id="cx-ch-top"></canvas></div></div>
+          <div class="cx-panel"><h3>Ruptura por Família</h3><div class="cx-sub">Valor de ruptura por família</div><div class="cx-chart-wrap"><canvas id="cx-ch-fam"></canvas></div></div>
+        </div>
+
+        <div class="cx-bars">
+          <div class="cx-panel" id="cx-panel-estr"><h3>Valor de Ruptura por Estratégia</h3><div class="cx-sub">Maiores valores de ruptura por estratégia</div><div class="cx-chart-wrap"><canvas id="cx-ch-estr"></canvas></div></div>
+          <div class="cx-panel"><h3>Valor de Ruptura por Linha</h3><div class="cx-sub">Maiores valores de ruptura por linha</div><div class="cx-chart-wrap"><canvas id="cx-ch-lin"></canvas></div></div>
+        </div>
+
+        <div class="cx-panel">
+          <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;margin-bottom:12px;">
+            <div><h3 style="margin:0;">Itens em ruptura · consulta</h3><div class="cx-sub" style="margin:0;" id="cx-tbl-info">—</div></div>
+            <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
+              <div class="cx-viewtoggle">
+                <button type="button" class="cx-vbtn active" data-view="tabular">Tabular</button>
+                <button type="button" class="cx-vbtn" data-view="matriz">Matriz</button>
+              </div>
+              <button type="button" class="cx-export" id="cx-export" title="Exportar a lista para Excel (.csv)"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>Exportar Excel</button>
+              <div class="search-wrap"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg><input class="search-input" id="cx-search" type="text" placeholder="Buscar produto, código, família…"></div>
+            </div>
+          </div>
+          <!-- visão TABULAR -->
+          <div class="cx-tbl-wrap" id="cx-tab-wrap">
+            <table class="cx-tbl" id="cx-tab-table">
+              <thead><tr>
+                <th class="dim" data-k="cod">Cód.</th><th class="dim" data-k="nome">Produto</th><th class="dim" data-k="familia">Família</th><th class="dim" data-k="linha">Linha</th>
+                <th data-k="qmov">Qtd Movimentada</th><th data-k="qrup">Qtde Ruptura</th><th data-k="qdisp">Disponível</th><th data-k="preco">Preço Unit.</th><th data-k="val">Valor de Ruptura</th>
+              </tr></thead>
+              <tbody id="cx-tbody"><tr><td colspan="9" style="padding:20px;text-align:center;color:var(--text-3);">Carregando…</td></tr></tbody>
+            </table>
+          </div>
+          <!-- visão MATRIZ (Família › Linha › Produto/Código) -->
+          <div class="cx-tbl-wrap" id="cx-mx-wrap" style="display:none;">
+            <table class="cx-tbl" id="cx-mx-table">
+              <thead><tr>
+                <th class="dim">Família › Linha › Produto</th>
+                <th>Qtd Movimentada</th><th>Qtde Ruptura</th><th>Disponível</th><th>Valor de Ruptura</th>
+              </tr></thead>
+              <tbody id="cx-mx-tbody"><tr><td colspan="5" style="padding:20px;text-align:center;color:var(--text-3);">Carregando…</td></tr></tbody>
+            </table>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </div></div></div>
+
+  <script src="../script.js?v=8"></script>
+  <script src="../nav-sidebar.js?v=52"></script>
+  <script src="../dw-pill.js?v=4"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+  <script>
+  // ================================================================
+  // RUPTURA DE ESTOQUE — tabela 'TabelaUnicaRuptura' (dataset auto-descoberto no workspace)
+  // ================================================================
+  const PBI_CFG = {
+    clientId:'129978ce-ff3b-431d-98b3-66a1bcb766b1', tenantId:'c311c9e6-6017-42a9-b306-4057beba5786',
+    workspaceId:'8535f0a1-8dc6-4da0-93ce-bf20c1c14e27',
+    scopes:['https://analysis.windows.net/powerbi/api/Dataset.Read.All','https://analysis.windows.net/powerbi/api/Report.Read.All']
+  };
+  let _pbi=null,_token=null,_dsId=null,_ready=false;
+  // token/dataset expostos p/ o dw-pill.js ler o histórico de refresh do dataset
+  window.bmDwInfo = () => ({ token:_token, ws:PBI_CFG.workspaceId, ds:_dsId });
+  const DS_CACHE_KEY='bio_ds_ruptura';
+
+  const FATO = "'TabelaUnicaRuptura'";
+  // CALCULATE força o context transition — sem ele o SUM ignora o grupo do SUMMARIZE e repete o total
+  const M_VAL  = `CALCULATE(SUM(${FATO}[Soma Ruptura]))`;          // valor de ruptura (R$)
+  const M_QRUP = `CALCULATE(SUM(${FATO}[Qtde Ruptura]))`;
+  const M_QDISP= `CALCULATE(SUM(${FATO}[QtdDisponivel]))`;
+  const M_QMOV = `CALCULATE(SUM(${FATO}[QtdMov]))`;
+  const M_PRECO= `CALCULATE(SUM(${FATO}[MediaPrecoUnitario]))`;     // BI usa "Soma de MediaPrecoUnitario" (SUM, não média)
+  const COL_COD="'TabelaUnicaRuptura'[Cód. do produto]", COL_PROD="'TabelaUnicaRuptura'[Produto]",
+        COL_FAM="'TabelaUnicaRuptura'[Família]", COL_LIN="'TabelaUnicaRuptura'[Linha]";
+
+  const FILTROS = [
+    { id:'familia', label:'Família', col:COL_FAM, re:/\[Família\]/i },
+    { id:'linha',   label:'Linha',   col:COL_LIN, re:/\[Linha\]/i }
+  ];
+  window._avSel = {}; FILTROS.forEach(f => window._avSel[f.id] = new Set());
+
+  const avDax = s => String(s==null?'':s).replace(/"/g,'""');
+  const avEsc = s => String(s==null?'':s).replace(/"/g,'&quot;');
+  const escH  = s => String(s==null?'':s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+  const _numN = x => (x==null||x===''||x==='-'||isNaN(Number(x)))?null:Number(x);
+  const _v = (r,re)=>{ const k=Object.keys(r).find(x=>re.test(x)); return k?r[k]:null; };
+  const setTxt=(id,t)=>{const el=document.getElementById(id);if(el)el.textContent=t;};
+  const fBRL = v => v==null?'—':'R$ '+Number(v).toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2});
+  function fMi(v){ if(v==null)return '—'; const a=Math.abs(v); if(a>=1e6) return 'R$ '+(v/1e6).toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2})+' Mi'; if(a>=1e3) return 'R$ '+(v/1e3).toLocaleString('pt-BR',{maximumFractionDigits:1})+'k'; return fBRL(v); }
+  const fNUM = v => v==null?'—':Number(v).toLocaleString('pt-BR',{maximumFractionDigits:2});
+  const fINT = v => v==null?'—':Number(v).toLocaleString('pt-BR',{maximumFractionDigits:0});
+
+  async function pbiConnect(){
+    if (window._msalAuth){ _pbi = window._msalAuth; }
+    else { _pbi = new msal.PublicClientApplication({ auth:{ clientId:PBI_CFG.clientId, authority:`https://login.microsoftonline.com/${PBI_CFG.tenantId}`, redirectUri:window.location.origin+'/' }, cache:{ cacheLocation:'localStorage', storeAuthStateInCookie:true } }); if(_pbi.initialize) await _pbi.initialize(); await _pbi.handleRedirectPromise().catch(()=>{}); }
+    const accounts = _pbi.getAllAccounts();
+    try { const r = await _pbi.acquireTokenSilent({ scopes:PBI_CFG.scopes, account:accounts[0] }); _token = r.accessToken; }
+    catch { const r = await _pbi.loginPopup({ scopes:PBI_CFG.scopes }); _token = r.accessToken; }
+    const acc = _pbi.getAllAccounts()[0]; if (acc && typeof window.setSidebarUser==='function') window.setSidebarUser(acc.name||acc.username, acc.username);
+  }
+  function _pbiErr(text){ try { const j=JSON.parse(text); const e=j.error||{}; const pe=e['pbi.error']||{}; const det=(pe.details||[]).map(d=>d.detail&&d.detail.value).filter(Boolean).join(' | '); return det||e.message||pe.code||text.substring(0,200); } catch { return text.substring(0,200); } }
+  async function execQuery(dsId, dax){
+    const body=JSON.stringify({queries:[{query:dax}],serializerSettings:{includeNulls:true}});
+    const r=await PBIModelo.post(PBI_CFG.workspaceId, dsId, {method:'POST',headers:{Authorization:`Bearer ${_token}`,'Content-Type':'application/json'},body});
+    const text=await r.text(); if(!r.ok) throw new Error(`HTTP ${r.status}: ${_pbiErr(text)}`);
+    const d=JSON.parse(text); if(d.error) throw new Error(_pbiErr(text));
+    return d.results[0].tables[0].rows;
+  }
+  async function resolveDataset(){
+    const falhas = [];
+    const cached = localStorage.getItem(DS_CACHE_KEY);
+    if (cached){ try { await execQuery(cached, PBIModelo.sonda(FATO)); return cached; } catch(e){ falhas.push(['modelo da última visita', e]); localStorage.removeItem(DS_CACHE_KEY); } }
+    const list = await PBIModelo.candidatos(PBI_CFG.workspaceId, _token);
+    for (const ds of list){ if (ds.id===cached) continue; try { await execQuery(ds.id, PBIModelo.sonda(FATO)); localStorage.setItem(DS_CACHE_KEY, ds.id); return ds.id; } catch(e){ falhas.push([ds.name, e]); } }
+    throw PBIModelo.motivo(FATO, falhas);
+  }
+  async function pbiQuery(dax){ if(!_dsId) _dsId = await resolveDataset(); return execQuery(_dsId, dax); }
+
+  function avBase(){
+    const base = [];
+    FILTROS.forEach(d => { const vals=[...window._avSel[d.id]]; if (vals.length) base.push(`${d.col} IN { ${vals.map(v=>'"'+avDax(v)+'"').join(', ')} }`); });
+    return base;
+  }
+  function ctWrap(inner){ const f=avBase(); return f.length?`CALCULATETABLE(${inner}, ${f.join(', ')})`:inner; }
+  async function avCarregarValores(col){
+    const rows = await pbiQuery(`EVALUATE VALUES(${col})`);
+    if(!rows||!rows.length) return [];
+    const key=Object.keys(rows[0])[0];
+    return rows.map(r=>r[key]).filter(v=>v!=null&&v!=='').map(v=>({value:String(v),label:String(v)})).sort((a,b)=>a.label.localeCompare(b.label,'pt-BR'));
+  }
+
+  let _rows=[];   // itens em ruptura (cache da última carga)
+  let _sort={k:'val',dir:'desc'};
+  let _view='tabular';   // 'tabular' | 'matriz'
+
+  async function carregar(){
+    const dax = `EVALUATE TOPN(5000, ${ctWrap(`ADDCOLUMNS(SUMMARIZE(${FATO}, ${COL_COD}, ${COL_PROD}, ${COL_FAM}, ${COL_LIN}), `
+      + `"Val", ${M_VAL}, "QMov", ${M_QMOV}, "QRup", ${M_QRUP}, "QDisp", ${M_QDISP}, "Preco", ${M_PRECO})`)}, [Val], DESC)`;
+    const raw = await pbiQuery(dax);
+    _rows = raw.map(r=>({
+      cod:_v(r,/Cód\. do produto/i), nome:_v(r,/\[Produto\]$/i), familia:_v(r,/\[Família\]$/i), linha:_v(r,/\[Linha\]$/i),
+      val:_numN(_v(r,/\[Val\]$/))||0, qmov:_numN(_v(r,/\[QMov\]$/))||0, qrup:_numN(_v(r,/\[QRup\]$/))||0, qdisp:_numN(_v(r,/\[QDisp\]$/))||0, preco:_numN(_v(r,/\[Preco\]$/))
+    })).filter(x=> x.qrup>0 || x.val>0);   // itens em ruptura
+  }
+
+  function renderKPIs(){
+    const val = _rows.reduce((s,x)=>s+x.val,0);
+    const qrup = _rows.reduce((s,x)=>s+x.qrup,0);
+    const qdisp = _rows.reduce((s,x)=>s+x.qdisp,0);
+    setTxt('cx-k-val', fMi(val));
+    setTxt('cx-k-itens', fINT(_rows.length));
+    setTxt('cx-k-qrup', fNUM(qrup));
+    setTxt('cx-k-qdisp', fNUM(qdisp));
+  }
+
+  const _charts={};
+  function hbarChart(id, labels, data, color, money){
+    const el=document.getElementById(id); if(!el||typeof Chart==='undefined') return;
+    const cfg={ labels, datasets:[{label:'Valor de Ruptura', data, backgroundColor:color, borderRadius:3}] };
+    if(_charts[id]){ _charts[id].data=cfg; _charts[id].update(); return; }
+    _charts[id]=new Chart(el.getContext('2d'),{ type:'bar', data:cfg,
+      options:{ indexAxis:'y', responsive:true, maintainAspectRatio:false,
+        plugins:{ legend:{display:false}, tooltip:{callbacks:{label:c=>fBRL(c.raw)}} },
+        scales:{ x:{ticks:{callback:v=>fMi(v),font:{size:10}}}, y:{ticks:{font:{size:10}}} } } });
+  }
+  function renderCharts(){
+    const top = _rows.slice().sort((a,b)=>b.val-a.val).slice(0,12);
+    hbarChart('cx-ch-top', top.map(x=>String(x.nome||x.cod||'—').slice(0,26)), top.map(x=>x.val), 'rgba(185,28,28,.85)');
+    const fam={}; _rows.forEach(x=>{ const k=x.familia==null?'(sem família)':String(x.familia); fam[k]=(fam[k]||0)+x.val; });
+    const famArr=Object.entries(fam).map(([k,v])=>({k,v})).sort((a,b)=>b.v-a.v).slice(0,12);
+    hbarChart('cx-ch-fam', famArr.map(x=>x.k.slice(0,24)), famArr.map(x=>x.v), 'rgba(30,136,229,.85)');
+    // Linha — os dados já vêm na carga (x.linha)
+    const lin={}; _rows.forEach(x=>{ const k=(x.linha==null||String(x.linha).trim()==='')?'(sem linha)':String(x.linha); lin[k]=(lin[k]||0)+x.val; });
+    const linArr=Object.entries(lin).map(([k,v])=>({k,v})).sort((a,b)=>b.v-a.v).slice(0,12);
+    hbarChart('cx-ch-lin', linArr.map(x=>x.k.slice(0,24)), linArr.map(x=>x.v), 'rgba(124,58,237,.85)');
+  }
+  // mapa família → estratégia (da dim 'Famílias'); carregado uma vez e cacheado
+  let _estrMap=null;
+  async function loadEstrMap(){
+    if(_estrMap) return _estrMap;
+    const defs=[
+      {t:"'Famílias'", f:"'Famílias'[Família]", e:"'Famílias'[Estratégia]"},
+      {t:"'Produtos'", f:"'Produtos'[Família]", e:"'Produtos'[Estratégia]"}
+    ];
+    for(const d of defs){
+      try{
+        const rows=await pbiQuery(`EVALUATE SUMMARIZE(${d.t}, ${d.f}, ${d.e})`);
+        const m={}; rows.forEach(r=>{ const fam=_v(r,/\[Família\]$/i); const es=_v(r,/\[Estratégia\]$/i); if(fam!=null && String(fam).trim()!=='') m[String(fam)]=(es==null||String(es).trim()==='')?null:String(es); });
+        if(Object.keys(m).length){ _estrMap=m; return m; }
+      }catch(e){}
+    }
+    _estrMap={}; return _estrMap;
+  }
+  // Estratégia — agrega os MESMOS _rows da ruptura (que batem com o total) pelo mapa família→estratégia.
+  // Assim o gráfico sempre reconcilia com a ruptura total; itens sem estratégia caem em "(sem estratégia)".
+  async function renderEstrategia(){
+    const panel=document.getElementById('cx-panel-estr');
+    try{
+      const map=await loadEstrMap();
+      if(!map || !Object.keys(map).length){ if(panel) panel.style.display='none'; return; }
+      const agg={}; _rows.forEach(x=>{ const fam=x.familia==null?'':String(x.familia); const es=map[fam]||'(sem estratégia)'; agg[es]=(agg[es]||0)+x.val; });
+      const arr=Object.entries(agg).map(([k,v])=>({k,v})).filter(x=>x.v>0).sort((a,b)=>b.v-a.v).slice(0,12);
+      if(!arr.length){ if(panel) panel.style.display='none'; return; }
+      if(panel) panel.style.display='';
+      hbarChart('cx-ch-estr', arr.map(x=>x.k.slice(0,24)), arr.map(x=>x.v), 'rgba(217,119,6,.9)');
+    }catch(e){ if(panel) panel.style.display='none'; console.warn('[RUPTURA] estratégia:', e.message); }
+  }
+
+  function renderTabela(){
+    const tbody=document.getElementById('cx-tbody');
+    const q=(document.getElementById('cx-search').value||'').trim().toLowerCase();
+    let rows=_rows.slice();
+    if(q) rows=rows.filter(x=>[x.cod,x.nome,x.familia,x.linha].some(v=>String(v==null?'':v).toLowerCase().includes(q)));
+    const dir=_sort.dir==='desc'?-1:1, k=_sort.k;
+    rows.sort((a,b)=>{ const av=a[k], bv=b[k]; if(typeof av==='number'&&typeof bv==='number') return (av-bv)*dir; return String(av==null?'':av).localeCompare(String(bv==null?'':bv),'pt-BR')*dir; });
+    if(!rows.length){ tbody.innerHTML='<tr><td colspan="9" style="padding:20px;text-align:center;color:var(--text-3);">Nenhum item em ruptura.</td></tr>'; setTxt('cx-tbl-info','0 itens'); return; }
+    const tot={qmov:0,val:0,qrup:0,qdisp:0}; _rows.forEach(x=>{tot.qmov+=x.qmov;tot.val+=x.val;tot.qrup+=x.qrup;tot.qdisp+=x.qdisp;});
+    tbody.innerHTML = rows.map(x=>`<tr>
+      <td class="cod">${escH(x.cod==null?'—':x.cod)}</td>
+      <td class="dim">${escH(x.nome==null?'—':x.nome)}</td>
+      <td class="dim">${escH(x.familia==null?'—':x.familia)}</td>
+      <td class="dim">${escH(x.linha==null?'—':x.linha)}</td>
+      <td>${fNUM(x.qmov)}</td>
+      <td><span class="cx-rup-badge">${fNUM(x.qrup)}</span></td>
+      <td>${fNUM(x.qdisp)}</td>
+      <td>${x.preco==null?'—':fBRL(x.preco)}</td>
+      <td style="font-weight:700;color:var(--danger,#b91c1c);">${fBRL(x.val)}</td></tr>`).join('')
+      + `<tr class="cx-total"><td class="dim" colspan="4">TOTAL · ${_rows.length} itens</td><td>${fNUM(tot.qmov)}</td><td>${fNUM(tot.qrup)}</td><td>${fNUM(tot.qdisp)}</td><td>—</td><td>${fBRL(tot.val)}</td></tr>`;
+    setTxt('cx-tbl-info', `${rows.length} de ${_rows.length} itens em ruptura · ordenado por ${k}`);
+  }
+
+  // linhas após o filtro de busca (compartilhado por matriz e exportação)
+  function filteredRows(){
+    const q=(document.getElementById('cx-search').value||'').trim().toLowerCase();
+    if(!q) return _rows.slice();
+    return _rows.filter(x=>[x.cod,x.nome,x.familia,x.linha].some(v=>String(v==null?'':v).toLowerCase().includes(q)));
+  }
+
+  // ── visão MATRIZ: Família › Linha › Produto (com código) ──
+  function buildTree(rows){
+    const fam={};
+    rows.forEach(x=>{
+      const fk = (x.familia==null||String(x.familia).trim()==='')?'(sem família)':String(x.familia);
+      const lk = (x.linha==null||String(x.linha).trim()==='')?'(sem linha)':String(x.linha);
+      const F = fam[fk] || (fam[fk]={val:0,qmov:0,qrup:0,qdisp:0,lin:{}});
+      F.val+=x.val; F.qmov+=x.qmov; F.qrup+=x.qrup; F.qdisp+=x.qdisp;
+      const L = F.lin[lk] || (F.lin[lk]={val:0,qmov:0,qrup:0,qdisp:0,prod:[]});
+      L.val+=x.val; L.qmov+=x.qmov; L.qrup+=x.qrup; L.qdisp+=x.qdisp; L.prod.push(x);
+    });
+    return fam;
+  }
+  function mxCells(g){
+    return `<td>${fNUM(g.qmov)}</td><td><span class="cx-rup-badge">${fNUM(g.qrup)}</span></td><td>${fNUM(g.qdisp)}</td>`
+      + `<td style="font-weight:700;color:var(--danger,#b91c1c);">${fBRL(g.val)}</td>`;
+  }
+  function renderMatriz(){
+    const tbody=document.getElementById('cx-mx-tbody');
+    const rows=filteredRows();
+    if(!rows.length){ tbody.innerHTML='<tr><td colspan="5" style="padding:20px;text-align:center;color:var(--text-3);">Nenhum item em ruptura.</td></tr>'; setTxt('cx-tbl-info','0 itens'); return; }
+    const tree=buildTree(rows);
+    const fams=Object.entries(tree).map(([k,v])=>Object.assign({k},v)).sort((a,b)=>b.val-a.val);
+    const tot={qmov:0,qrup:0,qdisp:0,val:0};
+    let html='', fi=0, nLin=0;
+    fams.forEach(F=>{
+      tot.qmov+=F.qmov; tot.qrup+=F.qrup; tot.qdisp+=F.qdisp; tot.val+=F.val;
+      const fid='f'+(fi++);
+      html += `<tr class="cx-mx-row" data-lvl="0" data-id="${fid}"><td class="dim" style="padding-left:12px;"><span class="cx-tg">▶</span> ${escH(F.k)}</td>${mxCells(F)}</tr>`;
+      const lins=Object.entries(F.lin).map(([k,v])=>Object.assign({k},v)).sort((a,b)=>b.val-a.val);
+      let li=0;
+      lins.forEach(L=>{ nLin++;
+        const lid=fid+'l'+(li++);
+        html += `<tr class="cx-mx-row" data-lvl="1" data-id="${lid}" data-parent="${fid}" hidden><td class="dim" style="padding-left:32px;"><span class="cx-tg">▶</span> ${escH(L.k)}</td>${mxCells(L)}</tr>`;
+        L.prod.slice().sort((a,b)=>b.val-a.val).forEach((p,pi)=>{
+          const pid=lid+'p'+pi;
+          html += `<tr class="cx-mx-row" data-lvl="2" data-id="${pid}" data-parent="${lid}" hidden><td class="dim" style="padding-left:54px;"><span style="display:inline-block;width:14px;color:var(--text-4);">·</span> ${escH(p.nome==null?'—':p.nome)}<span class="cod-inline">${escH(p.cod==null?'':p.cod)}</span></td>${mxCells(p)}</tr>`;
+        });
+      });
+    });
+    html += `<tr class="cx-total"><td class="dim">TOTAL · ${fams.length} família(s) · ${nLin} linha(s)</td>${mxCells(tot)}</tr>`;
+    tbody.innerHTML=html;
+    setTxt('cx-tbl-info', `${fams.length} família(s) · ${nLin} linha(s) · ${rows.length} itens · clique para expandir`);
+  }
+  // expandir/recolher na matriz
+  function mxToggleChildren(id, show){
+    document.querySelectorAll(`#cx-mx-tbody tr[data-parent="${id}"]`).forEach(c=>{
+      c.hidden=!show;
+      if(!show){ const t=c.querySelector('.cx-tg'); if(t) t.textContent='▶'; mxToggleChildren(c.dataset.id, false); }
+    });
+  }
+  document.getElementById('cx-mx-tbody').addEventListener('click', e=>{
+    const tg=e.target.closest('.cx-tg'); if(!tg) return;
+    const tr=tg.closest('tr'); if(!tr) return;
+    const open = tg.textContent.trim()!=='▼';
+    tg.textContent = open?'▼':'▶';
+    if(open) document.querySelectorAll(`#cx-mx-tbody tr[data-parent="${tr.dataset.id}"]`).forEach(c=>{ c.hidden=false; });
+    else mxToggleChildren(tr.dataset.id, false);
+  });
+
+  function renderView(){ if(_view==='matriz') renderMatriz(); else renderTabela(); }
+
+  function setView(v){
+    _view=v;
+    document.querySelectorAll('.cx-vbtn').forEach(b=>b.classList.toggle('active', b.getAttribute('data-view')===v));
+    document.getElementById('cx-tab-wrap').style.display = (v==='tabular')?'':'none';
+    document.getElementById('cx-mx-wrap').style.display  = (v==='matriz') ?'':'none';
+    renderView();
+  }
+
+  // ── exportar para Excel (.csv compatível com Excel pt-BR: separador ; e BOM) ──
+  function exportExcel(){
+    const q=(document.getElementById('cx-search').value||'').trim().toLowerCase();
+    let rows=filteredRows();
+    const dir=_sort.dir==='desc'?-1:1, k=_sort.k;
+    rows.sort((a,b)=>{ const av=a[k], bv=b[k]; if(typeof av==='number'&&typeof bv==='number') return (av-bv)*dir; return String(av==null?'':av).localeCompare(String(bv==null?'':bv),'pt-BR')*dir; });
+    const cell = v => '"'+String(v==null?'':v).replace(/"/g,'""')+'"';
+    const num  = v => v==null?'':String(v).replace('.',',');   // decimal com vírgula
+    const head = ['Cód.','Produto','Família','Linha','Qtd Movimentada','Qtde Ruptura','Disponível','Preço Unit.','Valor de Ruptura'];
+    const lines = [head.join(';')];
+    rows.forEach(x=>{ lines.push([cell(x.cod),cell(x.nome),cell(x.familia),cell(x.linha),num(x.qmov),num(x.qrup),num(x.qdisp),num(x.preco),num(x.val)].join(';')); });
+    const d=new Date(), p=n=>String(n).padStart(2,'0');
+    const fname=`ruptura_estoque_${d.getFullYear()}${p(d.getMonth()+1)}${p(d.getDate())}_${p(d.getHours())}${p(d.getMinutes())}.csv`;
+    const blob=new Blob(['﻿'+lines.join('\r\n')],{type:'text/csv;charset=utf-8;'});
+    const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download=fname; document.body.appendChild(a); a.click();
+    setTimeout(()=>{ URL.revokeObjectURL(a.href); a.remove(); }, 0);
+  }
+
+  async function cxAplicar(){
+    if(!_ready) return;
+    document.getElementById('cx-tbody').innerHTML='<tr><td colspan="9" style="padding:20px;text-align:center;color:var(--text-3);">Carregando…</td></tr>';
+    try { await carregar(); renderKPIs(); renderCharts(); renderView(); }
+    catch(e){ console.error('[RUPTURA]', e.message); document.getElementById('cx-tbody').innerHTML=`<tr><td colspan="9" style="padding:18px;text-align:center;color:var(--danger);">Erro: ${e.message.substring(0,180)}</td></tr>`; }
+    renderEstrategia();   // defensivo (try/catch interno) — não interrompe o fluxo principal
+  }
+  window.cxAplicar=cxAplicar;
+
+  // ── dropdowns ──
+  function avMakeDropdown({ label, getOptions, getSelected, setSelected, onChange }){
+    const wrap=document.createElement('div'); wrap.className='av-dd';
+    const btn=document.createElement('button'); btn.className='av-dd-btn'; btn.type='button';
+    const panel=document.createElement('div'); panel.className='av-dd-panel';
+    panel.innerHTML = `<div class="av-dd-search"><input type="text" placeholder="Buscar…"></div><div class="av-dd-list"></div><div class="av-dd-foot"><button type="button" data-act="limpar">Limpar</button><button type="button" data-act="fechar">Fechar</button></div>`;
+    wrap.appendChild(btn); wrap.appendChild(panel);
+    const list=panel.querySelector('.av-dd-list'), search=panel.querySelector('input');
+    let loaded=false, options=[];
+    function refresh(){ const n=getSelected().length; btn.classList.toggle('has',n>0); btn.innerHTML=`<span>${label}</span>${ n?`<span class="cnt">${n}</span>`:'<span style="color:var(--text-4);font-weight:500;">Todos</span>' }`; }
+    function renderList(){ const q=(search.value||'').toLowerCase(); const sel=new Set(getSelected()); const items=options.filter(o=>!q||String(o.label).toLowerCase().includes(q)); list.innerHTML=items.length?items.map(o=>`<label class="av-dd-opt"><input type="checkbox" value="${avEsc(o.value)}" ${sel.has(o.value)?'checked':''}>${o.label}</label>`).join(''):'<div style="padding:8px;color:var(--text-3);font-size:12px;">nenhum</div>'; }
+    async function ensure(){ if(loaded) return; list.innerHTML='<div style="padding:10px;color:var(--text-3);font-size:12px;">Carregando…</div>'; try{options=await getOptions();}catch(e){list.innerHTML='<div style="padding:10px;color:var(--danger);font-size:12px;">erro</div>';return;} loaded=true; renderList(); }
+    btn.addEventListener('click', async e=>{ e.stopPropagation(); const open=wrap.classList.contains('open'); document.querySelectorAll('.av-dd.open').forEach(d=>d.classList.remove('open')); if(!open){ wrap.classList.add('open'); await ensure(); search.focus(); } });
+    panel.addEventListener('click', e=>e.stopPropagation());
+    list.addEventListener('change', e=>{ if(e.target.matches('input[type=checkbox]')){ setSelected(e.target.value,e.target.checked); refresh(); onChange(); } });
+    search.addEventListener('input', renderList);
+    panel.querySelector('[data-act=limpar]').addEventListener('click', ()=>{ setSelected(null,false,true); renderList(); refresh(); onChange(); });
+    panel.querySelector('[data-act=fechar]').addEventListener('click', ()=>wrap.classList.remove('open'));
+    refresh(); return wrap;
+  }
+  document.addEventListener('click', ()=>document.querySelectorAll('.av-dd.open').forEach(d=>d.classList.remove('open')));
+  function avMontarToolbar(){
+    const tb=document.getElementById('cx-toolbar'); if(!tb) return; tb.innerHTML='';
+    FILTROS.forEach(d=>tb.appendChild(avMakeDropdown({ label:d.label, getOptions:()=>avCarregarValores(d.col), getSelected:()=>[...window._avSel[d.id]], setSelected:(v,ck,clr)=>{ const s=window._avSel[d.id]; if(clr){s.clear();return;} if(ck)s.add(v); else s.delete(v); }, onChange:cxAplicar })));
+    const limpar=document.createElement('button'); limpar.className='cx-btn'; limpar.type='button'; limpar.textContent='✕ Limpar filtros';
+    limpar.addEventListener('click', ()=>{ FILTROS.forEach(f=>window._avSel[f.id].clear()); avMontarToolbar(); cxAplicar(); });
+    tb.appendChild(limpar);
+  }
+
+  document.getElementById('cx-search').addEventListener('input', ()=>renderView());
+  document.querySelectorAll('#cx-tab-table thead th').forEach(th=>th.addEventListener('click', ()=>{ const k=th.getAttribute('data-k'); if(!k) return; if(_sort.k===k) _sort.dir=_sort.dir==='desc'?'asc':'desc'; else { _sort.k=k; _sort.dir=(['cod','nome','familia','linha'].includes(k))?'asc':'desc'; } renderTabela(); }));
+  document.querySelectorAll('.cx-vbtn').forEach(b=>b.addEventListener('click', ()=>setView(b.getAttribute('data-view'))));
+  document.getElementById('cx-export').addEventListener('click', exportExcel);
+
+  document.addEventListener('DOMContentLoaded', async ()=>{
+    avMontarToolbar();
+    const banner=document.getElementById('cx-banner');
+    try {
+      await pbiConnect();
+      banner.innerHTML='⏳ Localizando o dataset de ruptura…';
+      await resolveDataset();
+      _ready=true;
+      banner.style.cssText='padding:11px 16px;border-radius:8px;font-size:13px;display:flex;align-items:center;gap:10px;background:#F0FDF4;border:1px solid #BBF7D0;color:#14532D;';
+      banner.innerHTML=`<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg> ✅ Conectado ao Power BI`;
+      await cxAplicar();
+    } catch(err){
+      banner.style.cssText='padding:11px 16px;border-radius:8px;font-size:13px;display:flex;align-items:center;gap:10px;background:#FEF2F2;border:1px solid #FECACA;color:#7F1D1D;';
+      banner.innerHTML=`<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg> ${err.message}`;
+    }
+  });
+  </script>
+</body>
+</html>

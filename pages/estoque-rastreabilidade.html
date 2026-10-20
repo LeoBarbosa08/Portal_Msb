@@ -1,0 +1,687 @@
+﻿<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Rastreabilidade · Estoque · Biomedical</title>
+  <link rel="stylesheet" href="../styles.css?v=14">
+  <script src="https://unpkg.com/@azure/msal-browser@2.38.3/lib/msal-browser.min.js"></script>
+<script src="../pbi-throttle.js?v=3"></script>
+<script src="../pbi-modelo.js?v=2"></script>
+  <!-- Layout v3 (Claude Design · animado): fonte + camada visual + motor de animações -->
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300..800&family=Manrope:wght@400..800&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../portal-v3.css?v=2">
+  <script src="../portal-motion.js?v=3" defer></script>
+  <!-- Tema claro/escuro (menu do avatar): marca o <html> antes de pintar + camada escura -->
+  <script>try{if(localStorage.getItem('bm-tema')==='escuro')document.documentElement.setAttribute('data-tema','escuro')}catch(e){}</script>
+  <link rel="stylesheet" href="../portal-tema.css?v=1">
+  <script src="../portal-tema.js?v=1" defer></script>
+  <!-- Celular (varredura 15/10/26): só vale em tela < 768px; no computador não se aplica -->
+  <link rel="stylesheet" href="../portal-mobile.css?v=1" media="(max-width: 767.98px)">
+  <script src="../portal-mobile.js?v=1" defer></script>
+</head>
+<body class="dept">
+
+  <header class="site-header"><div class="container">
+    <a href="../index.html" class="brand" aria-label="Biomedical — Portal Corporativo"><img class="brand-logo" src="/icons/icon-192.png" alt="Biomedical" onerror="this.dataset.failed='true'"><span class="brand-fallback">Biomedical</span></a>
+    <nav class="header-nav"><a href="../index.html">Início</a><a href="../index.html#areas">Áreas</a><a href="../index.html#sistemas">Sistemas</a><a href="../index.html#avisos">Avisos</a><a href="../index.html#contato">Contato</a></nav>
+  </div></header>
+
+  <!-- cabeçalho movido para .fx-head (abas de submódulo, Claude Design) -->
+
+  <div class="area-body"><div class="container"><div class="area-grid">
+    <aside class="area-sidebar">
+      <div class="sb-card"><div class="sb-head"><span class="sb-ic"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="2" width="20" height="8" rx="2"/><rect x="2" y="14" width="20" height="8" rx="2"/><line x1="6" y1="6" x2="6.01" y2="6"/><line x1="6" y1="18" x2="6.01" y2="18"/></svg></span><div><div class="sb-tt">Estoque</div><div class="sb-st">Departamento</div></div></div><nav></nav></div>
+      <a href="../index.html" class="sb-back"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></svg>Voltar ao Portal</a>
+    </aside>
+
+    <div class="area-main">
+          <!-- ═══ Cabeçalho + abas de submódulo (Claude Design) ═══ -->
+          <style>
+            .fx-head{display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap;padding:22px 0 4px;}
+            .fx-bc{display:flex;align-items:center;gap:6px;font-size:12px;color:#7C93A8;}
+            .fx-title{margin:4px 0 0;font-size:23px;font-weight:800;letter-spacing:-0.5px;color:#0A2E5C;}
+            .fx-head-right{display:flex;align-items:center;gap:12px;flex-wrap:wrap;}
+            .fx-tabs{display:flex;align-items:center;background:#FFFFFF;border:1px solid #E3EAF2;border-radius:11px;padding:3px;flex-wrap:wrap;}
+            .fx-tabs a,.fx-tabs span{padding:8px 14px;border-radius:8px;font-size:12.5px;font-weight:600;color:#5B7189;text-decoration:none;white-space:nowrap;}
+            .fx-tabs a:hover{color:#0A2E5C;}
+            .fx-tabs .active{background:#0A2E5C;font-weight:700;color:#fff;}
+            .fx-filters{display:flex;align-items:center;gap:10px;flex-wrap:wrap;padding:12px 14px;background:#fff;border:1px solid #E3EAF2;border-radius:12px;}
+            /* esconde a faixa de cards de sub-modulos (estatica OU injetada pelo nav-sidebar.js) — navegacao agora pelas abas */
+            .area-main section:has(.modulo-card){display:none !important;}
+            @media(max-width:767.98px){
+              .fx-head{align-items:flex-start;padding-top:14px;}
+              .fx-title{font-size:17px;}
+              .fx-head-right{width:100%;}
+              .fx-tabs{width:100%;flex-wrap:nowrap;overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none;background:#F0F4F9;border:none;}
+              .fx-tabs::-webkit-scrollbar{display:none;}
+              .fx-tabs a,.fx-tabs span{flex:0 0 auto;}
+              .fx-filters{flex-wrap:nowrap;overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none;}
+              .fx-filters::-webkit-scrollbar{display:none;}
+            }
+          </style>
+
+          <div class="fx-head">
+            <div>
+              <div class="fx-bc"><span>Estoque</span><span>›</span><span>Gestão de Consignação</span></div>
+              <h1 class="fx-title">Rastreabilidade</h1>
+            </div>
+            <div class="fx-head-right">
+              <div class="fx-tabs">
+                <a href="estoque-gestao-consignacao.html">Visão Geral</a>
+                <a href="estoque-saldo-consignado.html">Saldo Consignado</a>
+                <a href="estoque-contagem-saldo-nota.html">Contagem · Saldo por Nota</a>
+                <a href="estoque-devolucoes-faturamento.html">Devoluções</a>
+                <span class="active">Rastreabilidade</span>
+                <a href="estoque-gmroi.html">GMROI</a>
+              </div>
+            </div>
+          </div>
+
+      <style>
+        .cx-wrap{padding:8px 0 48px;display:flex;flex-direction:column;gap:14px;}
+        .cx-panel{background:#fff;border:1px solid var(--border);border-radius:var(--radius);padding:16px 18px;}
+        .cx-panel h3{font-size:14px;font-weight:700;color:var(--text);margin:0 0 4px;display:flex;align-items:center;gap:8px;}
+        .cx-panel .cx-sub{font-size:11.5px;color:var(--text-3);margin-bottom:14px;}
+        .cx-fix{font-size:11px;color:var(--text-3);line-height:1.6;margin:0 0 10px;}
+        .cx-fix b{color:var(--text-2);font-weight:700;}
+        .cx-fix .cx-fix-w{color:#B45309;font-weight:700;}
+        .cx-badge{font-size:10px;font-weight:800;letter-spacing:.04em;text-transform:uppercase;padding:3px 8px;border-radius:999px;}
+        .cx-badge.rem{background:#E0ECFB;color:#1E40AF;}
+        .cx-badge.dev{background:#FEF3C7;color:#92400E;}
+        .cx-badge.ven{background:#DCFCE7;color:#166534;}
+        .cx-tbl-wrap{overflow:auto;border:1px solid var(--border);border-radius:10px;max-height:560px;}
+        table.cx-tbl{width:100%;border-collapse:collapse;font-size:12px;}
+        table.cx-tbl thead th{position:sticky;top:0;z-index:3;background:var(--bm-blue-900);color:rgba(255,255,255,.95);text-align:right;padding:9px 12px;font-size:10px;font-weight:600;letter-spacing:.02em;text-transform:uppercase;white-space:nowrap;cursor:pointer;user-select:none;}
+        table.cx-tbl thead th.dim{text-align:left;}
+        table.cx-tbl thead th.unres{color:#FCA5A5;}
+        table.cx-tbl tbody td{padding:7px 12px;border-bottom:1px solid var(--border);text-align:right;font-variant-numeric:tabular-nums;color:var(--text-2);white-space:nowrap;}
+        table.cx-tbl tbody td.dim{text-align:left;color:var(--text);font-weight:600;}
+        table.cx-tbl tbody td.cod{font-family:var(--font-mono,monospace);font-size:11px;color:var(--text-3);text-align:left;}
+        table.cx-tbl tbody td.ctr{text-align:center;}
+        table.cx-tbl tbody td.venc-late{color:var(--danger,#b91c1c);font-weight:700;}
+        table.cx-tbl tbody td.venc-soon{color:#b45309;font-weight:700;}
+        table.cx-tbl tbody tr:hover td{background:var(--bm-blue-50);}
+        table.cx-tbl tbody tr.hit td{background:#FEFCE8;}
+        table.cx-tbl tbody tr.cx-total td{background:var(--bm-blue-900);color:#fff;font-weight:800;border-top:2px solid var(--border-2);position:sticky;bottom:0;}
+        .av-toolbar{display:flex;gap:8px;flex-wrap:wrap;align-items:center;}
+        .av-grp-lbl{font-size:10px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:var(--text-4);align-self:center;padding:0 2px;}
+        .av-div{width:1px;height:26px;background:var(--border);margin:0 4px;align-self:center;}
+        .av-dd{position:relative;display:inline-block;}
+        .av-dd-btn{padding:7px 12px;border-radius:8px;border:1px solid var(--border);background:#fff;font-size:12.5px;font-weight:600;color:var(--text-2);cursor:pointer;display:inline-flex;align-items:center;gap:10px;min-width:150px;justify-content:space-between;}
+        .av-dd-btn:hover{border-color:var(--bm-blue-500);}
+        .av-dd-btn.has{border-color:var(--bm-blue-600);background:var(--bm-blue-50);color:var(--bm-blue-800);}
+        .av-dd-btn.pri{border-color:#C7D8F0;background:#F3F8FF;}
+        .av-dd-btn.pri.has{border-color:var(--bm-blue-600);background:var(--bm-blue-50);}
+        .av-dd-btn .cnt{background:var(--bm-blue-600);color:#fff;border-radius:999px;padding:0 7px;font-size:11px;}
+        .av-dd-panel{position:absolute;z-index:40;top:calc(100% + 4px);left:0;width:290px;max-height:360px;display:none;flex-direction:column;background:#fff;border:1px solid var(--border);border-radius:10px;box-shadow:var(--shadow);overflow:hidden;}
+        .av-dd.open .av-dd-panel{display:flex;}
+        .av-dd-search{padding:8px;border-bottom:1px solid var(--border);}
+        .av-dd-search input{width:100%;padding:6px 8px;border:1px solid var(--border);border-radius:6px;font-size:12px;font-family:var(--font-body);box-sizing:border-box;}
+        .av-dd-list{overflow-y:auto;padding:4px;}
+        .av-dd-opt{display:flex;align-items:center;gap:8px;padding:6px 8px;border-radius:6px;font-size:12.5px;color:var(--text-2);cursor:pointer;}
+        .av-dd-opt:hover{background:var(--bm-blue-50);}
+        .av-dd-cap{padding:8px;font-size:11px;color:var(--text-3);text-align:center;border-top:1px dashed var(--border);}
+        .av-dd-foot{display:flex;justify-content:space-between;padding:6px 10px;border-top:1px solid var(--border);}
+        .av-dd-foot button{font-size:11.5px;color:var(--bm-blue-700);background:none;border:none;cursor:pointer;font-weight:600;}
+        .cx-btn{padding:5px 13px;border-radius:6px;border:1px solid var(--border);background:#fff;font-size:12.5px;font-weight:600;color:var(--text-2);cursor:pointer;font-family:var(--font-body);}
+      </style>
+
+      <div class="cx-wrap">
+
+        <div id="cx-banner" style="padding:11px 16px;border-radius:8px;font-size:13px;display:flex;align-items:center;gap:10px;background:#EFF6FF;border:1px solid #BFDBFE;color:#1E40AF;">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+          Conectando ao Power BI…
+        </div>
+
+
+        <!-- ── filtros da página (dropdowns) — aplicados a TODAS as tabelas ── -->
+        <div class="fx-filters"><div class="av-toolbar" id="cx-toolbar" style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;"></div></div>
+
+        <!-- ════════ 1 · REMESSAS (fato 'Consignação - Remessas') ════════ -->
+        <div class="cx-panel">
+          <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;margin-bottom:12px;">
+            <div>
+              <h3 style="margin:0;"><span class="cx-badge rem">1 · Remessas</span> Saída em consignação</h3>
+              <div class="cx-sub" style="margin:0;" id="cx-rem-info">—</div>
+            </div>
+          </div>
+          <div class="cx-fix" id="cx-fix-rem">Filtros fixos: lendo o modelo…</div>
+          <div class="cx-tbl-wrap">
+            <table class="cx-tbl" id="cx-tbl-rem">
+              <thead><tr id="cx-rem-head"></tr></thead>
+              <tbody id="cx-rem-rows"><tr><td style="padding:20px;text-align:center;color:var(--text-3);">Carregando…</td></tr></tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- ════════ 2 · DEVOLUÇÕES (fato 'Consignação - Devoluções') ════════ -->
+        <div class="cx-panel">
+          <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;margin-bottom:12px;">
+            <div>
+              <h3 style="margin:0;"><span class="cx-badge dev">2 · Devoluções</span> Retorno do consignado</h3>
+              <div class="cx-sub" style="margin:0;" id="cx-dev-info">—</div>
+            </div>
+          </div>
+          <div class="cx-fix" id="cx-fix-dev">Filtros fixos: lendo o modelo…</div>
+          <div class="cx-tbl-wrap">
+            <table class="cx-tbl" id="cx-tbl-dev">
+              <thead><tr id="cx-dev-head"></tr></thead>
+              <tbody id="cx-dev-rows"><tr><td style="padding:20px;text-align:center;color:var(--text-3);">Carregando…</td></tr></tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- ════════ 3 · VENDAS / RECONSIGNAÇÃO (fato 'Consignação - Vendas e reconsignações') ════════ -->
+        <div class="cx-panel">
+          <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;margin-bottom:12px;">
+            <div>
+              <h3 style="margin:0;"><span class="cx-badge ven">3 · Vendas / Reconsignação</span> Faturamento e transferência do consignado</h3>
+              <div class="cx-sub" style="margin:0;" id="cx-ven-info">—</div>
+            </div>
+          </div>
+          <div class="cx-fix" id="cx-fix-ven">Filtros fixos: lendo o modelo…</div>
+          <div class="cx-tbl-wrap">
+            <table class="cx-tbl" id="cx-tbl-ven">
+              <thead><tr id="cx-ven-head"></tr></thead>
+              <tbody id="cx-ven-rows"><tr><td style="padding:20px;text-align:center;color:var(--text-3);">Carregando…</td></tr></tbody>
+            </table>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </div></div></div>
+
+  <footer class="site-footer"><div class="container"><p>© Biomedical — Portal Corporativo</p></div></footer>
+
+  <script src="../script.js?v=8"></script>
+  <script src="../nav-sidebar.js?v=52"></script>
+  <script src="../dw-pill.js?v=4"></script>
+  <script>
+  // ================================================================
+  // RASTREABILIDADE DE CONSIGNAÇÃO — 3 tabelas (fluxo do consignado):
+  //   1) Remessas               → fato 'Consignação - Remessas'
+  //   2) Devoluções             → fato 'Consignação - Devoluções'
+  //   3) Vendas/Reconsignações  → fato 'Consignação - Vendas e reconsignações'
+  //
+  //   Mesmo esquema robusto do "Saldo Consignado"/"Devoluções": os nomes
+  //   de coluna/medida são resolvidos p/ o nome EXATO do modelo (via
+  //   INFO.VIEW.COLUMNS / INFO.VIEW.MEASURES), sem depender de acento/
+  //   grafia. Coluna/medida ausente é descartada da query (a tabela segue
+  //   viva) e sinalizada no cabeçalho (⚠) + banner.
+  //
+  //   FILTROS:
+  //     • dropdowns da página  → aplicados às 3 tabelas (baseFilters).
+  //         principais = nº das ordens (chaves de rastreio, por fato);
+  //         dimensões  = Empresa, Unidade, Depósito, Família, Produto,
+  //                      Lote, Cliente (compartilhadas → filtram os 3 fatos).
+  //     • fixo GLOBAL da página → 'Depósitos'[Grupo de depósitos] =
+  //         "ESTOQUE CONSIGNADO/COMODATO" (todos os visuais).
+  //     • fixos SÓ da Remessa   → Exibir no BI=Sim · NF(modelo)=55 · NF≠vazia.
+  // ================================================================
+  const PBI_CFG = {
+    clientId:'129978ce-ff3b-431d-98b3-66a1bcb766b1', tenantId:'c311c9e6-6017-42a9-b306-4057beba5786',
+    workspaceId:'8535f0a1-8dc6-4da0-93ce-bf20c1c14e27',
+    scopes:['https://analysis.windows.net/powerbi/api/Dataset.Read.All','https://analysis.windows.net/powerbi/api/Report.Read.All']
+  };
+  let _pbi=null,_token=null,_dsId=null,_ready=false;
+  // token/dataset expostos p/ o dw-pill.js ler o histórico de refresh do dataset
+  window.bmDwInfo = () => ({ token:_token, ws:PBI_CFG.workspaceId, ds:_dsId });
+  // modelo de Consignação FIXADO — o workspace tem CÓPIAS "(N)" do mesmo modelo com as
+  // mesmas tabelas, e a varredura podia cair numa cópia velha/incompleta (foi o que
+  // zerou a aba Devoluções). Cache/varredura ficam só como reserva.
+  const DS_PINNED = '960d8415-9844-40aa-a502-07a8b3eea240';
+  const DS_CACHE_KEY='bio_ds_consignado';
+  const FATO = "'Consignação - Remessas'";   // fato usado p/ achar o dataset
+
+  // ── helpers de formatação / escape ──
+  const avDax = s => String(s==null?'':s).replace(/"/g,'""');
+  const avEsc = s => String(s==null?'':s).replace(/"/g,'&quot;');
+  const escH  = s => String(s==null?'':s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+  const _numN = x => (x==null||x===''||x==='-'||isNaN(Number(x)))?null:Number(x);
+  const bareRef = r => String(r==null?'':r).replace(/^\[/,'').replace(/\]$/,'');   // "[Medida]" -> "Medida"
+  const setTxt=(id,t)=>{const el=document.getElementById(id);if(el)el.textContent=t;};
+  const fNUM = v => v==null?'—':Number(v).toLocaleString('pt-BR',{maximumFractionDigits:2});
+  function fDate(v){ if(v==null||v==='') return '—'; const m=String(v).match(/^(\d{4})-(\d{2})-(\d{2})/); return m?`${m[3]}/${m[2]}/${m[1]}`:String(v); }
+  function dateObj(v){ if(v==null||v==='') return null; const m=String(v).match(/^(\d{4})-(\d{2})-(\d{2})/); return m?new Date(+m[1],+m[2]-1,+m[3]):null; }
+  // normaliza p/ casar nomes sem acento/caixa/espaços duplicados
+  const _norm = s => String(s==null?'':s).normalize('NFD').replace(/[̀-ͯ]/g,'').toLowerCase().replace(/\s+/g,' ').trim();
+
+  // ── kind → como a coluna é exibida. cands = [tabela, coluna] em ordem de
+  //    preferência; o 1º que existir no modelo (por nome normalizado) vence. ──
+
+  // ── 1 · REMESSAS ──
+  const COLS_REM = [
+    { key:'unidade',  header:'Unidade de Negócio', kind:'dim',  cands:[['DIM_UNIDADE_DE_NEGOCIO_V2','UNIDADE_DE_NEGOCIO']] },
+    { key:'codcli',   header:'Cód. Cliente',       kind:'cod',  cands:[['Clientes','Cód. do Cliente'],['Clientes','Cód. Cliente'],['Clientes','Cód. do cliente']] },
+    { key:'codprod',  header:'Cód. Produto',       kind:'cod',  cands:[['Produtos','Cód. do produto'],['Produtos','Cód. produto'],['Produtos','Código do produto']] },
+    { key:'lote',     header:'Lote',               kind:'cod',  cands:[['Lotes','Lote']] },
+    { key:'datavenc', header:'Data Vencimento',    kind:'date', venc:true, cands:[['Lotes','Data de vencimento (tratada)'],['Lotes','Data de vencimento']] },
+    { key:'ordvenda', header:'Ordem de Venda',     kind:'cod',  cands:[['Consignação - Remessas','Número da ordem de venda']] },
+    { key:'nota',     header:'Nota Fiscal',        kind:'cod',  cands:[['Consignação - Remessas','Nota fiscal'],['Consignação - Remessas','Nota Fiscal']] },
+    { key:'datamov',  header:'Data do Movimento',  kind:'date', cands:[['Consignação - Remessas','Data do movimento']] },
+    { key:'tipoop',   header:'Tipo de Operação',   kind:'dim',  cands:[['Operações','Tipo de operação'],['Consignação - Remessas','Tipo de operação']] }
+  ];
+  const MEAS_REM = [
+    { key:'qtd',   header:'Quantidade',      fmt:fNUM, strong:'font-weight:700;color:var(--bm-blue-900);', agg:'SUM', cands:[['Consignação - Remessas','Quantidade']] },
+    { key:'saldo', header:'Saldo Remessas',  fmt:fNUM, strong:'font-weight:700;color:var(--bm-green-700,#15803d);', cands:['Consignado - Saldo de remessas'] }
+  ];
+  // fixos SÓ da tabela de Remessas
+  const FIXED_REM = [
+    { label:'Exibir no BI = Sim',    op:'in',       vals:['Sim'], cands:[['Consignação - Remessas','Exibir no BI']] },
+    { label:'NF (modelo) = 55',      op:'in',       vals:['55'],  cands:[['Consignação - Remessas','Nota fiscal (modelo)'],['Consignação - Remessas','Nota fiscal modelo']] },
+    { label:'Nota fiscal ≠ vazia',   op:'notblank',               cands:[['Consignação - Remessas','Nota fiscal'],['Consignação - Remessas','Nota Fiscal']] }
+  ];
+
+  // ── 2 · DEVOLUÇÕES ── ("Data do movimento" foi listada 2× no pedido → usada 1×)
+  const COLS_DEV = [
+    { key:'unidade',     header:'Unidade de Negócio', kind:'dim',  cands:[['DIM_UNIDADE_DE_NEGOCIO_V2','UNIDADE_DE_NEGOCIO']] },
+    { key:'codcli',      header:'Cód. Cliente',       kind:'cod',  cands:[['Clientes','Cód. do Cliente'],['Clientes','Cód. Cliente'],['Clientes','Cód. do cliente']] },
+    { key:'codprod',     header:'Cód. Produto',       kind:'cod',  cands:[['Produtos','Cód. do produto'],['Produtos','Cód. produto'],['Produtos','Código do produto']] },
+    { key:'lote',        header:'Lote',               kind:'cod',  cands:[['Lotes','Lote']] },
+    { key:'datavenc',    header:'Data Vencimento',    kind:'date', venc:true, cands:[['Lotes','Data de vencimento (tratada)'],['Lotes','Data de vencimento']] },
+    { key:'ordvendaorig',header:'Ordem Venda (orig.)',kind:'cod',  cands:[['Consignação - Devoluções','Número da ordem de venda (origem)']] },
+    { key:'notaorig',    header:'NF (origem)',        kind:'cod',  cands:[['Consignação - Devoluções','Nota fiscal (origem)']] },
+    { key:'datamov',     header:'Data do Movimento',  kind:'date', cands:[['Consignação - Devoluções','Data do movimento']] },
+    { key:'nota',        header:'Nota Fiscal',        kind:'cod',  cands:[['Consignação - Devoluções','Nota fiscal'],['Consignação - Devoluções','Nota Fiscal']] },
+    { key:'tipoop',      header:'Tipo de Operação',   kind:'dim',  cands:[['Consignação - Devoluções','Tipo de operação'],['Operações','Tipo de operação']] }
+  ];
+  const MEAS_DEV = [
+    { key:'qtddev',   header:'Qtde Devolvida',    fmt:fNUM, strong:'font-weight:700;color:var(--bm-blue-900);', cands:['Consignado - Qtde devolvida','Quantidade (Devolução)','Consignado - Quantidade devolvida'] },
+    { key:'saldodev', header:'Saldo Devoluções',  fmt:fNUM, strong:'font-weight:700;color:var(--bm-green-700,#15803d);', cands:['Consignado - Saldo de devoluções','Consignado - Saldo de devolucoes'] }
+  ];
+
+  // ── 3 · VENDAS / RECONSIGNAÇÃO ──
+  const COLS_VEN = [
+    { key:'unidade',     header:'Unidade de Negócio', kind:'dim',  cands:[['DIM_UNIDADE_DE_NEGOCIO_V2','UNIDADE_DE_NEGOCIO']] },
+    { key:'codcli',      header:'Cód. Cliente',       kind:'cod',  cands:[['Clientes','Cód. do Cliente'],['Clientes','Cód. Cliente'],['Clientes','Cód. do cliente']] },
+    { key:'codprod',     header:'Cód. Produto',       kind:'cod',  cands:[['Produtos','Cód. do produto'],['Produtos','Cód. produto'],['Produtos','Código do produto']] },
+    { key:'lote',        header:'Lote',               kind:'cod',  cands:[['Lotes','Lote']] },
+    { key:'datavenc',    header:'Data Vencimento',    kind:'date', venc:true, cands:[['Lotes','Data de vencimento (tratada)'],['Lotes','Data de vencimento']] },
+    { key:'orddevolorig',header:'Ordem Devol. (orig.)',kind:'cod', cands:[['Consignação - Vendas e reconsignações','Número da ordem de devolução (origem)']] },
+    { key:'datamov',     header:'Data do Movimento',  kind:'date', cands:[['Consignação - Vendas e reconsignações','Data do movimento']] },
+    { key:'ordvenda',    header:'Ordem de Venda',     kind:'cod',  cands:[['Consignação - Vendas e reconsignações','Número da ordem de venda']] },
+    { key:'nota',        header:'Nota Fiscal',        kind:'cod',  cands:[['Consignação - Vendas e reconsignações','Nota fiscal'],['Consignação - Vendas e reconsignações','Nota Fiscal']] },
+    { key:'tipoop',      header:'Tipo de Operação',   kind:'dim',  cands:[['Consignação - Vendas e reconsignações','Tipo de operação'],['Operações','Tipo de operação']] }
+  ];
+  const MEAS_VEN = [
+    { key:'qtdven', header:'Qtd Venda/Recons.', fmt:fNUM, strong:'font-weight:700;color:var(--bm-blue-900);', cands:['Quantidade (Venda - reconsignação)','Quantidade (Venda - reconsignacao)','Quantidade (Venda-reconsignação)','Consignado - Quantidade (Venda - reconsignação)'] }
+  ];
+
+  // ── FIXO GLOBAL da página (todos os visuais) ──
+  const GLOBAL = [
+    { label:'Grupo de depósitos = ESTOQUE CONSIGNADO/COMODATO', op:'in', vals:['ESTOQUE CONSIGNADO/COMODATO'], cands:[['Depósitos','Grupo de depósitos'],['Depósitos','Grupo de depósito'],['Depósitos','Grupo depósitos']] }
+  ];
+
+  // ── FILTROS da página (dropdowns) — resolvem a própria coluna (independentes das tabelas) ──
+  //    grp:'p' = principais (chaves de rastreio, colunas de fato por movimento)
+  const FILTROS = [
+    { id:'ordrem',  grp:'p', label:'Ordem Venda · Remessa', cands:[['Consignação - Remessas','Número da ordem de venda']] },
+    { id:'ordven',  grp:'p', label:'Ordem Venda · Venda',   cands:[['Consignação - Vendas e reconsignações','Número da ordem de venda']] },
+    { id:'orddev',  grp:'p', label:'Ordem · Devolução',     cands:[['Consignação - Devoluções','Número da ordem de devolução']] },
+    { id:'empresa', label:'Empresa',            cands:[['Empresas','Empresa']] },
+    { id:'unidade', label:'Unidade de Negócio', cands:[['DIM_UNIDADE_DE_NEGOCIO_V2','UNIDADE_DE_NEGOCIO']] },
+    { id:'coddep',  label:'Cód. Depósito',      cands:[['Depósitos','Cód. do depósito'],['Depósitos','Cód. depósito'],['Depósitos','Código do depósito']] },
+    { id:'familia', label:'Família',            cands:[['Famílias','Família'],['Produtos','Família']] },
+    { id:'codprod', label:'Cód. Produto',       cands:[['Produtos','Cód. do produto'],['Produtos','Cód. produto']] },
+    { id:'lote',    label:'Lote',               cands:[['Lotes','Lote']] },
+    { id:'codcli',  label:'Cód. Cliente',       cands:[['Clientes','Cód. do Cliente'],['Clientes','Cód. Cliente']] }
+  ];
+  window._avSel = {}; FILTROS.forEach(f => window._avSel[f.id] = new Set());
+
+  // ── descritores das 3 tabelas — a MESMA fábrica genérica serve às três ──
+  const novaTabela = cfg => Object.assign({ rows:[], tot:null, trunc:false, _fixed:[], sort:{k:cfg.meas[0].key, dir:'desc'}, measkeys:cfg.meas.map(m=>m.key) }, cfg);
+  const TBL_REM = novaTabela({ name:'Remessas',    fato:"'Consignação - Remessas'",               cols:COLS_REM, meas:MEAS_REM, fixed:FIXED_REM, emptyMsg:'Sem remessas para os filtros atuais.',   ids:{head:'cx-rem-head', rows:'cx-rem-rows', info:'cx-rem-info', fix:'cx-fix-rem'} });
+  const TBL_DEV = novaTabela({ name:'Devoluções',  fato:"'Consignação - Devoluções'",             cols:COLS_DEV, meas:MEAS_DEV, fixed:[],        emptyMsg:'Sem devoluções para os filtros atuais.', ids:{head:'cx-dev-head', rows:'cx-dev-rows', info:'cx-dev-info', fix:'cx-fix-dev'} });
+  const TBL_VEN = novaTabela({ name:'Vendas/Recons.',fato:"'Consignação - Vendas e reconsignações'",cols:COLS_VEN, meas:MEAS_VEN, fixed:[],        emptyMsg:'Sem vendas/reconsignações para os filtros atuais.', ids:{head:'cx-ven-head', rows:'cx-ven-rows', info:'cx-ven-info', fix:'cx-fix-ven'} });
+  const TABLES = [TBL_REM, TBL_DEV, TBL_VEN];
+
+  // ── conexão / execução Power BI (MSAL delegado) ──
+  async function pbiConnect(){
+    if (window._msalAuth){ _pbi = window._msalAuth; }
+    else { _pbi = new msal.PublicClientApplication({ auth:{ clientId:PBI_CFG.clientId, authority:`https://login.microsoftonline.com/${PBI_CFG.tenantId}`, redirectUri:window.location.origin+'/' }, cache:{ cacheLocation:'localStorage', storeAuthStateInCookie:true } }); if(_pbi.initialize) await _pbi.initialize(); await _pbi.handleRedirectPromise().catch(()=>{}); }
+    const accounts = _pbi.getAllAccounts();
+    try { const r = await _pbi.acquireTokenSilent({ scopes:PBI_CFG.scopes, account:accounts[0] }); _token = r.accessToken; }
+    catch { const r = await _pbi.loginPopup({ scopes:PBI_CFG.scopes }); _token = r.accessToken; }
+    const acc = _pbi.getAllAccounts()[0]; if (acc && typeof window.setSidebarUser==='function') window.setSidebarUser(acc.name||acc.username, acc.username);
+  }
+  function _pbiErr(text){ try { const j=JSON.parse(text); const e=j.error||{}; const pe=e['pbi.error']||{}; const det=(pe.details||[]).map(d=>d.detail&&d.detail.value).filter(Boolean).join(' | '); return det||e.message||pe.code||text.substring(0,200); } catch { return text.substring(0,200); } }
+  async function execQuery(dsId, dax){
+    const body=JSON.stringify({queries:[{query:dax}],serializerSettings:{includeNulls:true}});
+    const r=await PBIModelo.post(PBI_CFG.workspaceId, dsId, {method:'POST',headers:{Authorization:`Bearer ${_token}`,'Content-Type':'application/json'},body});
+    const text=await r.text(); if(!r.ok) throw new Error(`HTTP ${r.status}: ${_pbiErr(text)}`);
+    const d=JSON.parse(text); if(d.error) throw new Error(_pbiErr(text));
+    return d.results[0].tables[0].rows;
+  }
+  async function resolveDataset(){
+    const falhas = [];
+    const cands = [DS_PINNED, localStorage.getItem(DS_CACHE_KEY)].filter(Boolean).filter((v,i,a)=>a.indexOf(v)===i);
+    for (const id of cands){ try { await execQuery(id, PBIModelo.sonda(FATO)); localStorage.setItem(DS_CACHE_KEY, id); return (_dsId=id); } catch(e){ falhas.push(['modelo '+id, e]); } }
+    const list = await PBIModelo.candidatos(PBI_CFG.workspaceId, _token);
+    for (const ds of list){ if (cands.indexOf(ds.id)>=0) continue; try { await execQuery(ds.id, PBIModelo.sonda(FATO)); localStorage.setItem(DS_CACHE_KEY, ds.id); return (_dsId=ds.id); } catch(e){ falhas.push([ds.name, e]); } }
+    throw PBIModelo.motivo(FATO, falhas);
+  }
+  async function pbiQuery(dax){ if(!_dsId) await resolveDataset(); return execQuery(_dsId, dax); }
+
+  // ── catálogo do modelo → resolve nomes EXATOS ──
+  let _colCat=null, _meaCat=null, _unresolved=[], _measUnresolved=[], _badMeas=new Set(), _globalUnresolved=[], _globalFilters=[], _filtUnresolved=[];
+  function _indexCols(rows, tk, nk){ const idx={}; rows.forEach(r=>{ const t=r[tk], n=r[nk]; if(t==null||n==null)return; const tn=_norm(t); (idx[tn]=idx[tn]||{})[_norm(n)]=String(n); }); return idx; }
+  function _setRef(c,t,n){ c._t=t; c._n=n; c._ref=`'${t}'[${n}]`; c._out=`${t}[${n}]`; c._include=true; }
+  // resolve c.cands ([tabela,coluna][]) → _t/_n/_ref/_out/_include usando o catálogo (exato→fuzzy)
+  function resolveColSpec(c){
+    c._t=c._n=c._ref=c._out=null; c._include=false;
+    if(_colCat){
+      for(const [t,n] of c.cands){ const tb=_colCat[_norm(t)]; if(tb&&tb[_norm(n)]){ _setRef(c,t,tb[_norm(n)]); break; } }
+      if(!c._include){ for(const [t,n] of c.cands){ const tb=_colCat[_norm(t)]; if(!tb)continue; const toks=_norm(n).split(' ').filter(w=>w.length>2); if(!toks.length)continue; let best=null; for(const nn in tb){ if(toks.every(w=>nn.includes(w))){ if(best===null||nn.length<best.length)best=nn; } } if(best!==null){ _setRef(c,t,tb[best]); break; } } }
+    } else {
+      const [t,n]=c.cands[0]; _setRef(c,t,n);   // sem catálogo: melhor esforço com o 1º candidato
+    }
+  }
+  // monta a expressão DAX de um filtro fixo
+  function fixedFilterDax(g){
+    const ref=g._ref, list=(g.vals||[]).map(v=>'"'+avDax(v)+'"').join(', ');
+    if(g.op==='notin')    return `FILTER(ALL(${ref}), NOT(${ref} IN {${list}}))`;
+    if(g.op==='notblank') return `FILTER(ALL(${ref}), NOT(ISBLANK(${ref})) && LEN(TRIM(${ref})) > 0)`;   // "não está vazio": exclui BLANK/nulo, "" e só-espaços (TRIM)
+    if(g.blank){ const eqs=(g.vals||[]).map(v=>`${ref} = "${avDax(v)}"`).join(' || '); return `FILTER(ALL(${ref}), ${eqs}${eqs?' || ':''}ISBLANK(${ref}))`; }
+    return `TREATAS({${list}}, ${ref})`;
+  }
+  // resolve o nome EXATO de uma MEDIDA nomeada → "[Medida]" (com fallback literal)
+  function resolveM(cands){
+    if(_meaCat){
+      for(const nm of cands){ const h=_meaCat[_norm(nm)]; if(h)return `[${h}]`; }
+      const toks=_norm(cands[0]).split(' ').filter(w=>w.length>2); let best=null;
+      for(const nn in _meaCat){ if(toks.length&&toks.every(w=>nn.includes(w))){ if(best===null||nn.length<best.length)best=nn; } }
+      if(best!==null)return `[${_meaCat[best]}]`;
+    }
+    return `[${cands[0]}]`;
+  }
+  // resolve o _ref de um item de MEAS: medida nomeada ([X]) OU agregação de coluna (SUM(col))
+  function resolveMeasSpec(m){
+    if(m.agg){ const c={cands:m.cands}; resolveColSpec(c); m._colref=c._ref; m._ref = c._ref ? `${m.agg}(${c._ref})` : null; }
+    else { m._ref = resolveM(m.cands); }
+    m._include = !!m._ref;
+  }
+  async function carregarCatalogo(){
+    // colunas — INFO.VIEW.COLUMNS (padrão do portal) e fallback COLUMNSTATISTICS
+    try { const rows=await pbiQuery(`EVALUATE SELECTCOLUMNS(INFO.VIEW.COLUMNS(), "T",[Table], "N",[Name])`); if(rows&&rows.length) _colCat=_indexCols(rows,'[T]','[N]'); } catch(e){ console.warn('[RASTREIO] INFO.VIEW.COLUMNS:', e.message); }
+    if(!_colCat){ try { const rows=await pbiQuery(`EVALUATE SELECTCOLUMNS(COLUMNSTATISTICS(), "T",[Table Name], "N",[Column Name])`); if(rows&&rows.length) _colCat=_indexCols(rows,'[T]','[N]'); } catch(e){ console.warn('[RASTREIO] COLUMNSTATISTICS:', e.message); } }
+    // medidas — INFO.VIEW.MEASURES (padrão) e fallback INFO.MEASURES.
+    //   Sem esse catálogo, medida inexistente vira ref de coluna e quebra a query toda.
+    try { const rows=await pbiQuery(`EVALUATE SELECTCOLUMNS(INFO.VIEW.MEASURES(), "N",[Name])`); if(rows&&rows.length){ _meaCat={}; rows.forEach(r=>{ const n=r['[N]']; if(n!=null)_meaCat[_norm(n)]=String(n); }); } } catch(e){ console.warn('[RASTREIO] INFO.VIEW.MEASURES:', e.message); }
+    if(!_meaCat){ try { const rows=await pbiQuery(`EVALUATE SELECTCOLUMNS(INFO.MEASURES(), "N",[Name])`); if(rows&&rows.length){ _meaCat={}; rows.forEach(r=>{ const n=r['[N]']; if(n!=null)_meaCat[_norm(n)]=String(n); }); } } catch(e){ console.warn('[RASTREIO] INFO.MEASURES:', e.message); } }
+
+    // resolve as colunas de TODAS as tabelas (auto-heal remove depois o que não existir)
+    _unresolved=[];
+    TABLES.forEach(T=> T.cols.forEach(c=>{ resolveColSpec(c); if(!c._include && _unresolved.indexOf(c.header)<0) _unresolved.push(c.header); }));
+    // resolve os FILTROS (dropdowns) — cada um resolve a própria coluna
+    _filtUnresolved=[];
+    FILTROS.forEach(d=>{ resolveColSpec(d); if(!d._ref && _filtUnresolved.indexOf(d.label)<0) _filtUnresolved.push(d.label); });
+    // resolve FIXO GLOBAL da página + monta as expressões DAX
+    _globalUnresolved=[]; _globalFilters=[];
+    GLOBAL.forEach(g=>{ resolveColSpec(g); if(!g._ref){ _globalUnresolved.push(g.label); console.warn('[RASTREIO] filtro fixo global sem coluna:', g.label); return; } _globalFilters.push(fixedFilterDax(g)); });
+    // resolve FIXOS por-tabela (hoje só Remessas)
+    TABLES.forEach(T=>{ T._fixed=[]; (T.fixed||[]).forEach(g=>{ resolveColSpec(g); if(!g._ref){ _globalUnresolved.push(g.label+' ('+T.name+')'); console.warn('[RASTREIO] filtro fixo sem coluna:', g.label, T.name); return; } T._fixed.push(fixedFilterDax(g)); }); });
+    // resolve medidas de TODAS as tabelas
+    TABLES.forEach(T=> T.meas.forEach(resolveMeasSpec));
+  }
+
+  // ── valida MEDIDAS (leve, estilo Saldo): só reporta o que não resolveu.
+  //   Medida nomeada sempre entra (tem _ref) e é validada na query REAL;
+  //   se falhar de verdade, o auto-heal da tabela a isola sem derrubar tudo.
+  async function validarMedidas(){
+    _measUnresolved=[]; _badMeas=new Set();
+    TABLES.forEach(T=> T.meas.forEach(m=>{ m._include = !!m._ref; if(!m._ref){ const nm=m.header||'?'; if(_measUnresolved.indexOf(nm)<0)_measUnresolved.push(nm); } }));
+  }
+
+  // chave da linha ↔ coluna por nome NORMALIZADO: a API devolve "Tabela[Coluna]" com a
+  // grafia do MODELO e o `_out` pode vir do candidato (catálogo incompleto) — o literal
+  // não acha a chave e a coluna inteira viraria "—" (caso do 'Cód. do Cliente').
+  const rowKeyMap = row => { const m={}; Object.keys(row||{}).forEach(k=>{ m[_norm(k)]=k; }); return m; };
+  function cellVal(r, c, km){ if(c._out in r) return r[c._out]; const k=km[_norm(c._out)]; return k===undefined?null:r[k]; }
+
+  const activeCols = T => T.cols.filter(c=>c._include);
+  const activeMeas = T => T.meas.filter(m=>m._include!==false && m._ref && !_badMeas.has(m._ref));
+
+  // diagnóstico por URL: ?debug=1 loga DAX + 1ª linha; ?nofilters=1 ignora fixos
+  const NOFILT = /[?&]nofilters\b/i.test(location.search);
+  const DBG    = NOFILT || /[?&](debug|diag)\b/i.test(location.search);
+
+  // filtros aplicados a UMA tabela: fixo global + dropdowns + fixos da própria tabela
+  function baseFilters(T){
+    const f = NOFILT ? [] : _globalFilters.slice();
+    FILTROS.forEach(d=>{ if(!d._ref) return; const vals=[...window._avSel[d.id]]; if(vals.length) f.push(`TREATAS({ ${vals.map(v=>'"'+avDax(v)+'"').join(', ')} }, ${d._ref})`); });
+    if(T && T._fixed && !NOFILT) T._fixed.forEach(x=>f.push(x));
+    return f;
+  }
+  async function avCarregarValores(id){
+    const d=FILTROS.find(f=>f.id===id); if(!d||!d._ref) return [];
+    const rows = await pbiQuery(`EVALUATE VALUES(${d._ref})`);
+    if(!rows||!rows.length) return [];
+    const k=Object.keys(rows[0])[0];
+    return rows.map(r=>r[k]).filter(v=>v!=null&&v!=='').map(v=>({value:String(v),label:String(v)})).sort((a,b)=>a.label.localeCompare(b.label,'pt-BR',{numeric:true}));
+  }
+
+  const LIMITE = 5000;   // teto de linhas da consulta (o rodapé é corrigido quando corta)
+
+  // Total REAL do rodapé quando o TOPN cortou: SUMX sobre a MESMA base, sem o corte.
+  //   Sem isto o rodapé mostra só a soma das 5.000 linhas que couberam — foi o que deixava
+  //   os números defasados do BI numa tabela com muito mais grupos que isso.
+  async function carregarTotais(T, ms, baseDax){
+    const parts = ms.map(m=>`"${m.key}", SUMX(B, [${m.key}])`).join(', ');
+    const r = (await pbiQuery(`EVALUATE VAR B = ${baseDax} RETURN ROW(${parts})`))[0]||{};
+    const o={}; ms.forEach(m=>{ o[m.key]=_numN(r['['+m.key+']'])||0; }); return o;
+  }
+
+  async function carregarTabela(T){
+    let attempts=0; const maxTry=T.cols.length+T.meas.length+2;
+    while(true){
+      const cols = activeCols(T).map(c=>c._ref).join(', ');
+      if(!cols){ T.rows=[]; return; }
+      const ms = activeMeas(T);
+      if(!ms.length){ T.rows=[]; return; }   // nenhuma medida válida para pedir
+      const flt = baseFilters(T); const fstr = flt.length ? flt.join(', ')+', ' : '';
+      const meas = ms.map(m=>`"${m.key}", ${m._ref}`).join(', ');
+      const base = `SUMMARIZECOLUMNS(${cols}, ${fstr}${meas})`;
+      const dax = `EVALUATE TOPN(${LIMITE}, ${base}, [${ms[0].key}], DESC)`;
+      if(DBG) console.log('[RASTREIO]', T.name, 'DAX >>', dax);
+      try {
+        const raw = await pbiQuery(dax);
+        if(DBG) console.log('[RASTREIO]', T.name, 'linhas:', raw.length, '| 1ª linha:', raw[0]);
+        const km = rowKeyMap(raw[0]);
+        if(raw.length) activeCols(T).forEach(c=>{ if(!(c._out in raw[0]) && km[_norm(c._out)]===undefined) console.warn('[RASTREIO] sem chave no resultado:', c.header, '·', c._out, '| chaves:', Object.keys(raw[0]).join(' , ')); });
+        T.rows = raw.map(r=>{
+          const o={};
+          activeCols(T).forEach(c=>{ o[c.key]=cellVal(r,c,km); });
+          ms.forEach(m=>{ o[m.key]=_numN(r['['+m.key+']'])||0; });
+          return o;
+        }).filter(x=> ms.some(m=>(x[m.key]||0)!==0));
+        // cortou no teto? então o rodapé não pode somar só o que veio — busca o total real
+        T.trunc = raw.length >= LIMITE; T.tot = null;
+        if(T.trunc){ try { T.tot = await carregarTotais(T, ms, base); } catch(e){ console.warn('[RASTREIO] total real', T.name+':', (e.message||'')); } }
+        return;
+      } catch(e){
+        const msg=(e.message||'').replace(/<\/?oii>/g,'');
+        // auto-heal 1: coluna inexistente → descarta a coluna e retenta
+        const mc=/Column '([^']+)' in table '([^']+)' cannot be found/i.exec(msg);
+        if(mc && attempts<maxTry){
+          attempts++;
+          const badN=_norm(mc[1]), badT=_norm(mc[2]);
+          const victim = activeCols(T).find(c=> _norm(c._t)===badT && _norm(c._n)===badN)
+                      || activeCols(T).find(c=> _norm(c._n)===badN);
+          if(victim){ victim._include=false; if(_unresolved.indexOf(victim.header)<0) _unresolved.push(victim.header); renderHeadT(T); continue; }
+        }
+        // auto-heal 2: MEDIDA tratada como coluna (nome inexistente) → descarta a medida e retenta
+        const mm=/(?:The value for|A single value for column|A single value for measure|Cannot find name) '([^']+)'/i.exec(msg)
+              || /'([^']+)'\s+cannot be determined/i.exec(msg);
+        if(mm && attempts<maxTry){
+          attempts++;
+          const bad=_norm(mm[1]);
+          const victim = activeMeas(T).find(m=> _norm(bareRef(m._ref))===bad)
+                      || activeMeas(T).find(m=> _norm(m.header)===bad);
+          if(victim){ _badMeas.add(victim._ref); victim._include=false; const nm=bareRef(victim._ref); if(_measUnresolved.indexOf(nm)<0)_measUnresolved.push(nm); renderHeadT(T); continue; }
+        }
+        throw e;
+      }
+    }
+  }
+
+  function vencCls(v){ const d=dateObj(v); if(!d) return ''; const t=new Date(); t.setHours(0,0,0,0); const diff=(d-t)/86400000; if(diff<0) return 'venc-late'; if(diff<=90) return 'venc-soon'; return ''; }
+  function sortRowsT(T,rows){ const dir=T.sort.dir==='desc'?-1:1,k=T.sort.k; return rows.sort((a,b)=>{ const av=a[k],bv=b[k]; if(T.measkeys.includes(k)) return ((av||0)-(bv||0))*dir; return String(av==null?'':av).localeCompare(String(bv==null?'':bv),'pt-BR',{numeric:true})*dir; }); }
+
+  // mostra, embaixo do título de cada tabela, os filtros fixos que ELA usa de fato
+  //   (o fixo GLOBAL da página + os fixos da própria tabela). Coluna que não resolveu
+  //   no modelo aparece em âmbar: filtro fixo que não é aplicado não pode sair calado.
+  function renderFixos(T){
+    const el=document.getElementById(T.ids&&T.ids.fix); if(!el) return;
+    if(NOFILT){ el.innerHTML='<b>Filtros fixos:</b> DESLIGADOS (?nofilters)'; return; }
+    const lista = GLOBAL.concat(T.fixed||[]);
+    const ok    = lista.filter(g=>g._ref).map(g=>escH(g.label));
+    const falta = lista.filter(g=>!g._ref).map(g=>escH(g.label));
+    el.innerHTML = `<b>Filtros fixos desta tabela:</b> ${ ok.length ? ok.join(' · ') : '(nenhum)' }`
+      + (falta.length ? ` <span class="cx-fix-w">⚠ não aplicado(s): ${falta.join(', ')}</span>` : '');
+  }
+
+  function renderHeadT(T){
+    const tr=document.getElementById(T.ids.head); if(!tr) return;
+    let h='';
+    T.cols.forEach(c=>{
+      const left = (c.kind==='dim'||c.kind==='cod'||c.kind==='date'||c.kind==='ctr');
+      const ok = c._include!==false;   // otimista: só marca ⚠ depois que o catálogo provar que falta
+      const cls = (left?'dim':'') + (ok?'':' unres');
+      const tt = ok? '' : ' title="Coluna não encontrada no modelo"';
+      h += `<th class="${cls.trim()}" data-k="${c.key}"${tt}>${escH(c.header)}${ok?'':' ⚠'}</th>`;
+    });
+    T.meas.forEach(m=>{ const ok=(m._include!==false && !_badMeas.has(m._ref)); h += `<th class="${ok?'':'unres'}" data-k="${m.key}"${ok?'':' title="Medida não encontrada no modelo"'}>${escH(m.header)}${ok?'':' ⚠'}</th>`; });
+    tr.innerHTML=h;
+    tr.querySelectorAll('th').forEach(th=>th.addEventListener('click', ()=>{
+      const k=th.getAttribute('data-k'); if(!k) return;
+      if(T.sort.k===k) T.sort.dir=T.sort.dir==='desc'?'asc':'desc';
+      else { T.sort.k=k; T.sort.dir=T.measkeys.includes(k)?'desc':'asc'; }
+      renderTabela(T);
+    }));
+  }
+
+  function cellFor(c,x){
+    const v=x[c.key];
+    if(c.kind==='date') return `<td class="ctr ${c.venc?vencCls(v):''}">${fDate(v)}</td>`;
+    if(c.kind==='ctr')  return `<td class="ctr">${escH(v==null?'—':v)}</td>`;
+    if(c.kind==='cod')  return `<td class="cod">${escH(v==null?'—':v)}</td>`;
+    return `<td class="dim">${escH(v==null?'—':v)}</td>`;
+  }
+
+  function renderTabela(T){
+    const tbody=document.getElementById(T.ids.rows); if(!tbody) return;
+    const q='';   // a barra de busca das 3 tabelas foi removida (pedido do usuário, 20/08)
+    let rows=T.rows.slice();
+    if(q) rows=rows.filter(x=>T.cols.some(c=>String(x[c.key]==null?'':x[c.key]).toLowerCase().includes(q)));
+    sortRowsT(T,rows);
+    const ncols = T.cols.length + T.meas.length;
+    if(!rows.length){ tbody.innerHTML=`<tr><td colspan="${ncols}" style="padding:20px;text-align:center;color:var(--text-3);">${escH(q?'Nada encontrado para \"'+q+'\".':(T.emptyMsg||'Sem dados.'))}</td></tr>`; setTxt(T.ids.info, q?`0 de ${T.rows.length} linhas`:'0 linhas'); return; }
+    const tot={}; T.meas.forEach(m=>tot[m.key]=(m._include===false||!m._ref||_badMeas.has(m._ref))?null:0);
+    // sem busca: total REAL da base (a consulta pode ter cortado no teto). Com busca: soma do
+    // que está visível, que é o que o usuário está olhando.
+    if(!q && T.tot) T.meas.forEach(m=>{ if(tot[m.key]!==null && T.tot[m.key]!=null) tot[m.key]=T.tot[m.key]; });
+    else rows.forEach(x=>T.meas.forEach(m=>{ if(tot[m.key]!==null) tot[m.key]+=(x[m.key]||0); }));
+    tbody.innerHTML = rows.map(x=>`<tr${q?' class="hit"':''}>`
+        + T.cols.map(c=>cellFor(c,x)).join('')
+        + T.meas.map(m=>`<td${m.strong?` style="${m.strong}"`:''}>${m.fmt(x[m.key])}</td>`).join('')
+        + '</tr>').join('')
+      + `<tr class="cx-total"><td class="dim" colspan="${T.cols.length}">TOTAL · ${rows.length} linha(s)${(!q&&T.trunc)?` (TOP ${LIMITE} exibidas — total real da base)`:''}</td>`
+        + T.meas.map(m=>`<td>${m.fmt(tot[m.key])}</td>`).join('')
+      + `</tr>`;
+    setTxt(T.ids.info, `${rows.length}${q?' de '+T.rows.length:''} linha(s) · ordenado por ${T.sort.k}`);
+  }
+
+  async function cxAplicar(){
+    if(!_ready) return;
+    TABLES.forEach(T=>{ const tb=document.getElementById(T.ids.rows); if(tb) tb.innerHTML=`<tr><td colspan="${T.cols.length+T.meas.length}" style="padding:20px;text-align:center;color:var(--text-3);">Carregando…</td></tr>`; });
+    for(const T of TABLES){
+      try { await carregarTabela(T); renderTabela(T); }
+      catch(e){ console.error(`[RASTREIO] ${T.name}:`, e.message); const tb=document.getElementById(T.ids.rows); if(tb) tb.innerHTML=`<tr><td colspan="${T.cols.length+T.meas.length}" style="padding:18px;text-align:center;color:var(--danger);">Erro: ${escH((e.message||'').substring(0,240))}</td></tr>`; }
+    }
+  }
+  window.cxAplicar=cxAplicar;
+
+  // ── dropdowns de filtro (genérico, com cap de renderização p/ colunas de fato grandes) ──
+  const DD_CAP = 800;
+  function avMakeDropdown({ label, pri, getOptions, getSelected, setSelected, onChange }){
+    const wrap=document.createElement('div'); wrap.className='av-dd';
+    const btn=document.createElement('button'); btn.className='av-dd-btn'+(pri?' pri':''); btn.type='button';
+    const panel=document.createElement('div'); panel.className='av-dd-panel';
+    panel.innerHTML = `<div class="av-dd-search"><input type="text" placeholder="Buscar…"></div><div class="av-dd-list"></div><div class="av-dd-foot"><button type="button" data-act="limpar">Limpar</button><button type="button" data-act="fechar">Fechar</button></div>`;
+    wrap.appendChild(btn); wrap.appendChild(panel);
+    const list=panel.querySelector('.av-dd-list'), search=panel.querySelector('input');
+    let loaded=false, options=[];
+    function refresh(){ const n=getSelected().length; btn.classList.toggle('has',n>0); btn.innerHTML=`<span>${escH(label)}</span>${ n?`<span class="cnt">${n}</span>`:'<span style="color:var(--text-4);font-weight:500;">Todos</span>' }`; }
+    function renderList(){
+      const qq=(search.value||'').toLowerCase(); const sel=new Set(getSelected());
+      const items=options.filter(o=>!qq||String(o.label).toLowerCase().includes(qq));
+      const shown=items.slice(0,DD_CAP);
+      list.innerHTML=(shown.length?shown.map(o=>`<label class="av-dd-opt"><input type="checkbox" value="${avEsc(o.value)}" ${sel.has(o.value)?'checked':''}>${escH(o.label)}</label>`).join(''):'<div style="padding:8px;color:var(--text-3);font-size:12px;">nenhum</div>')
+        + (items.length>DD_CAP?`<div class="av-dd-cap">+${(items.length-DD_CAP).toLocaleString('pt-BR')} — refine a busca</div>`:'');
+    }
+    async function ensure(){ if(loaded) return; list.innerHTML='<div style="padding:10px;color:var(--text-3);font-size:12px;">Carregando…</div>'; try{options=await getOptions();}catch(e){list.innerHTML='<div style="padding:10px;color:var(--danger);font-size:12px;">erro</div>';return;} loaded=true; renderList(); }
+    btn.addEventListener('click', async e=>{ e.stopPropagation(); const open=wrap.classList.contains('open'); document.querySelectorAll('.av-dd.open').forEach(d=>d.classList.remove('open')); if(!open){ wrap.classList.add('open'); await ensure(); search.focus(); } });
+    panel.addEventListener('click', e=>e.stopPropagation());
+    list.addEventListener('change', e=>{ if(e.target.matches('input[type=checkbox]')){ setSelected(e.target.value,e.target.checked); refresh(); onChange(); } });
+    search.addEventListener('input', renderList);
+    panel.querySelector('[data-act=limpar]').addEventListener('click', ()=>{ setSelected(null,false,true); renderList(); refresh(); onChange(); });
+    panel.querySelector('[data-act=fechar]').addEventListener('click', ()=>wrap.classList.remove('open'));
+    refresh(); return wrap;
+  }
+  document.addEventListener('click', ()=>document.querySelectorAll('.av-dd.open').forEach(d=>d.classList.remove('open')));
+  function avMontarToolbar(){
+    const tb=document.getElementById('cx-toolbar'); if(!tb) return; tb.innerHTML='';
+    let lastGrp=null;
+    FILTROS.forEach(d=>{
+      const grp = d.grp==='p' ? 'p' : 'dim';
+      if(grp!==lastGrp){
+        if(lastGrp!==null){ const div=document.createElement('span'); div.className='av-div'; tb.appendChild(div); }
+        const lbl=document.createElement('span'); lbl.className='av-grp-lbl'; lbl.textContent = grp==='p' ? 'Rastreio' : 'Filtros';
+        tb.appendChild(lbl); lastGrp=grp;
+      }
+      tb.appendChild(avMakeDropdown({ label:d.label, pri:d.grp==='p', getOptions:()=>avCarregarValores(d.id), getSelected:()=>[...window._avSel[d.id]], setSelected:(v,ck,clr)=>{ const s=window._avSel[d.id]; if(clr){s.clear();return;} if(ck)s.add(v); else s.delete(v); }, onChange:cxAplicar }));
+    });
+    const limpar=document.createElement('button'); limpar.className='cx-btn'; limpar.type='button'; limpar.textContent='✕ Limpar filtros'; limpar.style.marginLeft='4px';
+    limpar.addEventListener('click', ()=>{ FILTROS.forEach(f=>window._avSel[f.id].clear()); avMontarToolbar(); cxAplicar(); });
+    tb.appendChild(limpar);
+  }
+
+  // busca unificada: filtra as linhas já carregadas das 3 tabelas ao mesmo tempo
+
+  document.addEventListener('DOMContentLoaded', async ()=>{
+    TABLES.forEach(renderHeadT);
+    avMontarToolbar();
+    const banner=document.getElementById('cx-banner');
+    try {
+      await pbiConnect();
+      banner.innerHTML='⏳ Localizando o dataset de consignação…';
+      await resolveDataset();
+      banner.innerHTML='⏳ Lendo o modelo (nomes exatos de colunas e medidas)…';
+      await carregarCatalogo();
+      await validarMedidas();
+      TABLES.forEach(renderHeadT);   // re-render marcando colunas/medidas não encontradas
+      TABLES.forEach(renderFixos);   // cada tabela mostra os filtros fixos DELA
+      _ready=true;
+      const faltas = _unresolved.concat(_measUnresolved.map(m=>m+' (medida)')).concat(_filtUnresolved.map(m=>m+' (filtro)'));
+      const chk  = `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>`;
+      const warn = `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>`;
+      if(_globalUnresolved.length){
+        banner.style.cssText='padding:11px 16px;border-radius:8px;font-size:13px;display:flex;align-items:center;gap:10px;background:#FFFBEB;border:1px solid #FDE68A;color:#92400E;';
+        banner.innerHTML = `${warn} ⚠ Filtro(s) fixo(s) NÃO aplicado(s) — coluna não encontrada no modelo: ${escH(_globalUnresolved.join(', '))}. Os números podem estar SEM esse filtro.${faltas.length?` (também faltam: ${escH(faltas.join(', '))})`:''}`;
+      } else {
+        banner.style.cssText='padding:11px 16px;border-radius:8px;font-size:13px;display:flex;align-items:center;gap:10px;background:#F0FDF4;border:1px solid #BBF7D0;color:#14532D;';
+        banner.innerHTML = faltas.length
+          ? `${chk} ✅ Conectado — filtros fixos ativos · ${faltas.length} campo(s) não encontrados: ${escH(faltas.join(', '))}`
+          : `${chk} ✅ Conectado ao Power BI · fixo global: Grupo de depósitos = ESTOQUE CONSIGNADO/COMODATO · Remessa: Exibir no BI=Sim · NF(modelo)=55 · NF≠vazia`;
+      }
+      await cxAplicar();
+    } catch(err){
+      banner.style.cssText='padding:11px 16px;border-radius:8px;font-size:13px;display:flex;align-items:center;gap:10px;background:#FEF2F2;border:1px solid #FECACA;color:#7F1D1D;';
+      banner.innerHTML=`<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg> ${escH(err.message)}`;
+    }
+  });
+  </script>
+</body>
+</html>

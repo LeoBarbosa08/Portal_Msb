@@ -1,0 +1,1961 @@
+﻿<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Sales Report · Comercial · Biomedical</title>
+  <link rel="stylesheet" href="../styles.css?v=14">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../dash-v2.css?v=3">
+  <!-- MSAL via unpkg (CDN mais confiável) -->
+  <script src="https://unpkg.com/@azure/msal-browser@2.38.3/lib/msal-browser.min.js"></script>
+<script src="../pbi-throttle.js?v=3"></script>
+  <!-- Layout v3 (Claude Design · animado): fonte + camada visual + motor de animações -->
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300..800&family=Manrope:wght@400..800&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../portal-v3.css?v=2">
+  <!-- Pedidos em andamento + Faturamento Diário: listas no molde das Negociações e a ficha à direita -->
+  <link rel="stylesheet" href="../sr-diario.css?v=2">
+  <script src="../portal-motion.js?v=3" defer></script>
+  <!-- Tema claro/escuro (menu do avatar): marca o <html> antes de pintar + camada escura -->
+  <script>try{if(localStorage.getItem('bm-tema')==='escuro')document.documentElement.setAttribute('data-tema','escuro')}catch(e){}</script>
+  <link rel="stylesheet" href="../portal-tema.css?v=1">
+  <script src="../portal-tema.js?v=1" defer></script>
+  <!-- Celular (varredura 15/10/26): só vale em tela < 768px; no computador não se aplica -->
+  <link rel="stylesheet" href="../portal-mobile.css?v=1" media="(max-width: 767.98px)">
+  <script src="../portal-mobile.js?v=1" defer></script>
+</head>
+<body class="dept">
+
+  <header class="site-header">
+    <div class="container">
+      <a href="../index.html" class="brand" aria-label="Biomedical — Portal Corporativo">
+        <img class="brand-logo" src="/icons/icon-192.png" alt="Biomedical" onerror="this.dataset.failed='true'">
+        <span class="brand-fallback">Biomedical</span>
+      </a>
+      <nav class="header-nav">
+        <a href="../index.html">Início</a>
+        <a href="../index.html#areas">Áreas</a>
+        <a href="../index.html#sistemas">Sistemas</a>
+        <a href="../index.html#avisos">Avisos</a>
+        <a href="../index.html#contato">Contato</a>
+      </nav>
+    </div>
+  </header>
+
+  <!-- cabeçalho movido para .fx-head (abas de submódulo, Claude Design) -->
+
+  <div class="area-body">
+    <div class="container">
+      <div class="area-grid">
+
+        <aside class="area-sidebar">
+          <div class="sb-card">
+            <div class="sb-head">
+              <span class="sb-ic"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="8.5" cy="7" r="4"/><path d="M20 8v6"/><path d="M23 11h-6"/></svg></span>
+              <div><div class="sb-tt">Comercial</div><div class="sb-st">Departamento</div></div>
+            </div>
+            <nav>
+              <div class="sb-section">Navegação</div>
+              <a href="comercial.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>Visão geral</a>
+              <div class="sb-group open">
+                <button type="button" class="sb-parent"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>Sales Report<svg class="sb-caret" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg></button>
+                <div class="sb-children">
+                  <a href="comercial-vendas.html">Análise de Vendas</a>
+                  <a href="comercial-clientes.html">Análise de Clientes</a>
+                  <a href="comercial-novos-negocios.html">Novos Negócios</a>
+                </div>
+              </div>
+              <a href="comercial-funil.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 7V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v2"/></svg>Negociações</a>
+              <a href="comercial-fca.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="9" y1="15" x2="15" y2="15"/></svg>FCA</a>
+              <div class="sb-group">
+                <button type="button" class="sb-parent"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>Materiais e Recursos<svg class="sb-caret" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg></button>
+                <div class="sb-children">
+                  <a href="comercial-materiais.html#materiais">Materiais</a>
+                  <a href="comercial-materiais.html#proctoria">Proctoria</a>
+                  <a href="comercial-materiais.html#processo">Como funciona</a>
+                </div>
+              </div>
+              
+              <div class="sb-divider"></div>
+              <div class="sb-section">AUTOMAÇÕES</div>
+              <a href="#" class="btn-placeholder"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>Automações de Cotações</a>
+              <a href="#"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>Envio de Propostas</a>
+              <a href="#"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/></svg>Pipeline Automático</a>
+              <div class="sb-divider"></div>
+              <div class="sb-section">AGENTES</div>
+              <a href="agente-comercial.html"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="10" rx="2"/><path d="M12 11V7"/><circle cx="12" cy="5" r="2"/><circle cx="8" cy="16" r="1" fill="currentColor"/><circle cx="16" cy="16" r="1" fill="currentColor"/></svg>Agente de Vendas</a>
+              <a href="agente-comercial.html"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>Análise de Clientes IA</a>
+              <div class="sb-section">Atalhos</div>
+              <a href="https://biomedical.lightning.force.com/lightning/page/home" target="_blank" rel="noopener"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>Salesforce</a>
+              <a href="comercial.html#metas"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></svg>Metas &amp; Pipeline</a>
+            </nav>
+          </div>
+          <a href="../index.html" class="sb-back"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></svg>Voltar ao Portal</a>
+        </aside>
+
+        <div class="area-main">
+
+          <!-- ═══ Cabeçalho + abas de submódulo (Claude Design) ═══ -->
+          <style>
+            .fx-head{display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap;padding:22px 0 4px;}
+            .fx-bc{display:flex;align-items:center;gap:6px;font-size:12px;color:#7C93A8;}
+            .fx-title{margin:4px 0 0;font-size:23px;font-weight:800;letter-spacing:-0.5px;color:#0A2E5C;}
+            .fx-head-right{display:flex;align-items:center;gap:12px;flex-wrap:wrap;}
+            .fx-dw{display:inline-flex;align-items:center;gap:8px;padding:6px 12px;border-radius:999px;background:#EAF8F0;border:1px solid #CFEEDD;font-size:11.5px;font-weight:700;color:#22794C;white-space:nowrap;}
+            .fx-dw i{width:7px;height:7px;border-radius:999px;background:#2FBF71;display:inline-block;}
+            .fx-tabs{display:flex;align-items:center;background:#FFFFFF;border:1px solid #E3EAF2;border-radius:11px;padding:3px;flex-wrap:wrap;}
+            .fx-tabs a,.fx-tabs span{padding:8px 14px;border-radius:8px;font-size:12.5px;font-weight:600;color:#5B7189;text-decoration:none;white-space:nowrap;}
+            .fx-tabs a:hover{color:#0A2E5C;}
+            .fx-tabs .active{background:#0A2E5C;font-weight:700;color:#fff;}
+            /* filtros · 1 linha */
+            .fx-filters{display:flex;align-items:center;gap:10px;flex-wrap:wrap;padding:12px 14px;background:#fff;border:1px solid #E3EAF2;border-radius:12px;}
+            .fx-fdiv{width:1px;height:24px;background:#E3EAF2;}
+            .fx-fbtn{display:inline-flex;align-items:center;gap:8px;padding:8px 12px;border-radius:9px;border:1px solid #E3EAF2;background:#fff;font-size:12.5px;font-weight:600;color:#33495E;cursor:pointer;font-family:inherit;white-space:nowrap;}
+            .fx-fbtn:hover{border-color:#1272C4;}
+            .fx-fbtn .fx-fk{font-weight:700;color:#93A7BA;}
+            .fx-fbtn svg{flex-shrink:0;}
+            .fx-flimpar{margin-left:auto;display:inline-flex;align-items:center;gap:6px;padding:8px 12px;border-radius:9px;border:none;background:transparent;font-size:12.5px;font-weight:600;color:#5B7189;cursor:pointer;font-family:inherit;white-space:nowrap;}
+            .fx-flimpar:hover{color:#B54545;}
+            .fxdd{position:relative;display:inline-block;}
+            .fxdd-panel{position:absolute;z-index:50;top:calc(100% + 6px);left:0;display:none;flex-direction:column;background:#fff;border:1px solid #E3EAF2;border-radius:12px;box-shadow:0 10px 30px rgba(10,46,92,0.14);padding:12px;}
+            .fxdd.open .fxdd-panel{display:flex;}
+            .fxdd-sec{font-size:10.5px;font-weight:800;letter-spacing:0.8px;text-transform:uppercase;color:#93A7BA;margin:2px 2px 8px;}
+            .fxdd-sec.mt{margin-top:12px;}
+            .fxdd-hint{font-size:11px;color:#93A7BA;margin-top:10px;}
+            /* Periodo: painel largo e horizontal (mes em cima; ano/semestre/trimestre embaixo) */
+            .fxdd-panel{min-width:210px;}
+            #fx-periodo .fxdd-panel{width:720px;max-width:calc(100vw - 48px);}
+            #fx-periodo .fxdd-panel .sr-row,#fx-periodo .fxdd-panel .av-row,#fx-periodo .fxdd-panel .pv-row{max-width:none !important;gap:6px !important;row-gap:8px !important;}
+            #fx-periodo .fxdd-panel .sr-btn,#fx-periodo .fxdd-panel .av-btn,#fx-periodo .fxdd-panel .pv-btn{padding:5px 9px;}
+            #fx-periodo .fxdd-panel .sr-divider:first-of-type,#fx-periodo .fxdd-panel .av-divider:first-of-type,#fx-periodo .fxdd-panel .pv-divider:first-of-type{flex-basis:100%;width:100%;height:0 !important;border:0 !important;background:transparent !important;margin:2px 0 0 !important;}
+            @media(max-width:1100px){#fx-periodo .fxdd-panel{width:560px;}}
+            @media(max-width:767.98px){
+              .fx-head{align-items:flex-start;padding-top:14px;}
+              .fx-title{font-size:17px;}
+              .fx-head-right{width:100%;}
+              .fx-tabs{width:100%;flex-wrap:nowrap;overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none;background:#F0F4F9;border:none;}
+              .fx-tabs::-webkit-scrollbar{display:none;}
+              .fx-tabs a,.fx-tabs span{flex:0 0 auto;}
+              /* ── FILTROS mobile: controles empilhados em largura total; cada
+                    painel abre como accordion (sem recorte por overflow-x, sem
+                    rolagem horizontal escondendo filtros). O layout novo (.fx-filters)
+                    tem dropdown próprio — o nav-sidebar.js não o converte em <select>. ── */
+              .fx-filters{flex-direction:column;align-items:stretch;flex-wrap:nowrap;overflow:visible;gap:8px;}
+              .fx-filters .fx-fdiv{display:none;}
+              .fx-filters .fxdd{width:100%;position:static;display:block;}
+              .fx-filters .fx-fbtn,.fx-filters .av-dd-btn{width:100%;min-width:0;box-sizing:border-box;justify-content:space-between;}
+              .fx-filters .fx-fbtn{padding:11px 14px;font-size:13.5px;}
+              .fx-fbtn svg{transition:transform .18s;}
+              .fxdd.open .fx-fbtn svg{transform:rotate(180deg);}
+              .fx-filters .av-sel{flex:1 1 auto;min-width:0;box-sizing:border-box;}
+              /* dropdowns de valor (.av-dd) empilhados em largura total, igual aos .fxdd */
+              .fx-filters .av-row{width:100%;}
+              .fx-filters .av-dd{width:100%;position:relative;display:block;}
+              .fx-filters .av-dd-panel{width:100%;min-width:0;max-width:none;}
+              /* painel accordion: flui abaixo do botão, largura total, sem sombra flutuante */
+              .fx-filters .fxdd-panel{position:static;width:100%;min-width:0;max-width:none;box-shadow:none;margin-top:2px;box-sizing:border-box;}
+              #fx-periodo .fxdd-panel{width:100%;}
+              /* vence a regra global mobile (.sr-row{flex-wrap:nowrap} do styles.css)
+                 para os botões QUEBRAREM em grade dentro do painel, em vez de rolar */
+              .fxdd-panel .sr-row,.fxdd-panel .av-row,.fxdd-panel .pv-row{flex-wrap:wrap !important;overflow:visible !important;padding-bottom:0 !important;max-width:none !important;gap:6px !important;row-gap:8px !important;}
+              /* rótulos (Mês/Ano/Empresa…) ocupam a linha inteira — viram títulos de grupo */
+              .fxdd-panel .sr-label,.fxdd-panel .av-label,.fxdd-panel .pv-label{flex:0 0 100%;margin:4px 0 0;}
+              /* divisores viram quebra de linha, separando os grupos */
+              .fxdd-panel .sr-divider,.fxdd-panel .av-divider,.fxdd-panel .pv-divider{flex:0 0 100%;width:100% !important;height:0 !important;border:0 !important;background:transparent !important;margin:0 !important;}
+              /* botões preenchem a largura numa grade uniforme (sobrepõe flex-shrink:0 global) */
+              .fxdd-panel .sr-btn,.fxdd-panel .av-btn,.fxdd-panel .pv-btn{flex:1 1 auto !important;min-width:52px;text-align:center;padding:8px 6px;}
+              .fx-filters .fx-flimpar{width:100%;justify-content:center;margin:2px 0 0;padding:11px;border:1px solid #E3EAF2;border-radius:9px;}
+            }
+          </style>
+
+          <div class="fx-head">
+            <div>
+              <div class="fx-bc"><span>Comercial</span><span>›</span><span>Sales Report</span></div>
+              <h1 class="fx-title">Visão Geral</h1>
+            </div>
+            <div class="fx-head-right">
+              <span class="fx-dw"><i></i><span>DW atualizado · <span id="sr-dw-update">—</span></span></span>
+              <div class="fx-tabs">
+                <span class="active">Visão Geral</span>
+                <a href="comercial-performance-vendas.html">Performance de Vendas</a>
+                <a href="comercial-vendas.html">Análise de Vendas</a>
+                <a href="comercial-clientes.html">Análise de Pedidos</a>
+                <a href="comercial-base-notas-fiscais.html">Base de Notas Fiscais</a>
+                <a href="comercial-novos-negocios.html">Novos Negócios</a>
+                <a href="comercial-clientes-perdidos.html">Clientes Perdidos</a>
+                <a href="comercial-comportamento-clientes.html">Comportamento de Clientes</a>
+                <a href="comercial-calendario-cirurgico.html">Calendário Cirúrgico</a>
+              </div>
+            </div>
+          </div>
+
+          <!-- Sub-módulos (ocultos — navegação agora pelas abas fx-tabs acima) -->
+          <section style="padding:28px 0 0;display:none;">
+            <div class="container">
+              <div class="fin-subhead" style="margin-bottom:18px;">
+                <h2 style="font-size:18px;">Sub-módulos · Sales Report</h2>
+                <span class="sub">Selecione para análise detalhada</span>
+              </div>
+              <div class="modulos-grid" style="grid-template-columns:repeat(6,1fr);gap:12px;margin-bottom:32px;">
+
+                <a href="comercial-sales-report.html" class="modulo-card" data-tone="receber" style="min-height:0;padding:18px 20px;pointer-events:none;opacity:.7;">
+                  <div class="mc-top"><span class="mc-icon"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg></span></div>
+                  <div class="mc-name" style="font-size:14px;">Visão Geral</div>
+                  <div class="mc-desc">Dashboard consolidado de vendas.</div>
+                  <div class="mc-open" style="font-size:12px;">Ver <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg></div>
+                </a>
+
+                <a href="comercial-performance-vendas.html" class="modulo-card" data-tone="dre" style="min-height:0;padding:18px 20px;">
+                  <div class="mc-top"><span class="mc-icon"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg></span></div>
+                  <div class="mc-name" style="font-size:14px;">Performance de Vendas</div>
+                  <div class="mc-desc">Acompanhamento de metas e resultados.</div>
+                  <div class="mc-open" style="font-size:12px;">Ver <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg></div>
+                </a>
+
+                <a href="comercial-vendas.html" class="modulo-card" data-tone="receber" style="min-height:0;padding:18px 20px;">
+                  <div class="mc-top"><span class="mc-icon"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg></span></div>
+                  <div class="mc-name" style="font-size:14px;">Análise de Vendas</div>
+                  <div class="mc-desc">Faturamento e produtos por região.</div>
+                  <div class="mc-open" style="font-size:12px;">Ver <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg></div>
+                </a>
+
+                <a href="comercial-clientes.html" class="modulo-card" data-tone="receber" style="min-height:0;padding:18px 20px;">
+                  <div class="mc-top"><span class="mc-icon"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg></span></div>
+                  <div class="mc-name" style="font-size:14px;">Análise de Pedidos</div>
+                  <div class="mc-desc">Notas fiscais detalhadas.</div>
+                  <div class="mc-open" style="font-size:12px;">Ver <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg></div>
+                </a>
+
+                <a href="comercial-novos-negocios.html" class="modulo-card" data-tone="dre" style="min-height:0;padding:18px 20px;">
+                  <div class="mc-top"><span class="mc-icon"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="8.5" cy="7" r="4"/><path d="M20 8v6"/><path d="M23 11h-6"/></svg></span></div>
+                  <div class="mc-name" style="font-size:14px;">Novos Negócios</div>
+                  <div class="mc-desc">Aquisição e expansão de clientes.</div>
+                  <div class="mc-open" style="font-size:12px;">Ver <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg></div>
+                </a>
+
+                <a href="comercial-clientes-perdidos.html" class="modulo-card" data-tone="dre" style="min-height:0;padding:18px 20px;">
+                  <div class="mc-top"><span class="mc-icon"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="8.5" cy="7" r="4"/><line x1="23" y1="11" x2="17" y2="11"/></svg></span></div>
+                  <div class="mc-name" style="font-size:14px;">Clientes Perdidos</div>
+                  <div class="mc-desc">Clientes que deixaram de comprar.</div>
+                  <div class="mc-open" style="font-size:12px;">Ver <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg></div>
+                </a>
+
+              </div>
+            </div>
+          </section>
+
+          <!-- ═══════════ SALES REPORT DASHBOARD ═══════════ -->
+          <style>
+            /* ── Controls ── */
+            .sr-wrap{padding:20px 0 48px;display:flex;flex-direction:column;gap:16px;}
+            .sr-row{display:flex;align-items:center;gap:8px;flex-wrap:wrap;}
+            .sr-label{font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--text-4);margin-right:4px;}
+            .sr-btn{padding:5px 11px;border-radius:6px;border:1px solid var(--border);background:#fff;font-size:12px;font-weight:500;color:var(--text-2);cursor:pointer;font-family:var(--font-body);transition:all .15s;}
+            .sr-btn:hover{border-color:var(--bm-blue-500);color:var(--bm-blue-700);}
+            .sr-btn.active{background:var(--bm-blue-900);color:#fff;border-color:var(--bm-blue-900);}
+            .sr-btn.active-green{background:var(--bm-green-600);color:#fff;border-color:var(--bm-green-600);}
+            .sr-divider{width:1px;height:22px;background:var(--border-2);flex-shrink:0;}
+            /* ── Filtros de valor · dropdown multi-seleção ──
+                 MESMO componente da Análise de Vendas (comercial-vendas.html):
+                 um dropdown por campo, com busca, checkboxes e contador. Não
+                 alterar aqui sem alterar lá — os 9 submódulos usam o mesmo visual. */
+            .av-row{display:flex;align-items:center;gap:8px;flex-wrap:wrap;}
+            .av-dd{position:relative;display:inline-block;}
+            .av-dd-btn{padding:7px 12px;border-radius:8px;border:1px solid var(--border);background:#fff;font-size:12.5px;font-weight:600;color:var(--text-2);cursor:pointer;display:inline-flex;align-items:center;gap:10px;min-width:150px;justify-content:space-between;font-family:inherit;}
+            .av-dd-btn:hover{border-color:var(--bm-blue-500);}
+            .av-dd-btn.has{border-color:var(--bm-blue-600);background:var(--bm-blue-50);color:var(--bm-blue-800);}
+            .av-dd-btn .cnt{background:var(--bm-blue-600);color:#fff;border-radius:999px;padding:0 7px;font-size:11px;}
+            .av-dd-panel{position:absolute;z-index:40;top:calc(100% + 4px);left:0;width:270px;max-height:340px;display:none;flex-direction:column;background:#fff;border:1px solid var(--border);border-radius:10px;box-shadow:var(--shadow);overflow:hidden;}
+            .av-dd.open .av-dd-panel{display:flex;}
+            .av-dd-search{padding:8px;border-bottom:1px solid var(--border);}
+            .av-dd-search input{width:100%;padding:6px 8px;border:1px solid var(--border);border-radius:6px;font-size:12px;font-family:var(--font-body);box-sizing:border-box;}
+            .av-dd-list{overflow-y:auto;padding:4px;}
+            .av-dd-opt{display:flex;align-items:center;gap:8px;padding:6px 8px;border-radius:6px;font-size:12.5px;color:var(--text-2);cursor:pointer;}
+            .av-dd-opt:hover{background:var(--bm-blue-50);}
+            .av-dd-foot{display:flex;justify-content:space-between;padding:6px 10px;border-top:1px solid var(--border);}
+            .av-dd-foot button{font-size:11.5px;color:var(--bm-blue-700);background:none;border:none;cursor:pointer;font-weight:600;font-family:inherit;}
+            .av-btn{padding:5px 11px;border-radius:6px;border:1px solid var(--border);background:#fff;font-size:12px;font-weight:500;color:var(--text-2);cursor:pointer;font-family:var(--font-body);transition:all .15s;}
+            .av-btn:hover{border-color:var(--bm-blue-500);color:var(--bm-blue-700);}
+            /* ── KPI top row ── */
+            .sr-kpi-row{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;}
+            .sr-kpi{background:#fff;border:1px solid var(--border);border-radius:var(--radius);padding:16px 18px;position:relative;overflow:hidden;}
+            .sr-kpi::before{content:'';position:absolute;left:0;top:0;bottom:0;width:4px;}
+            .sr-kpi.pos::before{background:var(--bm-green-600);}
+            .sr-kpi.neg::before{background:var(--danger);}
+            .sr-kpi.neu::before{background:var(--bm-blue-600);}
+            .sr-kpi.warn::before{background:var(--warning);}
+            .sr-kpi-label{font-size:10.5px;font-weight:600;text-transform:uppercase;letter-spacing:.06em;color:var(--text-3);margin-bottom:6px;}
+            .sr-kpi-val{font-family:var(--font-display);font-size:26px;font-weight:700;color:var(--bm-blue-900);line-height:1;margin-bottom:4px;}
+            .sr-kpi-sub{font-size:12px;color:var(--text-3);}
+            .sr-kpi-badge{display:inline-flex;align-items:center;gap:4px;font-size:12px;font-weight:700;padding:2px 8px;border-radius:999px;margin-top:6px;}
+            .sr-kpi-badge.up{background:var(--bm-green-100);color:var(--bm-green-700);}
+            .sr-kpi-badge.dn{background:var(--danger-bg);color:var(--danger);}
+            /* ── Mid row ── */
+            .sr-mid{display:grid;grid-template-columns:1fr 1.6fr;gap:12px;margin-top:12px;}
+            .sr-panel{background:#fff;border:1px solid var(--border);border-radius:var(--radius);padding:18px 20px;}
+            .sr-panel h4{font-size:13px;font-weight:600;color:var(--text);margin:0 0 14px;}
+            /* ── Indicators ── */
+            .sr-ind{display:flex;flex-direction:column;gap:12px;}
+            .sr-ind-row{display:flex;justify-content:space-between;align-items:baseline;padding:10px 12px;border-radius:8px;background:var(--surface-2);}
+            .sr-ind-lbl{font-size:13px;color:var(--text-2);}
+            .sr-ind-vals{display:flex;gap:16px;align-items:baseline;}
+            .sr-ind-main{font-family:var(--font-display);font-size:18px;font-weight:700;color:var(--bm-blue-900);}
+            .sr-ind-pct{font-size:13px;font-weight:600;}
+            .sr-ind-pct.ok{color:var(--bm-green-700);}
+            .sr-ind-pct.bad{color:var(--danger);}
+            .sr-ind-gap{font-size:11px;color:var(--text-3);}
+            /* ── Chart ── */
+            .sr-chart-wrap{position:relative;height:220px;}
+            /* ── Table ── */
+            .sr-tbl-wrap{margin-top:12px;background:#fff;border:1px solid var(--border);border-radius:var(--radius);overflow:hidden;}
+            .sr-tbl{width:100%;border-collapse:collapse;font-size:12.5px;}
+            .sr-tbl thead th{background:var(--bm-blue-900);color:rgba(255,255,255,.85);text-align:right;padding:10px 12px;font-size:11px;font-weight:600;letter-spacing:.04em;text-transform:uppercase;white-space:nowrap;}
+            .sr-tbl thead th:first-child{text-align:left;}
+            .sr-tbl tbody td{padding:10px 12px;border-bottom:1px solid var(--border);text-align:right;font-variant-numeric:tabular-nums;color:var(--text-2);}
+            .sr-tbl tbody td:first-child{text-align:left;font-weight:600;color:var(--text);}
+            .sr-tbl tbody tr:last-child td{border-bottom:none;background:var(--bm-blue-50);font-weight:700;}
+            .sr-tbl tbody tr:hover td{background:var(--bm-blue-50);}
+            .sr-pct-bar{display:flex;align-items:center;gap:6px;justify-content:flex-end;}
+            .sr-pct-track{width:52px;height:5px;background:var(--surface-3);border-radius:999px;overflow:hidden;flex-shrink:0;}
+            .sr-pct-fill{height:100%;border-radius:999px;}
+            .sr-pct-fill.ok{background:var(--bm-green-600);}
+            .sr-pct-fill.warn{background:var(--warning);}
+            .sr-pct-fill.bad{background:var(--danger);}
+            .sr-chip{display:inline-block;padding:2px 7px;border-radius:4px;font-size:11px;font-weight:700;}
+            .sr-chip.up{background:var(--bm-green-100);color:var(--bm-green-700);}
+            .sr-chip.dn{background:var(--danger-bg);color:var(--danger);}
+            .sr-tbl-header{display:flex;align-items:center;justify-content:space-between;padding:12px 16px 0;}
+            .sr-tbl-header h4{font-size:14px;font-weight:600;color:var(--text);margin:0;}
+            @media(max-width:1100px){.sr-kpi-row{grid-template-columns:repeat(2,1fr);}.sr-mid{grid-template-columns:1fr;}}
+          </style>
+
+          <div class="sr-wrap">
+
+            <!-- ── FILTROS · barra horizontal (Claude Design) ── -->
+            <div class="fx-filters">
+
+              <!-- Período (Mês / Semestre / Trimestre + Ano) -->
+              <div class="fxdd" id="fx-periodo">
+                <button type="button" class="fx-fbtn" onclick="fxTogglePanel(this)">
+                  <span class="fx-fk">Período</span><span id="fx-periodo-lbl">2026</span>
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#7C93A8" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg>
+                </button>
+                <div class="fxdd-panel">
+                  <div class="sr-row">
+                    <span class="sr-label">Mês</span>
+                    <button class="sr-btn" data-fxdefault onclick="setMesTodos(this)">Todos</button>
+                    <button class="sr-btn" onclick="setMes(this,'Jan')">Jan</button>
+                    <button class="sr-btn" onclick="setMes(this,'Fev')">Fev</button>
+                    <button class="sr-btn" onclick="setMes(this,'Mar')">Mar</button>
+                    <button class="sr-btn" onclick="setMes(this,'Abr')">Abr</button>
+                    <button class="sr-btn" onclick="setMes(this,'Mai')">Mai</button>
+                    <button class="sr-btn" onclick="setMes(this,'Jun')">Jun</button>
+                    <button class="sr-btn" onclick="setMes(this,'Jul')">Jul</button>
+                    <button class="sr-btn" onclick="setMes(this,'Ago')">Ago</button>
+                    <button class="sr-btn" onclick="setMes(this,'Set')">Set</button>
+                    <button class="sr-btn" onclick="setMes(this,'Out')">Out</button>
+                    <button class="sr-btn" onclick="setMes(this,'Nov')">Nov</button>
+                    <button class="sr-btn" onclick="setMes(this,'Dez')">Dez</button>
+                    <div class="sr-divider"></div>
+                    <span class="sr-label">Ano</span>
+                    <button class="sr-btn" onclick="setAno(this,'2023')">2023</button>
+                    <button class="sr-btn" onclick="setAno(this,'2024')">2024</button>
+                    <button class="sr-btn" onclick="setAno(this,'2025')">2025</button>
+                    <button class="sr-btn active-green" data-fxdefault onclick="setAno(this,'2026')">2026</button>
+                    <div class="sr-divider" style="height:22px;"></div>
+                    <button class="sr-btn" onclick="setSem(this,'1S')">1° Sem</button>
+                    <button class="sr-btn" onclick="setSem(this,'2S')">2° Sem</button>
+                    <div class="sr-divider" style="height:22px;"></div>
+                    <button class="sr-btn" onclick="setTri(this,1)">1° Tri</button>
+                    <button class="sr-btn" onclick="setTri(this,2)">2° Tri</button>
+                    <button class="sr-btn" onclick="setTri(this,3)">3° Tri</button>
+                    <button class="sr-btn" onclick="setTri(this,4)">4° Tri</button>
+                  </div>
+                  <div class="fxdd-hint">Ctrl + clique seleciona mais de um mês/ano</div>
+                </div>
+              </div>
+
+              <div class="fx-fdiv"></div>
+
+              <!-- Filtros de valor · um dropdown POR CAMPO (Empresa, Tipo de Cliente).
+                   Injetados por srMontarToolbar() com o mesmo componente da Análise
+                   de Vendas: multi-seleção, busca e contador. -->
+              <div class="av-toolbar av-row" id="av-toolbar-filtros" style="gap:8px;flex-wrap:wrap;"></div>
+            </div>
+
+            <script>
+            /* barra de filtros fx — dropdowns compactos (Claude Design). Reaproveita
+               os botões/handlers originais (setMes/setAno/…); só os agrupa em menus. */
+            (function(){
+              window.fxTogglePanel = function(btn){
+                var dd = btn.closest('.fxdd'); if(!dd) return;
+                var open = dd.classList.contains('open');
+                document.querySelectorAll('.fxdd.open').forEach(function(d){ d.classList.remove('open'); });
+                if(!open) dd.classList.add('open');
+              };
+              function txt(id,v){ var el=document.getElementById(id); if(el) el.textContent=v; }
+              window.fxSyncLabels = function(){
+                var per = document.getElementById('fx-periodo');
+                if(per){
+                  var mesBtn = per.querySelector('.fxdd-panel button.active');
+                  var anoBtns = per.querySelectorAll('.fxdd-panel button.active-green');
+                  var ano = anoBtns.length===1 ? anoBtns[0].textContent.trim() : (anoBtns.length>1 ? anoBtns.length+' anos' : '');
+                  var mes = mesBtn ? mesBtn.textContent.trim() : '';
+                  var lbl = [ano, (mes && !/^todos$/i.test(mes) ? mes : '')].filter(Boolean).join(' · ');
+                  txt('fx-periodo-lbl', lbl || 'Todos');
+                }
+                /* Empresa / Tipo de Cliente agora são .av-dd (dropdowns de valor):
+                   quem cuida do rótulo deles é o próprio componente. */
+              };
+              window.fxLimpar = function(){
+                document.querySelectorAll('.fx-filters [data-fxdefault]').forEach(function(b){ b.click(); });
+                if (window.srLimparValores) window.srLimparValores();
+                setTimeout(window.fxSyncLabels, 0);
+              };
+              document.addEventListener('DOMContentLoaded', function(){
+                document.querySelectorAll('.fx-filters .fxdd-panel').forEach(function(p){
+                  p.addEventListener('click', function(e){ e.stopPropagation(); setTimeout(window.fxSyncLabels, 0); });
+                });
+                document.addEventListener('click', function(e){ if(e.target.closest && e.target.closest('.fxdd')) return; document.querySelectorAll('.fxdd.open').forEach(function(d){ d.classList.remove('open'); }); });
+                window.fxSyncLabels();
+              });
+            })();
+            </script>
+
+            <!-- ════════ INDICADORES (Bio · MSB · MSBio) ════════ -->
+            <style>
+              .ix-grid{display:grid;grid-template-columns:1fr 1.15fr;gap:14px;align-items:start;}
+              .ix-card{background:#fff;border:1px solid var(--border);border-radius:var(--radius);padding:18px 20px;}
+              .ix-card-head{display:flex;align-items:center;gap:8px;font-size:15px;font-weight:700;color:var(--bm-blue-900);margin-bottom:14px;}
+              .ix-card-head .ix-period{margin-left:auto;font-size:11px;font-weight:600;color:var(--text-3);background:var(--bm-blue-50);padding:3px 9px;border-radius:999px;}
+              .ix-col{display:flex;flex-direction:column;gap:14px;}
+              /* blocos com barra lateral */
+              .ix-block{position:relative;padding:10px 0 10px 14px;border-top:1px solid var(--border);}
+              .ix-block::before{content:'';position:absolute;left:0;top:10px;bottom:10px;width:4px;border-radius:3px;background:var(--bm-blue-600);}
+              .ix-block.warn::before{background:#E2492E;}
+              .ix-block-title{font-size:13px;font-weight:700;color:var(--text);margin-bottom:8px;}
+              .ix-fat-row{display:flex;align-items:baseline;gap:14px;margin-bottom:8px;}
+              .ix-fat{font-family:var(--font-display);font-size:24px;font-weight:800;color:var(--bm-blue-900);}
+              .ix-fatpct{font-family:var(--font-display);font-size:20px;font-weight:700;color:var(--text-2);}
+              .ix-kv{display:flex;gap:24px;flex-wrap:wrap;}
+              .ix-kv>div{display:flex;flex-direction:column;gap:2px;}
+              .ix-k{font-size:11px;color:var(--text-3);}
+              .ix-v{font-size:14px;font-weight:700;color:var(--text);font-variant-numeric:tabular-nums;}
+              .ix-v.ix-neg,.ix-m-val2.ix-neg{color:var(--danger);}
+              .ix-v.ix-ok,.ix-m-val2.ix-ok{color:var(--bm-green-700);}
+              .ix-v.ix-warn,.ix-m-val2.ix-warn{color:#E2492E;}
+              /* head azul (Bio/MSB) */
+              .ix-head-blue{font-size:14px;}
+              .ix-seg-name{font-size:14px;font-weight:700;color:var(--bm-blue-700);margin:2px 0 8px;}
+              .ix-seg-name.ix-sub{margin-top:16px;padding-top:14px;border-top:1px dashed var(--border-2);}
+              /* linha de métricas Bio/MSB */
+              .ix-metrics{display:grid;grid-template-columns:1.4fr .8fr 1.1fr 1.2fr .7fr .8fr;gap:8px 12px;align-items:end;}
+              .ix-m{display:flex;flex-direction:column;gap:3px;min-width:0;}
+              .ix-m-lbl{font-size:10.5px;color:var(--text-3);white-space:nowrap;}
+              .ix-m-val{font-family:var(--font-display);font-size:17px;font-weight:800;color:var(--bm-blue-900);font-variant-numeric:tabular-nums;}
+              .ix-m-val2{font-size:13px;font-weight:700;color:var(--text);font-variant-numeric:tabular-nums;}
+              .ix-fat-label{font-size:11px;color:var(--text-3);margin-bottom:2px;}
+              /* barra de progresso % meta */
+              .ix-bar-wrap{margin:14px 0 16px;}
+              .ix-bar-track{position:relative;height:14px;background:var(--bm-blue-50);border-radius:8px;overflow:hidden;border:1px solid var(--border);}
+              .ix-bar-fill{position:absolute;left:0;top:0;bottom:0;border-radius:8px;background:linear-gradient(90deg,var(--bm-blue-500),var(--bm-blue-700));transition:width .5s ease;}
+              .ix-bar-fill.ix-ok{background:linear-gradient(90deg,var(--bm-green-500),var(--bm-green-700));}
+              .ix-bar-fill.ix-warn{background:linear-gradient(90deg,#F59E0B,#E2492E);}
+              .ix-bar-mark{position:absolute;right:0;top:-2px;bottom:-2px;width:2px;background:var(--text-3);opacity:.4;}
+              .ix-bar-legend{display:flex;justify-content:space-between;font-size:10px;color:var(--text-4);margin-top:4px;}
+              /* pedidos */
+              .ix-ped-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px;}
+              .ix-ped-title{font-size:13px;font-weight:700;color:var(--text);margin-bottom:12px;}
+              @media(max-width:1100px){.ix-grid{grid-template-columns:1fr;}.ix-metrics{grid-template-columns:repeat(3,1fr);}}
+            </style>
+
+            <!-- ══ FAIXA DE KPIs (Claude Design · Faturamento Dashboard) ══ -->
+            <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:14px;">
+
+              <!-- HERO MSBio -->
+              <div style="min-width:0;grid-row:span 2;padding:22px;border-radius:14px;background:linear-gradient(150deg,#071E3D,#0E4A8A);color:#FFFFFF;display:flex;flex-direction:column;position:relative;overflow:hidden;">
+                <div style="position:absolute;inset:0;background-image:radial-gradient(circle at 90% 10%, rgba(47,191,113,0.16), transparent 45%);"></div>
+                <div style="position:relative;display:flex;align-items:center;justify-content:space-between;gap:10px;">
+                  <span style="font-size:11.5px;font-weight:800;letter-spacing:1px;color:#A8C3DD;">FATURAMENTO × META · MSBIO</span>
+                  <span id="ix-period" style="font-size:11px;font-weight:700;color:#DCEAF7;background:rgba(255,255,255,0.10);border-radius:999px;padding:3px 10px;white-space:nowrap;">Jun 2026</span>
+                </div>
+                <div style="position:relative;display:flex;align-items:baseline;gap:12px;margin-top:14px;flex-wrap:wrap;">
+                  <span id="ix-msbio-fat" style="font-size:31px;font-weight:800;letter-spacing:-0.8px;">—</span>
+                  <span style="display:inline-flex;align-items:center;gap:4px;font-size:13px;font-weight:800;color:#4FD98D;">
+                    <span id="ix-msbio-pct2">—</span>
+                  </span>
+                </div>
+                <div style="position:relative;margin-top:16px;">
+                  <div style="height:8px;border-radius:999px;background:rgba(255,255,255,0.14);overflow:hidden;">
+                    <div id="ix-msbio-bar" style="height:100%;width:0%;border-radius:999px;background:linear-gradient(90deg,#2FBF71,#4FD98D);transition:width .5s ease;"></div>
+                  </div>
+                  <div style="display:flex;justify-content:space-between;margin-top:8px;font-size:11.5px;color:#8FAECB;">
+                    <span>Meta: <span id="ix-msbio-meta" style="color:#DCEAF7;font-weight:700;">—</span></span>
+                    <span>Gap: <span id="ix-msbio-gap" style="color:#DCEAF7;font-weight:700;">—</span></span>
+                  </div>
+                </div>
+                <div style="flex:1;"></div>
+                <div style="position:relative;display:flex;gap:28px;margin-top:18px;padding-top:16px;border-top:1px solid rgba(255,255,255,0.10);flex-wrap:wrap;">
+                  <div>
+                    <div style="font-size:11px;font-weight:700;color:#8FAECB;">MARGEM · ÍNDICE</div>
+                    <div id="ix-msbio-margem" style="font-size:18px;font-weight:800;margin-top:3px;">—</div>
+                  </div>
+                  <div>
+                    <div style="font-size:11px;font-weight:700;color:#8FAECB;">% MARGEM</div>
+                    <div id="ix-msbio-margempct" style="font-size:18px;font-weight:800;margin-top:3px;">—</div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- BIO -->
+              <div style="min-width:0;padding:18px 20px;border-radius:14px;background:#FFFFFF;border:1px solid #E3EAF2;">
+                <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;">
+                  <span style="font-size:12.5px;font-weight:800;color:#0A2E5C;">Bio</span>
+                  <span id="ix-bio-badge" style="display:inline-flex;align-items:center;gap:4px;font-size:11.5px;font-weight:800;color:#22794C;background:#EAF8F0;border-radius:999px;padding:3px 9px;white-space:nowrap;"><span class="arr"></span><span id="ix-bio-pct">—</span></span>
+                </div>
+                <div id="ix-bio-fat" style="font-size:22px;font-weight:800;color:#0A2E5C;margin-top:8px;letter-spacing:-0.4px;">—</div>
+                <div style="height:6px;border-radius:999px;background:#EDF2F8;overflow:hidden;margin-top:10px;">
+                  <div id="ix-bio-minibar" style="height:100%;width:0%;border-radius:999px;background:#2FBF71;transition:width .5s ease;"></div>
+                </div>
+                <div style="display:flex;gap:16px;margin-top:10px;font-size:11.5px;color:#5B7189;flex-wrap:wrap;">
+                  <span>Meta <strong style="color:#33495E;" id="ix-bio-meta">—</strong></span>
+                  <span>Gap <strong style="color:#33495E;" id="ix-bio-gap">—</strong></span>
+                  <span>Margem <strong style="color:#33495E;"><span id="ix-bio-margempct">—</span> · <span id="ix-bio-margem">—</span></strong></span>
+                  <span>Pedidos <strong style="color:#33495E;"><span id="ix-ped-bio-qtd">—</span> · <span id="ix-ped-bio-valor">—</span></strong></span>
+                </div>
+              </div>
+
+              <!-- MSB -->
+              <div style="min-width:0;padding:18px 20px;border-radius:14px;background:#FFFFFF;border:1px solid #E3EAF2;">
+                <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;">
+                  <span style="font-size:12.5px;font-weight:800;color:#0A2E5C;">MSB</span>
+                  <span id="ix-msb-badge" style="display:inline-flex;align-items:center;gap:4px;font-size:11.5px;font-weight:800;color:#22794C;background:#EAF8F0;border-radius:999px;padding:3px 9px;white-space:nowrap;"><span class="arr"></span><span id="ix-msb-pct">—</span></span>
+                </div>
+                <div id="ix-msb-fat" style="font-size:22px;font-weight:800;color:#0A2E5C;margin-top:8px;letter-spacing:-0.4px;">—</div>
+                <div style="height:6px;border-radius:999px;background:#EDF2F8;overflow:hidden;margin-top:10px;">
+                  <div id="ix-msb-minibar" style="height:100%;width:0%;border-radius:999px;background:#2FBF71;transition:width .5s ease;"></div>
+                </div>
+                <div style="display:flex;gap:16px;margin-top:10px;font-size:11.5px;color:#5B7189;flex-wrap:wrap;">
+                  <span>Meta <strong style="color:#33495E;" id="ix-msb-meta">—</strong></span>
+                  <span>Gap <strong style="color:#33495E;" id="ix-msb-gap">—</strong></span>
+                  <span>Margem <strong style="color:#33495E;"><span id="ix-msb-margempct">—</span> · <span id="ix-msb-margem">—</span></strong></span>
+                  <span>Pedidos <strong style="color:#33495E;"><span id="ix-ped-msb-qtd">—</span> · <span id="ix-ped-msb-valor">—</span></strong></span>
+                </div>
+              </div>
+            </div>
+
+            <!-- ── GRÁFICO EVOLUÇÃO MENSAL ──────────────────────── -->
+            <div class="sr-mid" style="grid-template-columns:1fr;">
+              <div class="sr-panel">
+                <h4>Evolução Mensal · Faturamento <span id="sr-mensal-ano" style="font-weight:500;color:var(--text-3);font-size:11px;"></span></h4>
+                <div class="sr-chart-wrap"><canvas id="sr-chart-mensal"></canvas></div>
+              </div>
+            </div>
+
+            <!-- ── GRÁFICO DIÁRIO ──────────────────────────────── -->
+            <div class="sr-mid" style="grid-template-columns:1fr;">
+              <div class="sr-panel">
+                <h4>Faturamento por Dia</h4>
+                <div class="sr-chart-wrap"><canvas id="sr-chart-daily"></canvas></div>
+              </div>
+            </div>
+
+            <!-- ── PEDIDOS EM ANDAMENTO + FATURAMENTO DIÁRIO (lado a lado) ──
+                 No molde da lista das Negociações (Licitação › Funil de Vendas):
+                 totalizador na faixa navy (a legenda filtra), busca, cabeçalho
+                 que ordena, total no rodapé e a FICHA à direita ao clicar.
+                 Desenho e comportamento: ../sr-diario.css · ../sr-diario.js -->
+            <style>
+              .sr-daily-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;margin-top:12px;}
+              @media(max-width:1200px){.sr-daily-grid{grid-template-columns:minmax(0,1fr);}}
+            </style>
+            <div class="sr-daily-grid sd-grid">
+
+              <!-- Pedidos em andamento (retrato de hoje) -->
+              <section class="sd-card" id="sd-ped" data-sd="ped" aria-labelledby="sd-ped-tt">
+                <div class="sd-hero">
+                  <div class="sd-h-top">
+                    <div class="sd-h-tt">
+                      <span class="sd-h-ic" aria-hidden="true"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="3" width="15" height="13"/><polygon points="16 8 20 8 23 11 23 16 16 16 16 8"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/></svg></span>
+                      <h4 id="sd-ped-tt">Pedidos em andamento</h4>
+                    </div>
+                    <span class="sd-h-chip" title="Não depende do período do filtro: são os pedidos em andamento agora"><i></i>retrato de hoje</span>
+                  </div>
+                  <div class="sd-h-k">Valor em andamento</div>
+                  <div class="sd-h-v" id="sd-ped-v">—</div>
+                  <div class="sd-h-st" id="sd-ped-st"></div>
+                  <div class="sd-split" id="sd-ped-split" hidden></div>
+                  <div class="sd-leg" id="sd-ped-leg" role="group"></div>
+                </div>
+                <div class="sd-in">
+                  <div class="sd-bar">
+                    <label class="sd-busca"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg><input type="search" placeholder="Buscar pedido, cliente, UF, vertical…" autocomplete="off" aria-label="Buscar nos pedidos em andamento"></label>
+                    <button type="button" class="sd-fx" id="sd-ped-fx" hidden></button>
+                    <span class="sd-info" id="sd-ped-info"></span>
+                    <label class="sd-ord-m">Ordenar <select id="sd-ped-ord" aria-label="Ordenar os pedidos"></select></label>
+                  </div>
+                  <div class="sd-tw tbl-wrap"><table class="sd-tb" id="sd-ped-tb"><thead></thead><tbody><tr class="sd-vz-r"><td class="sd-vz">Carregando…</td></tr></tbody><tfoot></tfoot></table></div>
+                  <button type="button" class="sd-mais" id="sd-ped-mais" hidden></button>
+                  <p class="sd-nota">Clique no pedido para abrir a ficha com os itens e onde ele está. <b>Como conta:</b> status em processo logístico ou aguardando faturamento, de qualquer data — não muda com o período escolhido.</p>
+                </div>
+              </section>
+
+              <!-- Faturamento diário (notas fiscais de hoje) -->
+              <section class="sd-card" id="sd-nf" data-sd="nf" aria-labelledby="sd-nf-tt">
+                <div class="sd-hero">
+                  <div class="sd-h-top">
+                    <div class="sd-h-tt">
+                      <span class="sd-h-ic" aria-hidden="true"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg></span>
+                      <h4 id="sd-nf-tt">Faturamento diário</h4>
+                    </div>
+                    <span class="sd-h-chip" id="sd-nf-chip" title="Notas fiscais com data de hoje (horário de Brasília)"><i></i>hoje</span>
+                  </div>
+                  <div class="sd-h-k">Faturado hoje</div>
+                  <div class="sd-h-v" id="sd-nf-v">—</div>
+                  <div class="sd-h-st" id="sd-nf-st"></div>
+                  <div class="sd-split" id="sd-nf-split" hidden></div>
+                  <div class="sd-leg" id="sd-nf-leg" role="group"></div>
+                </div>
+                <div class="sd-in">
+                  <div class="sd-bar">
+                    <label class="sd-busca"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg><input type="search" placeholder="Buscar nota, cliente, família, UF…" autocomplete="off" aria-label="Buscar nas notas fiscais de hoje"></label>
+                    <button type="button" class="sd-fx" id="sd-nf-fx" hidden></button>
+                    <span class="sd-info" id="sd-nf-info"></span>
+                    <label class="sd-ord-m">Ordenar <select id="sd-nf-ord" aria-label="Ordenar as notas"></select></label>
+                  </div>
+                  <div class="sd-tw tbl-wrap"><table class="sd-tb" id="sd-nf-tb"><thead></thead><tbody><tr class="sd-vz-r"><td class="sd-vz">Carregando…</td></tr></tbody><tfoot></tfoot></table></div>
+                  <button type="button" class="sd-mais" id="sd-nf-mais" hidden></button>
+                  <p class="sd-nota">Clique na nota para abrir a ficha com os itens e o que a compõe. <b>Como conta:</b> notas com data de hoje, uma linha por nota (as famílias dela ficam juntas) — não muda com o período escolhido.</p>
+                </div>
+              </section>
+
+            </div>
+
+            <!-- ── TABELA POR FILIAL (drill-down) ──────────────── -->
+            <style>
+              .sr-tbl tbody tr.sr-fl-row:last-child td{background:#fff;}
+              .sr-fl-row:hover td{background:var(--bm-blue-50);}
+              .sr-fl-row .sr-tg{transition:transform .12s;}
+              .sr-fl-total td{background:var(--bm-blue-50)!important;border-top:2px solid var(--border-2);}
+            </style>
+            <div class="sr-tbl-wrap">
+              <div class="sr-tbl-header" style="padding-bottom:12px;border-bottom:1px solid var(--border);">
+                <div style="display:flex;flex-direction:column;gap:1px;">
+                  <h4 style="font-size:15px;font-weight:700;color:var(--bm-blue-900);">Performance por Filial</h4>
+                  <span id="sr-fil-period" style="font-weight:500;color:var(--text-3);font-size:11px;"></span>
+                </div>
+                <div style="display:flex;align-items:center;gap:6px;">
+                  <button onclick="srExpandirNivel()" class="sr-btn" style="font-size:11px;padding:5px 10px;display:inline-flex;align-items:center;gap:4px;" title="Expandir próximo nível">
+                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
+                    + Nível
+                  </button>
+                  <button onclick="srRecolher()" class="sr-btn" style="font-size:11px;padding:5px 10px;display:inline-flex;align-items:center;gap:4px;" title="Recolher tudo">
+                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg>
+                    Recolher
+                  </button>
+                  <button onclick="srExportExcel()" class="sr-btn" style="font-size:11px;padding:5px 10px;display:inline-flex;align-items:center;gap:4px;" title="Exportar para Excel">
+                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                    Excel
+                  </button>
+                </div>
+              </div>
+              <table class="sr-tbl">
+                <thead>
+                  <tr>
+                    <th>Filial</th>
+                    <th>Faturamento</th>
+                    <th>Meta</th>
+                    <th>% Atingimento</th>
+                    <th>Gap</th>
+                    <th>% Margem</th>
+                    <th>Nota de Margem</th>
+                  </tr>
+                </thead>
+                <tbody id="sr-tbody">
+                </tbody>
+              </table>
+            </div>
+
+          </div><!-- /sr-wrap -->
+
+          <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+          <script>
+          // Claude Design: tipografia e grade sutil nos gráficos
+          if(window.Chart){
+            Chart.defaults.font.weight='600';
+            Chart.defaults.font.family="'Plus Jakarta Sans', system-ui, sans-serif";
+            Chart.defaults.color='#7C93A8';
+            Chart.defaults.borderColor='#EDF2F8';
+          }
+          </script>
+          <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+          <script>
+          // ── Dados das filiais ──────────────────────────────────
+          const FILIAIS = [
+            { nome:'FILIAL-BH',    meta:2500000, fat:2621000, metaDia:96153, fatDia:100807, margem:7.80 },
+            { nome:'FILIAL-RJ',    meta:650000,  fat:612000,  metaDia:25000, fatDia:23538,  margem:7.20 },
+            { nome:'FILIAL-SP',    meta:800000,  fat:842000,  metaDia:30769, fatDia:32384,  margem:7.45 },
+            { nome:'FILIAL-SL',    meta:350000,  fat:381000,  metaDia:13461, fatDia:14653,  margem:7.10 },
+            { nome:'FILIAL-BSB',   meta:180000,  fat:163000,  metaDia:6923,  fatDia:6269,   margem:6.90 },
+            { nome:'VENDA DIRETA', meta:120000,  fat:135000,  metaDia:4615,  fatDia:5192,   margem:8.20 },
+            { nome:'BSS',          meta:80000,   fat:66000,   metaDia:3076,  fatDia:2538,   margem:6.50 },
+            { nome:'RCA-EXPORT',   meta:20000,   fat:0,       metaDia:769,   fatDia:0,      margem:null },
+            { nome:'Nova Tecnol.', meta:null,    fat:0,       metaDia:null,  fatDia:0,      margem:null },
+          ];
+
+          const fmtM = v => v == null || v === 0 ? '–' : 'R$ ' + (v>=1e6?(v/1e6).toFixed(2)+'M':(v/1e3).toFixed(0)+'k');
+          const fmtK = v => v == null || v === 0 ? '–' : 'R$ ' + (v/1e3).toFixed(1)+'k';
+          const fmtMg = v => v == null ? '–' : v.toFixed(2);
+
+          function renderTable(data) {
+            const tbody = document.getElementById('sr-tbody');
+            let totMeta=0,totFat=0,totMD=0,totFD=0;
+            const rows = data.map(f => {
+              const pct = f.meta ? Math.round(f.fat/f.meta*100) : null;
+              const gap = f.meta ? f.fat-f.meta : null;
+              const gapD= f.metaDia ? f.fatDia-f.metaDia : null;
+              const cls = pct==null?'':'pct='+(pct>=100?'ok':pct>=80?'warn':'bad');
+              if(f.meta){totMeta+=f.meta;} totFat+=f.fat;
+              if(f.metaDia){totMD+=f.metaDia;} totFD+=f.fatDia;
+              const pctCls = pct==null?'':pct>=100?'ok':pct>=80?'warn':'bad';
+              const barW = pct==null?0:Math.min(pct,100);
+              return `<tr>
+                <td>${f.nome}</td>
+                <td>${fmtM(f.meta)}</td>
+                <td style="font-weight:600;color:var(--bm-blue-900);">${fmtM(f.fat)}</td>
+                <td>${gap==null?'–':'<span class="sr-chip '+(gap>=0?'up':'dn')+'">'+(gap>=0?'+':'')+fmtM(Math.abs(gap))+'</span>'}</td>
+                <td>
+                  ${pct==null?'–':`<div class="sr-pct-bar">
+                    <span style="font-weight:700;color:var(--text);min-width:34px;">${pct}%</span>
+                    <div class="sr-pct-track"><div class="sr-pct-fill ${pctCls}" style="width:${barW}%"></div></div>
+                  </div>`}
+                </td>
+                <td>${fmtK(f.metaDia)}</td>
+                <td>${gapD==null?'–':'<span class="sr-chip '+(gapD>=0?'up':'dn')+'">'+(gapD>=0?'+':'')+fmtK(Math.abs(gapD))+'</span>'}</td>
+                <td style="color:${f.margem&&f.margem>=7.5?'var(--bm-green-700)':f.margem&&f.margem<7?'var(--danger)':'var(--text-2)'};">${fmtMg(f.margem)}</td>
+              </tr>`;
+            });
+            // Total row
+            const totPct = totMeta?Math.round(totFat/totMeta*100):0;
+            const totGap = totFat-totMeta;
+            rows.push(`<tr>
+              <td>TOTAL</td>
+              <td>${fmtM(totMeta)}</td>
+              <td>${fmtM(totFat)}</td>
+              <td><span class="sr-chip ${totGap>=0?'up':'dn'}">${totGap>=0?'+':''}${fmtM(Math.abs(totGap))}</span></td>
+              <td><b>${totPct}%</b></td>
+              <td>${fmtK(totMD)}</td>
+              <td></td>
+              <td>7,30</td>
+            </tr>`);
+            tbody.innerHTML = rows.join('');
+          }
+
+          // ── Gráfico diário (alimentado pelo Power BI) ──────────
+          let _chartDiario = null;
+          window.renderChartDiario = function(labels, valores){
+            const el = document.getElementById('sr-chart-daily');
+            if(!el || typeof Chart === 'undefined') return;
+            const cores = valores.map(v => Number(v) > 0 ? 'rgba(39,208,69,.7)' : 'rgba(203,213,225,.45)');
+            if(_chartDiario){
+              _chartDiario.data.labels = labels;
+              _chartDiario.data.datasets[0].data = valores;
+              _chartDiario.data.datasets[0].backgroundColor = cores;
+              _chartDiario.update();
+              return;
+            }
+            _chartDiario = new Chart(el.getContext('2d'),{
+              type:'bar',
+              data:{ labels, datasets:[{ label:'Faturamento', data:valores, backgroundColor:cores, borderRadius:3, borderSkipped:false }] },
+              options:{
+                responsive:true, maintainAspectRatio:false,
+                plugins:{ legend:{ display:false }, tooltip:{ callbacks:{ label:c=>'R$ '+Number(c.raw).toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2}) } } },
+                scales:{
+                  x:{ grid:{ display:false }, ticks:{ font:{ size:10 }, maxRotation:0, autoSkip:true, autoSkipPadding:8 } },
+                  y:{ grid:{ color:'rgba(15,23,42,.05)' }, ticks:{ font:{ size:10 }, callback:v=>'R$'+(v/1000).toFixed(0)+'k' } }
+                }
+              }
+            });
+          };
+
+          // ── Gráfico Evolução Mensal (alimentado pelo Power BI) ──
+          let _chartMensal = null;
+          window.renderChartMensal = function(valores, metas){
+            const el = document.getElementById('sr-chart-mensal');
+            if(!el || typeof Chart === 'undefined') return;
+            const labels = ['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];
+            // meta: meses sem meta projetada (0/nulo) viram null para a linha não cair a zero
+            const metaLine = (metas || []).map(v => Number(v) > 0 ? Number(v) : null);
+            // cor da barra: verde se faturamento > meta, vermelho se <= meta; cinza sem faturamento; azul sem meta p/ comparar
+            const cores = valores.map((v,i)=>{
+              const fv = Number(v)||0, mv = Number((metas||[])[i])||0;
+              if(fv<=0) return 'rgba(203,213,225,.45)';
+              if(mv>0)  return fv>mv ? 'rgba(34,163,63,.82)' : 'rgba(220,38,38,.80)';
+              return 'rgba(30,136,229,.8)';
+            });
+            if(_chartMensal){
+              _chartMensal.data.datasets[0].data = valores;
+              _chartMensal.data.datasets[0].backgroundColor = cores;
+              if(_chartMensal.data.datasets[1]) _chartMensal.data.datasets[1].data = metaLine;
+              _chartMensal.update(); return;
+            }
+            _chartMensal = new Chart(el.getContext('2d'),{
+              type:'bar',
+              data:{ labels, datasets:[
+                { label:'Faturamento', data:valores, backgroundColor:cores, borderRadius:3, borderSkipped:false, order:2, bmLabelInBar:true },
+                { label:'Meta', type:'line', data:metaLine, borderColor:'#F59E0B', backgroundColor:'#F59E0B', borderWidth:2.5, tension:.35, spanGaps:true, order:1, pointRadius:3, pointHoverRadius:5, pointBackgroundColor:'#fff', pointBorderColor:'#F59E0B', pointBorderWidth:2, bmLabelPos:'below', bmLabelColor:'#B45309' }
+              ] },
+              options:{ responsive:true, maintainAspectRatio:false,
+                plugins:{ legend:{ display:true, position:'top', labels:{ usePointStyle:true, font:{ size:11 } } }, tooltip:{ callbacks:{ label:c=>c.dataset.label+': R$ '+Number(c.raw).toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2}) } } },
+                scales:{ x:{ grid:{ display:false }, ticks:{ font:{ size:10 } } }, y:{ grid:{ color:'rgba(15,23,42,.05)' }, ticks:{ font:{ size:10 }, callback:v=>'R$'+(v/1000).toFixed(0)+'k' } } }
+              }
+            });
+          };
+
+          // ── Filtros ────────────────────────────────────────────
+          // Ctrl+clique (ou Cmd no Mac) permite selecionar MAIS DE UM mês/ano
+          const _srMulti = () => !!(window.event && (window.event.ctrlKey || window.event.metaKey));
+          function setMes(btn,mes){
+            const row = btn.closest('.sr-row'), f = window.filtroAtual;
+            const v = (window.MES_NUM && window.MES_NUM[mes]) || null;
+            if (!f || !v) return;
+            let cur = f.mes==null?[]:[].concat(f.mes);
+            if (_srMulti()){ cur = cur.includes(v) ? cur.filter(x=>x!==v) : cur.concat(v); } else { cur=[v]; }
+            f.mes = cur.length ? (cur.length===1?cur[0]:cur) : null; f.sem = null; f.tri = null;
+            row.querySelectorAll('.sr-btn').forEach(x=>{
+              const oc = x.getAttribute('onclick')||'';
+              if (/setSem|setTri|setMesTodos/.test(oc)) x.classList.remove('active');
+              const mm = oc.match(/setMes\(this,'(\w+)'\)/);
+              if (mm) x.classList.toggle('active', cur.includes(window.MES_NUM[mm[1]]));
+            });
+            if (!cur.length){ const t=row.querySelector('[onclick*="setMesTodos"]'); if(t) t.classList.add('active'); }
+            if (window.aplicarFiltroFaturamento) window.aplicarFiltroFaturamento();
+          }
+          function setMesTodos(btn){
+            btn.closest('.sr-row').querySelectorAll('.sr-btn.active').forEach(b=>b.classList.remove('active'));
+            btn.classList.add('active');
+            if (window.filtroAtual) { window.filtroAtual.mes = null; window.filtroAtual.sem = null; window.filtroAtual.tri = null; }
+            if (window.aplicarFiltroFaturamento) window.aplicarFiltroFaturamento();
+          }
+          function setTri(btn,q){
+            btn.closest('.sr-row').querySelectorAll('.sr-btn.active').forEach(b=>b.classList.remove('active'));
+            btn.classList.add('active');
+            if (window.filtroAtual) { window.filtroAtual.tri = q; window.filtroAtual.sem = null; window.filtroAtual.mes = null; }
+            if (window.aplicarFiltroFaturamento) window.aplicarFiltroFaturamento();
+          }
+          function setAno(btn,ano){
+            const row = btn.closest('.sr-row'), f = window.filtroAtual;
+            const v = parseInt(ano, 10);
+            if (!f) return;
+            let cur = [].concat(f.ano);
+            if (_srMulti()){ cur = cur.includes(v) ? cur.filter(x=>x!==v) : cur.concat(v); if (!cur.length) cur=[v]; } else { cur=[v]; }
+            f.ano = cur.length===1 ? cur[0] : cur;
+            row.querySelectorAll('.sr-btn').forEach(x=>{
+              const mm = (x.getAttribute('onclick')||'').match(/setAno\(this,'?(\d{4})'?\)/);
+              if (mm) x.classList.toggle('active-green', cur.includes(parseInt(mm[1],10)));
+            });
+            if (window.aplicarFiltroFaturamento) window.aplicarFiltroFaturamento();
+          }
+          function setSem(btn,s){
+            btn.closest('.sr-row').querySelectorAll('.sr-btn.active').forEach(b=>b.classList.remove('active'));
+            btn.classList.add('active');
+            if (window.filtroAtual) { window.filtroAtual.sem = s; window.filtroAtual.tri = null; } // '1S' ou '2S'
+            if (window.aplicarFiltroFaturamento) window.aplicarFiltroFaturamento();
+          }
+          /* ── Filtros de valor (Empresa · Tipo de Cliente) ─────────────────
+             Componente IDÊNTICO ao da Análise de Vendas (comercial-vendas.html):
+             um dropdown por campo, multi-seleção, com busca, contador e
+             Limpar/Fechar. Os valores vêm do próprio modelo; se a query falhar
+             (sem sessão, OLS, etc.) cai na lista fixa de reserva. */
+          // Os VALORES são exatamente os que já estavam nos botões desta página —
+          // lista fixa, NÃO consultada no modelo. Só a forma de escolher mudou.
+          const SR_FILTROS = [
+            { id:'empresa',     label:'Empresa',         col:"'Empresas'[Código da empresa]",
+              valores:['BIO','MSB'] },
+            { id:'tipoCliente', label:'Tipo de Cliente', col:"'Clientes'[Tipo de cliente (Revisado)]",
+              valores:['Distribuidor','Órgão Público','Representante','Venda Direta'] }
+          ];
+          window._srSel = {};
+          SR_FILTROS.forEach(f => window._srSel[f.id] = new Set());
+          const srEsc = s => String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+
+          // ── Componente: dropdown multi-seleção ──
+          function srMakeDropdown({ label, getOptions, getSelected, setSelected, onChange }){
+            const wrap = document.createElement('div'); wrap.className = 'av-dd';
+            const btn = document.createElement('button'); btn.className = 'av-dd-btn'; btn.type = 'button';
+            const panel = document.createElement('div'); panel.className = 'av-dd-panel';
+            panel.innerHTML = `<div class="av-dd-search"><input type="text" placeholder="Buscar…"></div><div class="av-dd-list"></div><div class="av-dd-foot"><button type="button" data-act="limpar">Limpar</button><button type="button" data-act="fechar">Fechar</button></div>`;
+            wrap.appendChild(btn); wrap.appendChild(panel);
+            const list = panel.querySelector('.av-dd-list');
+            const search = panel.querySelector('input');
+            let loaded = false, options = [];
+            function refresh(){
+              const n = getSelected().length;
+              btn.classList.toggle('has', n > 0);
+              btn.innerHTML = `<span>${label}</span>${ n ? `<span class="cnt">${n}</span>` : '<span style="color:var(--text-4);font-weight:500;">Todos</span>' }`;
+            }
+            function renderList(){
+              const q = (search.value || '').toLowerCase();
+              const sel = new Set(getSelected());
+              const items = options.filter(o => !q || String(o.label).toLowerCase().includes(q));
+              list.innerHTML = items.length
+                ? items.map(o => `<label class="av-dd-opt"><input type="checkbox" value="${srEsc(o.value)}" ${sel.has(o.value) ? 'checked' : ''}>${o.label}</label>`).join('')
+                : '<div style="padding:8px;color:var(--text-3);font-size:12px;">nenhum</div>';
+            }
+            async function ensure(){
+              if (loaded) return;
+              list.innerHTML = '<div style="padding:10px;color:var(--text-3);font-size:12px;">Carregando…</div>';
+              try { options = await getOptions(); } catch (e) { list.innerHTML = `<div style="padding:10px;color:var(--danger);font-size:12px;">erro: ${e.message.substring(0,60)}</div>`; return; }
+              loaded = true; renderList();
+            }
+            btn.addEventListener('click', async (e) => {
+              e.stopPropagation();
+              const open = wrap.classList.contains('open');
+              document.querySelectorAll('.av-dd.open').forEach(d => d.classList.remove('open'));
+              if (!open){ wrap.classList.add('open'); await ensure(); search.focus(); }
+            });
+            panel.addEventListener('click', e => e.stopPropagation());
+            list.addEventListener('change', (e) => {
+              if (e.target.matches('input[type=checkbox]')){ setSelected(e.target.value, e.target.checked); refresh(); onChange(); }
+            });
+            search.addEventListener('input', renderList);
+            panel.querySelector('[data-act=limpar]').addEventListener('click', () => { setSelected(null, false, true); renderList(); refresh(); onChange(); });
+            panel.querySelector('[data-act=fechar]').addEventListener('click', () => wrap.classList.remove('open'));
+            refresh();
+            return wrap;
+          }
+          document.addEventListener('click', () => document.querySelectorAll('.av-dd.open').forEach(d => d.classList.remove('open')));
+
+          function srMontarToolbar(){
+            const tb = document.getElementById('av-toolbar-filtros');
+            if (!tb) return;
+            tb.innerHTML = '';
+            SR_FILTROS.forEach(ft => tb.appendChild(srMakeDropdown({
+              label: ft.label,
+              getOptions: async () => ft.valores.map(v => ({ value:v, label:v })),
+              getSelected: () => [...window._srSel[ft.id]],
+              setSelected: (v, ck, clr) => { const s = window._srSel[ft.id]; if (clr){ s.clear(); return; } if (ck) s.add(v); else s.delete(v); },
+              onChange: () => { if (window.aplicarFiltroFaturamento) window.aplicarFiltroFaturamento(); }
+            })));
+            const limpar = document.createElement('button');
+            limpar.className = 'av-btn'; limpar.type = 'button'; limpar.textContent = '✕ Limpar';
+            limpar.style.fontSize = '11px';
+            limpar.addEventListener('click', () => { window.srLimparValores(); if (window.aplicarFiltroFaturamento) window.aplicarFiltroFaturamento(); });
+            tb.appendChild(limpar);
+          }
+          window.srMontarToolbar = srMontarToolbar;
+          window.srLimparValores = function(){
+            SR_FILTROS.forEach(f => window._srSel[f.id].clear());
+            srMontarToolbar();
+          };
+
+          // ── Init ───────────────────────────────────────────────
+          document.addEventListener('DOMContentLoaded',()=>{
+            // tabela de filiais e gráfico diário são renderizados pelo Power BI (aplicarFiltroFaturamento)
+          });
+          </script>
+
+          <!-- sub-module cards (hidden - dashboard above) -->
+          <div style="display:none;margin-top:40px;">
+          <div class="modulos-grid">
+                <a href="comercial-vendas.html" class="modulo-card" data-tone="receber">
+                  <div class="mc-top">
+                    <span class="mc-icon">
+                      <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
+                    </span>
+                  </div>
+                  <div class="mc-name">Análise de Vendas</div>
+                  <div class="mc-desc">Faturamento e análise de produtos por região.</div>
+                  <div class="mc-open">Abrir módulo <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg></div>
+                </a>
+                <a href="comercial-clientes.html" class="modulo-card" data-tone="receber">
+                  <div class="mc-top">
+                    <span class="mc-icon">
+                      <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+                    </span>
+                  </div>
+                  <div class="mc-name">Análise de Pedidos</div>
+                  <div class="mc-desc">Carteira de clientes e concentração de receita.</div>
+                  <div class="mc-open">Abrir módulo <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg></div>
+                </a>
+                <a href="comercial-novos-negocios.html" class="modulo-card" data-tone="receber">
+                  <div class="mc-top">
+                    <span class="mc-icon">
+                      <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="8.5" cy="7" r="4"/><path d="M20 8v6"/><path d="M23 11h-6"/></svg>
+                    </span>
+                  </div>
+                  <div class="mc-name">Novos Negócios</div>
+                  <div class="mc-desc">Aquisição e expansão de clientes.</div>
+                  <div class="mc-open">Abrir módulo <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg></div>
+                </a>
+              </div>
+            </div>
+          </section>
+        </div><!-- /area-main -->
+      </div><!-- /area-grid -->
+    </div><!-- /container -->
+  </div><!-- /area-body -->
+
+  <!-- FOOTER -->
+  <footer class="site-footer">
+    <div class="container">
+      <div class="bm-footer-grid">
+
+        <div class="bm-footer-col">
+          <img class="footer-logo" src="/icons/icon-192.png" alt="Biomedical">
+          <h5>Unidades</h5>
+          <div class="bm-units">
+            <div class="bm-unit"><span class="city">Belo Horizonte</span><a href="tel:+553121294000">(31) 2129-4000</a></div>
+            <div class="bm-unit"><span class="city">São Paulo</span><a href="tel:+551136626263">(11) 3662-6263</a></div>
+            <div class="bm-unit"><span class="city">Rio de Janeiro</span><a href="tel:+552133115376">(21) 3311-5376</a></div>
+            <div class="bm-unit"><span class="city">Curitiba</span><a href="tel:+554132093960">(41) 3209-3960</a></div>
+            <div class="bm-unit"><span class="city">Recife</span><a href="tel:+558130978110">(81) 3097-8110</a></div>
+            <div class="bm-unit"><span class="city">Porto Alegre</span><a href="tel:+555135739515">(51) 3573-9515</a></div>
+          </div>
+          <a href="https://api.whatsapp.com/send?phone=553121294000&text=Ol%C3%A1,%20gostaria%20de%20mais%20informa%C3%A7%C3%B5es%20sobre%20a%20Biomedical." target="_blank" rel="noopener" class="bm-whatsapp">
+            <svg viewBox="0 0 24 24" fill="currentColor"><path d="M.057 24l1.687-6.163a11.867 11.867 0 0 1-1.587-5.946C.16 5.335 5.495 0 12.05 0a11.817 11.817 0 0 1 8.413 3.488 11.824 11.824 0 0 1 3.48 8.414c-.003 6.557-5.338 11.892-11.893 11.892a11.9 11.9 0 0 1-5.688-1.448L.057 24zm6.597-3.807c1.676.995 3.276 1.591 5.392 1.592 5.448 0 9.886-4.434 9.889-9.885.002-5.462-4.415-9.89-9.881-9.892-5.452 0-9.887 4.434-9.889 9.884a9.86 9.86 0 0 0 1.515 5.26l-.999 3.648 3.973-1.042zm11.387-5.464c-.074-.124-.272-.198-.57-.347-.297-.149-1.758-.868-2.031-.967-.272-.099-.47-.149-.669.149-.198.297-.768.967-.941 1.165-.173.198-.347.223-.644.074-.297-.149-1.255-.462-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.297-.347.446-.521.151-.172.2-.296.3-.495.099-.198.05-.372-.025-.521-.075-.148-.669-1.611-.916-2.206-.242-.579-.487-.501-.669-.51l-.57-.01c-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.095 3.2 5.076 4.487.71.306 1.263.489 1.694.626.712.226 1.36.194 1.872.118.571-.085 1.758-.719 2.006-1.413.248-.695.248-1.29.173-1.414z"/></svg>
+            Entre em contato!
+          </a>
+        </div>
+
+        <div class="bm-footer-col">
+          <h5>Sobre</h5>
+          <ul>
+            <li><a href="https://biomedical.com.br/institucional/" target="_blank" rel="noopener">Nosso Legado</a></li>
+            <li><a href="https://biomedical.com.br/#hub" target="_blank" rel="noopener">HUB de Negócios</a></li>
+            <li><a href="https://biomedical.com.br/fale-conosco/" target="_blank" rel="noopener">Grupo MSBIO</a></li>
+            <li><a href="https://biomedical.com.br/institucional/#certificacoes" target="_blank" rel="noopener">Certificações</a></li>
+            <li><a href="https://biomedical.com.br/fale-conosco/" target="_blank" rel="noopener">Imprensa</a></li>
+            <li><a href="https://vemprabiomedical.gupy.io/" target="_blank" rel="noopener">Carreira</a></li>
+          </ul>
+        </div>
+
+        <div class="bm-footer-col">
+          <h5>Contatos</h5>
+          <ul>
+            <li><a href="https://biomedical.com.br/wp-content/uploads/2023/08/Codigo-de-Etica-e-Conduta-Biomedical.pdf" target="_blank" rel="noopener">Ética e Compliance</a></li>
+            <li><a href="https://biomedical.com.br/institucional/#certificacoes" target="_blank" rel="noopener">Segurança e Certificações</a></li>
+            <li><a href="https://biomedical.com.br/fale-conosco/" target="_blank" rel="noopener">Central de Vendas</a></li>
+            <li><a href="https://api.whatsapp.com/send?phone=553121294000" target="_blank" rel="noopener">Fale com a gente</a></li>
+            <li><a href="https://biomedical.com.br/canal-de-denuncias/" target="_blank" rel="noopener">Ouvidoria</a></li>
+          </ul>
+        </div>
+
+        <div class="bm-footer-col">
+          <h5>Produtos</h5>
+          <ul>
+            <li><a href="https://biomedical.com.br/produtos/" target="_blank" rel="noopener">Vascular</a></li>
+            <li><a href="https://biomedical.com.br/produtos/" target="_blank" rel="noopener">Heart e Rhythm</a></li>
+            <li><a href="https://biomedical.com.br/produtos/" target="_blank" rel="noopener">Intensive Care</a></li>
+            <li><a href="https://biomedical.com.br/produtos/" target="_blank" rel="noopener">Dialysis</a></li>
+            <li><a href="https://biomedical.com.br/produtos/" target="_blank" rel="noopener">Accessories</a></li>
+            <li><a href="https://biomedical.com.br/produtos/" target="_blank" rel="noopener">Guidewires</a></li>
+            <li><a href="https://biomedical.com.br/produtos/" target="_blank" rel="noopener">Cath Lab</a></li>
+            <li><a href="https://biomedical.com.br/produtos/" target="_blank" rel="noopener">Segurança do Paciente</a></li>
+          </ul>
+        </div>
+
+      </div>
+
+      <div class="bm-footer-bottom">
+        <span>© <span id="year"></span> Biomedical · Portal Corporativo Interno</span>
+        <span class="bm-footer-meta">Belo Horizonte · São Paulo · Rio de Janeiro · Curitiba · Recife · Porto Alegre</span>
+      </div>
+    </div>
+  </footer>
+
+  <script src="../script.js?v=8"></script>
+<script src="../nav-sidebar.js?v=52"></script>
+<script src="../sr-intercompany.js?v=1"></script>
+<script src="../sr-diario.js?v=2"></script>
+<script>
+// ================================================================
+// POWER BI — Autenticação automática e busca de dados reais
+// (mesmo mecanismo da Análise de Vendas — comercial-vendas.html)
+// ================================================================
+const PBI_CFG = {
+  clientId:    '129978ce-ff3b-431d-98b3-66a1bcb766b1',
+  tenantId:    'c311c9e6-6017-42a9-b306-4057beba5786',
+  workspaceId: '8535f0a1-8dc6-4da0-93ce-bf20c1c14e27',  // workspace com Import mode
+  reportId:    '10a505aa-759e-4f20-a130-98c0736ba42d',  // relatório publicado
+  scopes:      ['https://analysis.windows.net/powerbi/api/Dataset.Read.All',
+                'https://analysis.windows.net/powerbi/api/Report.Read.All']
+};
+
+let _pbi = null, _token = null, _datasetId = null;
+
+async function pbiConnect() {
+  // 1. Reutiliza instância MSAL do auth.js (já autenticada) ou cria nova
+  if (window._msalAuth) {
+    _pbi = window._msalAuth;
+  } else {
+    _pbi = new msal.PublicClientApplication({
+      auth: {
+        clientId:    PBI_CFG.clientId,
+        authority:   `https://login.microsoftonline.com/${PBI_CFG.tenantId}`,
+        redirectUri: window.location.origin + '/'
+      },
+      cache: { cacheLocation: 'localStorage', storeAuthStateInCookie: true }
+    });
+    if (_pbi.initialize) await _pbi.initialize();
+    await _pbi.handleRedirectPromise().catch(() => {});
+  }
+
+  // 2. Tenta token silencioso (sessão salva)
+  const accounts = _pbi.getAllAccounts();
+  try {
+    const r = await _pbi.acquireTokenSilent({ scopes: PBI_CFG.scopes, account: accounts[0] });
+    _token = r.accessToken;
+  } catch {
+    // 3. Sem sessão → popup de login
+    const r = await _pbi.loginPopup({ scopes: PBI_CFG.scopes });
+    _token = r.accessToken;
+  }
+
+  // Preenche info do usuário no sidebar
+  const acc = _pbi.getAllAccounts()[0];
+  if (acc && typeof window.setSidebarUser === 'function') {
+    window.setSidebarUser(acc.name || acc.username, acc.username);
+  }
+
+  return _token;
+}
+
+async function pbiGetDatasetId() {
+  if (_datasetId) return _datasetId;
+
+  // Tenta 1: endpoint com workspace (requer membership)
+  const r1 = await fetch(
+    `https://api.powerbi.com/v1.0/myorg/groups/${PBI_CFG.workspaceId}/reports/${PBI_CFG.reportId}`,
+    { headers: { Authorization: `Bearer ${_token}` } }
+  );
+  if (r1.ok) {
+    const report = await r1.json();
+    if (report.datasetId) { _datasetId = report.datasetId; return _datasetId; }
+  }
+
+  // Tenta 2: endpoint sem workspace (funciona com Build permission)
+  console.warn('[PBI] Workspace endpoint retornou', r1.status, '— tentando endpoint direto...');
+  const r2 = await fetch(
+    `https://api.powerbi.com/v1.0/myorg/reports/${PBI_CFG.reportId}`,
+    { headers: { Authorization: `Bearer ${_token}` } }
+  );
+  if (r2.ok) {
+    const report2 = await r2.json();
+    if (report2.datasetId) { _datasetId = report2.datasetId; return _datasetId; }
+  }
+
+  throw new Error('Não foi possível encontrar o Dataset. Verifique permissões (necessário Build).');
+}
+
+async function pbiQuery(dax) {
+  const dsId = await pbiGetDatasetId();
+
+  const urlWs     = `https://api.powerbi.com/v1.0/myorg/groups/${PBI_CFG.workspaceId}/datasets/${dsId}/executeQueries`;
+  const urlDirect = `https://api.powerbi.com/v1.0/myorg/datasets/${dsId}/executeQueries`;
+
+  const body = JSON.stringify({ queries: [{ query: dax }] });
+  const headers = { Authorization: `Bearer ${_token}`, 'Content-Type': 'application/json' };
+
+  let r = await fetch(urlWs, { method: 'POST', headers, body });
+
+  if (r.status === 401 || r.status === 403) {
+    console.warn('[PBI] Workspace executeQueries bloqueado — tentando endpoint direto...');
+    r = await fetch(urlDirect, { method: 'POST', headers, body });
+  }
+
+  // token expirado → renova e tenta de novo
+  if (r.status === 401 || r.status === 403) {
+    try { const _a = _pbi.getAllAccounts()[0]; const _t = await _pbi.acquireTokenSilent({ scopes: PBI_CFG.scopes, account: _a, forceRefresh: true }); _token = _t.accessToken; }
+    catch (_e) { try { const _t = await _pbi.loginPopup({ scopes: PBI_CFG.scopes }); _token = _t.accessToken; } catch (__e) {} }
+    const h2 = { Authorization: `Bearer ${_token}`, 'Content-Type': 'application/json' };
+    r = await fetch(urlWs, { method: 'POST', headers: h2, body });
+    if (r.status === 401 || r.status === 403) r = await fetch(urlDirect, { method: 'POST', headers: h2, body });
+  }
+
+  const text = await r.text();
+  if (!r.ok) throw new Error(`HTTP ${r.status}: ${text.substring(0, 100)}`);
+  const d = JSON.parse(text);
+  if (d.error) throw new Error(d.error.message);
+  return d.results[0].tables[0].rows;
+}
+
+// Expõe globalmente para F12
+window.PBIData = { connect: pbiConnect, query: pbiQuery };
+
+// ── Estado do filtro (controlado pelos botões Mês/Semestre/Ano) ──
+let _pbiReady = false;
+let _srSeqDiario = 0;   // rodada das listas Pedidos em andamento + Faturamento Diário
+window.MES_NUM   = { Jan:1, Fev:2, Mar:3, Abr:4, Mai:5, Jun:6, Jul:7, Ago:8, Set:9, Out:10, Nov:11, Dez:12 };
+window.NOMES_MES = ['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
+// default = mês/ano marcados como ativos no HTML (Jun / 2026)
+// só o PERÍODO vive aqui; Empresa e Tipo de Cliente ficam em window._srSel (dropdowns .av-dd)
+window.filtroAtual = { mes: (new Date().getMonth()+1), ano: 2026, sem: null, tri: null };  // padrão = mês atual (calendário)
+// Padrão: ao abrir, destaca o botão do mês atual em vez do mês fixo
+(function(){ try {
+  var _cm = window.filtroAtual.mes;
+  document.querySelectorAll('.sr-row .sr-btn').forEach(function(x){
+    var oc = x.getAttribute('onclick')||'';
+    if(/setMesTodos/.test(oc)) x.classList.remove('active');
+    var mm = oc.match(/setMes\(this,'(\w+)'\)/);
+    if(mm) x.classList.toggle('active', window.MES_NUM[mm[1]]===_cm);
+  });
+} catch(e){} })();
+
+// ════════════════════════════════════════════════════════════════
+// CONFIG DE MEDIDAS — ajuste os nomes conforme o seu modelo do BI.
+// O [Faturamento] já está confirmado. Os demais são o melhor palpite:
+// se um card ficar "—", troque o nome aqui e funciona.
+// ════════════════════════════════════════════════════════════════
+// NFs ocultadas por decisão do negócio: não aparecem em NENHUM lugar do módulo
+// Sales Report e não somam em nenhuma medida. Para ocultar outra, inclua aqui.
+const NF_OCULTAS = ['667708'];
+
+const MEDIDAS = {
+  faturamento: '[Faturamento]',                          // ✅ confirmado
+  meta:        '[Meta Sales Vertical]',                  // ✅
+  pct:         '[% Meta Faturamento (Sales Vertical)]',  // ✅ retorna fração (×100)
+  gap:         '[Gap Faturamento X Meta (Sales Vertical)]', // ✅
+  margemNota:  '[Margem de contribuição (nota)]',        // ✅ índice 0–10
+  margemPct:   '[Margem de contribuição (%)]',           // ✅ retorna fração (×100)
+  pedidosValor:'[Pedidos em Andamento (Valor)]', // ✅ SUM(Pedidos[Preço total])
+  pedidosQtd:  '[Pedidos em Andamento (Qtd)]',   // ✅ DISTINCTCOUNT(Pedidos[Número da ordem de venda])
+  // filtro-base: NUNCA trazer faturamento intercompany. Nas consultas de
+  // Faturamentos entra também 'Faturamentos'[É intercompany?] = "NÃO", com a
+  // grafia resolvida no modelo (SRInterco.filtros(), ../sr-intercompany.js).
+  semIntercompany: "'DIM_UNIDADE_DE_NEGOCIO_V2'[UNIDADE_DE_NEGOCIO] <> \"INTERCOMPANY\"",
+  // filtro-base: esconde as NFs de NF_OCULTAS (não listam e não somam).
+  // O `& ""` compara em TEXTO, então vale se a coluna do modelo for número OU texto.
+  semNfOculta: `FILTER(ALL('Faturamentos'[Número da fatura]), NOT(('Faturamentos'[Número da fatura] & "") IN { ${NF_OCULTAS.map(n => '"' + n + '"').join(', ')} }))`,
+  // filtro-base do relatório inteiro: só Operações que geram fatura a receber
+  geraFatura: "'Operações'[Gera Fatura a receber?] = \"SIM\"",
+  // coluna de data dos Pedidos (filtra direto, sem depender de relação)
+  pedidosDataCol: "Pedidos[Data da ordem de venda]",
+  // status válidos de Pedidos em andamento
+  pedidosStatus: "(Pedidos[Status do pedido] = \"EM PROCESSO LOGÍSTICO\" || Pedidos[Status do pedido] = \"AGUARDANDO FATURAMENTO\")",
+  // Coluna que separa Bio / MSB (confirmado pelo modelo):
+  segCol:   "'Empresas'[Código da empresa]", // ✅ valores: BIO / MSB
+  segBio:   "BIO",
+  segMsb:   "MSB",
+  // Coluna do Tipo de Cliente:
+  tipoClienteCol: "'Clientes'[Tipo de cliente (Revisado)]" // ✅
+};
+
+// ── Filtros de valor (Empresa · Tipo de Cliente) ────────────────
+// Os dropdowns .av-dd são MULTI-seleção, então o predicado sai como
+// `col = "x"` (1 valor) ou `col IN { "x", "y" }` (vários). Nenhum valor
+// marcado = sem predicado (Todos).
+const _srDax  = s => String(s == null ? '' : s).replace(/"/g, '""');
+const _srVals = id => [...((window._srSel && window._srSel[id]) || [])];
+function srPredicado(col, id) {
+  const v = _srVals(id);
+  if (!v.length) return null;
+  return v.length === 1
+    ? `${col} = "${_srDax(v[0])}"`
+    : `${col} IN { ${v.map(x => '"' + _srDax(x) + '"').join(', ')} }`;
+}
+const srFiltroEmpresa = () => srPredicado(MEDIDAS.segCol, 'empresa');
+const srFiltroTipo    = () => srPredicado(MEDIDAS.tipoClienteCol, 'tipoCliente');
+// sufixo do rótulo de período (" · BIO · Distribuidor"); 3+ valores viram contagem
+const srSufixoValores = () => ['empresa', 'tipoCliente'].map(id => {
+  const v = _srVals(id);
+  if (!v.length) return '';
+  return v.length <= 2 ? v.join('+') : v.length + ' selecionados';
+}).filter(Boolean).map(s => ' · ' + s).join('');
+
+// ── Formatadores pt-BR ───────────────────────────────────────────
+const _n   = (rows, key) => { const r = rows && rows[0]; if (!r) return null; return r['[' + key + ']'] ?? r[key] ?? null; };
+const fBRL = v => v == null ? '—' : 'R$ ' + Number(v).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+const fPCT = v => v == null ? '—' : Number(v).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + '%';
+const fNUM = v => v == null ? '—' : Number(v).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+const fINT = v => v == null ? '—' : Number(v).toLocaleString('pt-BR', { maximumFractionDigits: 0 });
+const fGAP = v => v == null ? '—' : (Number(v) < 0 ? '-' : '') + 'R$ ' + Math.abs(Number(v)).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+const setTxt = (id, t) => { const el = document.getElementById(id); if (el) el.textContent = t; };
+// parser tolerante de datetime vindo do Power BI (ISO .NET com frações de seg., ou dd/mm/aaaa)
+function parseDW(raw){
+  if (raw == null || raw === '') return null;
+  if (raw instanceof Date) return isNaN(raw) ? null : raw;
+  if (typeof raw === 'number'){ const d = new Date(raw); return isNaN(d) ? null : d; }
+  const s = String(raw).trim();
+  // ISO: 2026-06-14T22:55:30(.fffffff) — ignora fração de segundo e fuso
+  let m = /^(\d{4})-(\d{2})-(\d{2})[T ](\d{2}):(\d{2})(?::(\d{2}))?/.exec(s);
+  if (m) return new Date(+m[1], +m[2]-1, +m[3], +m[4], +m[5], +(m[6]||0));
+  // só data ISO
+  m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(s);
+  if (m) return new Date(+m[1], +m[2]-1, +m[3]);
+  // BR: 14/06/2026 (22:55(:30))?
+  m = /^(\d{2})\/(\d{2})\/(\d{4})(?:[ T](\d{2}):(\d{2})(?::(\d{2}))?)?/.exec(s);
+  if (m) return new Date(+m[3], +m[2]-1, +m[1], +(m[4]||0), +(m[5]||0), +(m[6]||0));
+  const d = new Date(s); return isNaN(d) ? null : d;
+}
+
+// ── Mede um segmento (faturamento garantido + extras opcionais) ──
+// Memória de OLS do freio (pbi-throttle.js): medida que já se sabe bloqueada
+// para este usuário nem entra no combinado. Sem ela TODO clique de quem não vê
+// a margem pagava 1 + N consultas (combinado recusado + uma por medida) e o
+// operador estourava o teto de consultas/minuto do Power BI com poucos filtros.
+const _olsMem = (window.PBIQ && window.PBIQ.ols) || { vivas: l => l, aprender: () => {}, leque: () => true };
+
+async function medirSegmento(periodFilters, segFiltro) {
+  const filtros = segFiltro ? periodFilters.concat(segFiltro) : periodFilters.slice();
+  const fStr = filtros.join(', ');
+  const out = { fat: null, meta: null, pct: null, gap: null, margemNota: null, margemPct: null };
+
+  // 1) Faturamento — query isolada e confiável
+  try {
+    const r = await pbiQuery(`EVALUATE CALCULATETABLE(ROW("v", ${MEDIDAS.faturamento}), ${fStr})`);
+    out.fat = _n(r, 'v');
+  } catch (e) { console.warn('[PBI] faturamento falhou:', e.message); }
+
+  // 2) Meta / % / Gap / Margem(nota) / Margem(%)
+  // Tenta combinado (rápido); se falhar sob RLS/OLS, mede uma a uma para que
+  // toda medida a que o usuário TEM direito apareça (só a bloqueada fica "—").
+  const todas = [
+    ['meta', MEDIDAS.meta], ['pct', MEDIDAS.pct], ['gap', MEDIDAS.gap],
+    ['mn',   MEDIDAS.margemNota], ['mp', MEDIDAS.margemPct]
+  ];
+  const vivas = _olsMem.vivas(todas, x => x[1]);
+  const extras = vivas.length ? vivas : todas;      // todas "bloqueadas" = memória velha: tenta tudo
+  const aplicaExtra = (k, v) => {
+    if (k === 'meta') out.meta = v; else if (k === 'pct') out.pct = v;
+    else if (k === 'gap') out.gap = v; else if (k === 'mn') out.margemNota = v;
+    else if (k === 'mp') out.margemPct = v;
+  };
+  try {
+    const r = await pbiQuery(`EVALUATE CALCULATETABLE(ROW(${extras.map(([k, m]) => `"${k}", ${m}`).join(', ')}), ${fStr})`);
+    extras.forEach(([k]) => aplicaExtra(k, _n(r, k)));
+  } catch (e) {
+    if (!_olsMem.leque(e)) { console.warn('[PBI] medidas extras (combinado) no limite de ritmo:', e.message); return out; }
+    console.warn('[PBI] medidas extras (combinado) falharam, medindo individualmente:', e.message);
+    const falhas = [];
+    for (const [k, m] of extras) {
+      try {
+        const r = await pbiQuery(`EVALUATE CALCULATETABLE(ROW("x", ${m}), ${fStr})`);
+        aplicaExtra(k, _n(r, 'x'));
+      } catch (e2) { console.warn(`[PBI] medida "${k}" (${m}) bloqueada/indisponível:`, e2.message); falhas.push([m, e2]); }
+    }
+    _olsMem.aprender(falhas, falhas.length < extras.length);
+  }
+
+  return out;
+}
+
+// ── Pedidos em andamento (valor + qtd) por segmento ──────────────
+async function medirPedidos(periodFilters, segFiltro) {
+  const out = { valor: null, qtd: null };
+  try {
+    const filtros = segFiltro ? periodFilters.concat(segFiltro) : periodFilters.slice();
+    const fStr = filtros.join(', ');
+    const r = await pbiQuery(`EVALUATE CALCULATETABLE(ROW("val", ${MEDIDAS.pedidosValor}, "qtd", ${MEDIDAS.pedidosQtd}), ${fStr})`);
+    const toNum = x => (x == null || x === '-' || isNaN(Number(x))) ? null : Number(x);
+    out.valor = toNum(_n(r, 'val')); out.qtd = toNum(_n(r, 'qtd'));
+  } catch (e) { console.warn('[PBI] pedidos falhou:', e.message); }
+  return out;
+}
+
+// ── Faturamento por dia (eixo X = Calendário[Dia]) ──
+async function medirFaturamentoDiario(filtros) {
+  const out = { labels: [], valores: [] };
+  try {
+    const fStr = filtros.join(', ');
+    const rows = await pbiQuery(`EVALUATE CALCULATETABLE(ADDCOLUMNS(VALUES('Calendário'[Dia]), "Fat", [Faturamento]), ${fStr})`);
+    if (!rows || !rows.length) return out;
+    const keys = Object.keys(rows[0]);
+    const kLabel = keys.find(k => /\[Dia\]/i.test(k)) || keys[0];
+    const kVal   = keys.find(k => /Fat/i.test(k) && k !== kLabel) || '[Fat]';
+    const dados = rows
+      .map(r => ({ dia: Number(r[kLabel]), valor: Number(r[kVal]) || 0 }))
+      .filter(x => !isNaN(x.dia))
+      .sort((a, b) => a.dia - b.dia);
+    out.labels  = dados.map(x => String(x.dia));
+    out.valores = dados.map(x => x.valor);
+  } catch (e) { console.warn('[PBI] faturamento diário falhou:', e.message); }
+  return out;
+}
+
+// ── Performance por Filial (drill-down: Filial > Estratégia > Família) ──
+const _numN = x => (x == null || x === '' || x === '-' || isNaN(Number(x))) ? null : Number(x);
+const _esc = s => String(s == null ? '' : s).replace(/"/g, '&quot;');
+const _corPct = p => p == null ? 'var(--text-2)' : (p >= 1 ? 'var(--bm-green-700)' : p >= 0.8 ? 'var(--warning)' : 'var(--danger)');
+window._filtrosFiliais = [];
+
+// A meta DESCE para este nível? Quando o modelo não projeta a meta no campo,
+// toda linha devolve a meta do pai (ou, sem pai, todas devolvem a mesma) —
+// aí ela não é deste nível e não pode virar linha nem % de atingimento.
+function _metaRepetida(rows, metaPai) {
+  const ms = rows.map(r => r.meta).filter(m => m != null && m !== 0);
+  if (ms.length < 2) return false;
+  const ref = metaPai != null ? metaPai : ms[0];
+  return ms.every(m => Math.abs(m - ref) < 0.01);
+}
+
+// mede um nível genérico (agrupa por groupCol e calcula as medidas)
+// 1) Faturamento por grupo — confiável; garante que as linhas (ex.: a filial do
+//    usuário) sempre apareçam. 2) Enriquece com as demais medidas; se o RLS/OLS
+//    bloquear alguma, mantém as linhas só com o que o usuário tem direito de ver.
+// metaPai: meta da linha que está sendo aberta (null no 1º nível).
+async function medirNivel(groupCol, filtros, metaPai) {
+  const fStr = filtros.join(', ');
+  const val  = (r, re) => { const k = Object.keys(r).find(x => re.test(x)); return k ? r[k] : null; };
+
+  // 1) Faturamento por grupo
+  let base = [];
+  try {
+    const rows = await pbiQuery(`EVALUATE CALCULATETABLE(ADDCOLUMNS(VALUES(${groupCol}), "Fat", [Faturamento]), ${fStr})`);
+    if (!rows || !rows.length) return [];
+    const kGroup = Object.keys(rows[0]).find(k => !/\[Fat\]$/.test(k)) || Object.keys(rows[0])[0];
+    base = rows.map(r => ({
+      nome: r[kGroup], fat: Number(val(r, /\[Fat\]$/)) || 0,
+      meta: null, pct: null, gap: null, mgPct: null, mgNota: null
+    }));
+  } catch (e) { console.warn('[PBI] nível (faturamento) falhou:', e.message); return []; }
+
+  // 2) Enriquece com Meta / % / Gap / Margem.
+  // Tenta combinado (1 query, rápido) e, se falhar, mede UMA A UMA — o mesmo
+  // padrão do medirCartao (~linha 1204). MOTIVO: sob OLS o ADDCOLUMNS inteiro
+  // volta HTTP 400 por causa de UMA medida bloqueada, e sem este fallback a
+  // Meta, o % e o Gap (a que o usuário TEM direito) morriam junto com a margem
+  // — a linha inteira ficava em "—" sem dizer por quê.
+  const TODAS = [
+    ['Meta',   MEDIDAS.meta,       'meta'],
+    ['Pct',    MEDIDAS.pct,        'pct'],
+    ['Gap',    MEDIDAS.gap,        'gap'],
+    ['MgPct',  MEDIDAS.margemPct,  'mgPct'],
+    ['MgNota', MEDIDAS.margemNota, 'mgNota']
+  ];
+  const VIVAS = _olsMem.vivas(TODAS, e => e[1]);
+  const EXTRAS = VIVAS.length ? VIVAS : TODAS;      // todas "bloqueadas" = memória velha: tenta tudo
+  const ALIAS_RE = /\[(Meta|Pct|Gap|MgPct|MgNota)\]$/;
+  const daxNivel = cols => 'EVALUATE CALCULATETABLE(ADDCOLUMNS(VALUES(' + groupCol + '), ' + cols + '), ' + fStr + ')';
+  // casa cada linha da medida com a linha do faturamento pelo nome do grupo
+  const casar = (rows, alias, campo) => {
+    if (!rows || !rows.length) return;
+    const re = new RegExp('\\[' + alias + '\\]$');
+    const kGroup = Object.keys(rows[0]).find(k => !ALIAS_RE.test(k)) || Object.keys(rows[0])[0];
+    const byName = {}; rows.forEach(r => { byName[r[kGroup]] = r; });
+    base.forEach(item => { const r = byName[item.nome]; if (r) item[campo] = _numN(val(r, re)); });
+  };
+  try {
+    const rows = await pbiQuery(daxNivel(EXTRAS.map(e => '"' + e[0] + '", ' + e[1]).join(', ')));
+    EXTRAS.forEach(e => casar(rows, e[0], e[2]));
+  } catch (e) {
+    if (!_olsMem.leque(e)) console.warn('[PBI] nível (medidas extras combinado) no limite de ritmo:', e.message);
+    else {
+      console.warn('[PBI] nível (medidas extras combinado) falhou, medindo individualmente:', e.message);
+      const falhas = [];
+      for (const [alias, medida, campo] of EXTRAS) {
+        try { casar(await pbiQuery(daxNivel('"' + alias + '", ' + medida)), alias, campo); }
+        catch (e2) { console.warn('[PBI] nível: medida "' + alias + '" (' + medida + ') bloqueada/indisponível:', e2.message); falhas.push([medida, e2]); }
+      }
+      _olsMem.aprender(falhas, falhas.length < EXTRAS.length);
+    }
+  }
+
+  // Ficam as linhas que faturaram E as que só têm meta: estratégia que ainda
+  // não faturou no período continua devendo a meta dela. Cortar só por
+  // faturamento fazia a filial mostrar a meta inteira e, aberta, só as
+  // estratégias que já tinham nota — o resto da meta sumia do detalhe.
+  if (_metaRepetida(base, metaPai)) base.forEach(x => { x.meta = null; x.pct = null; x.gap = null; });
+  return base
+    .filter(x => x.nome != null && ((x.fat || 0) > 0 || (x.meta || 0) > 0))
+    .sort((a, b) => (b.fat - a.fat) || ((b.meta || 0) - (a.meta || 0)));
+}
+const medirFiliais = (filtros) => medirNivel("'DIM_UNIDADE_DE_NEGOCIO_V2'[UNIDADE_DE_NEGOCIO]", filtros);
+
+function _linhaFilial(item, level, expandable, attrs) {
+  const ind = level * 18;
+  const tg = expandable
+    ? `<span class="sr-tg" style="cursor:pointer;display:inline-block;width:14px;color:var(--bm-blue-600);">▶</span>`
+    : `<span style="display:inline-block;width:14px;"></span>`;
+  const nomeStyle = level === 0 ? 'font-weight:600;' : 'font-weight:400;color:var(--text-2);';
+  return `<tr class="sr-fl-row" data-level="${level}" data-meta="${item.meta == null ? '' : item.meta}" ${attrs || ''}>
+    <td style="padding-left:${12 + ind}px;${nomeStyle}">${tg} ${item.nome}</td>
+    <td style="font-weight:600;color:var(--bm-blue-900);">${fBRL(item.fat)}</td>
+    <td>${fBRL(item.meta)}</td>
+    <td style="font-weight:700;color:${_corPct(item.pct)};">${item.pct == null ? '—' : fPCT(item.pct * 100)}</td>
+    <td style="color:${(item.gap || 0) < 0 ? 'var(--danger)' : 'var(--text-2)'};">${fGAP(item.gap)}</td>
+    <td>${item.mgPct == null ? '—' : fPCT(item.mgPct * 100)}</td>
+    <td>${fNUM(item.mgNota)}</td>
+  </tr>`;
+}
+function renderTabelaFiliais(rows, total) {
+  const tbody = document.getElementById('sr-tbody');
+  if (!tbody) return;
+  let html = rows.map(f => _linhaFilial(f, 0, true, `data-filial="${_esc(f.nome)}"`)).join('');
+  if (total) {
+    html += `<tr class="sr-fl-total">
+      <td style="padding-left:26px;font-weight:700;">TOTAL</td>
+      <td style="font-weight:700;color:var(--bm-blue-900);">${fBRL(total.fat)}</td>
+      <td style="font-weight:700;">${fBRL(total.meta)}</td>
+      <td style="font-weight:700;color:${_corPct(total.pct)};">${total.pct == null ? '—' : fPCT(total.pct * 100)}</td>
+      <td style="font-weight:700;color:${(total.gap || 0) < 0 ? 'var(--danger)' : 'var(--text-2)'};">${fGAP(total.gap)}</td>
+      <td style="font-weight:700;">${total.margemPct == null ? '—' : fPCT(total.margemPct * 100)}</td>
+      <td style="font-weight:700;">${fNUM(total.margemNota)}</td>
+    </tr>`;
+  }
+  tbody.innerHTML = html || '<tr><td colspan="7" style="text-align:center;color:var(--text-3);">Sem dados no período</td></tr>';
+}
+
+// expande UMA linha (reutilizado pelo clique e pelo botão "+ Nível")
+async function _expandFilialRow(tr) {
+  if (!tr || !tr.classList.contains('sr-fl-row')) return;
+  if (tr.classList.contains('open')) return;
+  const tg = tr.querySelector('.sr-tg');
+  if (!tg) return;
+  const level = +tr.dataset.level;
+  tg.textContent = '…';
+  const base = window._filtrosFiliais || [];
+  const filial = tr.dataset.filial;
+  const metaPai = _numN(tr.dataset.meta);
+  // medirNivel já devolve só estratégias/famílias com faturamento > 0 OU meta > 0
+  let children = [], childLevel, childExpandable, attrsFn;
+  if (level === 0) {
+    children = await medirNivel("'Famílias'[Estratégia]", base.concat(`'DIM_UNIDADE_DE_NEGOCIO_V2'[UNIDADE_DE_NEGOCIO] = "${filial}"`), metaPai);
+    childLevel = 1; childExpandable = true;
+    attrsFn = c => `data-filial="${_esc(filial)}" data-estrategia="${_esc(c.nome)}"`;
+  } else if (level === 1) {
+    const estr = tr.dataset.estrategia;
+    children = await medirNivel("'Famílias'[Família]", base.concat(`'DIM_UNIDADE_DE_NEGOCIO_V2'[UNIDADE_DE_NEGOCIO] = "${filial}"`, `'Famílias'[Estratégia] = "${estr}"`), metaPai);
+    childLevel = 2; childExpandable = false;
+    attrsFn = () => `data-filial="${_esc(filial)}"`;
+  } else { tg.textContent = '▶'; return; }
+  tr.classList.add('open'); tg.textContent = '▼';
+  const childHtml = children.length
+    ? children.map(c => _linhaFilial(c, childLevel, childExpandable, attrsFn(c))).join('')
+    : `<tr class="sr-fl-row" data-level="${childLevel}"><td colspan="7" style="padding-left:${12 + childLevel * 18}px;color:var(--text-3);">sem dados</td></tr>`;
+  tr.insertAdjacentHTML('afterend', childHtml);
+}
+
+// drill-down: clique no triângulo expande/colapsa o nível
+document.addEventListener('click', async (ev) => {
+  const tg = ev.target.closest && ev.target.closest('.sr-tg');
+  if (!tg) return;
+  const tr = tg.closest('tr');
+  if (!tr || !tr.classList.contains('sr-fl-row')) return;
+  const level = +tr.dataset.level;
+  if (tr.classList.contains('open')) {           // colapsar (remove a subárvore)
+    let n = tr.nextElementSibling;
+    while (n && +n.dataset.level > level) { const nx = n.nextElementSibling; n.remove(); n = nx; }
+    tr.classList.remove('open'); tg.textContent = '▶';
+    return;
+  }
+  await _expandFilialRow(tr);
+});
+
+// ── Botões: expandir próximo nível / recolher tudo ──
+async function srExpandirNivel() {
+  const tbody = document.getElementById('sr-tbody');
+  if (!tbody) return;
+  const maxLevel = 1;  // nível 0 (Filial) e 1 (Estratégia) são expansíveis; 2 (Família) é folha
+  const candidatas = [...tbody.querySelectorAll('tr.sr-fl-row')]
+    .filter(tr => !tr.classList.contains('open') && tr.querySelector('.sr-tg') && +tr.dataset.level <= maxLevel);
+  if (!candidatas.length) return;
+  const alvo = Math.min(...candidatas.map(tr => +tr.dataset.level));
+  const lote = candidatas.filter(tr => +tr.dataset.level === alvo);
+  for (const tr of lote) { await _expandFilialRow(tr); }
+}
+function srRecolher() {
+  const tbody = document.getElementById('sr-tbody');
+  if (!tbody) return;
+  tbody.querySelectorAll('tr.sr-fl-row').forEach(tr => {
+    if (+tr.dataset.level > 0) tr.remove();
+    else { tr.classList.remove('open'); const tg = tr.querySelector('.sr-tg'); if (tg) tg.textContent = '▶'; }
+  });
+}
+window.srExpandirNivel = srExpandirNivel;
+window.srRecolher = srRecolher;
+
+// ── Exportar Excel (com granularidade em colunas) ──
+function srExportExcel() {
+  if (typeof XLSX === 'undefined') { alert('Biblioteca de exportação não carregou.'); return; }
+  const tbody = document.getElementById('sr-tbody');
+  if (!tbody) return;
+  const dimLabels = ['Filial', 'Estratégia', 'Família'];
+  const measHeaders = ['Faturamento', 'Meta', '% Atingimento', 'Gap', '% Margem', 'Nota de Margem'];
+  const rows = [dimLabels.concat(measHeaders)];
+  const parseN = txt => {
+    const t = txt.replace(/[▶▼…]/g, '').trim();
+    if (t === '—' || t === '') return '';
+    const clean = t.replace(/^-?R\$\s?/, m => m.includes('-') ? '-' : '').replace(/\./g, '').replace(',', '.').replace(/[%]/g, '');
+    return (!isNaN(Number(clean)) && clean !== '') ? Number(clean) : t;
+  };
+  const path = [];
+  tbody.querySelectorAll('tr').forEach(tr => {
+    const tds = tr.querySelectorAll('td');
+    if (!tds.length) return;
+    const isTotal = tr.classList.contains('sr-fl-total');
+    const nome = tds[0].textContent.replace(/[▶▼…]/g, '').trim();
+    let dimCols;
+    if (isTotal) {
+      dimCols = ['TOTAL', '', ''];
+    } else {
+      const level = +tr.dataset.level || 0;
+      path[level] = nome;
+      dimCols = [0, 1, 2].map(i => i <= level ? (path[i] || '') : '');
+    }
+    const measCols = [];
+    for (let i = 1; i < tds.length; i++) measCols.push(parseN(tds[i].textContent));
+    rows.push(dimCols.concat(measCols));
+  });
+  const ws = XLSX.utils.aoa_to_sheet(rows);
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, 'Performance por Filial');
+  const f = window.filtroAtual || {};
+  XLSX.writeFile(wb, `Performance_Filial_${f.mes || ''}_${f.ano || ''}.xlsx`);
+}
+window.srExportExcel = srExportExcel;
+
+// ── Faturamento diário · Notas Fiscais de HOJE ──
+// Linha = NF × vertical × UF × cliente × família; a lista (../sr-diario.js)
+// junta numa linha por nota. `erro` separa "falhou" de "não houve nota".
+async function medirFaturados(filtros) {
+  const out = { rows: [], qtd: 0, total: 0, erro: null };
+  try {
+    const fStr = filtros.join(', ');
+    const rows = await pbiQuery(`EVALUATE CALCULATETABLE(ADDCOLUMNS(SUMMARIZE(Faturamentos, 'Faturamentos'[Número da fatura], 'Sales Vertical'[Sales Vertical], 'Estados'[Cód. do estado], 'Clientes'[Cliente], 'Famílias'[Família]), "Fat", [Faturamento]), ${fStr})`);
+    if (!rows || !rows.length) return out;
+    const val = (r, re) => { const k = Object.keys(r).find(x => re.test(x)); return k ? r[k] : null; };
+    out.rows = rows.map(r => ({
+      nf:       val(r, /Número da fatura/i),
+      vertical: val(r, /Sales Vertical/i),
+      estado:   val(r, /do estado/i),
+      cliente:  val(r, /\[Cliente\]/i),
+      familia:  val(r, /\[Família\]/i),
+      fat:      Number(val(r, /\[Fat\]/i)) || 0
+    })).sort((a, b) => b.fat - a.fat);
+    out.total = out.rows.reduce((s, r) => s + r.fat, 0);
+    out.qtd   = new Set(out.rows.map(r => r.nf)).size;
+  } catch (e) { console.warn('[PBI] faturados falhou:', e.message); out.erro = e.message; }
+  return out;
+}
+// ctx = filtro-base da consulta: a ficha lê os itens e os dados da nota com
+// ele, então soma igual à linha da lista
+function renderFaturados(data, ctx) {
+  if (window.SRDiario) window.SRDiario.faturados(data, ctx);
+}
+
+// ── Pedidos em andamento (detalhe, lado a lado com Faturados) ──
+// A data da OV entra para a lista dizer há quanto tempo o pedido existe; se
+// o modelo recusar a coluna, a consulta volta ao recorte de antes, sem ela.
+const PED_COLS = ['Pedidos[Número da ordem de venda]', 'Pedidos[Data de liberação para depósito (tratada)]', "'Sales Vertical'[Sales Vertical]",
+  "'Estados'[Cód. do estado]", "'Clientes'[Cliente]", 'Pedidos[Status do pedido]', 'Pedidos[DATA_PREVISAO_ENTREGA]'];
+async function medirPedidosDetalhe(filtros) {
+  const out = { rows: [], qtd: 0, total: 0, erro: null };
+  const fStr = filtros.join(', ');
+  const dax = cols => `EVALUATE CALCULATETABLE(ADDCOLUMNS(SUMMARIZE(Pedidos, ${cols.join(', ')}), "Valor", CALCULATE(SUM(Pedidos[Preço total]))), ${fStr})`;
+  try {
+    let rows;
+    try { rows = await pbiQuery(dax(PED_COLS.concat(MEDIDAS.pedidosDataCol))); }
+    catch (e1) {
+      console.warn('[PBI] pedidos detalhe com a data da OV falhou, sem ela:', e1.message);
+      rows = await pbiQuery(dax(PED_COLS));
+    }
+    if (!rows || !rows.length) return out;
+    const val = (r, re) => { const k = Object.keys(r).find(x => re.test(x)); return k ? r[k] : null; };
+    out.rows = rows.map(r => ({
+      pedido:    val(r, /Número da ordem de venda/i),
+      criacao:   val(r, /Data da ordem de venda/i),
+      liberacao: val(r, /Data de liberação/i),
+      vertical:  val(r, /Sales Vertical/i),
+      estado:    val(r, /do estado/i),
+      cliente:   val(r, /\[Cliente\]/i),
+      status:    val(r, /Status do pedido/i),
+      previsao:  val(r, /DATA_PREVISAO_ENTREGA/i),
+      valor:     Number(val(r, /\[Valor\]/i)) || 0
+    })).sort((a, b) => b.valor - a.valor);
+    out.total = out.rows.reduce((s, r) => s + r.valor, 0);
+    out.qtd   = new Set(out.rows.map(r => r.pedido)).size;
+  } catch (e) { console.warn('[PBI] pedidos detalhe falhou:', e.message); out.erro = e.message; }
+  return out;
+}
+// O totalizador usa as MEDIDAS do relatório (iguais ao visual de Pedidos em
+// andamento); a lista, as linhas do detalhe
+function renderPedidosDetalhe(data, totais, ctx) {
+  if (window.SRDiario) window.SRDiario.pedidos(data, totais, ctx);
+}
+
+// ── Preenche um bloco de indicadores (Bio / MSB / Stent / MSBio) ──
+function pintarSegmento(prefixo, d) {
+  const pct = d.pct == null ? null : d.pct * 100;        // medida vem em fração
+  const mpct = d.margemPct == null ? null : d.margemPct * 100;
+  setTxt(prefixo + '-fat', fBRL(d.fat));
+  setTxt(prefixo + '-pct', fPCT(pct));
+  setTxt(prefixo + '-meta', fBRL(d.meta));
+  setTxt(prefixo + '-gap', fGAP(d.gap));
+  setTxt(prefixo + '-margem', fNUM(d.margemNota));
+  setTxt(prefixo + '-margempct', fPCT(mpct));
+
+  // Claude Design: badge pastel ▲/▼ (verde ≥100%, âmbar <100%) + barrinha
+  const badge = document.getElementById(prefixo + '-badge');
+  if (badge && pct != null) {
+    const ok = pct >= 100;
+    badge.style.color = ok ? '#22794C' : '#A8541F';
+    badge.style.background = ok ? '#EAF8F0' : '#FDF3E7';
+    const arr = badge.querySelector('.arr');
+    if (arr) arr.textContent = ok ? '▲' : '▼';
+  }
+  const mini = document.getElementById(prefixo + '-minibar');
+  if (mini && pct != null) {
+    mini.style.width = Math.max(0, Math.min(pct, 100)) + '%';
+    mini.style.background = pct >= 100 ? '#2FBF71' : '#E8A33D';
+  }
+  return { pct, mpct };
+}
+
+// ── Evolução mensal: faturamento dos 12 meses do ano (independe do mês selecionado) ──
+async function medirEvolucaoMensal(extraArr) {
+  const f = window.filtroAtual;
+  const extra = [MEDIDAS.semIntercompany, MEDIDAS.geraFatura, MEDIDAS.semNfOculta].concat(SRInterco.filtros(), extraArr || []);
+  const _tp = srFiltroTipo(); if (_tp) extra.push(_tp);
+  const extraStr = extra.length ? (', ' + extra.join(', ')) : '';
+  const dax = `EVALUATE ADDCOLUMNS(GENERATESERIES(1, 12, 1), "Fat", CALCULATE(${MEDIDAS.faturamento}, FILTER(ALL('Calendário'), YEAR('Calendário'[Data]) = ${Math.max.apply(null, [].concat(f.ano))} && MONTH('Calendário'[Data]) = [Value])${extraStr}))`;
+  const rows = await pbiQuery(dax);
+  const arr = new Array(12).fill(0);
+  rows.forEach(r => { const mi = (Number(r['[Value]']) || 0) - 1; if (mi >= 0 && mi < 12) arr[mi] = Number(r['[Fat]']) || 0; });
+  return arr;
+}
+
+// ── Meta mensal: meta dos 12 meses do ano (para a linha de meta no gráfico) ──
+async function medirMetaMensal(extraArr) {
+  const f = window.filtroAtual;
+  const extra = [MEDIDAS.semIntercompany, MEDIDAS.geraFatura, MEDIDAS.semNfOculta].concat(SRInterco.filtros(), extraArr || []);
+  const _tp = srFiltroTipo(); if (_tp) extra.push(_tp);
+  const extraStr = extra.length ? (', ' + extra.join(', ')) : '';
+  const dax = `EVALUATE ADDCOLUMNS(GENERATESERIES(1, 12, 1), "Meta", CALCULATE(${MEDIDAS.meta}, FILTER(ALL('Calendário'), YEAR('Calendário'[Data]) = ${Math.max.apply(null, [].concat(f.ano))} && MONTH('Calendário'[Data]) = [Value])${extraStr}))`;
+  const rows = await pbiQuery(dax);
+  const arr = new Array(12).fill(0);
+  rows.forEach(r => { const mi = (Number(r['[Value]']) || 0) - 1; if (mi >= 0 && mi < 12) arr[mi] = Number(r['[Meta]']) || 0; });
+  return arr;
+}
+
+// ── Aplica o filtro atual e atualiza TODOS os indicadores ────────
+async function aplicarFiltroFaturamento() {
+  if (!_pbiReady) return;
+  const f = window.filtroAtual;
+
+  // monta o filtro de período (Trimestre > Semestre > Mês > Ano inteiro)
+  // mes/ano podem ser número único OU lista (Ctrl+clique = multi-seleção)
+  const meses = f.mes==null?[]:[].concat(f.mes);
+  const anos  = [].concat(f.ano);
+  const anoLbl = anos.join('+');
+  let mesClause = '', labelPeriodo;
+  if (f.tri) {
+    const ini = f.tri*3 - 2, fim = f.tri*3;
+    mesClause    = `MONTH('Calendário'[Data]) >= ${ini} && MONTH('Calendário'[Data]) <= ${fim}`;
+    labelPeriodo = `${f.tri}º Tri ${anoLbl}`;
+  } else if (f.sem) {
+    const [ini, fim] = f.sem === '1S' ? [1, 6] : [7, 12];
+    mesClause    = `MONTH('Calendário'[Data]) >= ${ini} && MONTH('Calendário'[Data]) <= ${fim}`;
+    labelPeriodo = (f.sem === '1S' ? '1º Sem' : '2º Sem') + ' ' + anoLbl;
+  } else if (meses.length) {
+    mesClause    = meses.length===1 ? `MONTH('Calendário'[Data]) = ${meses[0]}` : `MONTH('Calendário'[Data]) IN { ${meses.join(', ')} }`;
+    labelPeriodo = meses.map(m => window.NOMES_MES[m - 1]).join('+') + ' ' + anoLbl;
+  } else {
+    labelPeriodo = 'Ano ' + anoLbl;   // nenhum mês marcado = ano inteiro
+  }
+  const tipoFiltro = srFiltroTipo();
+  setTxt('ix-period', labelPeriodo + srSufixoValores());
+
+  // ── Filtro-base comum a TODAS as queries (período + intercompany + gera fatura + tipo cliente) ──
+  const base = [anos.length===1 ? `YEAR('Calendário'[Data]) = ${anos[0]}` : `YEAR('Calendário'[Data]) IN { ${anos.join(', ')} }`, MEDIDAS.semIntercompany, MEDIDAS.geraFatura, MEDIDAS.semNfOculta].concat(SRInterco.filtros());
+  if (mesClause) base.unshift(mesClause);
+  if (tipoFiltro) base.push(tipoFiltro);
+
+  // ── Filtro-base dos Pedidos em andamento: SNAPSHOT (não filtra por data de criação) ──
+  // Um pedido criado em qualquer mês passado e ainda em "EM PROCESSO LOGÍSTICO" ou
+  // "AGUARDANDO FATURAMENTO" continua sendo pedido em andamento HOJE.
+  const basePedidos = [MEDIDAS.semIntercompany, MEDIDAS.geraFatura, MEDIDAS.pedidosStatus];
+  if (tipoFiltro) basePedidos.push(tipoFiltro);
+
+  // estado "carregando"
+  ['ix-msbio-fat','ix-bio-fat','ix-msb-fat'].forEach(id => setTxt(id, '…'));
+
+  const segBio = `${MEDIDAS.segCol} = "${MEDIDAS.segBio}"`;
+  const segMsb = `${MEDIDAS.segCol} = "${MEDIDAS.segMsb}"`;
+  // filtro de Empresa do topo (Todos = sem filtro) aplicado ao bloco consolidado
+  const empresaFiltro = srFiltroEmpresa();
+
+  try {
+    const filtrosDia = empresaFiltro ? base.concat(empresaFiltro) : base.slice();
+    window._filtrosFiliais = filtrosDia;  // base p/ o drill-down da tabela de filiais
+
+    // ── Faturados de HOJE (data de hoje no horário de Brasília) ──
+    const hojeBR = new Intl.DateTimeFormat('en-CA', { timeZone: 'America/Sao_Paulo', year: 'numeric', month: '2-digit', day: '2-digit' }).format(new Date());
+    const [hy, hm, hd] = hojeBR.split('-');
+    const baseFat = [`'Calendário'[Data] = DATE(${+hy}, ${+hm}, ${+hd})`, MEDIDAS.semIntercompany, MEDIDAS.geraFatura, MEDIDAS.semNfOculta].concat(SRInterco.filtros());
+    if (tipoFiltro) baseFat.push(tipoFiltro);
+    if (empresaFiltro) baseFat.push(empresaFiltro);
+
+    const filtrosPedDet = empresaFiltro ? basePedidos.concat(empresaFiltro) : basePedidos.slice();
+
+    // ── Pedidos em andamento + Faturamento Diário (o pé da página) ──
+    // Pintam assim que os SEUS dados chegam: não esperam os outros visuais, e
+    // um visual que falhe lá em cima não as deixa presas em "Carregando…".
+    // A sequência descarta a resposta de um filtro que a pessoa já trocou.
+    const seqD = ++_srSeqDiario;
+    if (window.SRDiario) window.SRDiario.carregando();
+    medirFaturados(baseFat)
+      .then(d => { if (seqD === _srSeqDiario) renderFaturados(d, { filtros: baseFat, dia: hojeBR, query: pbiQuery }); })
+      .catch(e => console.warn('[SR] faturamento diário:', e.message));
+    Promise.all([medirPedidosDetalhe(filtrosPedDet), medirPedidos(filtrosPedDet)])  // linhas + totais pelas medidas do relatório
+      .then(([det, tot]) => { if (seqD === _srSeqDiario) renderPedidosDetalhe(det, tot, { filtros: filtrosPedDet, query: pbiQuery }); })
+      .catch(e => console.warn('[SR] pedidos em andamento:', e.message));
+
+    const [msbio, bio, msb, pedBio, pedMsb, diario, filiais, dwUpdate, evol, metaEvol] = await Promise.all([
+      medirSegmento(base, empresaFiltro),  // consolidado (respeita Empresa)
+      medirSegmento(base, segBio),
+      medirSegmento(base, segMsb),
+      medirPedidos(basePedidos, segBio),
+      medirPedidos(basePedidos, segMsb),
+      medirFaturamentoDiario(filtrosDia),  // gráfico Faturamento por Dia
+      medirFiliais(filtrosDia),            // tabela Performance por Filial
+      pbiQuery("EVALUATE ROW(\"UltimaAtualizacao\", MAX('Atualizações DW'[Última atualização]))").catch(()=>[]),
+      medirEvolucaoMensal(empresaFiltro ? [empresaFiltro] : []),  // gráfico Evolução Mensal
+      medirMetaMensal(empresaFiltro ? [empresaFiltro] : [])       // linha de meta no gráfico
+    ]);
+
+    // Última atualização DW
+    if (dwUpdate && dwUpdate[0]) {
+      const raw = Object.values(dwUpdate[0])[0];
+      if (raw != null && raw !== '') {
+        const dt = parseDW(raw);
+        setTxt('sr-dw-update', dt
+          ? dt.toLocaleString('pt-BR', { day:'2-digit', month:'2-digit', year:'numeric', hour:'2-digit', minute:'2-digit' })
+          : String(raw));
+      }
+    }
+
+    // MSBio consolidado
+    const r = pintarSegmento('ix-msbio', msbio);
+    setTxt('ix-msbio-pct2', fPCT(r.pct));
+    // barra de progresso % atingimento
+    const bar = document.getElementById('ix-msbio-bar');
+    if (bar && r.pct != null) {
+      bar.style.width = Math.max(0, Math.min(r.pct, 100)) + '%';
+      bar.classList.remove('ix-ok','ix-warn');
+      if (r.pct >= 100) bar.classList.add('ix-ok');
+      else if (r.pct < 80) bar.classList.add('ix-warn');
+    }
+    // barra de % Margem
+    const mbar = document.getElementById('ix-msbio-margem-bar');
+    if (mbar && r.mpct != null) mbar.style.width = Math.max(0, Math.min(r.mpct, 100)) + '%';
+
+    // Bio / MSB
+    pintarSegmento('ix-bio', bio);
+    pintarSegmento('ix-msb', msb);
+
+    // Pedidos em andamento
+    setTxt('ix-ped-bio-valor', fBRL(pedBio.valor));
+    setTxt('ix-ped-bio-qtd',   fINT(pedBio.qtd));
+    setTxt('ix-ped-msb-valor', fBRL(pedMsb.valor));
+    setTxt('ix-ped-msb-qtd',   fINT(pedMsb.qtd));
+
+    // Gráfico Faturamento por Dia
+    if (window.renderChartDiario) window.renderChartDiario(diario.labels, diario.valores);
+
+    // Gráfico Evolução Mensal
+    if (window.renderChartMensal) window.renderChartMensal(evol, metaEvol);
+    setTxt('sr-mensal-ano', '· ' + Math.max.apply(null, [].concat(f.ano)));
+
+    // Tabela Performance por Filial
+    renderTabelaFiliais(filiais, msbio);
+    setTxt('sr-fil-period', labelPeriodo + srSufixoValores());
+  } catch (e) {
+    console.error('[PBI] Erro ao aplicar filtro:', e.message);
+  }
+}
+window.aplicarFiltroFaturamento = aplicarFiltroFaturamento;
+
+// ── Executa ao carregar ─────────────────────────────────────────
+document.addEventListener('DOMContentLoaded', async () => {
+  if (window.srMontarToolbar) window.srMontarToolbar();   // dropdowns de valor (Empresa · Tipo de Cliente)
+  // Banner de status
+  const wrap = document.querySelector('.sr-wrap');
+  const banner = document.createElement('div');
+  banner.id = 'pbi-banner';
+  banner.style.cssText = 'padding:11px 16px;border-radius:8px;font-size:13px;margin-bottom:16px;display:flex;align-items:center;gap:10px;background:#EFF6FF;border:1px solid #BFDBFE;color:#1E40AF;';
+  banner.innerHTML = `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg> Conectando ao Power BI…`;
+  if (wrap) wrap.insertBefore(banner, wrap.firstChild);
+
+  try {
+    await pbiConnect();
+    console.log('[PBI] ✅ Autenticado!');
+    await SRInterco.resolver(pbiQuery);   // 'Faturamentos'[É intercompany?] = "NÃO"
+
+    banner.style.cssText = 'padding:11px 16px;border-radius:8px;font-size:13px;margin-bottom:16px;display:flex;align-items:center;gap:10px;background:#F0FDF4;border:1px solid #BBF7D0;color:#14532D;';
+    banner.innerHTML = `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg> ✅ Conectado ao Power BI · <code style="font-size:11px;background:rgba(21,128,61,.1);padding:2px 7px;border-radius:4px;">F12 → PBIData.query('EVALUATE ...')</code>`;
+    SRInterco.marcarBanner(banner);
+
+    // ── PBI pronto → aplica o filtro atual (mês/ano dos botões) ──
+    _pbiReady = true;
+    await aplicarFiltroFaturamento();
+
+  } catch (err) {
+    console.error('[PBI] Erro:', err.message);
+    banner.style.cssText = 'padding:11px 16px;border-radius:8px;font-size:13px;margin-bottom:16px;display:flex;align-items:center;gap:10px;background:#FEF2F2;border:1px solid #FECACA;color:#7F1D1D;';
+    banner.innerHTML = `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg> ${err.message}`;
+  }
+});
+</script>
+
+<!-- ════════ MOBILE (≤640px) — melhora só o celular, desktop intacto ════════ -->
+<style>
+@media (max-width:640px){
+  /* nav de submódulos: mesmo padrão compacto de 1 coluna das demais páginas */
+  .modulos-grid{gap:8px!important;margin-bottom:16px!important;}
+
+  /* respiro geral menor */
+  .sr-wrap{gap:12px;padding:10px 0 40px;}
+  .sr-panel{padding:14px 13px;}
+  .sr-panel h4{font-size:13px;margin-bottom:10px;}
+
+  /* FILTROS: cada linha vira um strip rolável na horizontal (em vez de quebrar em várias linhas) */
+  .sr-row{flex-wrap:nowrap;overflow-x:auto;-webkit-overflow-scrolling:touch;gap:6px;padding-bottom:6px;max-width:100%;}
+  .sr-row>*{flex:0 0 auto;}
+  .sr-row::-webkit-scrollbar{height:5px;}
+  .sr-row::-webkit-scrollbar-thumb{background:var(--border-2);border-radius:3px;}
+  .sr-btn{padding:6px 11px;font-size:12px;}
+  .sr-label{position:sticky;left:0;background:#fff;z-index:1;padding-right:4px;}
+
+  /* KPIs: 2 por linha, valores menores p/ caber */
+  .sr-kpi-row{grid-template-columns:repeat(2,1fr);gap:8px;}
+  .sr-kpi{padding:13px 13px;}
+  .sr-kpi-val{font-size:19px;}
+  .sr-kpi-label{font-size:9.5px;}
+
+  /* INDICADORES: métricas em 2 colunas, pedidos 1 coluna, fontes menores */
+  .ix-card{padding:14px 14px;}
+  .ix-card-head{font-size:14px;}
+  .ix-metrics{grid-template-columns:repeat(2,1fr)!important;gap:10px 12px;}
+  .ix-ped-grid{grid-template-columns:1fr;}
+  .ix-fat{font-size:21px;}
+  .ix-fatpct{font-size:16px;}
+  .ix-kv{gap:14px;}
+
+  /* gráficos um pouco mais baixos no celular */
+  .sr-chart-wrap{height:200px;}
+
+  /* VISÃO GERAL: grades de 2 colunas viram coluna única (indicadores +
+     evolução mensal; pedidos em andamento + faturamento diário) */
+  .sr-mid{grid-template-columns:1fr;}
+  .sr-daily-grid{grid-template-columns:1fr;}
+
+  /* Faturamento x Meta: linha do valor + % quebra sem estourar */
+  .ix-fat-row{flex-wrap:wrap;gap:6px 10px;}
+  .ix-kv{gap:12px 16px;}
+
+  /* cabeçalhos de tabela (título + período/controles) empilham */
+  .sr-tbl-header{flex-wrap:wrap;gap:8px;padding:12px 12px 0;}
+
+  /* tabelas largas: mantém colunas legíveis e rola na horizontal */
+  .sr-tbl{min-width:720px;}
+
+  /* Pedidos em andamento + Faturamento Diário: no celular cada linha vira
+     um cartão (../sr-diario.css) — nada a esconder aqui */
+}
+</style>
+  <script src="../voz-embed.js?v=12"></script>
+</body>
+</html>

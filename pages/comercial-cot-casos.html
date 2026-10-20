@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Gestão de Cotações · Cotações · Biomedical</title>
+  <link rel="stylesheet" href="../styles.css?v=14">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../dash-v2.css?v=3">
+  <!-- Login BLOQUEANTE: a tela chama /api/cot-* no boot e o token tem de
+       existir na primeira chamada (o nav-sidebar.js injeta o auth.js de forma
+       assíncrona). _portalAuthLoaded impede o nav-sidebar de carregar um 2º. -->
+  <script src="https://unpkg.com/@azure/msal-browser@2.38.3/lib/msal-browser.min.js"></script>
+  <script src="../auth.js?v=7"></script>
+  <script>window._portalAuthLoaded = true;</script>
+  <!-- Layout v3 (Claude Design · animado): fonte + camada visual + motor de animações -->
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300..800&family=Manrope:wght@400..800&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../portal-v3.css?v=2">
+  <script src="../portal-motion.js?v=3" defer></script>
+  <!-- Tema claro/escuro (menu do avatar): marca o <html> antes de pintar + camada escura -->
+  <script>try{if(localStorage.getItem('bm-tema')==='escuro')document.documentElement.setAttribute('data-tema','escuro')}catch(e){}</script>
+  <link rel="stylesheet" href="../portal-tema.css?v=1">
+  <script src="../portal-tema.js?v=1" defer></script>
+  <!-- Celular (varredura 15/10/26): só vale em tela < 768px; no computador não se aplica -->
+  <link rel="stylesheet" href="../portal-mobile.css?v=1" media="(max-width: 767.98px)">
+  <script src="../portal-mobile.js?v=1" defer></script>
+  <!-- Cotações: família do Customer Service (botões, chips, cartões, caso, diálogo) -->
+  <link rel="stylesheet" href="../customer-service.css?v=3">
+  <link rel="stylesheet" href="../cotacoes.css?v=7">
+</head>
+<body class="dept cs-page cot-page" data-cot-pagina="casos">
+
+  <!-- HEADER GLOBAL -->
+  <header class="site-header">
+    <div class="container">
+      <a href="../index.html" class="brand" aria-label="Biomedical — Portal Corporativo">
+        <img class="brand-logo" src="/icons/icon-192.png" alt="Biomedical" onerror="this.dataset.failed='true'">
+        <span class="brand-fallback">Biomedical</span>
+      </a>
+      <nav class="header-nav">
+        <a href="../index.html">Início</a>
+        <a href="../index.html#areas">Áreas</a>
+        <a href="../index.html#sistemas">Sistemas</a>
+        <a href="../index.html#avisos">Avisos</a>
+        <a href="../index.html#contato">Contato</a>
+      </nav>
+    </div>
+  </header>
+
+  <div class="area-body">
+    <div class="container">
+      <div class="area-grid">
+
+        <aside class="area-sidebar">
+          <div class="sb-card">
+            <div class="sb-head">
+              <span class="sb-ic"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="8.5" cy="7" r="4"/><path d="M20 8v6"/><path d="M23 11h-6"/></svg></span>
+              <div><div class="sb-tt">Comercial</div><div class="sb-st">Departamento</div></div>
+            </div>
+            <nav>
+              <div class="sb-section">Navegação</div>
+              <a href="comercial.html">Visão geral</a>
+              <a href="comercial-cot-funil.html" class="active">Cotações</a>
+            </nav>
+          </div>
+          <a href="../index.html" class="sb-back"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></svg>Voltar ao Portal</a>
+        </aside>
+
+        <div class="area-main">
+
+          <div class="fx-head">
+            <div>
+              <div class="fx-bc"><span>Comercial</span><span>›</span><a href="comercial-cot-funil.html">Cotações</a><span>›</span><span>Gestão de Cotações</span></div>
+              <h1 class="fx-title" data-recente="Cotações · Gestão de Cotações">Gestão de Cotações</h1>
+            </div>
+            <div class="fx-head-right">
+              <span class="cs-live" id="cot-live"><i></i><span>Conectando…</span></span>
+              <a class="cs-btn cs-btn-sm cs-btn-p" href="comercial-cot-nova.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>Nova cotação</a>
+              <div class="fx-tabs" id="cot-abas">
+                <a href="comercial-cot-funil.html">Funil</a>
+                <a href="#lista" data-aba="lista" class="active">Cotações</a>
+                <a href="#quadro" data-aba="quadro">Quadro</a>
+                <a href="#config" data-aba="config">Configurações</a>
+              </div>
+            </div>
+          </div>
+
+          <div class="cot-wrap cs-wrap" id="cot-app">
+            <div id="cot-faixa"></div>
+            <div class="cs-kpis" id="cot-kpis"></div>
+
+            <section data-painel="lista">
+              <div class="tk" id="tk">
+                <div id="cot-lista">
+                  <div class="cot-quadro-l">
+                    <div class="tk-barra"><div class="tk-visoes" id="cot-visoes" role="group" aria-label="Situação da cotação"></div></div>
+                    <div class="cot-portais" id="cot-portais" role="group" aria-label="Portais"></div>
+                    <div class="tk-ferr">
+                      <label class="cs-busca"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg><input id="cot-busca" type="search" placeholder="Nº, cliente, nº da cotação, CNPJ, produto, OC…" autocomplete="off" aria-label="Buscar cotações"></label>
+                      <select class="cs-sel" id="cot-ordem" aria-label="Ordenar">
+                        <option value="prazo">Prazo (vence antes)</option>
+                        <option value="recentes">Mais recentes primeiro</option>
+                        <option value="chegada">Ordem de chegada</option>
+                        <option value="valor">Maior valor</option>
+                        <option value="atividade">Última atividade</option>
+                      </select>
+                    </div>
+                    <div class="tk-cab" id="cot-cab"></div>
+                    <div class="cot-tabela" id="cot-tabela" role="table" aria-label="Cotações"></div>
+                  </div>
+                </div>
+                <div class="tk-caso" id="cot-caso" hidden></div>
+              </div>
+            </section>
+            <section data-painel="quadro" hidden><div class="cot-kanban" id="cot-kanban"></div></section>
+            <section data-painel="config" hidden><div class="cot-cfg" id="cot-cfg"></div></section>
+          </div>
+
+        </div><!-- /area-main -->
+      </div><!-- /area-grid -->
+    </div><!-- /container -->
+  </div><!-- /area-body -->
+
+  <!-- FOOTER -->
+  <footer class="site-footer">
+    <div class="container">
+      <div class="bm-footer-bottom">
+        <span>© <span id="year"></span> Biomedical · Portal Corporativo Interno</span>
+        <span class="bm-footer-meta">Comercial · Cotações</span>
+      </div>
+    </div>
+  </footer>
+
+  <dialog class="cs-dlg" id="cs-dlg"></dialog>
+  <div class="cs-toasts" id="cs-toasts" aria-live="polite"></div>
+
+  <script src="../script.js?v=8"></script>
+  <script src="../nav-sidebar.js?v=60"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+  <script>
+    if (window.pdfjsLib) {
+      pdfjsLib.GlobalWorkerOptions.workerSrc =
+        'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+    }
+  </script>
+  <script src="../pi-pdf-texto.js?v=1"></script>
+  <script src="../customer-service-pi.js?v=1"></script>
+  <script src="../pbi-throttle.js?v=3" data-bi-trava="off"></script>
+  <script src="../voz-pbi.js?v=2"></script>
+  <script src="../cotacoes-base.js?v=6"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <script src="../cotacoes-proposta.js?v=2"></script>
+  <script src="../cotacoes.js?v=8"></script>
+</body>
+</html>

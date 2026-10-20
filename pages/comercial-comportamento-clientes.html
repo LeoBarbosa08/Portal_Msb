@@ -1,0 +1,1961 @@
+﻿<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Comportamento de Clientes · Comercial · Biomedical</title>
+  <link rel="stylesheet" href="../styles.css?v=14">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../dash-v2.css?v=3">
+  <script src="https://unpkg.com/@azure/msal-browser@2.38.3/lib/msal-browser.min.js"></script>
+<script src="../pbi-throttle.js?v=3"></script>
+  <!-- Layout v3 (Claude Design · animado): fonte + camada visual + motor de animações -->
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300..800&family=Manrope:wght@400..800&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../portal-v3.css?v=2">
+  <script src="../portal-motion.js?v=3" defer></script>
+  <!-- Tema claro/escuro (menu do avatar): marca o <html> antes de pintar + camada escura -->
+  <script>try{if(localStorage.getItem('bm-tema')==='escuro')document.documentElement.setAttribute('data-tema','escuro')}catch(e){}</script>
+  <link rel="stylesheet" href="../portal-tema.css?v=1">
+  <script src="../portal-tema.js?v=1" defer></script>
+  <!-- Celular (varredura 15/10/26): só vale em tela < 768px; no computador não se aplica -->
+  <link rel="stylesheet" href="../portal-mobile.css?v=1" media="(max-width: 767.98px)">
+  <script src="../portal-mobile.js?v=1" defer></script>
+</head>
+<body class="dept">
+
+  <header class="site-header">
+    <div class="container">
+      <a href="../index.html" class="brand" aria-label="Biomedical — Portal Corporativo">
+        <img class="brand-logo" src="/icons/icon-192.png" alt="Biomedical" onerror="this.dataset.failed='true'">
+        <span class="brand-fallback">Biomedical</span>
+      </a>
+      <nav class="header-nav">
+        <a href="../index.html">Início</a>
+        <a href="../index.html#areas">Áreas</a>
+        <a href="../index.html#sistemas">Sistemas</a>
+        <a href="../index.html#avisos">Avisos</a>
+        <a href="../index.html#contato">Contato</a>
+      </nav>
+    </div>
+  </header>
+
+  <!-- cabeçalho movido para .fx-head (abas de submódulo, Claude Design) -->
+
+  <div class="area-body">
+    <div class="container">
+      <div class="area-grid">
+
+        <aside class="area-sidebar">
+          <div class="sb-card">
+            <div class="sb-head">
+              <span class="sb-ic"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="8.5" cy="7" r="4"/><path d="M20 8v6"/><path d="M23 11h-6"/></svg></span>
+              <div><div class="sb-tt">Comercial</div><div class="sb-st">Departamento</div></div>
+            </div>
+            <nav></nav>
+          </div>
+          <a href="../index.html" class="sb-back"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></svg>Voltar ao Portal</a>
+        </aside>
+
+        <div class="area-main">
+
+          <!-- ═══ Cabeçalho + abas de submódulo (Claude Design) ═══ -->
+          <style>
+            .fx-head{display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap;padding:22px 0 4px;}
+            .fx-bc{display:flex;align-items:center;gap:6px;font-size:12px;color:#7C93A8;}
+            .fx-title{margin:4px 0 0;font-size:23px;font-weight:800;letter-spacing:-0.5px;color:#0A2E5C;}
+            .fx-head-right{display:flex;align-items:center;gap:12px;flex-wrap:wrap;}
+            .fx-tabs{display:flex;align-items:center;background:#FFFFFF;border:1px solid #E3EAF2;border-radius:11px;padding:3px;flex-wrap:wrap;}
+            .fx-tabs a,.fx-tabs span{padding:8px 14px;border-radius:8px;font-size:12.5px;font-weight:600;color:#5B7189;text-decoration:none;white-space:nowrap;}
+            .fx-tabs a:hover{color:#0A2E5C;}
+            .fx-tabs .active{background:#0A2E5C;font-weight:700;color:#fff;}
+            .fx-filters{display:flex;align-items:center;gap:10px;flex-wrap:wrap;padding:12px 14px;background:#fff;border:1px solid #E3EAF2;border-radius:12px;}
+            .fx-fdiv{width:1px;height:24px;background:#E3EAF2;}
+            .fx-fbtn{display:inline-flex;align-items:center;gap:8px;padding:8px 12px;border-radius:9px;border:1px solid #E3EAF2;background:#fff;font-size:12.5px;font-weight:600;color:#33495E;cursor:pointer;font-family:inherit;white-space:nowrap;}
+            .fx-fbtn:hover{border-color:#1272C4;}
+            .fx-fbtn .fx-fk{font-weight:700;color:#93A7BA;}
+            .fx-fbtn svg{flex-shrink:0;}
+            .fx-flimpar{margin-left:auto;display:inline-flex;align-items:center;gap:6px;padding:8px 12px;border-radius:9px;border:none;background:transparent;font-size:12.5px;font-weight:600;color:#5B7189;cursor:pointer;font-family:inherit;white-space:nowrap;}
+            .fx-flimpar:hover{color:#B54545;}
+            .fxdd{position:relative;display:inline-block;}
+            .fxdd-panel{position:absolute;z-index:50;top:calc(100% + 6px);left:0;display:none;flex-direction:column;background:#fff;border:1px solid #E3EAF2;border-radius:12px;box-shadow:0 10px 30px rgba(10,46,92,0.14);padding:12px;}
+            .fxdd.open .fxdd-panel{display:flex;}
+            .fxdd-sec{font-size:10.5px;font-weight:800;letter-spacing:0.8px;text-transform:uppercase;color:#93A7BA;margin:2px 2px 8px;}
+            .fxdd-sec.mt{margin-top:12px;}
+            .fxdd-hint{font-size:11px;color:#93A7BA;margin-top:10px;}
+            /* Periodo: painel largo e horizontal (mes em cima; ano/semestre/trimestre embaixo) */
+            .fxdd-panel{min-width:210px;}
+            #fx-periodo .fxdd-panel{width:720px;max-width:calc(100vw - 48px);}
+            #fx-periodo .fxdd-panel .sr-row,#fx-periodo .fxdd-panel .av-row,#fx-periodo .fxdd-panel .pv-row{max-width:none !important;gap:6px !important;row-gap:8px !important;}
+            #fx-periodo .fxdd-panel .sr-btn,#fx-periodo .fxdd-panel .av-btn,#fx-periodo .fxdd-panel .pv-btn{padding:5px 9px;}
+            #fx-periodo .fxdd-panel .sr-divider:first-of-type,#fx-periodo .fxdd-panel .av-divider:first-of-type,#fx-periodo .fxdd-panel .pv-divider:first-of-type{flex-basis:100%;width:100%;height:0 !important;border:0 !important;background:transparent !important;margin:2px 0 0 !important;}
+            @media(max-width:1100px){#fx-periodo .fxdd-panel{width:560px;}}
+            @media(max-width:767.98px){
+              .fx-head{align-items:flex-start;padding-top:14px;}
+              .fx-title{font-size:17px;}
+              .fx-head-right{width:100%;}
+              .fx-tabs{width:100%;flex-wrap:nowrap;overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none;background:#F0F4F9;border:none;}
+              .fx-tabs::-webkit-scrollbar{display:none;}
+              .fx-tabs a,.fx-tabs span{flex:0 0 auto;}
+              /* ── FILTROS mobile: controles empilhados em largura total; cada
+                    painel abre como accordion (sem recorte por overflow-x, sem
+                    rolagem horizontal escondendo filtros). O layout novo (.fx-filters)
+                    tem dropdown próprio — o nav-sidebar.js não o converte em <select>. ── */
+              .fx-filters{flex-direction:column;align-items:stretch;flex-wrap:nowrap;overflow:visible;gap:8px;}
+              .fx-filters .fx-fdiv{display:none;}
+              .fx-filters .fxdd{width:100%;position:static;display:block;}
+              .fx-filters .fx-fbtn,.fx-filters .av-dd-btn{width:100%;min-width:0;box-sizing:border-box;justify-content:space-between;}
+              .fx-filters .fx-fbtn{padding:11px 14px;font-size:13.5px;}
+              .fx-fbtn svg{transition:transform .18s;}
+              .fxdd.open .fx-fbtn svg{transform:rotate(180deg);}
+              .fx-filters .av-sel{flex:1 1 auto;min-width:0;box-sizing:border-box;}
+              /* dropdowns de valor (.av-dd) empilhados em largura total, igual aos .fxdd */
+              .fx-filters .av-row{width:100%;}
+              .fx-filters .av-dd{width:100%;position:relative;display:block;}
+              .fx-filters .av-dd-panel{width:100%;min-width:0;max-width:none;}
+              /* painel accordion: flui abaixo do botão, largura total, sem sombra flutuante */
+              .fx-filters .fxdd-panel{position:static;width:100%;min-width:0;max-width:none;box-shadow:none;margin-top:2px;box-sizing:border-box;}
+              #fx-periodo .fxdd-panel{width:100%;}
+              /* vence a regra global mobile (.sr-row{flex-wrap:nowrap} do styles.css)
+                 para os botões QUEBRAREM em grade dentro do painel, em vez de rolar */
+              .fxdd-panel .sr-row,.fxdd-panel .av-row,.fxdd-panel .pv-row{flex-wrap:wrap !important;overflow:visible !important;padding-bottom:0 !important;max-width:none !important;gap:6px !important;row-gap:8px !important;}
+              /* rótulos (Mês/Ano/Empresa…) ocupam a linha inteira — viram títulos de grupo */
+              .fxdd-panel .sr-label,.fxdd-panel .av-label,.fxdd-panel .pv-label{flex:0 0 100%;margin:4px 0 0;}
+              /* divisores viram quebra de linha, separando os grupos */
+              .fxdd-panel .sr-divider,.fxdd-panel .av-divider,.fxdd-panel .pv-divider{flex:0 0 100%;width:100% !important;height:0 !important;border:0 !important;background:transparent !important;margin:0 !important;}
+              /* botões preenchem a largura numa grade uniforme (sobrepõe flex-shrink:0 global) */
+              .fxdd-panel .sr-btn,.fxdd-panel .av-btn,.fxdd-panel .pv-btn{flex:1 1 auto !important;min-width:52px;text-align:center;padding:8px 6px;}
+              .fx-filters .fx-flimpar{width:100%;justify-content:center;margin:2px 0 0;padding:11px;border:1px solid #E3EAF2;border-radius:9px;}
+            }
+          </style>
+
+          <div class="fx-head">
+            <div>
+              <div class="fx-bc"><span>Comercial</span><span>›</span><span>Sales Report</span></div>
+              <h1 class="fx-title">Comportamento de Clientes</h1>
+            </div>
+            <div class="fx-head-right">
+              <div class="fx-tabs">
+                <a href="comercial-sales-report.html">Visão Geral</a>
+                <a href="comercial-performance-vendas.html">Performance de Vendas</a>
+                <a href="comercial-vendas.html">Análise de Vendas</a>
+                <a href="comercial-clientes.html">Análise de Pedidos</a>
+                <a href="comercial-base-notas-fiscais.html">Base de Notas Fiscais</a>
+                <a href="comercial-novos-negocios.html">Novos Negócios</a>
+                <a href="comercial-clientes-perdidos.html">Clientes Perdidos</a>
+                <span class="active">Comportamento de Clientes</span>
+                <a href="comercial-calendario-cirurgico.html">Calendário Cirúrgico</a>
+              </div>
+            </div>
+          </div>
+          <script>
+          /* barra de filtros fx — dropdowns compactos (Claude Design) */
+          (function(){
+            window.fxTogglePanel = function(btn){
+              var dd = btn.closest('.fxdd'); if(!dd) return;
+              var open = dd.classList.contains('open');
+              document.querySelectorAll('.fxdd.open').forEach(function(d){ d.classList.remove('open'); });
+              if(!open) dd.classList.add('open');
+            };
+            function txt(id,v){ var el=document.getElementById(id); if(el) el.textContent=v; }
+            window.fxSyncLabels = function(){
+              var per = document.getElementById('fx-periodo');
+              if(per){
+                var mesBtn = per.querySelector('.fxdd-panel button.active');
+                var anoBtns = per.querySelectorAll('.fxdd-panel button.active-green');
+                var ano = anoBtns.length===1 ? anoBtns[0].textContent.trim() : (anoBtns.length>1 ? anoBtns.length+' anos' : '');
+                var mes = mesBtn ? mesBtn.textContent.trim() : '';
+                txt('fx-periodo-lbl', ([ano, (mes && !/^todos$/i.test(mes) ? mes : '')].filter(Boolean).join(' · ')) || 'Todos');
+              }
+              [['fx-empresa','fx-empresa-lbl'],['fx-tipocli','fx-tipocli-lbl']].forEach(function(p){
+                var dd=document.getElementById(p[0]); if(!dd) return;
+                var b=dd.querySelector('.fxdd-panel button.active,.fxdd-panel button.active-green');
+                txt(p[1], b ? b.textContent.trim() : 'Todos');
+              });
+            };
+            window.fxLimpar = function(){
+              document.querySelectorAll('.fx-filters [data-fxdefault]').forEach(function(b){ b.click(); });
+              setTimeout(window.fxSyncLabels, 0);
+            };
+            document.addEventListener('DOMContentLoaded', function(){
+              document.querySelectorAll('.fx-filters .fxdd-panel').forEach(function(p){
+                p.addEventListener('click', function(e){ e.stopPropagation(); setTimeout(window.fxSyncLabels, 0); });
+              });
+              document.addEventListener('click', function(e){ if(e.target.closest && e.target.closest('.fxdd')) return; document.querySelectorAll('.fxdd.open').forEach(function(d){ d.classList.remove('open'); }); });
+              window.fxSyncLabels();
+            });
+          })();
+          </script>
+
+          <!-- ═══════════ COMPORTAMENTO DE CLIENTES ═══════════ -->
+          <style>
+            /* Barra de filtros: as classes av-* são as MESMAS da Análise de
+               Vendas de propósito — o CSS mobile da .fx-filters (acima) e o
+               setupMobileFilterCards() do nav-sidebar.js reconhecem .av-row /
+               .av-btn / .av-dd-btn. Renomear aqui quebraria o celular. */
+            .cb-wrap{padding:20px 0 48px;display:flex;flex-direction:column;gap:16px;}
+            .av-row{display:flex;align-items:center;gap:8px;flex-wrap:wrap;}
+            .av-label{font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--text-4);margin-right:4px;}
+            .av-btn{padding:5px 11px;border-radius:6px;border:1px solid var(--border);background:#fff;font-size:12px;font-weight:500;color:var(--text-2);cursor:pointer;font-family:var(--font-body);transition:all .15s;}
+            .av-btn:hover{border-color:var(--bm-blue-500);color:var(--bm-blue-700);}
+            .av-btn.active{background:var(--bm-blue-900);color:#fff;border-color:var(--bm-blue-900);}
+            .av-btn.active-green{background:var(--bm-green-600);color:#fff;border-color:var(--bm-green-600);}
+            .av-divider{width:1px;height:22px;background:var(--border-2);flex-shrink:0;}
+            .av-dd{position:relative;display:inline-block;}
+            .av-dd-btn{padding:7px 12px;border-radius:8px;border:1px solid var(--border);background:#fff;font-size:12.5px;font-weight:600;color:var(--text-2);cursor:pointer;display:inline-flex;align-items:center;gap:10px;min-width:150px;justify-content:space-between;font-family:inherit;}
+            .av-dd-btn:hover{border-color:var(--bm-blue-500);}
+            .av-dd-btn.has{border-color:var(--bm-blue-600);background:var(--bm-blue-50);color:var(--bm-blue-800);}
+            .av-dd-btn .cnt{background:var(--bm-blue-600);color:#fff;border-radius:999px;padding:0 7px;font-size:11px;}
+            .av-dd-panel{position:absolute;z-index:40;top:calc(100% + 4px);left:0;width:270px;max-height:340px;display:none;flex-direction:column;background:#fff;border:1px solid var(--border);border-radius:10px;box-shadow:var(--shadow);overflow:hidden;}
+            .av-dd.open .av-dd-panel{display:flex;}
+            .av-dd-search{padding:8px;border-bottom:1px solid var(--border);}
+            .av-dd-search input{width:100%;padding:6px 8px;border:1px solid var(--border);border-radius:6px;font-size:12px;font-family:var(--font-body);box-sizing:border-box;}
+            .av-dd-list{overflow-y:auto;padding:4px;}
+            .av-dd-opt{display:flex;align-items:center;gap:8px;padding:6px 8px;border-radius:6px;font-size:12.5px;color:var(--text-2);cursor:pointer;}
+            .av-dd-opt:hover{background:var(--bm-blue-50);}
+            .av-dd-foot{display:flex;justify-content:space-between;padding:6px 10px;border-top:1px solid var(--border);}
+            .av-dd-foot button{font-size:11.5px;color:var(--bm-blue-700);background:none;border:none;cursor:pointer;font-weight:600;font-family:inherit;}
+
+            /* ── KPIs ── */
+            /* 6 cartões: 6 numa fileira só em tela larga; 3+3 no desktop comum
+               (a área útil ao lado da sidebar é ~910px em 1280px de viewport). */
+            .cb-escopo{display:flex;align-items:center;gap:10px;flex-wrap:wrap;font-size:12px;color:#33495E;
+                       background:#F1F7FE;border:1px solid #D6E6F7;border-radius:10px;padding:9px 14px;}
+            .cb-escopo b{font-weight:800;color:#0A2E5C;}
+            .cb-escopo .cb-esc-x{margin-left:auto;background:#fff;border:1px solid #C7DBF0;color:#1E88E5;
+                       border-radius:7px;padding:3px 9px;font-size:11px;font-weight:700;cursor:pointer;}
+            .cb-escopo .cb-esc-x:hover{background:#1E88E5;border-color:#1E88E5;color:#fff;}
+            .cb-kpis{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:12px;}
+            @media (max-width:1560px){ .cb-kpis{grid-template-columns:repeat(3,minmax(0,1fr));} }
+            @media (max-width:900px){  .cb-kpis{grid-template-columns:repeat(2,minmax(0,1fr));} }
+            .cb-kpi{position:relative;background:#fff;border:1px solid #E3EAF2;border-radius:12px;padding:14px 16px 13px 18px;overflow:hidden;}
+            .cb-kpi::before{content:"";position:absolute;left:0;top:0;bottom:0;width:3px;background:var(--kc,#1E88E5);}
+            .cb-kpi-l{font-size:10px;font-weight:800;letter-spacing:.09em;text-transform:uppercase;color:#8FA3B6;}
+            .cb-kpi-v{margin-top:6px;font-size:25px;font-weight:800;letter-spacing:-.6px;color:#0A2E5C;line-height:1.05;font-variant-numeric:tabular-nums;}
+            .cb-kpi-s{margin-top:5px;font-size:11.5px;font-weight:600;color:#7C93A8;}
+            .cb-kpi-s .up{color:#12874A;}
+            .cb-kpi-s .dn{color:#C2410C;}
+
+            /* ── Cartão de seção ── */
+            .cb-card{background:#fff;border:1px solid #E3EAF2;border-radius:12px;padding:16px 18px 18px;}
+            .cb-ch{display:flex;align-items:flex-start;justify-content:space-between;gap:14px;flex-wrap:wrap;margin-bottom:14px;}
+            .cb-ct{margin:0;font-size:14.5px;font-weight:700;color:#0A4FA0;letter-spacing:-.2px;}
+            .cb-cs{margin:3px 0 0;font-size:11.5px;color:#8FA3B6;}
+            .cb-chint{font-size:11px;color:#A7B7C6;font-weight:600;}
+
+            /* ── Curva ABC: 3 classes ── */
+            .cb-abc{display:grid;grid-template-columns:repeat(auto-fit,minmax(268px,1fr));gap:12px;}
+            .cb-abc-c{position:relative;text-align:left;background:#fff;border:1.5px solid #E3EAF2;border-radius:11px;padding:13px 15px;cursor:pointer;font-family:inherit;transition:border-color .15s,box-shadow .15s,background .15s;}
+            .cb-abc-c:hover{border-color:#9FC3E8;}
+            .cb-abc-c.on{border-color:#0A2E5C;box-shadow:0 3px 12px rgba(10,46,92,.13);background:#FBFDFF;}
+            .cb-abc-top{display:flex;align-items:center;gap:9px;}
+            .cb-abc-b{flex:0 0 auto;width:19px;height:19px;border-radius:5px;display:grid;place-items:center;font-size:11px;font-weight:800;color:#fff;background:var(--ac,#1E88E5);}
+            .cb-abc-n{font-size:12.5px;font-weight:600;color:#33495E;}
+            .cb-abc-p{margin-left:auto;font-size:19px;font-weight:800;color:#0A2E5C;letter-spacing:-.5px;font-variant-numeric:tabular-nums;}
+            .cb-abc-bar{margin:10px 0 9px;height:5px;border-radius:99px;background:#EEF3F8;overflow:hidden;}
+            .cb-abc-bar i{display:block;height:100%;border-radius:99px;background:var(--ac,#1E88E5);}
+            .cb-abc-m{display:flex;align-items:baseline;justify-content:space-between;gap:10px;font-size:11px;color:#8FA3B6;}
+            .cb-abc-m b{font-weight:700;color:#33495E;font-variant-numeric:tabular-nums;}
+
+            .cb-abc-h{margin-top:4px;padding-top:4px;border-top:1px dashed #E3EAF2;color:#8FA3B8;}
+            .cb-abc-h b{color:#8FA3B8;font-weight:700;}
+
+            /* ── Ciclo de vida: 6 segmentos ── */
+            .cb-seg{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:12px;}
+            @media (max-width:1560px){ .cb-seg{grid-template-columns:repeat(3,minmax(0,1fr));} }
+            @media (max-width:900px){  .cb-seg{grid-template-columns:repeat(2,minmax(0,1fr));} }
+            .cb-seg-c{position:relative;text-align:left;background:#fff;border:1.5px solid #E3EAF2;border-radius:11px;padding:12px 14px 11px;cursor:pointer;font-family:inherit;transition:border-color .15s,box-shadow .15s,background .15s;}
+            .cb-seg-c:hover{border-color:#9FC3E8;}
+            .cb-seg-c.on{border-color:var(--sc,#1E88E5);background:var(--sbg,#F7FBFF);box-shadow:0 3px 12px rgba(10,46,92,.11);}
+            .cb-seg-h{display:flex;align-items:center;gap:7px;}
+            .cb-seg-d{width:7px;height:7px;border-radius:99px;background:var(--sc,#1E88E5);flex:0 0 auto;}
+            .cb-seg-n{font-size:12px;font-weight:700;color:var(--sc,#1E88E5);}
+            .cb-seg-v{margin-top:7px;font-size:22px;font-weight:800;color:#0A2E5C;letter-spacing:-.5px;line-height:1;font-variant-numeric:tabular-nums;}
+            .cb-seg-r{margin-top:4px;font-size:11.5px;font-weight:700;color:#5B7189;font-variant-numeric:tabular-nums;}
+            .cb-seg-x{margin-top:4px;font-size:11px;font-weight:600;color:#7C93A8;}
+            .cb-seg-x .up{color:#12874A;}
+            .cb-seg-x .dn{color:#C2410C;}
+            .cb-seg-k{margin-top:7px;padding-top:7px;border-top:1px dashed #E7EEF5;font-size:10.5px;color:#A7B7C6;line-height:1.35;}
+
+            /* ── Tabelas ── */
+            .cb-tsub{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin:18px 0 8px;}
+            .cb-tsub h5{margin:0;font-size:11px;font-weight:800;letter-spacing:.09em;text-transform:uppercase;color:#5B7189;}
+            .cb-scroll{max-height:58vh;overflow:auto;-webkit-overflow-scrolling:touch;border:1px solid #EDF2F7;border-radius:10px;}
+            table.cb-tbl{border-collapse:separate;border-spacing:0;width:100%;font-size:12px;white-space:nowrap;}
+            body.dept .area-main table.cb-tbl thead th{position:sticky;top:0;z-index:2;background:#F7FAFD;color:#7C93A8;text-align:left;padding:9px 12px;font-size:10px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;cursor:pointer;user-select:none;border-top:none;}
+            body.dept .area-main table.cb-tbl thead th.num{text-align:right;}
+            body.dept .area-main table.cb-tbl tbody td{padding:8px 12px;border-bottom:1px solid #F1F5F9;color:#4A5F75;}
+            body.dept .area-main table.cb-tbl tbody td.num{text-align:right;font-variant-numeric:tabular-nums;}
+            body.dept .area-main table.cb-tbl tbody td.nome{font-weight:600;color:#0A2E5C;max-width:330px;overflow:hidden;text-overflow:ellipsis;}
+            body.dept .area-main table.cb-tbl tbody td.forte{color:#0A2E5C;font-weight:700;}
+            body.dept .area-main table.cb-tbl tbody tr:hover td{background:#F7FBFF;}
+            body.dept .area-main table.cb-tbl tbody tr:last-child td{background:inherit;font-weight:inherit;border-top:none;}
+            .cb-pill{display:inline-block;padding:2px 8px;border-radius:99px;font-size:10.5px;font-weight:700;}
+            .cb-badge{display:inline-grid;place-items:center;width:18px;height:18px;border-radius:5px;font-size:10px;font-weight:800;color:#fff;}
+            .cb-vazio{padding:22px;text-align:center;color:#A7B7C6;font-size:12.5px;}
+            body.dept .area-main table.cb-tbl tbody td.motivo{max-width:270px;overflow:hidden;text-overflow:ellipsis;font-size:11px;color:#7C93A8;cursor:help;}
+
+            /* ── Ajuda: "como esta coluna e' calculada" ──
+               Balao em position:fixed no BODY: dentro da tabela ele seria cortado
+               pelo overflow do .cb-scroll. O title nativo nao serve (demora ~1s,
+               corta o texto e nao aparece no celular) — por isso o dicionario. */
+            .cb-tip{position:fixed;z-index:9600;max-width:340px;padding:10px 12px;border-radius:9px;background:#0A2E5C;color:#EAF3FF;font-size:11.5px;font-weight:500;line-height:1.5;box-shadow:0 10px 30px rgba(10,46,92,.3);pointer-events:none;opacity:0;transition:opacity .12s;}
+            .cb-tip.on{opacity:1;}
+            .cb-tip b{display:block;color:#8FC4FF;font-weight:800;font-size:10px;letter-spacing:.08em;text-transform:uppercase;margin-bottom:4px;}
+            .cb-kpi[data-tip],.cb-kpi-s[data-tip]{cursor:help;}
+            .cb-thint{font-size:11px;color:#A7B7C6;font-weight:600;display:inline-flex;align-items:center;gap:5px;}
+            .cb-thint::before{content:'?';display:inline-grid;place-items:center;width:14px;height:14px;border-radius:99px;background:#E7EFF8;color:#4A72A8;font-size:9.5px;font-weight:800;}
+            .cb-dic{margin-top:11px;font-size:11.5px;color:#5B7189;}
+            .cb-dic>summary{cursor:pointer;font-size:10.5px;font-weight:800;letter-spacing:.07em;text-transform:uppercase;color:#7C93A8;list-style:none;display:inline-flex;align-items:center;gap:6px;}
+            .cb-dic>summary::-webkit-details-marker{display:none;}
+            .cb-dic>summary::before{content:'?';display:inline-grid;place-items:center;width:15px;height:15px;border-radius:99px;background:#E7EFF8;color:#4A72A8;font-size:10px;font-weight:800;}
+            .cb-dic dl{margin:10px 0 0;display:grid;grid-template-columns:auto 1fr;gap:6px 14px;padding:12px 14px;background:#F8FBFE;border:1px solid #EDF2F7;border-radius:9px;}
+            .cb-dic dt{font-weight:800;color:#0A2E5C;white-space:nowrap;}
+            .cb-dic dd{margin:0;line-height:1.5;}
+
+            /* ── Matriz Cliente × Família × Mês ── */
+            .cb-mx-tools{display:flex;align-items:center;gap:8px;flex-wrap:wrap;}
+            .cb-tg{display:inline-flex;background:#F0F4F9;border:1px solid #E3EAF2;border-radius:9px;padding:2px;}
+            .cb-tg button{padding:6px 13px;border:none;background:none;border-radius:7px;font-size:12px;font-weight:600;color:#5B7189;cursor:pointer;font-family:inherit;}
+            .cb-tg button.on{background:#0A4FA0;color:#fff;font-weight:700;}
+            .cb-leg{display:inline-flex;align-items:center;gap:5px;font-size:10.5px;color:#A7B7C6;font-weight:600;}
+            .cb-leg i{width:15px;height:11px;border-radius:3px;display:inline-block;}
+            .cb-mx-scroll{overflow:auto;max-height:74vh;-webkit-overflow-scrolling:touch;border:1px solid #EDF2F7;border-radius:10px;}
+            table.cb-mx{border-collapse:separate;border-spacing:0;width:100%;font-size:11.5px;white-space:nowrap;}
+            body.dept .area-main table.cb-mx thead th{position:sticky;top:0;z-index:3;background:#F7FAFD;color:#7C93A8;padding:9px 10px;font-size:10px;font-weight:800;letter-spacing:.07em;text-transform:uppercase;text-align:center;border-top:none;}
+            body.dept .area-main table.cb-mx thead th:first-child{left:0;z-index:4;text-align:left;min-width:250px;}
+            body.dept .area-main table.cb-mx tbody td{padding:5px 6px;border-bottom:1px solid #F4F7FA;text-align:center;color:#4A5F75;}
+            body.dept .area-main table.cb-mx tbody td:first-child{position:sticky;left:0;z-index:1;background:#fff;text-align:left;padding:7px 12px;border-right:1px solid #EDF2F7;}
+            body.dept .area-main table.cb-mx tbody tr.fam td:first-child{background:#FBFDFF;padding-left:30px;}
+            body.dept .area-main table.cb-mx tbody tr:hover td:first-child{background:#F7FBFF;}
+            body.dept .area-main table.cb-mx tbody tr:last-child td{font-weight:inherit;border-top:none;}
+            .cb-mx-cli{display:flex;align-items:center;gap:8px;cursor:pointer;}
+            .cb-mx-exp{flex:0 0 auto;width:15px;height:15px;border-radius:4px;border:1px solid #DCE6F0;background:#fff;color:#7C93A8;font-size:10px;font-weight:800;display:grid;place-items:center;line-height:1;}
+            .cb-mx-nm{font-size:12px;font-weight:700;color:#0A2E5C;max-width:300px;overflow:hidden;text-overflow:ellipsis;}
+            .cb-mx-sub{margin-top:2px;font-size:10px;color:#A7B7C6;font-weight:600;padding-left:23px;}
+            .cb-mx-fam{font-size:11.5px;color:#5B7189;font-weight:600;max-width:290px;overflow:hidden;text-overflow:ellipsis;}
+            .cb-cel{display:block;border-radius:5px;padding:4px 2px;font-size:11px;font-weight:700;font-variant-numeric:tabular-nums;}
+            .cb-cel.zero{background:#FEF3F2;color:#E3A9A3;font-weight:600;}
+            .cb-tot{font-weight:800;color:#0A2E5C;font-variant-numeric:tabular-nums;text-align:right !important;padding-right:12px !important;}
+            .cb-more{width:100%;padding:10px;border:none;border-top:1px solid #EDF2F7;background:#FBFDFF;color:#0A4FA0;font-size:12px;font-weight:700;cursor:pointer;font-family:inherit;}
+            .cb-more:hover{background:#F2F8FF;}
+
+            /* ── Barra de ferramentas própria da página ── */
+            .cb-bar{display:flex;align-items:center;gap:10px;flex-wrap:wrap;padding:10px 14px;background:#fff;border:1px solid #E3EAF2;border-radius:12px;}
+            .cb-search{position:relative;flex:1 1 240px;min-width:190px;display:flex;align-items:center;}
+            .cb-search svg{position:absolute;left:10px;color:#A7B7C6;}
+            .cb-search input{width:100%;padding:8px 10px 8px 32px;border:1px solid #E3EAF2;border-radius:8px;font-size:12.5px;font-family:inherit;box-sizing:border-box;color:var(--text);}
+            .cb-search input:focus{outline:none;border-color:var(--bm-blue-500);}
+            .cb-xls{display:inline-flex;align-items:center;gap:6px;padding:8px 13px;border-radius:8px;border:1px solid var(--bm-green-600);background:var(--bm-green-600);color:#fff;font-size:12.5px;font-weight:700;cursor:pointer;font-family:inherit;}
+            .cb-xls:hover{filter:brightness(.94);}
+            .cb-xls:disabled{opacity:.5;cursor:default;filter:none;}
+            /* botao de Excel de UMA seccao, na faixa do titulo da tabela */
+            .cb-xls-mini{padding:6px 11px;font-size:11.5px;gap:5px;}
+            /* a contagem absorve a folga: titulo e dica ficam a esquerda, contagem e botao a direita */
+            .cb-tsub .cb-chint{margin-left:auto;}
+            .cb-info{font-size:11.5px;color:#8FA3B6;margin-left:auto;white-space:nowrap;font-weight:600;}
+            .cb-aviso{padding:9px 14px;border-radius:8px;font-size:12px;background:#FFFBEB;border:1px solid #FDE68A;color:#854D0E;}
+
+            @media (max-width:767.98px){
+              .cb-kpi-v{font-size:22px;}
+              .cb-card{padding:14px 13px 16px;}
+              .cb-kpis,.cb-abc,.cb-seg{grid-template-columns:1fr;}
+              body.dept .area-main table.cb-mx thead th:first-child{min-width:190px;}
+              .cb-mx-nm,.cb-mx-fam{max-width:150px;}
+              .cb-info{margin-left:0;}
+              .cb-dic dl{grid-template-columns:1fr;gap:1px;}
+              .cb-dic dd{margin-bottom:9px;}
+              .cb-tip{max-width:calc(100vw - 24px);}
+            }
+          </style>
+
+          <div class="cb-wrap">
+
+            <!-- Banner de status da conexão -->
+            <div id="cb-banner" style="padding:11px 16px;border-radius:8px;font-size:13px;display:flex;align-items:center;gap:10px;background:#EFF6FF;border:1px solid #BFDBFE;color:#1E40AF;">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+              Conectando ao Power BI…
+            </div>
+
+            <!-- ── FILTROS: Ano (DAX) + slicers do modelo + Segmento/Classe (locais) ── -->
+            <div class="fx-filters">
+              <div class="fxdd" id="fx-periodo">
+                <button type="button" class="fx-fbtn" onclick="fxTogglePanel(this)">
+                  <span class="fx-fk">Ano</span><span id="fx-periodo-lbl">2026</span>
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#7C93A8" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg>
+                </button>
+                <div class="fxdd-panel">
+                  <div class="fxdd-sec">Ano de análise</div>
+                  <div class="av-row" style="max-width:380px;">
+                    <button class="av-btn" onclick="cbSetAno(this,2022)">2022</button>
+                    <button class="av-btn" onclick="cbSetAno(this,2023)">2023</button>
+                    <button class="av-btn" onclick="cbSetAno(this,2024)">2024</button>
+                    <button class="av-btn" onclick="cbSetAno(this,2025)">2025</button>
+                    <button class="av-btn active-green" data-fxdefault onclick="cbSetAno(this,2026)">2026</button>
+                  </div>
+                  <div class="fxdd-hint">O comportamento é lido nos 12 meses do ano e comparado com o ano anterior.</div>
+                </div>
+              </div>
+              <div class="fx-fdiv"></div>
+              <div class="av-toolbar av-row" id="av-toolbar-filtros" style="gap:8px;flex-wrap:wrap;"></div>
+            </div>
+
+            <!-- Campos que o modelo não reconheceu (oculto quando está tudo ok) -->
+            <div class="cb-aviso" id="cb-faltando" hidden></div>
+
+            <!-- ── KPIs ── -->
+            <div class="cb-escopo" id="cb-escopo" hidden></div>
+            <div class="cb-kpis" id="cb-kpis">
+              <div class="cb-kpi" style="--kc:#1E88E5;" data-tip-t="Clientes ativos" data-tip="Clientes distintos com faturamento maior que zero no ano selecionado, dentro do recorte ativo (classe, segmento e os filtros do topo). A comparação é com o número de clientes ativos do ano anterior."><div class="cb-kpi-l">Clientes ativos</div><div class="cb-kpi-v" id="k-ativos">—</div><div class="cb-kpi-s" id="k-ativos-s">&nbsp;</div></div>
+              <div class="cb-kpi" style="--kc:#16A34A;" data-tip-t="Faturamento" data-tip="Soma de Faturamentos[Faturamento] no ano, sem INTERCOMPANY, só operações que geram fatura a receber e sem as notas ocultas. A consulta roda com o SEU login no Power BI, então soma apenas o que o seu perfil pode ver (RLS do modelo). A comparação é com o MESMO período do ano anterior, não com o ano fechado."><div class="cb-kpi-l">Faturamento</div><div class="cb-kpi-v" id="k-fat">—</div><div class="cb-kpi-s" id="k-fat-s">&nbsp;</div></div>
+              <div class="cb-kpi" style="--kc:#0A4FA0;" data-tip-t="Ticket médio" data-tip="Faturamento do recorte dividido pelo número de notas distintas (DISTINCTCOUNT de Faturamentos[Número da fatura]). O rodapé traz o faturamento médio por cliente."><div class="cb-kpi-l">Ticket médio</div><div class="cb-kpi-v" id="k-ticket">—</div><div class="cb-kpi-s" id="k-ticket-s">&nbsp;</div></div>
+              <div class="cb-kpi" style="--kc:#7C3AED;" data-tip-t="Margem média" data-tip="Medida Margem de contribuição (nota) somada e dividida pelo faturamento do recorte. Fica em branco quando o seu perfil não tem acesso à medida."><div class="cb-kpi-l">Margem média</div><div class="cb-kpi-v" id="k-margem">—</div><div class="cb-kpi-s" id="k-margem-s">&nbsp;</div></div>
+              <div class="cb-kpi" style="--kc:#D97706;" data-tip-t="Taxa de recompra" data-tip="Percentual dos clientes ativos que compraram mais de uma vez no ano: 2 notas ou mais, ou compra em 2 meses ou mais."><div class="cb-kpi-l">Taxa de recompra</div><div class="cb-kpi-v" id="k-recompra">—</div><div class="cb-kpi-s" id="k-recompra-s">&nbsp;</div></div>
+              <div class="cb-kpi" style="--kc:#DC2626;" data-tip-t="Clientes em risco" data-tip="Quantos clientes caíram no segmento Em risco do Ciclo de Vida: sem compra há 61 a 120 dias, OU queda de 30% ou mais contra o mesmo período do ano anterior. Este cartão ignora de propósito o recorte de segmento, senão viraria tautologia."><div class="cb-kpi-l">Clientes em risco</div><div class="cb-kpi-v" id="k-risco">—</div><div class="cb-kpi-s" id="k-risco-s">&nbsp;</div></div>
+            </div>
+
+            <!-- ── CURVA ABC ── -->
+            <div class="cb-card">
+              <div class="cb-ch">
+                <div>
+                  <h4 class="cb-ct">Curva ABC de Clientes</h4>
+                  <p class="cb-cs" id="cb-abc-sub">Concentração do faturamento por classe, com Pareto acumulado no ano. Corte: A até 70% · B até 90% · C o restante.</p>
+                </div>
+                <span class="cb-chint">Clique na classe para ver os clientes</span>
+              </div>
+              <div class="cb-abc" id="cb-abc"></div>
+
+              <div class="cb-tsub">
+                <h5 id="cb-abc-tt">Clientes por faturamento</h5>
+                <span class="cb-thint">passe o mouse no título da coluna para ver a fórmula</span>
+                <span class="cb-chint" id="cb-abc-info">—</span>
+                <button type="button" class="cb-xls cb-xls-mini" id="cb-abc-xls" onclick="cbExportABC()"
+                        data-tip-t="Exportar a Curva ABC" data-tip="Gera um Excel com as colunas desta tabela, na ordem em que ela está na tela e com o recorte de classe, segmento e busca que estiver ativo." disabled>
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg> Exportar Curva ABC
+                </button>
+              </div>
+              <div class="cb-scroll tbl-wrap">
+                <table class="cb-tbl" id="cb-abc-tbl">
+                  <thead id="cb-abc-thead"></thead>
+                  <tbody id="cb-abc-tbody"><tr><td class="cb-vazio">Carregando…</td></tr></tbody>
+                </table>
+              </div>
+              <details class="cb-dic" id="cb-abc-dic"></details>
+            </div>
+
+            <!-- ── CICLO DE VIDA ── -->
+            <div class="cb-card">
+              <div class="cb-ch">
+                <div>
+                  <h4 class="cb-ct">Ciclo de Vida do Cliente</h4>
+                  <p class="cb-cs" id="cb-seg-sub">Classificação por recência, frequência e tendência de compra.</p>
+                </div>
+                <span class="cb-chint">Clique no segmento para ver os clientes</span>
+              </div>
+              <div class="cb-seg" id="cb-seg"></div>
+
+              <div class="cb-tsub">
+                <h5 id="cb-seg-tt">Clientes por segmento</h5>
+                <span class="cb-thint">passe o mouse no título da coluna para ver a fórmula</span>
+                <span class="cb-chint" id="cb-seg-info">—</span>
+                <button type="button" class="cb-xls cb-xls-mini" id="cb-seg-xls" onclick="cbExportSeg()"
+                        data-tip-t="Exportar o Ciclo de Vida" data-tip="Gera um Excel com as colunas desta tabela — inclusive o Motivo do segmento —, na ordem da tela e com o recorte de classe, segmento e busca que estiver ativo." disabled>
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg> Exportar Ciclo de Vida
+                </button>
+              </div>
+              <div class="cb-scroll tbl-wrap">
+                <table class="cb-tbl" id="cb-seg-tbl">
+                  <thead id="cb-seg-thead"></thead>
+                  <tbody id="cb-seg-tbody"><tr><td class="cb-vazio">Carregando…</td></tr></tbody>
+                </table>
+              </div>
+              <details class="cb-dic" id="cb-seg-dic"></details>
+            </div>
+
+            <!-- ── Busca + exportação (afeta as duas tabelas e a matriz) ── -->
+            <div class="cb-bar">
+              <div class="cb-search">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+                <input type="text" id="cb-q" placeholder="Buscar cliente por nome, código, UF ou tipo…">
+              </div>
+              <button type="button" class="cb-xls" id="cb-btn-xls" onclick="cbExport()" disabled>
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                Exportar carteira
+              </button>
+              <span class="cb-info" id="cb-info">—</span>
+            </div>
+
+            <!-- ── MATRIZ CLIENTE × FAMÍLIA × MÊS ── -->
+            <div class="cb-card">
+              <div class="cb-ch">
+                <div>
+                  <h4 class="cb-ct">Matriz Cliente × Família × Mês</h4>
+                  <p class="cb-cs">Todos os 12 meses do ano são exibidos, inclusive os sem faturamento (em vermelho claro), para expor rupturas de compra por família.</p>
+                </div>
+                <div class="cb-mx-tools">
+                  <div class="cb-tg" id="cb-mx-tg">
+                    <button type="button" class="on" onclick="cbSetMedida('fat')">Faturamento</button>
+                    <button type="button" onclick="cbSetMedida('qtd')">Quantidade</button>
+                  </div>
+                  <span class="cb-leg">Sem faturamento <i style="background:#FEF3F2;border:1px solid #F6DCD8;"></i></span>
+                  <span class="cb-leg"><i style="background:#DCEAFB;"></i><i style="background:#B6D4F5;"></i><i style="background:#7FB2E8;"></i><i style="background:#3E85D0;"></i><i style="background:#0A4FA0;"></i> Alto</span>
+                </div>
+              </div>
+              <div class="cb-mx-scroll tbl-wrap">
+                <table class="cb-mx" id="cb-mx">
+                  <thead id="cb-mx-thead"></thead>
+                  <tbody id="cb-mx-tbody"><tr><td class="cb-vazio">Carregando…</td></tr></tbody>
+                </table>
+              </div>
+              <button type="button" class="cb-more" id="cb-mx-more" hidden onclick="cbMaisLinhas()"></button>
+              <div style="margin-top:10px;font-size:11px;color:#A7B7C6;">
+                <b style="color:#5B7189;">Meses sem compra</b> destacados em vermelho claro por família ·
+                <b style="color:#5B7189;">Linha do cliente</b> soma todas as famílias do período ·
+                clique no cliente para abrir as famílias.
+              </div>
+            </div>
+
+          </div><!-- /cb-wrap -->
+
+        </div><!-- /area-main -->
+      </div><!-- /area-grid -->
+    </div><!-- /container -->
+  </div><!-- /area-body -->
+
+  <footer class="site-footer">
+    <div class="container">
+      <div class="bm-footer-bottom">
+        <span>© <span id="year"></span> Biomedical · Portal Corporativo Interno</span>
+        <span class="bm-footer-meta">Belo Horizonte · São Paulo · Rio de Janeiro · Curitiba · Recife · Porto Alegre</span>
+      </div>
+    </div>
+  </footer>
+
+  <script src="../script.js?v=8"></script>
+  <script src="../nav-sidebar.js?v=52"></script>
+  <script src="../sr-intercompany.js?v=1"></script>
+  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+  <script>
+  // ================================================================
+  // COMPORTAMENTO DE CLIENTES — aba do Sales Report (Comercial)
+  //
+  // Pergunta que a página responde: como cada cliente da carteira se
+  // comporta ao longo do ano — quanto vale (curva ABC), em que fase do
+  // ciclo de vida está (novo / fiel / recorrente / em risco / dormente /
+  // perdido) e em quais meses comprou cada família.
+  //
+  // Mesmo dataset e MESMO filtro-base das outras abas que leem
+  // 'Faturamentos': sem INTERCOMPANY, só operação que gera fatura e sem
+  // as NFs de NF_OCULTAS. O período aqui é o ANO (não mês), porque toda
+  // a leitura de comportamento é anual e comparada com o ano anterior.
+  //
+  // 4 consultas no carregamento (+1 por cliente expandido na matriz):
+  //   Q1  grão CLIENTE no ano ....... fat, qtd, margem, nº notas, famílias,
+  //                                   primeira e última compra no ano
+  //   Q2  grão CLIENTE no ano-1 .... fat + última compra (para queda e recência
+  //                                   de quem sumiu neste ano)
+  //   Q3  códigos com compra ANTES do ano (define quem é cliente NOVO)
+  //   Q4  grão CLIENTE × MÊS no ano  (matriz, meses com compra, sazonalidade)
+  //   Q5  grão FAMÍLIA × MÊS de UM cliente (sob demanda, ao expandir a linha)
+  //
+  // Armadilhas conhecidas do módulo, já tratadas aqui:
+  //  1. SOMA DE COLUNA precisa de CALCULATE dentro de ADDCOLUMNS(SUMMARIZE(…)),
+  //     senão devolve o TOTAL GERAL em toda linha.
+  //  2. OLS de margem derruba a query INTEIRA (HTTP 400) em vez de devolver a
+  //     medida em branco — por isso o bundle de medidas tem fallback
+  //     medida-a-medida (olsBundle).
+  //  3. MAX('Calendário'[Data]) NÃO serve para achar a última compra: o filtro
+  //     do fato não sobe para a dimensão de data. A leitura correta é
+  //     MAXX(SUMMARIZE('Faturamentos','Calendário'[Data]), …), que agrupa o
+  //     PRÓPRIO fato pela data relacionada.
+  //  4. Grafia dos campos vem do catálogo do modelo (INFO.VIEW.COLUMNS /
+  //     INFO.VIEW.MEASURES). Campo ausente é pulado com tarja âmbar em vez de
+  //     derrubar a página. window.cbCampos() mostra o que foi para o DAX.
+  // ================================================================
+  const PBI_CFG = {
+    clientId:    '129978ce-ff3b-431d-98b3-66a1bcb766b1',
+    tenantId:    'c311c9e6-6017-42a9-b306-4057beba5786',
+    workspaceId: '8535f0a1-8dc6-4da0-93ce-bf20c1c14e27',
+    reportId:    '10a505aa-759e-4f20-a130-98c0736ba42d',
+    scopes:      ['https://analysis.windows.net/powerbi/api/Dataset.Read.All',
+                  'https://analysis.windows.net/powerbi/api/Report.Read.All']
+  };
+  let _pbi = null, _token = null, _datasetId = null, _cbReady = false;
+
+  const FATO = "'Faturamentos'";
+  const NF_OCULTAS = ['667708'];
+
+  // ── Regras de segmentação (declaradas aqui, exibidas nos cartões) ──
+  const REGRA = {
+    recRisco:    60,    // acima disso já é atenção
+    recDormente: 120,   // 121..240 dias = dormente
+    recPerdido:  240,   // acima disso = perdido
+    quedaRisco:  0.30,  // queda >= 30% vs ano anterior = risco
+    fielRatio:   0.70,  // fiel: compra em >= 70% dos meses decorridos
+    fielMin:     4      // ...com no mínimo 4 meses
+  };
+  // A avaliação PARA na primeira regra que casa, nesta ordem: perdidos →
+  // dormentes → em risco → novos → fiéis → recorrentes. O 'tip' é o texto que
+  // aparece ao passar o mouse no cartão; o 'crit' é a linha impressa nele.
+  const SEGS = [
+    { id:'novos',       nome:'Novos',       cor:'#7C3AED', bg:'#FAF7FF', crit:'1ª compra no ano selecionado',
+      tip:'Cliente sem NENHUMA nota antes de 1º de janeiro do ano selecionado (consulta própria no histórico) e com faturamento no ano. Só é avaliado depois de recência: quem entrou e já parou aparece em risco/dormente, não em novos.' },
+    { id:'fieis',       nome:'Fiéis',       cor:'#16A34A', bg:'#F4FCF6', crit:'compra em ≥70% dos meses do ano e recência ≤60d',
+      tip:'Comprou em pelo menos 70% dos meses DECORRIDOS do ano (mínimo de 4 meses) e a última compra foi há 60 dias ou menos. Os meses decorridos são contados até hoje, não até dezembro.' },
+    { id:'recorrentes', nome:'Recorrentes', cor:'#1E88E5', bg:'#F5FAFF', crit:'compra ativa (recência ≤60d), cadência abaixo de fiel',
+      tip:'Compra ativa (última nota há 60 dias ou menos), sem queda relevante, mas com cadência abaixo do corte de fiel. É o "resto" da regra: quem não é perdido, dormente, em risco, novo nem fiel.' },
+    { id:'risco',       nome:'Em risco',    cor:'#D97706', bg:'#FFFBF2', crit:'recência 61–120d ou queda ≥30% vs mesmo período',
+      tip:'Uma das duas condições basta: (a) última compra há 61 a 120 dias; ou (b) faturamento 30% ou mais abaixo do MESMO período do ano anterior (mesma janela de dias). A comparação é dia a dia de propósito — contra o ano anterior fechado, um cliente com ritmo idêntico apareceria em queda só porque o ano em curso ainda não terminou. A coluna Motivo da tabela diz qual das duas pegou cada cliente.' },
+    { id:'dormentes',   nome:'Dormentes',   cor:'#64748B', bg:'#F8FAFC', crit:'sem compra há 121–240 dias',
+      tip:'Última compra há 121 a 240 dias, contados da data de referência (hoje, ou 31/12 quando o ano selecionado já fechou).' },
+    { id:'perdidos',    nome:'Perdidos',    cor:'#DC2626', bg:'#FFF6F6', crit:'sem compra há mais de 240 dias',
+      tip:'Última compra há mais de 240 dias. No ano em curso isso implica faturamento zero no ano — por isso as colunas Fat. histórico e Potencial/mês, que dizem quanto o cliente vale de volta.' }
+  ];
+  const SEG_IX = {}; SEGS.forEach((s,i) => SEG_IX[s.id] = i);
+  const ABC = [
+    { id:'A', nome:'Alta representatividade',  cor:'#0A4FA0', ate:70 },
+    { id:'B', nome:'Média representatividade', cor:'#1E88E5', ate:90 },
+    { id:'C', nome:'Baixa representatividade', cor:'#93B7DA', ate:100 }
+  ];
+  const MESES = ['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];
+  const MES_NOME = { jan:1,fev:2,mar:3,abr:4,mai:5,jun:6,jul:7,ago:8,set:9,out:10,nov:11,dez:12,
+                     janeiro:1,fevereiro:2,marco:3,abril:4,maio:5,junho:6,julho:7,agosto:8,
+                     setembro:9,outubro:10,novembro:11,dezembro:12 };
+
+  // ── CAMPOS do modelo (grafia resolvida pelo catálogo) ──
+  //   kind 'col' = coluna · 'mea' = medida do modelo
+  //   ess  true  = essencial: sem ele a página não roda
+  const F = {
+    codcli:  { h:'Cód. Cliente',      kind:'col', ess:true,  cands:[['Clientes','Cód. Cliente'],['Clientes','Cod. Cliente'],['Clientes','Código do cliente']] },
+    cliente: { h:'Cliente',           kind:'col', ess:true,  cands:[['Clientes','Cliente']] },
+    tipocli: { h:'Tipo de cliente',   kind:'col', ess:false, cands:[['Clientes','Tipo de cliente (Revisado)'],['Clientes','Tipo de cliente']] },
+    uf:      { h:'Cód. Estado',       kind:'col', ess:false, cands:[['Clientes','Cód. Estado'],['Clientes','Cod. Estado']] },
+    familia: { h:'Família',           kind:'col', ess:false, cands:[['Famílias','Família'],['Familias','Familia']] },
+    fatCol:  { h:'Faturamento',       kind:'col', ess:true,  cands:[['Faturamentos','Faturamento']] },
+    nfCol:   { h:'Número da fatura',  kind:'col', ess:false, cands:[['Faturamentos','Número da fatura'],['Faturamentos','Numero da fatura']] },
+    calData: { h:'Data (calendário)', kind:'col', ess:true,  cands:[['Calendário','Data'],['Calendario','Data']] },
+    calMes:  { h:'Nº do mês',         kind:'col', ess:true,  cands:[['Calendário','Nº do mês'],['Calendário','N° do mês'],['Calendario','No do mes'],['Calendário','Número do mês'],['Calendário','Mês (nome abreviado)'],['Calendário','Mês (nome)'],['Calendário','Mês']] },
+    qtd:     { h:'Faturamento (quantidade)',      kind:'mea', ess:false, cands:['Faturamento (quantidade)'] },
+    mgn:     { h:'Margem de contribuição (nota)', kind:'mea', ess:false, cands:['Margem de contribuição (nota)','Margem de contribuicao (nota)'] }
+  };
+
+  // filtros de VALOR (slicers) — os mesmos vocabulários da Análise de Vendas
+  const FILTROS = [
+    { id:'empresa',  label:'Empresa',            col:"'Empresas'[Código da empresa]" },
+    { id:'unidade',  label:'Unidade de Negócio', col:"'DIM_UNIDADE_DE_NEGOCIO_V2'[UNIDADE_DE_NEGOCIO]" },
+    { id:'vertical', label:'Sales Vertical',     col:"'Sales Vertical'[Sales Vertical]" },
+    { id:'estado',   label:'Estado',             col:"'Estados'[Cód. do estado]" },
+    { id:'tipo',     label:'Tipo de Cliente',    col:"'Clientes'[Tipo de cliente (Revisado)]", colK:'tipocli' },
+    { id:'familia',  label:'Família',            col:"'Famílias'[Família]", colK:'familia' },
+    { id:'comiss',   label:'Comissionado',       col:"'Comissionados'[Comissionado]" }
+  ];
+
+  // estado da página
+  const ST = {
+    ano: 2026,
+    medida: 'fat',          // matriz: 'fat' | 'qtd'
+    classe: null,           // 'A' | 'B' | 'C' | null
+    segmento: null,         // id de SEGS | null
+    busca: '',
+    limite: 40,             // linhas visíveis na matriz
+    ref: null,              // data de referência da recência
+    clientes: [],           // carteira calculada
+    abcSort: { k:'fat', dir:'desc' },
+    segSort: { k:'fat', dir:'desc' },
+    expandido: {},          // cod -> [{fam, mes:{}}]
+    seq: 0                  // invalida respostas de consultas antigas
+  };
+  window._cbSel = {};
+  FILTROS.forEach(f => window._cbSel[f.id] = new Set());
+
+  // ── helpers ──
+  const cbDax  = s => String(s == null ? '' : s).replace(/"/g, '""');
+  const cbEsc  = s => String(s == null ? '' : s).replace(/"/g, '&quot;');
+  const escH   = s => String(s == null ? '' : s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  const _norm  = s => String(s == null ? '' : s).normalize('NFD').replace(/[̀-ͯ]/g,'').toLowerCase().replace(/\s+/g,' ').trim();
+  const _num   = x => (x == null || x === '' || isNaN(Number(x))) ? null : Number(x);
+  const n0     = x => (x == null ? 0 : Number(x)) || 0;
+  const setTxt = (id,t) => { const el = document.getElementById(id); if (el) el.textContent = t; };
+  const setHTML= (id,t) => { const el = document.getElementById(id); if (el) el.innerHTML = t; };
+
+  const brl  = v => 'R$ ' + n0(v).toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2});
+  const brl0 = v => 'R$ ' + n0(v).toLocaleString('pt-BR',{maximumFractionDigits:0});
+  const int  = v => n0(v).toLocaleString('pt-BR',{maximumFractionDigits:0});
+  const pct  = (v,d) => (v == null || !isFinite(v)) ? '—' : (n0(v)*100).toLocaleString('pt-BR',{minimumFractionDigits:(d==null?1:d),maximumFractionDigits:(d==null?1:d)}) + '%';
+  const pp   = v => (v == null || !isFinite(v)) ? '—' : (v >= 0 ? '+' : '') + (n0(v)*100).toLocaleString('pt-BR',{minimumFractionDigits:1,maximumFractionDigits:1}) + ' p.p.';
+  // curto para caber na célula da matriz: 137k / 1,1 mi
+  function curto(v){
+    const n = n0(v); const a = Math.abs(n);
+    if (a === 0) return '–';
+    if (a >= 1e6) return (n/1e6).toLocaleString('pt-BR',{minimumFractionDigits:1,maximumFractionDigits:1}) + ' mi';
+    if (a >= 1e3) return Math.round(n/1e3).toLocaleString('pt-BR') + 'k';
+    return n.toLocaleString('pt-BR',{maximumFractionDigits:0});
+  }
+  const dataBR = d => !d ? '—' : new Date(d).toLocaleDateString('pt-BR',{timeZone:'UTC'});
+  const dias   = (a,b) => Math.round((b - a) / 86400000);
+  const varHTML = v => v == null ? '—'
+    : '<span class="' + (v >= 0 ? 'up' : 'dn') + '">' + (v >= 0 ? '+' : '') + (v*100).toLocaleString('pt-BR',{maximumFractionDigits:1}) + '%</span>';
+
+  // ── Ajuda de coluna: um balão só, em position:fixed no body ─────────
+  // Dentro da tabela ele seria cortado pelo overflow do .cb-scroll; e o title
+  // nativo demora, corta o texto e não existe no celular (lá vale o dicionário).
+  let _tipEl = null;
+  function cbTipShow(alvo){
+    const t = alvo.getAttribute('data-tip'); if (!t) return;
+    if (!_tipEl){ _tipEl = document.createElement('div'); _tipEl.className = 'cb-tip'; document.body.appendChild(_tipEl); }
+    const el = _tipEl;
+    el.innerHTML = (alvo.getAttribute('data-tip-t') ? '<b>' + escH(alvo.getAttribute('data-tip-t')) + '</b>' : '') + escH(t);
+    el.style.left = '0px'; el.style.top = '0px'; el.classList.add('on');
+    const r = alvo.getBoundingClientRect(), b = el.getBoundingClientRect();
+    let x = r.left + r.width / 2 - b.width / 2;
+    x = Math.max(8, Math.min(x, window.innerWidth - b.width - 8));
+    let y = r.bottom + 8;
+    if (y + b.height > window.innerHeight - 8) y = Math.max(8, r.top - b.height - 8);
+    el.style.left = Math.round(x) + 'px'; el.style.top = Math.round(y) + 'px';
+  }
+  function cbTipHide(){ if (_tipEl) _tipEl.classList.remove('on'); }
+  document.addEventListener('mouseover', ev => {
+    const a = ev.target && ev.target.closest ? ev.target.closest('[data-tip]') : null;
+    if (a) cbTipShow(a); else cbTipHide();
+  });
+  window.addEventListener('scroll', cbTipHide, true);
+  window.addEventListener('resize', cbTipHide);
+
+  // cabeçalho e explicação podem ser função: o texto muda com o ano/mês escolhido
+  const colH   = c => typeof c.h   === 'function' ? c.h()   : c.h;
+  const colTip = c => (typeof c.tip === 'function' ? c.tip() : c.tip) || '';
+  const tipAttr = (t, titulo) => !t ? '' : ' data-tip="' + cbEsc(t) + '"' + (titulo ? ' data-tip-t="' + cbEsc(titulo) + '"' : '');
+
+  // ── Conexão MSAL / Power BI (igual às abas irmãs) ──
+  async function pbiConnect(){
+    if (window._msalAuth) { _pbi = window._msalAuth; }
+    else {
+      _pbi = new msal.PublicClientApplication({ auth:{ clientId:PBI_CFG.clientId, authority:`https://login.microsoftonline.com/${PBI_CFG.tenantId}`, redirectUri:window.location.origin+'/' }, cache:{ cacheLocation:'localStorage', storeAuthStateInCookie:true } });
+      if (_pbi.initialize) await _pbi.initialize();
+      await _pbi.handleRedirectPromise().catch(()=>{});
+    }
+    const accounts = _pbi.getAllAccounts();
+    try { const r = await _pbi.acquireTokenSilent({ scopes:PBI_CFG.scopes, account:accounts[0] }); _token = r.accessToken; }
+    catch { const r = await _pbi.loginPopup({ scopes:PBI_CFG.scopes }); _token = r.accessToken; }
+    const acc = _pbi.getAllAccounts()[0];
+    if (acc && typeof window.setSidebarUser === 'function') window.setSidebarUser(acc.name||acc.username, acc.username);
+    return _token;
+  }
+  async function pbiGetDatasetId(){
+    if (_datasetId) return _datasetId;
+    let r = await fetch(`https://api.powerbi.com/v1.0/myorg/groups/${PBI_CFG.workspaceId}/reports/${PBI_CFG.reportId}`,{headers:{Authorization:`Bearer ${_token}`}});
+    if (r.ok){ const j = await r.json(); if (j.datasetId){ _datasetId = j.datasetId; return _datasetId; } }
+    r = await fetch(`https://api.powerbi.com/v1.0/myorg/reports/${PBI_CFG.reportId}`,{headers:{Authorization:`Bearer ${_token}`}});
+    if (r.ok){ const j = await r.json(); if (j.datasetId){ _datasetId = j.datasetId; return _datasetId; } }
+    throw new Error('Dataset não encontrado (verifique permissão Build).');
+  }
+  async function pbiQuery(dax){
+    const dsId = await pbiGetDatasetId();
+    const urlWs  = `https://api.powerbi.com/v1.0/myorg/groups/${PBI_CFG.workspaceId}/datasets/${dsId}/executeQueries`;
+    const urlDir = `https://api.powerbi.com/v1.0/myorg/datasets/${dsId}/executeQueries`;
+    const body = JSON.stringify({ queries:[{ query:dax }], serializerSettings:{ includeNulls:true } });
+    const headers = { Authorization:`Bearer ${_token}`, 'Content-Type':'application/json' };
+    let r = await fetch(urlWs,{ method:'POST', headers, body });
+    if (r.status===401||r.status===403) r = await fetch(urlDir,{ method:'POST', headers, body });
+    if (r.status===401||r.status===403){
+      try { const _a=_pbi.getAllAccounts()[0]; const _t=await _pbi.acquireTokenSilent({scopes:PBI_CFG.scopes,account:_a,forceRefresh:true}); _token=_t.accessToken; }
+      catch(_e){ try { const _t=await _pbi.loginPopup({scopes:PBI_CFG.scopes}); _token=_t.accessToken; } catch(__e){} }
+      const h2 = { Authorization:`Bearer ${_token}`, 'Content-Type':'application/json' };
+      r = await fetch(urlWs,{ method:'POST', headers:h2, body });
+      if (r.status===401||r.status===403) r = await fetch(urlDir,{ method:'POST', headers:h2, body });
+    }
+    const text = await r.text();
+    if (!r.ok) throw new Error(`HTTP ${r.status}: ${text.substring(0,160)}`);
+    const d = JSON.parse(text);
+    if (d.error) throw new Error(d.error.message);
+    return d.results[0].tables[0].rows;
+  }
+  window.PBIData = { connect:pbiConnect, query:pbiQuery };
+
+  // ── CATÁLOGO: grafia EXATA do modelo ──────────────────────────────
+  let _colCat = null, _meaCat = null, _faltando = [];
+  const _v = (r,re) => { const k = Object.keys(r).find(x => re.test(x)); return k ? r[k] : null; };
+
+  async function carregarCatalogo(){
+    try {
+      const rows = await pbiQuery('EVALUATE SELECTCOLUMNS(INFO.VIEW.COLUMNS(), "T",[Table], "N",[Name])');
+      if (rows && rows.length){
+        _colCat = {};
+        rows.forEach(r => { const t=_v(r,/\[T\]$/), n=_v(r,/\[N\]$/); if (t==null||n==null) return; const tn=_norm(t); (_colCat[tn]=_colCat[tn]||{})[_norm(n)] = String(n); });
+      }
+    } catch(e){ console.warn('[CB] INFO.VIEW.COLUMNS:', e.message); }
+    if (!_colCat){
+      try {
+        const rows = await pbiQuery('EVALUATE SELECTCOLUMNS(COLUMNSTATISTICS(), "T",[Table Name], "N",[Column Name])');
+        if (rows && rows.length){
+          _colCat = {};
+          rows.forEach(r => { const t=_v(r,/\[T\]$/), n=_v(r,/\[N\]$/); if (t==null||n==null) return; const tn=_norm(t); (_colCat[tn]=_colCat[tn]||{})[_norm(n)] = String(n); });
+        }
+      } catch(e){ console.warn('[CB] COLUMNSTATISTICS:', e.message); }
+    }
+    const medidas = async fn => {
+      const rows = await pbiQuery('EVALUATE SELECTCOLUMNS(' + fn + '(), "N",[Name])');
+      if (!rows || !rows.length) return false;
+      _meaCat = {}; rows.forEach(r => { const n=_v(r,/\[N\]$/); if (n!=null) _meaCat[_norm(n)] = String(n); });
+      return true;
+    };
+    try { await medidas('INFO.VIEW.MEASURES'); } catch(e){ console.warn('[CB] INFO.VIEW.MEASURES:', e.message); }
+    if (!_meaCat){ try { await medidas('INFO.MEASURES'); } catch(e){ console.warn('[CB] INFO.MEASURES:', e.message); } }
+
+    _faltando = [];
+    Object.keys(F).forEach(k => {
+      const c = F[k];
+      const ok = c.kind === 'mea' ? resolveMea(c) : resolveCol(c);
+      const tinhaCat = c.kind === 'mea' ? !!_meaCat : !!_colCat;
+      c._ok = ok || !tinhaCat;                       // sem catálogo, o literal é o melhor palpite
+      if (!ok && tinhaCat){
+        if (c.ess) throw new Error('O modelo não tem o campo essencial "' + c.h + '".');
+        c._ref = null; _faltando.push(c.h);
+      }
+    });
+    mostrarFaltando();
+  }
+  function resolveCol(c){
+    c._ref = c._out = null;
+    const set = (t,n) => { c._ref = "'" + t + "'[" + n + "]"; c._out = t + '[' + n + ']'; };
+    if (_colCat){
+      for (const [t,n] of c.cands){ const tb = _colCat[_norm(t)]; if (tb && tb[_norm(n)]){ set(t, tb[_norm(n)]); return true; } }
+      for (const [t,n] of c.cands){                 // fuzzy: todos os tokens pedidos aparecem no nome real
+        const tb = _colCat[_norm(t)]; if (!tb) continue;
+        const toks = _norm(n).split(' ').filter(w => w.length > 2); if (!toks.length) continue;
+        let best = null;
+        for (const nn in tb){ if (toks.every(w => nn.indexOf(w) >= 0)){ if (best === null || nn.length < best.length) best = nn; } }
+        if (best !== null){ set(t, tb[best]); return true; }
+      }
+      return false;
+    }
+    set(c.cands[0][0], c.cands[0][1]);
+    return false;
+  }
+  function resolveMea(c){
+    c._ref = null;
+    if (_meaCat){
+      for (const nome of c.cands){ const h = _meaCat[_norm(nome)]; if (h){ c._ref = '[' + h + ']'; return true; } }
+      const alvo = _norm(c.cands[0]).replace(/[^a-z0-9]/g,'');
+      for (const k in _meaCat){ if (_norm(k).replace(/[^a-z0-9]/g,'') === alvo){ c._ref = '[' + _meaCat[k] + ']'; return true; } }
+      return false;
+    }
+    c._ref = '[' + c.cands[0] + ']';
+    return false;
+  }
+  function mostrarFaltando(){
+    const el = document.getElementById('cb-faltando'); if (!el) return;
+    if (!_faltando.length){ el.hidden = true; el.textContent = ''; return; }
+    el.hidden = false;
+    el.textContent = 'Campos que este modelo do Power BI não tem (as colunas correspondentes ficam vazias): ' + _faltando.join(' · ');
+  }
+  window.cbCampos = function(){
+    return Object.keys(F).map(k => ({ campo:F[k].h, kind:F[k].kind, ref:F[k]._ref, confirmado:!!F[k]._ok }));
+  };
+
+  // ── OLS: bundle de medidas com fallback medida-a-medida ───────────
+  // Sob OLS (quem não tem direito à margem) o Power BI devolve HTTP 400 na
+  // query INTEIRA, derrubando também as medidas permitidas. Tenta o bundle
+  // (1 query) e, se falhar, mede uma a uma e mescla pela chave da linha.
+  // Memória de OLS do freio (pbi-throttle.js): medida que já se sabe bloqueada
+  // para este usuário nem entra no bundle. Sem ela TODO clique de quem não vê a
+  // margem pagava 1 + N consultas (bundle recusado + uma por medida) e o
+  // operador estourava o teto de consultas/minuto do Power BI com poucos filtros.
+  const _olsMem = (window.PBIQ && window.PBIQ.ols) || { vivas: l => l, aprender: () => {}, leque: () => true };
+  async function olsBundle(medidas, montar, chave, rotulo){
+    const vivas = _olsMem.vivas(medidas);
+    if (vivas.length) medidas = vivas;            // todas "bloqueadas" = memória velha: tenta tudo
+    try { return await pbiQuery(montar(medidas.length ? ', ' + medidas.join(', ') : '')); }
+    catch (e){
+      if (!medidas.length || !_olsMem.leque(e)) throw e;   // 429/rede: o leque só multiplica requisição
+      console.warn('[CB] ' + rotulo + ': bundle de medidas falhou, medindo individualmente:', e.message);
+      const acc = new Map(), falhas = [];
+      for (const m of medidas){
+        let rows;
+        try { rows = await pbiQuery(montar(', ' + m)); }
+        catch (e2){ console.warn('[CB] ' + rotulo + ': ' + m + ' bloqueada/indisponível:', e2.message); falhas.push([m, e2]); continue; }
+        (rows || []).forEach(r => {
+          const k = chave ? String(chave(r)) : '_';
+          if (acc.has(k)) Object.assign(acc.get(k), r); else acc.set(k, Object.assign({}, r));
+        });
+      }
+      _olsMem.aprender(falhas, falhas.length < medidas.length);
+      if (!acc.size) throw e;
+      return [...acc.values()];
+    }
+  }
+
+  // ── Filtro-base (ano + intercompany + gera fatura + NF oculta + slicers) ──
+  const fCol = ft => { if (ft.colK && F[ft.colK] && F[ft.colK]._ref) return F[ft.colK]._ref; return ft.col; };
+  function baseFiltros(){
+    const b = [
+      "'DIM_UNIDADE_DE_NEGOCIO_V2'[UNIDADE_DE_NEGOCIO] <> \"INTERCOMPANY\"",
+      "'Operações'[Gera Fatura a receber?] = \"SIM\""
+    ];
+    if (F.nfCol._ref){
+      b.push('FILTER(ALL(' + F.nfCol._ref + '), NOT((' + F.nfCol._ref + ' & "") IN { '
+             + NF_OCULTAS.map(n => '"' + n + '"').join(', ') + ' }))');
+    }
+    // 'Faturamentos'[É intercompany?] = "NÃO" (grafia resolvida no modelo — ../sr-intercompany.js)
+    b.push(...SRInterco.filtros());
+    FILTROS.forEach(ft => {
+      const vals = [...window._cbSel[ft.id]];
+      if (vals.length) b.push(fCol(ft) + ' IN { ' + vals.map(v => '"' + cbDax(v) + '"').join(', ') + ' }');
+    });
+    return b;
+  }
+  const baseAno    = a => ['YEAR(' + F.calData._ref + ') = ' + a].concat(baseFiltros());
+  const baseAntes  = a => [F.calData._ref + ' < DATE(' + a + ', 1, 1)'].concat(baseFiltros());
+
+  async function cbCarregarValores(col){
+    const rows = await pbiQuery('EVALUATE CALCULATETABLE(VALUES(' + col + "), 'DIM_UNIDADE_DE_NEGOCIO_V2'[UNIDADE_DE_NEGOCIO] <> \"INTERCOMPANY\")");
+    if (!rows || !rows.length) return [];
+    const key = Object.keys(rows[0])[0];
+    return rows.map(r => r[key]).filter(v => v != null && v !== '')
+      .map(v => ({ value:String(v), label:String(v) }))
+      .sort((a,b) => a.label.localeCompare(b.label,'pt-BR'));
+  }
+
+  // ══════════════════════════════════════════════════════════════════
+  //  CONSULTAS
+  // ══════════════════════════════════════════════════════════════════
+  // leitura de coluna de dimensão pelo nome de saída do DAX
+  function getDim(row, f){
+    if (!f._out) return null;
+    const alvo = _norm('[' + f._out + ']');
+    const k = Object.keys(row).find(x => _norm(x) === alvo) ||
+              Object.keys(row).find(x => _norm(x) === _norm(f._out));
+    return k ? row[k] : null;
+  }
+  const getVal = (row, k) => { const kk = Object.keys(row).find(x => x === '[' + k + ']'); return kk ? row[kk] : null; };
+  // 'Nº do mês' vem número; se o catálogo só achou o NOME do mês, traduz
+  function mesNum(v){
+    if (v == null || v === '') return null;
+    const n = Number(v);
+    if (!isNaN(n) && n >= 1 && n <= 12) return n;
+    const k = _norm(v).replace(/\.$/,'');
+    return MES_NOME[k] || MES_NOME[k.substring(0,3)] || null;
+  }
+
+  // ── Q1: grão CLIENTE no ano ──
+  async function qClientesAno(ano){
+    const dims = [F.codcli, F.cliente, F.tipocli, F.uf].filter(c => c._ref).map(c => c._ref);
+    const fixas = [
+      '"fat", CALCULATE(SUM(' + F.fatCol._ref + '))',
+      '"ult", CALCULATE(MAXX(SUMMARIZE(' + FATO + ', ' + F.calData._ref + '), ' + F.calData._ref + '))',
+      '"pri", CALCULATE(MINX(SUMMARIZE(' + FATO + ', ' + F.calData._ref + '), ' + F.calData._ref + '))'
+    ];
+    if (F.nfCol._ref)   fixas.push('"nnf", CALCULATE(DISTINCTCOUNT(' + F.nfCol._ref + '))');
+    if (F.familia._ref) fixas.push('"nfam", CALCULATE(COUNTROWS(SUMMARIZE(' + FATO + ', ' + F.familia._ref + ')))');
+    const medidas = [];
+    if (F.qtd._ref) medidas.push('"qtd", ' + F.qtd._ref);
+    if (F.mgn._ref) medidas.push('"mgn", ' + F.mgn._ref);
+    const montar = extra => 'EVALUATE\nCALCULATETABLE(ADDCOLUMNS(SUMMARIZE(' + FATO + ', ' + dims.join(', ') + '), '
+      + fixas.join(', ') + extra + '), ' + baseAno(ano).join(', ') + ')\nORDER BY [fat] DESC';
+    return await olsBundle(medidas, montar, r => getDim(r, F.codcli), 'clientes do ano');
+  }
+
+  // ── Q2: grão CLIENTE no ano anterior (queda + recência de quem sumiu) ──
+  //   Devolve DUAS somas do ano anterior: o ano fechado ("fat") e a MESMA
+  //   janela de dias do ano em curso ("fatPer", 1º de janeiro até o dia do
+  //   'cut'). A regra de queda usa o mesmo período — comparar 8 meses de 2026
+  //   com os 12 de 2025 faz todo cliente estável cair 33% e jogava a carteira
+  //   inteira em "Em risco". Os dois limites de data vêm explícitos no
+  //   CALCULATE para não depender de quem sobrepõe o filtro de YEAR().
+  async function qClientesAnoAnt(ano, cut){
+    const dims = [F.codcli, F.cliente, F.tipocli, F.uf].filter(c => c._ref).map(c => c._ref);
+    const per = ', "fatPer", CALCULATE(SUM(' + F.fatCol._ref + '), '
+      + F.calData._ref + ' >= DATE(' + (ano - 1) + ', 1, 1), '
+      + F.calData._ref + ' <= DATE(' + (ano - 1) + ', ' + (cut.getUTCMonth() + 1) + ', ' + cut.getUTCDate() + '))';
+    const montar = extra => 'EVALUATE\nCALCULATETABLE(ADDCOLUMNS(SUMMARIZE(' + FATO + ', ' + dims.join(', ') + '), '
+      + '"fat", CALCULATE(SUM(' + F.fatCol._ref + ')), '
+      + '"ult", CALCULATE(MAXX(SUMMARIZE(' + FATO + ', ' + F.calData._ref + '), ' + F.calData._ref + '))'
+      + extra + '), ' + baseAno(ano - 1).join(', ') + ')';
+    try { return await pbiQuery(montar(per)); }
+    catch(e){                                     // sem a janela comparável a página
+      console.warn('[CB] mesmo período do ano anterior:', e.message);   // rateia (ver construirCarteira)
+      return await pbiQuery(montar(''));
+    }
+  }
+
+  // ── Q3: quem já comprava ANTES do ano (o resto é cliente NOVO) ──
+  async function qClientesAntes(ano){
+    return await pbiQuery('EVALUATE CALCULATETABLE(SUMMARIZE(' + FATO + ', ' + F.codcli._ref + '), '
+      + baseAntes(ano).join(', ') + ')');
+  }
+
+  // ── Q3b: grão CLIENTE em TODO o histórico (sem recorte de ano) ──
+  //   Quanto o cliente já rendeu desde sempre e a janela do relacionamento.
+  //   É o que dá para medir o valor de quem parou de comprar: no ano corrente
+  //   o faturamento dele é R$ 0, mas o histórico diz quanto ele vale de volta.
+  //   Respeita os slicers (empresa, família, UF…), só ignora o ano.
+  async function qClientesHist(){
+    return await pbiQuery('EVALUATE\nCALCULATETABLE(ADDCOLUMNS(SUMMARIZE(' + FATO + ', ' + F.codcli._ref + '), '
+      + '"fatH", CALCULATE(SUM(' + F.fatCol._ref + ')), '
+      + '"priH", CALCULATE(MINX(SUMMARIZE(' + FATO + ', ' + F.calData._ref + '), ' + F.calData._ref + ')), '
+      + '"ultH", CALCULATE(MAXX(SUMMARIZE(' + FATO + ', ' + F.calData._ref + '), ' + F.calData._ref + '))'
+      + '), ' + baseFiltros().join(', ') + ')');
+  }
+
+  // ── Q4: grão CLIENTE × MÊS no ano (matriz e cadência) ──
+  async function qClienteMes(ano){
+    const medidas = F.qtd._ref ? ['"qtd", ' + F.qtd._ref] : [];
+    const montar = extra => 'EVALUATE\nCALCULATETABLE(ADDCOLUMNS(SUMMARIZE(' + FATO + ', ' + F.codcli._ref + ', ' + F.calMes._ref + '), '
+      + '"fat", CALCULATE(SUM(' + F.fatCol._ref + '))' + extra + '), ' + baseAno(ano).join(', ') + ')';
+    return await olsBundle(medidas, montar, r => String(getDim(r, F.codcli)) + '|' + String(getDim(r, F.calMes)), 'cliente × mês');
+  }
+
+  // ── Q5: grão FAMÍLIA × MÊS de UM cliente (sob demanda) ──
+  async function qFamiliaMes(ano, cod){
+    if (!F.familia._ref) return [];
+    const medidas = F.qtd._ref ? ['"qtd", ' + F.qtd._ref] : [];
+    const montar = extra => 'EVALUATE\nCALCULATETABLE(ADDCOLUMNS(SUMMARIZE(' + FATO + ', ' + F.familia._ref + ', ' + F.calMes._ref + '), '
+      + '"fat", CALCULATE(SUM(' + F.fatCol._ref + '))' + extra + '), '
+      + baseAno(ano).concat([F.codcli._ref + ' = "' + cbDax(cod) + '"']).join(', ') + ')';
+    return await olsBundle(medidas, montar, r => String(getDim(r, F.familia)) + '|' + String(getDim(r, F.calMes)), 'família × mês');
+  }
+
+  // ══════════════════════════════════════════════════════════════════
+  //  CARTEIRA — junta as 4 consultas e classifica cada cliente
+  // ══════════════════════════════════════════════════════════════════
+  // Data de referência da recência, mês corrente e o RECORTE COMPARÁVEL do ano
+  // anterior. O ano em curso é parcial: comparado com o ano anterior FECHADO,
+  // um cliente de ritmo idêntico aparece com ~33% de queda em agosto — e era
+  // isso que jogava quase toda a carteira em "Em risco".
+  function refDoAno(ano){
+    const hoje = new Date();
+    const hojeUTC = Date.UTC(hoje.getFullYear(), hoje.getMonth(), hoje.getDate());
+    const fimAno  = Date.UTC(ano, 11, 31);
+    const ref = new Date(Math.min(hojeUTC, fimAno));
+    const m = ref.getUTCMonth(), d = ref.getUTCDate();
+    const ultDia = new Date(Date.UTC(ano - 1, m + 1, 0)).getUTCDate();      // 29/02 → 28/02
+    const decorridos = (ano < hoje.getFullYear()) ? 12 : (ano > hoje.getFullYear() ? 0 : hoje.getMonth() + 1);
+    return { ref, fimAno,
+             cut: new Date(Date.UTC(ano - 1, m, Math.min(d, ultDia))),
+             parcial: ref.getTime() < fimAno,
+             mesesDecorridos: decorridos,
+             mesRef: decorridos ? (ano < hoje.getFullYear() ? 12 : hoje.getMonth() + 1) : null };
+  }
+
+  function construirCarteira(q1, q2, q3, q4, q3b, ano){
+    const per = refDoAno(ano);
+    ST.ref = per.ref;
+    const mesesDecorridos = per.mesesDecorridos;
+    const mesRef = per.mesRef;
+
+    const map = new Map();
+    const novo = cod => ({ cod:String(cod), nome:'', tipo:'', uf:'', fat:0, qtd:0, mgn:0, nnf:0, nfam:0,
+                           fatAnt:0, fatAntPer:null, fatMesAtual:0, motivo:'', varPer:null,
+                           ult:null, pri:null, mes:{}, mesQ:{}, nmes:0, seg:null, classe:'—', classeAnt:'—', classeEf:'—', herdada:false,
+                           fatHist:0, priHist:null, ultHist:null, mesesHist:null, fatHistMes:null,
+                           pctTotal:0, pctAcum:0, novoCli:false, rec:null, varAno:null });
+
+    (q1 || []).forEach(r => {
+      const cod = getDim(r, F.codcli); if (cod == null || cod === '') return;
+      const o = map.get(String(cod)) || novo(cod);
+      o.nome = String(getDim(r, F.cliente) || o.nome || cod);
+      o.tipo = String(getDim(r, F.tipocli) || '');
+      o.uf   = String(getDim(r, F.uf) || '');
+      o.fat  = n0(getVal(r,'fat'));
+      o.qtd  = n0(getVal(r,'qtd'));
+      o.mgn  = n0(getVal(r,'mgn'));
+      o.nnf  = n0(getVal(r,'nnf'));
+      o.nfam = n0(getVal(r,'nfam'));
+      const u = getVal(r,'ult'), p = getVal(r,'pri');
+      if (u) o.ult = new Date(u);
+      if (p) o.pri = new Date(p);
+      map.set(o.cod, o);
+    });
+
+    (q2 || []).forEach(r => {
+      const cod = getDim(r, F.codcli); if (cod == null || cod === '') return;
+      const o = map.get(String(cod)) || novo(cod);
+      o.fatAnt = n0(getVal(r,'fat'));
+      const fp = getVal(r,'fatPer');                 // ausente = consulta degradada
+      if (fp != null) o.fatAntPer = n0(fp);
+      if (!o.nome) { o.nome = String(getDim(r, F.cliente) || cod); o.tipo = String(getDim(r, F.tipocli) || ''); o.uf = String(getDim(r, F.uf) || ''); }
+      // quem não comprou no ano tem a recência medida pela última compra do ano anterior
+      const u = getVal(r,'ult');
+      if (!o.ult && u) o.ult = new Date(u);
+      map.set(o.cod, o);
+    });
+
+    const antes = new Set();
+    (q3 || []).forEach(r => { const cod = getDim(r, F.codcli); if (cod != null && cod !== '') antes.add(String(cod)); });
+
+    // histórico total do cliente — NÃO amplia a carteira: quem nunca apareceu
+    // no ano nem no anterior continua fora da tela, só enriquece quem já está.
+    (q3b || []).forEach(r => {
+      const cod = getDim(r, F.codcli); if (cod == null || cod === '') return;
+      const o = map.get(String(cod)); if (!o) return;
+      o.fatHist = n0(getVal(r,'fatH'));
+      const p = getVal(r,'priH'), u = getVal(r,'ultH');
+      if (p) o.priHist = new Date(p);
+      if (u) o.ultHist = new Date(u);
+    });
+
+    (q4 || []).forEach(r => {
+      const cod = getDim(r, F.codcli); const m = mesNum(getDim(r, F.calMes));
+      if (cod == null || m == null) return;
+      const o = map.get(String(cod)); if (!o) return;
+      o.mes[m]  = n0(o.mes[m])  + n0(getVal(r,'fat'));
+      o.mesQ[m] = n0(o.mesQ[m]) + n0(getVal(r,'qtd'));
+    });
+
+    // ── métricas derivadas + classificação ──
+    const lista = [...map.values()];
+    lista.forEach(o => {
+      o.nmes   = Object.keys(o.mes).filter(m => n0(o.mes[m]) !== 0).length;
+      // valor histórico: quanto já rendeu e em que ritmo mensal
+      if (o.fatHist > 0 && o.priHist && o.ultHist){
+        o.mesesHist  = Math.max(1, (o.ultHist.getUTCFullYear() - o.priHist.getUTCFullYear()) * 12
+                                 + (o.ultHist.getUTCMonth() - o.priHist.getUTCMonth()) + 1);
+        o.fatHistMes = o.fatHist / o.mesesHist;
+      }
+      // sem compra no ano nem no anterior, a recência real está no histórico
+      // (nunca puxa para depois da data de referência, senão viraria negativa)
+      if (!o.ult && o.ultHist && o.ultHist <= ST.ref) o.ult = o.ultHist;
+      o.rec    = o.ult ? dias(o.ult, ST.ref) : null;
+      o.margem = o.fat ? (o.mgn / o.fat) : null;
+      o.ticket = o.nnf ? (o.fat / o.nnf) : null;
+      o.fatMes = mesesDecorridos ? (o.fat / mesesDecorridos) : 0;
+      o.fatMesAtual = mesRef ? n0(o.mes[mesRef]) : 0;
+      // Base COMPARÁVEL do ano anterior: mesma janela de dias (ver refDoAno).
+      // Se a consulta do mesmo período não veio, rateia o ano anterior pelos
+      // meses decorridos — o que não se faz é comparar com o ano fechado.
+      if (o.fatAntPer == null) o.fatAntPer = mesesDecorridos >= 12 ? o.fatAnt : o.fatAnt * mesesDecorridos / 12;
+      o.varPer = o.fatAntPer > 0 ? ((o.fat - o.fatAntPer) / o.fatAntPer) : null;
+      o.varAno = o.fatAnt    > 0 ? ((o.fat - o.fatAnt)    / o.fatAnt)    : null;
+      o.novoCli = !antes.has(o.cod) && o.fat > 0;
+      const alvoFiel = Math.max(REGRA.fielMin, Math.ceil(mesesDecorridos * REGRA.fielRatio));
+      const queda = (o.fatAntPer > 0 && (o.fatAntPer - o.fat) / o.fatAntPer >= REGRA.quedaRisco);
+      const rec = o.rec == null ? 99999 : o.rec;
+      // motivo = qual condição pegou o cliente. A dúvida "por que este está em
+      // risco se compra todo mês?" só se responde mostrando a regra que casou.
+      const recTxt   = o.rec == null ? 'sem compra registrada' : 'sem compra há ' + int(o.rec) + ' dias';
+      const quedaTxt = queda ? 'queda de ' + pct(-o.varPer, 0) + ' vs. o mesmo período de ' + (ano-1)
+                               + ' (' + brl0(o.fat) + ' contra ' + brl0(o.fatAntPer) + ')' : '';
+      if      (rec >  REGRA.recPerdido)  { o.seg = 'perdidos';  o.motivo = recTxt + ' — acima dos ' + REGRA.recPerdido + 'd de perdido'; }
+      else if (rec >  REGRA.recDormente) { o.seg = 'dormentes'; o.motivo = recTxt + ' — faixa de ' + (REGRA.recDormente+1) + ' a ' + REGRA.recPerdido + 'd'; }
+      else if (rec >  REGRA.recRisco || queda) { o.seg = 'risco';
+        o.motivo = rec > REGRA.recRisco
+          ? recTxt + ' — faixa de ' + (REGRA.recRisco+1) + ' a ' + REGRA.recDormente + 'd' + (queda ? ', e ' + quedaTxt : '')
+          : quedaTxt + ' — a recência de ' + int(o.rec) + 'd está em dia'; }
+      else if (o.novoCli) { o.seg = 'novos';
+        o.motivo = 'primeira compra em ' + dataBR(o.pri) + ': nenhuma nota antes de ' + ano; }
+      else if (o.nmes >= alvoFiel) { o.seg = 'fieis';
+        o.motivo = 'comprou em ' + int(o.nmes) + ' dos ' + mesesDecorridos + ' meses decorridos (mínimo ' + alvoFiel + ') e recência de ' + int(o.rec) + 'd'; }
+      else { o.seg = 'recorrentes';
+        o.motivo = 'ativo (recência ' + int(o.rec) + 'd), mas comprou em ' + int(o.nmes) + ' dos ' + mesesDecorridos
+                 + ' meses — abaixo dos ' + alvoFiel + ' de fiel'; }
+    });
+
+    // ── curva ABC (só quem faturou no ano) ──
+    const comFat = lista.filter(o => o.fat > 0).sort((a,b) => b.fat - a.fat);
+    const total  = comFat.reduce((s,o) => s + o.fat, 0);
+    let acum = 0;
+    comFat.forEach(o => {
+      const antes = total ? acum / total * 100 : 0;   // acumulado ANTES deste cliente
+      acum += o.fat;
+      o.pctTotal = total ? o.fat / total : 0;
+      o.pctAcum  = total ? acum / total : 0;
+      // quem CRUZA o corte entra na classe: e' assim que a classe A chega aos 70%
+      o.classe = antes < ABC[0].ate ? 'A' : (antes < ABC[1].ate ? 'B' : 'C');
+    });
+
+    // ── curva ABC do ano ANTERIOR ──
+    // quem nao faturou no ano nao entra na curva do ano (classe '—'): sem isso, ao cruzar
+    // com o ciclo de vida os Perdidos (recencia > 240d => faturamento 0 no ano) sumiriam
+    // de TODA classe e a tela diria "nenhum cliente A perdido", que e' falso.
+    const comFatAnt = lista.filter(o => o.fatAnt > 0).sort((a,b) => b.fatAnt - a.fatAnt);
+    const totalAnt  = comFatAnt.reduce((s,o) => s + o.fatAnt, 0);
+    let acumAnt = 0;
+    comFatAnt.forEach(o => {
+      const ant = totalAnt ? acumAnt / totalAnt * 100 : 0;
+      acumAnt += o.fatAnt;
+      o.classeAnt = ant < ABC[0].ate ? 'A' : (ant < ABC[1].ate ? 'B' : 'C');
+    });
+    // classe EFETIVA = a do ano; sem compra no ano, herda a do ano anterior (marcada com *)
+    lista.forEach(o => {
+      o.herdada  = (o.classe === '—' && o.classeAnt !== '—');
+      o.classeEf = o.herdada ? o.classeAnt : o.classe;
+    });
+
+    ST.clientes = lista.sort((a,b) => b.fat - a.fat);
+    ST.totalAno = total;
+    ST.mesesDecorridos = mesesDecorridos;
+    ST.mesRef    = mesRef;
+    ST.parcial   = per.parcial;
+    ST.mesRefLbl = mesRef ? MESES[mesRef-1].toLowerCase() + '/' + ano : '—';
+    ST.janLbl    = '01/01/' + ano + ' a ' + dataBR(per.ref);
+    ST.cutLbl    = dataBR(per.cut);
+    ST.perLbl    = (ano-1) + (per.parcial ? ' (até ' + ST.cutLbl.substring(0,5) + ')' : '');
+    ST.expandido = {};
+    return ST.clientes;
+  }
+
+  // universo visível: respeita busca + classe + segmento selecionados
+  function filtrados(opts){
+    const o = opts || {};
+    const q = _norm(ST.busca);
+    return ST.clientes.filter(c => {
+      if (!o.ignoraClasse   && ST.classe   && c.classeEf !== ST.classe) return false;
+      if (!o.ignoraSegmento && ST.segmento && c.seg !== ST.segmento)  return false;
+      if (q && _norm(c.nome).indexOf(q) < 0 && _norm(c.cod).indexOf(q) < 0
+            && _norm(c.uf).indexOf(q) < 0 && _norm(c.tipo).indexOf(q) < 0) return false;
+      return true;
+    });
+  }
+
+  // base dos CARTOES: cruzamento entre as duas secoes, com a regra de que o visual
+  // NAO filtra a si mesmo (ignora='classe' => cartoes da curva recortados pelo segmento).
+  // A busca de proposito nao entra aqui: ela e' lupa da tabela, nao filtro analitico.
+  function baseCartoes(ignora){
+    return ST.clientes.filter(c => {
+      if (ignora !== 'classe'   && ST.classe   && c.classeEf !== ST.classe) return false;
+      if (ignora !== 'segmento' && ST.segmento && c.seg     !== ST.segmento) return false;
+      return true;
+    });
+  }
+
+  // ══════════════════════════════════════════════════════════════════
+  //  KPIs
+  // ══════════════════════════════════════════════════════════════════
+  function renderKPIs(){
+    // os KPIs sao um visual como os outros: seguem as DUAS selecoes (a busca nao, ver baseCartoes)
+    const cs = baseCartoes(null);
+    const ativos = cs.filter(c => c.fat > 0);
+    const ativosAnt = cs.filter(c => c.fatAnt > 0);
+    const fat = ativos.reduce((s,c) => s + c.fat, 0);
+    const fatAnt = cs.reduce((s,c) => s + c.fatAnt, 0);
+    const nnf = ativos.reduce((s,c) => s + c.nnf, 0);
+    const mgn = ativos.reduce((s,c) => s + c.mgn, 0);
+    const recompra = ativos.length ? ativos.filter(c => c.nnf >= 2 || c.nmes >= 2).length / ativos.length : null;
+    // 'Clientes em risco' e' leitura de SEGMENTO: se o recorte de segmento entrasse aqui,
+    // o cartao viraria tautologia (segmento = Perdidos => risco 0). Segue so o recorte de classe.
+    const risco = baseCartoes('segmento').filter(c => c.seg === 'risco');
+    const dNov = ativos.length - ativosAnt.length;
+
+    setTxt('k-ativos', int(ativos.length));
+    setHTML('k-ativos-s', !ativosAnt.length ? 'sem base de comparação'
+      : dNov === 0 ? 'estável vs. ' + (ST.ano-1)
+      : (dNov > 0 ? '<span class="up">+' + int(dNov) + '</span>' : '<span class="dn">' + int(dNov) + '</span>') + ' vs. ' + (ST.ano-1));
+
+    // a comparação é com a MESMA janela de dias do ano anterior; o ano fechado
+    // fica no balão, porque contra ele o ano em curso sempre parece em queda
+    const fatPer = cs.reduce((s,c) => s + n0(c.fatAntPer), 0);
+    setTxt('k-fat', 'R$ ' + (fat/1e6).toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2}) + ' M');
+    setHTML('k-fat-s', fatPer ? varHTML((fat-fatPer)/fatPer) + ' vs. ' + ST.perLbl + ' (' + brl0(fatPer) + ')' : brl0(fat));
+    const elFat = document.getElementById('k-fat-s');
+    if (elFat){
+      elFat.setAttribute('data-tip-t', 'Comparação com ' + (ST.ano-1));
+      elFat.setAttribute('data-tip', ST.parcial
+        ? 'Mesmo período: ' + brl0(fatPer) + ' entre 01/01 e ' + ST.cutLbl + '. O ano de ' + (ST.ano-1)
+          + ' FECHADO somou ' + brl0(fatAnt) + ' — comparar ' + (ST.mesesDecorridos || 12) + ' meses de ' + ST.ano
+          + ' com os 12 de ' + (ST.ano-1) + ' faria uma carteira estável parecer em queda.'
+        : 'Os dois anos estão fechados: ' + brl0(fatAnt) + ' em ' + (ST.ano-1) + '.');
+    }
+
+    setTxt('k-ticket', nnf ? brl0(fat/nnf) : '—');
+    setHTML('k-ticket-s', (nnf ? int(nnf) + ' notas · ' : '') + (ativos.length ? brl0(fat/ativos.length) + ' por cliente' : '&nbsp;'));
+
+    setTxt('k-margem', fat ? pct(mgn/fat) : '—');
+    setHTML('k-margem-s', mgn ? brl0(mgn) + ' de margem de contribuição'
+      : (ST.clientes.some(c => c.mgn) ? 'sem faturamento neste recorte' : 'medida não disponível para o seu perfil'));
+
+    setTxt('k-recompra', recompra == null ? '—' : pct(recompra));
+    setHTML('k-recompra-s', 'clientes com 2 ou mais compras no ano');
+
+    setTxt('k-risco', int(risco.length));
+    setHTML('k-risco-s', brl0(risco.reduce((s,c) => s + c.fat, 0)) + ' expostos'
+      + (ST.segmento ? ' · todos os segmentos' : ''));
+
+    renderEscopo(cs.length);
+  }
+
+  // faixa que avisa que os indicadores acima estao recortados (e deixa limpar em 1 clique)
+  function renderEscopo(n){
+    const el = document.getElementById('cb-escopo'); if (!el) return;
+    if (!ST.classe && !ST.segmento){ el.hidden = true; el.innerHTML = ''; return; }
+    const partes = [];
+    if (ST.classe)   partes.push('Classe <b>' + ST.classe + '</b>');
+    if (ST.segmento) partes.push('segmento <b>' + escH(SEGS[SEG_IX[ST.segmento]].nome) + '</b>');
+    el.hidden = false;
+    el.innerHTML = '<span>Recorte ativo: ' + partes.join(' · ') + ' — ' + int(n)
+      + (n === 1 ? ' cliente' : ' clientes') + '. Os indicadores, cartões, tabelas e a matriz seguem esta seleção.</span>'
+      + '<button type="button" class="cb-esc-x" onclick="cbLimparRecorte()">✕ limpar recorte</button>';
+  }
+
+  // ══════════════════════════════════════════════════════════════════
+  //  CURVA ABC
+  // ══════════════════════════════════════════════════════════════════
+  function pillSeg(id, motivo){
+    const s = SEGS[SEG_IX[id]]; if (!s) return '—';
+    return '<span class="cb-pill" style="background:' + s.bg + ';color:' + s.cor + ';border:1px solid ' + s.cor + '33;cursor:help;"'
+      + tipAttr(motivo || s.tip, s.nome) + '>' + escH(s.nome) + '</span>';
+  }
+  function badgeABC(cl){
+    const a = ABC.find(x => x.id === cl);
+    if (!a) return '<span style="color:#C3D0DC;">—</span>';
+    return '<span class="cb-badge" style="background:' + a.cor + ';">' + a.id + '</span>';
+  }
+
+  function renderABC(){
+    const el = document.getElementById('cb-abc'); if (!el) return;
+    const base  = baseCartoes('classe');            // recortado pelo SEGMENTO, nunca por si mesmo
+    const total = base.reduce((s,c) => s + c.fat, 0);
+    el.innerHTML = ABC.map(a => {
+      const cs   = base.filter(c => c.classeEf === a.id);
+      const csF  = cs.filter(c => c.fat > 0);         // dinheiro so de quem faturou no ano
+      const herd = cs.length - csF.length;
+      const f = csF.reduce((s,c) => s + c.fat, 0);
+      const share = total ? f / total : 0;
+      const on = ST.classe === a.id;
+      return '<button type="button" class="cb-abc-c' + (on ? ' on' : '') + '" style="--ac:' + a.cor + ';" onclick="cbSetClasse(\'' + a.id + '\')">'
+        + '<div class="cb-abc-top"><span class="cb-abc-b">' + a.id + '</span>'
+        + '<span class="cb-abc-n">' + escH(a.nome) + '</span>'
+        + '<span class="cb-abc-p">' + (total ? pct(share, 0) : '—') + '</span></div>'
+        + '<div class="cb-abc-bar"><i style="width:' + Math.max(2, Math.round(share*100)) + '%;"></i></div>'
+        + '<div class="cb-abc-m"><span>' + int(cs.length) + (cs.length === 1 ? ' cliente' : ' clientes') + '</span><b>' + brl0(f) + '</b></div>'
+        + '<div class="cb-abc-m" style="margin-top:3px;"><span>Fat. médio / cliente</span><b>' + (csF.length ? brl0(f/csF.length) : '—') + '</b></div>'
+        + (herd ? '<div class="cb-abc-m cb-abc-h"><span>' + int(herd) + ' sem compra em ' + ST.ano + '</span><b>classe de ' + (ST.ano-1) + '</b></div>' : '')
+        + '</button>';
+    }).join('');
+    const sg = ST.segmento ? SEGS[SEG_IX[ST.segmento]] : null;
+    setTxt('cb-abc-sub', (sg
+        ? 'Recorte: segmento ' + sg.nome + ' — ' + int(base.length) + ' clientes distribuídos nas 3 classes. Os percentuais são do faturamento deste segmento.'
+        : 'Concentração do faturamento por classe, com Pareto acumulado no ano. Corte: A até 70% · B até 90% · C o restante.')
+      + ' Quem não comprou em ' + ST.ano + ' herda a classe de ' + (ST.ano-1) + ' (marcada com *).');
+  }
+
+  // ── Como cada coluna é calculada ────────────────────────────────────
+  //   O MESMO texto vai para o balão do cabeçalho e para o dicionário embaixo
+  //   da tabela (o dicionário é o que serve no celular, onde não existe hover).
+  //   São funções porque o texto cita o ano, o mês e a janela escolhidos.
+  const RLS = ' A consulta roda com o SEU login no Power BI, então este valor soma apenas o que o seu perfil pode ver (RLS do modelo).';
+  const TIP = {
+    nome:       () => 'Clientes[Cliente], com Clientes[Cód. Cliente] embaixo. O grão da tabela é o CLIENTE: cada linha soma todas as notas dele no período.',
+    tipo:       () => 'Clientes[Tipo de cliente (Revisado)] — classificação do cadastro (distribuidor, venda direta, órgão público…).',
+    uf:         () => 'Clientes[Cód. Estado] — UF do cadastro do cliente, não a UF de entrega da nota.',
+    fat:        () => 'Soma de Faturamentos[Faturamento] em ' + ST.ano + ' (' + (ST.janLbl || 'o ano inteiro') + '), sem INTERCOMPANY, só operações que geram fatura a receber e sem as notas ocultas.' + RLS,
+    mesAtual:   () => 'Soma do faturamento SÓ no mês de ' + (ST.mesRefLbl || '—')
+                    + (ST.parcial ? ' — mês em curso, fechado em ' + dataBR(ST.ref) + ', por isso naturalmente menor que um mês completo.'
+                                  : ' (último mês do ano selecionado).') + RLS,
+    fatMes:     () => 'Faturamento do ano ÷ ' + (ST.mesesDecorridos || 12) + ' meses decorridos. Dividir pelos meses COM compra premiaria o cliente esporádico.',
+    fatHist:    () => 'Tudo que o cliente já faturou, sem recorte de ano (os filtros do topo continuam valendo).' + RLS,
+    fatHistMes: () => 'Fat. histórico ÷ meses entre a primeira e a última compra dele (janela do relacionamento) — o ritmo mensal que o cliente vale. Passe o mouse no número para ver a janela.',
+    ticket:     () => 'Faturamento do ano ÷ nº de notas distintas (DISTINCTCOUNT de Faturamentos[Número da fatura]).',
+    margem:     () => 'Medida Margem de contribuição (nota) ÷ faturamento do ano. Fica em branco quando o seu perfil não tem acesso à medida.',
+    pctTotal:   () => 'Faturamento do cliente ÷ faturamento total do recorte no ano — a fatia dele na carteira.',
+    pctAcum:    () => 'Pareto: a fatia deste cliente somada à de todos os que faturam mais que ele. É o que define a classe — A até 70%, B até 90%, C o restante — com quem CRUZA o corte entrando na classe.',
+    seg:        () => 'Segmento do Ciclo de Vida. Passe o mouse na etiqueta para ver qual regra colocou este cliente aqui.',
+    classeEf:   () => 'Classe da curva ABC em ' + ST.ano + '. O asterisco marca quem não comprou no ano e herdou a classe de ' + (ST.ano-1) + '.',
+    nmes:       () => 'Em quantos dos ' + (ST.mesesDecorridos || 12) + ' meses decorridos houve faturamento diferente de zero.',
+    nfam:       () => 'Nº de famílias distintas compradas no ano (Famílias[Família]).',
+    ult:        () => 'Data da última nota do cliente, de MAXX(SUMMARIZE(Faturamentos, Calendário[Data])) — agrupando o próprio fato pela data, porque MAX na dimensão devolveria o fim do calendário para todo mundo. Sem compra em ' + ST.ano + ' nem em ' + (ST.ano-1) + ', cai para a última compra do histórico.',
+    rec:        () => 'Dias entre a última compra e ' + dataBR(ST.ref) + ' (data de referência: hoje, ou 31/12 quando o ano já fechou). É a base da classificação — até 60d ativo, 61 a 120d em risco, 121 a 240d dormente, acima disso perdido.',
+    varPer:     () => ST.parcial
+                    ? 'Faturamento de ' + (ST.janLbl || '') + ' contra o MESMO período de ' + (ST.ano-1) + ' (01/01 a ' + (ST.cutLbl || '') + '). A janela é igual de propósito: comparado com ' + (ST.ano-1) + ' FECHADO, um cliente de ritmo idêntico apareceria com queda de ~' + Math.round((1 - (ST.mesesDecorridos || 12)/12) * 100) + '% só porque ' + ST.ano + ' ainda não terminou — e é essa queda falsa que enchia o segmento Em risco.'
+                    : 'Faturamento de ' + ST.ano + ' contra ' + (ST.ano-1) + ', os dois anos fechados.',
+    motivo:     () => 'Qual condição colocou o cliente neste segmento. A avaliação para na primeira que casa: perdido → dormente → em risco → novo → fiel → recorrente.'
+  };
+
+  const COLS_ABC = [
+    { k:'nome',     h:'Cliente',        t:'cod',  tip:TIP.nome },   // Tipo e UF têm coluna própria aqui
+    { k:'tipo',     h:'Tipo',           t:'txt',  tip:TIP.tipo },
+    { k:'uf',       h:'UF',             t:'txt',  tip:TIP.uf },
+    { k:'fat',      h:() => 'Faturamento ' + ST.ano, t:'brl', forte:true, tip:TIP.fat },
+    { k:'fatMesAtual', h:() => 'Fat. ' + (ST.mesRefLbl || 'mês'), t:'mesatual', tip:TIP.mesAtual },
+    { k:'fatMes',   h:'Fat. médio / mês', t:'brl', tip:TIP.fatMes },
+    { k:'fatHist',    h:'Fat. histórico',  t:'brl', tip:TIP.fatHist },
+    { k:'fatHistMes', h:'Potencial / mês', t:'pot', tip:TIP.fatHistMes },
+    { k:'ticket',   h:'Ticket médio',   t:'brl',  tip:TIP.ticket },
+    { k:'margem',   h:'Margem',         t:'pct',  tip:TIP.margem },
+    { k:'pctTotal', h:'% do total',     t:'pct1', tip:TIP.pctTotal },
+    { k:'pctAcum',  h:'% acum.',        t:'pctm', tip:TIP.pctAcum },
+    { k:'seg',      h:'Segmento',       t:'seg',  tip:TIP.seg }
+  ];
+  const COLS_SEG = [
+    { k:'nome',   h:'Cliente',          t:'nome', tip:TIP.nome },
+    { k:'classeEf', h:'ABC',            t:'abc',  tip:TIP.classeEf },
+    { k:'fat',    h:() => 'Faturamento ' + ST.ano, t:'brl', forte:true, tip:TIP.fat },
+    { k:'fatMesAtual', h:() => 'Fat. ' + (ST.mesRefLbl || 'mês'), t:'mesatual', tip:TIP.mesAtual },
+    { k:'fatMes', h:'Fat. médio / mês', t:'brl',  tip:TIP.fatMes },
+    { k:'fatHist',    h:'Fat. histórico',  t:'brl', tip:TIP.fatHist },
+    { k:'fatHistMes', h:'Potencial / mês', t:'pot', tip:TIP.fatHistMes },
+    { k:'nmes',   h:'Meses c/ compra',  t:'mes',  tip:TIP.nmes },
+    { k:'nfam',   h:'Famílias',         t:'int',  tip:TIP.nfam },
+    { k:'ult',    h:'Última compra',    t:'data', tip:TIP.ult },
+    { k:'rec',    h:'Recência',         t:'rec',  tip:TIP.rec },
+    { k:'varPer', h:() => ST.parcial ? 'Var. mesmo período' : 'Var. ano', t:'var', tip:TIP.varPer },
+    { k:'motivo', h:'Motivo do segmento', t:'motivo', tip:TIP.motivo }
+  ];
+
+  function celula(c, col){
+    const v = c[col.k];
+    switch (col.t){
+      case 'nome':
+      case 'cod': {
+        const sub = col.t === 'cod' ? escH(c.cod)
+          : escH(c.cod) + (c.tipo ? ' · ' + escH(c.tipo) : '') + (c.uf ? ' · ' + escH(c.uf) : '');
+        return '<td class="nome" title="' + cbEsc(c.cod + ' · ' + c.nome) + '">' + escH(c.nome)
+             + '<span style="display:block;font-size:10px;color:#A7B7C6;font-weight:600;">' + sub + '</span></td>';
+      }
+      case 'txt':  return '<td>' + (v ? escH(v) : '—') + '</td>';
+      case 'brl':  return '<td class="num' + (col.forte ? ' forte' : '') + '">' + (v == null ? '—' : brl0(v)) + '</td>';
+      case 'pot':  return '<td class="num"' + (c.mesesHist ? ' title="' + cbEsc(int(c.mesesHist) + ' meses de relacionamento · '
+                     + dataBR(c.priHist) + ' a ' + dataBR(c.ultHist)) + '"' : '') + '>' + (v == null ? '—' : brl0(v)) + '</td>';
+      case 'int':  return '<td class="num">' + (v == null ? '—' : int(v)) + '</td>';
+      case 'pct':  return '<td class="num">' + (v == null ? '—' : pct(v)) + '</td>';
+      case 'pct1': return '<td class="num forte">' + pct(v) + '</td>';
+      case 'pctm': return '<td class="num" style="color:#A7B7C6;">' + pct(v) + '</td>';
+      case 'seg':  return '<td>' + pillSeg(c.seg, c.motivo) + '</td>';
+      // faturamento do mês de referência: cinza quando é zero, para o vazio saltar
+      case 'mesatual': return '<td class="num" style="color:' + (v > 0 ? '#0A2E5C' : '#C3D0DC') + ';font-weight:' + (v > 0 ? 700 : 500) + ';">' + (v > 0 ? brl0(v) : '—') + '</td>';
+      case 'motivo': return '<td class="motivo"' + tipAttr(c.motivo, 'Por que está neste segmento') + '>' + escH(c.motivo || '—') + '</td>';
+      case 'abc':  return '<td>' + badgeABC(c.classeEf) + (c.herdada ? '<span title="classe herdada de ' + (ST.ano-1) + ': sem compra em ' + ST.ano + '" style="color:#A7B7C6;font-weight:700;">*</span>' : '') + '</td>';
+      case 'mes':  return '<td class="num">' + int(v) + '/' + (ST.mesesDecorridos || 12) + '</td>';
+      case 'data': return '<td class="num">' + dataBR(v) + '</td>';
+      case 'rec':  return '<td class="num" style="color:' + (v == null ? '#A7B7C6' : v > REGRA.recDormente ? '#DC2626' : v > REGRA.recRisco ? '#D97706' : '#4A5F75') + ';">' + (v == null ? '—' : int(v) + 'd') + '</td>';
+      case 'var':  return '<td class="num">' + varHTML(v) + '</td>';
+      default:     return '<td>' + escH(v) + '</td>';
+    }
+  }
+  function ordenaLista(lista, sort){
+    const dir = sort.dir === 'asc' ? 1 : -1;
+    return lista.slice().sort((a,b) => {
+      let av = a[sort.k], bv = b[sort.k];
+      if (sort.k === 'seg')   { av = SEG_IX[a.seg]; bv = SEG_IX[b.seg]; }
+      if (sort.k === 'classeEf'){ av = a.classeEf; bv = b.classeEf; }
+      if (av instanceof Date) av = av.getTime();
+      if (bv instanceof Date) bv = bv.getTime();
+      const an = typeof av === 'number' ? av : _num(av), bn = typeof bv === 'number' ? bv : _num(bv);
+      if (an != null && bn != null) return dir * (an - bn);
+      if (an == null && bn == null) return dir * String(av==null?'':av).localeCompare(String(bv==null?'':bv),'pt-BR');
+      return an == null ? 1 : -1;                     // vazios sempre por último
+    });
+  }
+  function renderTabela(cols, lista, sort, ids, fn){
+    const th = document.getElementById(ids.thead), tb = document.getElementById(ids.tbody);
+    if (!th || !tb) return;
+    th.innerHTML = '<tr>' + cols.map(c => {
+      const seta = sort.k === c.k ? (sort.dir === 'asc' ? ' ▲' : ' ▼') : '';
+      const esq = ['nome','cod','txt','seg','abc','motivo'].indexOf(c.t) >= 0;
+      return '<th data-k="' + c.k + '"' + (esq ? '' : ' class="num"')
+        + tipAttr(colTip(c), colH(c)) + '>' + escH(colH(c)) + seta + '</th>';
+    }).join('') + '</tr>';
+    const rows = ordenaLista(lista, sort);
+    tb.innerHTML = rows.length
+      ? rows.map(c => '<tr>' + cols.map(col => celula(c, col)).join('') + '</tr>').join('')
+      : '<tr><td class="cb-vazio" colspan="' + cols.length + '">Nenhum cliente com esta combinação de filtros.</td></tr>';
+    if (fn) fn(rows);
+  }
+
+  // mesma explicação do balão, em lista: é o que resolve no celular (sem hover)
+  function renderDic(id, cols){
+    const el = document.getElementById(id); if (!el) return;
+    el.innerHTML = '<summary>Como cada coluna é calculada</summary><dl>'
+      + cols.map(c => '<dt>' + escH(colH(c)) + '</dt><dd>' + escH(colTip(c)) + '</dd>').join('')
+      + '</dl>';
+  }
+
+  function renderTabelaABC(){
+    const lista = filtrados();
+    const escopo = [ST.classe ? 'Classe ' + ST.classe : null, ST.segmento ? SEGS[SEG_IX[ST.segmento]].nome : null].filter(Boolean).join(' · ');
+    setTxt('cb-abc-tt', 'Clientes' + (escopo ? ' · ' + escopo : ' · todas as classes'));
+    renderTabela(COLS_ABC, lista, ST.abcSort, { thead:'cb-abc-thead', tbody:'cb-abc-tbody' }, rows => {
+      const f = rows.reduce((s,c) => s + c.fat, 0);
+      setTxt('cb-abc-info', int(rows.length) + (rows.length === 1 ? ' cliente' : ' clientes') + ' · ' + brl0(f)
+        + (ST.totalAno ? ' · ' + pct(f/ST.totalAno) + ' do faturamento do ano' : ''));
+      const bx = document.getElementById('cb-abc-xls'); if (bx) bx.disabled = !rows.length;
+    });
+    renderDic('cb-abc-dic', COLS_ABC);
+  }
+
+  // ══════════════════════════════════════════════════════════════════
+  //  CICLO DE VIDA
+  // ══════════════════════════════════════════════════════════════════
+  function renderSegmentos(){
+    const el = document.getElementById('cb-seg'); if (!el) return;
+    const base = baseCartoes('segmento');           // recortado pela CLASSE, nunca por si mesmo
+    el.innerHTML = SEGS.map(s => {
+      const cs = base.filter(c => c.seg === s.id);
+      const f  = cs.reduce((a,c) => a + c.fat, 0);
+      const fPer = cs.reduce((a,c) => a + n0(c.fatAntPer), 0);
+      const fMes = cs.reduce((a,c) => a + n0(c.fatMesAtual), 0);
+      const pot  = cs.reduce((a,c) => a + (c.fatHistMes || 0), 0);
+      const on = ST.segmento === s.id;
+      const delta = fPer > 0 ? (f - fPer) / fPer : null;
+      return '<button type="button" class="cb-seg-c' + (on ? ' on' : '') + '" style="--sc:' + s.cor + ';--sbg:' + s.bg + ';"'
+        + tipAttr(s.tip, s.nome) + ' onclick="cbSetSegmento(\'' + s.id + '\')">'
+        + '<div class="cb-seg-h"><span class="cb-seg-d"></span><span class="cb-seg-n">' + escH(s.nome) + '</span></div>'
+        + '<div class="cb-seg-v">' + int(cs.length) + '</div>'
+        + '<div class="cb-seg-r">' + brl0(f) + '</div>'
+        + '<div class="cb-seg-x">' + (delta == null ? (cs.length ? 'sem base em ' + (ST.ano-1) : '&nbsp;') : varHTML(delta) + ' vs. ' + brl0(fPer) + ' em ' + ST.perLbl) + '</div>'
+        + '<div class="cb-seg-x" style="color:#5B7189;">' + (ST.mesRefLbl && ST.mesRefLbl !== '—' ? brl0(fMes) + ' em ' + ST.mesRefLbl : '&nbsp;') + '</div>'
+        + '<div class="cb-seg-x" style="color:#5B7189;">' + (pot ? 'vale ' + brl0(pot) + '/mês no histórico' : '&nbsp;') + '</div>'
+        + '<div class="cb-seg-k">' + escH(s.crit) + '</div>'
+        + '</button>';
+    }).join('');
+    const carteira = base.length, ativos = base.filter(c => c.fat > 0).length;
+    setTxt('cb-seg-sub', (ST.classe ? 'Recorte: Classe ' + ST.classe + ' (' + (ABC.find(a => a.id === ST.classe)||{nome:''}).nome.toLowerCase() + ') · ' : '')
+      + 'Classificação por recência, frequência e tendência de compra · ' + (ST.classe ? 'nesta classe: ' : 'carteira analisada: ')
+      + int(carteira) + ' clientes (' + int(ativos) + ' com compra em ' + ST.ano + ' e ' + int(carteira - ativos)
+      + (carteira - ativos === 1 ? ' que comprou só em ' : ' que compraram só em ') + (ST.ano-1) + ') · recência medida em ' + dataBR(ST.ref)
+      + (ST.parcial ? ' · queda comparada com o MESMO período de ' + (ST.ano-1) + ' (01/01 a ' + ST.cutLbl + '), não com o ano fechado' : '') + '.');
+  }
+
+  function renderTabelaSeg(){
+    const lista = filtrados();
+    const escopo = [ST.segmento ? SEGS[SEG_IX[ST.segmento]].nome : null, ST.classe ? 'Classe ' + ST.classe : null].filter(Boolean).join(' · ');
+    setTxt('cb-seg-tt', 'Clientes' + (escopo ? ' · ' + escopo : ' · todos os segmentos'));
+    renderTabela(COLS_SEG, lista, ST.segSort, { thead:'cb-seg-thead', tbody:'cb-seg-tbody' }, rows => {
+      const f = rows.reduce((s,c) => s + c.fat, 0);
+      const m = rows.length ? rows.reduce((s,c) => s + c.nmes, 0) / rows.length : 0;
+      const pot = rows.reduce((s,c) => s + (c.fatHistMes || 0), 0);
+      const fm = rows.reduce((s,c) => s + n0(c.fatMesAtual), 0);
+      setTxt('cb-seg-info', int(rows.length) + (rows.length === 1 ? ' cliente' : ' clientes') + ' · ' + brl0(f)
+        + (ST.mesRefLbl && ST.mesRefLbl !== '—' ? ' · ' + brl0(fm) + ' em ' + ST.mesRefLbl : '')
+        + ' · média de ' + m.toLocaleString('pt-BR',{maximumFractionDigits:1}) + ' meses com compra'
+        + (pot ? ' · potencial histórico de ' + brl0(pot) + '/mês' : ''));
+      const bx = document.getElementById('cb-seg-xls'); if (bx) bx.disabled = !rows.length;
+    });
+    renderDic('cb-seg-dic', COLS_SEG);
+  }
+
+  // ══════════════════════════════════════════════════════════════════
+  //  MATRIZ CLIENTE × FAMÍLIA × MÊS
+  // ══════════════════════════════════════════════════════════════════
+  const HEAT = ['#EDF5FD','#DCEAFB','#B6D4F5','#7FB2E8','#3E85D0','#0A4FA0'];
+  // escala por QUANTIL: com faturamento muito concentrado, uma escala linear
+  // pintaria quase tudo da cor mais clara e o heatmap não diria nada.
+  function escala(vals){
+    const v = vals.filter(x => x > 0).sort((a,b) => a - b);
+    if (!v.length) return () => null;
+    const cortes = [];
+    for (let i = 1; i < HEAT.length; i++) cortes.push(v[Math.min(v.length-1, Math.floor(v.length * i / HEAT.length))]);
+    return x => {
+      if (!(x > 0)) return null;
+      let i = 0; while (i < cortes.length && x >= cortes[i]) i++;
+      return { bg:HEAT[i], fg:(i >= 4 ? '#fff' : (i >= 2 ? '#0A2E5C' : '#5B7189')) };
+    };
+  }
+  const valMes = (o, m) => ST.medida === 'qtd' ? n0(o.mesQ[m]) : n0(o.mes[m]);
+
+  function renderMatriz(){
+    const th = document.getElementById('cb-mx-thead'), tb = document.getElementById('cb-mx-tbody');
+    const more = document.getElementById('cb-mx-more');
+    if (!th || !tb) return;
+    th.innerHTML = '<tr><th>Cliente / Família</th>' + MESES.map(m => '<th>' + m + '</th>').join('')
+      + '<th style="text-align:right;padding-right:12px;">Total ano</th></tr>';
+
+    const todos = filtrados();
+    const lista = todos.slice(0, ST.limite);
+    if (!lista.length){
+      tb.innerHTML = '<tr><td class="cb-vazio" colspan="14">Nenhum cliente com esta combinação de filtros.</td></tr>';
+      more.hidden = true; return;
+    }
+    // a escala olha todas as células visíveis (cliente e família) para que a
+    // linha da família não fique sempre pálida ao lado da linha do cliente
+    const amostra = [];
+    lista.forEach(o => { for (let m = 1; m <= 12; m++) amostra.push(valMes(o, m)); });
+    Object.keys(ST.expandido).forEach(cod => { const fs_ = ST.expandido[cod]; if (!Array.isArray(fs_)) return; fs_.forEach(f => { for (let m = 1; m <= 12; m++) amostra.push(ST.medida === 'qtd' ? n0(f.mesQ[m]) : n0(f.mes[m])); }); });
+    const cor = escala(amostra);
+    const fmt = v => ST.medida === 'qtd' ? (v > 0 ? int(v) : '–') : curto(v);
+
+    const html = [];
+    lista.forEach(o => {
+      const aberto = !!ST.expandido[o.cod];
+      const tot = ST.medida === 'qtd' ? o.qtd : o.fat;
+      html.push('<tr><td><div class="cb-mx-cli" onclick="cbToggleCliente(\'' + cbEsc(o.cod) + '\')">'
+        + '<span class="cb-mx-exp">' + (aberto ? '−' : '+') + '</span>'
+        + '<span class="cb-mx-nm" title="' + cbEsc(o.nome) + '">' + escH(o.nome) + '</span></div>'
+        + '<div class="cb-mx-sub">' + escH(o.cod) + (o.tipo ? ' · ' + escH(o.tipo) : '') + (o.uf ? ' · ' + escH(o.uf) : '')
+        + ' · Classe ' + escH(o.classeEf) + (o.herdada ? '*' : '') + ' · ' + escH(SEGS[SEG_IX[o.seg]] ? SEGS[SEG_IX[o.seg]].nome : '—') + '</div></td>'
+        + celulasMes(o.mes, o.mesQ, cor, fmt)
+        + '<td class="cb-tot">' + (ST.medida === 'qtd' ? int(tot) : brl0(tot)) + '</td></tr>');
+      if (aberto){
+        const fams = ST.expandido[o.cod];
+        if (fams === 'load'){
+          html.push('<tr class="fam"><td colspan="14" style="text-align:left;padding:8px 30px;color:#A7B7C6;font-size:11.5px;">Carregando famílias…</td></tr>');
+        } else if (!fams.length){
+          html.push('<tr class="fam"><td colspan="14" style="text-align:left;padding:8px 30px;color:#A7B7C6;font-size:11.5px;">Sem detalhe de família para este cliente.</td></tr>');
+        } else {
+          fams.forEach(f => {
+            const t = ST.medida === 'qtd' ? f.totQ : f.tot;
+            html.push('<tr class="fam"><td><span class="cb-mx-fam" title="' + cbEsc(f.fam) + '">' + escH(f.fam) + '</span></td>'
+              + celulasMes(f.mes, f.mesQ, cor, fmt)
+              + '<td class="cb-tot" style="font-weight:600;">' + (ST.medida === 'qtd' ? int(t) : brl0(t)) + '</td></tr>');
+          });
+        }
+      }
+    });
+    tb.innerHTML = html.join('');
+    if (todos.length > lista.length){
+      more.hidden = false;
+      more.textContent = 'Mostrar mais 40 clientes (' + int(lista.length) + ' de ' + int(todos.length) + ')';
+    } else { more.hidden = true; }
+    setTxt('cb-info', int(todos.length) + (todos.length === 1 ? ' cliente na seleção' : ' clientes na seleção'));
+  }
+  function celulasMes(mes, mesQ, cor, fmt){
+    let s = '';
+    for (let m = 1; m <= 12; m++){
+      const v = ST.medida === 'qtd' ? n0(mesQ[m]) : n0(mes[m]);
+      const c = cor(v);
+      s += '<td>' + (c
+        ? '<span class="cb-cel" style="background:' + c.bg + ';color:' + c.fg + ';">' + fmt(v) + '</span>'
+        : '<span class="cb-cel zero">–</span>') + '</td>';
+    }
+    return s;
+  }
+
+  async function cbToggleCliente(cod){
+    if (ST.expandido[cod]){ delete ST.expandido[cod]; renderMatriz(); return; }
+    ST.expandido[cod] = 'load'; renderMatriz();
+    const seq = ST.seq;
+    try {
+      const rows = await qFamiliaMes(ST.ano, cod);
+      if (seq !== ST.seq) return;
+      const map = new Map();
+      (rows || []).forEach(r => {
+        const fam = String(getDim(r, F.familia) || '—');
+        const m = mesNum(getDim(r, F.calMes)); if (m == null) return;
+        const o = map.get(fam) || { fam, mes:{}, mesQ:{}, tot:0, totQ:0 };
+        const f = n0(getVal(r,'fat')), q = n0(getVal(r,'qtd'));
+        o.mes[m] = n0(o.mes[m]) + f; o.mesQ[m] = n0(o.mesQ[m]) + q;
+        o.tot += f; o.totQ += q;
+        map.set(fam, o);
+      });
+      ST.expandido[cod] = [...map.values()].sort((a,b) => b.tot - a.tot);
+    } catch(e){
+      console.warn('[CB] famílias de ' + cod + ':', e.message);
+      ST.expandido[cod] = [];
+    }
+    if (seq === ST.seq) renderMatriz();
+  }
+  window.cbToggleCliente = cbToggleCliente;
+
+  function cbMaisLinhas(){ ST.limite += 40; renderMatriz(); }
+  function cbSetMedida(m){
+    ST.medida = m;
+    document.querySelectorAll('#cb-mx-tg button').forEach((b,i) => b.classList.toggle('on', (i === 0) === (m === 'fat')));
+    renderMatriz();
+  }
+  window.cbMaisLinhas = cbMaisLinhas; window.cbSetMedida = cbSetMedida;
+
+  // ══════════════════════════════════════════════════════════════════
+  //  SELEÇÕES LOCAIS (classe / segmento) e ANO
+  // ══════════════════════════════════════════════════════════════════
+  function renderTudo(){
+    renderKPIs(); renderABC(); renderTabelaABC(); renderSegmentos(); renderTabelaSeg();
+    ST.limite = 40; renderMatriz();
+    const btn = document.getElementById('cb-btn-xls'); if (btn) btn.disabled = !ST.clientes.length;
+  }
+  function repintarSelecao(){
+    renderKPIs(); renderABC(); renderTabelaABC(); renderSegmentos(); renderTabelaSeg();
+    ST.limite = 40; ST.expandido = {}; renderMatriz();
+    if (window._cbLocais) window._cbLocais.forEach(f => f());
+  }
+  function cbSetClasse(id){   ST.classe   = (ST.classe === id ? null : id);      repintarSelecao(); }
+  function cbLimparRecorte(){ ST.classe = null; ST.segmento = null;              repintarSelecao(); }
+  window.cbLimparRecorte = cbLimparRecorte;
+  function cbSetSegmento(id){ ST.segmento = (ST.segmento === id ? null : id);    repintarSelecao(); }
+  window.cbSetClasse = cbSetClasse; window.cbSetSegmento = cbSetSegmento;
+
+  function cbSetAno(b, a){
+    const row = b.closest('.av-row');
+    row.querySelectorAll('.av-btn').forEach(x => x.classList.remove('active-green'));
+    b.classList.add('active-green');
+    ST.ano = a;
+    if (typeof window.fxSyncLabels === 'function') window.fxSyncLabels();
+    cbAplicar();
+  }
+  window.cbSetAno = cbSetAno;
+
+  // ══════════════════════════════════════════════════════════════════
+  //  EXPORTAÇÃO
+  // ══════════════════════════════════════════════════════════════════
+  // Uma tabela por vez: as colunas são as DA TABELA, então o Excel não mostra
+  // nada que a tela não mostre, e sai na mesma ordenação e no mesmo recorte.
+  // "Cliente" abre em colunas planas porque no HTML o código (e o Tipo/UF na
+  // tabela do ciclo) moram no subtítulo da célula do nome.
+  function colunasExcel(col){
+    if (col.t === 'cod')  return ['Cód. Cliente', 'Cliente'];
+    if (col.t === 'nome') return ['Cód. Cliente', 'Cliente', 'Tipo', 'UF'];
+    return [colH(col)];
+  }
+  function valoresExcel(c, col){
+    const v = c[col.k];
+    switch (col.t){
+      case 'cod':    return [c.cod, c.nome];
+      case 'nome':   return [c.cod, c.nome, c.tipo || '', c.uf || ''];
+      case 'txt':    return [v || ''];
+      case 'abc':    return [(c.classeEf === '—' ? '' : c.classeEf) + (c.herdada ? ' *' : '')];
+      case 'seg':    return [(SEGS[SEG_IX[c.seg]] || {}).nome || ''];
+      case 'motivo': return [c.motivo || ''];
+      case 'data':   return [v ? dataBR(v) : ''];
+      // números saem CRUS (percentual como fração) para o Excel poder somar
+      default:       return [v == null ? '' : v];
+    }
+  }
+  // vai para o nome do arquivo: dois recortes diferentes não se sobrescrevem
+  const escopoArquivo = () => (ST.classe ? '_Classe' + ST.classe : '')
+    + (ST.segmento ? '_' + SEGS[SEG_IX[ST.segmento]].nome.normalize('NFD').replace(/[^A-Za-z0-9]/g, '') : '');
+
+  function cbExportTabela(cols, sort, aba, arquivo){
+    if (typeof XLSX === 'undefined'){ alert('Biblioteca de exportação não carregou.'); return; }
+    const rows = ordenaLista(filtrados(), sort);
+    if (!rows.length) return;
+    const cab = cols.reduce((a, c) => a.concat(colunasExcel(c)), []);
+    const aoa = [cab].concat(rows.map(c => cols.reduce((a, col) => a.concat(valoresExcel(c, col)), [])));
+    const ws = XLSX.utils.aoa_to_sheet(aoa);
+    ws['!cols'] = cab.map(h => ({ wch: Math.min(38, Math.max(11, String(h).length + 3)) }));
+    ws['!autofilter'] = { ref: XLSX.utils.encode_range({ s:{ r:0, c:0 }, e:{ r:aoa.length-1, c:cab.length-1 } }) };
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, (aba + ' ' + ST.ano).substring(0, 31));
+    XLSX.writeFile(wb, arquivo + '_' + ST.ano + escopoArquivo() + '.xlsx');
+  }
+  function cbExportABC(){ cbExportTabela(COLS_ABC, ST.abcSort, 'Curva ABC',     'Curva_ABC'); }
+  function cbExportSeg(){ cbExportTabela(COLS_SEG, ST.segSort, 'Ciclo de Vida', 'Ciclo_de_Vida'); }
+  window.cbExportABC = cbExportABC; window.cbExportSeg = cbExportSeg;
+
+  function cbExport(){
+    if (typeof XLSX === 'undefined'){ alert('Biblioteca de exportação não carregou.'); return; }
+    const rows = ordenaLista(filtrados(), { k:'fat', dir:'desc' });
+    if (!rows.length) return;
+    const cab = ['Cód. Cliente','Cliente','Tipo','UF','Classe ABC','Classe ABC ' + (ST.ano-1),'Segmento','Motivo do segmento',
+                 'Faturamento','Fat. ' + (ST.mesRefLbl || 'mês'),'Quantidade',
+                 'Margem (nota)','Margem %','Nº notas','Ticket médio','Fat. médio/mês','Meses c/ compra',
+                 'Fat. histórico','Meses de relacionamento','Potencial/mês','Primeira compra (histórico)','Última compra (histórico)',
+                 'Famílias','Primeira compra','Última compra','Recência (dias)','Faturamento ' + (ST.ano-1),
+                 'Faturamento ' + (ST.ano-1) + ' (mesmo período, até ' + (ST.cutLbl || '') + ')',
+                 'Var. mesmo período %','Var. ano fechado %','% do total','% acumulado'].concat(MESES.map(m => m + '/' + String(ST.ano).slice(2)));
+    const aoa = [cab];
+    rows.forEach(c => {
+      const l = [c.cod, c.nome, c.tipo || '', c.uf || '', c.classe, c.classeAnt, (SEGS[SEG_IX[c.seg]] || {}).nome || '', c.motivo || '',
+                 c.fat, n0(c.fatMesAtual), c.qtd, c.mgn, c.margem == null ? '' : c.margem, c.nnf, c.ticket == null ? '' : c.ticket,
+                 c.fatMes, c.nmes,
+                 c.fatHist, c.mesesHist == null ? '' : c.mesesHist, c.fatHistMes == null ? '' : c.fatHistMes,
+                 c.priHist ? dataBR(c.priHist) : '', c.ultHist ? dataBR(c.ultHist) : '',
+                 c.nfam,
+                 c.pri ? dataBR(c.pri) : '', c.ult ? dataBR(c.ult) : '', c.rec == null ? '' : c.rec,
+                 c.fatAnt, n0(c.fatAntPer), c.varPer == null ? '' : c.varPer, c.varAno == null ? '' : c.varAno,
+                 c.pctTotal, c.pctAcum];
+      for (let m = 1; m <= 12; m++) l.push(ST.medida === 'qtd' ? n0(c.mesQ[m]) : n0(c.mes[m]));
+      aoa.push(l);
+    });
+    const ws = XLSX.utils.aoa_to_sheet(aoa);
+    ws['!cols'] = cab.map(h => ({ wch: Math.min(34, Math.max(11, h.length + 3)) }));
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, 'Comportamento');
+    XLSX.writeFile(wb, 'Comportamento_Clientes_' + ST.ano + '.xlsx');
+  }
+  window.cbExport = cbExport;
+
+  // ══════════════════════════════════════════════════════════════════
+  //  FILTROS (dropdowns)
+  // ══════════════════════════════════════════════════════════════════
+  function avMakeDropdown({ label, getOptions, getSelected, setSelected, onChange }){
+    const wrap = document.createElement('div'); wrap.className = 'av-dd';
+    const btn = document.createElement('button'); btn.className = 'av-dd-btn'; btn.type = 'button';
+    const panel = document.createElement('div'); panel.className = 'av-dd-panel';
+    panel.innerHTML = '<div class="av-dd-search"><input type="text" placeholder="Buscar…"></div><div class="av-dd-list"></div><div class="av-dd-foot"><button type="button" data-act="limpar">Limpar</button><button type="button" data-act="fechar">Fechar</button></div>';
+    wrap.appendChild(btn); wrap.appendChild(panel);
+    const list = panel.querySelector('.av-dd-list');
+    const search = panel.querySelector('input');
+    let loaded = false, options = [];
+    function refresh(){
+      const n = getSelected().length;
+      btn.classList.toggle('has', n > 0);
+      btn.innerHTML = '<span>' + escH(label) + '</span>' + (n ? '<span class="cnt">' + n + '</span>' : '<span style="color:var(--text-4);font-weight:500;">Todos</span>');
+    }
+    function renderList(){
+      const q = (search.value || '').toLowerCase();
+      const sel = new Set(getSelected());
+      const items = options.filter(o => !q || String(o.label).toLowerCase().includes(q));
+      list.innerHTML = items.length
+        ? items.map(o => '<label class="av-dd-opt"><input type="checkbox" value="' + cbEsc(o.value) + '" ' + (sel.has(o.value) ? 'checked' : '') + '>' + escH(o.label) + '</label>').join('')
+        : '<div style="padding:8px;color:var(--text-3);font-size:12px;">nenhum</div>';
+    }
+    async function ensure(){
+      if (loaded) return;
+      list.innerHTML = '<div style="padding:10px;color:var(--text-3);font-size:12px;">Carregando…</div>';
+      try { options = await getOptions(); } catch(e){ list.innerHTML = '<div style="padding:10px;color:var(--danger);font-size:12px;">erro: ' + escH(e.message.substring(0,60)) + '</div>'; return; }
+      loaded = true; renderList();
+    }
+    btn.addEventListener('click', async e => {
+      e.stopPropagation();
+      const open = wrap.classList.contains('open');
+      document.querySelectorAll('.av-dd.open').forEach(d => d.classList.remove('open'));
+      if (!open){ wrap.classList.add('open'); await ensure(); search.focus(); }
+    });
+    panel.addEventListener('click', e => e.stopPropagation());
+    list.addEventListener('change', e => { if (e.target.matches('input[type=checkbox]')){ setSelected(e.target.value, e.target.checked); refresh(); onChange(); } });
+    search.addEventListener('input', renderList);
+    panel.querySelector('[data-act=limpar]').addEventListener('click', () => { setSelected(null,false,true); renderList(); refresh(); onChange(); });
+    panel.querySelector('[data-act=fechar]').addEventListener('click', () => wrap.classList.remove('open'));
+    refresh();
+    return { el:wrap, refresh };
+  }
+  document.addEventListener('click', () => document.querySelectorAll('.av-dd.open').forEach(d => d.classList.remove('open')));
+
+  // dropdown de seleção ÚNICA e local (não vai ao DAX): Segmento e Classe ABC
+  function cbMakeLocal({ label, options, get, set }){
+    const wrap = document.createElement('div'); wrap.className = 'av-dd';
+    const btn = document.createElement('button'); btn.className = 'av-dd-btn'; btn.type = 'button'; btn.style.minWidth = '132px';
+    const panel = document.createElement('div'); panel.className = 'av-dd-panel'; panel.style.width = '212px';
+    const list = document.createElement('div'); list.className = 'av-dd-list'; list.style.padding = '5px';
+    panel.appendChild(list); wrap.appendChild(btn); wrap.appendChild(panel);
+    function refresh(){
+      const v = get();
+      const o = options.find(x => x.value === v);
+      btn.classList.toggle('has', !!v);
+      btn.innerHTML = '<span>' + escH(label) + '</span>' + (o
+        ? '<span style="font-weight:700;color:var(--bm-blue-800);">' + escH(o.label) + '</span>'
+        : '<span style="color:var(--text-4);font-weight:500;">Todos</span>');
+      list.innerHTML = [{ value:null, label:'Todos' }].concat(options).map(x =>
+        '<div class="av-dd-opt" data-v="' + (x.value == null ? '' : cbEsc(x.value)) + '" style="font-weight:'
+        + ((x.value || null) === (v || null) ? '700;color:var(--bm-blue-800)' : '500') + ';">'
+        + (x.cor ? '<span style="width:7px;height:7px;border-radius:99px;background:' + x.cor + ';"></span>' : '')
+        + escH(x.label) + '</div>').join('');
+    }
+    btn.addEventListener('click', e => {
+      e.stopPropagation();
+      const open = wrap.classList.contains('open');
+      document.querySelectorAll('.av-dd.open').forEach(d => d.classList.remove('open'));
+      if (!open) wrap.classList.add('open');
+    });
+    panel.addEventListener('click', e => {
+      e.stopPropagation();
+      const d = e.target.closest('[data-v]'); if (!d) return;
+      set(d.dataset.v || null); wrap.classList.remove('open');
+    });
+    refresh();
+    return { el:wrap, refresh };
+  }
+
+  function cbMontarFiltros(){
+    const tbF = document.getElementById('av-toolbar-filtros'); if (!tbF) return;
+    tbF.innerHTML = '';
+    FILTROS.forEach(ft => tbF.appendChild(avMakeDropdown({
+      label: ft.label,
+      getOptions: () => cbCarregarValores(fCol(ft)),
+      getSelected: () => [...window._cbSel[ft.id]],
+      setSelected: (v, ck, clr) => { const s = window._cbSel[ft.id]; if (clr){ s.clear(); return; } if (ck) s.add(v); else s.delete(v); },
+      onChange: cbAplicar
+    }).el));
+
+    const div = document.createElement('div'); div.className = 'fx-fdiv'; tbF.appendChild(div);
+    window._cbLocais = [];
+    const dSeg = cbMakeLocal({
+      label:'Segmento',
+      options: SEGS.map(s => ({ value:s.id, label:s.nome, cor:s.cor })),
+      get: () => ST.segmento,
+      set: v => { ST.segmento = v; repintarSelecao(); }
+    });
+    const dCls = cbMakeLocal({
+      label:'Classe ABC',
+      options: ABC.map(a => ({ value:a.id, label:'Classe ' + a.id, cor:a.cor })),
+      get: () => ST.classe,
+      set: v => { ST.classe = v; repintarSelecao(); }
+    });
+    tbF.appendChild(dSeg.el); tbF.appendChild(dCls.el);
+    window._cbLocais.push(dSeg.refresh, dCls.refresh);
+
+    const limpar = document.createElement('button');
+    limpar.className = 'av-btn'; limpar.type = 'button'; limpar.textContent = '✕ Limpar'; limpar.style.fontSize = '11px';
+    limpar.addEventListener('click', () => {
+      FILTROS.forEach(f => window._cbSel[f.id].clear());
+      ST.classe = null; ST.segmento = null; ST.busca = '';
+      const q = document.getElementById('cb-q'); if (q) q.value = '';
+      cbMontarFiltros(); cbAplicar();
+    });
+    tbF.appendChild(limpar);
+  }
+
+  // ══════════════════════════════════════════════════════════════════
+  //  CARREGAMENTO
+  // ══════════════════════════════════════════════════════════════════
+  function carregando(){
+    ['cb-abc-tbody','cb-seg-tbody','cb-mx-tbody'].forEach(id =>
+      setHTML(id, '<tr><td class="cb-vazio" colspan="14">Carregando…</td></tr>'));
+    setTxt('cb-abc-info','—'); setTxt('cb-seg-info','—'); setTxt('cb-info','—');
+    const more = document.getElementById('cb-mx-more'); if (more) more.hidden = true;
+  }
+  function erro(msg){
+    ['cb-abc-tbody','cb-seg-tbody','cb-mx-tbody'].forEach(id =>
+      setHTML(id, '<tr><td class="cb-vazio" style="color:var(--danger);" colspan="14">Erro: ' + escH(String(msg).substring(0,240)) + '</td></tr>'));
+  }
+
+  async function cbAplicar(){
+    if (!_cbReady) return;
+    const seq = ++ST.seq;
+    const ano = ST.ano;
+    carregando();
+    try {
+      await pbiGetDatasetId();                       // memoiza antes do paralelo
+      const [q1, q2, q3, q4, q3b] = await Promise.all([
+        qClientesAno(ano),
+        qClientesAnoAnt(ano, refDoAno(ano).cut).catch(e => { console.warn('[CB] ano anterior:', e.message); return []; }),
+        qClientesAntes(ano).catch(e => { console.warn('[CB] histórico anterior:', e.message); return []; }),
+        qClienteMes(ano),
+        qClientesHist().catch(e => { console.warn('[CB] histórico total:', e.message); return []; })
+      ]);
+      if (seq !== ST.seq) return;                    // resposta de um filtro já trocado
+      construirCarteira(q1, q2, q3, q4, q3b, ano);
+      renderTudo();
+    } catch(e){
+      if (seq !== ST.seq) return;
+      console.error('[CB] carga:', e);
+      erro(e.message);
+    }
+  }
+  window.cbAplicar = cbAplicar;
+
+  document.addEventListener('DOMContentLoaded', async () => {
+    cbMontarFiltros();
+    document.getElementById('cb-abc-thead').addEventListener('click', ev => {
+      const th = ev.target.closest('th[data-k]'); if (!th) return;
+      const k = th.dataset.k;
+      if (ST.abcSort.k === k) ST.abcSort.dir = ST.abcSort.dir === 'asc' ? 'desc' : 'asc';
+      else ST.abcSort = { k, dir:(k === 'nome' || k === 'tipo' || k === 'uf') ? 'asc' : 'desc' };
+      renderTabelaABC();
+    });
+    document.getElementById('cb-seg-thead').addEventListener('click', ev => {
+      const th = ev.target.closest('th[data-k]'); if (!th) return;
+      const k = th.dataset.k;
+      if (ST.segSort.k === k) ST.segSort.dir = ST.segSort.dir === 'asc' ? 'desc' : 'asc';
+      else ST.segSort = { k, dir:(k === 'nome' || k === 'classeEf') ? 'asc' : 'desc' };
+      renderTabelaSeg();
+    });
+    let _t = null;
+    document.getElementById('cb-q').addEventListener('input', e => {
+      ST.busca = e.target.value || '';
+      clearTimeout(_t); _t = setTimeout(() => { renderTabelaABC(); renderTabelaSeg(); ST.limite = 40; renderMatriz(); }, 200);
+    });
+
+    const banner = document.getElementById('cb-banner');
+    try {
+      await pbiConnect();
+      await carregarCatalogo();
+      await SRInterco.resolver(pbiQuery);   // 'Faturamentos'[É intercompany?] = "NÃO"
+      _cbReady = true;
+      banner.style.cssText = 'padding:11px 16px;border-radius:8px;font-size:13px;display:flex;align-items:center;gap:10px;background:#F0FDF4;border:1px solid #BBF7D0;color:#14532D;';
+      banner.innerHTML = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg> ✅ Conectado ao Power BI · sem INTERCOMPANY, só operações que geram fatura · '
+        + '<span style="text-decoration:underline dotted;cursor:help;font-weight:700;" data-tip-t="Segurança dos dados" data-tip="'
+        + 'Todas as consultas desta tela são enviadas ao Power BI com o SEU token (login delegado), nunca com uma conta de serviço. '
+        + 'O RLS do modelo é aplicado pelo próprio serviço: Faturamento, Fat. histórico, potencial, KPIs, cartões e matriz somam apenas as notas que o seu perfil pode ver. '
+        + 'Única exceção: quem é Administrador ou Membro do workspace, ou dono do modelo, não passa por RLS — para essas contas o número é o total da empresa.'
+        + '">valores no seu nível de acesso (RLS)</span>';
+      SRInterco.marcarBanner(banner);
+      await cbAplicar();
+    } catch(err){
+      banner.style.cssText = 'padding:11px 16px;border-radius:8px;font-size:13px;display:flex;align-items:center;gap:10px;background:#FEF2F2;border:1px solid #FECACA;color:#7F1D1D;';
+      banner.innerHTML = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg> ' + escH(err.message);
+      erro(err.message);                              // nao deixa as tabelas eternamente em 'Carregando...'
+    }
+  });
+  </script>
+</body>
+</html>

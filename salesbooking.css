@@ -1,0 +1,680 @@
+/* ================================================================
+   salesbooking.css — Sales Playbook (Comercial)
+   Prefixo `sbk-` para não colidir com `.sb-` (sidebar do portal).
+   Segue o Claude Design do portal: cards brancos, borda #E3EAF2,
+   raio 14px, navy #0A2E5C, Plus Jakarta Sans.
+
+   TIPOGRAFIA — escala em px INTEIROS (fracionário renderiza borrado no
+   Windows) e peso por hierarquia, não por ênfase:
+     30/22/20/17/16 = títulos (700)   |   15/14 = texto
+     13/12/11 = rótulos e chips (600) |   800 não é usado
+   Tracking negativo só a partir de 17px; abaixo disso, tracking normal.
+
+   RITMO — o respiro entre os blocos vem de DOIS lugares: o gap do
+   `.sbk-wrap` (busca × conteúdo) e o gap do `#sbk-view` (aviso × seções).
+   O `#sbk-view` é preenchido pelo JS; sem o flex dele as seções empilham
+   coladas — era o que deixava a tela com "tudo junto".
+   ================================================================ */
+
+/* (a fonte do h1 do hero é resolvida no dash-v2.css, para todos os módulos) */
+#sbk-sub { font-size: 15px; line-height: 1.65; max-width: 68ch; }
+
+.sbk-wrap {
+  padding: 26px 0 64px;
+  display: flex;
+  flex-direction: column;
+  gap: 30px;
+  /* SEM cap de largura: o conteudo preenche a margem, como antes. O respiro
+     vem do gap e do padding, nao de estreitar a coluna. */
+}
+
+/* a coluna de conteúdo que o JS preenche (aviso + seções) */
+#sbk-view {
+  display: flex;
+  flex-direction: column;
+  gap: 38px;
+}
+#sbk-view > section { min-width: 0; }
+
+/* ── Busca ─────────────────────────────────────────────────────── */
+.sbk-search {
+  position: relative;
+  background: #fff;
+  border: 1px solid #E3EAF2;
+  border-radius: 14px;
+  display: flex;
+  align-items: center;
+  gap: 13px;
+  padding: 0 20px;
+  transition: border-color .15s, box-shadow .15s;
+}
+.sbk-search:focus-within {
+  border-color: #1272C4;
+  box-shadow: 0 0 0 3px rgba(18, 114, 196, .10);
+}
+.sbk-search svg { flex: 0 0 auto; color: #1272C4; }
+.sbk-search input {
+  flex: 1;
+  min-width: 0;
+  border: none;
+  outline: none;
+  background: transparent;
+  font-family: inherit;
+  font-size: 15px;
+  color: #0A2E5C;
+  padding: 18px 0;
+}
+.sbk-search input::placeholder { color: #93A9BE; }
+.sbk-search-clear {
+  border: none;
+  background: #F0F4F9;
+  color: #5B7189;
+  border-radius: 8px;
+  padding: 6px 12px;
+  font-family: inherit;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+}
+.sbk-search-clear:hover { background: #E3EAF2; color: #0A2E5C; }
+
+/* ── Seções ────────────────────────────────────────────────────── */
+.sbk-sec-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 20px;
+  flex-wrap: wrap;
+  margin-bottom: 18px;
+}
+.sbk-sec-head h2 {
+  margin: 0;
+  font-size: 22px;
+  font-weight: 700;
+  color: #0A2E5C;
+  line-height: 1.25;
+  letter-spacing: -.45px;
+}
+.sbk-sec-head .sbk-sec-hint { font-size: 13px; font-weight: 500; color: #7C93A8; }
+/* seções do hub: o subtítulo mora embaixo do título. Jogado na outra ponta
+   da linha larga ele lia como um texto solto na tela. */
+.sbk-sec-head.sbk-sec-stack {
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 5px;
+}
+
+/* ── Aviso de conteúdo em validação ────────────────────────────── */
+.sbk-banner {
+  display: flex;
+  align-items: flex-start;
+  gap: 13px;
+  background: #FFF8EC;
+  border: 1px solid #F5E0BC;
+  border-radius: 12px;
+  padding: 15px 18px;
+  font-size: 14px;
+  line-height: 1.7;
+  color: #7A5A17;
+}
+.sbk-banner svg { flex: 0 0 auto; margin-top: 1px; color: #C08A21; }
+.sbk-banner b { color: #6A4D10; }
+
+/* ── Trilhas ───────────────────────────────────────────────────── */
+.sbk-trilhas {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 16px;
+}
+.sbk-trilha {
+  display: flex;
+  flex-direction: column;
+  background: #fff;
+  border: 1px solid #E3EAF2;
+  border-radius: 14px;
+  padding: 20px 20px 18px;
+  text-decoration: none;
+  min-width: 0;
+  transition: border-color .15s, box-shadow .15s, transform .15s;
+}
+.sbk-trilha:hover {
+  border-color: #1272C4;
+  box-shadow: 0 8px 22px rgba(10, 46, 92, .08);
+  transform: translateY(-2px);
+}
+.sbk-tr-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 14px;
+}
+.sbk-tr-nivel {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: .7px;
+  text-transform: uppercase;
+  color: #7C93A8;
+}
+.sbk-tr-pct {
+  font-size: 14px;
+  font-weight: 700;
+  color: #1272C4;
+  font-variant-numeric: tabular-nums;
+}
+.sbk-tr-pct[data-zero="1"] { color: #A8B9C9; }
+.sbk-trilha h3 {
+  margin: 0 0 8px;
+  font-size: 16px;
+  font-weight: 700;
+  color: #0A2E5C;
+  line-height: 1.4;
+  letter-spacing: normal;
+}
+.sbk-tr-desc {
+  font-size: 14px;
+  color: #5B7189;
+  line-height: 1.6;
+  margin-bottom: 20px;
+  flex: 1;
+}
+.sbk-bar {
+  height: 6px;
+  border-radius: 99px;
+  background: #EDF2F7;
+  overflow: hidden;
+  margin-bottom: 10px;
+}
+.sbk-bar i {
+  display: block;
+  height: 100%;
+  border-radius: 99px;
+  background: #1272C4;
+  transition: width .3s;
+}
+.sbk-tr-aulas { font-size: 12px; color: #7C93A8; font-weight: 500; }
+
+/* ── Capítulos ─────────────────────────────────────────────────── */
+.sbk-caps {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 16px;
+}
+.sbk-cap {
+  display: flex;
+  flex-direction: column;
+  background: #fff;
+  border: 1px solid #E3EAF2;
+  border-radius: 14px;
+  padding: 22px;
+  text-decoration: none;
+  min-width: 0;
+  transition: border-color .15s, box-shadow .15s, transform .15s;
+}
+.sbk-cap:hover {
+  border-color: #1272C4;
+  box-shadow: 0 8px 22px rgba(10, 46, 92, .08);
+  transform: translateY(-2px);
+}
+.sbk-cap-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 22px;
+}
+.sbk-ic {
+  width: 42px;
+  height: 42px;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #EAF2FB;
+  color: #1272C4;
+  flex: 0 0 auto;
+}
+.sbk-ic svg { width: 20px; height: 20px; }
+.sbk-ic[data-tom="roxo"]     { background: #EFECFB; color: #6C5CE0; }
+.sbk-ic[data-tom="vermelho"] { background: #FDECEC; color: #D4574E; }
+.sbk-ic[data-tom="verde"]    { background: #E7F5EE; color: #1E8E5A; }
+.sbk-count {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: .6px;
+  text-transform: uppercase;
+  color: #5B7189;
+  background: #F0F4F9;
+  border-radius: 99px;
+  padding: 5px 11px;
+}
+.sbk-cap h3 {
+  margin: 0 0 8px;
+  font-size: 17px;
+  font-weight: 700;
+  color: #0A2E5C;
+  line-height: 1.3;
+  letter-spacing: -.2px;
+}
+.sbk-cap-desc { font-size: 14px; color: #5B7189; line-height: 1.6; }
+
+/* ── Lista de artigos ──────────────────────────────────────────── */
+.sbk-list { display: flex; flex-direction: column; gap: 12px; }
+.sbk-item {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  background: #fff;
+  border: 1px solid #E3EAF2;
+  border-radius: 14px;
+  padding: 18px 22px;
+  text-decoration: none;
+  min-width: 0;
+  transition: border-color .15s, box-shadow .15s;
+}
+.sbk-item:hover {
+  border-color: #1272C4;
+  box-shadow: 0 6px 18px rgba(10, 46, 92, .07);
+}
+.sbk-item-n {
+  font-size: 13px;
+  font-weight: 700;
+  color: #C3D2E0;
+  flex: 0 0 auto;
+  width: 22px;
+  font-variant-numeric: tabular-nums;
+}
+.sbk-item-body { flex: 1; min-width: 0; }
+.sbk-item-t {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  font-size: 16px;
+  font-weight: 700;
+  color: #0A2E5C;
+  line-height: 1.4;
+  letter-spacing: normal;
+}
+.sbk-item-s {
+  font-size: 14px;
+  color: #7C93A8;
+  line-height: 1.55;
+  margin-top: 5px;
+}
+.sbk-item-r {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  flex: 0 0 auto;
+  font-size: 13px;
+  color: #93A9BE;
+  font-weight: 600;
+}
+.sbk-item-r svg { color: #C3D2E0; }
+.sbk-item:hover .sbk-item-r svg { color: #1272C4; }
+.sbk-item-cap {
+  font-size: 11px;
+  font-weight: 600;
+  color: #5B7189;
+  background: #F0F4F9;
+  border-radius: 7px;
+  padding: 4px 10px;
+}
+.sbk-lido {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: .5px;
+  text-transform: uppercase;
+  color: #1E8E5A;
+  background: #E7F5EE;
+  border-radius: 99px;
+  padding: 4px 10px;
+}
+.sbk-tag-rasc {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: .6px;
+  text-transform: uppercase;
+  color: #A67C10;
+  background: #FDF3DE;
+  border-radius: 6px;
+  padding: 3px 8px;
+}
+
+/* ── Cabeçalho de capítulo ─────────────────────────────────────── */
+.sbk-back {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 13px;
+  font-weight: 600;
+  color: #1272C4;
+  text-decoration: none;
+  align-self: flex-start;
+}
+.sbk-back:hover { text-decoration: underline; }
+/* na tela de capítulo o "voltar" é filho direto do #sbk-view: os 38px do gap
+   o soltariam do cabeçalho a que ele pertence. */
+#sbk-view > .sbk-back { margin-bottom: -24px; }
+.sbk-cap-head {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  background: #fff;
+  border: 1px solid #E3EAF2;
+  border-radius: 14px;
+  padding: 24px 26px;
+}
+.sbk-cap-head h2 {
+  margin: 0 0 6px;
+  font-size: 22px;
+  font-weight: 700;
+  color: #0A2E5C;
+  line-height: 1.25;
+  letter-spacing: -.4px;
+}
+.sbk-cap-head p { margin: 0; font-size: 14px; color: #5B7189; line-height: 1.6; }
+
+/* ── Artigo ────────────────────────────────────────────────────── */
+.sbk-art-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 270px;
+  gap: 24px;
+  align-items: start;
+}
+.sbk-art {
+  background: #fff;
+  border: 1px solid #E3EAF2;
+  border-radius: 14px;
+  padding: 34px 40px 38px;
+  min-width: 0;
+}
+.sbk-art h1 {
+  margin: 16px 0 12px;
+  font-size: 30px;
+  font-weight: 700;
+  color: #0A2E5C;
+  line-height: 1.22;
+  letter-spacing: -.6px;
+}
+.sbk-art-meta {
+  font-size: 13px;
+  color: #7C93A8;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  padding-bottom: 24px;
+  border-bottom: 1px solid #EDF2F7;
+}
+.sbk-art h2 {
+  margin: 36px 0 14px;
+  font-size: 20px;
+  font-weight: 700;
+  color: #0A2E5C;
+  line-height: 1.3;
+  letter-spacing: -.3px;
+  scroll-margin-top: 90px;
+}
+.sbk-art h2:first-of-type { margin-top: 28px; }
+.sbk-art p {
+  margin: 0 0 16px;
+  font-size: 15px;
+  line-height: 1.75;
+  color: #33495E;
+}
+.sbk-art ul, .sbk-art ol { margin: 0 0 20px; padding-left: 4px; list-style: none; }
+.sbk-art ul li, .sbk-art ol li {
+  position: relative;
+  padding-left: 24px;
+  margin-bottom: 10px;
+  font-size: 15px;
+  line-height: 1.75;
+  color: #33495E;
+}
+.sbk-art ul li::before {
+  content: '';
+  position: absolute;
+  left: 5px;
+  top: 11px;
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: #1272C4;
+}
+.sbk-art ol { counter-reset: sbkol; }
+.sbk-art ol li { counter-increment: sbkol; }
+.sbk-art ol li::before {
+  content: counter(sbkol);
+  position: absolute;
+  left: 0;
+  top: 2px;
+  font-size: 12px;
+  font-weight: 700;
+  color: #1272C4;
+}
+
+/* passo a passo */
+.sbk-passos { display: flex; flex-direction: column; gap: 2px; margin-bottom: 22px; }
+.sbk-passo {
+  display: flex;
+  gap: 16px;
+  padding: 15px 0;
+  border-top: 1px solid #EDF2F7;
+}
+.sbk-passo:first-child { border-top: none; padding-top: 4px; }
+.sbk-passo-n {
+  flex: 0 0 auto;
+  width: 28px;
+  height: 28px;
+  border-radius: 9px;
+  background: #EAF2FB;
+  color: #1272C4;
+  font-size: 12px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.sbk-passo-t { font-size: 15px; font-weight: 700; color: #0A2E5C; margin-bottom: 5px; }
+.sbk-passo-x { font-size: 14px; line-height: 1.7; color: #4A6076; }
+
+/* nota / callout */
+.sbk-nota {
+  display: flex;
+  gap: 13px;
+  border-radius: 12px;
+  padding: 16px 18px;
+  margin: 0 0 22px;
+  border: 1px solid;
+}
+.sbk-nota svg { flex: 0 0 auto; margin-top: 2px; }
+.sbk-nota-t { font-size: 13px; font-weight: 700; margin-bottom: 5px; }
+.sbk-nota-x { font-size: 14px; line-height: 1.7; }
+.sbk-nota[data-tom="info"]   { background: #F1F7FD; border-color: #D3E4F5; color: #1B4B78; }
+.sbk-nota[data-tom="info"] svg { color: #1272C4; }
+.sbk-nota[data-tom="alerta"] { background: #FFF8EC; border-color: #F5E0BC; color: #7A5A17; }
+.sbk-nota[data-tom="alerta"] svg { color: #C08A21; }
+.sbk-nota[data-tom="ok"]     { background: #F0F9F4; border-color: #C9E7D6; color: #1B6A46; }
+.sbk-nota[data-tom="ok"] svg { color: #1E8E5A; }
+
+/* tabela */
+.sbk-tblwrap {
+  border: 1px solid #E3EAF2;
+  border-radius: 12px;
+  overflow-x: auto;
+  margin: 0 0 22px;
+}
+.sbk-art table { width: 100%; border-collapse: collapse; min-width: 460px; }
+/* o dash-v2.css estiliza `body.dept .area-main table thead th` (10.5px/800,
+   cabeçalho de dashboard) — aqui a tabela é texto de artigo, então a regra
+   precisa da mesma especificidade para valer. */
+body.dept .area-main .sbk-art th,
+.sbk-art th {
+  text-align: left;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: .6px;
+  text-transform: uppercase;
+  color: #5B7189;
+  background: #F7FAFC;
+  padding: 12px 16px;
+  border-bottom: 1px solid #E3EAF2;
+  white-space: nowrap;
+}
+.sbk-art td {
+  font-size: 14px;
+  line-height: 1.65;
+  color: #33495E;
+  padding: 13px 16px;
+  border-bottom: 1px solid #EDF2F7;
+  vertical-align: top;
+}
+.sbk-art tr:last-child td { border-bottom: none; }
+.sbk-art td:first-child { font-weight: 700; color: #0A2E5C; }
+
+/* links "onde fazer" */
+.sbk-links { display: flex; flex-direction: column; gap: 10px; margin: 0 0 22px; }
+.sbk-link {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  border: 1px solid #E3EAF2;
+  border-radius: 10px;
+  padding: 14px 16px;
+  font-size: 14px;
+  font-weight: 600;
+  color: #1B4B78;
+  text-decoration: none;
+  transition: border-color .15s, background .15s;
+}
+.sbk-link:hover { border-color: #1272C4; background: #F7FBFF; }
+.sbk-link svg { flex: 0 0 auto; color: #93A9BE; }
+.sbk-link:hover svg { color: #1272C4; }
+.sbk-link span { flex: 1; min-width: 0; }
+
+/* termos (dicionário) */
+.sbk-termos { display: flex; flex-direction: column; margin: 0 0 22px; }
+.sbk-termo {
+  padding: 16px 0;
+  border-bottom: 1px solid #EDF2F7;
+  scroll-margin-top: 90px;
+}
+.sbk-termo:last-child { border-bottom: none; }
+.sbk-termo dt { font-size: 16px; font-weight: 700; color: #0A2E5C; margin-bottom: 6px; }
+.sbk-termo dd { margin: 0; font-size: 14px; line-height: 1.7; color: #4A6076; }
+
+/* rodapé do artigo */
+.sbk-art-foot {
+  margin-top: 36px;
+  padding-top: 24px;
+  border-top: 1px solid #EDF2F7;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  flex-wrap: wrap;
+}
+.sbk-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  border: 1px solid #E3EAF2;
+  background: #fff;
+  border-radius: 10px;
+  padding: 10px 16px;
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  color: #33495E;
+  cursor: pointer;
+  text-decoration: none;
+  transition: border-color .15s, background .15s, color .15s;
+}
+.sbk-btn:hover { border-color: #1272C4; color: #0A2E5C; }
+.sbk-btn[data-on="1"] { background: #E7F5EE; border-color: #C9E7D6; color: #1B6A46; }
+.sbk-btn svg { flex: 0 0 auto; }
+.sbk-next {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  font-weight: 600;
+  color: #1272C4;
+  text-decoration: none;
+}
+.sbk-next:hover { text-decoration: underline; }
+
+/* índice lateral do artigo */
+.sbk-toc {
+  position: sticky;
+  top: 20px;
+  background: #fff;
+  border: 1px solid #E3EAF2;
+  border-radius: 14px;
+  padding: 20px 22px;
+}
+.sbk-toc-t {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: .8px;
+  text-transform: uppercase;
+  color: #7C93A8;
+  margin-bottom: 14px;
+}
+.sbk-toc a {
+  display: block;
+  font-size: 13px;
+  line-height: 1.55;
+  color: #4A6076;
+  text-decoration: none;
+  padding: 8px 0 8px 12px;
+  border-left: 2px solid #EDF2F7;
+}
+.sbk-toc a:hover { color: #1272C4; border-left-color: #C3D2E0; }
+.sbk-toc a.on { color: #1272C4; font-weight: 600; border-left-color: #1272C4; }
+
+/* ── Estado vazio / resultados ─────────────────────────────────── */
+.sbk-empty {
+  background: #fff;
+  border: 1px dashed #D6E1EC;
+  border-radius: 14px;
+  padding: 48px 24px;
+  text-align: center;
+  font-size: 15px;
+  color: #7C93A8;
+}
+mark.sbk-hl { background: #FEF0C7; color: inherit; border-radius: 3px; padding: 0 2px; }
+
+/* ── Responsivo ────────────────────────────────────────────────── */
+@media (max-width: 1100px) {
+  #sbk-view { gap: 32px; }
+  .sbk-trilhas { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .sbk-caps    { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .sbk-art-grid { grid-template-columns: minmax(0, 1fr); }
+  .sbk-toc { position: static; order: -1; }
+}
+@media (max-width: 767.98px) {
+  .sbk-wrap { padding: 18px 0 44px; gap: 24px; }
+  #sbk-view { gap: 28px; }
+  .sbk-trilhas { grid-template-columns: minmax(0, 1fr) !important; }
+  .sbk-caps    { grid-template-columns: minmax(0, 1fr) !important; }
+  .sbk-search input { padding: 14px 0; font-size: 14px; }
+  .sbk-sec-head { margin-bottom: 14px; gap: 4px; }
+  .sbk-sec-head h2 { font-size: 19px; letter-spacing: -.3px; }
+  .sbk-item { padding: 15px 16px; gap: 12px; }
+  .sbk-item-n { display: none; }
+  .sbk-item-r .sbk-min { display: none; }
+  .sbk-cap-head { padding: 18px; gap: 13px; }
+  .sbk-cap-head h2 { font-size: 18px; }
+  .sbk-art { padding: 24px 18px 28px; border-radius: 12px; }
+  .sbk-art h1 { font-size: 24px; letter-spacing: -.4px; }
+  .sbk-art h2 { font-size: 18px; margin-top: 28px; }
+  .sbk-art p, .sbk-art ul li, .sbk-art ol li { font-size: 14px; }
+  .sbk-art-foot { flex-direction: column; align-items: stretch; }
+  .sbk-art-foot .sbk-btn { justify-content: center; }
+}

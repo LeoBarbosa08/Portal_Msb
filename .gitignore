@@ -1,0 +1,16 @@
+# Ferramentas de teste local (servidor de teste, Power BI/MSAL de mentira).
+# Nunca sobem: o Azure publicaria a pasta inteira como site.
+.claude/
+
+# Variáveis exportadas do Azure para filtrar (têm segredos)
+variaveis*.json
+
+# Node / logs
+node_modules/
+*.log
+npm-debug.log*
+
+# Sistema
+Thumbs.db
+desktop.ini
+.DS_Store

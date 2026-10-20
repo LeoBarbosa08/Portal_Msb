@@ -1,0 +1,202 @@
+﻿<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Agente de Vendas · Biomedical</title>
+  <link rel="stylesheet" href="../styles.css?v=14">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../dash-v2.css?v=3">
+  <!-- Layout v3 (Claude Design · animado): fonte + camada visual + motor de animações -->
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300..800&family=Manrope:wght@400..800&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../portal-v3.css?v=2">
+  <script src="../portal-motion.js?v=3" defer></script>
+  <!-- Tema claro/escuro (menu do avatar): marca o <html> antes de pintar + camada escura -->
+  <script>try{if(localStorage.getItem('bm-tema')==='escuro')document.documentElement.setAttribute('data-tema','escuro')}catch(e){}</script>
+  <link rel="stylesheet" href="../portal-tema.css?v=1">
+  <script src="../portal-tema.js?v=1" defer></script>
+  <!-- Celular (varredura 15/10/26): só vale em tela < 768px; no computador não se aplica -->
+  <link rel="stylesheet" href="../portal-mobile.css?v=1" media="(max-width: 767.98px)">
+  <script src="../portal-mobile.js?v=1" defer></script>
+</head>
+<body class="dept">
+
+  <!-- HEADER -->
+  <header class="site-header">
+    <div class="container">
+      <a href="../index.html" class="brand" aria-label="Biomedical — Portal Corporativo">
+        <img class="brand-logo" src="/icons/icon-192.png" alt="Biomedical" onerror="this.dataset.failed='true'">
+        <span class="brand-fallback">Biomedical</span>
+      </a>
+      <span class="header-divider"></span>
+      <nav class="header-nav">
+        <a href="../index.html">Início</a>
+        <a href="../index.html#areas">Áreas</a>
+        <a href="../index.html#sistemas">Sistemas</a>
+        <a href="../index.html#avisos">Avisos</a>
+        <a href="../index.html#contato">Contato</a>
+      </nav>
+    </div>
+  </header>
+
+  <!-- AREA HEADER -->
+  <section class="area-header">
+    <div class="container">
+      <div class="breadcrumb">
+        <a href="../index.html">Portal</a>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18l6-6-6-6"/></svg>
+        <a href="comercial.html">Comercial</a>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18l6-6-6-6"/></svg>
+        <span>Agente de Vendas</span>
+      </div>
+      <h1>Agente de Vendas</h1>
+      <p>Assistente inteligente para análise de vendas, clientes e oportunidades comerciais.</p>
+    </div>
+  </section>
+
+  <!-- BODY -->
+  <div class="area-body">
+    <div class="container">
+      <div class="area-grid">
+
+        <!-- SIDEBAR -->
+        <aside class="area-sidebar">
+          <div class="sb-card">
+            <div class="sb-head">
+              <span class="sb-ic"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="8.5" cy="7" r="4"/><path d="M20 8v6"/><path d="M23 11h-6"/></svg></span>
+              <div><div class="sb-tt">Comercial</div><div class="sb-st">Departamento</div></div>
+            </div>
+            <nav>
+              <div class="sb-section">Navegação</div>
+              <a href="comercial.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>Visão geral</a>
+              <div class="sb-group">
+                <button type="button" class="sb-parent"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>SalesReport<svg class="sb-caret" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg></button>
+                <div class="sb-children">
+                  <a href="comercial-sales-report.html">Visão geral</a>
+                  <a href="comercial-vendas.html">Análise de Vendas</a>
+                  <a href="comercial-clientes.html">Análise de Clientes</a>
+                  <a href="comercial-novos-negocios.html">Novos Negócios</a>
+                </div>
+              </div>
+              <a href="comercial-funil.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 7V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v2"/></svg>Negociações</a>
+              <a href="comercial-fca.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="9" y1="15" x2="15" y2="15"/></svg>FCA</a>
+              <a href="comercial-materiais.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>Materiais e Recursos</a>
+              <div class="sb-divider"></div>
+              <div class="sb-section">AUTOMAÇÕES</div>
+              <a href="#" class="btn-placeholder"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>Automação de Cotações</a>
+              <a href="#"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>Envio de Propostas</a>
+              <a href="#"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/></svg>Pipeline Automático</a>
+              <div class="sb-divider"></div>
+              <div class="sb-section">AGENTES</div>
+              <a href="agente-comercial.html" class="active"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8"/><path d="M12 17v4"/></svg>Agente de Vendas</a>
+              <a href="agente-comercial.html"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>Análise de Clientes IA</a>
+              <div class="sb-divider"></div>
+              <div class="sb-section">Atalhos</div>
+              <a href="https://biomedical.lightning.force.com/lightning/page/home" target="_blank" rel="noopener"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>Salesforce</a>
+              <a href="comercial.html#metas"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></svg>Metas &amp; Pipeline</a>
+            </nav>
+          </div>
+          <a href="../index.html" class="sb-back"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></svg>Voltar ao Portal</a>
+        </aside>
+
+        <!-- MAIN CONTENT -->
+        <div class="area-main">
+          <section style="padding:32px 0 60px;">
+            <div class="container">
+              <div style="display:flex;flex-direction:column;gap:20px;">
+                <div style="background:#fff;border:1px solid var(--border);border-radius:16px;overflow:hidden;box-shadow:var(--shadow-lg);">
+                  <!-- Chat header -->
+                  <div style="background:var(--bm-blue-900);padding:16px 20px;display:flex;align-items:center;gap:12px;">
+                    <span style="width:38px;height:38px;border-radius:50%;background:rgba(255,255,255,0.15);border:1px solid rgba(255,255,255,0.25);display:inline-flex;align-items:center;justify-content:center;color:var(--bm-green-500);flex-shrink:0;">
+                      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+                    </span>
+                    <div>
+                      <div style="font-family:var(--font-display);font-size:15px;font-weight:600;color:#fff;">Agente de Vendas</div>
+                      <div style="font-size:12px;color:rgba(255,255,255,0.7);display:flex;align-items:center;gap:6px;margin-top:2px;">
+                        <span style="width:7px;height:7px;border-radius:50%;background:var(--bm-green-500);display:inline-block;"></span>
+                        Online · Biomedical IA
+                      </div>
+                    </div>
+                  </div>
+                  <!-- WebChat (Bot Framework) — token gerado no servidor -->
+                  <div id="webchat" role="main" style="height:600px;width:100%;background:#fff;"></div>
+                </div>
+              </div>
+            </div>
+          </section>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+  <!-- FOOTER -->
+  <footer class="site-footer">
+    <div class="container">
+      <div class="bm-footer-bottom">
+        <span>© 2026 Biomedical · Portal Corporativo</span>
+        <a href="comercial.html">← Voltar a Comercial</a>
+      </div>
+    </div>
+  </footer>
+
+  <script src="../script.js?v=8"></script>
+<script src="../nav-sidebar.js?v=52"></script>
+
+  <!-- Bot Framework WebChat -->
+  <script src="https://cdn.botframework.com/botframework-webchat/latest/webchat.js"></script>
+  <script>
+  (async function () {
+    const el = document.getElementById('webchat');
+    if (!el || !window.WebChat) return;
+
+    function showError(msg) {
+      el.innerHTML = '<div style="padding:28px 26px;display:flex;flex-direction:column;gap:10px;color:#7F1D1D;font-family:var(--font-body,sans-serif);font-size:14px;line-height:1.55;">'
+        + '<strong style="font-size:15px;">Não foi possível conectar ao Agente de Vendas.</strong>'
+        + '<span style="color:#475569;">' + msg + '</span>'
+        + '<span style="color:#94A3B8;font-size:12.5px;">Verifique se o segredo <code>DIRECTLINE_SECRET</code> está configurado nas App Settings do Static Web App.</span>'
+        + '</div>';
+    }
+
+    try {
+      const res = await fetch('/api/directline-token', { method: 'POST' });
+      if (!res.ok) throw new Error('Token indisponível (HTTP ' + res.status + ').');
+      const data = await res.json();
+      if (!data.token) throw new Error(data.error || 'Token vazio.');
+
+      const styleOptions = {
+        // Marca Biomedical
+        accent: '#0A4FA0',
+        backgroundColor: '#FFFFFF',
+        bubbleBackground: '#F1F5F9',
+        bubbleTextColor: '#0F172A',
+        bubbleBorderRadius: 14,
+        bubbleFromUserBackground: '#002E5D',
+        bubbleFromUserTextColor: '#FFFFFF',
+        bubbleFromUserBorderRadius: 14,
+        botAvatarInitials: 'BV',
+        userAvatarInitials: 'EU',
+        botAvatarBackgroundColor: '#002E5D',
+        userAvatarBackgroundColor: '#0A4FA0',
+        sendBoxButtonColor: '#0A4FA0',
+        sendBoxHeight: 52,
+        hideUploadButton: true,
+        rootHeight: '100%',
+        rootWidth: '100%'
+      };
+
+      window.WebChat.renderWebChat({
+        directLine: window.WebChat.createDirectLine({ token: data.token }),
+        userID: data.userId,
+        locale: 'pt-BR',
+        styleOptions: styleOptions
+      }, el);
+    } catch (e) {
+      showError((e && e.message) || 'Erro inesperado.');
+    }
+  })();
+  </script>
+</body>
+</html>

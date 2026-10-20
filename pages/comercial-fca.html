@@ -1,0 +1,1020 @@
+﻿<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>FCA · Comercial · Biomedical</title>
+  <link rel="stylesheet" href="../styles.css?v=14">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../dash-v2.css?v=3">
+  <script src="https://unpkg.com/@azure/msal-browser@2.38.3/lib/msal-browser.min.js"></script>
+  <style>
+    .fca-forecast-card{background:#fff;border:1px solid var(--border);border-radius:var(--radius);padding:18px 20px;margin-bottom:18px;}
+    .ffc-head{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;margin-bottom:16px;}
+    .ffc-unit-label{font-size:10.5px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--text-4);margin-bottom:3px;}
+    .ffc-unit{font-family:var(--font-display);font-size:19px;font-weight:800;color:var(--bm-blue-900);line-height:1.1;}
+    .ffc-badge{font-size:11px;font-weight:600;color:var(--text-3);background:var(--bm-blue-50);border:1px solid var(--border);border-radius:999px;padding:4px 12px;white-space:nowrap;}
+    .ffc-kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:16px;}
+    @media(max-width:760px){.ffc-kpis{grid-template-columns:repeat(2,1fr);}}
+    .ffc-kpi{border:1px solid var(--border);border-radius:10px;padding:12px 14px;position:relative;overflow:hidden;background:#fff;}
+    .ffc-kpi::before{content:'';position:absolute;left:0;top:0;bottom:0;width:3px;background:var(--bm-blue-600);}
+    .ffc-kpi.meta::before{background:var(--text-3);}
+    .ffc-kpi.accent::before{background:var(--bm-green-600);}
+    .ffc-kpi.proj::before{background:#b45309;}
+    .ffc-kpi .l{font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.04em;color:var(--text-3);margin-bottom:5px;}
+    .ffc-kpi .v{font-family:var(--font-display);font-size:18px;font-weight:800;color:var(--bm-blue-900);line-height:1;}
+    .ffc-bar-labels{display:flex;justify-content:space-between;font-size:12px;font-weight:700;color:var(--text-2);margin-bottom:6px;}
+    .ffc-bar{position:relative;height:14px;border-radius:999px;background:var(--bm-blue-50);overflow:hidden;display:flex;}
+    .ffc-bar-real{height:100%;background:var(--bm-blue-600);transition:width .4s;}
+    .ffc-bar-fc{height:100%;background:var(--bm-green-500,#22c55e);transition:width .4s;}
+    .ffc-legend{display:flex;flex-wrap:wrap;gap:16px;margin-top:8px;font-size:11.5px;color:var(--text-3);}
+    .ffc-legend i{display:inline-block;width:10px;height:10px;border-radius:3px;margin-right:5px;vertical-align:middle;}
+    .ffc-legend i.r{background:var(--bm-blue-600);}
+    .ffc-legend i.f{background:var(--bm-green-500,#22c55e);}
+    .ffc-legend b{color:var(--text);}
+    #fca-table .fca-acao-cell{white-space:pre-wrap;word-break:break-word;max-width:360px;min-width:200px;line-height:1.4;color:var(--text-2);}
+    .ffc-unit-sel{font-family:var(--font-display);font-size:18px;font-weight:800;color:var(--bm-blue-900);line-height:1.1;border:1px solid var(--border);border-radius:8px;padding:5px 10px;background:#fff;cursor:pointer;max-width:340px;}
+    .ffc-unit-sel:focus{outline:none;border-color:var(--bm-blue-500);box-shadow:0 0 0 3px var(--bm-blue-50);}
+    .ffc-filiais-wrap{margin-top:18px;border-top:1px solid var(--border);padding-top:14px;}
+    .ffc-filiais-title{font-size:12px;font-weight:700;color:var(--text-2);margin-bottom:10px;}
+    .ffc-filiais-title span{font-weight:500;color:var(--text-4);}
+    .ffc-filiais-tbl{width:100%;border-collapse:collapse;font-size:12px;min-width:1060px;}
+    .ffc-filiais-tbl thead th{text-align:right;padding:7px 12px;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.03em;color:var(--text-3);border-bottom:1px solid var(--border);white-space:nowrap;}
+    .ffc-filiais-tbl thead th:first-child{text-align:left;}
+    .ffc-filiais-tbl tbody td{padding:7px 12px;border-bottom:1px solid var(--border);text-align:right;font-variant-numeric:tabular-nums;color:var(--text-2);white-space:nowrap;}
+    .ffc-filiais-tbl tbody td:first-child{text-align:left;font-weight:700;color:var(--text);cursor:pointer;}
+    .ffc-filiais-tbl tbody tr:hover td{background:var(--bm-blue-50);}
+    .ffc-filiais-tbl tbody tr.sel td{background:var(--bm-blue-50);}
+    .ffc-filiais-tbl tfoot td{padding:8px 12px;text-align:right;font-weight:800;color:var(--bm-blue-900);border-top:2px solid var(--border-2);}
+    .ffc-filiais-tbl tfoot td:first-child{text-align:left;}
+    .ffc-pct-ok{color:var(--bm-green-700,#15803d);font-weight:700;}
+    .ffc-pct-warn{color:#b45309;font-weight:700;}
+    .ff-fc-edit{width:118px;text-align:right;border:1px solid var(--border);border-radius:6px;padding:4px 8px;font-size:12px;font-family:var(--font-body);font-variant-numeric:tabular-nums;color:var(--bm-blue-900);font-weight:700;background:#fff;}
+    .ff-fc-edit:focus{outline:none;border-color:var(--bm-blue-500);box-shadow:0 0 0 3px var(--bm-blue-50);}
+    .ff-fc-edit.manual{border-color:var(--bm-green-600,#16a34a);background:#f0fdf4;}
+    .ff-fc-reset{margin-left:4px;border:none;background:none;cursor:pointer;color:var(--text-3);font-size:14px;line-height:1;vertical-align:middle;}
+    .ff-fc-reset:hover{color:var(--bm-blue-700);}
+    .ff-fc-auto{color:var(--text-4);font-style:italic;}
+    /* edição inline das fichas */
+    #fca-table .fca-ed{width:100%;box-sizing:border-box;border:1px solid var(--border);border-radius:6px;padding:5px 7px;font-size:12.5px;font-family:var(--font-body);color:var(--text);}
+    #fca-table .fca-ed:focus{outline:none;border-color:var(--bm-blue-500);box-shadow:0 0 0 3px var(--bm-blue-50);}
+    #fca-table .fca-ed-valor{text-align:right;font-variant-numeric:tabular-nums;}
+    #fca-table textarea.fca-ed{resize:vertical;min-height:34px;line-height:1.35;}
+    #fca-table tr.fca-editing td{background:var(--bm-blue-50);vertical-align:top;}
+    #fca-table .fca-edit,#fca-table .fca-save,#fca-table .fca-cancel{border:none;background:none;cursor:pointer;color:var(--text-3);padding:3px 4px;border-radius:5px;vertical-align:middle;line-height:1;}
+    #fca-table .fca-edit:hover{color:var(--bm-blue-700);background:#fff;}
+    #fca-table .fca-save{color:var(--bm-green-700,#15803d);font-size:15px;font-weight:800;}
+    #fca-table .fca-save:hover{background:#f0fdf4;}
+    #fca-table .fca-cancel{color:var(--danger);font-size:15px;font-weight:800;}
+    #fca-table .fca-cancel:hover{background:#fef2f2;}
+    #fca-table td.fca-mod{font-size:12px;white-space:nowrap;}
+    #fca-table td.fca-mod .who{font-weight:600;color:var(--text-2);}
+    #fca-table td.fca-mod .when{font-size:11px;color:var(--text-3);}
+    /* histórico de alterações */
+    .fca-hist-btn{border:none;background:none;cursor:pointer;color:var(--bm-blue-600);padding:0 2px;vertical-align:middle;line-height:1;margin-left:4px;}
+    .fca-hist-btn:hover{color:var(--bm-blue-800);}
+    .fca-hist-overlay{position:fixed;inset:0;background:rgba(15,23,42,.45);display:none;align-items:center;justify-content:center;z-index:1000;padding:20px;}
+    .fca-hist-overlay.open{display:flex;}
+    .fca-hist-modal{background:#fff;border-radius:14px;width:min(560px,100%);max-height:82vh;display:flex;flex-direction:column;box-shadow:0 20px 60px rgba(0,0,0,.3);overflow:hidden;}
+    .fca-hist-head{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;padding:18px 20px;border-bottom:1px solid var(--border);}
+    .fca-hist-tt{font-family:var(--font-display);font-size:16px;font-weight:800;color:var(--bm-blue-900);}
+    .fca-hist-sub{font-size:12.5px;color:var(--text-3);margin-top:2px;}
+    .fca-hist-close{border:none;background:none;font-size:18px;cursor:pointer;color:var(--text-3);line-height:1;}
+    .fca-hist-close:hover{color:var(--text);}
+    .fca-hist-body{padding:18px 20px;overflow:auto;}
+    .fca-hist-item{display:flex;gap:12px;padding-bottom:18px;position:relative;}
+    .fca-hist-item:not(:last-child)::before{content:'';position:absolute;left:5px;top:14px;bottom:0;width:2px;background:var(--border);}
+    .fca-hist-dot{width:12px;height:12px;border-radius:50%;background:var(--bm-blue-600);margin-top:2px;flex-shrink:0;border:2px solid #fff;box-shadow:0 0 0 1px var(--border);}
+    .fca-hist-dot.create{background:var(--bm-green-600,#16a34a);}
+    .fca-hist-content{flex:1;min-width:0;}
+    .fca-hist-meta{display:flex;gap:8px;align-items:baseline;flex-wrap:wrap;}
+    .fca-hist-meta .by{font-weight:700;color:var(--text);font-size:13px;}
+    .fca-hist-meta .at{font-size:11.5px;color:var(--text-3);}
+    .fca-hist-act{font-size:12.5px;color:var(--text-2);margin-top:3px;}
+    .fca-hist-chg{display:flex;gap:6px;align-items:baseline;flex-wrap:wrap;margin-top:4px;font-size:12px;}
+    .fca-hist-chg .fld{font-weight:700;color:var(--text-3);min-width:54px;}
+    .fca-hist-chg .from{color:var(--danger);text-decoration:line-through;}
+    .fca-hist-chg .arr{color:var(--text-4);}
+    .fca-hist-chg .to{color:var(--bm-green-700,#15803d);font-weight:600;}
+    .fca-hist-empty{color:var(--text-3);font-size:13px;text-align:center;padding:20px;}
+    /* aviso do armazenamento/escopo, mensagem do formulário e autor da ficha */
+    .fca-aviso{border-radius:10px;padding:11px 14px;margin-bottom:14px;font-size:13px;line-height:1.45;border:1px solid;}
+    .fca-aviso--warn{background:#fffbeb;border-color:#fcd34d;color:#92400e;}
+    .fca-aviso--err{background:#fef2f2;border-color:#fca5a5;color:#991b1b;}
+    .fca-msg{margin-top:12px;font-size:12.5px;font-weight:600;}
+    .fca-msg--ok{color:var(--bm-green-700,#15803d);}
+    .fca-msg--err{color:var(--danger,#b91c1c);}
+    .fca-aviso[hidden],.fca-msg[hidden]{display:none;}
+    .fca-add-btn:disabled{opacity:.55;cursor:not-allowed;}
+    #fca-table td.col-mono{white-space:nowrap;}
+    #fca-table .fca-autor{font-size:11px;color:var(--text-3);margin-top:2px;}
+    /* valor DE FATO faturado — ficha concluída sai do forecast e vale por ele */
+    .ffc-kpi .s{font-size:10.5px;font-weight:600;color:var(--text-3);margin-top:6px;line-height:1.3;}
+    .ffc-kpi .s:empty{display:none;}
+    #fca-table .fca-fat{font-size:11px;font-weight:700;color:var(--bm-green-700,#15803d);margin-top:3px;white-space:nowrap;}
+    #fca-table .fca-fat.falta{color:#b45309;font-weight:600;}
+    #fca-table .fca-ed-fat{margin-top:7px;}
+    #fca-table .fca-ed-fat .lb{display:block;text-align:right;font-size:9.5px;font-weight:700;text-transform:uppercase;letter-spacing:.04em;color:var(--bm-green-700,#15803d);margin-bottom:3px;}
+    #fca-table .fca-ed-valor-fat{border-color:var(--bm-green-600,#16a34a);background:#f0fdf4;}
+    .fca-field[hidden]{display:none;}
+    .fca-field.faturado label{color:var(--bm-green-700,#15803d);}
+    .fca-field.faturado input{border-color:var(--bm-green-600,#16a34a);background:#f0fdf4;}
+    /* cancelada: fica na lista como registro, mas não soma em nada */
+    #fca-table .badge--cancelado{background:#f1f5f9;color:#64748b;}
+    #fca-table tr.fca-cancelada td:not(:last-child){opacity:.62;}
+    #fca-table .fca-fat.cancel{color:var(--text-3);font-weight:600;}
+  </style>
+<script src="../pbi-throttle.js?v=3" data-bi-trava="off"></script>
+  <!-- Layout v3 (Claude Design · animado): fonte + camada visual + motor de animações -->
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300..800&family=Manrope:wght@400..800&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../portal-v3.css?v=2">
+  <script src="../portal-motion.js?v=3" defer></script>
+  <!-- Tema claro/escuro (menu do avatar): marca o <html> antes de pintar + camada escura -->
+  <script>try{if(localStorage.getItem('bm-tema')==='escuro')document.documentElement.setAttribute('data-tema','escuro')}catch(e){}</script>
+  <link rel="stylesheet" href="../portal-tema.css?v=1">
+  <script src="../portal-tema.js?v=1" defer></script>
+  <!-- Celular (varredura 15/10/26): só vale em tela < 768px; no computador não se aplica -->
+  <link rel="stylesheet" href="../portal-mobile.css?v=1" media="(max-width: 767.98px)">
+  <script src="../portal-mobile.js?v=1" defer></script>
+</head>
+<body class="dept">
+
+  <header class="site-header">
+    <div class="container">
+      <a href="../index.html" class="brand" aria-label="Biomedical — Portal Corporativo">
+        <img class="brand-logo" src="/icons/icon-192.png" alt="Biomedical" onerror="this.dataset.failed='true'">
+        <span class="brand-fallback">Biomedical</span>
+      </a>
+      <nav class="header-nav">
+        <a href="../index.html">Início</a>
+        <a href="../index.html#areas">Áreas</a>
+        <a href="../index.html#sistemas">Sistemas</a>
+        <a href="../index.html#avisos">Avisos</a>
+        <a href="../index.html#contato">Contato</a>
+      </nav>
+    </div>
+  </header>
+
+  <section class="area-header">
+    <div class="container">
+      <div class="breadcrumb">
+        <a href="../index.html">Portal</a><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18l6-6-6-6"/></svg>
+        <a href="comercial.html">Comercial</a><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18l6-6-6-6"/></svg>
+        <span>FCA</span>
+      </div>
+      <div class="area-header-top">
+        <div>
+          <h1>FCA · Fichas de Atividade Comercial</h1>
+          <p>Inclua e acompanhe suas fichas por mês — cliente, valor, estratégia de venda, data e status.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <div class="area-body">
+    <div class="container">
+      <div class="area-grid">
+
+        <aside class="area-sidebar">
+          <div class="sb-card">
+            <div class="sb-head">
+              <span class="sb-ic"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="8.5" cy="7" r="4"/><path d="M20 8v6"/><path d="M23 11h-6"/></svg></span>
+              <div><div class="sb-tt">Comercial</div><div class="sb-st">Departamento</div></div>
+            </div>
+            <nav>
+              <div class="sb-section">Navegação</div>
+              <a href="comercial.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>Visão geral</a>
+              <div class="sb-group">
+                <button type="button" class="sb-parent"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>Sales Report<svg class="sb-caret" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg></button>
+                <div class="sb-children">
+                  <a href="comercial-vendas.html">Análise de Vendas</a>
+                  <a href="comercial-clientes.html">Análise de Clientes</a>
+                  <a href="comercial-novos-negocios.html">Novos Negócios</a>
+                </div>
+              </div>
+              <a href="comercial-funil.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 7V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v2"/></svg>Negociações</a>
+              <a href="comercial-fca.html" class="active"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="9" y1="15" x2="15" y2="15"/></svg>FCA</a>
+              <div class="sb-group">
+                <button type="button" class="sb-parent"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>Materiais e Recursos<svg class="sb-caret" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg></button>
+                <div class="sb-children">
+                  <a href="comercial-materiais.html#materiais">Materiais</a>
+                  <a href="comercial-materiais.html#proctoria">Proctoria</a>
+                  <a href="comercial-materiais.html#processo">Como funciona</a>
+                </div>
+              </div>
+              
+              <div class="sb-divider"></div>
+              <div class="sb-section">AUTOMAÇÕES</div>
+              <a href="#" class="btn-placeholder"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>Automações de Cotações</a>
+              <a href="#"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>Envio de Propostas</a>
+              <a href="#"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/></svg>Pipeline Automático</a>
+              <div class="sb-divider"></div>
+              <div class="sb-section">AGENTES</div>
+              <a href="agente-comercial.html"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="10" rx="2"/><path d="M12 11V7"/><circle cx="12" cy="5" r="2"/><circle cx="8" cy="16" r="1" fill="currentColor"/><circle cx="16" cy="16" r="1" fill="currentColor"/></svg>Agente de Vendas</a>
+              <a href="agente-comercial.html"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>Análise de Clientes IA</a>
+              <div class="sb-section">Atalhos</div>
+              <a href="https://biomedical.lightning.force.com/lightning/page/home" target="_blank" rel="noopener"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>Salesforce</a>
+              <a href="comercial.html#metas"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></svg>Metas &amp; Pipeline</a>
+            </nav>
+          </div>
+          <a href="../index.html" class="sb-back"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></svg>Voltar ao Portal</a>
+        </aside>
+
+        <div class="area-main">
+          <section class="fin-section fin-section--last">
+            <div class="container">
+              <div class="fca-toolbar">
+                <label class="az-filter">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+                  <span class="az-filter-label">Mês</span>
+                  <select id="fca-month"></select>
+                </label>
+                <span class="az-sub" id="fca-summary" style="margin:0;"></span>
+              </div>
+
+              <!-- ── FORECAST DA FILIAL (Power BI · RLS por unidade) ── -->
+              <div class="fca-forecast-card" id="fca-forecast">
+                <div class="ffc-head">
+                  <div>
+                    <div class="ffc-unit-label">Unidade de negócio</div>
+                    <select id="ff-unidade-sel" class="ffc-unit-sel"><option value="">conectando…</option></select>
+                  </div>
+                  <span class="ffc-badge" id="ff-status">Power BI</span>
+                </div>
+                <div class="ffc-kpis">
+                  <div class="ffc-kpi"><div class="l">Faturamento Real <span id="ff-mes-lbl"></span></div><div class="v" id="ff-real">—</div></div>
+                  <div class="ffc-kpi meta"><div class="l">Meta do mês</div><div class="v" id="ff-meta">—</div></div>
+                  <div class="ffc-kpi accent"><div class="l">Forecast (FCAs)</div><div class="v" id="ff-fc">—</div><div class="s" id="ff-fc-sub"></div></div>
+                  <div class="ffc-kpi proj"><div class="l">Real + Forecast</div><div class="v" id="ff-proj">—</div></div>
+                </div>
+                <div class="ffc-bar-wrap">
+                  <div class="ffc-bar-labels"><span>Atingimento da meta</span><span id="ff-pct">—</span></div>
+                  <div class="ffc-bar"><div class="ffc-bar-real" id="ff-bar-real" style="width:0;"></div><div class="ffc-bar-fc" id="ff-bar-fc" style="width:0;"></div></div>
+                  <div class="ffc-legend">
+                    <span><i class="r"></i>Realizado <b id="ff-pct-real">—</b></span>
+                    <span><i class="f"></i>Com forecast <b id="ff-pct-proj">—</b></span>
+                    <span id="ff-gap-wrap">Gap p/ meta: <b id="ff-gap">—</b></span>
+                    <span style="margin-left:auto;">Mesmo recorte do Sales Report · sem intercompany · só gera fatura a receber</span>
+                  </div>
+                </div>
+                <div class="ffc-filiais-wrap" id="ff-filiais-wrap" style="display:none;">
+                  <div class="ffc-filiais-title">Todas as filiais <span>· visão gerencial · mês selecionado</span></div>
+                  <div style="overflow:auto;">
+                    <table class="ffc-filiais-tbl">
+                      <thead><tr><th>Unidade de Negócio</th><th>Faturamento Real</th><th>Meta</th><th>%</th><th>Forecast (FCA)</th><th>Faturado (FCA)</th><th>Real + Forecast</th><th>% c/ forecast</th></tr></thead>
+                      <tbody id="ff-filiais-rows"></tbody>
+                    </table>
+                  </div>
+                </div>
+              </div>
+
+              <div class="fca-aviso" id="fca-aviso" role="status" hidden></div>
+              <div class="fca-form-card">
+                <h3 style="margin:0 0 16px;font-size:16px;">Incluir FCA</h3>
+                <form id="fca-form" class="fca-form-grid">
+                  <div class="fca-field col-2"><label>Cliente</label><input type="text" id="f-cliente" placeholder="Nome do cliente" required></div>
+                  <div class="fca-field"><label>Valor (R$)</label><input type="number" id="f-valor" placeholder="0,00" min="0" step="0.01" required></div>
+                  <div class="fca-field col-2"><label>Unidade de Negócio</label><select id="f-unidade" required><option value="">—</option></select></div>
+                  <div class="fca-field col-full"><label>Ação</label><textarea id="f-acao" rows="3" placeholder="Descreva a ação (texto livre, pode ser longo)…"></textarea></div>
+                  <div class="fca-field"><label>Data</label><input type="date" id="f-data" required></div>
+                  <div class="fca-field"><label>Status</label><select id="f-status"><option>Pendente</option><option>Em andamento</option><option>Concluído</option></select></div>
+                  <div class="fca-field faturado" id="f-faturado-wrap" hidden><label>Valor faturado (R$)</label><input type="number" id="f-valor-faturado" placeholder="0,00" min="0" step="0.01"></div>
+                  <div class="fca-field"><label>&nbsp;</label><button type="submit" class="fca-add-btn"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>Incluir</button></div>
+                </form>
+                <div class="fca-msg" id="fca-form-msg" role="status" hidden></div>
+              </div>
+              <div class="az-chart-card" style="padding:0;overflow:hidden;">
+                <div style="padding:20px 24px 0;display:flex;align-items:flex-end;justify-content:space-between;gap:16px;flex-wrap:wrap;">
+                  <div><h3 id="fca-title">Fichas do mês</h3><div class="az-sub" id="fca-sub">Registros incluídos por você neste mês</div></div>
+                  <div class="search-wrap">
+                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+                    <input type="text" class="search-input" id="fca-search" placeholder="Buscar cliente ou estratégia…">
+                  </div>
+                </div>
+                <div class="az-matrix-wrap" style="border:none;">
+                  <table class="fin-table" id="fca-table" style="min-width:1180px;">
+                    <thead><tr><th>Ficha</th><th class="col-nome">Cliente</th><th>Unidade de Negócio</th><th class="col-num">Valor</th><th>Ação</th><th>Data</th><th>Status</th><th>Modificado</th><th></th></tr></thead>
+                    <tbody id="fca-rows"></tbody>
+                  </table>
+                </div>
+                <div class="empty-state hidden" id="fca-empty" style="padding:48px;">
+                  <svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+                  <p>Nenhuma FCA incluída para este mês. Use o formulário acima para começar.</p>
+                </div>
+                <div style="padding:14px 24px;border-top:1px solid var(--border);font-size:12.5px;color:var(--text-3);" id="fca-foot"></div>
+              </div>
+            </div>
+          </section>
+        </div><!-- /area-main -->
+      </div>
+    </div>
+  </div>
+
+  <!-- FOOTER -->
+  <footer class="site-footer">
+    <div class="container">
+      <div class="bm-footer-grid">
+
+        <div class="bm-footer-col">
+          <img class="footer-logo" src="/icons/icon-192.png" alt="Biomedical">
+          <h5>Unidades</h5>
+          <div class="bm-units">
+            <div class="bm-unit"><span class="city">Belo Horizonte</span><a href="tel:+553121294000">(31) 2129-4000</a></div>
+            <div class="bm-unit"><span class="city">São Paulo</span><a href="tel:+551136626263">(11) 3662-6263</a></div>
+            <div class="bm-unit"><span class="city">Rio de Janeiro</span><a href="tel:+552133115376">(21) 3311-5376</a></div>
+            <div class="bm-unit"><span class="city">Curitiba</span><a href="tel:+554132093960">(41) 3209-3960</a></div>
+            <div class="bm-unit"><span class="city">Recife</span><a href="tel:+558130978110">(81) 3097-8110</a></div>
+            <div class="bm-unit"><span class="city">Porto Alegre</span><a href="tel:+555135739515">(51) 3573-9515</a></div>
+          </div>
+          <a href="https://api.whatsapp.com/send?phone=553121294000&text=Ol%C3%A1,%20gostaria%20de%20mais%20informa%C3%A7%C3%B5es%20sobre%20a%20Biomedical." target="_blank" rel="noopener" class="bm-whatsapp">
+            <svg viewBox="0 0 24 24" fill="currentColor"><path d="M.057 24l1.687-6.163a11.867 11.867 0 0 1-1.587-5.946C.16 5.335 5.495 0 12.05 0a11.817 11.817 0 0 1 8.413 3.488 11.824 11.824 0 0 1 3.48 8.414c-.003 6.557-5.338 11.892-11.893 11.892a11.9 11.9 0 0 1-5.688-1.448L.057 24zm6.597-3.807c1.676.995 3.276 1.591 5.392 1.592 5.448 0 9.886-4.434 9.889-9.885.002-5.462-4.415-9.89-9.881-9.892-5.452 0-9.887 4.434-9.889 9.884a9.86 9.86 0 0 0 1.515 5.26l-.999 3.648 3.973-1.042zm11.387-5.464c-.074-.124-.272-.198-.57-.347-.297-.149-1.758-.868-2.031-.967-.272-.099-.47-.149-.669.149-.198.297-.768.967-.941 1.165-.173.198-.347.223-.644.074-.297-.149-1.255-.462-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.297-.347.446-.521.151-.172.2-.296.3-.495.099-.198.05-.372-.025-.521-.075-.148-.669-1.611-.916-2.206-.242-.579-.487-.501-.669-.51l-.57-.01c-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.095 3.2 5.076 4.487.71.306 1.263.489 1.694.626.712.226 1.36.194 1.872.118.571-.085 1.758-.719 2.006-1.413.248-.695.248-1.29.173-1.414z"/></svg>
+            Entre em contato!
+          </a>
+        </div>
+
+        <div class="bm-footer-col">
+          <h5>Sobre</h5>
+          <ul>
+            <li><a href="https://biomedical.com.br/institucional/" target="_blank" rel="noopener">Nosso Legado</a></li>
+            <li><a href="https://biomedical.com.br/#hub" target="_blank" rel="noopener">HUB de Negócios</a></li>
+            <li><a href="https://biomedical.com.br/fale-conosco/" target="_blank" rel="noopener">Grupo MSBIO</a></li>
+            <li><a href="https://biomedical.com.br/institucional/#certificacoes" target="_blank" rel="noopener">Certificações</a></li>
+            <li><a href="https://biomedical.com.br/fale-conosco/" target="_blank" rel="noopener">Imprensa</a></li>
+            <li><a href="https://vemprabiomedical.gupy.io/" target="_blank" rel="noopener">Carreira</a></li>
+          </ul>
+        </div>
+
+        <div class="bm-footer-col">
+          <h5>Contatos</h5>
+          <ul>
+            <li><a href="https://biomedical.com.br/wp-content/uploads/2023/08/Codigo-de-Etica-e-Conduta-Biomedical.pdf" target="_blank" rel="noopener">Ética e Compliance</a></li>
+            <li><a href="https://biomedical.com.br/institucional/#certificacoes" target="_blank" rel="noopener">Segurança e Certificações</a></li>
+            <li><a href="https://biomedical.com.br/fale-conosco/" target="_blank" rel="noopener">Central de Vendas</a></li>
+            <li><a href="https://api.whatsapp.com/send?phone=553121294000" target="_blank" rel="noopener">Fale com a gente</a></li>
+            <li><a href="https://biomedical.com.br/canal-de-denuncias/" target="_blank" rel="noopener">Ouvidoria</a></li>
+          </ul>
+        </div>
+
+        <div class="bm-footer-col">
+          <h5>Produtos</h5>
+          <ul>
+            <li><a href="https://biomedical.com.br/produtos/" target="_blank" rel="noopener">Vascular</a></li>
+            <li><a href="https://biomedical.com.br/produtos/" target="_blank" rel="noopener">Heart e Rhythm</a></li>
+            <li><a href="https://biomedical.com.br/produtos/" target="_blank" rel="noopener">Intensive Care</a></li>
+            <li><a href="https://biomedical.com.br/produtos/" target="_blank" rel="noopener">Dialysis</a></li>
+            <li><a href="https://biomedical.com.br/produtos/" target="_blank" rel="noopener">Accessories</a></li>
+            <li><a href="https://biomedical.com.br/produtos/" target="_blank" rel="noopener">Guidewires</a></li>
+            <li><a href="https://biomedical.com.br/produtos/" target="_blank" rel="noopener">Cath Lab</a></li>
+            <li><a href="https://biomedical.com.br/produtos/" target="_blank" rel="noopener">Segurança do Paciente</a></li>
+          </ul>
+        </div>
+
+      </div>
+
+      <div class="bm-footer-bottom">
+        <span>© <span id="year"></span> Biomedical · Portal Corporativo Interno</span>
+        <span class="bm-footer-meta">Belo Horizonte · São Paulo · Rio de Janeiro · Curitiba · Recife · Porto Alegre</span>
+      </div>
+    </div>
+  </footer>
+
+  <!-- MODAL · histórico de alterações -->
+  <div class="fca-hist-overlay" id="fca-hist-overlay">
+    <div class="fca-hist-modal" role="dialog" aria-modal="true" aria-label="Histórico de alterações">
+      <div class="fca-hist-head">
+        <div>
+          <div class="fca-hist-tt">Histórico de alterações</div>
+          <div class="fca-hist-sub" id="fca-hist-sub"></div>
+        </div>
+        <button class="fca-hist-close" id="fca-hist-close" title="Fechar" aria-label="Fechar">✕</button>
+      </div>
+      <div class="fca-hist-body" id="fca-hist-body"></div>
+    </div>
+  </div>
+
+  <script src="../script.js?v=8"></script>
+  <script>
+  (function () {
+    var MONTHS = ['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
+    // As fichas moram no portal (/api/fca → blob, um arquivo por mês). O
+    // localStorage 'bio_fca_2026' é o LEGADO de antes de 28/09/2026: só é lido
+    // uma vez, para levar ao portal o que estava apenas neste navegador.
+    var API = '/api/fca';
+    var LEGADO_KEY = 'bio_fca_2026';
+    var SEMENTES = { 'FCA-2051':1, 'FCA-2050':1, 'FCA-2049':1 };   // as 3 fichas de exemplo da versão antiga
+    var monthSel = document.getElementById('fca-month');
+    var form = document.getElementById('fca-form');
+    var rowsEl = document.getElementById('fca-rows');
+    var emptyEl = document.getElementById('fca-empty');
+    var footEl = document.getElementById('fca-foot');
+    var titleEl = document.getElementById('fca-title');
+    var subEl = document.getElementById('fca-sub');
+    var summaryEl = document.getElementById('fca-summary');
+    var searchEl = document.getElementById('fca-search');
+    var avisoEl = document.getElementById('fca-aviso');
+    var formMsgEl = document.getElementById('fca-form-msg');
+    var addBtn = form.querySelector('.fca-add-btn');
+    var fData = document.getElementById('f-data');
+    var now = new Date();
+    var curAno = now.getFullYear(), curMonth = now.getMonth();   // curMonth: 0-11
+    function hojeIso(){ var d=new Date(); return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'); }
+    // meses do seletor: ano anterior + ano corrente (+ o seguinte a partir de outubro)
+    (function(){
+      var ate = curAno + (curMonth >= 9 ? 1 : 0);
+      for (var a = curAno - 1; a <= ate; a++) for (var i = 0; i < 12; i++) {
+        var o=document.createElement('option'); o.value=a+'-'+i; o.textContent=MONTHS[i]+'/'+a; monthSel.appendChild(o);
+      }
+    })();
+    monthSel.value = curAno+'-'+curMonth; fData.value = hojeIso();
+
+    // estado vindo do /api/fca (mês aberto)
+    var S = { armazenamento:null, fichas:[], escopo:null, forecast:null, eu:null, carregando:true, erro:'' };
+    var editingId = null, _salvando = false;
+
+    function money(v){ return 'R$ ' + Number(v).toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2}); }
+    function brDate(s){ var p=String(s||'').split('-'); return p.length===3 ? p[2]+'/'+p[1]+'/'+p[0].slice(2) : '—'; }
+    function stCls(s){ return ehCancel(s)?'cancelado':((s==='Concluído'||s==='Concluída')?'avencer':((s==='Em andamento'||s==='Em análise')?'moderado':'recente')); }
+    function esc(s){ return String(s).replace(/[&<>"']/g,function(c){ return ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'})[c]; }); }
+
+    // ====== FORECAST DA FILIAL (Power BI · RLS por unidade de negócio) ======
+    var PBI = {
+      clientId:'129978ce-ff3b-431d-98b3-66a1bcb766b1', tenantId:'c311c9e6-6017-42a9-b306-4057beba5786',
+      workspaceId:'8535f0a1-8dc6-4da0-93ce-bf20c1c14e27', reportId:'10a505aa-759e-4f20-a130-98c0736ba42d',
+      scopes:['https://analysis.windows.net/powerbi/api/Dataset.Read.All','https://analysis.windows.net/powerbi/api/Report.Read.All']
+    };
+    var _pbi=null,_token=null,_dsId=null,_pbiReady=false,_pbiCache={};
+    // unidades que não devem aparecer no painel/tabela/totais
+    // (INTERCOMPANY sai também do seletor: o filtro-base abaixo zera o faturamento dela)
+    var EXCLUI_UNIDADES = ['NOVA TECNOLOGIA','NÃO CLASSIFICADO','MSB-EXPORT','MSB','INTERCOMPANY'];
+    // Filtro-base IGUAL ao da Visão Geral do Sales Report (MEDIDAS em
+    // comercial-sales-report.html): sem intercompany, só Operações que geram
+    // fatura a receber e sem as NFs ocultadas. Mudou lá? Mude aqui também.
+    var NF_OCULTAS = ['667708'];
+    var FILTROS_BASE = [
+      "'DIM_UNIDADE_DE_NEGOCIO_V2'[UNIDADE_DE_NEGOCIO] <> \"INTERCOMPANY\"",
+      "'Operações'[Gera Fatura a receber?] = \"SIM\"",
+      "FILTER(ALL('Faturamentos'[Número da fatura]), NOT(('Faturamentos'[Número da fatura] & \"\") IN { " + NF_OCULTAS.map(function(n){ return '"'+n+'"'; }).join(', ') + " }))"
+    ];
+    function unidOk(u){ var n=String(u==null?'':u).trim().toUpperCase(); return EXCLUI_UNIDADES.indexOf(n) < 0; }
+    function ffSet(id,t){ var el=document.getElementById(id); if(el) el.textContent=t; }
+    function ffVal(r,re){ var k=Object.keys(r).find(function(x){return re.test(x);}); return k?r[k]:null; }
+    function ffNum(x){ return (x==null||x===''||isNaN(Number(x)))?null:Number(x); }
+    function mesKey(){ return curAno+'-'+curMonth; }
+    var _selUnit = '';   // '' = todas as unidades
+    var _units = [];     // unidades de negócio (RLS · Power BI) — usadas nos selects
+
+    // Forecast (FCA) = soma das fichas da unidade que AINDA vão faturar
+    // (Pendente e Em andamento), calculada NO SERVIDOR: com as unidades
+    // confirmadas no Power BI, a filial soma as fichas de todos daquela
+    // unidade; sem a confirmação, só as da própria pessoa.
+    // CONCLUÍDA não entra no forecast — o que ela vendeu já está no
+    // Faturamento Real do Power BI e somar de novo contaria duas vezes. Ela
+    // soma no FATURADO, pelo valor de fato faturado informado na conclusão.
+    function ehConcl(st){ return /^conclu/i.test(String(st||'').trim()); }
+    // CANCELADA não soma em nada — nem forecast, nem faturado. É a saída para a
+    // ficha que não vai acontecer, já que ficha do FCA não se apaga.
+    function ehCancel(st){ return /^cancel/i.test(String(st||'').trim()); }
+    // mês ABERTO = a competência corrente no fuso de Brasília (o mesmo cálculo
+    // do /api/fca): só nele a pessoa pode cancelar uma ficha.
+    function mesAberto(){
+      var ano, mes;
+      try {
+        var pp = new Intl.DateTimeFormat('en-US',{timeZone:'America/Sao_Paulo',year:'numeric',month:'numeric'}).formatToParts(new Date());
+        ano = Number((pp.find(function(x){ return x.type==='year'; })||{}).value);
+        mes = Number((pp.find(function(x){ return x.type==='month'; })||{}).value);
+      } catch(e){}
+      if(!(ano>=2024 && mes>=1 && mes<=12)){ var d=new Date(); ano=d.getFullYear(); mes=d.getMonth()+1; }
+      return curAno===ano && (curMonth+1)===mes;
+    }
+    function somaUnid(qual, unit){
+      var p=(S.forecast&&S.forecast[qual])||{}; var U=String(unit||'').trim().toUpperCase();
+      var k=Object.keys(p).find(function(x){ return x.trim().toUpperCase()===U; });
+      return k ? (Number(p[k])||0) : 0;
+    }
+    function somaTudo(qual, fora){
+      var p=(S.forecast&&S.forecast[qual])||{};
+      return Object.keys(p).reduce(function(s,k){ return s+(Number(p[k])||0); },0) + ((S.forecast&&Number(S.forecast[fora]))||0);
+    }
+    function fcDaUnidade(unit){ return somaUnid('porUnidade', unit); }
+    function fcTotal(){ return somaTudo('porUnidade','foraDasUnidades'); }
+    function fatDaUnidade(unit){ return somaUnid('faturadoPorUnidade', unit); }
+    function fatTotal(){ return somaTudo('faturadoPorUnidade','faturadoForaDasUnidades'); }
+    function ffDateTime(iso){
+      if(!iso) return '—';
+      var d=new Date(iso); if(isNaN(d.getTime())) return '—';
+      var p=function(n){return String(n).padStart(2,'0');};
+      return p(d.getDate())+'/'+p(d.getMonth()+1)+'/'+String(d.getFullYear()).slice(2)+' '+p(d.getHours())+':'+p(d.getMinutes());
+    }
+
+    // ── histórico de alterações das fichas ──
+    var FIELD_LBL = { cliente:'Cliente', valor:'Valor', unidade:'Unidade', acao:'Ação', data:'Data', status:'Status', valorFaturado:'Valor faturado' };
+    function fmtField(k,v){ if(k==='valor') return money(Number(v)||0); if(k==='valorFaturado') return (v==null||v==='')?'—':money(Number(v)||0); if(k==='data') return v?brDate(v):'—'; return (v==null||v==='')?'—':String(v); }
+    function histLine(h){
+      var isCreate = h.action==='create';
+      var label;
+      if(isCreate){ label='<b>Criou a ficha</b>'; }
+      else if(h.action==='import'){ label='<b>Trouxe a ficha do navegador para o portal</b><div class="fca-hist-chg" style="color:var(--text-3);">Antes de 28/09/2026 as fichas ficavam só no navegador de quem as incluía.</div>'; }
+      else if(h.action==='legacy'){ label='<b>Última modificação registrada</b><div class="fca-hist-chg" style="color:var(--text-3);">Esta ficha é anterior ao registro de histórico detalhado.</div>'; }
+      else {
+        var parts=(h.changes||[]).map(function(c){
+          return '<div class="fca-hist-chg"><span class="fld">'+esc(FIELD_LBL[c.field]||c.field)+'</span>'
+            +'<span class="from">'+esc(fmtField(c.field,c.from))+'</span>'
+            +'<span class="arr">→</span>'
+            +'<span class="to">'+esc(fmtField(c.field,c.to))+'</span></div>';
+        }).join('');
+        label='<b>Editou a ficha</b>'+parts;
+      }
+      return '<div class="fca-hist-item"><div class="fca-hist-dot'+(isCreate?' create':'')+'"></div>'
+        +'<div class="fca-hist-content"><div class="fca-hist-meta"><span class="by">'+esc(h.by||'—')+'</span>'
+        +'<span class="at">'+ffDateTime(h.at)+'</span></div><div class="fca-hist-act">'+label+'</div></div></div>';
+    }
+    var histOverlay = document.getElementById('fca-hist-overlay');
+    function fichaPorId(id){ return S.fichas.find(function(x){ return String(x.id)===String(id); }); }
+    function openHist(id){
+      var f=fichaPorId(id); if(!f) return;
+      var sub=document.getElementById('fca-hist-sub'); if(sub) sub.textContent=(f.ficha||'')+' · '+(f.cliente||'');
+      var body=document.getElementById('fca-hist-body');
+      var hist=(f.hist||[]).slice().reverse();   // mais recente primeiro
+      if(!hist.length && f.modBy) hist=[{ by:f.modBy, at:f.modAt, action:'legacy' }];
+      body.innerHTML = hist.length ? hist.map(histLine).join('') : '<div class="fca-hist-empty">Sem alterações registradas para esta ficha.</div>';
+      histOverlay.classList.add('open');
+    }
+    function closeHist(){ histOverlay.classList.remove('open'); }
+    document.getElementById('fca-hist-close').addEventListener('click', closeHist);
+    histOverlay.addEventListener('click', function(e){ if(e.target===histOverlay) closeHist(); });
+    document.addEventListener('keydown', function(e){ if(e.key==='Escape') closeHist(); });
+
+    async function pbiConnect(){
+      if (window._msalAuth){ _pbi = window._msalAuth; }
+      else { _pbi = new msal.PublicClientApplication({ auth:{ clientId:PBI.clientId, authority:'https://login.microsoftonline.com/'+PBI.tenantId, redirectUri:window.location.origin+'/' }, cache:{ cacheLocation:'localStorage', storeAuthStateInCookie:true } }); if(_pbi.initialize) await _pbi.initialize(); await _pbi.handleRedirectPromise().catch(function(){}); }
+      var accounts = _pbi.getAllAccounts();
+      try { var r = await _pbi.acquireTokenSilent({ scopes:PBI.scopes, account:accounts[0] }); _token = r.accessToken; }
+      catch(e){ var r2 = await _pbi.loginPopup({ scopes:PBI.scopes }); _token = r2.accessToken; }
+      var acc = _pbi.getAllAccounts()[0]; if (acc){ if(typeof window.setSidebarUser==='function') window.setSidebarUser(acc.name||acc.username, acc.username); }
+    }
+    // token do Power BI renovado (o MSAL devolve o do cache enquanto vale) —
+    // vai para o /api/fca, que confirma com ELE as unidades da pessoa
+    async function pbiTokenFresco(){
+      if(!_pbi) return _token;
+      try { var acc=_pbi.getAllAccounts()[0]; if(acc){ var r=await _pbi.acquireTokenSilent({ scopes:PBI.scopes, account:acc }); if(r&&r.accessToken) _token=r.accessToken; } } catch(e){}
+      return _token;
+    }
+    async function pbiDataset(){
+      if (_dsId) return _dsId;
+      var r = await fetch('https://api.powerbi.com/v1.0/myorg/groups/'+PBI.workspaceId+'/reports/'+PBI.reportId,{headers:{Authorization:'Bearer '+_token}});
+      if (r.ok){ var j=await r.json(); if(j.datasetId){_dsId=j.datasetId;return _dsId;} }
+      r = await fetch('https://api.powerbi.com/v1.0/myorg/reports/'+PBI.reportId,{headers:{Authorization:'Bearer '+_token}});
+      if (r.ok){ var j2=await r.json(); if(j2.datasetId){_dsId=j2.datasetId;return _dsId;} }
+      throw new Error('dataset não encontrado');
+    }
+    async function pbiQuery(dax){
+      var dsId = await pbiDataset();
+      var u1='https://api.powerbi.com/v1.0/myorg/groups/'+PBI.workspaceId+'/datasets/'+dsId+'/executeQueries';
+      var u2='https://api.powerbi.com/v1.0/myorg/datasets/'+dsId+'/executeQueries';
+      var body=JSON.stringify({queries:[{query:dax}],serializerSettings:{includeNulls:true}});
+      var headers={Authorization:'Bearer '+_token,'Content-Type':'application/json'};
+      var r=await fetch(u1,{method:'POST',headers:headers,body:body});
+      if(r.status===401||r.status===403) r=await fetch(u2,{method:'POST',headers:headers,body:body});
+      var text=await r.text(); if(!r.ok) throw new Error('HTTP '+r.status);
+      var d=JSON.parse(text); if(d.error) throw new Error('DAX'); return d.results[0].tables[0].rows;
+    }
+    async function loadPbi(){
+      if(!_pbiReady) { renderForecast(); return; }
+      var key = mesKey(), ano = curAno, m = curMonth;
+      if(!_pbiCache[key]){
+        try {
+          var dax = 'EVALUATE CALCULATETABLE(ADDCOLUMNS(VALUES(\'DIM_UNIDADE_DE_NEGOCIO_V2\'[UNIDADE_DE_NEGOCIO]), "Fat",[Faturamento], "Meta",[Meta Sales Vertical]), YEAR(\'Calendário\'[Data])='+ano+', MONTH(\'Calendário\'[Data])='+(m+1)+', '+FILTROS_BASE.join(', ')+')';
+          var rows = await pbiQuery(dax);
+          var byUnit={}, units=[], totFat=0, totMeta=0;
+          rows.forEach(function(r){
+            var u = ffVal(r,/UNIDADE_DE_NEGOCIO\]$/); if(u==null||String(u).trim()===''||!unidOk(u)) return;
+            var fat=ffNum(ffVal(r,/\[Fat\]$/)), meta=ffNum(ffVal(r,/\[Meta\]$/));
+            byUnit[String(u)]={fat:fat,meta:meta}; units.push(String(u));
+            totFat+=fat||0; totMeta+=meta||0;
+          });
+          _pbiCache[key] = { byUnit:byUnit, units:units, totFat:totFat, totMeta:totMeta };
+        } catch(e){ _pbiCache[key] = { byUnit:{}, units:[], totFat:null, totMeta:null }; }
+      }
+      renderForecast();
+    }
+    function pctCls(p){ return p==null?'':(p>=0.9?'ffc-pct-ok':'ffc-pct-warn'); }
+    function renderForecast(){
+      ffSet('ff-mes-lbl', '· ' + MONTHS[curMonth]);
+      var cache = _pbiCache[mesKey()] || {};
+      var real, meta;
+      if(_selUnit){ var d=(cache.byUnit||{})[_selUnit]||{}; real=d.fat==null?null:d.fat; meta=d.meta==null?null:d.meta; }
+      else { real=cache.totFat==null?null:cache.totFat; meta=cache.totMeta==null?null:cache.totMeta; }
+      var fc = _selUnit ? fcDaUnidade(_selUnit) : fcTotal();
+      var fat = _selUnit ? fatDaUnidade(_selUnit) : fatTotal();
+      ffSet('ff-fc', money(fc));
+      ffSet('ff-fc-sub', fat>0 ? ('+ ' + money(fat) + ' de FCAs concluídas — já contam no Faturamento Real') : '');
+      ffSet('ff-real', real==null?'—':money(real));
+      ffSet('ff-meta', meta==null?'—':money(meta));
+      var proj = (real||0) + fc;
+      ffSet('ff-proj', (real==null && !fc)?'—':money(proj));
+      var pr = (meta && meta>0) ? (real||0)/meta : null;
+      var pp = (meta && meta>0) ? proj/meta : null;
+      ffSet('ff-pct-real', pr==null?'—':(pr*100).toFixed(1)+'%');
+      ffSet('ff-pct-proj', pp==null?'—':(pp*100).toFixed(1)+'%');
+      ffSet('ff-pct', pp==null?'—':(pp*100).toFixed(1)+'% projetado');
+      var gap = (meta!=null) ? (meta - proj) : null;
+      ffSet('ff-gap', gap==null?'—':(gap>0?money(gap):'meta atingida ✓'));
+      var barReal=document.getElementById('ff-bar-real'), barFc=document.getElementById('ff-bar-fc');
+      if(barReal&&barFc){
+        if(meta && meta>0){
+          var wr=Math.max(0,Math.min((real||0)/meta*100,100));
+          var wf=Math.max(0,Math.min(fc/meta*100,100-wr));
+          barReal.style.width=wr+'%'; barFc.style.width=wf+'%';
+        } else { barReal.style.width='0'; barFc.style.width='0'; }
+      }
+      renderFiliais();
+    }
+    function renderFiliais(){
+      var wrap=document.getElementById('ff-filiais-wrap'), tb=document.getElementById('ff-filiais-rows');
+      if(!wrap||!tb) return;
+      var cache=_pbiCache[mesKey()]||{}; var units=cache.units||[];
+      if(units.length < 2){ wrap.style.display='none'; return; }   // só mostra a tabela p/ quem vê várias filiais (gerencial)
+      wrap.style.display='';
+      var arr=units.map(function(u){ var d=(cache.byUnit||{})[u]||{}; var fc=fcDaUnidade(u); var real=d.fat||0, meta=d.meta||0; return {u:u,real:real,meta:meta,fc:fc,fat:fatDaUnidade(u),proj:real+fc}; })
+                   .sort(function(a,b){ return b.real-a.real; });
+      tb.innerHTML = arr.map(function(x){
+        var pr=x.meta>0?x.real/x.meta:null, pp=x.meta>0?x.proj/x.meta:null;
+        return '<tr class="'+(x.u===_selUnit?'sel':'')+'" data-unit="'+esc(x.u)+'">'
+          +'<td>'+esc(x.u)+'</td>'
+          +'<td>'+money(x.real)+'</td><td>'+money(x.meta)+'</td>'
+          +'<td class="'+pctCls(pr)+'">'+(pr==null?'—':(pr*100).toFixed(1)+'%')+'</td>'
+          +'<td>'+money(x.fc)+'</td>'
+          +'<td>'+money(x.fat)+'</td>'
+          +'<td>'+money(x.proj)+'</td>'
+          +'<td class="'+pctCls(pp)+'">'+(pp==null?'—':(pp*100).toFixed(1)+'%')+'</td></tr>';
+      }).join('');
+    }
+
+    // ====== API das fichas ======
+    // O id token do Entra vai sozinho (patch de fetch do auth.js); o token do
+    // Power BI vai no x-pbi-token para o servidor confirmar as unidades.
+    function esperaLogin(ms){
+      return new Promise(function(res){
+        var t0=Date.now(), feito=false;
+        function fim(v){ if(!feito){ feito=true; res(v); } }
+        document.addEventListener('portalauth:ready', function(){ fim(true); }, { once:true });
+        (function tick(){
+          if (feito) return;
+          if (window._msalAuth && window._portalUser) return fim(true);
+          if (window._portalAuthReady && !tick.p){ tick.p=1; window._portalAuthReady.then(function(){ fim(true); }); }
+          if (Date.now()-t0 > ms) return fim(false);
+          setTimeout(tick, 150);
+        })();
+      });
+    }
+    async function api(method, body, query){
+      var headers = { 'Accept':'application/json' };
+      var t = await pbiTokenFresco(); if (t) headers['x-pbi-token'] = t;
+      if (body) headers['Content-Type'] = 'application/json';
+      var r = await fetch(API + (query||''), { method:method, headers:headers, body: body ? JSON.stringify(body) : undefined, cache:'no-store' });
+      var j = null; try { j = await r.json(); } catch(e){}
+      if (!r.ok || !j || j.ok === false) {
+        var err = new Error((j && j.error) || ('O portal respondeu HTTP ' + r.status + '.')); err.status = r.status; throw err;
+      }
+      return j;
+    }
+    function aplica(j){
+      S.armazenamento = j.armazenamento !== false;
+      S.fichas = j.fichas || [];
+      S.escopo = j.escopo || null;
+      S.forecast = j.forecast || null;
+      S.eu = j.eu || S.eu;
+      S.erro = S.armazenamento ? '' : (j.error || 'Armazenamento das fichas não configurado.');
+    }
+    var _reqSeq = 0;
+    async function carregarMes(){
+      var seq = ++_reqSeq;
+      S.carregando = true; S.fichas = []; S.forecast = null; render();
+      try {
+        var j = await api('GET', null, '?ano='+curAno+'&mes='+(curMonth+1));
+        if (seq !== _reqSeq) return;
+        aplica(j);
+        // Power BI do navegador falhou mas o servidor confirmou as unidades:
+        // o select de inclusão usa as dele (senão ninguém consegue lançar)
+        if (!_units.length && S.escopo && S.escopo.conhecido && (S.escopo.unidades||[]).length) populateUnitSelects(S.escopo.unidades);
+      } catch(e){
+        if (seq !== _reqSeq) return;
+        S.erro = e.status === 401 ? 'Sua sessão não foi reconhecida pelo portal. Recarregue a página.' : e.message;
+      }
+      S.carregando = false; render();
+    }
+    function podeIncluir(){ return !S.carregando && !S.erro && S.armazenamento === true && !!(S.escopo && S.escopo.conhecido); }
+    var MOTIVO_ESCOPO = {
+      'sem-token':'o Power BI não respondeu nesta página',
+      'token-expirado':'a sessão do Power BI expirou',
+      'token-invalido':'o token do Power BI não foi aceito',
+      'token-de-outra-conta':'o Power BI está logado com outra conta',
+      'pbi-falhou':'o Power BI não respondeu'
+    };
+    function renderAviso(){
+      var msg = '', tipo = 'warn';
+      if (S.erro) { msg = S.erro; tipo = 'err'; }
+      else if (!S.carregando && S.escopo && !S.escopo.conhecido) {
+        msg = 'Não deu para confirmar as suas unidades de negócio (' + (MOTIVO_ESCOPO[S.escopo.fonte] || S.escopo.fonte)
+            + (S.escopo.status ? ' · HTTP ' + S.escopo.status : '') + '). Você está vendo só as suas fichas e não consegue incluir agora — recarregue a página.';
+      }
+      avisoEl.hidden = !msg;
+      avisoEl.className = 'fca-aviso fca-aviso--' + tipo;
+      avisoEl.textContent = msg;
+      addBtn.disabled = !podeIncluir() || _salvando;
+      addBtn.title = podeIncluir() ? '' : (S.carregando ? 'Carregando…' : 'Inclusão indisponível — veja o aviso acima');
+    }
+    var _msgTimer = null;
+    function formMsg(txt, tipo){
+      clearTimeout(_msgTimer);
+      formMsgEl.hidden = !txt; formMsgEl.textContent = txt || '';
+      formMsgEl.className = 'fca-msg fca-msg--' + (tipo || 'err');
+      if (txt && tipo === 'ok') _msgTimer = setTimeout(function(){ formMsgEl.hidden = true; }, 6000);
+    }
+
+    // Legado: fichas que estavam no localStorage deste navegador vão para o
+    // portal UMA vez (o servidor também deduplica). As 3 de exemplo ficam fora.
+    async function importarLegado(){
+      if (!S.armazenamento || !S.escopo || !S.escopo.conhecido || !S.eu || !S.eu.email) return;
+      var flag = 'bio_fca_importado_' + S.eu.email;
+      var st = null;
+      try { if (localStorage.getItem(flag)) return; st = JSON.parse(localStorage.getItem(LEGADO_KEY)); } catch(e){ return; }
+      var total = 0, falhou = false;
+      if (st && typeof st === 'object') {
+        var meses = Object.keys(st).filter(function(k){ return /^\d+$/.test(k) && Array.isArray(st[k]); });
+        for (var i = 0; i < meses.length; i++) {
+          var m = parseInt(meses[i], 10); if (m < 0 || m > 11) continue;
+          var fichas = st[meses[i]].filter(function(f){ return f && f.cliente && !(SEMENTES[f.ficha] && (f.id===1 || f.id===2 || f.id===3)); });
+          if (!fichas.length) continue;
+          try {
+            var j = await api('POST', { op:'importar', ano:2026, mes:m+1, fichas:fichas });
+            total += (j.resultado && j.resultado.importadas) || 0;
+            if (curAno === 2026 && m === curMonth) aplica(j);
+          } catch(e){ falhou = true; }
+        }
+      }
+      if (!falhou) { try { localStorage.setItem(flag, new Date().toISOString()); } catch(e){} }
+      if (total) { render(); formMsg(total + ' ficha(s) que estavam só neste navegador foram levadas para o portal.', 'ok'); }
+    }
+
+    function histBtn(f){
+      if(!(f.hist && f.hist.length) && !f.modBy) return '';
+      return '<button class="fca-hist-btn" title="Ver histórico de alterações" data-hist="'+esc(f.id)+'"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v5h5"/><path d="M3.05 13A9 9 0 1 0 6 5.3L3 8"/><path d="M12 7v5l3 2"/></svg></button>';
+    }
+    function modCell(f){
+      if(!f.modBy) return '<td class="fca-mod"><span class="ff-fc-auto">—</span>'+histBtn(f)+'</td>';
+      return '<td class="fca-mod"><div class="who">'+esc(f.modBy)+histBtn(f)+'</div><div class="when">'+ffDateTime(f.modAt)+'</div></td>';
+    }
+    // <option>s do select de unidade de negócio (edição da ficha)
+    function unitOpts(sel){
+      sel = String(sel||'');
+      var inList = _units.indexOf(sel) >= 0;
+      var o = '<option value=""'+(sel===''?' selected':'')+'>—</option>';
+      o += _units.map(function(u){ return '<option value="'+esc(u)+'"'+(String(u)===sel?' selected':'')+'>'+esc(u)+'</option>'; }).join('');
+      if(sel!=='' && !inList) o += '<option value="'+esc(sel)+'" selected>'+esc(sel)+' (fora da lista)</option>';
+      return o;
+    }
+    // nota sob o valor: o que foi DE FATO faturado (concluída, que saiu do
+    // forecast) ou o aviso de que a cancelada não soma em lugar nenhum
+    function notaValor(f){
+      if(ehCancel(f.status)) return '<div class="fca-fat cancel">fora do forecast</div>';
+      if(!ehConcl(f.status)) return '';
+      return f.valorFaturado==null
+        ? '<div class="fca-fat falta" title="Edite a ficha para informar o valor de fato faturado">faturado: informar</div>'
+        : '<div class="fca-fat">faturado: '+money(f.valorFaturado)+'</div>';
+    }
+    // 'Cancelado' só entra na lista do mês ABERTO — e na ficha que já está
+    // cancelada, para ela não perder o próprio status ao ser editada depois.
+    function statusOpts(f){
+      var lista = STATUS_BASE.slice();
+      if(mesAberto() || ehCancel(f.status)) lista.push('Cancelado');
+      if(lista.indexOf(f.status) < 0) lista.push(f.status);
+      return lista.map(function(st){ return '<option'+(st===f.status?' selected':'')+'>'+esc(st)+'</option>'; }).join('');
+    }
+    var STATUS_BASE = ['Pendente','Em andamento','Concluído'];
+    function render(){
+      var list = S.fichas.slice().sort(function(a,b){ return (b.data||'').localeCompare(a.data||''); });
+      var q = (searchEl.value||'').trim().toLowerCase();
+      var filtered = q ? list.filter(function(f){ return (f.cliente+' '+(f.acao||'')+' '+(f.autorNome||'')).toLowerCase().indexOf(q)>=0; }) : list;
+      var gerencial = !!(S.escopo && S.escopo.gerencial);
+      titleEl.textContent = 'Fichas de ' + MONTHS[curMonth] + '/' + curAno;
+      subEl.textContent = gerencial ? 'Fichas de todo o time nas suas unidades — você edita só as que incluiu' : 'Registros incluídos por você neste mês';
+      var html='';
+      filtered.forEach(function(f){
+        var autor = (!f.minha && f.autorNome) ? '<div class="fca-autor">por '+esc(f.autorNome)+'</div>' : '';
+        if(editingId === f.id && f.minha){
+          html += '<tr data-id="'+esc(f.id)+'" class="fca-editing">'
+            + '<td class="col-mono">'+esc(f.ficha||'—')+'</td>'
+            + '<td><input class="fca-ed fca-ed-cliente" type="text" value="'+esc(f.cliente||'')+'"></td>'
+            + '<td><select class="fca-ed fca-ed-unidade">'+unitOpts(f.unidade)+'</select></td>'
+            + '<td class="col-num"><input class="fca-ed fca-ed-valor" type="number" min="0" step="0.01" value="'+(Number(f.valor)||0)+'">'
+              + '<div class="fca-ed-fat"'+(ehConcl(f.status)?'':' style="display:none;"')+'><span class="lb">Faturado (R$)</span>'
+              + '<input class="fca-ed fca-ed-valor-fat" type="number" min="0" step="0.01" placeholder="0,00" value="'+(f.valorFaturado==null?'':Number(f.valorFaturado))+'"></div></td>'
+            + '<td><textarea class="fca-ed fca-ed-acao" rows="2">'+esc(f.acao||'')+'</textarea></td>'
+            + '<td><input class="fca-ed fca-ed-data" type="date" value="'+esc(f.data||'')+'"></td>'
+            + '<td><select class="fca-ed fca-ed-status"'+(mesAberto()?'':' title="Cancelar só é possível na ficha do mês aberto"')+'>'+statusOpts(f)+'</select></td>'
+            + modCell(f)
+            + '<td style="white-space:nowrap;"><button class="fca-save" title="Salvar" data-id="'+esc(f.id)+'">✔</button><button class="fca-cancel" title="Cancelar" data-id="'+esc(f.id)+'">✕</button></td>'
+            + '</tr>';
+        } else {
+          // só editar: ficha do FCA não se apaga (o mês é o registro do que o
+          // time fez e alimenta o forecast da filial) — quem errou edita
+          var acoes = f.minha
+            ? '<button class="fca-edit" title="Editar" data-id="'+esc(f.id)+'"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.12 2.12 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg></button>'
+            : '';
+          html += '<tr data-id="'+esc(f.id)+'"'+(ehCancel(f.status)?' class="fca-cancelada"':'')+'>'
+            + '<td class="col-mono">'+esc(f.ficha||'—')+'</td>'
+            + '<td><strong>'+esc(f.cliente)+'</strong>'+autor+'</td>'
+            + '<td>'+(f.unidade?esc(f.unidade):'<span class="ff-fc-auto">—</span>')+'</td>'
+            + '<td class="col-num">'+money(f.valor)+notaValor(f)+'</td>'
+            + '<td class="fca-acao-cell">'+esc(f.acao||'—')+'</td>'
+            + '<td class="col-mono">'+(f.data?brDate(f.data):'—')+'</td>'
+            + '<td><span class="badge badge--'+stCls(f.status)+'">'+esc(f.status)+'</span></td>'
+            + modCell(f)
+            + '<td style="white-space:nowrap;">'+acoes+'</td>'
+            + '</tr>';
+        }
+      });
+      rowsEl.innerHTML = html;
+      var has = filtered.length > 0;
+      emptyEl.classList.toggle('hidden', has);
+      var emptyP = emptyEl.querySelector('p');
+      if (emptyP) emptyP.textContent = S.carregando ? 'Carregando as fichas do mês…'
+        : (S.erro ? 'As fichas não puderam ser carregadas.' : (q ? 'Nenhuma ficha casa com a busca.' : 'Nenhuma FCA incluída para este mês. Use o formulário acima para começar.'));
+      var somaFc=0, somaFat=0, nConcl=0, nCanc=0;
+      list.forEach(function(f){
+        if(ehCancel(f.status)) nCanc++;
+        else if(ehConcl(f.status)){ nConcl++; somaFat+=Number(f.valorFaturado||0); }
+        else somaFc+=Number(f.valor||0);
+      });
+      footEl.textContent = S.carregando ? '' : (list.length + ' ficha(s) · ' + money(somaFc) + ' em forecast'
+        + (nConcl ? ' · ' + money(somaFat) + ' faturado em ' + nConcl + ' concluída(s)' : '')
+        + (nCanc ? ' · ' + nCanc + ' cancelada(s)' : '')
+        + (S.armazenamento ? ' · salvas no portal' : ''));
+      summaryEl.textContent = S.carregando ? 'carregando…' : (list.length + ' fichas em ' + MONTHS[curMonth]);
+      renderAviso();
+      renderForecast();
+    }
+    // O campo do valor faturado só existe quando a ficha está Concluída — ela
+    // sai do forecast e passa a valer pelo que foi de fato faturado.
+    var fStatusEl = document.getElementById('f-status');
+    var fFatWrap = document.getElementById('f-faturado-wrap');
+    var fFatEl = document.getElementById('f-valor-faturado');
+    function toggleFatForm(){
+      if(!fFatWrap || !fStatusEl) return;
+      var on = ehConcl(fStatusEl.value);
+      fFatWrap.hidden = !on;
+      if(!on && fFatEl) fFatEl.value = '';
+    }
+    if(fStatusEl) fStatusEl.addEventListener('change', toggleFatForm);
+    toggleFatForm();
+    // Lê o valor faturado de um input quando o status é Concluído.
+    // Devolve { ok, valor } — ok:false quando falta ou está inválido.
+    function leFaturado(status, el){
+      if(!ehConcl(status)) return { ok:true, valor:null };
+      var bruto = el ? String(el.value).trim().replace(',', '.') : '';
+      if(bruto === '') return { ok:false, erro:'Ficha concluída: informe o valor de fato faturado.' };
+      var v = parseFloat(bruto);
+      if(!isFinite(v) || v < 0) return { ok:false, erro:'Valor faturado inválido.' };
+      return { ok:true, valor:v };
+    }
+    form.addEventListener('submit', async function(e){
+      e.preventDefault();
+      if (_salvando || !podeIncluir()) return;
+      var cliente = document.getElementById('f-cliente').value.trim(); if(!cliente) return;
+      var uSel = document.getElementById('f-unidade');
+      var unidade = uSel ? uSel.value : '';
+      if (!unidade) { formMsg('Selecione a unidade de negócio.', 'err'); if (uSel) uSel.focus(); return; }
+      var status = fStatusEl ? fStatusEl.value : 'Pendente';
+      var fat = leFaturado(status, fFatEl);
+      if (!fat.ok) { formMsg(fat.erro, 'err'); if (fFatEl) fFatEl.focus(); return; }
+      var body = { op:'criar', ano:curAno, mes:curMonth+1, cliente:cliente,
+        valor: parseFloat(document.getElementById('f-valor').value)||0,
+        unidade: unidade,
+        acao: document.getElementById('f-acao') ? document.getElementById('f-acao').value.trim() : '',
+        data: document.getElementById('f-data').value || hojeIso(),
+        status: status, valorFaturado: fat.valor };
+      _salvando = true; renderAviso(); formMsg('');
+      try {
+        var j = await api('POST', body);
+        aplica(j);
+        form.reset(); fData.value = hojeIso(); toggleFatForm();
+        if (uSel) uSel.value = unidade;  // mantém a unidade p/ próximas inclusões
+        formMsg('Ficha ' + ((j.resultado && j.resultado.ficha) || '') + ' incluída.', 'ok');
+        document.getElementById('f-cliente').focus();
+      } catch(err){ formMsg(err.message, 'err'); }
+      finally { _salvando = false; render(); }
+    });
+    async function gravar(body){
+      if (_salvando) return false;
+      _salvando = true;
+      try { var j = await api('POST', Object.assign({ ano:curAno, mes:curMonth+1 }, body)); aplica(j); return true; }
+      catch(err){ alert(err.message); return false; }
+      finally { _salvando = false; }
+    }
+    rowsEl.addEventListener('click', async function(e){
+      // ver histórico de alterações
+      var hb = e.target.closest('.fca-hist-btn');
+      if(hb){ openHist(hb.getAttribute('data-hist')); return; }
+      // entrar em edição
+      var ed = e.target.closest('.fca-edit');
+      if(ed){ editingId = ed.getAttribute('data-id'); render(); var c=rowsEl.querySelector('tr.fca-editing .fca-ed-cliente'); if(c) c.focus(); return; }
+      // cancelar edição
+      var cancel = e.target.closest('.fca-cancel');
+      if(cancel){ editingId = null; render(); return; }
+      // salvar edição (quem + quando é gravado pelo servidor)
+      var sv = e.target.closest('.fca-save');
+      if(sv){
+        var id = sv.getAttribute('data-id');
+        var tr = sv.closest('tr'); if(!tr) return;
+        var f = fichaPorId(id); if(!f) return;
+        var cli = tr.querySelector('.fca-ed-cliente').value.trim();
+        if(!cli){ tr.querySelector('.fca-ed-cliente').focus(); return; }
+        var uEl = tr.querySelector('.fca-ed-unidade');
+        var stEl = tr.querySelector('.fca-ed-status');
+        var status = stEl ? stEl.value : f.status;
+        var fatEl = tr.querySelector('.fca-ed-valor-fat');
+        var fat = leFaturado(status, fatEl);
+        if(!fat.ok){ alert(fat.erro); if(fatEl) fatEl.focus(); return; }
+        var body = { op:'editar', id:id, cliente:cli,
+          valor: parseFloat(tr.querySelector('.fca-ed-valor').value)||0,
+          unidade: uEl ? uEl.value : (f.unidade||''),
+          acao:  tr.querySelector('.fca-ed-acao').value.trim(),
+          data:  tr.querySelector('.fca-ed-data').value || f.data,
+          status: status, valorFaturado: fat.valor };
+        sv.disabled = true;
+        if(await gravar(body)) editingId = null;
+        render(); return;
+      }
+    });
+    // status da linha em edição → Concluído: pede o valor de fato faturado
+    rowsEl.addEventListener('change', function(e){
+      var st = e.target; if(!st || !st.classList || !st.classList.contains('fca-ed-status')) return;
+      var tr = st.closest('tr'); if(!tr) return;
+      var wrap = tr.querySelector('.fca-ed-fat'); if(!wrap) return;
+      var on = ehConcl(st.value);
+      wrap.style.display = on ? '' : 'none';
+      var inp = wrap.querySelector('.fca-ed-valor-fat');
+      if(inp){ if(on){ inp.focus(); inp.select(); } else inp.value=''; }
+    });
+    monthSel.addEventListener('change', function(){
+      var p = String(monthSel.value).split('-');
+      curAno = parseInt(p[0],10); curMonth = parseInt(p[1],10);
+      searchEl.value=''; editingId=null;
+      carregarMes(); loadPbi();
+    });
+    searchEl.addEventListener('input', render);
+    // seletor de unidade do painel → muda o foco dos KPIs
+    var panelSel = document.getElementById('ff-unidade-sel');
+    if(panelSel) panelSel.addEventListener('change', function(){ _selUnit = this.value; var fs=document.getElementById('f-unidade'); if(fs && _selUnit && _units.indexOf(_selUnit)>=0) fs.value=_selUnit; renderForecast(); });
+    // clique numa linha da tabela de filiais → seleciona aquela filial
+    var filiaisRows = document.getElementById('ff-filiais-rows');
+    if(filiaisRows){
+      filiaisRows.addEventListener('click', function(e){
+        var tr = e.target.closest('tr[data-unit]'); if(!tr) return;
+        _selUnit = tr.getAttribute('data-unit');
+        if(panelSel) panelSel.value = _selUnit;
+        var fs=document.getElementById('f-unidade'); if(fs && _selUnit && _units.indexOf(_selUnit)>=0) fs.value=_selUnit;
+        renderForecast();
+      });
+    }
+    render();
+
+    function populateUnitSelects(units){
+      _units = (units||[]).map(String);
+      var ps=document.getElementById('ff-unidade-sel'), fs=document.getElementById('f-unidade');
+      var opts = units.map(function(u){ return '<option value="'+esc(u)+'">'+esc(u)+'</option>'; }).join('');
+      if(ps){ ps.innerHTML='<option value="">Todas as unidades</option>'+opts; ps.value=_selUnit; }
+      if(fs){ fs.innerHTML=(units.length>1?'<option value="">— selecione —</option>':'')+opts; fs.value = (_selUnit && units.indexOf(_selUnit)>=0) ? _selUnit : (units.length===1?units[0]:''); }
+      render();   // re-renderiza a tabela para que os selects de edição recebam a lista de unidades
+    }
+
+    // 1) Power BI (unidades por RLS + token que o /api/fca usa para confirmá-las)
+    // 2) fichas do mês no portal  3) legado do navegador  4) faturamento/meta
+    (async function(){
+      try {
+        await pbiConnect(); _pbiReady = true;
+        var units = [];
+        try {
+          var u = await pbiQuery("EVALUATE VALUES('DIM_UNIDADE_DE_NEGOCIO_V2'[UNIDADE_DE_NEGOCIO])");
+          var k = u.length ? Object.keys(u[0])[0] : null;
+          units = u.map(function(x){ return k?x[k]:null; }).filter(function(v){ return v!=null && String(v).trim()!=='' && unidOk(v); }).map(String).sort(function(a,b){ return a.localeCompare(b,'pt-BR'); });
+        } catch(e){}
+        populateUnitSelects(units);
+        ffSet('ff-status','✅ Power BI');
+      } catch(e){
+        _pbiReady = false; ffSet('ff-status','sem conexão');
+        var ps=document.getElementById('ff-unidade-sel'); if(ps) ps.innerHTML='<option value="">— sem conexão —</option>';
+      }
+      await esperaLogin(20000);
+      await carregarMes();
+      await importarLegado();
+      await loadPbi();
+    })();
+  })();
+  </script>
+<script src="../nav-sidebar.js?v=52"></script>
+</body>
+</html>

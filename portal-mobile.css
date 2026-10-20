@@ -1,0 +1,94 @@
+/* =====================================================================
+   portal-mobile.css — acabamento de CELULAR do portal (varredura 15/10/26)
+   ---------------------------------------------------------------------
+   Carregado em todas as páginas com media="(max-width: 767.98px)": no
+   computador o navegador nem aplica este arquivo. Tudo aqui é só
+   disposição (largura, quebra, rolagem) — nenhuma cor, então o tema
+   escuro não precisa de nada. Vem DEPOIS do portal-v3.css e do tema.
+
+   Achados da varredura a 375px (161 páginas, dados de teste com nomes e
+   valores de produção) que este arquivo resolve:
+     1. topo da página: título espremido em 19px quando a linha do título
+        também leva o "DW atualizado" ou botões (Perdas, Tabela de Preços,
+        Power BI, Chamados, Internet) e migalhas quebrando palavra a palavra
+     2. painéis lado a lado que viraram 1 coluna com "1fr" mas continuavam
+        mais largos que a tela (a tabela de dentro empurrava a coluna):
+        Contas a Receber / Inadimplência / Baixas, Comitê de Produto, Dossiê
+     3. seletor de visão do Estoque (Saldo · Custo · …) saindo da tela
+     4. Cobrança: filtros de vencimento e de valor mais largos que o cartão
+     5. FCA: campos "col-2" criando uma 2ª coluna fantasma no formulário, e
+        lista suspensa com nome comprido alargando o cartão (vale p/ todas)
+     6. home: abas dos alertas (Todos · Licitações · …) sem rolagem
+     7. faixas de aviso do Power BI: 3 colunas espremidas lado a lado
+   Gráficos (rótulos cortados) e números grandes dos cartões ficam no
+   portal-mobile.js, que só age em celular (≤640px).
+   ===================================================================== */
+
+/* ---------- 1. TOPO DA PÁGINA (app shell, <768px) ---------- */
+@media (max-width: 767.98px) {
+  /* o que divide a linha com o título (DW atualizado, botões) desce para
+     uma linha própria — antes o título ficava com o que sobrava */
+  body.dept.dshell .area-header-top:has(> .fx-head-right),
+  body.dept.dshell .area-header-top:has(> .area-actions) { flex-wrap: wrap; }
+  body.dept.dshell .area-header-top > .fx-head-right,
+  body.dept.dshell .area-header-top > .area-actions {
+    flex: 1 1 100% !important; margin-left: 0 !important; min-width: 0;
+  }
+  /* o portal-v3 deixa o .fx-head-right "display: contents" (a pílula entra
+     direto na linha): aqui ele volta a ser caixa, para descer inteiro */
+  body.dept.dshell .area-header-top > .fx-head-right { display: block !important; }
+  body.dept.dshell .area-header-top > .fx-head-right:empty { display: none; }
+  body.dept.dshell .area-header-top > .area-actions { flex-wrap: wrap; }
+
+  /* migalhas: cada item desce inteiro em vez de quebrar letra a letra */
+  body.dept.dshell .area-header .breadcrumb { flex-wrap: wrap; row-gap: 4px; }
+  body.dept.dshell .area-header .breadcrumb > * { flex-shrink: 0; }
+  body.dept.dshell .area-header .breadcrumb > :last-child { flex-shrink: 1; min-width: 0; }
+}
+
+/* ---------- 2-7. CONTEÚDO (celular, ≤640px) ---------- */
+@media (max-width: 640px) {
+
+  /* 2. painéis empilhados cabem na tela; a tabela de dentro rola sozinha
+        (o nav-sidebar.js já põe as tabelas num invólucro com rolagem) */
+  .cx-evo-row, .ng-row2, .dv-cols, .dv-cols-21 { grid-template-columns: minmax(0, 1fr) !important; }
+  .cx-evo-row > *, .ng-row2 > *, .dv-cols > *, .dv-cols-21 > * { min-width: 0; }
+
+  /* 3. seletor de visão (Estoque): rola na horizontal dentro do cartão */
+  .cx-seg {
+    display: flex !important; max-width: 100%; overflow-x: auto;
+    -webkit-overflow-scrolling: touch; scrollbar-width: none;
+  }
+  .cx-seg::-webkit-scrollbar { display: none; }
+  .cx-seg button { flex-shrink: 0; }
+
+  /* 4. Cobrança: rótulo em cima, "de … até …" embaixo */
+  .cb-filtros .cb-dtf { flex-wrap: wrap; max-width: 100%; row-gap: 2px; }
+  .cb-filtros .cb-dtf > b { flex: 1 1 100%; }
+  .cb-filtros .cb-dtf input { width: 112px; min-width: 0; }
+
+  /* 5. FCA: o formulário tem 1 coluna no celular — "col-2" ocupa a linha */
+  .fca-form-grid { grid-template-columns: minmax(0, 1fr) !important; }
+  .fca-form-grid > .col-2 { grid-column: 1 / -1 !important; }
+  .ffc-head { flex-wrap: wrap; }
+  .ffc-head > div:first-child { flex: 1 1 auto; min-width: 0; }
+
+  /* 5b. lista suspensa com opção comprida ("HOSPITAL SANTA CASA DE
+         MISERICÓRDIA…") ficava da largura do nome e empurrava o cartão
+         para fora da tela: no celular ela respeita a largura do cartão */
+  body.dept select { max-width: 100%; }
+
+  /* 6. home: abas dos alertas rolam; "Atualizar" fica ao lado */
+  body.home-v3 .section-header > .hv-al-actions {
+    flex: 1 1 100%; min-width: 0; max-width: 100%; flex-wrap: nowrap;
+  }
+  body.home-v3 .hv-al-actions > .hv3-seg { flex: 1 1 0; min-width: 0; }
+  body.home-v3 .hv-al-actions > .hv-al-refresh { flex-shrink: 0; }
+
+  /* 7. faixas de aviso (Conectado ao Power BI · aviso): quebram em linhas */
+  [id$="-banner"] { flex-wrap: wrap; }
+  [id$="-banner"] > * { overflow-wrap: anywhere; }
+  [id$="-banner"] > svg:first-child + span:last-child { flex: 1 1 0; min-width: 0; }
+  /* aviso que o sr-intercompany.js pendura no fim: linha inteira */
+  [id$="-banner"] > span[style*="flex: 1 1 0"] { flex-basis: 100% !important; }
+}

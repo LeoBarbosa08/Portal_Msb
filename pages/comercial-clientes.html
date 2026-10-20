@@ -1,0 +1,918 @@
+﻿<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Análise de Pedidos · Comercial · Biomedical</title>
+  <link rel="stylesheet" href="../styles.css?v=14">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../dash-v2.css?v=3">
+  <script src="https://unpkg.com/@azure/msal-browser@2.38.3/lib/msal-browser.min.js"></script>
+<script src="../pbi-throttle.js?v=3"></script>
+  <!-- Layout v3 (Claude Design · animado): fonte + camada visual + motor de animações -->
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300..800&family=Manrope:wght@400..800&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../portal-v3.css?v=2">
+  <script src="../portal-motion.js?v=3" defer></script>
+  <!-- Tema claro/escuro (menu do avatar): marca o <html> antes de pintar + camada escura -->
+  <script>try{if(localStorage.getItem('bm-tema')==='escuro')document.documentElement.setAttribute('data-tema','escuro')}catch(e){}</script>
+  <link rel="stylesheet" href="../portal-tema.css?v=1">
+  <script src="../portal-tema.js?v=1" defer></script>
+  <!-- Celular (varredura 15/10/26): só vale em tela < 768px; no computador não se aplica -->
+  <link rel="stylesheet" href="../portal-mobile.css?v=1" media="(max-width: 767.98px)">
+  <script src="../portal-mobile.js?v=1" defer></script>
+</head>
+<body class="dept">
+
+  <header class="site-header">
+    <div class="container">
+      <a href="../index.html" class="brand" aria-label="Biomedical — Portal Corporativo">
+        <img class="brand-logo" src="/icons/icon-192.png" alt="Biomedical" onerror="this.dataset.failed='true'">
+        <span class="brand-fallback">Biomedical</span>
+      </a>
+      <nav class="header-nav">
+        <a href="../index.html">Início</a>
+        <a href="../index.html#areas">Áreas</a>
+        <a href="../index.html#sistemas">Sistemas</a>
+        <a href="../index.html#avisos">Avisos</a>
+        <a href="../index.html#contato">Contato</a>
+      </nav>
+    </div>
+  </header>
+
+  <!-- cabeçalho movido para .fx-head (abas de submódulo, Claude Design) -->
+
+  <div class="area-body">
+    <div class="container">
+      <div class="area-grid">
+
+        <aside class="area-sidebar">
+          <div class="sb-card">
+            <div class="sb-head">
+              <span class="sb-ic"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="8.5" cy="7" r="4"/><path d="M20 8v6"/><path d="M23 11h-6"/></svg></span>
+              <div><div class="sb-tt">Comercial</div><div class="sb-st">Departamento</div></div>
+            </div>
+            <nav></nav>
+          </div>
+          <a href="../index.html" class="sb-back"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></svg>Voltar ao Portal</a>
+        </aside>
+
+        <div class="area-main">
+
+          <!-- ═══ Cabeçalho + abas de submódulo (Claude Design) ═══ -->
+          <style>
+            .fx-head{display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap;padding:22px 0 4px;}
+            .fx-bc{display:flex;align-items:center;gap:6px;font-size:12px;color:#7C93A8;}
+            .fx-title{margin:4px 0 0;font-size:23px;font-weight:800;letter-spacing:-0.5px;color:#0A2E5C;}
+            .fx-head-right{display:flex;align-items:center;gap:12px;flex-wrap:wrap;}
+            .fx-tabs{display:flex;align-items:center;background:#FFFFFF;border:1px solid #E3EAF2;border-radius:11px;padding:3px;flex-wrap:wrap;}
+            .fx-tabs a,.fx-tabs span{padding:8px 14px;border-radius:8px;font-size:12.5px;font-weight:600;color:#5B7189;text-decoration:none;white-space:nowrap;}
+            .fx-tabs a:hover{color:#0A2E5C;}
+            .fx-tabs .active{background:#0A2E5C;font-weight:700;color:#fff;}
+            .fx-filters{display:flex;align-items:center;gap:10px;flex-wrap:wrap;padding:12px 14px;background:#fff;border:1px solid #E3EAF2;border-radius:12px;}
+            .fx-fdiv{width:1px;height:24px;background:#E3EAF2;}
+            .fx-fbtn{display:inline-flex;align-items:center;gap:8px;padding:8px 12px;border-radius:9px;border:1px solid #E3EAF2;background:#fff;font-size:12.5px;font-weight:600;color:#33495E;cursor:pointer;font-family:inherit;white-space:nowrap;}
+            .fx-fbtn:hover{border-color:#1272C4;}
+            .fx-fbtn .fx-fk{font-weight:700;color:#93A7BA;}
+            .fx-fbtn svg{flex-shrink:0;}
+            .fx-flimpar{margin-left:auto;display:inline-flex;align-items:center;gap:6px;padding:8px 12px;border-radius:9px;border:none;background:transparent;font-size:12.5px;font-weight:600;color:#5B7189;cursor:pointer;font-family:inherit;white-space:nowrap;}
+            .fx-flimpar:hover{color:#B54545;}
+            .fxdd{position:relative;display:inline-block;}
+            .fxdd-panel{position:absolute;z-index:50;top:calc(100% + 6px);left:0;display:none;flex-direction:column;background:#fff;border:1px solid #E3EAF2;border-radius:12px;box-shadow:0 10px 30px rgba(10,46,92,0.14);padding:12px;}
+            .fxdd.open .fxdd-panel{display:flex;}
+            .fxdd-sec{font-size:10.5px;font-weight:800;letter-spacing:0.8px;text-transform:uppercase;color:#93A7BA;margin:2px 2px 8px;}
+            .fxdd-sec.mt{margin-top:12px;}
+            .fxdd-hint{font-size:11px;color:#93A7BA;margin-top:10px;}
+            /* Periodo: painel largo e horizontal (mes em cima; ano/semestre/trimestre embaixo) */
+            .fxdd-panel{min-width:210px;}
+            #fx-periodo .fxdd-panel{width:720px;max-width:calc(100vw - 48px);}
+            #fx-periodo .fxdd-panel .sr-row,#fx-periodo .fxdd-panel .av-row,#fx-periodo .fxdd-panel .pv-row{max-width:none !important;gap:6px !important;row-gap:8px !important;}
+            #fx-periodo .fxdd-panel .sr-btn,#fx-periodo .fxdd-panel .av-btn,#fx-periodo .fxdd-panel .pv-btn{padding:5px 9px;}
+            #fx-periodo .fxdd-panel .sr-divider:first-of-type,#fx-periodo .fxdd-panel .av-divider:first-of-type,#fx-periodo .fxdd-panel .pv-divider:first-of-type{flex-basis:100%;width:100%;height:0 !important;border:0 !important;background:transparent !important;margin:2px 0 0 !important;}
+            @media(max-width:1100px){#fx-periodo .fxdd-panel{width:560px;}}
+            @media(max-width:767.98px){
+              .fx-head{align-items:flex-start;padding-top:14px;}
+              .fx-title{font-size:17px;}
+              .fx-head-right{width:100%;}
+              .fx-tabs{width:100%;flex-wrap:nowrap;overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none;background:#F0F4F9;border:none;}
+              .fx-tabs::-webkit-scrollbar{display:none;}
+              .fx-tabs a,.fx-tabs span{flex:0 0 auto;}
+              /* ── FILTROS mobile: controles empilhados em largura total; cada
+                    painel abre como accordion (sem recorte por overflow-x, sem
+                    rolagem horizontal escondendo filtros). O layout novo (.fx-filters)
+                    tem dropdown próprio — o nav-sidebar.js não o converte em <select>. ── */
+              .fx-filters{flex-direction:column;align-items:stretch;flex-wrap:nowrap;overflow:visible;gap:8px;}
+              .fx-filters .fx-fdiv{display:none;}
+              .fx-filters .fxdd{width:100%;position:static;display:block;}
+              .fx-filters .fx-fbtn,.fx-filters .av-dd-btn{width:100%;min-width:0;box-sizing:border-box;justify-content:space-between;}
+              .fx-filters .fx-fbtn{padding:11px 14px;font-size:13.5px;}
+              .fx-fbtn svg{transition:transform .18s;}
+              .fxdd.open .fx-fbtn svg{transform:rotate(180deg);}
+              .fx-filters .av-sel{flex:1 1 auto;min-width:0;box-sizing:border-box;}
+              /* dropdowns de valor (.av-dd) empilhados em largura total, igual aos .fxdd */
+              .fx-filters .av-row{width:100%;}
+              .fx-filters .av-dd{width:100%;position:relative;display:block;}
+              .fx-filters .av-dd-panel{width:100%;min-width:0;max-width:none;}
+              /* painel accordion: flui abaixo do botão, largura total, sem sombra flutuante */
+              .fx-filters .fxdd-panel{position:static;width:100%;min-width:0;max-width:none;box-shadow:none;margin-top:2px;box-sizing:border-box;}
+              #fx-periodo .fxdd-panel{width:100%;}
+              /* vence a regra global mobile (.sr-row{flex-wrap:nowrap} do styles.css)
+                 para os botões QUEBRAREM em grade dentro do painel, em vez de rolar */
+              .fxdd-panel .sr-row,.fxdd-panel .av-row,.fxdd-panel .pv-row{flex-wrap:wrap !important;overflow:visible !important;padding-bottom:0 !important;max-width:none !important;gap:6px !important;row-gap:8px !important;}
+              /* rótulos (Mês/Ano/Empresa…) ocupam a linha inteira — viram títulos de grupo */
+              .fxdd-panel .sr-label,.fxdd-panel .av-label,.fxdd-panel .pv-label{flex:0 0 100%;margin:4px 0 0;}
+              /* divisores viram quebra de linha, separando os grupos */
+              .fxdd-panel .sr-divider,.fxdd-panel .av-divider,.fxdd-panel .pv-divider{flex:0 0 100%;width:100% !important;height:0 !important;border:0 !important;background:transparent !important;margin:0 !important;}
+              /* botões preenchem a largura numa grade uniforme (sobrepõe flex-shrink:0 global) */
+              .fxdd-panel .sr-btn,.fxdd-panel .av-btn,.fxdd-panel .pv-btn{flex:1 1 auto !important;min-width:52px;text-align:center;padding:8px 6px;}
+              .fx-filters .fx-flimpar{width:100%;justify-content:center;margin:2px 0 0;padding:11px;border:1px solid #E3EAF2;border-radius:9px;}
+            }
+          </style>
+
+          <div class="fx-head">
+            <div>
+              <div class="fx-bc"><span>Comercial</span><span>›</span><span>Sales Report</span></div>
+              <h1 class="fx-title">Análise de Pedidos</h1>
+            </div>
+            <div class="fx-head-right">
+              <div class="fx-tabs">
+                <a href="comercial-sales-report.html">Visão Geral</a>
+                <a href="comercial-performance-vendas.html">Performance de Vendas</a>
+                <a href="comercial-vendas.html">Análise de Vendas</a>
+                <span class="active">Análise de Pedidos</span>
+                <a href="comercial-base-notas-fiscais.html">Base de Notas Fiscais</a>
+                <a href="comercial-novos-negocios.html">Novos Negócios</a>
+                <a href="comercial-clientes-perdidos.html">Clientes Perdidos</a>
+                <a href="comercial-comportamento-clientes.html">Comportamento de Clientes</a>
+                <a href="comercial-calendario-cirurgico.html">Calendário Cirúrgico</a>
+              </div>
+            </div>
+          </div>
+          <script>
+          /* barra de filtros fx — dropdowns compactos (Claude Design) */
+          (function(){
+            window.fxTogglePanel = function(btn){
+              var dd = btn.closest('.fxdd'); if(!dd) return;
+              var open = dd.classList.contains('open');
+              document.querySelectorAll('.fxdd.open').forEach(function(d){ d.classList.remove('open'); });
+              if(!open) dd.classList.add('open');
+            };
+            function txt(id,v){ var el=document.getElementById(id); if(el) el.textContent=v; }
+            window.fxSyncLabels = function(){
+              var per = document.getElementById('fx-periodo');
+              if(per){
+                var mesBtn = per.querySelector('.fxdd-panel button.active');
+                var anoBtns = per.querySelectorAll('.fxdd-panel button.active-green');
+                var ano = anoBtns.length===1 ? anoBtns[0].textContent.trim() : (anoBtns.length>1 ? anoBtns.length+' anos' : '');
+                var mes = mesBtn ? mesBtn.textContent.trim() : '';
+                txt('fx-periodo-lbl', ([ano, (mes && !/^todos$/i.test(mes) ? mes : '')].filter(Boolean).join(' · ')) || 'Todos');
+              }
+              [['fx-empresa','fx-empresa-lbl'],['fx-tipocli','fx-tipocli-lbl']].forEach(function(p){
+                var dd=document.getElementById(p[0]); if(!dd) return;
+                var b=dd.querySelector('.fxdd-panel button.active,.fxdd-panel button.active-green');
+                txt(p[1], b ? b.textContent.trim() : 'Todos');
+              });
+            };
+            window.fxLimpar = function(){
+              document.querySelectorAll('.fx-filters [data-fxdefault]').forEach(function(b){ b.click(); });
+              setTimeout(window.fxSyncLabels, 0);
+            };
+            document.addEventListener('DOMContentLoaded', function(){
+              document.querySelectorAll('.fx-filters .fxdd-panel').forEach(function(p){
+                p.addEventListener('click', function(e){ e.stopPropagation(); setTimeout(window.fxSyncLabels, 0); });
+              });
+              document.addEventListener('click', function(e){ if(e.target.closest && e.target.closest('.fxdd')) return; document.querySelectorAll('.fxdd.open').forEach(function(d){ d.classList.remove('open'); }); });
+              window.fxSyncLabels();
+            });
+          })();
+          </script>
+
+          <!-- Sub-módulos -->
+          <section style="padding:28px 0 0;display:none;">
+            <div class="container">
+              <div class="fin-subhead" style="margin-bottom:18px;">
+                <h2 style="font-size:18px;">Sub-módulos · Sales Report</h2>
+                <span class="sub">Selecione para análise detalhada</span>
+              </div>
+              <div class="modulos-grid" style="grid-template-columns:repeat(6,1fr);gap:12px;margin-bottom:32px;">
+
+                <a href="comercial-sales-report.html" class="modulo-card" data-tone="receber" style="min-height:0;padding:18px 20px;">
+                  <div class="mc-top"><span class="mc-icon"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg></span></div>
+                  <div class="mc-name" style="font-size:14px;">Visão Geral</div>
+                  <div class="mc-desc">Dashboard consolidado de vendas.</div>
+                  <div class="mc-open" style="font-size:12px;">Ver <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg></div>
+                </a>
+
+                <a href="comercial-performance-vendas.html" class="modulo-card" data-tone="dre" style="min-height:0;padding:18px 20px;">
+                  <div class="mc-top"><span class="mc-icon"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg></span></div>
+                  <div class="mc-name" style="font-size:14px;">Performance de Vendas</div>
+                  <div class="mc-desc">Acompanhamento de metas e resultados.</div>
+                  <div class="mc-open" style="font-size:12px;">Ver <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg></div>
+                </a>
+
+                <a href="comercial-vendas.html" class="modulo-card" data-tone="receber" style="min-height:0;padding:18px 20px;">
+                  <div class="mc-top"><span class="mc-icon"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg></span></div>
+                  <div class="mc-name" style="font-size:14px;">Análise de Vendas</div>
+                  <div class="mc-desc">Faturamento e produtos por região.</div>
+                  <div class="mc-open" style="font-size:12px;">Ver <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg></div>
+                </a>
+
+                <a href="comercial-clientes.html" class="modulo-card" data-tone="receber" style="min-height:0;padding:18px 20px;pointer-events:none;opacity:.7;">
+                  <div class="mc-top"><span class="mc-icon"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="9" y1="15" x2="15" y2="15"/></svg></span></div>
+                  <div class="mc-name" style="font-size:14px;">Análise de Pedidos</div>
+                  <div class="mc-desc">Pedidos e status detalhados.</div>
+                  <div class="mc-open" style="font-size:12px;">Ver <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg></div>
+                </a>
+
+                <a href="comercial-novos-negocios.html" class="modulo-card" data-tone="dre" style="min-height:0;padding:18px 20px;">
+                  <div class="mc-top"><span class="mc-icon"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="8.5" cy="7" r="4"/><path d="M20 8v6"/><path d="M23 11h-6"/></svg></span></div>
+                  <div class="mc-name" style="font-size:14px;">Novos Negócios</div>
+                  <div class="mc-desc">Clientes que compraram 1 vez.</div>
+                  <div class="mc-open" style="font-size:12px;">Ver <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg></div>
+                </a>
+
+                <a href="comercial-clientes-perdidos.html" class="modulo-card" data-tone="dre" style="min-height:0;padding:18px 20px;">
+                  <div class="mc-top"><span class="mc-icon"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="8.5" cy="7" r="4"/><line x1="23" y1="11" x2="17" y2="11"/></svg></span></div>
+                  <div class="mc-name" style="font-size:14px;">Clientes Perdidos</div>
+                  <div class="mc-desc">Clientes que deixaram de comprar.</div>
+                  <div class="mc-open" style="font-size:12px;">Ver <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg></div>
+                </a>
+
+              </div>
+            </div>
+          </section>
+
+          <!-- ═══════════ ANÁLISE DE PEDIDOS ═══════════ -->
+          <style>
+            .av-wrap{padding:4px 0 48px;display:flex;flex-direction:column;gap:14px;}
+            .av-row{display:flex;align-items:center;gap:8px;flex-wrap:wrap;}
+            .av-label{font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--text-4);margin-right:4px;}
+            .av-btn{padding:5px 11px;border-radius:6px;border:1px solid var(--border);background:#fff;font-size:12px;font-weight:500;color:var(--text-2);cursor:pointer;font-family:var(--font-body);transition:all .15s;}
+            .av-btn:hover{border-color:var(--bm-blue-500);color:var(--bm-blue-700);}
+            .av-btn.active{background:var(--bm-blue-900);color:#fff;border-color:var(--bm-blue-900);}
+            .av-btn.active-green{background:var(--bm-green-600);color:#fff;border-color:var(--bm-green-600);}
+            .av-divider{width:1px;height:22px;background:var(--border-2);flex-shrink:0;}
+            .av-card{background:#fff;border:1px solid var(--border);border-radius:var(--radius);padding:14px 16px;}
+            .av-kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;}
+            .av-kpi{background:#fff;border:1px solid var(--border);border-radius:var(--radius);padding:14px 16px;position:relative;overflow:hidden;}
+            .av-kpi::before{content:'';position:absolute;left:0;top:0;bottom:0;width:4px;background:#12457B;}
+            .av-kpi.g::before{background:var(--bm-green-600);}
+            .av-kpi.t::before{background:#0E7F8A;}
+            .av-kpi.w::before{background:#B4741B;}
+            .av-kpi-l{font-size:10.5px;font-weight:600;text-transform:uppercase;letter-spacing:.05em;color:var(--text-3);margin-bottom:6px;}
+            .av-kpi-v{font-family:var(--font-display);font-size:20px;font-weight:800;color:var(--bm-blue-900);line-height:1;}
+            .av-charts{display:grid;grid-template-columns:repeat(2,1fr);gap:12px;}
+            @media(max-width:1200px){.av-charts{grid-template-columns:1fr;}.av-kpis{grid-template-columns:repeat(2,1fr);}}
+            /* painéis dos gráficos: um tom por painel (fita no topo + marcador do título) */
+            .av-panel{background:#fff;border:1px solid var(--border);border-radius:var(--radius);padding:16px 16px 14px;position:relative;overflow:hidden;transition:box-shadow .18s,border-color .18s;--ap-tom:#12457B;}
+            .av-panel::before{content:'';position:absolute;top:0;left:0;right:0;height:3px;background:linear-gradient(90deg,var(--ap-tom) 0%,var(--ap-tom) 26%,rgba(0,0,0,0) 82%);}
+            .av-panel:hover{border-color:#D7E3EF;box-shadow:0 8px 22px rgba(10,46,92,.07);}
+            .av-panel.t1{--ap-tom:#12457B;} .av-panel.t2{--ap-tom:#0E7F8A;} .av-panel.t3{--ap-tom:#4B4FA6;} .av-panel.t4{--ap-tom:#B4741B;}
+            .av-panel h4{font-size:13px;font-weight:600;color:var(--text);margin:0 0 12px;display:flex;align-items:center;gap:8px;}
+            .av-panel h4::before{content:'';width:9px;height:9px;border-radius:3px;background:var(--ap-tom);flex-shrink:0;}
+            .av-chart-wrap{position:relative;height:260px;}
+            /* linha de 3 gráficos no formato da Análise de Vendas (.av-charts3/.av-panel2) */
+            .av-charts3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;}
+            .av-panel2{background:#fff;border:1px solid var(--border);border-radius:var(--radius);padding:14px 16px;}
+            .av-panel2 h4{font-size:13px;font-weight:600;color:var(--text);margin:0 0 10px;}
+            .av-cw{position:relative;height:280px;}
+            @media(max-width:1200px){.av-charts3{grid-template-columns:1fr;}}
+            .av-toolbar{display:flex;gap:8px;flex-wrap:wrap;align-items:center;}
+            .av-dd{position:relative;display:inline-block;}
+            .av-dd-btn{padding:7px 12px;border-radius:8px;border:1px solid var(--border);background:#fff;font-size:12.5px;font-weight:600;color:var(--text-2);cursor:pointer;display:inline-flex;align-items:center;gap:10px;min-width:150px;justify-content:space-between;font-family:inherit;}
+            .av-dd-btn:hover{border-color:var(--bm-blue-500);}
+            .av-dd-btn.has{border-color:var(--bm-blue-600);background:var(--bm-blue-50);color:var(--bm-blue-800);}
+            .av-dd-btn .cnt{background:var(--bm-blue-600);color:#fff;border-radius:999px;padding:0 7px;font-size:11px;}
+            .av-dd-panel{position:absolute;z-index:40;top:calc(100% + 4px);left:0;width:270px;max-height:340px;display:none;flex-direction:column;background:#fff;border:1px solid var(--border);border-radius:10px;box-shadow:var(--shadow);overflow:hidden;}
+            .av-dd.open .av-dd-panel{display:flex;}
+            .av-dd-search{padding:8px;border-bottom:1px solid var(--border);}
+            .av-dd-search input{width:100%;padding:6px 8px;border:1px solid var(--border);border-radius:6px;font-size:12px;font-family:var(--font-body);box-sizing:border-box;}
+            .av-dd-list{overflow-y:auto;padding:4px;}
+            .av-dd-opt{display:flex;align-items:center;gap:8px;padding:6px 8px;border-radius:6px;font-size:12.5px;color:var(--text-2);cursor:pointer;}
+            .av-dd-opt:hover{background:var(--bm-blue-50);}
+            .av-dd-foot{display:flex;justify-content:space-between;padding:6px 10px;border-top:1px solid var(--border);}
+            .av-dd-foot button{font-size:11.5px;color:var(--bm-blue-700);background:none;border:none;cursor:pointer;font-weight:600;font-family:inherit;}
+            .av-tbl-wrap{background:#fff;border:1px solid var(--border);border-radius:var(--radius);overflow:hidden;}
+            .av-tbl-head{display:flex;align-items:center;justify-content:space-between;padding:12px 16px;border-bottom:1px solid var(--border);}
+            .av-tbl-head h4{font-size:14px;font-weight:600;margin:0;color:var(--text);}
+            .av-scroll{max-height:640px;overflow:auto;}
+            table.av-tbl{width:100%;border-collapse:collapse;font-size:12.5px;}
+            table.av-tbl thead th{position:sticky;top:0;z-index:1;background:var(--bm-blue-900);color:rgba(255,255,255,.9);text-align:right;padding:9px 12px;font-size:10.5px;font-weight:600;letter-spacing:.03em;text-transform:uppercase;white-space:nowrap;}
+            table.av-tbl thead th.dim{text-align:left;}
+            table.av-tbl tbody td{padding:8px 12px;border-bottom:1px solid var(--border);text-align:right;font-variant-numeric:tabular-nums;color:var(--text-2);white-space:nowrap;}
+            table.av-tbl tbody td.dim{text-align:left;color:var(--text);font-weight:700;white-space:normal;}
+            table.av-tbl tbody tr:hover td{background:var(--bm-blue-50);}
+            table.av-tbl tbody tr.av-total td{background:var(--bm-blue-50);font-weight:700;border-top:2px solid var(--border-2);}
+            /* TOTAL no rodapé FIXO: a tabela traz todas as linhas (sem TOPN), então a linha
+               de total não pode ir para o fim de dezenas de milhares de <tr>. O !important
+               é porque o dash-v2.css (body.dept) ganha da especificidade daqui. */
+            table.av-tbl tfoot td{position:sticky !important;bottom:0;z-index:2;background:var(--dv-headbg,var(--bm-blue-50)) !important;color:var(--text);font-weight:800;border-top:2px solid var(--border-2);padding:9px 12px;text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap;}
+            table.av-tbl tfoot td.dim{text-align:left;}
+          </style>
+
+          <div class="av-wrap">
+
+            <div id="av-banner" style="padding:11px 16px;border-radius:8px;font-size:13px;display:flex;align-items:center;gap:10px;background:#EFF6FF;border:1px solid #BFDBFE;color:#1E40AF;">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+              Conectando ao Power BI…
+            </div>
+
+            <!-- ── FILTROS ── -->
+            <div class="fx-filters">
+              <div class="fxdd" id="fx-periodo">
+                <button type="button" class="fx-fbtn" onclick="fxTogglePanel(this)">
+                  <span class="fx-fk">Período</span><span id="fx-periodo-lbl">2026</span>
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#7C93A8" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg>
+                </button>
+                <div class="fxdd-panel">
+                  <div class="fxdd-sec">Mês · Semestre · Trimestre · Ano</div>
+                  <div class="av-row" style="max-width:380px;">
+                    <span class="av-label">Mês</span>
+                <button class="av-btn active" onclick="avSetMesTodos(this)">Todos</button>
+                <button class="av-btn" onclick="avSetMes(this,'Jan')">Jan</button>
+                <button class="av-btn" onclick="avSetMes(this,'Fev')">Fev</button>
+                <button class="av-btn" onclick="avSetMes(this,'Mar')">Mar</button>
+                <button class="av-btn" onclick="avSetMes(this,'Abr')">Abr</button>
+                <button class="av-btn" onclick="avSetMes(this,'Mai')">Mai</button>
+                <button class="av-btn" onclick="avSetMes(this,'Jun')">Jun</button>
+                <button class="av-btn" onclick="avSetMes(this,'Jul')">Jul</button>
+                <button class="av-btn" onclick="avSetMes(this,'Ago')">Ago</button>
+                <button class="av-btn" onclick="avSetMes(this,'Set')">Set</button>
+                <button class="av-btn" onclick="avSetMes(this,'Out')">Out</button>
+                <button class="av-btn" onclick="avSetMes(this,'Nov')">Nov</button>
+                <button class="av-btn" onclick="avSetMes(this,'Dez')">Dez</button>
+                <div class="av-divider"></div>
+                <button class="av-btn" onclick="avSetSem(this,'1S')">1° Sem</button>
+                <button class="av-btn" onclick="avSetSem(this,'2S')">2° Sem</button>
+                <div class="av-divider"></div>
+                <button class="av-btn" onclick="avSetTri(this,1)">1° Tri</button>
+                <button class="av-btn" onclick="avSetTri(this,2)">2° Tri</button>
+                <button class="av-btn" onclick="avSetTri(this,3)">3° Tri</button>
+                <button class="av-btn" onclick="avSetTri(this,4)">4° Tri</button>
+                <div class="av-divider"></div>
+                <span class="av-label">Ano</span>
+                <button class="av-btn" onclick="avSetAno(this,'2023')">2023</button>
+                <button class="av-btn" onclick="avSetAno(this,'2024')">2024</button>
+                <button class="av-btn" onclick="avSetAno(this,'2025')">2025</button>
+                <button class="av-btn active-green" onclick="avSetAno(this,'2026')">2026</button>
+                  </div>
+                </div>
+              </div>
+              <div class="fx-fdiv"></div>
+              <div class="av-toolbar" id="av-toolbar" style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;"></div>
+            </div>
+
+            <!-- ── KPIs ── -->
+            <div class="av-kpis">
+              <div class="av-kpi g"><div class="av-kpi-l">Valor Total</div><div class="av-kpi-v" id="av-k-tot">—</div></div>
+              <div class="av-kpi"><div class="av-kpi-l">Qtd Pedidos</div><div class="av-kpi-v" id="av-k-ped">—</div></div>
+              <div class="av-kpi t"><div class="av-kpi-l">Quantidade</div><div class="av-kpi-v" id="av-k-qt">—</div></div>
+              <div class="av-kpi w"><div class="av-kpi-l">Ticket Médio</div><div class="av-kpi-v" id="av-k-tk">—</div></div>
+            </div>
+
+            <!-- ── GRÁFICOS (todos ordenados por Valor do Pedido) ── -->
+            <div class="av-charts">
+              <div class="av-panel t1"><h4>Estratégia · Valor</h4><div class="av-chart-wrap"><canvas id="ap-c1"></canvas></div></div>
+              <div class="av-panel t2"><h4>Top Unidades de Negócio · Valor</h4><div class="av-chart-wrap"><canvas id="ap-c2"></canvas></div></div>
+              <div class="av-panel t3"><h4>Família · Valor</h4><div class="av-chart-wrap"><canvas id="ap-c3"></canvas></div></div>
+              <div class="av-panel t4"><h4>Tipo de Cliente · Valor</h4><div class="av-chart-wrap"><canvas id="ap-c5"></canvas></div></div>
+            </div>
+
+            <!-- ── STATUS DO PEDIDO · 3 gráficos (formato da Análise de Vendas) ── -->
+            <div class="av-charts3">
+              <div class="av-panel2"><h4>Valor em Pedido por Status</h4><div class="av-cw"><canvas id="ap-s1"></canvas></div></div>
+              <div class="av-panel2"><h4>Qtd de Pedidos por Status <span style="font-weight:500;color:var(--text-3);font-size:11px;">· OVs distintas</span></h4><div class="av-cw"><canvas id="ap-s2"></canvas></div></div>
+              <div class="av-panel2"><h4>Ticket Médio por Status</h4><div class="av-cw"><canvas id="ap-s3"></canvas></div></div>
+            </div>
+
+            <!-- ── + CAMPOS (acima da tabela) ── -->
+            <div class="av-toolbar" id="av-campos"></div>
+
+            <!-- ── TABELA ── -->
+            <div class="av-tbl-wrap">
+              <div class="av-tbl-head">
+                <h4>Tabela analítica de pedidos <span style="font-weight:500;color:var(--text-3);font-size:11px;">· 1 linha por combinação dos campos</span></h4>
+                <span style="font-size:11px;color:var(--text-3);" id="av-tbl-info">—</span>
+              </div>
+              <div class="av-scroll">
+                <table class="av-tbl">
+                  <thead id="av-thead"></thead>
+                  <tbody id="av-tbody"><tr><td style="text-align:center;color:var(--text-3);padding:20px;">Carregando…</td></tr></tbody>
+                  <tfoot id="av-tfoot"></tfoot>
+                </table>
+              </div>
+            </div>
+
+          </div><!-- /av-wrap -->
+
+        </div><!-- /area-main -->
+      </div><!-- /area-grid -->
+    </div><!-- /container -->
+  </div><!-- /area-body -->
+
+  <footer class="site-footer">
+    <div class="container">
+      <div class="bm-footer-bottom">
+        <span>© <span id="year"></span> Biomedical · Portal Corporativo Interno</span>
+        <span class="bm-footer-meta">Belo Horizonte · São Paulo · Rio de Janeiro · Curitiba · Recife · Porto Alegre</span>
+      </div>
+    </div>
+  </footer>
+
+  <script src="../script.js?v=8"></script>
+  <script src="../nav-sidebar.js?v=52"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+  <script>if(window.Chart){Chart.defaults.font.weight='600';}</script>
+  <script>
+  // ================================================================
+  // ANÁLISE DE PEDIDOS — tabela tabular + gráficos representativos
+  // ================================================================
+  const PBI_CFG = {
+    clientId:'129978ce-ff3b-431d-98b3-66a1bcb766b1', tenantId:'c311c9e6-6017-42a9-b306-4057beba5786',
+    workspaceId:'8535f0a1-8dc6-4da0-93ce-bf20c1c14e27', reportId:'10a505aa-759e-4f20-a130-98c0736ba42d',
+    scopes:['https://analysis.windows.net/powerbi/api/Dataset.Read.All','https://analysis.windows.net/powerbi/api/Report.Read.All']
+  };
+  let _pbi=null,_token=null,_datasetId=null,_avReady=false,_c1=null,_c2=null,_c3=null,_c4=null,_c5=null;
+
+  function _esc(re){ return re.replace(/[.*+?^${}()|[\]\\]/g,'\\$&'); }
+  function _re(col){
+    const m = col.match(/^'?([^'\[]+)'?\[(.+)\]$/);
+    if(!m) return new RegExp(_esc(col), 'i');
+    return new RegExp(_esc(m[2]) + '\\]$', 'i');
+  }
+
+  // dimensões (todas as colunas pedidas)
+  const DIMS = [
+    { id:'numov',     label:'Nº Ordem de Venda',        col:"Pedidos[Número da ordem de venda]" },
+    { id:'ordcompra', label:'Ordem de Compra Cliente',  col:"Pedidos[ORDEM_DE_COMPRA_CLIENTE]" },
+    { id:'dataov',    label:'Data da Ordem de Venda',   col:"Pedidos[Data da ordem de venda]" },
+    { id:'unidade',   label:'Unidade de Negócio',       col:"'DIM_UNIDADE_DE_NEGOCIO_V2'[UNIDADE_DE_NEGOCIO]" },
+    { id:'estrategia',label:'Estratégia',               col:"'Famílias'[Estratégia]" },
+    { id:'familia',   label:'Família',                  col:"'Famílias'[Família]" },
+    { id:'tipocli',   label:'Tipo de Cliente',          col:"'Clientes'[Tipo de cliente (Revisado)]" },
+    { id:'estado',    label:'Estado',                   col:"Clientes[Cód. Estado]" },
+    { id:'codcli',    label:'Cód. Cliente',             col:"Clientes[Cód. Cliente]" },
+    { id:'cliente',   label:'Cliente',                  col:"Clientes[Cliente]" },
+    { id:'paciente',  label:'Nome do Paciente',         col:"Pedidos[NOME_PACIENTE]" },
+    { id:'codprod',   label:'Cód. Produto',             col:"Produtos[Cód. produto]" },
+    { id:'produto',   label:'Produto',                  col:"Produtos[Produto]" },
+    { id:'stpedido',  label:'Status do Pedido',         col:"Pedidos[Status do pedido]" },
+    { id:'stlib',     label:'Status da Liberação',      col:"Pedidos[Status da liberação]" },
+    { id:'stov',      label:'Status da OV',             col:"Pedidos[Status da ordem de venda]" },
+    { id:'stsaida',   label:'Status de Saída',          col:"Pedidos[Status de saída]" },
+    { id:'gerencred', label:'Em Gerenciamento de Crédito', col:"Pedidos[EM_GERENCIAMENTO_DE_CREDITO]" },
+    { id:'invoice',   label:'Invoice Number',           col:"Pedidos[INVOICENUMBER]" },
+    { id:'ordemcria', label:'Ordem Criada Por',         col:"Pedidos[ORDEM_CRIADA_POR]" },
+    { id:'prevent',   label:'Data Previsão Entrega',    col:"Pedidos[DATA_PREVISAO_ENTREGA]" },
+    { id:'transp',    label:'Transportadora',           col:"Pedidos[TRANSPORTADORA]" }
+  ];
+  DIMS.forEach(d => d.re = _re(d.col));
+  // slicers: as dimensões filtráveis (fora datas e invoice). O Nº da OV entra com
+  // carregamento próprio — o universo é grande demais p/ um VALUES() sem filtro.
+  const FILTROS = DIMS.filter(d => !/Data|Invoice/i.test(d.label));
+
+  // Valores: SUM(Quantidade), AVG(Preço unitário), SUM(Preço total)
+  const VAL_DAX = '"Qt", CALCULATE(SUM(Pedidos[Quantidade])), "PU", CALCULATE(AVERAGE(Pedidos[Preço unitário])), "Tot", CALCULATE(SUM(Pedidos[Preço total]))';
+  const TOT_DAX = '"Tot", CALCULATE(SUM(Pedidos[Preço total])), "Qt", CALCULATE(SUM(Pedidos[Quantidade])), "Ped", CALCULATE(DISTINCTCOUNT(Pedidos[Número da ordem de venda]))';
+
+  window._avFiltro = { mes:(new Date().getMonth()+1), ano:2026, sem:null, tri:null };   // padrão = mês atual (calendário)
+  window._avDims = ['numov','cliente','produto','stpedido'];
+  window._avSel = {}; FILTROS.forEach(f => window._avSel[f.id] = new Set());
+  const MES_NUM = { Jan:1,Fev:2,Mar:3,Abr:4,Mai:5,Jun:6,Jul:7,Ago:8,Set:9,Out:10,Nov:11,Dez:12 };
+  // Padrão: ao abrir, destaca o botão do mês atual em vez de "Todos"
+  (function(){ try {
+    var _cm = window._avFiltro.mes;
+    document.querySelectorAll('.av-row .av-btn').forEach(function(x){
+      var oc = x.getAttribute('onclick')||'';
+      if(/avSetMesTodos/.test(oc)) x.classList.remove('active');
+      var mm = oc.match(/avSetMes\(this,'(\w+)'\)/);
+      if(mm) x.classList.toggle('active', MES_NUM[mm[1]]===_cm);
+    });
+  } catch(e){} })();
+  const avEsc = s => String(s==null?'':s).replace(/"/g,'&quot;');
+  const avDax = s => String(s==null?'':s).replace(/"/g,'""');
+
+  const _numN = x => (x==null||x===''||x==='-'||isNaN(Number(x)))?null:Number(x);
+  const fBRL = v => v==null?'—':'R$ '+Number(v).toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2});
+  const fNUM = v => v==null?'—':Number(v).toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2});
+  const fINT = v => v==null?'—':Number(v).toLocaleString('pt-BR',{maximumFractionDigits:0});
+  const setTxt = (id,t)=>{const el=document.getElementById(id);if(el)el.textContent=t;};
+  const fData = v => { if(v==null||v==='')return ''; const s=String(v); const m=s.match(/^(\d{4})-(\d{2})-(\d{2})/); return m?`${m[3]}/${m[2]}/${m[1]}`:s; };
+
+  async function pbiConnect(){
+    if (window._msalAuth){ _pbi = window._msalAuth; }
+    else { _pbi = new msal.PublicClientApplication({ auth:{ clientId:PBI_CFG.clientId, authority:`https://login.microsoftonline.com/${PBI_CFG.tenantId}`, redirectUri:window.location.origin+'/' }, cache:{ cacheLocation:'localStorage', storeAuthStateInCookie:true } }); if(_pbi.initialize) await _pbi.initialize(); await _pbi.handleRedirectPromise().catch(()=>{}); }
+    const accounts = _pbi.getAllAccounts();
+    try { const r = await _pbi.acquireTokenSilent({ scopes:PBI_CFG.scopes, account:accounts[0] }); _token = r.accessToken; }
+    catch { const r = await _pbi.loginPopup({ scopes:PBI_CFG.scopes }); _token = r.accessToken; }
+    const acc = _pbi.getAllAccounts()[0]; if (acc && typeof window.setSidebarUser==='function') window.setSidebarUser(acc.name||acc.username, acc.username);
+  }
+  async function pbiDataset(){
+    if (_datasetId) return _datasetId;
+    let r = await fetch(`https://api.powerbi.com/v1.0/myorg/groups/${PBI_CFG.workspaceId}/reports/${PBI_CFG.reportId}`,{headers:{Authorization:`Bearer ${_token}`}});
+    if (r.ok){ const j=await r.json(); if(j.datasetId){_datasetId=j.datasetId;return _datasetId;} }
+    r = await fetch(`https://api.powerbi.com/v1.0/myorg/reports/${PBI_CFG.reportId}`,{headers:{Authorization:`Bearer ${_token}`}});
+    if (r.ok){ const j=await r.json(); if(j.datasetId){_datasetId=j.datasetId;return _datasetId;} }
+    throw new Error('Dataset não encontrado.');
+  }
+  async function pbiQuery(dax){
+    const dsId = await pbiDataset();
+    const u1=`https://api.powerbi.com/v1.0/myorg/groups/${PBI_CFG.workspaceId}/datasets/${dsId}/executeQueries`;
+    const u2=`https://api.powerbi.com/v1.0/myorg/datasets/${dsId}/executeQueries`;
+    const body=JSON.stringify({queries:[{query:dax}],serializerSettings:{includeNulls:true}});
+    const headers={Authorization:`Bearer ${_token}`,'Content-Type':'application/json'};
+    let r=await fetch(u1,{method:'POST',headers,body});
+    if(r.status===401||r.status===403) r=await fetch(u2,{method:'POST',headers,body});
+    if(r.status===401||r.status===403){
+      try{ const _a=_pbi.getAllAccounts()[0]; const _t=await _pbi.acquireTokenSilent({scopes:PBI_CFG.scopes,account:_a,forceRefresh:true}); _token=_t.accessToken; }
+      catch(_e){ try{ const _t=await _pbi.loginPopup({scopes:PBI_CFG.scopes}); _token=_t.accessToken; }catch(__e){} }
+      const h2={Authorization:`Bearer ${_token}`,'Content-Type':'application/json'};
+      r=await fetch(u1,{method:'POST',headers:h2,body}); if(r.status===401||r.status===403) r=await fetch(u2,{method:'POST',headers:h2,body});
+    }
+    const text=await r.text();
+    if(!r.ok) throw new Error(`HTTP ${r.status}: ${text.substring(0,160)}`);
+    const d=JSON.parse(text); if(d.error) throw new Error(d.error.message);
+    return d.results[0].tables[0].rows;
+  }
+  window.PBIData={connect:pbiConnect,query:pbiQuery};
+
+  // ─────────────────────────────────────────────────────────────────────────
+  // FILTRO-BASE DO RELATÓRIO — é UM SÓ: Pedidos[É intercompany?] = "NÃO".
+  // Não há mais recorte por status do pedido nem por unidade de negócio:
+  // a aba mostra TODOS os pedidos do período (faturados, abertos, cancelados).
+  // O nome da coluna e o valor "NÃO" saem do catálogo do modelo, com a grafia
+  // e o acento exatos — grafia chutada derruba a query inteira.
+  // ─────────────────────────────────────────────────────────────────────────
+  const _norm = s => String(s==null?'':s).normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().replace(/\s+/g,' ').trim();
+  let _icFiltro = null;   // predicado DAX pronto (null = não resolvido)
+  let _icAviso  = null;   // motivo, quando não resolve
+
+  // base filtra Pedidos pelo período via sua própria coluna de data (evita depender de relação)
+  function avBase(){
+    const f = window._avFiltro;
+    const dc = "Pedidos[Data da ordem de venda]";
+    let mc = null;
+    const meses = f.mes==null?[]:[].concat(f.mes);      // nº único ou lista (Ctrl+clique)
+    if (f.tri){ const i=(f.tri-1)*3+1, fi=f.tri*3; mc=`MONTH(${dc}) >= ${i} && MONTH(${dc}) <= ${fi}`; }
+    else if (f.sem){ const [i,fi]=f.sem==='1S'?[1,6]:[7,12]; mc=`MONTH(${dc}) >= ${i} && MONTH(${dc}) <= ${fi}`; }
+    else if (meses.length){ mc = meses.length===1 ? `MONTH(${dc}) = ${meses[0]}` : `MONTH(${dc}) IN { ${meses.join(', ')} }`; }
+    const anos = [].concat(f.ano);
+    const base = [anos.length===1 ? `YEAR(${dc}) = ${anos[0]}` : `YEAR(${dc}) IN { ${anos.join(', ')} }`];
+    if (mc) base.unshift(mc);
+    if (_icFiltro) base.push(_icFiltro);   // ← ÚNICO filtro fixo do relatório
+    FILTROS.forEach(ft => { const vals=[...window._avSel[ft.id]]; if (vals.length) base.push(`${ft.col} IN { ${vals.map(v=>'"'+avDax(v)+'"').join(', ')} }`); });
+    return base;
+  }
+  const _v = (r,re)=>{ const k=Object.keys(r).find(x=>re.test(x)); return k?r[k]:null; };
+  // Chave da coluna no resultado do executeQueries. Casar só pelo SUFIXO da
+  // coluna COLIDE — /Cliente\]$/i casa Clientes[Cliente], Clientes[Cód. Cliente]
+  // E Pedidos[ORDEM_DE_COMPRA_CLIENTE] —, e quem vence é a 1ª chave da linha,
+  // ou seja a ordem dos campos escolhidos mudava o valor da coluna. Agora tenta
+  // a chave EXATA (tabela+coluna, ignorando as aspas do DAX) e só cai no sufixo
+  // (comportamento antigo) quando não acha.
+  const _keyN = s => String(s==null?'':s).replace(/'/g,'').toLowerCase();
+  function _vCol(r, col, re){
+    const alvo = _keyN(col);
+    const k = Object.keys(r).find(x => _keyN(x) === alvo);
+    return k !== undefined ? r[k] : _v(r, re || _re(col));
+  }
+  const _meas = r => ({ qt:_numN(_v(r,/\[Qt\]$/)), pu:_numN(_v(r,/\[PU\]$/)), tot:_numN(_v(r,/\[Tot\]$/)) });
+
+  // Resolve o ÚNICO filtro fixo da aba: Pedidos[É intercomapny?] = "NÃO".
+  // O nome da coluna é LITERAL — a grafia no modelo é "É intercomapny?" MESMO,
+  // não corrigir. A versão anterior varria o catálogo por /intercomp/, que NÃO
+  // casa com "intercomapny": era por isso que o filtro nunca era aplicado (o
+  // banner amarelo dizia que a tabela Pedidos não tinha a coluna). O catálogo
+  // continua sendo lido, mas só para cobrir o dia em que a grafia for corrigida;
+  // o VALUES() é que diz como o "não" está gravado (texto "NÃO"/"Nao", booleano
+  // FALSE ou 0) — valor chutado derrubaria a query inteira.
+  const IC_COL = 'É intercomapny?';
+  async function icResolver(){
+    _icFiltro = null; _icAviso = null;
+    let colNome = IC_COL;          // o literal manda; o catálogo só entra se ele não existir
+    try {
+      const rows = await pbiQuery(`EVALUATE SELECTCOLUMNS(INFO.VIEW.COLUMNS(), "T", [Table], "N", [Name])`);
+      const nomes = (rows||[]).filter(r => _norm(_v(r,/\[T\]$/))==='pedidos')
+                              .map(r => _v(r,/\[N\]$/)).filter(n => n!=null).map(String);
+      if (nomes.length && !nomes.some(n => _norm(n)===_norm(IC_COL))){
+        // o literal saiu do modelo: aceita variação (inclusive a grafia corrigida)
+        const cand = nomes.filter(n => /interco/.test(_norm(n)));
+        colNome = cand.find(n => /^e interco/.test(_norm(n))) || cand[0] || null;
+        if (!colNome) _icAviso = `a tabela Pedidos não tem [${IC_COL}] nem outra coluna com "interco" no nome (${nomes.length} colunas lidas)`;
+      }
+    } catch(e){ /* sem catálogo: segue com o literal, que é o nome bom no modelo */ }
+    if (!colNome) return;
+    const col = `Pedidos[${colNome}]`;
+    try {
+      const rows = await pbiQuery(`EVALUATE VALUES(${col})`);
+      const key  = (rows && rows.length) ? Object.keys(rows[0])[0] : null;
+      const vals = key ? rows.map(r => r[key]) : [];
+      const nao  = vals.find(v => /^(nao|n|false|0)$/.test(_norm(v)));
+      if (nao === undefined) _icAviso = `${col} não tem valor "NÃO" (achei: ${vals.slice(0,6).map(v=>String(v)).join(' / ')||'nada'})`;
+      else if (typeof nao === 'boolean') _icFiltro = `${col} = FALSE()`;
+      else if (typeof nao === 'number')  _icFiltro = `${col} = ${nao}`;
+      else                               _icFiltro = `${col} = "${avDax(nao)}"`;
+    } catch(e){ _icAviso = `erro ao ler os valores de ${col}: `+String(e.message).substring(0,90); }
+    if (_icFiltro) _icAviso = null;   // resolveu: o aviso do catálogo não vale mais
+  }
+
+  async function avCarregarValores(col){
+    const rows = await pbiQuery(`EVALUATE VALUES(${col})`);
+    if (!rows||!rows.length) return [];
+    const key = Object.keys(rows[0])[0];
+    return rows.map(r=>r[key]).filter(v=>v!=null&&v!=='').map(v=>({value:String(v),label:String(v)})).sort((a,b)=>a.label.localeCompare(b.label,'pt-BR'));
+  }
+  // Nº da ordem de venda: TODAS as OVs do período/filtros vigentes, sem teto
+  // (as mais recentes primeiro). A busca do dropdown varre a lista inteira.
+  const OV_COL = "Pedidos[Número da ordem de venda]";
+  async function avCarregarOVs(){
+    const base = avBase().filter(f => !/Número da ordem de venda/i.test(f));
+    let rows;
+    try { rows = await pbiQuery(`EVALUATE CALCULATETABLE(VALUES(${OV_COL}), ${base.join(', ')})`); }
+    catch(e){ rows = await pbiQuery(`EVALUATE VALUES(${OV_COL})`); }
+    if (!rows||!rows.length) return [];
+    const key = Object.keys(rows[0])[0];
+    return rows.map(r=>r[key]).filter(v=>v!=null&&v!=='').map(v=>({value:String(v),label:String(v)}))
+               .sort((a,b)=>b.label.localeCompare(a.label,'pt-BR',{numeric:true}));
+  }
+  async function avTotais(){
+    const r = await pbiQuery(`EVALUATE CALCULATETABLE(ROW(${TOT_DAX}), ${avBase().join(', ')})`);
+    if (!r||!r[0]) return {};
+    return { tot:_numN(_v(r[0],/\[Tot\]$/)), qt:_numN(_v(r[0],/\[Qt\]$/)), ped:_numN(_v(r[0],/\[Ped\]$/)) };
+  }
+  async function avAgrupar(col, top){
+    const r = await pbiQuery(`EVALUATE TOPN(${top||10}, CALCULATETABLE(ADDCOLUMNS(VALUES(${col}), "v", CALCULATE(SUM(Pedidos[Preço total])), "n", CALCULATE(DISTINCTCOUNT(Pedidos[Número da ordem de venda]))), ${avBase().join(', ')}), [v], DESC)`);
+    return r.map(rr => ({ nome:_vCol(rr, col), v:_numN(_v(rr,/\[v\]$/)), n:_numN(_v(rr,/\[n\]$/)) }))
+            .sort((a,b)=>(b.v||0)-(a.v||0));   // ordena por Valor Total do pedido (desc)
+  }
+
+  // ── tabular ──
+  let dimsArr=[];
+  // Sem TOPN: vem tudo. O ORDER BY assume a ordenação que o TOPN fazia de carona.
+  // Nenhuma linha é descartada — valor zero e negativo (devolução, cancelamento)
+  // aparecem, e por isso o rodapé TOTAL agora fecha com a soma das linhas.
+  async function avTabular(){
+    if (!dimsArr.length) return [];
+    const dimCols = dimsArr.map(d=>d.col).join(', ');
+    const dax = `EVALUATE CALCULATETABLE(ADDCOLUMNS(SUMMARIZE(Pedidos, ${dimCols}), ${VAL_DAX}), ${avBase().join(', ')}) ORDER BY [Tot] DESC`;
+    const r = await pbiQuery(dax);
+    return r.map(rr => { const o=_meas(rr); o.vals = dimsArr.map(d => _vCol(rr, d.col, d.re)); return o; });
+  }
+
+  // Render em lotes: com a tabela trazendo tudo, jogar dezenas de milhares de <tr>
+  // no DOM de uma vez congela a aba. Pinta AV_LOTE e emenda conforme o scroll.
+  const AV_LOTE = 1500;
+  const AV_TETO_PBI = 100000;          // teto de linhas do executeQueries do Power BI
+  let _avRows = [], _avPint = 0;
+  function _avLinha(r){
+    const dc = r.vals.map((v,i) => `<td class="dim">${/Data/i.test(dimsArr[i].label) ? fData(v) : (v ?? '')}</td>`).join('');
+    return `<tr>${dc}<td>${fNUM(r.qt)}</td><td>${fBRL(r.pu)}</td><td style="font-weight:600;color:var(--bm-blue-900);">${fBRL(r.tot)}</td></tr>`;
+  }
+  function _avInfo(){
+    const t = _avRows.length;
+    let s = `${fINT(t)} linha(s)`;
+    if (_avPint < t) s += ` · mostrando ${fINT(_avPint)} — role a tabela p/ carregar o resto`;
+    if (t >= AV_TETO_PBI) s += ` · ⚠ o Power BI corta a resposta em ${fINT(AV_TETO_PBI)} linhas: reduza o período ou os campos`;
+    setTxt('av-tbl-info', s);
+  }
+  function _avMais(){
+    if (_avPint >= _avRows.length) return;
+    const tbody = document.getElementById('av-tbody'); if (!tbody) return;
+    const lote = _avRows.slice(_avPint, _avPint + AV_LOTE);
+    tbody.insertAdjacentHTML('beforeend', lote.map(_avLinha).join(''));
+    _avPint += lote.length; _avInfo();
+  }
+  (function(){ const sc=document.querySelector('.av-scroll'); if(!sc) return;
+    sc.addEventListener('scroll', ()=>{ if (sc.scrollTop + sc.clientHeight >= sc.scrollHeight - 400) _avMais(); }); })();
+
+  function avRenderTabular(rows, total){
+    const thead = document.getElementById('av-thead');
+    const tbody = document.getElementById('av-tbody');
+    const tfoot = document.getElementById('av-tfoot');
+    const ncol  = dimsArr.length + 3;
+    thead.innerHTML = '<tr>' + dimsArr.map(d=>`<th class="dim">${d.label}</th>`).join('') + '<th>Quantidade</th><th>Preço Unit.</th><th>Preço Total</th></tr>';
+    _avRows = rows || []; _avPint = 0; if (tfoot) tfoot.innerHTML = '';
+    const sc = document.querySelector('.av-scroll'); if (sc) sc.scrollTop = 0;
+    if (!dimsArr.length){ tbody.innerHTML = `<tr><td colspan="${ncol||4}" style="text-align:center;color:var(--text-3);padding:20px;">Selecione ao menos um campo em "➕ Campos".</td></tr>`; setTxt('av-tbl-info','0 linhas'); return; }
+    if (!_avRows.length){ tbody.innerHTML = `<tr><td colspan="${ncol}" style="text-align:center;color:var(--text-3);padding:20px;">Sem dados no período.</td></tr>`; setTxt('av-tbl-info','0 linhas'); return; }
+    tbody.innerHTML = '';
+    _avMais();
+    if (total && tfoot){
+      const empty = dimsArr.map((d,i)=>`<td class="dim">${i===0?'<b>TOTAL</b>':''}</td>`).join('');
+      tfoot.innerHTML = `<tr>${empty}<td>${fNUM(total.qt)}</td><td>—</td><td>${fBRL(total.tot)}</td></tr>`;
+    }
+  }
+
+  // ── Paleta dos visuais ────────────────────────────────────────────────────
+  // Um tom por painel + degradê pelo ranking (a maior barra é a mais forte):
+  // dá hierarquia e vida sem transformar o dashboard num arco-íris.
+  const AP_TONS = {
+    azul:  ['#12457B','#8CB8E0'],   // Estratégia
+    teal:  ['#0E7F8A','#8ACFD5'],   // Unidades de Negócio
+    roxo:  ['#4B4FA6','#ACB0E4'],   // Família
+    ambar: ['#B4741B','#EBC489']    // Tipo de Cliente
+  };
+  const _hex2rgb = h => [parseInt(h.slice(1,3),16),parseInt(h.slice(3,5),16),parseInt(h.slice(5,7),16)];
+  function apRampa(tom, n){
+    const [esc, clr] = (AP_TONS[tom]||AP_TONS.azul).map(_hex2rgb);
+    if(n<=1) return ['rgb('+esc.join(',')+')'];
+    return Array.from({length:n}, (_,i)=>{
+      const t = (i/(n-1))*0.80;               // pára antes do tom claro: nada de barra "lavada"
+      return 'rgb('+esc.map((c,k)=>Math.round(c+(clr[k]-c)*t)).join(',')+')';
+    });
+  }
+  // eixo de valor compacto (o plugin global de rótulos reaproveita este callback)
+  const _fmtK = v => { const a=Math.abs(v);
+    if(a>=1e9) return (v/1e9).toLocaleString('pt-BR',{maximumFractionDigits:1})+' Bi';
+    if(a>=1e6) return (v/1e6).toLocaleString('pt-BR',{maximumFractionDigits:1})+' Mi';
+    if(a>=1e3) return (v/1e3).toLocaleString('pt-BR',{maximumFractionDigits:1})+'k';
+    return Number(v).toLocaleString('pt-BR',{maximumFractionDigits:0}); };
+
+  function _bar(canvasId, inst, labels, data, horiz, fmtTip, tom){
+    const el=document.getElementById(canvasId); if(!el||typeof Chart==='undefined') return inst;
+    const cores  = apRampa(tom, data.length);
+    const escuro = (AP_TONS[tom]||AP_TONS.azul)[0];
+    const mx     = Math.max(0, ...data.map(Number).filter(n=>!isNaN(n)));
+    const sugg   = mx>0 ? mx*1.14 : undefined;   // folga p/ o rótulo do valor caber FORA da barra
+    if(inst){
+      const ds=inst.data.datasets[0];
+      inst.data.labels=labels; ds.data=data; ds.backgroundColor=cores; ds.hoverBackgroundColor=escuro;
+      const vs = horiz ? inst.options.scales.x : inst.options.scales.y; if(vs) vs.suggestedMax=sugg;
+      inst.update(); return inst;
+    }
+    const grid = { color:'rgba(10,46,92,.07)', drawTicks:false };
+    const tk   = { font:{size:10}, color:'#64748B', padding:4 };
+    const eixoValor = { suggestedMax:sugg, beginAtZero:true, grid, border:{display:false}, ticks:Object.assign({callback:_fmtK}, tk) };
+    const eixoCat   = { grid:{display:false}, border:{display:false}, ticks:tk };
+    return new Chart(el.getContext('2d'),{ type:'bar',
+      data:{ labels, datasets:[{ data, backgroundColor:cores, hoverBackgroundColor:escuro,
+             borderRadius:5, borderSkipped:false, maxBarThickness:horiz?24:54, categoryPercentage:.84, barPercentage:.9 }] },
+      options:{ indexAxis:horiz?'y':'x', responsive:true, maintainAspectRatio:false,
+        animation:{duration:420}, layout:{padding:{top:12,right:horiz?10:4}},
+        plugins:{ legend:{display:false},
+          tooltip:{ backgroundColor:'rgba(4,26,51,.94)', padding:10, cornerRadius:8, displayColors:false,
+                    titleFont:{size:12,weight:'700'}, bodyFont:{size:12},
+                    callbacks:{ label: c => fmtTip ? fmtTip(c.raw) : String(c.raw) } } },
+        scales:{ x: horiz?eixoValor:eixoCat, y: horiz?eixoCat:eixoValor } } });
+  }
+  function _doughnut(canvasId, inst, labels, data){
+    const el=document.getElementById(canvasId); if(!el||typeof Chart==='undefined') return inst;
+    const colors=['#1565C0','#27D045','#F59E0B','#EF4444','#7C3AED','#0EA5E9','#10B981','#F97316','#64748B'];
+    if(inst){ inst.data.labels=labels; inst.data.datasets[0].data=data; inst.update(); return inst; }
+    return new Chart(el.getContext('2d'),{ type:'doughnut',
+      data:{ labels, datasets:[{ data, backgroundColor:colors, borderColor:'#fff', borderWidth:2 }] },
+      options:{ responsive:true, maintainAspectRatio:false, cutout:'58%', plugins:{ legend:{ position:'right', labels:{ boxWidth:9, font:{size:10.5}, padding:8 } } } } });
+  }
+
+  // ── STATUS DO PEDIDO · 3 visuais no formato da Análise de Vendas ───────────
+  // Barra horizontal, uma cor por painel, rótulo do valor no fim da barra. O
+  // rótulo vem do callback de ticks do eixo de valor (plugin global do script.js),
+  // então cada painel passa o SEU formatador — sem isso a CONTAGEM de pedidos
+  // sairia rotulada como R$.
+  const _apSt = {};
+  const _apAxBRL = v => { const a=Math.abs(v);
+    if(a>=1e6) return 'R$ '+(v/1e6).toLocaleString('pt-BR',{maximumFractionDigits:1})+' Mi';
+    if(a>=1e3) return 'R$ '+Math.round(v/1e3).toLocaleString('pt-BR')+'k';
+    return 'R$ '+Number(v).toLocaleString('pt-BR',{maximumFractionDigits:0}); };
+  const _apAxINT = v => Number(v).toLocaleString('pt-BR',{maximumFractionDigits:0});
+  function apBar3(canvasId, labels, data, opts){
+    const el=document.getElementById(canvasId); if(!el||typeof Chart==='undefined') return;
+    const o=opts||{};
+    if(_apSt[canvasId]){ const ch=_apSt[canvasId]; ch.data.labels=labels; ch.data.datasets[0].data=data; ch.update(); return; }
+    const valAxis={ beginAtZero:true, ticks:{ font:{size:10}, callback:o.eixo }, grid:{ color:'rgba(15,23,42,.05)' } };
+    const catAxis={ grid:{display:false}, ticks:{ font:{size:10}, autoSkip:false } };
+    _apSt[canvasId]=new Chart(el.getContext('2d'),{ type:'bar',
+      data:{ labels, datasets:[{ data, backgroundColor:o.color||'rgba(30,136,229,.75)', borderRadius:4 }] },
+      options:{ indexAxis:'y', responsive:true, maintainAspectRatio:false,
+        layout:{padding:{right:14}},
+        plugins:{ legend:{display:false}, tooltip:{ callbacks:{ label:c => o.tip?o.tip(c.raw):String(c.raw) } } },
+        scales:{ x:valAxis, y:catAxis } } });
+  }
+
+  async function avAplicar(){
+    if (!_avReady) return;
+    dimsArr = window._avDims.map(id=>DIMS.find(d=>d.id===id)).filter(Boolean);
+    const ncol = dimsArr.length + 3;
+    document.getElementById('av-tbody').innerHTML = `<tr><td colspan="${ncol||4}" style="text-align:center;color:var(--text-3);padding:20px;">Carregando…</td></tr>`;
+    try {
+      const [tot, rows, gEs, gUn, gFam, gTipo, gSt] = await Promise.all([
+        avTotais(),
+        avTabular(),
+        avAgrupar("'Famílias'[Estratégia]", 12).catch(()=>[]),
+        avAgrupar("'DIM_UNIDADE_DE_NEGOCIO_V2'[UNIDADE_DE_NEGOCIO]").catch(()=>[]),
+        avAgrupar("'Famílias'[Família]", 12).catch(()=>[]),
+        avAgrupar("'Clientes'[Tipo de cliente (Revisado)]", 12).catch(()=>[]),
+        avAgrupar("Pedidos[Status do pedido]", 40).catch(()=>[])
+      ]);
+      setTxt('av-k-tot', fBRL(tot.tot)); setTxt('av-k-ped', fINT(tot.ped)); setTxt('av-k-qt', fNUM(tot.qt));
+      setTxt('av-k-tk',  tot.tot != null && tot.ped ? fBRL(tot.tot/tot.ped) : '—');
+      avRenderTabular(rows, tot);
+      const _moeda = v => 'R$ '+Number(v).toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2});
+      // todos os visuais ordenados por Valor Total do pedido (SUM Preço total) — avAgrupar: TOPN [v] DESC + sort
+      _c1 = _bar('ap-c1', _c1, gEs.map(x=>x.nome??'—'),   gEs.map(x=>x.v||0),   true,  _moeda, 'azul');
+      _c2 = _bar('ap-c2', _c2, gUn.map(x=>x.nome??'—'),   gUn.map(x=>x.v||0),   false, _moeda, 'teal');
+      _c3 = _bar('ap-c3', _c3, gFam.map(x=>x.nome??'—'),  gFam.map(x=>x.v||0),  true,  _moeda, 'roxo');
+      _c5 = _bar('ap-c5', _c5, gTipo.map(x=>x.nome??'—'), gTipo.map(x=>x.v||0), true,  _moeda, 'ambar');
+      // Status do pedido: as MESMAS medidas dos KPIs (Valor = SUM Preço total,
+      // Qtd de Pedidos = DISTINCTCOUNT da OV, Ticket = Valor ÷ Qtd de Pedidos).
+      // Cada painel ordena pela SUA medida, como na Análise de Vendas.
+      const st  = (gSt||[]).map(x=>({ nome:x.nome??'—', v:x.v||0, n:x.n||0, tk:(x.n ? (x.v||0)/x.n : 0) }));
+      const stOrd = k => st.slice().sort((a,b)=>(b[k]||0)-(a[k]||0));
+      const stV=stOrd('v'), stN=stOrd('n'), stT=stOrd('tk');
+      apBar3('ap-s1', stV.map(x=>x.nome), stV.map(x=>x.v),  { color:'rgba(30,136,229,.8)',  eixo:_apAxBRL, tip:_moeda });
+      apBar3('ap-s2', stN.map(x=>x.nome), stN.map(x=>x.n),  { color:'rgba(124,58,237,.8)',  eixo:_apAxINT, tip:v=>fINT(v)+' pedido(s)' });
+      apBar3('ap-s3', stT.map(x=>x.nome), stT.map(x=>x.tk), { color:'rgba(245,158,11,.85)', eixo:_apAxBRL, tip:_moeda });
+    } catch(e){ console.error('[AP] erro:', e.message); document.getElementById('av-tbody').innerHTML = `<tr><td colspan="${ncol||4}" style="text-align:center;color:var(--danger);padding:20px;">Erro: ${e.message.substring(0,160)}</td></tr>`; }
+  }
+
+  // Ctrl+clique (ou Cmd no Mac) permite selecionar MAIS DE UM mês/ano
+  const _avMulti = () => !!(window.event && (window.event.ctrlKey || window.event.metaKey));
+  function avSetMes(b,m){
+    const f=window._avFiltro, row=b.closest('.av-row'), v=MES_NUM[m];
+    let cur=f.mes==null?[]:[].concat(f.mes);
+    if(_avMulti()){ cur = cur.includes(v) ? cur.filter(x=>x!==v) : cur.concat(v); } else { cur=[v]; }
+    f.mes = cur.length ? (cur.length===1?cur[0]:cur) : null; f.sem=null; f.tri=null;
+    row.querySelectorAll('.av-btn').forEach(x=>{
+      const oc=x.getAttribute('onclick')||'';
+      if(/avSetSem|avSetTri|avSetMesTodos/.test(oc)) x.classList.remove('active');
+      const mm=oc.match(/avSetMes\(this,'(\w+)'\)/);
+      if(mm) x.classList.toggle('active', cur.includes(MES_NUM[mm[1]]));
+    });
+    if(!cur.length){ const t=row.querySelector('[onclick*="avSetMesTodos"]'); if(t) t.classList.add('active'); }
+    avAplicar();
+  }
+  function avSetMesTodos(b){ b.closest('.av-row').querySelectorAll('.av-btn.active').forEach(x=>x.classList.remove('active')); b.classList.add('active'); window._avFiltro.mes=null; window._avFiltro.sem=null; window._avFiltro.tri=null; avAplicar(); }
+  function avSetSem(b,s){ b.closest('.av-row').querySelectorAll('.av-btn.active').forEach(x=>x.classList.remove('active')); b.classList.add('active'); window._avFiltro.sem=s; window._avFiltro.mes=null; window._avFiltro.tri=null; avAplicar(); }
+  function avSetTri(b,q){ b.closest('.av-row').querySelectorAll('.av-btn.active').forEach(x=>x.classList.remove('active')); b.classList.add('active'); window._avFiltro.tri=q; window._avFiltro.mes=null; window._avFiltro.sem=null; avAplicar(); }
+  function avSetAno(b,a){
+    const f=window._avFiltro, row=b.closest('.av-row'), v=parseInt(a,10);
+    let cur=[].concat(f.ano);
+    if(_avMulti()){ cur = cur.includes(v) ? cur.filter(x=>x!==v) : cur.concat(v); if(!cur.length) cur=[v]; } else { cur=[v]; }
+    f.ano = cur.length===1 ? cur[0] : cur;
+    row.querySelectorAll('.av-btn').forEach(x=>{
+      const mm=(x.getAttribute('onclick')||'').match(/avSetAno\(this,'?(\d{4})'?\)/);
+      if(mm) x.classList.toggle('active-green', cur.includes(parseInt(mm[1],10)));
+    });
+    avAplicar();
+  }
+  window.avSetMes=avSetMes; window.avSetMesTodos=avSetMesTodos; window.avSetSem=avSetSem; window.avSetTri=avSetTri; window.avSetAno=avSetAno;
+
+  function avMakeDropdown({ label, getOptions, getSelected, setSelected, onChange, noCache, dica }){
+    const wrap=document.createElement('div'); wrap.className='av-dd';
+    const btn=document.createElement('button'); btn.className='av-dd-btn'; btn.type='button';
+    const panel=document.createElement('div'); panel.className='av-dd-panel';
+    panel.innerHTML = `<div class="av-dd-search"><input type="text" placeholder="${dica||'Buscar…'}"></div><div class="av-dd-list"></div><div class="av-dd-foot"><button type="button" data-act="limpar">Limpar</button><button type="button" data-act="fechar">Fechar</button></div>`;
+    wrap.appendChild(btn); wrap.appendChild(panel);
+    const list=panel.querySelector('.av-dd-list'), search=panel.querySelector('input');
+    let loaded=false, options=[];
+    function refresh(){ const n=getSelected().length; btn.classList.toggle('has',n>0); btn.innerHTML=`<span>${label}</span>${ n?`<span class="cnt">${n}</span>`:'<span style="color:var(--text-4);font-weight:500;">Todos</span>' }`; }
+    function renderList(){ const q=(search.value||'').toLowerCase(); const sel=new Set(getSelected()); const items=options.filter(o=>!q||String(o.label).toLowerCase().includes(q)); list.innerHTML=items.length?items.slice(0,500).map(o=>`<label class="av-dd-opt"><input type="checkbox" value="${avEsc(o.value)}" ${sel.has(o.value)?'checked':''}>${o.label}</label>`).join(''):'<div style="padding:8px;color:var(--text-3);font-size:12px;">nenhum</div>'; }
+    async function ensure(){ if(loaded && !noCache) return; list.innerHTML='<div style="padding:10px;color:var(--text-3);font-size:12px;">Carregando…</div>'; try{options=await getOptions();}catch(e){list.innerHTML=`<div style="padding:10px;color:var(--danger);font-size:12px;">erro: ${e.message.substring(0,60)}</div>`;return;} loaded=true; renderList(); }
+    btn.addEventListener('click', async e=>{ e.stopPropagation(); const open=wrap.classList.contains('open'); document.querySelectorAll('.av-dd.open').forEach(d=>d.classList.remove('open')); if(!open){ wrap.classList.add('open'); await ensure(); search.focus(); } });
+    panel.addEventListener('click', e=>e.stopPropagation());
+    list.addEventListener('change', e=>{ if(e.target.matches('input[type=checkbox]')){ setSelected(e.target.value,e.target.checked); refresh(); onChange(); } });
+    search.addEventListener('input', renderList);
+    panel.querySelector('[data-act=limpar]').addEventListener('click', ()=>{ setSelected(null,false,true); renderList(); refresh(); onChange(); });
+    panel.querySelector('[data-act=fechar]').addEventListener('click', ()=>wrap.classList.remove('open'));
+    refresh(); return wrap;
+  }
+  document.addEventListener('click', ()=>document.querySelectorAll('.av-dd.open').forEach(d=>d.classList.remove('open')));
+  function avMontarToolbar(){
+    const tb=document.getElementById('av-toolbar'); const cp=document.getElementById('av-campos'); if(!tb) return; tb.innerHTML=''; if(cp) cp.innerHTML='';
+    (cp||tb).appendChild(avMakeDropdown({ label:'➕ Campos', getOptions:async()=>DIMS.map(d=>({value:d.id,label:d.label})), getSelected:()=>window._avDims.slice(), setSelected:(id,ck,clr)=>{ if(clr){window._avDims=[];return;} const i=window._avDims.indexOf(id); if(ck){if(i<0)window._avDims.push(id);}else if(i>=0)window._avDims.splice(i,1); }, onChange:avAplicar }));
+    FILTROS.forEach(ft=>tb.appendChild(avMakeDropdown({
+      label: ft.label,
+      getOptions: ft.id==='numov' ? avCarregarOVs : (()=>avCarregarValores(ft.col)),
+      noCache: ft.id==='numov',                                   // a lista de OVs acompanha o período
+      dica: ft.id==='numov' ? 'Buscar Nº da OV…' : 'Buscar…',
+      getSelected:()=>[...window._avSel[ft.id]], setSelected:(v,ck,clr)=>{ const s=window._avSel[ft.id]; if(clr){s.clear();return;} if(ck)s.add(v); else s.delete(v); }, onChange:avAplicar })));
+    const limpar=document.createElement('button'); limpar.className='av-btn'; limpar.type='button'; limpar.textContent='✕ Limpar'; limpar.style.fontSize='11px';
+    limpar.addEventListener('click', ()=>{ FILTROS.forEach(f=>window._avSel[f.id].clear()); avMontarToolbar(); avAplicar(); });
+    tb.appendChild(limpar);
+  }
+
+  document.addEventListener('DOMContentLoaded', async ()=>{
+    avMontarToolbar();
+    const banner=document.getElementById('av-banner');
+    try {
+      await pbiConnect(); _avReady=true;
+      await icResolver();
+      // o banner declara o único filtro fixo da aba — filtro invisível foi o
+      // problema da versão anterior (escondia tudo que já estava faturado)
+      if (_icFiltro){
+        banner.style.cssText='padding:11px 16px;border-radius:8px;font-size:13px;display:flex;align-items:center;gap:10px;background:#F0FDF4;border:1px solid #BBF7D0;color:#14532D;';
+        banner.innerHTML=`<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg> ✅ Conectado ao Power BI · filtro fixo do relatório: <code style="background:#DCFCE7;padding:1px 6px;border-radius:5px;">${_icFiltro}</code> (nenhum outro)`;
+      } else {
+        banner.style.cssText='padding:11px 16px;border-radius:8px;font-size:13px;display:flex;align-items:center;gap:10px;background:#FFFBEB;border:1px solid #FDE68A;color:#78350F;';
+        banner.innerHTML=`<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg> ⚠ Conectado, mas o filtro de intercompany <b>não</b> foi aplicado — os números incluem intercompany. Motivo: ${_icAviso||'desconhecido'}`;
+      }
+      await avAplicar();
+    } catch(err){
+      banner.style.cssText='padding:11px 16px;border-radius:8px;font-size:13px;display:flex;align-items:center;gap:10px;background:#FEF2F2;border:1px solid #FECACA;color:#7F1D1D;';
+      banner.innerHTML=`<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg> ${err.message}`;
+    }
+  });
+  </script>
+</body>
+</html>

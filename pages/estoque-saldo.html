@@ -1,0 +1,966 @@
+﻿<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Saldo de Estoque · Estoque · Biomedical</title>
+  <link rel="stylesheet" href="../styles.css?v=14">
+  <script src="https://unpkg.com/@azure/msal-browser@2.38.3/lib/msal-browser.min.js"></script>
+<script src="../pbi-throttle.js?v=3"></script>
+<script src="../pbi-modelo.js?v=2"></script>
+  <!-- Layout v3 (Claude Design · animado): fonte + camada visual + motor de animações -->
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300..800&family=Manrope:wght@400..800&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../portal-v3.css?v=2">
+  <script src="../portal-motion.js?v=3" defer></script>
+  <!-- Tema claro/escuro (menu do avatar): marca o <html> antes de pintar + camada escura -->
+  <script>try{if(localStorage.getItem('bm-tema')==='escuro')document.documentElement.setAttribute('data-tema','escuro')}catch(e){}</script>
+  <link rel="stylesheet" href="../portal-tema.css?v=1">
+  <script src="../portal-tema.js?v=1" defer></script>
+  <!-- Celular (varredura 15/10/26): só vale em tela < 768px; no computador não se aplica -->
+  <link rel="stylesheet" href="../portal-mobile.css?v=1" media="(max-width: 767.98px)">
+  <script src="../portal-mobile.js?v=1" defer></script>
+</head>
+<body class="dept">
+
+  <header class="site-header">
+    <div class="container">
+      <a href="../index.html" class="brand" aria-label="Biomedical — Portal Corporativo">
+        <img class="brand-logo" src="/icons/icon-192.png" alt="Biomedical" onerror="this.dataset.failed='true'">
+        <span class="brand-fallback">Biomedical</span>
+      </a>
+      <nav class="header-nav">
+        <a href="../index.html">Início</a><a href="../index.html#areas">Áreas</a><a href="../index.html#sistemas">Sistemas</a><a href="../index.html#avisos">Avisos</a><a href="../index.html#contato">Contato</a>
+      </nav>
+    </div>
+  </header>
+
+  <!-- cabeçalho movido para .fx-head (abas de submódulo, Claude Design) -->
+
+  <div class="area-body">
+    <div class="container">
+      <div class="area-grid">
+
+        <aside class="area-sidebar">
+          <div class="sb-card">
+            <div class="sb-head">
+              <span class="sb-ic"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="2" width="20" height="8" rx="2"/><rect x="2" y="14" width="20" height="8" rx="2"/><line x1="6" y1="6" x2="6.01" y2="6"/><line x1="6" y1="18" x2="6.01" y2="18"/></svg></span>
+              <div><div class="sb-tt">Estoque</div><div class="sb-st">Departamento</div></div>
+            </div>
+            <nav></nav>
+          </div>
+          <a href="../index.html" class="sb-back"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></svg>Voltar ao Portal</a>
+        </aside>
+
+        <div class="area-main">
+          <!-- ═══ Cabeçalho + abas de submódulo (Claude Design) ═══ -->
+          <style>
+            .fx-head{display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap;padding:22px 0 4px;}
+            .fx-bc{display:flex;align-items:center;gap:6px;font-size:12px;color:#7C93A8;}
+            .fx-title{margin:4px 0 0;font-size:23px;font-weight:800;letter-spacing:-0.5px;color:#0A2E5C;}
+            .fx-head-right{display:flex;align-items:center;gap:12px;flex-wrap:wrap;}
+            .fx-tabs{display:flex;align-items:center;background:#FFFFFF;border:1px solid #E3EAF2;border-radius:11px;padding:3px;flex-wrap:wrap;}
+            .fx-tabs a,.fx-tabs span{padding:8px 14px;border-radius:8px;font-size:12.5px;font-weight:600;color:#5B7189;text-decoration:none;white-space:nowrap;}
+            .fx-tabs a:hover{color:#0A2E5C;}
+            .fx-tabs .active{background:#0A2E5C;font-weight:700;color:#fff;}
+            .fx-filters{display:flex;align-items:center;gap:10px;flex-wrap:wrap;padding:12px 14px;background:#fff;border:1px solid #E3EAF2;border-radius:12px;}
+            .fx-fdiv{width:1px;height:24px;background:#E3EAF2;}
+            .fx-fbtn{display:inline-flex;align-items:center;gap:8px;padding:8px 12px;border-radius:9px;border:1px solid #E3EAF2;background:#fff;font-size:12.5px;font-weight:600;color:#33495E;cursor:pointer;font-family:inherit;white-space:nowrap;}
+            .fx-fbtn:hover{border-color:#1272C4;}
+            .fx-fbtn .fx-fk{font-weight:700;color:#93A7BA;}
+            .fx-fbtn svg{flex-shrink:0;}
+            .fx-flimpar{margin-left:auto;display:inline-flex;align-items:center;gap:6px;padding:8px 12px;border-radius:9px;border:none;background:transparent;font-size:12.5px;font-weight:600;color:#5B7189;cursor:pointer;font-family:inherit;white-space:nowrap;}
+            .fx-flimpar:hover{color:#B54545;}
+            .fxdd{position:relative;display:inline-block;}
+            .fxdd-panel{position:absolute;z-index:50;top:calc(100% + 6px);left:0;display:none;flex-direction:column;background:#fff;border:1px solid #E3EAF2;border-radius:12px;box-shadow:0 10px 30px rgba(10,46,92,0.14);padding:12px;min-width:210px;}
+            .fxdd.open .fxdd-panel{display:flex;}
+            .fxdd-sec{font-size:10.5px;font-weight:800;letter-spacing:0.8px;text-transform:uppercase;color:#93A7BA;margin:2px 2px 8px;}
+            .fxdd-sec.mt{margin-top:12px;}
+            .fxdd-hint{font-size:11px;color:#93A7BA;margin-top:10px;}
+            /* esconde a faixa de cards de sub-modulos (estatica OU injetada pelo nav-sidebar.js) — navegacao agora pelas abas */
+            .area-main section:has(.modulo-card){display:none !important;}
+            /* periodo largo/horizontal p/ dropdowns com botoes de mes */
+            #fx-periodo .fxdd-panel{width:720px;max-width:calc(100vw - 48px);}
+            @media(max-width:1100px){#fx-periodo .fxdd-panel{width:560px;}}
+            #fx-periodo .fxdd-panel .sr-row,#fx-periodo .fxdd-panel .av-row,#fx-periodo .fxdd-panel .pv-row,#fx-periodo .fxdd-panel .fn-row-f{max-width:none !important;gap:6px !important;row-gap:8px !important;}
+            #fx-periodo .fxdd-panel .sr-btn,#fx-periodo .fxdd-panel .av-btn,#fx-periodo .fxdd-panel .pv-btn{padding:5px 9px;}
+            #fx-periodo .fxdd-panel .sr-divider:first-of-type,#fx-periodo .fxdd-panel .av-divider:first-of-type,#fx-periodo .fxdd-panel .pv-divider:first-of-type{flex-basis:100%;width:100%;height:0 !important;border:0 !important;background:transparent !important;margin:2px 0 0 !important;}
+            @media(max-width:767.98px){
+              .fx-head{align-items:flex-start;padding-top:14px;}
+              .fx-title{font-size:17px;}
+              .fx-head-right{width:100%;}
+              .fx-tabs{width:100%;flex-wrap:nowrap;overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none;background:#F0F4F9;border:none;}
+              .fx-tabs::-webkit-scrollbar{display:none;}
+              .fx-tabs a,.fx-tabs span{flex:0 0 auto;}
+              .fx-filters{flex-wrap:nowrap;overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none;}
+              .fx-filters::-webkit-scrollbar{display:none;}
+              .fx-filters>*{flex-shrink:0;}
+              .fx-flimpar{margin-left:8px;}
+            }
+          </style>
+
+          <div class="fx-head">
+            <div>
+              <div class="fx-bc"><span>Estoque</span><span>›</span><span>Gestão de Estoque</span></div>
+              <h1 class="fx-title">Saldo de Estoque</h1>
+            </div>
+            <div class="fx-head-right">
+              <div class="fx-tabs">
+                <a href="estoque-gestao.html">Visão Geral</a>
+                <span class="active">Saldo de Estoque</span>
+                <a href="estoque-ruptura.html">Ruptura de Estoque</a>
+                <a href="estoque-validade-curta.html">Validade Curta</a>
+                <a href="estoque-movimentacoes.html">Movimentações</a>
+              </div>
+            </div>
+          </div>
+          <script>
+          /* barra de filtros fx — dropdowns compactos (Claude Design) */
+          (function(){
+            window.fxTogglePanel = function(btn){
+              var dd = btn.closest('.fxdd'); if(!dd) return;
+              var open = dd.classList.contains('open');
+              document.querySelectorAll('.fxdd.open').forEach(function(d){ d.classList.remove('open'); });
+              if(!open) dd.classList.add('open');
+            };
+            function txt(id,v){ var el=document.getElementById(id); if(el) el.textContent=v; }
+            window.fxSyncLabels = function(){
+              var per = document.getElementById('fx-periodo');
+              if(per){
+                var mesBtn = per.querySelector('.fxdd-panel button.active');
+                var anoBtns = per.querySelectorAll('.fxdd-panel button.active-green');
+                var ano = anoBtns.length===1 ? anoBtns[0].textContent.trim() : (anoBtns.length>1 ? anoBtns.length+' anos' : '');
+                var mes = mesBtn ? mesBtn.textContent.trim() : '';
+                txt('fx-periodo-lbl', ([ano, (mes && !/^todos$/i.test(mes) ? mes : '')].filter(Boolean).join(' · ')) || 'Todos');
+              }
+              [['fx-empresa','fx-empresa-lbl'],['fx-tipocli','fx-tipocli-lbl']].forEach(function(p){
+                var dd=document.getElementById(p[0]); if(!dd) return;
+                var b=dd.querySelector('.fxdd-panel button.active,.fxdd-panel button.active-green');
+                txt(p[1], b ? b.textContent.trim() : 'Todos');
+              });
+            };
+            window.fxLimpar = function(){
+              document.querySelectorAll('.fx-filters [data-fxdefault]').forEach(function(b){ b.click(); });
+              setTimeout(window.fxSyncLabels, 0);
+            };
+            document.addEventListener('DOMContentLoaded', function(){
+              document.querySelectorAll('.fx-filters .fxdd-panel').forEach(function(p){
+                p.addEventListener('click', function(e){ e.stopPropagation(); setTimeout(window.fxSyncLabels, 0); });
+              });
+              document.addEventListener('click', function(e){ if(e.target.closest && e.target.closest('.fxdd')) return; document.querySelectorAll('.fxdd.open').forEach(function(d){ d.classList.remove('open'); }); });
+              window.fxSyncLabels();
+            });
+          })();
+          </script>
+
+          <style>
+            .cx-wrap{padding:8px 0 48px;display:flex;flex-direction:column;gap:14px;}
+            .cx-row-f{display:flex;align-items:center;gap:8px;flex-wrap:wrap;}
+            .cx-label{font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--text-4);margin-right:4px;}
+            .cx-btn{padding:5px 13px;border-radius:6px;border:1px solid var(--border);background:#fff;font-size:12.5px;font-weight:600;color:var(--text-2);cursor:pointer;font-family:var(--font-body);transition:all .15s;}
+            .cx-btn:hover{border-color:var(--bm-blue-500);color:var(--bm-blue-700);}
+            .cx-btn.active{background:var(--bm-blue-900);color:#fff;border-color:var(--bm-blue-900);}
+            .cx-card{background:#fff;border:1px solid var(--border);border-radius:var(--radius);padding:14px 16px;}
+            .cx-kpis{display:grid;grid-template-columns:repeat(5,1fr);gap:12px;}
+            @media(max-width:1100px){.cx-kpis{grid-template-columns:repeat(3,1fr);}}
+            @media(max-width:880px){.cx-kpis{grid-template-columns:repeat(2,1fr);}.cx-bars{grid-template-columns:1fr;}}
+            .cx-kpi{background:#fff;border:1px solid var(--border);border-radius:var(--radius);padding:16px 18px;position:relative;overflow:hidden;}
+            .cx-kpi::before{content:'';position:absolute;left:0;top:0;bottom:0;width:4px;background:var(--bm-blue-600);}
+            .cx-kpi.g::before{background:var(--bm-green-600);}
+            .cx-kpi.e::before{background:#0891b2;}
+            .cx-kpi.s::before{background:#b45309;}
+            .cx-kpi-l{font-size:10.5px;font-weight:600;text-transform:uppercase;letter-spacing:.05em;color:var(--text-3);margin-bottom:6px;}
+            .cx-kpi-v{font-family:var(--font-display);font-size:24px;font-weight:800;color:var(--bm-blue-900);line-height:1;}
+            .cx-panel{background:#fff;border:1px solid var(--border);border-radius:var(--radius);padding:16px 18px;}
+            .cx-panel h3{font-size:14px;font-weight:700;color:var(--text);margin:0 0 4px;}
+            .cx-panel .cx-sub{font-size:11.5px;color:var(--text-3);margin-bottom:14px;}
+            .cx-bars{display:grid;grid-template-columns:1fr 1fr;gap:14px;}
+            .cx-chart-wrap{position:relative;height:300px;}
+            .cx-tbl-wrap{overflow:auto;border:1px solid var(--border);border-radius:10px;max-height:620px;}
+            table.cx-tbl{width:100%;border-collapse:collapse;font-size:12.5px;}
+            table.cx-tbl thead th{position:sticky;top:0;z-index:3;background:var(--bm-blue-900);color:rgba(255,255,255,.95);text-align:right;padding:9px 14px;font-size:10.5px;font-weight:600;letter-spacing:.02em;text-transform:uppercase;white-space:nowrap;}
+            table.cx-tbl thead th.dim{text-align:left;left:0;z-index:4;}
+            table.cx-tbl tbody td{padding:8px 14px;border-bottom:1px solid var(--border);text-align:right;font-variant-numeric:tabular-nums;color:var(--text-2);white-space:nowrap;}
+            table.cx-tbl tbody td.dim{position:sticky;left:0;z-index:1;background:#fff;text-align:left;color:var(--text);font-weight:700;border-right:1px solid var(--border);}
+            table.cx-tbl tbody tr:hover td{background:var(--bm-blue-50);}
+            table.cx-tbl tbody tr:hover td.dim{background:var(--bm-blue-50);}
+            table.cx-tbl tbody tr.cx-total td{background:var(--bm-blue-900);color:#fff;font-weight:800;border-top:2px solid var(--border-2);position:sticky;bottom:0;z-index:2;}
+            .cx-tg{cursor:pointer;display:inline-block;width:14px;color:var(--bm-blue-600);font-weight:700;}
+            .av-toolbar{display:flex;gap:8px;flex-wrap:wrap;align-items:center;}
+            .av-dd{position:relative;display:inline-block;}
+            .av-dd-btn{padding:7px 12px;border-radius:8px;border:1px solid var(--border);background:#fff;font-size:12.5px;font-weight:600;color:var(--text-2);cursor:pointer;display:inline-flex;align-items:center;gap:10px;min-width:150px;justify-content:space-between;}
+            .av-dd-btn:hover{border-color:var(--bm-blue-500);}
+            .av-dd-btn.has{border-color:var(--bm-blue-600);background:var(--bm-blue-50);color:var(--bm-blue-800);}
+            .av-dd-btn .cnt{background:var(--bm-blue-600);color:#fff;border-radius:999px;padding:0 7px;font-size:11px;}
+            .av-dd-panel{position:absolute;z-index:40;top:calc(100% + 4px);left:0;width:280px;max-height:340px;display:none;flex-direction:column;background:#fff;border:1px solid var(--border);border-radius:10px;box-shadow:var(--shadow);overflow:hidden;}
+            .av-dd.open .av-dd-panel{display:flex;}
+            .av-dd-search{padding:8px;border-bottom:1px solid var(--border);}
+            .av-dd-search input{width:100%;padding:6px 8px;border:1px solid var(--border);border-radius:6px;font-size:12px;font-family:var(--font-body);box-sizing:border-box;}
+            .av-dd-list{overflow-y:auto;padding:4px;}
+            .av-dd-opt{display:flex;align-items:center;gap:8px;padding:6px 8px;border-radius:6px;font-size:12.5px;color:var(--text-2);cursor:pointer;}
+            .av-dd-opt:hover{background:var(--bm-blue-50);}
+            .av-dd-foot{display:flex;justify-content:space-between;padding:6px 10px;border-top:1px solid var(--border);}
+            .av-dd-foot button{font-size:11.5px;color:var(--bm-blue-700);background:none;border:none;cursor:pointer;font-weight:600;}
+            /* alerta de pouco estoque */
+            .cx-lowstock{border-left:4px solid #d97706;}
+            .cx-pill{display:inline-flex;align-items:center;gap:6px;padding:6px 12px;border-radius:999px;font-size:12.5px;font-weight:700;}
+            .cx-pill svg{flex:0 0 auto;}
+            .cx-pill.warn{background:#FEF3C7;color:#92400E;border:1px solid #FDE68A;}
+            .cx-pill.danger{background:#FEE2E2;color:#991B1B;border:1px solid #FECACA;}
+            .cx-pill.ok{background:#F0FDF4;color:#14532D;border:1px solid #BBF7D0;}
+            .cx-low-thr{width:84px;padding:6px 9px;border:1px solid var(--border);border-radius:6px;font-family:var(--font-body);font-size:13px;}
+            .cx-low-thr:focus{outline:none;border-color:var(--bm-blue-500);box-shadow:0 0 0 3px var(--bm-blue-50);}
+            /* ícone de status na matriz (esgotado / pouco / disponível) */
+            .cx-stat{display:inline-block;width:9px;height:9px;border-radius:50%;margin-right:6px;vertical-align:middle;flex:0 0 auto;box-shadow:0 0 0 2px rgba(255,255,255,.6);}
+            .cx-stat.ok{background:#16a34a;} .cx-stat.low{background:#d97706;} .cx-stat.esg{background:#dc2626;}
+            .cx-stat-legend{display:flex;gap:14px;flex-wrap:wrap;font-size:11.5px;color:var(--text-3);font-weight:600;}
+            .cx-stat-legend span{display:inline-flex;align-items:center;gap:6px;}
+            /* alternância MATRIZ / TABULAR + busca + exportar */
+            .cx-viewtoggle{display:inline-flex;border:1px solid var(--border);border-radius:8px;overflow:hidden;}
+            .cx-vbtn{padding:7px 14px;font-size:12.5px;font-weight:600;color:var(--text-2);background:#fff;border:none;cursor:pointer;font-family:var(--font-body);}
+            .cx-vbtn.active{background:var(--bm-blue-900);color:#fff;}
+            .cx-vbtn+.cx-vbtn{border-left:1px solid var(--border);}
+            .cx-export{display:inline-flex;align-items:center;gap:6px;padding:7px 13px;border-radius:8px;border:1px solid var(--bm-green-600,#16a34a);background:#f0fdf4;color:#15803d;font-size:12.5px;font-weight:700;cursor:pointer;font-family:var(--font-body);}
+            .cx-export:hover{background:#dcfce7;}
+            .search-wrap{position:relative;}
+            .search-wrap svg{position:absolute;left:10px;top:50%;transform:translateY(-50%);color:var(--text-4);}
+            .search-input{padding:7px 10px 7px 32px;border:1px solid var(--border);border-radius:8px;font-size:12.5px;font-family:var(--font-body);width:250px;box-sizing:border-box;}
+            /* tabela TABULAR — muitas colunas: só a 1ª congela; cabeçalho ordena */
+            #cx-tab-table thead th{cursor:pointer;user-select:none;}
+            #cx-tab-table thead th.tdim{text-align:left;left:auto;z-index:3;}
+            #cx-tab-table tbody td.tdim{text-align:left;color:var(--text-2);font-weight:600;white-space:nowrap;}
+            #cx-tab-table thead th:first-child{position:sticky;left:0;z-index:4;}
+            #cx-tab-table tbody td:first-child{position:sticky;left:0;z-index:1;background:#fff;color:var(--text);font-weight:700;border-right:1px solid var(--border);}
+            #cx-tab-table tbody tr:hover td:first-child{background:var(--bm-blue-50);}
+            #cx-tab-table tbody tr.cx-total td:first-child{background:var(--bm-blue-900);color:#fff;}
+            #cx-tab-table thead th .sarr{opacity:.6;font-size:9px;margin-left:4px;}
+            #cx-tab-table tbody td.cod{font-family:var(--font-mono,monospace);font-size:11px;color:var(--text-3);text-align:left;font-weight:500;}
+            /* painel "Campos" com seções (dimensões + medidas) */
+            .cx-campos-sec{font-size:10px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:var(--text-4);padding:9px 8px 4px;}
+            .cx-campos-acts{display:flex;gap:10px;padding:2px 8px 6px;}
+            .cx-campos-acts button{font-size:11.5px;color:var(--bm-blue-700);background:none;border:none;cursor:pointer;font-weight:700;font-family:var(--font-body);}
+          </style>
+
+          <div class="cx-wrap">
+
+            <div id="cx-banner" style="padding:11px 16px;border-radius:8px;font-size:13px;display:flex;align-items:center;gap:10px;background:#EFF6FF;border:1px solid #BFDBFE;color:#1E40AF;">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+              Conectando ao Power BI…
+            </div>
+
+            <!-- ── FILTROS ── -->
+            <div class="fx-filters"><div class="av-toolbar" id="cx-toolbar" style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;"></div></div>
+
+            <!-- ── KPIs ── -->
+            <div class="cx-kpis">
+              <div class="cx-kpi"><div class="cx-kpi-l">Qtde Física</div><div class="cx-kpi-v" id="cx-k-fis">—</div></div>
+              <div class="cx-kpi s"><div class="cx-kpi-l">Qtde Reservada</div><div class="cx-kpi-v" id="cx-k-res">—</div></div>
+              <div class="cx-kpi g"><div class="cx-kpi-l">Qtde Disponível</div><div class="cx-kpi-v" id="cx-k-disp">—</div></div>
+              <div class="cx-kpi e"><div class="cx-kpi-l">Em Ordem de Entrada</div><div class="cx-kpi-v" id="cx-k-ent">—</div></div>
+              <div class="cx-kpi s"><div class="cx-kpi-l">Em Ordem de Saída</div><div class="cx-kpi-v" id="cx-k-sai">—</div></div>
+            </div>
+
+            <!-- ── GRÁFICOS ── -->
+            <div class="cx-bars">
+              <div class="cx-panel"><h3>Top 10 · Qtde Física por Família</h3><div class="cx-sub">Maiores saldos físicos</div><div class="cx-chart-wrap"><canvas id="cx-ch-fam"></canvas></div></div>
+              <div class="cx-panel"><h3>Top 10 · Qtde Física por Depósito</h3><div class="cx-sub">Maiores saldos físicos</div><div class="cx-chart-wrap"><canvas id="cx-ch-dep"></canvas></div></div>
+            </div>
+
+            <!-- ── ALERTA · POUCO ESTOQUE (tabela) ── -->
+            <div class="cx-panel cx-lowstock">
+              <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;">
+                <div>
+                  <h3 style="margin:0;display:flex;align-items:center;gap:7px;"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#d97706" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>Alerta · Pouco estoque</h3>
+                  <div class="cx-sub" style="margin:0;">Produtos com baixa quantidade disponível — do menor saldo para o maior</div>
+                </div>
+                <label style="display:flex;align-items:center;gap:8px;font-size:12px;color:var(--text-3);font-weight:600;">Estoque mínimo
+                  <input type="number" id="cx-low-thr" class="cx-low-thr" value="10" min="0" step="1">
+                </label>
+              </div>
+              <div id="cx-low-badges" style="display:flex;gap:10px;flex-wrap:wrap;margin:12px 0 10px;"></div>
+              <div class="cx-tbl-wrap" id="cx-low-tblwrap" style="max-height:440px;">
+                <table class="cx-tbl" id="cx-low-table">
+                  <thead><tr><th class="dim">Produto</th><th style="text-align:left;">Família</th><th>Qtde Física</th><th>Disponível</th><th>Situação</th></tr></thead>
+                  <tbody id="cx-low-tbody"><tr><td colspan="5" style="padding:20px;text-align:center;color:var(--text-3);">Carregando…</td></tr></tbody>
+                </table>
+              </div>
+              <div id="cx-low-empty" style="display:none;padding:34px;text-align:center;color:var(--text-3);font-size:13px;">Nenhum produto abaixo do estoque mínimo. ✅</div>
+            </div>
+
+            <!-- ── MATRIZ ── -->
+            <div class="cx-panel">
+              <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;margin-bottom:12px;">
+                <div><h3 style="margin:0;">Saldo de Estoque</h3><div class="cx-sub" style="margin:0;" id="cx-mx-sub">Clique para detalhar</div></div>
+                <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
+                  <div class="cx-viewtoggle" id="cx-viewtoggle">
+                    <button type="button" class="cx-vbtn active" data-view="matriz">Matriz</button>
+                    <button type="button" class="cx-vbtn" data-view="tabular">Tabular</button>
+                  </div>
+                  <div class="av-dd" id="cx-campos">
+                    <button class="av-dd-btn" id="cx-campos-btn" type="button" style="min-width:auto;gap:7px;">
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>
+                      <span>Campos</span>
+                    </button>
+                    <div class="av-dd-panel" style="left:auto;right:0;width:252px;"><div class="av-dd-list" id="cx-campos-list"></div></div>
+                  </div>
+                  <div id="cx-rootwrap" style="display:flex;align-items:center;gap:8px;">
+                    <span class="cx-label" style="margin:0;">Visualizar por</span>
+                    <div class="cx-row-f" id="cx-rootdim" style="gap:6px;"></div>
+                  </div>
+                  <div id="cx-tabtools" style="display:none;align-items:center;gap:10px;flex-wrap:wrap;">
+                    <button type="button" class="cx-export" id="cx-export" title="Exportar a visão tabular para Excel (.csv)"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>Exportar Excel</button>
+                    <div class="search-wrap"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg><input class="search-input" id="cx-search" type="text" placeholder="Buscar produto, lote, depósito…"></div>
+                  </div>
+                </div>
+              </div>
+              <div class="cx-stat-legend" style="margin-bottom:10px;">
+                <span><span class="cx-stat ok"></span>Disponível</span>
+                <span><span class="cx-stat low"></span>Pouco estoque</span>
+                <span><span class="cx-stat esg"></span>Esgotado</span>
+              </div>
+              <!-- visão MATRIZ (drill por dimensão) -->
+              <div class="cx-tbl-wrap" id="cx-mx-wrap">
+                <table class="cx-tbl"><thead id="cx-mx-thead"></thead>
+                  <tbody id="cx-mx-tbody"><tr><td style="padding:20px;text-align:center;color:var(--text-3);">Carregando…</td></tr></tbody>
+                </table>
+              </div>
+              <!-- visão TABULAR (uma linha por combinação, todos os campos) -->
+              <div class="cx-tbl-wrap" id="cx-tab-wrap" style="display:none;">
+                <table class="cx-tbl" id="cx-tab-table"><thead id="cx-tab-thead"></thead>
+                  <tbody id="cx-tab-tbody"><tr><td style="padding:20px;text-align:center;color:var(--text-3);">Carregando…</td></tr></tbody>
+                </table>
+              </div>
+              <div style="font-size:11px;color:var(--text-3);margin-top:8px;" id="cx-mx-info"></div>
+            </div>
+
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="../script.js?v=8"></script>
+  <script src="../nav-sidebar.js?v=77"></script>
+  <script src="../dw-pill.js?v=4"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+  <script>
+  // ================================================================
+  // SALDO DE ESTOQUE — tabela-fato 'Saldo de estoque' (dataset auto-descoberto no workspace)
+  // ================================================================
+  const PBI_CFG = {
+    clientId:'129978ce-ff3b-431d-98b3-66a1bcb766b1', tenantId:'c311c9e6-6017-42a9-b306-4057beba5786',
+    workspaceId:'8535f0a1-8dc6-4da0-93ce-bf20c1c14e27',
+    scopes:['https://analysis.windows.net/powerbi/api/Dataset.Read.All','https://analysis.windows.net/powerbi/api/Report.Read.All']
+  };
+  let _pbi=null,_token=null,_dsId=null,_ready=false;
+  // token/dataset expostos p/ o dw-pill.js ler o histórico de refresh do dataset
+  window.bmDwInfo = () => ({ token:_token, ws:PBI_CFG.workspaceId, ds:_dsId });
+  const DS_CACHE_KEY = 'bio_ds_saldoestoque';
+
+  const FATO  = "'Saldo de estoque'";
+  // CALCULATE força o context transition — sem ele o SUM ignora o grupo do SUMMARIZE e repete o total
+  const M_FIS  = `CALCULATE(SUM(${FATO}[Qtde (Física)]))`;
+  // Reservada e Disponível = "Soma de" pura da coluna, igual à tabela do Power BI: a reserva também
+  // mora em linhas com Qtde (Física) <= 0, que o F_FIS_POS cortava (Reservada saía 0 e Disponível =
+  // Física). REMOVEFILTERS tira SÓ esse filtro — filtros da tela e o caminho do drill continuam valendo.
+  const M_RES  = `CALCULATE(SUM(${FATO}[Qtde (Reservada)]), REMOVEFILTERS(${FATO}[Qtde (Física)]))`;
+  const M_DISP = `CALCULATE(SUM(${FATO}[Qtde (Disponível)]), REMOVEFILTERS(${FATO}[Qtde (Física)]))`;
+  const M_ENT  = `CALCULATE(SUM(${FATO}[Qtde (Em ordem de entrada)]))`;
+  const M_SAI  = `CALCULATE(SUM(${FATO}[Qtde (Em ordem de saída)]))`;
+  const MEAS = `"Fis", ${M_FIS}, "Res", ${M_RES}, "Disp", ${M_DISP}, "Ent", ${M_ENT}, "Sai", ${M_SAI}`;
+  // filtro-base da PÁGINA INTEIRA: só linhas com Qtde (Física) > 0 (equivale ao filtro de página do Power BI)
+  const F_FIS_POS = `FILTER(ALL(${FATO}[Qtde (Física)]), ${FATO}[Qtde (Física)] > 0)`;
+
+  // normaliza nomes (sem acento/caixa/espaço duplo) p/ casar com o catálogo do modelo
+  const _DIAC = /[\u0300-\u036f]/g;
+  const _norm = s => String(s==null?'':s).normalize('NFD').replace(_DIAC,'').toLowerCase().replace(/\s+/g,' ').trim();
+  const _rx   = s => String(s==null?'':s).replace(/[.*+?^${}()|[\]\\]/g,'\\$&');
+
+  // dimensões — cands = [tabela, coluna] em ordem de preferência: vence a 1ª que
+  // EXISTIR no modelo (casando sem acento/caixa, via INFO.VIEW.COLUMNS). O que o
+  // modelo não tiver é PULADO (sai dos filtros e do drill) — era o que dava "erro"
+  // no dropdown de Empresa: a tabela do modelo é 'Empresas', não 'Empresa'.
+  // pair = coluna companheira usada só no RÓTULO da opção ("código · nome"), p/
+  // achar o item digitando o código OU o nome. col/re são preenchidos no boot.
+  const DIMS = [
+    { id:'familia',   label:'Família',            cands:[['Famílias','Família'],['Produtos','Família']] },
+    { id:'empresa',   label:'Empresa',            cands:[['Empresas','Empresa'],['Empresa','Empresa'],['Empresas','Código da empresa']] },
+    { id:'linha',     label:'Linha',              cands:[['Linhas','Linha'],['Produtos','Linha']] },
+    { id:'grupodep',  label:'Grupo de Depósitos', cands:[['Depósitos','Grupo de depósitos'],['Depósitos','Grupo de depósito']] },
+    { id:'deposito',  label:'Depósito',           cands:[['Depósitos','Depósito']], pair:[['Depósitos','Cód. do depósito'],['Depósitos','Cód. depósito']] },
+    { id:'site',      label:'Site',               cands:[['Depósitos','Site']] },
+    { id:'coddep',    label:'Cód. do Depósito',   cands:[['Depósitos','Cód. do depósito'],['Depósitos','Cód. depósito'],['Depósitos','Código do depósito']], pair:[['Depósitos','Depósito']] },
+    { id:'estado',    label:'Estado',             cands:[['Clientes','Estado']], pair:[['Clientes','Cód. do estado'],['Clientes','Cód. Estado']] },
+    { id:'codestado', label:'Cód. do Estado',     cands:[['Clientes','Cód. do estado'],['Clientes','Cód. Estado'],['Clientes','Cód. do Estado']], pair:[['Clientes','Estado']] },
+    { id:'cliente',   label:'Cliente',            cands:[['Clientes','Cliente']], pair:[['Clientes','Cód. do Cliente'],['Clientes','Cód. Cliente']] },
+    { id:'codcli',    label:'Cód. do Cliente',    cands:[['Clientes','Cód. do Cliente'],['Clientes','Cód. Cliente'],['Clientes','Código do cliente']], pair:[['Clientes','Cliente']] },
+    { id:'produto',   label:'Produto',            cands:[['Produtos','Produto']], pair:[['Produtos','Cód. do produto'],['Produtos','Cód. produto']] },
+    { id:'codprod',   label:'Cód. do Produto',    cands:[['Produtos','Cód. do produto'],['Produtos','Cód. produto'],['Produtos','Código do produto']], pair:[['Produtos','Produto']] },
+    { id:'rms',       label:'RMS (Lote)',         cands:[['Lotes','RMS']] },
+    { id:'lote',      label:'Lote',               cands:[['Lotes','Lote']] },
+    { id:'fabricacao',label:'Data de Fabricação', cands:[['Lotes','Data de fabricação (tratada)'],['Lotes','Data de fabricação']] },
+    { id:'vencimento',label:'Data de Vencimento', cands:[['Lotes','Data de vencimento'],['Lotes','Data de vencimento (tratada)']] },
+    { id:'vencido',   label:'Lote vencido?',      cands:[['Lotes','Lote vencido?'],['Lotes','Lote vencido']] }
+  ];
+  const _dim  = id => DIMS.find(d=>d.id===id);
+  const dimOK = id => { const d=_dim(id); return (d && d._include) ? d : null; };
+
+  // hierarquia (drill) por visão — níveis que o modelo não tiver caem fora sozinhos
+  const HIER = {
+    familia:  ['familia','linha','produto','deposito','cliente','rms','lote'],
+    deposito: ['grupodep','deposito','site','familia','produto','rms','lote'],
+    produto:  ['produto','codprod','familia','deposito','cliente','rms','lote'],
+    cliente:  ['cliente','codcli','familia','produto','deposito','rms','lote']
+  };
+  // filtros (dropdowns) na ordem da barra — os que faltarem no modelo são pulados
+  const FILTROS_IDS = ['empresa','familia','linha','grupodep','coddep','deposito','site','estado','codestado','cliente','codcli','produto','codprod','rms','lote','vencido'];
+  const filtrosAtivos = () => FILTROS_IDS.map(id=>dimOK(id)).filter(Boolean);
+
+  window._cxRoot = 'familia';
+  window._avSel = {}; DIMS.forEach(d => window._avSel[d.id] = new Set());
+
+  // colunas de medida exibíveis na matriz (botão "Campos")
+  const MCOLS = [
+    {k:'fis',  label:'Qtde Física'},
+    {k:'res',  label:'Reservada'},
+    {k:'disp', label:'Disponível'},
+    {k:'ent',  label:'Em Ordem Entrada'},
+    {k:'sai',  label:'Em Ordem Saída'}
+  ];
+  window._cxCols = new Set(MCOLS.map(m=>m.k));
+  const visMeas  = ()=>MCOLS.filter(m=>window._cxCols.has(m.k));
+  const mxColspan= ()=>1 + visMeas().length;
+  // situação do item pela qtde disponível (ícone): esgotado / pouco / disponível
+  function statusOf(g){
+    const thr = lowThreshold();
+    if (g.fis>0 && g.disp<=0) return {c:'esg', t:'Esgotado'};
+    if (g.disp>0 && g.disp<=thr) return {c:'low', t:'Pouco estoque'};
+    return {c:'ok', t:'Disponível'};
+  }
+
+  const avDax = s => String(s==null?'':s).replace(/"/g,'""');
+  const avEsc = s => String(s==null?'':s).replace(/"/g,'&quot;');
+  const escH  = s => String(s==null?'':s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+  const _numN = x => (x==null||x===''||x==='-'||isNaN(Number(x)))?null:Number(x);
+  const _v = (r,re)=>{ const k=Object.keys(r).find(x=>re.test(x)); return k?r[k]:null; };
+  const setTxt = (id,t)=>{const el=document.getElementById(id);if(el)el.textContent=t;};
+  function fNUM(v){ return v==null?'—':Number(v).toLocaleString('pt-BR',{maximumFractionDigits:2}); }
+
+  async function pbiConnect(){
+    if (window._msalAuth){ _pbi = window._msalAuth; }
+    else { _pbi = new msal.PublicClientApplication({ auth:{ clientId:PBI_CFG.clientId, authority:`https://login.microsoftonline.com/${PBI_CFG.tenantId}`, redirectUri:window.location.origin+'/' }, cache:{ cacheLocation:'localStorage', storeAuthStateInCookie:true } }); if(_pbi.initialize) await _pbi.initialize(); await _pbi.handleRedirectPromise().catch(()=>{}); }
+    const accounts = _pbi.getAllAccounts();
+    try { const r = await _pbi.acquireTokenSilent({ scopes:PBI_CFG.scopes, account:accounts[0] }); _token = r.accessToken; }
+    catch { const r = await _pbi.loginPopup({ scopes:PBI_CFG.scopes }); _token = r.accessToken; }
+    const acc = _pbi.getAllAccounts()[0]; if (acc && typeof window.setSidebarUser==='function') window.setSidebarUser(acc.name||acc.username, acc.username);
+  }
+  function _pbiErr(text){ try { const j=JSON.parse(text); const e=j.error||{}; const pe=e['pbi.error']||{}; const det=(pe.details||[]).map(d=>d.detail&&d.detail.value).filter(Boolean).join(' | '); return det||e.message||pe.code||text.substring(0,200); } catch { return text.substring(0,200); } }
+  async function execQuery(dsId, dax){
+    const body=JSON.stringify({queries:[{query:dax}],serializerSettings:{includeNulls:true}});
+    const r=await PBIModelo.post(PBI_CFG.workspaceId, dsId, {method:'POST',headers:{Authorization:`Bearer ${_token}`,'Content-Type':'application/json'},body});
+    const text=await r.text(); if(!r.ok) throw new Error(`HTTP ${r.status}: ${_pbiErr(text)}`);
+    const d=JSON.parse(text); if(d.error) throw new Error(_pbiErr(text));
+    return d.results[0].tables[0].rows;
+  }
+  // descobre, no workspace, o dataset que contém a tabela 'Saldo de estoque'
+  async function resolveDataset(){
+    const falhas = [];
+    const cached = localStorage.getItem(DS_CACHE_KEY);
+    if (cached) { try { await execQuery(cached, PBIModelo.sonda(FATO)); return cached; } catch(e){ falhas.push(['modelo da última visita', e]); localStorage.removeItem(DS_CACHE_KEY); } }
+    const list = await PBIModelo.candidatos(PBI_CFG.workspaceId, _token);
+    for (const ds of list){ if (ds.id===cached) continue; try { await execQuery(ds.id, PBIModelo.sonda(FATO)); localStorage.setItem(DS_CACHE_KEY, ds.id); return ds.id; } catch(e){ falhas.push([ds.name, e]); } }
+    throw PBIModelo.motivo(FATO, falhas);
+  }
+  async function pbiQuery(dax){ if(!_dsId) _dsId = await resolveDataset(); return execQuery(_dsId, dax); }
+
+  // -- catálogo do modelo -> nome EXATO de cada tabela/coluna (padrão do portal) --
+  let _colCat=null, _dimSkip=[];
+  function _indexCols(rows, tk, nk){ const idx={}; rows.forEach(r=>{ const t=r[tk], n=r[nk]; if(t==null||n==null) return; const tn=_norm(t); (idx[tn]=idx[tn]||{})[_norm(n)]=String(n); }); return idx; }
+  // acha [tabela, coluna] no catálogo: nome exato -> fuzzy (todos os tokens)
+  function _lookup(cands){
+    if(!_colCat) return cands[0];                        // sem catálogo: melhor esforço
+    for(const [t,n] of cands){ const tb=_colCat[_norm(t)]; if(tb && tb[_norm(n)]) return [t, tb[_norm(n)]]; }
+    for(const [t,n] of cands){
+      const tb=_colCat[_norm(t)]; if(!tb) continue;
+      const toks=_norm(n).split(' ').filter(w=>w.length>2); if(!toks.length) continue;
+      let best=null; for(const nn in tb){ if(toks.every(w=>nn.includes(w)) && (best===null||nn.length<best.length)) best=nn; }
+      if(best!==null) return [t, tb[best]];
+    }
+    return null;
+  }
+  // resolve col/re de cada dimensão — o que não existir fica com _include=false
+  function resolverDims(){
+    _dimSkip=[]; const usadas={};
+    DIMS.forEach(d=>{
+      d._include=false; d._t=d._n=d.col=d.re=null; d._pair=null;
+      const hit=_lookup(d.cands);
+      if(!hit){ _dimSkip.push(d.label); return; }
+      d._t=hit[0]; d._n=hit[1]; d.col=`'${d._t}'[${d._n}]`; d.re=new RegExp('\\['+_rx(d._n)+'\\]$');
+      if(usadas[d.col]) return;                          // 2 ids na mesma coluna: fica o 1º
+      usadas[d.col]=d.id; d._include=true;
+      if(d.pair){ const p=_lookup(d.pair); if(p && _norm(p[0])===_norm(d._t) && _norm(p[1])!==_norm(d._n)) d._pair=`'${p[0]}'[${p[1]}]`; }
+    });
+    if(_dimSkip.length) console.warn('[SALDO] campos fora do modelo (pulados):', _dimSkip.join(', '));
+  }
+  async function carregarCatalogo(){
+    try { const rows=await pbiQuery(`EVALUATE SELECTCOLUMNS(INFO.VIEW.COLUMNS(), "T",[Table], "N",[Name])`); if(rows&&rows.length) _colCat=_indexCols(rows,'[T]','[N]'); }
+    catch(e){ console.warn('[SALDO] INFO.VIEW.COLUMNS:', e.message); }
+    if(!_colCat){ try { const rows=await pbiQuery(`EVALUATE SELECTCOLUMNS(COLUMNSTATISTICS(), "T",[Table Name], "N",[Column Name])`); if(rows&&rows.length) _colCat=_indexCols(rows,'[T]','[N]'); } catch(e){ console.warn('[SALDO] COLUMNSTATISTICS:', e.message); } }
+    resolverDims();
+  }
+
+  // literal DAX conforme o TIPO da coluna — código numérico não aceita aspas
+  function daxLit(v, t){
+    if(v==null) return 'BLANK()';
+    if(t==='number'){ const n=Number(v); return isNaN(n)?`"${avDax(v)}"`:String(n); }
+    if(t==='boolean') return /^(true|verdadeiro|sim|1)$/i.test(String(v))?'TRUE()':'FALSE()';
+    return `"${avDax(v)}"`;
+  }
+  function avBase(){
+    const base = [];
+    DIMS.forEach(d => { if(!d._include) return; const vals=[...window._avSel[d.id]]; if (vals.length) base.push(`${d.col} IN { ${vals.map(v=>daxLit(v,d._type)).join(', ')} }`); });
+    return base;
+  }
+  function ctWrap(inner, extra){ const f = [F_FIS_POS].concat(avBase(), extra||[]); return `CALCULATETABLE(${inner}, ${f.join(', ')})`; }
+  // opções do dropdown: só a coluna, ou coluna + companheira no rótulo ("código · nome")
+  async function avCarregarValores(d){
+    const dax = d._pair
+      ? `EVALUATE SELECTCOLUMNS(SUMMARIZE('${d._t}', ${d.col}, ${d._pair}), "V", ${d.col}, "L", ${d._pair})`
+      : `EVALUATE SELECTCOLUMNS(VALUES(${d.col}), "V", ${d.col})`;
+    const rows = await pbiQuery(dax);
+    if (!rows||!rows.length) return [];
+    const out=[], vistos=new Set();
+    rows.forEach(r=>{
+      const v=_v(r,/\[V\]$/); if(v==null||v==='') return;
+      if(d._type==null) d._type=typeof v;
+      const key=String(v); if(vistos.has(key)) return; vistos.add(key);
+      const comp=d._pair?_v(r,/\[L\]$/):null; const cs=(comp==null)?'':String(comp).trim();
+      out.push({ value:key, label:(cs&&cs!==key)?`${key} · ${cs}`:key });
+    });
+    return out.sort((a,b)=>a.label.localeCompare(b.label,'pt-BR',{numeric:true,sensitivity:'base'}));
+  }
+
+  // ── KPIs ──
+  async function renderKPIs(){
+    try {
+      const rows = await pbiQuery(`EVALUATE ${ctWrap(`ROW(${MEAS})`)}`);
+      const r = rows && rows[0] ? rows[0] : {};
+      setTxt('cx-k-fis',  fNUM(_numN(_v(r,/\[Fis\]$/))));
+      setTxt('cx-k-res',  fNUM(_numN(_v(r,/\[Res\]$/))));
+      setTxt('cx-k-disp', fNUM(_numN(_v(r,/\[Disp\]$/))));
+      setTxt('cx-k-ent',  fNUM(_numN(_v(r,/\[Ent\]$/))));
+      setTxt('cx-k-sai',  fNUM(_numN(_v(r,/\[Sai\]$/))));
+    } catch(e){ console.warn('[SALDO] KPIs:', e.message); }
+  }
+
+  // ── matriz (drill por dimensão) ──
+  let _mxSeq=0; const _mxPath={};
+  function dimByRoot(){ const order=HIER[window._cxRoot]||HIER.familia; return order.map(id=>dimOK(id)).filter(Boolean); }
+  async function mxLevel(dim, pathFilters){
+    const dax = `EVALUATE TOPN(3000, ${ctWrap(`ADDCOLUMNS(SUMMARIZE(${FATO}, ${dim.col}), ${MEAS})`, pathFilters)}, [Fis], DESC)`;
+    const rows = await pbiQuery(dax);
+    return rows.map(rw=>{
+      const dv=_v(rw,dim.re); const blank=(dv==null||String(dv).trim()==='');
+      return { nome:blank?'—':String(dv), raw:(blank?null:String(dv)), t:typeof dv,
+        fis:_numN(_v(rw,/\[Fis\]$/))||0, res:_numN(_v(rw,/\[Res\]$/))||0, disp:_numN(_v(rw,/\[Disp\]$/))||0, ent:_numN(_v(rw,/\[Ent\]$/))||0, sai:_numN(_v(rw,/\[Sai\]$/))||0 };
+    }).filter(x=> x.fis!==0||x.res!==0||x.disp!==0||x.ent!==0||x.sai!==0)
+      .sort((a,b)=> a.nome.localeCompare(b.nome,'pt-BR',{numeric:true,sensitivity:'base'}));
+  }
+  // tot = linha TOTAL: sem o azul-marinho inline na Física (ficava invisível no fundo navy)
+  function mxCells(g, tot){ return visMeas().map(m=>{ const st=(m.k==='fis'&&!tot)?' style="font-weight:600;color:var(--bm-blue-900);"':''; return `<td${st}>${fNUM(g[m.k])}</td>`; }).join(''); }
+  function mxRow(g, level, dims, path){
+    const expandable = level < dims.length - 1;
+    const ind = level*16;
+    const tg = expandable ? `<span class="cx-tg">▶</span>` : `<span style="display:inline-block;width:14px;"></span>`;
+    const idx=_mxSeq++; _mxPath[idx]={path, level};
+    const st = level===0?'font-weight:700;':'font-weight:600;color:var(--text-2);';
+    const s = statusOf(g);
+    return `<tr class="cx-mrow" data-level="${level}" data-idx="${idx}"><td class="dim" style="padding-left:${10+ind}px;${st}">${tg} <span class="cx-stat ${s.c}" title="${s.t}"></span>${g.nome}</td>${mxCells(g)}</tr>`;
+  }
+  function mxHeader(dims){
+    const title = dims.length ? dims[0].label : 'Dimensão';
+    document.getElementById('cx-mx-thead').innerHTML =
+      `<tr><th class="dim">${title}</th>${visMeas().map(m=>`<th>${m.label}</th>`).join('')}</tr>`;
+  }
+  async function renderMatriz(){
+    const dims = dimByRoot();
+    _mxSeq=0; for(const k in _mxPath) delete _mxPath[k];
+    const tbody=document.getElementById('cx-mx-tbody');
+    if(!dims.length){ tbody.innerHTML = `<tr><td style="padding:20px;text-align:center;color:var(--text-3);">Nenhum campo desta visão existe no modelo.</td></tr>`; setTxt('cx-mx-info',''); return; }
+    mxHeader(dims);
+    setTxt('cx-mx-sub', dims.map(d=>d.label).join(' › '));
+    tbody.innerHTML = `<tr><td colspan="${mxColspan()}" style="padding:20px;text-align:center;color:var(--text-3);">Carregando…</td></tr>`;
+    try {
+      const rows = await mxLevel(dims[0], []);
+      if (!rows.length){ tbody.innerHTML = `<tr><td colspan="${mxColspan()}" style="padding:20px;text-align:center;color:var(--text-3);">Sem dados.</td></tr>`; setTxt('cx-mx-info','0 linhas'); return; }
+      const tot = {nome:'TOTAL', fis:0,res:0,disp:0,ent:0,sai:0};
+      rows.forEach(g=>{ tot.fis+=g.fis; tot.res+=g.res; tot.disp+=g.disp; tot.ent+=g.ent; tot.sai+=g.sai; });
+      tbody.innerHTML = rows.map(g=>mxRow(g,0,dims,[{col:dims[0].col,value:g.raw,t:g.t}])).join('')
+        + `<tr class="cx-total"><td class="dim">TOTAL</td>${mxCells(tot, true)}</tr>`;
+      setTxt('cx-mx-info', `${rows.length} ${dims[0].label.toLowerCase()}(s) no 1º nível · clique para detalhar`);
+    } catch(e){ console.error('[SALDO] matriz:', e.message); tbody.innerHTML = `<tr><td colspan="${mxColspan()}" style="padding:18px;text-align:center;color:var(--danger);">Erro: ${e.message.substring(0,180)}</td></tr>`; }
+  }
+  document.addEventListener('click', async (ev)=>{
+    const tg = ev.target.closest && ev.target.closest('.cx-tg'); if(!tg) return;
+    const tr = tg.closest('tr'); if(!tr || !tr.classList.contains('cx-mrow')) return;
+    const dims = dimByRoot(); const level=+tr.dataset.level;
+    if (tr.classList.contains('open')){ let n=tr.nextElementSibling; while(n && +n.dataset.level>level){ const nx=n.nextElementSibling; n.remove(); n=nx; } tr.classList.remove('open'); tg.textContent='▶'; return; }
+    if (level >= dims.length-1) return;
+    const info = _mxPath[+tr.dataset.idx] || {path:[]};
+    tg.textContent='…';
+    const childLevel=level+1;
+    const pathFilters = info.path.map(p=> (p.value==null)?`ISBLANK(${p.col})`:`${p.col} IN { ${daxLit(p.value,p.t)} }`);
+    let children=[]; try { children = await mxLevel(dims[childLevel], pathFilters); } catch(e){ tg.textContent='▶'; return; }
+    tg.textContent='▼'; tr.classList.add('open');
+    const frag = children.map(c=>mxRow(c, childLevel, dims, info.path.concat({col:dims[childLevel].col, value:c.raw, t:c.t}))).join('');
+    tr.insertAdjacentHTML('afterend', frag);
+  });
+
+  // ══════════════════════════════════════════════════════════════
+  // VISÃO TABULAR — 1 linha por combinação dos campos escolhidos
+  // (mesmos filtros/medidas da matriz; grão = colunas marcadas em "Campos")
+  // ══════════════════════════════════════════════════════════════
+  const TAB_LIMIT = 5000;                       // teto de linhas trazidas (TOP por Qtde Física)
+  let _view='matriz';                           // 'matriz' | 'tabular'
+  let _tabRows=[], _tabDims=[], _tabRx=[], _tabTot=null, _tabN=null, _tabLoaded=false, _tabErr=null;
+  let _tabSort={k:'fis',dir:'desc'};
+
+  // colunas (dimensões) da visão tabular — padrão: TODOS os campos que existem no modelo
+  window._cxDimCols = new Set();
+  let _tabDrop=[];                              // campos retirados por não serem agrupáveis pelo fato
+  const dimsTab   = ()=>DIMS.filter(d=>d._include && !d._nogrp);
+  function initTabCols(){ window._cxDimCols = new Set(dimsTab().map(d=>d.id)); }
+  const visDimsTab = ()=>dimsTab().filter(d=>window._cxDimCols && window._cxDimCols.has(d.id));
+  // SUMMARIZE só agrupa por coluna alcançável pelo fato; se o DAX reclamar de uma
+  // coluna, ela sai do grão (e do seletor) e a consulta é repetida sem ela
+  function _tabTryDrop(msg){
+    const m=_norm(msg), sel=visDimsTab(), out=[];
+    sel.forEach(d=>{ const n=_norm(d._n); if(m.includes('['+n+']')||m.includes("'"+n+"'")) out.push(d); });
+    if(!out.length || out.length>=sel.length) return [];       // não identificou (ou dropparia tudo)
+    out.forEach(d=>{ d._nogrp=true; window._cxDimCols.delete(d.id); });
+    return out.map(d=>d.label);
+  }
+
+  // formata valor de dimensão: data ISO → dd/mm/aaaa, booleano → Sim/Não, vazio → —
+  function fVAL(v){
+    if(v==null||String(v).trim()==='') return '—';
+    if(typeof v==='boolean') return v?'Sim':'Não';
+    const m=/^(\d{4})-(\d{2})-(\d{2})(T|$)/.exec(String(v));
+    return m?`${m[3]}/${m[2]}/${m[1]}`:String(v);
+  }
+  function fVALraw(v){ if(v==null) return ''; if(typeof v==='boolean') return v?'Sim':'Não'; const m=/^(\d{4})-(\d{2})-(\d{2})(T|$)/.exec(String(v)); return m?`${m[3]}/${m[2]}/${m[1]}`:String(v); }
+  const isCod = d => /^(cod|codprod|codcli|coddep|codestado|rms|lote)$/.test(d.id) || /^cod/.test(d.id);
+
+  async function carregarTabular(){
+    _tabRows=[]; _tabTot=null; _tabN=null; _tabErr=null;
+    let dims=[], grp='', raw=null, tent=0;
+    while(raw===null){
+      dims = visDimsTab();
+      if(!dims.length){ _tabDims=[]; _tabRx=[]; return; }
+      grp = dims.map(d=>d.col).join(', ');
+      const sel = dims.map((d,i)=>`"D${i}", ${d.col}`).join(', ');
+      // SELECTCOLUMNS renomeia cada dimensão p/ D0..Dn — evita ambiguidade quando
+      // duas tabelas têm colunas de mesmo nome no resultado
+      const inner = `SELECTCOLUMNS(ADDCOLUMNS(SUMMARIZE(${FATO}, ${grp}), ${MEAS}), ${sel}, `
+        + `"Fis", [Fis], "Res", [Res], "Disp", [Disp], "Ent", [Ent], "Sai", [Sai])`;
+      try { raw = await pbiQuery(`EVALUATE TOPN(${TAB_LIMIT}, ${ctWrap(inner)}, [Fis], DESC)`); }
+      catch(e){
+        const dropped=_tabTryDrop(e.message);
+        if(!dropped.length || ++tent>4) throw e;
+        _tabDrop=_tabDrop.concat(dropped);
+        console.warn('[SALDO] campos fora do grão da tabular:', dropped.join(', '));
+        if(window._cxCamposRender) window._cxCamposRender();
+      }
+    }
+    _tabDims=dims; _tabRx = dims.map((d,i)=>new RegExp('\\[D'+i+'\\]$'));
+    _tabRows = raw.map(r=>({
+      v: _tabRx.map(re=>_v(r,re)),
+      fis:_numN(_v(r,/\[Fis\]$/))||0, res:_numN(_v(r,/\[Res\]$/))||0, disp:_numN(_v(r,/\[Disp\]$/))||0,
+      ent:_numN(_v(r,/\[Ent\]$/))||0, sai:_numN(_v(r,/\[Sai\]$/))||0
+    })).filter(x=> x.fis!==0||x.res!==0||x.disp!==0||x.ent!==0||x.sai!==0);
+    // totais REAIS + nº de linhas do filtro (a tabela é limitada a TAB_LIMIT)
+    try {
+      const tr = await pbiQuery(`EVALUATE ${ctWrap(`ROW("N", COUNTROWS(SUMMARIZE(${FATO}, ${grp})), ${MEAS})`)}`);
+      const t = (tr&&tr[0])?tr[0]:{};
+      _tabN = _numN(_v(t,/\[N\]$/));
+      _tabTot = { fis:_numN(_v(t,/\[Fis\]$/))||0, res:_numN(_v(t,/\[Res\]$/))||0, disp:_numN(_v(t,/\[Disp\]$/))||0,
+                  ent:_numN(_v(t,/\[Ent\]$/))||0, sai:_numN(_v(t,/\[Sai\]$/))||0 };
+    } catch(e){ console.warn('[SALDO] totais da tabular:', e.message); }
+  }
+
+  function tabSearch(){ const el=document.getElementById('cx-search'); return (el&&el.value||'').trim().toLowerCase(); }
+  function tabFiltered(){
+    const q=tabSearch();
+    let rows=_tabRows.slice();
+    if(q) rows=rows.filter(x=>x.v.some(v=>fVALraw(v).toLowerCase().includes(q)));
+    const dir=_tabSort.dir==='desc'?-1:1, k=_tabSort.k;
+    const di = /^d(\d+)$/.exec(k);
+    rows.sort((a,b)=>{
+      if(di){ const i=+di[1]; return fVALraw(a.v[i]).localeCompare(fVALraw(b.v[i]),'pt-BR',{numeric:true,sensitivity:'base'})*dir; }
+      return ((a[k]||0)-(b[k]||0))*dir;
+    });
+    return rows;
+  }
+  function tabHeader(){
+    const arr=k=>_tabSort.k===k?`<span class="sarr">${_tabSort.dir==='desc'?'▼':'▲'}</span>`:'';
+    document.getElementById('cx-tab-thead').innerHTML = '<tr>'
+      + _tabDims.map((d,i)=>`<th class="tdim" data-k="d${i}">${d.label}${arr('d'+i)}</th>`).join('')
+      + visMeas().map(m=>`<th data-k="${m.k}">${m.label}${arr(m.k)}</th>`).join('') + '</tr>';
+  }
+  function renderTabular(){
+    const tbody=document.getElementById('cx-tab-tbody');
+    const nCols=Math.max(1,_tabDims.length+visMeas().length);
+    if(_tabErr){ document.getElementById('cx-tab-thead').innerHTML=''; tbody.innerHTML=`<tr><td style="padding:18px;text-align:center;color:var(--danger);">Erro: ${escH(_tabErr.substring(0,180))}</td></tr>`; setTxt('cx-mx-info',''); return; }
+    if(!_tabDims.length){ document.getElementById('cx-tab-thead').innerHTML=''; tbody.innerHTML='<tr><td style="padding:20px;text-align:center;color:var(--text-3);">Marque ao menos um campo em “Campos”.</td></tr>'; setTxt('cx-mx-info',''); return; }
+    tabHeader();
+    setTxt('cx-mx-sub', _tabDims.map(d=>d.label).join(' · '));
+    const rows=tabFiltered();
+    if(!rows.length){ tbody.innerHTML=`<tr><td colspan="${nCols}" style="padding:20px;text-align:center;color:var(--text-3);">Sem dados.</td></tr>`; setTxt('cx-mx-info','0 linhas'); return; }
+    const tot={fis:0,res:0,disp:0,ent:0,sai:0};
+    rows.forEach(x=>{ tot.fis+=x.fis; tot.res+=x.res; tot.disp+=x.disp; tot.ent+=x.ent; tot.sai+=x.sai; });
+    const meas=visMeas();
+    tbody.innerHTML = rows.map(x=>{
+      const s=statusOf(x);
+      const cells=_tabDims.map((d,i)=>{
+        const cls = i===0 ? 'tdim' : (isCod(d)?'cod':'tdim');
+        const dot = i===0 ? `<span class="cx-stat ${s.c}" title="${s.t}"></span>` : '';
+        return `<td class="${cls}">${dot}${escH(fVAL(x.v[i]))}</td>`;
+      }).join('');
+      return `<tr>${cells}${meas.map(m=>{ const st=m.k==='fis'?' style="font-weight:600;color:var(--bm-blue-900);"':''; return `<td${st}>${fNUM(x[m.k])}</td>`; }).join('')}</tr>`;
+    }).join('')
+      + `<tr class="cx-total"><td colspan="${_tabDims.length}">TOTAL · ${fNUM(rows.length)} linha(s) exibida(s)</td>${meas.map(m=>`<td>${fNUM(tot[m.k])}</td>`).join('')}</tr>`;
+    const truncou = _tabN!=null && _tabN>_tabRows.length;
+    const info = `${fNUM(rows.length)} de ${_tabN==null?fNUM(_tabRows.length):fNUM(_tabN)} linha(s)`
+      + (truncou?` · TOP ${fNUM(TAB_LIMIT)} por Qtde Física — refine os filtros para ver o resto`:'')
+      + (_tabTot?` · total do filtro: Física ${fNUM(_tabTot.fis)} · Disponível ${fNUM(_tabTot.disp)}`:'')
+      + (_tabDrop.length?` · ${_tabDrop.length} campo(s) sem grão no fato (retirados): ${_tabDrop.join(', ')}`:'');
+    setTxt('cx-mx-info', info);
+  }
+  async function recarregarTabular(){
+    const tbody=document.getElementById('cx-tab-tbody');
+    const nCols=Math.max(1,visDimsTab().length+visMeas().length);
+    tbody.innerHTML=`<tr><td colspan="${nCols}" style="padding:20px;text-align:center;color:var(--text-3);">Carregando…</td></tr>`;
+    try { await carregarTabular(); _tabLoaded=true; }
+    catch(e){ _tabErr=e.message; _tabLoaded=false; console.error('[SALDO] tabular:', e.message); }
+    renderTabular();
+  }
+  let _tabDeb=null;
+  function tabReloadDebounced(){ clearTimeout(_tabDeb); _tabDeb=setTimeout(()=>{ if(_view==='tabular') recarregarTabular(); else _tabLoaded=false; }, 450); }
+
+  function setView(v){
+    _view=v;
+    document.querySelectorAll('#cx-viewtoggle .cx-vbtn').forEach(b=>b.classList.toggle('active', b.getAttribute('data-view')===v));
+    document.getElementById('cx-mx-wrap').style.display  = (v==='matriz') ?'':'none';
+    document.getElementById('cx-tab-wrap').style.display = (v==='tabular')?'':'none';
+    document.getElementById('cx-rootwrap').style.display = (v==='matriz') ?'flex':'none';
+    document.getElementById('cx-tabtools').style.display = (v==='tabular')?'flex':'none';
+    if(v==='tabular'){ if(_tabLoaded) renderTabular(); else recarregarTabular(); }
+    else renderMatriz();
+  }
+
+  // ── exportar a visão tabular (.csv pt-BR: separador ; + BOM) ──
+  function exportExcel(){
+    if(_view!=='tabular' || !_tabDims.length) return;
+    const rows=tabFiltered(), meas=visMeas();
+    const cell = v => '"'+String(v==null?'':v).replace(/"/g,'""')+'"';
+    const num  = v => v==null?'':String(v).replace('.',',');
+    const lines = [ _tabDims.map(d=>d.label).concat(meas.map(m=>m.label)).map(cell).join(';') ];
+    rows.forEach(x=>{ lines.push(_tabDims.map((d,i)=>cell(fVALraw(x.v[i]))).concat(meas.map(m=>num(x[m.k]))).join(';')); });
+    const d=new Date(), p=n=>String(n).padStart(2,'0');
+    const fname=`saldo_estoque_${d.getFullYear()}${p(d.getMonth()+1)}${p(d.getDate())}_${p(d.getHours())}${p(d.getMinutes())}.csv`;
+    const blob=new Blob(['﻿'+lines.join('\r\n')],{type:'text/csv;charset=utf-8;'});
+    const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download=fname; document.body.appendChild(a); a.click();
+    setTimeout(()=>{ URL.revokeObjectURL(a.href); a.remove(); }, 0);
+  }
+
+  // ── gráficos ──
+  const _charts={};
+  function hbarChart(id, labels, data, color){
+    const el=document.getElementById(id); if(!el||typeof Chart==='undefined') return;
+    const cfg={ labels, datasets:[{label:'Qtde Física', data, backgroundColor:color, borderRadius:3}] };
+    if (_charts[id]){ _charts[id].data=cfg; _charts[id].update(); return; }
+    _charts[id]=new Chart(el.getContext('2d'),{ type:'bar', data:cfg,
+      options:{ indexAxis:'y', responsive:true, maintainAspectRatio:false,
+        plugins:{ legend:{display:false}, tooltip:{callbacks:{label:c=>fNUM(c.raw)}} },
+        scales:{ x:{ticks:{callback:v=>fNUM(v),font:{size:10}}}, y:{ticks:{font:{size:10}}} } } });
+  }
+  async function topChart(id, dim, color){
+    try {
+      const rows = await pbiQuery(`EVALUATE TOPN(10, ${ctWrap(`ADDCOLUMNS(SUMMARIZE(${FATO}, ${dim.col}), "Fis", ${M_FIS})`)}, [Fis], DESC)`);
+      const items = rows.map(rw=>({nome:String(_v(rw,dim.re)??'—'), fis:_numN(_v(rw,/\[Fis\]$/))||0})).filter(x=>x.fis!==0).sort((a,b)=>b.fis-a.fis).slice(0,10);
+      hbarChart(id, items.map(x=>x.nome.length>22?x.nome.slice(0,21)+'…':x.nome), items.map(x=>x.fis), color);
+    } catch(e){ console.warn('[SALDO] top '+id+':', e.message); }
+  }
+  async function renderCharts(){
+    const dFam=dimOK('familia'), dDep=dimOK('deposito');
+    if(dFam) await topChart('cx-ch-fam', dFam, 'rgba(21,128,61,.85)');
+    if(dDep) await topChart('cx-ch-dep', dDep, 'rgba(30,136,229,.85)');
+  }
+
+  // ── alerta de pouco estoque (tabela por produto, baseado na qtde disponível) ──
+  function lowThreshold(){ const el=document.getElementById('cx-low-thr'); const v=el?Number(el.value):10; return (isNaN(v)||v<0)?10:v; }
+  async function renderLowStock(){
+    const prod = dimOK('produto'); if(!prod) return;
+    const fam  = dimOK('familia');
+    const thr = lowThreshold();
+    const badges = document.getElementById('cx-low-badges');
+    const tblwrap= document.getElementById('cx-low-tblwrap');
+    const tbody  = document.getElementById('cx-low-tbody');
+    const empty  = document.getElementById('cx-low-empty');
+    try {
+      // contagens: esgotados (físico > 0 e nada disponível) e em alerta (0 < disponível ≤ limite)
+      const cr = await pbiQuery(`EVALUATE ${ctWrap(`ROW(`
+        + `"Esg", COUNTROWS(FILTER(ADDCOLUMNS(SUMMARIZE(${FATO}, ${prod.col}), "D", ${M_DISP}, "F", ${M_FIS}), [F] > 0 && [D] <= 0)), `
+        + `"Low", COUNTROWS(FILTER(ADDCOLUMNS(SUMMARIZE(${FATO}, ${prod.col}), "D", ${M_DISP}), [D] > 0 && [D] <= ${thr})))`)}`);
+      const c = (cr && cr[0]) ? cr[0] : {};
+      const esg = _numN(_v(c,/\[Esg\]$/)) || 0, low = _numN(_v(c,/\[Low\]$/)) || 0;
+      if (badges) badges.innerHTML =
+        `<span class="cx-pill warn"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>${fNUM(low)} produto(s) com pouco estoque (≤ ${fNUM(thr)})</span>`
+        + `<span class="cx-pill danger"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>${fNUM(esg)} esgotado(s) · físico sem disponível</span>`;
+      // lista dos mais críticos (menor disponível primeiro) — inclui esgotados (D ≤ 0) e em alerta (0 < D ≤ limite)
+      const grp  = fam ? `${prod.col}, ${fam.col}` : `${prod.col}`;
+      const rows = await pbiQuery(`EVALUATE TOPN(300, ${ctWrap(`FILTER(ADDCOLUMNS(SUMMARIZE(${FATO}, ${grp}), "D", ${M_DISP}, "Ff", ${M_FIS}), [Ff] > 0 && [D] <= ${thr})`)}, [D], ASC)`);
+      const items = rows.map(rw=>({ nome:String(_v(rw,prod.re)??'—'), fam:String((fam?_v(rw,fam.re):null)??'—'), fis:_numN(_v(rw,/\[Ff\]$/))||0, disp:_numN(_v(rw,/\[D\]$/))||0 }))
+                        .sort((a,b)=>a.disp-b.disp);
+      if (!items.length){
+        if (tblwrap) tblwrap.style.display='none';
+        if (empty) empty.style.display='';
+        if (badges && esg===0 && low===0) badges.innerHTML = `<span class="cx-pill ok"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>Nenhum produto abaixo do estoque mínimo</span>`;
+        return;
+      }
+      if (tblwrap) tblwrap.style.display='';
+      if (empty) empty.style.display='none';
+      tbody.innerHTML = items.map(function(x){
+        var esgotado = x.disp <= 0;
+        var dispStyle = esgotado ? 'color:var(--danger,#b91c1c);font-weight:800;' : (x.disp <= thr/2 ? 'color:#b45309;font-weight:700;' : '');
+        var sit = esgotado
+          ? '<span class="cx-pill danger" style="padding:2px 9px;font-size:10.5px;">Esgotado</span>'
+          : '<span class="cx-pill warn" style="padding:2px 9px;font-size:10.5px;">Pouco estoque</span>';
+        return '<tr><td class="dim">'+avEsc(x.nome)+'</td><td style="text-align:left;color:var(--text-2);">'+avEsc(x.fam)+'</td>'
+          + '<td>'+fNUM(x.fis)+'</td><td style="'+dispStyle+'">'+fNUM(x.disp)+'</td>'
+          + '<td style="text-align:center;">'+sit+'</td></tr>';
+      }).join('');
+    } catch(e){ console.warn('[SALDO] pouco estoque:', e.message); }
+  }
+
+  async function cxAplicar(){
+    if(!_ready) return;
+    _tabLoaded=false;                                     // filtros mudaram: a tabular precisa recarregar
+    const view = (_view==='tabular') ? recarregarTabular() : renderMatriz();
+    await Promise.all([ renderKPIs(), view, renderCharts(), renderLowStock() ]);
+  }
+  window.cxAplicar = cxAplicar;
+  function cxSetRoot(btn, id){ document.querySelectorAll('#cx-rootdim .cx-btn.active').forEach(b=>b.classList.remove('active')); btn.classList.add('active'); window._cxRoot=id; renderMatriz(); }
+  window.cxSetRoot=cxSetRoot;
+
+  // ── dropdowns ──
+  function avMakeDropdown({ label, getOptions, getSelected, setSelected, onChange }){
+    const wrap=document.createElement('div'); wrap.className='av-dd';
+    const btn=document.createElement('button'); btn.className='av-dd-btn'; btn.type='button';
+    const panel=document.createElement('div'); panel.className='av-dd-panel';
+    panel.innerHTML = `<div class="av-dd-search"><input type="text" placeholder="Buscar…"></div><div class="av-dd-list"></div><div class="av-dd-foot"><button type="button" data-act="limpar">Limpar</button><button type="button" data-act="fechar">Fechar</button></div>`;
+    wrap.appendChild(btn); wrap.appendChild(panel);
+    const list=panel.querySelector('.av-dd-list'), search=panel.querySelector('input');
+    let loaded=false, options=[];
+    function refresh(){ const n=getSelected().length; btn.classList.toggle('has',n>0); btn.innerHTML=`<span>${label}</span>${ n?`<span class="cnt">${n}</span>`:'<span style="color:var(--text-4);font-weight:500;">Todos</span>' }`; }
+    function renderList(){ const q=(search.value||'').toLowerCase(); const sel=new Set(getSelected()); const items=options.filter(o=>!q||String(o.label).toLowerCase().includes(q)); list.innerHTML=items.length?items.map(o=>`<label class="av-dd-opt"><input type="checkbox" value="${avEsc(o.value)}" ${sel.has(o.value)?'checked':''}>${o.label}</label>`).join(''):'<div style="padding:8px;color:var(--text-3);font-size:12px;">nenhum</div>'; }
+    async function ensure(){ if(loaded) return; list.innerHTML='<div style="padding:10px;color:var(--text-3);font-size:12px;">Carregando…</div>'; try{options=await getOptions();}catch(e){list.innerHTML=`<div style="padding:10px;color:var(--danger);font-size:12px;">erro</div>`;return;} loaded=true; renderList(); }
+    btn.addEventListener('click', async e=>{ e.stopPropagation(); const open=wrap.classList.contains('open'); document.querySelectorAll('.av-dd.open').forEach(d=>d.classList.remove('open')); if(!open){ wrap.classList.add('open'); await ensure(); search.focus(); } });
+    panel.addEventListener('click', e=>e.stopPropagation());
+    list.addEventListener('change', e=>{ if(e.target.matches('input[type=checkbox]')){ setSelected(e.target.value,e.target.checked); refresh(); onChange(); } });
+    search.addEventListener('input', renderList);
+    panel.querySelector('[data-act=limpar]').addEventListener('click', ()=>{ setSelected(null,false,true); renderList(); refresh(); onChange(); });
+    panel.querySelector('[data-act=fechar]').addEventListener('click', ()=>wrap.classList.remove('open'));
+    refresh(); return wrap;
+  }
+  document.addEventListener('click', ()=>document.querySelectorAll('.av-dd.open').forEach(d=>d.classList.remove('open')));
+  function avMontarToolbar(){
+    const tb=document.getElementById('cx-toolbar'); if(!tb) return; tb.innerHTML='';
+    filtrosAtivos().forEach(d=>tb.appendChild(avMakeDropdown({ label:d.label, getOptions:()=>avCarregarValores(d), getSelected:()=>[...window._avSel[d.id]], setSelected:(v,ck,clr)=>{ const s=window._avSel[d.id]; if(clr){s.clear();return;} if(ck)s.add(v); else s.delete(v); }, onChange:cxAplicar })));
+    const limpar=document.createElement('button'); limpar.className='cx-btn'; limpar.type='button'; limpar.textContent='✕ Limpar filtros';
+    limpar.addEventListener('click', ()=>{ DIMS.forEach(d=>window._avSel[d.id].clear()); avMontarToolbar(); cxAplicar(); });
+    tb.appendChild(limpar);
+  }
+  function montarRootBtns(){
+    const c=document.getElementById('cx-rootdim'); if(!c) return; c.innerHTML='';
+    const ids=['familia','deposito','produto','cliente'].filter(id=>dimOK(id));
+    if(ids.length && ids.indexOf(window._cxRoot)<0) window._cxRoot=ids[0];
+    ids.forEach(id=>{ const d=dimOK(id); const b=document.createElement('button'); b.className='cx-btn'+(id===window._cxRoot?' active':''); b.textContent=d.label; b.onclick=function(){cxSetRoot(this,id);}; c.appendChild(b); });
+  }
+  // ── seletor de colunas ("Campos"): medidas (matriz) + campos/medidas (tabular) ──
+  function montarCampos(){
+    const dd=document.getElementById('cx-campos'); if(!dd) return;
+    const btn=document.getElementById('cx-campos-btn'), list=document.getElementById('cx-campos-list');
+    function optM(m){ return `<label class="av-dd-opt"><input type="checkbox" data-g="m" value="${m.k}" ${window._cxCols.has(m.k)?'checked':''}>${m.label}</label>`; }
+    function optD(d){ return `<label class="av-dd-opt"><input type="checkbox" data-g="d" value="${d.id}" ${(window._cxDimCols&&window._cxDimCols.has(d.id))?'checked':''}>${d.label}</label>`; }
+    function render(){
+      const meas='<div class="cx-campos-sec">Medidas</div>'+MCOLS.map(optM).join('');
+      if(_view!=='tabular'){ list.innerHTML=meas; return; }
+      const dims=dimsTab();
+      list.innerHTML = '<div class="cx-campos-sec">Campos (colunas)</div>'
+        + '<div class="cx-campos-acts"><button type="button" data-act="todos">Todos</button><button type="button" data-act="nenhum">Nenhum</button></div>'
+        + (dims.length?dims.map(optD).join(''):'<div style="padding:6px 8px;font-size:12px;color:var(--text-3);">nenhum campo no modelo</div>')
+        + meas;
+    }
+    window._cxCamposRender = render;
+    btn.addEventListener('click', e=>{ e.stopPropagation(); const open=dd.classList.contains('open'); document.querySelectorAll('.av-dd.open').forEach(d=>d.classList.remove('open')); if(!open){ dd.classList.add('open'); render(); } });
+    dd.querySelector('.av-dd-panel').addEventListener('click', e=>e.stopPropagation());
+    list.addEventListener('click', e=>{
+      const b=e.target.closest('button[data-act]'); if(!b) return;
+      const ids=dimsTab().map(d=>d.id);
+      if(b.dataset.act==='todos') window._cxDimCols=new Set(ids);
+      else window._cxDimCols=new Set(ids.slice(0,1));       // "Nenhum" mantém 1 (grão mínimo)
+      render(); tabReloadDebounced();
+    });
+    list.addEventListener('change', e=>{
+      if(!e.target.matches('input[type=checkbox]')) return;
+      const g=e.target.dataset.g||'m', k=e.target.value;
+      if(g==='d'){                                          // campo (dimensão) da tabular → muda o grão
+        if(e.target.checked) window._cxDimCols.add(k);
+        else { if(window._cxDimCols.size<=1){ e.target.checked=true; return; } window._cxDimCols.delete(k); }
+        tabReloadDebounced(); return;
+      }
+      if(e.target.checked) window._cxCols.add(k);
+      else { if(window._cxCols.size<=1){ e.target.checked=true; return; } window._cxCols.delete(k); }
+      if(_view==='tabular') renderTabular(); else renderMatriz();
+    });
+  }
+
+  document.addEventListener('DOMContentLoaded', async ()=>{
+    montarCampos();
+    // alternância Matriz / Tabular
+    document.querySelectorAll('#cx-viewtoggle .cx-vbtn').forEach(b=>b.addEventListener('click', ()=>{ if(_ready) setView(b.getAttribute('data-view')); }));
+    // ordenação pelo cabeçalho da tabular
+    const th=document.getElementById('cx-tab-thead');
+    if(th) th.addEventListener('click', e=>{ const c=e.target.closest('th'); if(!c||!c.dataset.k) return; const k=c.dataset.k;
+      if(_tabSort.k===k) _tabSort.dir=(_tabSort.dir==='desc')?'asc':'desc';
+      else _tabSort={k, dir:/^d\d+$/.test(k)?'asc':'desc'};
+      renderTabular(); });
+    // busca da tabular
+    const se=document.getElementById('cx-search');
+    if(se){ let _s; se.addEventListener('input', ()=>{ clearTimeout(_s); _s=setTimeout(()=>{ if(_view==='tabular') renderTabular(); }, 250); }); }
+    const ex=document.getElementById('cx-export'); if(ex) ex.addEventListener('click', exportExcel);
+    const _tb0=document.getElementById('cx-toolbar'); if(_tb0) _tb0.innerHTML='<span style="font-size:12px;color:var(--text-3);">Carregando filtros…</span>';
+    // recalcula o alerta quando o limite de estoque mínimo muda
+    const thrEl=document.getElementById('cx-low-thr');
+    if(thrEl){ let _t; thrEl.addEventListener('input', ()=>{ clearTimeout(_t); _t=setTimeout(()=>{ if(_ready) renderLowStock(); }, 400); }); }
+    const banner=document.getElementById('cx-banner');
+    try {
+      await pbiConnect();
+      banner.innerHTML='⏳ Localizando o dataset de estoque…';
+      _dsId = await resolveDataset();   // descobre e cacheia o datasetId
+      banner.innerHTML='⏳ Lendo o catálogo do modelo…';
+      await carregarCatalogo();         // resolve o nome EXATO de cada coluna
+      initTabCols();                    // visão tabular começa com TODOS os campos do modelo
+      avMontarToolbar(); montarRootBtns();
+      _ready=true;
+      banner.style.cssText='padding:11px 16px;border-radius:8px;font-size:13px;display:flex;align-items:center;gap:10px;background:#F0FDF4;border:1px solid #BBF7D0;color:#14532D;';
+      banner.innerHTML=`<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg> ✅ Conectado ao Power BI${_dimSkip.length?`<span style="color:#5B7189;font-weight:600;"> · ${_dimSkip.length} campo(s) fora do modelo (pulados): ${_dimSkip.join(', ')}</span>`:''}`;
+      await cxAplicar();
+    } catch(err){
+      banner.style.cssText='padding:11px 16px;border-radius:8px;font-size:13px;display:flex;align-items:center;gap:10px;background:#FEF2F2;border:1px solid #FECACA;color:#7F1D1D;';
+      banner.innerHTML=`<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg> ${err.message}`;
+    }
+  });
+  </script>
+</body>
+</html>

@@ -1,0 +1,673 @@
+﻿<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Produtos com Validade Curta · Estoque · Biomedical</title>
+  <link rel="stylesheet" href="../styles.css?v=14">
+  <script src="https://unpkg.com/@azure/msal-browser@2.38.3/lib/msal-browser.min.js"></script>
+<script src="../pbi-throttle.js?v=3"></script>
+<script src="../pbi-modelo.js?v=2"></script>
+  <!-- Layout v3 (Claude Design · animado): fonte + camada visual + motor de animações -->
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300..800&family=Manrope:wght@400..800&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../portal-v3.css?v=2">
+  <script src="../portal-motion.js?v=3" defer></script>
+  <!-- Tema claro/escuro (menu do avatar): marca o <html> antes de pintar + camada escura -->
+  <script>try{if(localStorage.getItem('bm-tema')==='escuro')document.documentElement.setAttribute('data-tema','escuro')}catch(e){}</script>
+  <link rel="stylesheet" href="../portal-tema.css?v=1">
+  <script src="../portal-tema.js?v=1" defer></script>
+  <!-- Celular (varredura 15/10/26): só vale em tela < 768px; no computador não se aplica -->
+  <link rel="stylesheet" href="../portal-mobile.css?v=1" media="(max-width: 767.98px)">
+  <script src="../portal-mobile.js?v=1" defer></script>
+</head>
+<body class="dept">
+
+  <header class="site-header"><div class="container">
+    <a href="../index.html" class="brand" aria-label="Biomedical — Portal Corporativo"><img class="brand-logo" src="/icons/icon-192.png" alt="Biomedical" onerror="this.dataset.failed='true'"><span class="brand-fallback">Biomedical</span></a>
+    <nav class="header-nav"><a href="../index.html">Início</a><a href="../index.html#areas">Áreas</a><a href="../index.html#sistemas">Sistemas</a><a href="../index.html#avisos">Avisos</a><a href="../index.html#contato">Contato</a></nav>
+  </div></header>
+
+  <!-- cabeçalho movido para .fx-head (abas de submódulo, Claude Design) -->
+
+  <div class="area-body"><div class="container"><div class="area-grid">
+    <aside class="area-sidebar">
+      <div class="sb-card"><div class="sb-head"><span class="sb-ic"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="2" width="20" height="8" rx="2"/><rect x="2" y="14" width="20" height="8" rx="2"/><line x1="6" y1="6" x2="6.01" y2="6"/><line x1="6" y1="18" x2="6.01" y2="18"/></svg></span><div><div class="sb-tt">Estoque</div><div class="sb-st">Departamento</div></div></div><nav></nav></div>
+      <a href="../index.html" class="sb-back"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></svg>Voltar ao Portal</a>
+    </aside>
+
+    <div class="area-main">
+          <!-- ═══ Cabeçalho + abas de submódulo (Claude Design) ═══ -->
+          <style>
+            .fx-head{display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap;padding:22px 0 4px;}
+            .fx-bc{display:flex;align-items:center;gap:6px;font-size:12px;color:#7C93A8;}
+            .fx-title{margin:4px 0 0;font-size:23px;font-weight:800;letter-spacing:-0.5px;color:#0A2E5C;}
+            .fx-head-right{display:flex;align-items:center;gap:12px;flex-wrap:wrap;}
+            .fx-tabs{display:flex;align-items:center;background:#FFFFFF;border:1px solid #E3EAF2;border-radius:11px;padding:3px;flex-wrap:wrap;}
+            .fx-tabs a,.fx-tabs span{padding:8px 14px;border-radius:8px;font-size:12.5px;font-weight:600;color:#5B7189;text-decoration:none;white-space:nowrap;}
+            .fx-tabs a:hover{color:#0A2E5C;}
+            .fx-tabs .active{background:#0A2E5C;font-weight:700;color:#fff;}
+            .fx-filters{display:flex;align-items:center;gap:10px;flex-wrap:wrap;padding:12px 14px;background:#fff;border:1px solid #E3EAF2;border-radius:12px;}
+            .fx-fdiv{width:1px;height:24px;background:#E3EAF2;}
+            .fx-fbtn{display:inline-flex;align-items:center;gap:8px;padding:8px 12px;border-radius:9px;border:1px solid #E3EAF2;background:#fff;font-size:12.5px;font-weight:600;color:#33495E;cursor:pointer;font-family:inherit;white-space:nowrap;}
+            .fx-fbtn:hover{border-color:#1272C4;}
+            .fx-fbtn .fx-fk{font-weight:700;color:#93A7BA;}
+            .fx-fbtn svg{flex-shrink:0;}
+            .fx-flimpar{margin-left:auto;display:inline-flex;align-items:center;gap:6px;padding:8px 12px;border-radius:9px;border:none;background:transparent;font-size:12.5px;font-weight:600;color:#5B7189;cursor:pointer;font-family:inherit;white-space:nowrap;}
+            .fx-flimpar:hover{color:#B54545;}
+            .fxdd{position:relative;display:inline-block;}
+            .fxdd-panel{position:absolute;z-index:50;top:calc(100% + 6px);left:0;display:none;flex-direction:column;background:#fff;border:1px solid #E3EAF2;border-radius:12px;box-shadow:0 10px 30px rgba(10,46,92,0.14);padding:12px;min-width:210px;}
+            .fxdd.open .fxdd-panel{display:flex;}
+            .fxdd-sec{font-size:10.5px;font-weight:800;letter-spacing:0.8px;text-transform:uppercase;color:#93A7BA;margin:2px 2px 8px;}
+            .fxdd-sec.mt{margin-top:12px;}
+            .fxdd-hint{font-size:11px;color:#93A7BA;margin-top:10px;}
+            /* esconde a faixa de cards de sub-modulos (estatica OU injetada pelo nav-sidebar.js) — navegacao agora pelas abas */
+            .area-main section:has(.modulo-card){display:none !important;}
+            /* periodo largo/horizontal p/ dropdowns com botoes de mes */
+            #fx-periodo .fxdd-panel{width:720px;max-width:calc(100vw - 48px);}
+            @media(max-width:1100px){#fx-periodo .fxdd-panel{width:560px;}}
+            #fx-periodo .fxdd-panel .sr-row,#fx-periodo .fxdd-panel .av-row,#fx-periodo .fxdd-panel .pv-row,#fx-periodo .fxdd-panel .fn-row-f{max-width:none !important;gap:6px !important;row-gap:8px !important;}
+            #fx-periodo .fxdd-panel .sr-btn,#fx-periodo .fxdd-panel .av-btn,#fx-periodo .fxdd-panel .pv-btn{padding:5px 9px;}
+            #fx-periodo .fxdd-panel .sr-divider:first-of-type,#fx-periodo .fxdd-panel .av-divider:first-of-type,#fx-periodo .fxdd-panel .pv-divider:first-of-type{flex-basis:100%;width:100%;height:0 !important;border:0 !important;background:transparent !important;margin:2px 0 0 !important;}
+            @media(max-width:767.98px){
+              .fx-head{align-items:flex-start;padding-top:14px;}
+              .fx-title{font-size:17px;}
+              .fx-head-right{width:100%;}
+              .fx-tabs{width:100%;flex-wrap:nowrap;overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none;background:#F0F4F9;border:none;}
+              .fx-tabs::-webkit-scrollbar{display:none;}
+              .fx-tabs a,.fx-tabs span{flex:0 0 auto;}
+              .fx-filters{flex-wrap:nowrap;overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none;}
+              .fx-filters::-webkit-scrollbar{display:none;}
+              .fx-filters>*{flex-shrink:0;}
+              .fx-flimpar{margin-left:8px;}
+            }
+          </style>
+
+          <div class="fx-head">
+            <div>
+              <div class="fx-bc"><span>Estoque</span><span>›</span><span>Gestão de Estoque</span></div>
+              <h1 class="fx-title">Validade Curta</h1>
+            </div>
+            <div class="fx-head-right">
+              <div class="fx-tabs">
+                <a href="estoque-gestao.html">Visão Geral</a>
+                <a href="estoque-saldo.html">Saldo de Estoque</a>
+                <a href="estoque-ruptura.html">Ruptura de Estoque</a>
+                <span class="active">Validade Curta</span>
+                <a href="estoque-movimentacoes.html">Movimentações</a>
+              </div>
+            </div>
+          </div>
+          <script>
+          /* barra de filtros fx — dropdowns compactos (Claude Design) */
+          (function(){
+            window.fxTogglePanel = function(btn){
+              var dd = btn.closest('.fxdd'); if(!dd) return;
+              var open = dd.classList.contains('open');
+              document.querySelectorAll('.fxdd.open').forEach(function(d){ d.classList.remove('open'); });
+              if(!open) dd.classList.add('open');
+            };
+            function txt(id,v){ var el=document.getElementById(id); if(el) el.textContent=v; }
+            window.fxSyncLabels = function(){
+              var per = document.getElementById('fx-periodo');
+              if(per){
+                var mesBtn = per.querySelector('.fxdd-panel button.active');
+                var anoBtns = per.querySelectorAll('.fxdd-panel button.active-green');
+                var ano = anoBtns.length===1 ? anoBtns[0].textContent.trim() : (anoBtns.length>1 ? anoBtns.length+' anos' : '');
+                var mes = mesBtn ? mesBtn.textContent.trim() : '';
+                txt('fx-periodo-lbl', ([ano, (mes && !/^todos$/i.test(mes) ? mes : '')].filter(Boolean).join(' · ')) || 'Todos');
+              }
+              [['fx-empresa','fx-empresa-lbl'],['fx-tipocli','fx-tipocli-lbl']].forEach(function(p){
+                var dd=document.getElementById(p[0]); if(!dd) return;
+                var b=dd.querySelector('.fxdd-panel button.active,.fxdd-panel button.active-green');
+                txt(p[1], b ? b.textContent.trim() : 'Todos');
+              });
+            };
+            window.fxLimpar = function(){
+              document.querySelectorAll('.fx-filters [data-fxdefault]').forEach(function(b){ b.click(); });
+              setTimeout(window.fxSyncLabels, 0);
+            };
+            document.addEventListener('DOMContentLoaded', function(){
+              document.querySelectorAll('.fx-filters .fxdd-panel').forEach(function(p){
+                p.addEventListener('click', function(e){ e.stopPropagation(); setTimeout(window.fxSyncLabels, 0); });
+              });
+              document.addEventListener('click', function(e){ if(e.target.closest && e.target.closest('.fxdd')) return; document.querySelectorAll('.fxdd.open').forEach(function(d){ d.classList.remove('open'); }); });
+              window.fxSyncLabels();
+            });
+          })();
+          </script>
+
+      <style>
+        .cx-wrap{padding:8px 0 48px;display:flex;flex-direction:column;gap:14px;}
+        .cx-card{background:#fff;border:1px solid var(--border);border-radius:var(--radius);padding:14px 16px;}
+        .cx-kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;}
+        @media(max-width:880px){.cx-kpis{grid-template-columns:repeat(2,1fr);}.cx-bars{grid-template-columns:1fr!important;}}
+        .cx-kpi{background:#fff;border:1px solid var(--border);border-radius:var(--radius);padding:16px 18px;position:relative;overflow:hidden;}
+        .cx-kpi::before{content:'';position:absolute;left:0;top:0;bottom:0;width:4px;background:#b45309;}
+        .cx-kpi.b::before{background:var(--bm-blue-600);}
+        .cx-kpi.g::before{background:var(--bm-green-600);}
+        .cx-kpi.d::before{background:var(--danger,#b91c1c);}
+        .cx-kpi-l{font-size:10.5px;font-weight:600;text-transform:uppercase;letter-spacing:.05em;color:var(--text-3);margin-bottom:6px;}
+        .cx-kpi-v{font-family:var(--font-display);font-size:23px;font-weight:800;color:var(--bm-blue-900);line-height:1;}
+        .cx-panel{background:#fff;border:1px solid var(--border);border-radius:var(--radius);padding:16px 18px;}
+        .cx-panel h3{font-size:14px;font-weight:700;color:var(--text);margin:0 0 4px;}
+        .cx-panel .cx-sub{font-size:11.5px;color:var(--text-3);margin-bottom:14px;}
+        .cx-bars{display:grid;grid-template-columns:1fr 1fr;gap:14px;}
+        .cx-chart-wrap{position:relative;height:320px;}
+        .cx-tbl-wrap{overflow:auto;border:1px solid var(--border);border-radius:10px;max-height:600px;}
+        table.cx-tbl{width:100%;border-collapse:collapse;font-size:12px;}
+        table.cx-tbl thead th{position:sticky;top:0;z-index:3;background:var(--bm-blue-900);color:rgba(255,255,255,.95);text-align:right;padding:9px 12px;font-size:10px;font-weight:600;letter-spacing:.02em;text-transform:uppercase;white-space:nowrap;cursor:pointer;user-select:none;}
+        table.cx-tbl thead th.dim{text-align:left;}
+        table.cx-tbl tbody td{padding:7px 12px;border-bottom:1px solid var(--border);text-align:right;font-variant-numeric:tabular-nums;color:var(--text-2);white-space:nowrap;}
+        table.cx-tbl tbody td.dim{text-align:left;color:var(--text);font-weight:600;}
+        table.cx-tbl tbody td.cod{font-family:var(--font-mono,monospace);font-size:11px;color:var(--text-3);text-align:left;}
+        table.cx-tbl tbody td.ctr{text-align:center;}
+        table.cx-tbl tbody td.venc-late{color:var(--danger,#b91c1c);font-weight:700;}
+        table.cx-tbl tbody td.venc-soon{color:#b45309;font-weight:700;}
+        table.cx-tbl tbody tr:hover td{background:var(--bm-blue-50);}
+        table.cx-tbl tbody tr.cx-total td{background:var(--bm-blue-900);color:#fff;font-weight:800;border-top:2px solid var(--border-2);position:sticky;bottom:0;}
+        .cx-badge-sim{display:inline-block;padding:2px 8px;border-radius:999px;font-size:10.5px;font-weight:700;background:#FEF3C7;color:#b45309;}
+        .search-wrap{position:relative;}
+        .search-wrap svg{position:absolute;left:10px;top:50%;transform:translateY(-50%);color:var(--text-4);}
+        .search-input{padding:7px 10px 7px 32px;border:1px solid var(--border);border-radius:8px;font-size:12.5px;font-family:var(--font-body);width:280px;box-sizing:border-box;}
+        .av-toolbar{display:flex;gap:8px;flex-wrap:wrap;align-items:center;}
+        .av-dd{position:relative;display:inline-block;}
+        .av-dd-btn{padding:7px 12px;border-radius:8px;border:1px solid var(--border);background:#fff;font-size:12.5px;font-weight:600;color:var(--text-2);cursor:pointer;display:inline-flex;align-items:center;gap:10px;min-width:150px;justify-content:space-between;}
+        .av-dd-btn:hover{border-color:var(--bm-blue-500);}
+        .av-dd-btn.has{border-color:var(--bm-blue-600);background:var(--bm-blue-50);color:var(--bm-blue-800);}
+        .av-dd-btn .cnt{background:var(--bm-blue-600);color:#fff;border-radius:999px;padding:0 7px;font-size:11px;}
+        .av-dd-panel{position:absolute;z-index:40;top:calc(100% + 4px);left:0;width:280px;max-height:340px;display:none;flex-direction:column;background:#fff;border:1px solid var(--border);border-radius:10px;box-shadow:var(--shadow);overflow:hidden;}
+        .av-dd.open .av-dd-panel{display:flex;}
+        .av-dd-search{padding:8px;border-bottom:1px solid var(--border);}
+        .av-dd-search input{width:100%;padding:6px 8px;border:1px solid var(--border);border-radius:6px;font-size:12px;font-family:var(--font-body);box-sizing:border-box;}
+        .av-dd-list{overflow-y:auto;padding:4px;}
+        .av-dd-opt{display:flex;align-items:center;gap:8px;padding:6px 8px;border-radius:6px;font-size:12.5px;color:var(--text-2);cursor:pointer;}
+        .av-dd-opt:hover{background:var(--bm-blue-50);}
+        .av-dd-foot{display:flex;justify-content:space-between;padding:6px 10px;border-top:1px solid var(--border);}
+        .av-dd-foot button{font-size:11.5px;color:var(--bm-blue-700);background:none;border:none;cursor:pointer;font-weight:600;}
+        .cx-btn{padding:5px 13px;border-radius:6px;border:1px solid var(--border);background:#fff;font-size:12.5px;font-weight:600;color:var(--text-2);cursor:pointer;font-family:var(--font-body);}
+        .cx-fixed-flt{font-size:11px;color:var(--text-3);display:inline-flex;align-items:center;gap:6px;}
+        .cx-fixed-flt b{color:#b45309;}
+      </style>
+
+      <div class="cx-wrap">
+
+        <div id="cx-banner" style="padding:11px 16px;border-radius:8px;font-size:13px;display:flex;align-items:center;gap:10px;background:#EFF6FF;border:1px solid #BFDBFE;color:#1E40AF;">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+          Conectando ao Power BI…
+        </div>
+
+        <div class="fx-filters" style="flex-wrap:wrap;">
+          <div class="av-toolbar" id="cx-toolbar" style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;"></div>
+          <div class="fx-fdiv"></div>
+          <div class="cx-fixed-flt" style="display:inline-flex;align-items:center;gap:6px;font-size:12px;color:#93A7BA;" title="Produto com validade curta? = SIM&#10;Status (NF-e) = Aprovado&#10;Identificador do tipo de operação (D365) = E.VEN.001, E.LIC.002, S.VEN.002, S.LIC.002, E.CON.002, S.CON.004, AA.EVEN.1, E.VEN.002, S.VEN.006">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+            Filtros fixos do relatório: <b>Validade curta = SIM · NF-e = Aprovado · 9 tipos de operação</b>
+          </div>
+        </div>
+
+        <div class="cx-kpis">
+          <div class="cx-kpi"><div class="cx-kpi-l">Valor Total (ajustado)</div><div class="cx-kpi-v" id="cx-k-val">—</div></div>
+          <div class="cx-kpi b"><div class="cx-kpi-l">Quantidade</div><div class="cx-kpi-v" id="cx-k-qtd">—</div></div>
+          <div class="cx-kpi g"><div class="cx-kpi-l">Nº de Faturas</div><div class="cx-kpi-v" id="cx-k-fat">—</div></div>
+          <div class="cx-kpi d"><div class="cx-kpi-l">Nº de Produtos</div><div class="cx-kpi-v" id="cx-k-prod">—</div></div>
+        </div>
+
+        <div class="cx-bars">
+          <div class="cx-panel"><h3>Valor por Família</h3><div class="cx-sub">Top 12 famílias por valor (ajustado)</div><div class="cx-chart-wrap"><canvas id="cx-ch-fam"></canvas></div></div>
+          <div class="cx-panel"><h3>Valor por Estratégia</h3><div class="cx-sub">Distribuição por estratégia</div><div class="cx-chart-wrap"><canvas id="cx-ch-estr"></canvas></div></div>
+        </div>
+
+        <div class="cx-panel">
+          <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;margin-bottom:12px;">
+            <div><h3 style="margin:0;">Movimentações · consulta analítica</h3><div class="cx-sub" style="margin:0;" id="cx-tbl-info">—</div></div>
+            <div class="search-wrap"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg><input class="search-input" id="cx-search" type="text" placeholder="Buscar produto, fatura, cliente, família…"></div>
+          </div>
+          <div class="cx-tbl-wrap">
+            <table class="cx-tbl">
+              <thead><tr>
+                <th class="dim" data-k="estrategia">Estratégia</th>
+                <th class="dim" data-k="familia">Família</th>
+                <th class="dim" data-k="codprod">Cód. Produto</th>
+                <th class="dim" data-k="fatura">Nº Fatura</th>
+                <th class="dim" data-k="tipoop">Tipo Operação</th>
+                <th class="dim" data-k="tiporemessa">Tipo Op. Remessa Consig.</th>
+                <th class="dim" data-k="codcli">Cód. Cliente</th>
+                <th class="dim" data-k="cliente">Cliente (OV)</th>
+                <th class="dim" data-k="uf">UF</th>
+                <th class="dim" data-k="tipocli">Tipo Cliente</th>
+                <th class="dim" data-k="datamov">Data Movim.</th>
+                <th class="dim" data-k="datavenc">Data Vencimento</th>
+                <th class="dim" data-k="validade">Val. Curta?</th>
+                <th data-k="qtd">Quantidade</th>
+                <th data-k="punit">Preço Unit. OV</th>
+                <th data-k="val">Valor Total (ajust.)</th>
+              </tr></thead>
+              <tbody id="cx-tbody"><tr><td colspan="16" style="padding:20px;text-align:center;color:var(--text-3);">Carregando…</td></tr></tbody>
+            </table>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </div></div></div>
+
+  <script src="../script.js?v=8"></script>
+  <script src="../nav-sidebar.js?v=77"></script>
+  <script src="../dw-pill.js?v=4"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+  <script>
+  // ================================================================
+  // PRODUTOS COM VALIDADE CURTA — tabela 'Movimentações de estoque'
+  // Filtros fixos: [Produto com validade curta?] = "SIM", [Status (NF-e)] = "Aprovado"
+  //                e 'Operações'[Identificador do tipo de operação (D365)] ∈ 9 códigos
+  // ================================================================
+  const PBI_CFG = {
+    clientId:'129978ce-ff3b-431d-98b3-66a1bcb766b1', tenantId:'c311c9e6-6017-42a9-b306-4057beba5786',
+    workspaceId:'8535f0a1-8dc6-4da0-93ce-bf20c1c14e27',
+    scopes:['https://analysis.windows.net/powerbi/api/Dataset.Read.All','https://analysis.windows.net/powerbi/api/Report.Read.All']
+  };
+  let _pbi=null,_token=null,_dsId=null,_ready=false;
+  // token/dataset expostos p/ o dw-pill.js ler o histórico de refresh do dataset
+  window.bmDwInfo = () => ({ token:_token, ws:PBI_CFG.workspaceId, ds:_dsId });
+  const DS_CACHE_KEY='bio_ds_validadecurta';
+
+  const FATO = "'Movimentações de estoque'";
+  // ── FILTROS FIXOS do relatório — entram em TODA query (KPIs, gráficos, tabela)
+  //    e também no escopo dos dropdowns. Espelham a filtragem do relatório de origem.
+  const TIPOS_OP = ['E.VEN.001','E.LIC.002','S.VEN.002','S.LIC.002','E.CON.002','S.CON.004','AA.EVEN.1','E.VEN.002','S.VEN.006'];
+  const FIXOS = [
+    `${FATO}[Produto com validade curta?] = "SIM"`,
+    `${FATO}[Status (NF-e)] = "Aprovado"`,
+    `'Operações'[Identificador do tipo de operação (D365)] IN { ${TIPOS_OP.map(v=>'"'+v+'"').join(', ')} }`
+  ];
+
+  // medidas (SUM — espelha "Soma de ..." do Power BI)
+  // CALCULATE força o context transition — sem ele o SUM ignora o grupo do SUMMARIZE e repete o total
+  const M_QTD   = `CALCULATE(SUM(${FATO}[Quantidade]))`;
+  const M_PUNIT = `CALCULATE(SUM(${FATO}[Preço unitário da OV]))`;
+  const M_VAL   = `CALCULATE(SUM(${FATO}[Preço Total (ajustado)]))`;
+
+  // dimensões (group-by) — exatamente as colunas do relatório
+  const COL = {
+    estrategia: "'Famílias'[Estratégia]",
+    familia:    "'Famílias'[Família]",
+    codprod:    "'Produtos'[Cód. do produto]",
+    fatura:     `${FATO}[Número da fatura]`,
+    tipoop:     "'Operações'[Tipo de operação]",
+    tiporemessa:`${FATO}[Tipo de operação da remessa de consignação]`,
+    codcli:     `${FATO}[Cód. do cliente da OV]`,
+    cliente:    `${FATO}[Cliente da OV]`,
+    uf:         `${FATO}[UF do cliente (OV)]`,
+    tipocli:    `${FATO}[Tipo de Cliente]`,
+    datamov:    `${FATO}[Data da movimentação]`,
+    datavenc:   "'Lotes'[Data de vencimento (tratada)]",
+    validade:   `${FATO}[Produto com validade curta?]`
+  };
+  // regexes p/ extrair cada coluna do resultado (cuidado: codcli vs cliente)
+  const RX = {
+    estrategia:/\[Estratégia\]$/i, familia:/\[Família\]$/i, codprod:/Cód\. do produto/i,
+    fatura:/Número da fatura/i, tipoop:/\[Tipo de operação\]$/i, tiporemessa:/remessa de consigna/i,
+    codcli:/Cód\. do cliente da OV/i, cliente:/\[Cliente da OV\]/i, uf:/UF do cliente/i,
+    tipocli:/\[Tipo de Cliente\]$/i, datamov:/Data da movimenta/i, datavenc:/Data de vencimento/i,
+    validade:/validade curta/i
+  };
+  // ── FILTROS (dropdowns) ────────────────────────────────────────
+  // base: colunas do próprio relatório (confirmadas, sempre presentes)
+  const FILTROS_BASE = [
+    { id:'estrategia', label:'Estratégia',        col:COL.estrategia },
+    { id:'familia',    label:'Família',           col:COL.familia },
+    { id:'tipoop',     label:'Tipo de Operação',  col:COL.tipoop },
+    { id:'uf',         label:'UF do Cliente',     col:COL.uf },
+    { id:'tipocli',    label:'Tipo de Cliente',   col:COL.tipocli }
+  ];
+  FILTROS_BASE.forEach(d=>{ d._include=true; });
+  // extras — os MESMOS filtros do Saldo de Estoque. cands=[tabela,coluna] em ordem de
+  // preferência: vence a 1ª que EXISTIR no modelo (casando sem acento/caixa, via
+  // INFO.VIEW.COLUMNS). É PULADO o campo que o modelo não tiver ou que não tenha
+  // relação com o fato de movimentações (filtro que não filtra nada é pior que ausente).
+  // pair = coluna companheira usada só no RÓTULO ("código · nome"), p/ achar o item
+  // digitando o código OU o nome.
+  const DIMS_EX = [
+    { id:'empresa',   label:'Empresa',            cands:[['Empresas','Empresa'],['Empresa','Empresa'],['Empresas','Código da empresa']] },
+    { id:'linha',     label:'Linha',              cands:[['Linhas','Linha'],['Produtos','Linha'],['Famílias','Linha']] },
+    { id:'grupodep',  label:'Grupo de Depósitos', cands:[['Depósitos','Grupo de depósitos'],['Depósitos','Grupo de depósito']] },
+    { id:'deposito',  label:'Depósito',           cands:[['Depósitos','Depósito']], pair:[['Depósitos','Cód. do depósito'],['Depósitos','Cód. depósito']] },
+    { id:'coddep',    label:'Cód. do Depósito',   cands:[['Depósitos','Cód. do depósito'],['Depósitos','Cód. depósito'],['Depósitos','Código do depósito']], pair:[['Depósitos','Depósito']] },
+    { id:'site',      label:'Site',               cands:[['Depósitos','Site']] },
+    { id:'produto',   label:'Produto',            cands:[['Produtos','Produto']], pair:[['Produtos','Cód. do produto'],['Produtos','Cód. produto']] },
+    { id:'codprod',   label:'Cód. do Produto',    cands:[['Produtos','Cód. do produto'],['Produtos','Cód. produto'],['Produtos','Código do produto']], pair:[['Produtos','Produto']] },
+    { id:'rms',       label:'RMS (Lote)',         cands:[['Lotes','RMS']] },
+    { id:'lote',      label:'Lote',               cands:[['Lotes','Lote']] },
+    { id:'vencido',   label:'Lote vencido?',      cands:[['Lotes','Lote vencido?'],['Lotes','Lote vencido']] },
+    { id:'cliente',   label:'Cliente',            cands:[['Clientes','Cliente']], pair:[['Clientes','Cód. do Cliente'],['Clientes','Cód. Cliente']] },
+    { id:'codcli',    label:'Cód. do Cliente',    cands:[['Clientes','Cód. do Cliente'],['Clientes','Cód. Cliente'],['Clientes','Código do cliente']], pair:[['Clientes','Cliente']] },
+    { id:'estado',    label:'Estado',             cands:[['Clientes','Estado']], pair:[['Clientes','Cód. do estado'],['Clientes','Cód. Estado']] },
+    { id:'codestado', label:'Cód. do Estado',     cands:[['Clientes','Cód. do estado'],['Clientes','Cód. Estado'],['Clientes','Cód. do Estado']], pair:[['Clientes','Estado']] }
+  ];
+  // ordem na barra: Empresa na frente, depois os do relatório e os demais
+  const ORDEM = ['empresa','estrategia','familia','linha','grupodep','deposito','coddep','site',
+                 'produto','codprod','rms','lote','vencido','cliente','codcli','estado','codestado','tipoop','uf','tipocli'];
+  const TODOS = FILTROS_BASE.concat(DIMS_EX);
+  const _dim = id => TODOS.find(d=>d.id===id);
+  const filtrosAtivos = () => ORDEM.map(_dim).filter(d=>d && d._include);
+  window._avSel = {}; TODOS.forEach(f => window._avSel[f.id] = new Set());
+
+  // ── catálogo do modelo → nome EXATO de tabela/coluna (padrão do portal) ──
+  const _DIAC = /[\u0300-\u036f]/g;
+  const _norm = s => String(s==null?'':s).normalize('NFD').replace(_DIAC,'').toLowerCase().replace(/\s+/g,' ').trim();
+  let _colCat=null, _relG=null, _dimSkip=[];
+  function _indexCols(rows, tk, nk){ const idx={}; rows.forEach(r=>{ const t=r[tk], n=r[nk]; if(t==null||n==null) return; const tn=_norm(t); (idx[tn]=idx[tn]||{})[_norm(n)]=String(n); }); return idx; }
+  // acha [tabela, coluna] no catálogo: nome exato -> fuzzy (todos os tokens)
+  function _lookup(cands){
+    if(!_colCat) return cands[0];
+    for(const c of cands){ const tb=_colCat[_norm(c[0])]; if(tb && tb[_norm(c[1])]) return [c[0], tb[_norm(c[1])]]; }
+    for(const c of cands){
+      const tb=_colCat[_norm(c[0])]; if(!tb) continue;
+      const toks=_norm(c[1]).split(' ').filter(w=>w.length>2); if(!toks.length) continue;
+      let best=null; for(const nn in tb){ if(toks.every(w=>nn.includes(w)) && (best===null||nn.length<best.length)) best=nn; }
+      if(best!==null) return [c[0], tb[best]];
+    }
+    return null;
+  }
+  async function carregarCatalogo(){
+    try { const rows=await pbiQuery(`EVALUATE SELECTCOLUMNS(INFO.VIEW.COLUMNS(), "T",[Table], "N",[Name])`); if(rows&&rows.length) _colCat=_indexCols(rows,'[T]','[N]'); }
+    catch(e){ console.warn('[VALIDADE] INFO.VIEW.COLUMNS:', e.message); }
+    if(!_colCat){ try { const rows=await pbiQuery(`EVALUATE SELECTCOLUMNS(COLUMNSTATISTICS(), "T",[Table Name], "N",[Column Name])`); if(rows&&rows.length) _colCat=_indexCols(rows,'[T]','[N]'); } catch(e){ console.warn('[VALIDADE] COLUMNSTATISTICS:', e.message); } }
+  }
+  // grafo das relações (lado muitos -> lado um): só filtra o fato quem ele alcança
+  async function carregarRelacoes(){
+    try {
+      const rows = await pbiQuery(`EVALUATE SELECTCOLUMNS(INFO.VIEW.RELATIONSHIPS(), "F",[FromTable], "T",[ToTable], "A",[IsActive])`);
+      const g={}; (rows||[]).forEach(r=>{
+        const f=_norm(_v(r,/\[F\]$/)), t=_norm(_v(r,/\[T\]$/)), a=_v(r,/\[A\]$/);
+        if(!f||!t||a===false) return; (g[f]=g[f]||[]).push(t);
+      });
+      if(Object.keys(g).length) _relG=g;
+    } catch(e){ console.warn('[VALIDADE] INFO.VIEW.RELATIONSHIPS:', e.message); }
+  }
+  function alcancavel(tab){
+    if(!_relG) return true;                              // sem metadados: melhor esforço
+    const start=_norm(FATO.replace(/'/g,'')), goal=_norm(tab);
+    if(start===goal) return true;
+    const seen={}; seen[start]=1; const fila=[start];
+    while(fila.length){ const cur=fila.shift(); const nb=_relG[cur]||[];
+      for(const n of nb){ if(n===goal) return true; if(!seen[n]){ seen[n]=1; fila.push(n); } } }
+    return false;
+  }
+  function resolverDims(){
+    _dimSkip=[]; const usadas={};
+    FILTROS_BASE.forEach(d=>{ usadas[d.col]=d.id; });
+    DIMS_EX.forEach(d=>{
+      d._include=false; d._t=d._n=d.col=d._pair=null;
+      const hit=_lookup(d.cands);
+      if(!hit){ _dimSkip.push(d.label); return; }
+      const col=`'${hit[0]}'[${hit[1]}]`;
+      if(usadas[col]) return;                            // já existe filtro nessa coluna
+      if(!alcancavel(hit[0])){ _dimSkip.push(d.label); return; }
+      d._t=hit[0]; d._n=hit[1]; d.col=col; usadas[col]=d.id; d._include=true;
+      if(d.pair){ const p=_lookup(d.pair); if(p && _norm(p[0])===_norm(d._t) && _norm(p[1])!==_norm(d._n)) d._pair=`'${p[0]}'[${p[1]}]`; }
+    });
+    if(_dimSkip.length) console.warn('[VALIDADE] filtros fora do modelo (pulados):', _dimSkip.join(', '));
+  }
+  // literal DAX conforme o TIPO da coluna — código numérico não aceita aspas
+  function daxLit(v, t){
+    if(v==null) return 'BLANK()';
+    if(t==='number'){ const n=Number(v); return isNaN(n)?`"${avDax(v)}"`:String(n); }
+    if(t==='boolean') return /^(true|verdadeiro|sim|1)$/i.test(String(v))?'TRUE()':'FALSE()';
+    return `"${avDax(v)}"`;
+  }
+
+  const avDax = s => String(s==null?'':s).replace(/"/g,'""');
+  const avEsc = s => String(s==null?'':s).replace(/"/g,'&quot;');
+  const escH  = s => String(s==null?'':s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+  const _numN = x => (x==null||x===''||x==='-'||isNaN(Number(x)))?null:Number(x);
+  const _v = (r,re)=>{ const k=Object.keys(r).find(x=>re.test(x)); return k?r[k]:null; };
+  const setTxt=(id,t)=>{const el=document.getElementById(id);if(el)el.textContent=t;};
+  const fBRL = v => v==null?'—':'R$ '+Number(v).toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2});
+  function fMi(v){ if(v==null)return '—'; const a=Math.abs(v); if(a>=1e6) return 'R$ '+(v/1e6).toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2})+' Mi'; if(a>=1e3) return 'R$ '+(v/1e3).toLocaleString('pt-BR',{maximumFractionDigits:1})+'k'; return fBRL(v); }
+  const fNUM = v => v==null?'—':Number(v).toLocaleString('pt-BR',{maximumFractionDigits:2});
+  const fINT = v => v==null?'—':Number(v).toLocaleString('pt-BR',{maximumFractionDigits:0});
+  function fDate(v){ if(v==null||v==='') return '—'; const m=String(v).match(/^(\d{4})-(\d{2})-(\d{2})/); return m?`${m[3]}/${m[2]}/${m[1]}`:String(v); }
+  function dateObj(v){ if(v==null||v==='') return null; const m=String(v).match(/^(\d{4})-(\d{2})-(\d{2})/); return m?new Date(+m[1],+m[2]-1,+m[3]):null; }
+
+  async function pbiConnect(){
+    if (window._msalAuth){ _pbi = window._msalAuth; }
+    else { _pbi = new msal.PublicClientApplication({ auth:{ clientId:PBI_CFG.clientId, authority:`https://login.microsoftonline.com/${PBI_CFG.tenantId}`, redirectUri:window.location.origin+'/' }, cache:{ cacheLocation:'localStorage', storeAuthStateInCookie:true } }); if(_pbi.initialize) await _pbi.initialize(); await _pbi.handleRedirectPromise().catch(()=>{}); }
+    const accounts = _pbi.getAllAccounts();
+    try { const r = await _pbi.acquireTokenSilent({ scopes:PBI_CFG.scopes, account:accounts[0] }); _token = r.accessToken; }
+    catch { const r = await _pbi.loginPopup({ scopes:PBI_CFG.scopes }); _token = r.accessToken; }
+    const acc = _pbi.getAllAccounts()[0]; if (acc && typeof window.setSidebarUser==='function') window.setSidebarUser(acc.name||acc.username, acc.username);
+  }
+  function _pbiErr(text){ try { const j=JSON.parse(text); const e=j.error||{}; const pe=e['pbi.error']||{}; const det=(pe.details||[]).map(d=>d.detail&&d.detail.value).filter(Boolean).join(' | '); return det||e.message||pe.code||text.substring(0,200); } catch { return text.substring(0,200); } }
+  async function execQuery(dsId, dax){
+    const body=JSON.stringify({queries:[{query:dax}],serializerSettings:{includeNulls:true}});
+    const r=await PBIModelo.post(PBI_CFG.workspaceId, dsId, {method:'POST',headers:{Authorization:`Bearer ${_token}`,'Content-Type':'application/json'},body});
+    const text=await r.text(); if(!r.ok) throw new Error(`HTTP ${r.status}: ${_pbiErr(text)}`);
+    const d=JSON.parse(text); if(d.error) throw new Error(_pbiErr(text));
+    return d.results[0].tables[0].rows;
+  }
+  async function resolveDataset(){
+    const falhas = [];
+    const cached = localStorage.getItem(DS_CACHE_KEY);
+    if (cached){ try { await execQuery(cached, PBIModelo.sonda(FATO)); return cached; } catch(e){ falhas.push(['modelo da última visita', e]); localStorage.removeItem(DS_CACHE_KEY); } }
+    const list = await PBIModelo.candidatos(PBI_CFG.workspaceId, _token);
+    for (const ds of list){ if (ds.id===cached) continue; try { await execQuery(ds.id, PBIModelo.sonda(FATO)); localStorage.setItem(DS_CACHE_KEY, ds.id); return ds.id; } catch(e){ falhas.push([ds.name, e]); } }
+    throw PBIModelo.motivo(FATO, falhas);
+  }
+  async function pbiQuery(dax){ if(!_dsId) _dsId = await resolveDataset(); return execQuery(_dsId, dax); }
+
+  // base de filtros: filtros fixos SEMPRE + filtros do usuário
+  function baseFilters(){
+    const f = FIXOS.slice();
+    filtrosAtivos().forEach(d => { const vals=[...window._avSel[d.id]]; if (vals.length) f.push(`${d.col} IN { ${vals.map(v=>daxLit(v,d._type)).join(', ')} }`); });
+    return f;
+  }
+  function ctWrap(inner){ return `CALCULATETABLE(${inner}, ${baseFilters().join(', ')})`; }
+  // opções do dropdown: valores DENTRO do escopo dos filtros fixos (via fato); se a
+  // coluna não puder ser agrupada pelo fato, cai para a lista da própria dimensão
+  async function avCarregarValores(d){
+    const esc = FIXOS.join(', ');
+    const q1 = d._pair
+      ? `EVALUATE CALCULATETABLE(SELECTCOLUMNS(SUMMARIZE(${FATO}, ${d.col}, ${d._pair}), "V", ${d.col}, "L", ${d._pair}), ${esc})`
+      : `EVALUATE CALCULATETABLE(SELECTCOLUMNS(SUMMARIZE(${FATO}, ${d.col}), "V", ${d.col}), ${esc})`;
+    const q2 = d._pair
+      ? `EVALUATE SELECTCOLUMNS(SUMMARIZE('${d._t}', ${d.col}, ${d._pair}), "V", ${d.col}, "L", ${d._pair})`
+      : `EVALUATE SELECTCOLUMNS(VALUES(${d.col}), "V", ${d.col})`;
+    let rows=null;
+    try { rows = await pbiQuery(q1); }
+    catch(e){ console.warn('[VALIDADE] valores de '+d.label+' pelo fato:', e.message); rows = await pbiQuery(q2); }
+    if(!rows||!rows.length) return [];
+    const out=[], vistos={};
+    rows.forEach(r=>{
+      const v=_v(r,/\[V\]$/); if(v==null||v==='') return;
+      if(d._type==null) d._type=typeof v;
+      const k=String(v); if(vistos[k]) return; vistos[k]=1;
+      const comp=d._pair?_v(r,/\[L\]$/):null; const cs=(comp==null)?'':String(comp).trim();
+      out.push({ value:k, label:(cs&&cs!==k)?`${k} · ${cs}`:k });
+    });
+    return out.sort((a,b)=>a.label.localeCompare(b.label,'pt-BR',{numeric:true,sensitivity:'base'}));
+  }
+
+  const GROUP_COLS = Object.values(COL).join(', ');
+  let _rows=[];
+  let _tot=null;                       // totais REAIS do modelo (a tabela é limitada a 5.000 linhas)
+  let _sort={k:'val',dir:'desc'};
+
+  async function carregar(){
+    const dax = `EVALUATE TOPN(5000, ${ctWrap(`ADDCOLUMNS(SUMMARIZE(${FATO}, ${GROUP_COLS}), `
+      + `"Qtd", ${M_QTD}, "PUnit", ${M_PUNIT}, "Val", ${M_VAL})`)}, [Val], DESC)`;
+    const raw = await pbiQuery(dax);
+    _rows = raw.map(r=>({
+      estrategia:_v(r,RX.estrategia), familia:_v(r,RX.familia), codprod:_v(r,RX.codprod),
+      fatura:_v(r,RX.fatura), tipoop:_v(r,RX.tipoop), tiporemessa:_v(r,RX.tiporemessa),
+      codcli:_v(r,RX.codcli), cliente:_v(r,RX.cliente), uf:_v(r,RX.uf), tipocli:_v(r,RX.tipocli),
+      datamov:_v(r,RX.datamov), datavenc:_v(r,RX.datavenc), validade:_v(r,RX.validade),
+      qtd:_numN(_v(r,/\[Qtd\]$/))||0, punit:_numN(_v(r,/\[PUnit\]$/))||0, val:_numN(_v(r,/\[Val\]$/))||0
+    }));
+  }
+
+  // KPIs vêm de uma agregação dedicada — NÃO da tabela (limitada a TOPN 5000). Como há bem
+  // mais de 5.000 combinações, somar a tabela subestimava os totais e o nº de faturas/produtos.
+  // Esta consulta traz os valores REAIS do período e bate 1:1 com a Visão Geral.
+  async function renderKPIs(){
+    try {
+      // uma única agregação alimenta os KPIs E o TOTAL da tabela — assim os dois
+      // fecham por construção. NLin = nº real de linhas (combinações) do relatório.
+      const t = (await pbiQuery(`EVALUATE ${ctWrap(`ROW(`
+        + `"Val", ${M_VAL}, "Qtd", ${M_QTD}, "PUnit", ${M_PUNIT}, `
+        + `"NProd", DISTINCTCOUNT('Produtos'[Cód. do produto]), `
+        + `"NFat", DISTINCTCOUNT(${FATO}[Número da fatura]), `
+        + `"NLin", COUNTROWS(SUMMARIZE(${FATO}, ${GROUP_COLS})))`)}`))[0]||{};
+      _tot = { val:_numN(_v(t,/\[Val\]$/)), qtd:_numN(_v(t,/\[Qtd\]$/)), punit:_numN(_v(t,/\[PUnit\]$/)), nlin:_numN(_v(t,/\[NLin\]$/)) };
+      setTxt('cx-k-val', fMi(_tot.val));
+      setTxt('cx-k-qtd', fNUM(_tot.qtd));
+      setTxt('cx-k-fat', fINT(_numN(_v(t,/\[NFat\]$/))));
+      setTxt('cx-k-prod',fINT(_numN(_v(t,/\[NProd\]$/))));
+    } catch(e){ _tot=null; console.warn('[VALIDADE] KPIs/totais:', e.message); }
+  }
+
+  const _charts={};
+  function hbarChart(id, labels, data, color, money){
+    const el=document.getElementById(id); if(!el||typeof Chart==='undefined') return;
+    const cfg={ labels, datasets:[{label:'Valor', data, backgroundColor:color, borderRadius:3}] };
+    if(_charts[id]){ _charts[id].data=cfg; _charts[id].update(); return; }
+    _charts[id]=new Chart(el.getContext('2d'),{ type:'bar', data:cfg,
+      options:{ indexAxis:'y', responsive:true, maintainAspectRatio:false,
+        plugins:{ legend:{display:false}, tooltip:{callbacks:{label:c=>fBRL(c.raw)}} },
+        scales:{ x:{ticks:{callback:v=>fMi(v),font:{size:10}}}, y:{ticks:{font:{size:10}}} } } });
+  }
+  // Os gráficos NÃO podem sair de _rows: a tabela é TOPN 5.000 POR VALOR, então as
+  // linhas de valor negativo (devolução/estorno) ficam fora do corte e a família
+  // aparece INFLADA — STENT V12 dava R$ 7,61 Mi sem filtro e R$ 6,73 Mi ao filtrar a
+  // própria família (o filtro não tirava valor: ele fazia as linhas negativas caberem).
+  // Cada gráfico roda a sua agregação, como os KPIs, e passa a fechar por construção.
+  async function topAgg(col, rx, n){
+    const rows = await pbiQuery(`EVALUATE TOPN(${n}, ${ctWrap(`ADDCOLUMNS(SUMMARIZE(${FATO}, ${col}), "Val", ${M_VAL})`)}, [Val], DESC)`);
+    return (rows||[]).map(r=>{ const v=_v(r,rx);
+        return { k:(v==null||String(v).trim()==='')?'(em branco)':String(v), v:_numN(_v(r,/\[Val\]$/))||0 }; })
+      .sort((a,b)=>b.v-a.v).slice(0,n);
+  }
+  async function renderCharts(){
+    try {
+      const fam = await topAgg(COL.familia, RX.familia, 12);
+      hbarChart('cx-ch-fam', fam.map(x=>x.k.slice(0,24)), fam.map(x=>x.v), 'rgba(180,83,9,.85)');
+    } catch(e){ console.warn('[VALIDADE] gráfico por família:', e.message); }
+    try {
+      const estr = await topAgg(COL.estrategia, RX.estrategia, 12);
+      hbarChart('cx-ch-estr', estr.map(x=>x.k.slice(0,24)), estr.map(x=>x.v), 'rgba(30,136,229,.85)');
+    } catch(e){ console.warn('[VALIDADE] gráfico por estratégia:', e.message); }
+  }
+
+  function vencCls(v){
+    const d=dateObj(v); if(!d) return '';
+    const today=new Date(); today.setHours(0,0,0,0);
+    const diff=(d-today)/86400000;
+    if(diff<0) return 'venc-late';
+    if(diff<=90) return 'venc-soon';
+    return '';
+  }
+
+  function renderTabela(){
+    const tbody=document.getElementById('cx-tbody');
+    const q=(document.getElementById('cx-search').value||'').trim().toLowerCase();
+    let rows=_rows.slice();
+    if(q) rows=rows.filter(x=>[x.estrategia,x.familia,x.codprod,x.fatura,x.cliente,x.codcli,x.uf,x.tipoop].some(v=>String(v==null?'':v).toLowerCase().includes(q)));
+    const dir=_sort.dir==='desc'?-1:1, k=_sort.k;
+    rows.sort((a,b)=>{ const av=a[k], bv=b[k]; if(typeof av==='number'&&typeof bv==='number') return (av-bv)*dir; return String(av==null?'':av).localeCompare(String(bv==null?'':bv),'pt-BR')*dir; });
+    if(!rows.length){ tbody.innerHTML='<tr><td colspan="16" style="padding:20px;text-align:center;color:var(--text-3);">Nenhuma movimentação encontrada.</td></tr>'; setTxt('cx-tbl-info','0 linhas'); return; }
+    // TOTAL: sem busca usa os totais REAIS do modelo (mesma agregação dos KPIs de cima);
+    // somar a tabela não fecharia, porque ela traz só as 5.000 maiores linhas por valor.
+    // Com busca ativa, soma as linhas visíveis (é o total daquele recorte).
+    const usaReal = !q && !!_tot;
+    const tot = {qtd:0,punit:0,val:0};
+    if (usaReal){ tot.qtd=_tot.qtd||0; tot.punit=_tot.punit||0; tot.val=_tot.val||0; }
+    else { rows.forEach(x=>{tot.qtd+=x.qtd;tot.punit+=x.punit;tot.val+=x.val;}); }
+    const nReal  = (_tot && _tot.nlin) ? _tot.nlin : _rows.length;
+    const totLbl = usaReal ? `TOTAL · ${fINT(nReal)} linhas` : (q ? `TOTAL da busca · ${fINT(rows.length)} linhas` : `TOTAL · ${fINT(rows.length)} linhas`);
+    tbody.innerHTML = rows.map(x=>`<tr>
+      <td class="dim">${escH(x.estrategia==null?'—':x.estrategia)}</td>
+      <td class="dim">${escH(x.familia==null?'—':x.familia)}</td>
+      <td class="cod">${escH(x.codprod==null?'—':x.codprod)}</td>
+      <td class="cod">${escH(x.fatura==null?'—':x.fatura)}</td>
+      <td class="dim">${escH(x.tipoop==null?'—':x.tipoop)}</td>
+      <td class="dim">${escH(x.tiporemessa==null?'—':x.tiporemessa)}</td>
+      <td class="cod">${escH(x.codcli==null?'—':x.codcli)}</td>
+      <td class="dim">${escH(x.cliente==null?'—':x.cliente)}</td>
+      <td class="ctr">${escH(x.uf==null?'—':x.uf)}</td>
+      <td class="dim">${escH(x.tipocli==null?'—':x.tipocli)}</td>
+      <td class="ctr">${fDate(x.datamov)}</td>
+      <td class="ctr ${vencCls(x.datavenc)}">${fDate(x.datavenc)}</td>
+      <td class="ctr"><span class="cx-badge-sim">${escH(x.validade==null?'—':x.validade)}</span></td>
+      <td>${fNUM(x.qtd)}</td>
+      <td>${x.punit==null?'—':fBRL(x.punit)}</td>
+      <td style="font-weight:700;color:var(--bm-blue-900);">${fBRL(x.val)}</td></tr>`).join('')
+      + `<tr class="cx-total"><td class="dim" colspan="13">${totLbl}</td><td>${fNUM(tot.qtd)}</td><td>${fBRL(tot.punit)}</td><td>${fBRL(tot.val)}</td></tr>`;
+    setTxt('cx-tbl-info', (_rows.length < nReal)
+      ? `${fINT(rows.length)} de ${fINT(nReal)} linhas · TOP ${fINT(_rows.length)} por valor (as linhas de valor negativo ficam fora do corte) · ordenado por ${k}`
+      : `${fINT(rows.length)} de ${fINT(nReal)} linhas · ordenado por ${k}`);
+  }
+
+  async function cxAplicar(){
+    if(!_ready) return;
+    document.getElementById('cx-tbody').innerHTML='<tr><td colspan="16" style="padding:20px;text-align:center;color:var(--text-3);">Carregando…</td></tr>';
+    try { await carregar(); await renderKPIs(); renderTabela(); await renderCharts(); }
+    catch(e){ console.error('[VALIDADE]', e.message); document.getElementById('cx-tbody').innerHTML=`<tr><td colspan="16" style="padding:18px;text-align:center;color:var(--danger);">Erro: ${e.message.substring(0,180)}</td></tr>`; }
+  }
+  window.cxAplicar=cxAplicar;
+
+  // ── dropdowns ──
+  function avMakeDropdown({ label, getOptions, getSelected, setSelected, onChange }){
+    const wrap=document.createElement('div'); wrap.className='av-dd';
+    const btn=document.createElement('button'); btn.className='av-dd-btn'; btn.type='button';
+    const panel=document.createElement('div'); panel.className='av-dd-panel';
+    panel.innerHTML = `<div class="av-dd-search"><input type="text" placeholder="Buscar…"></div><div class="av-dd-list"></div><div class="av-dd-foot"><button type="button" data-act="limpar">Limpar</button><button type="button" data-act="fechar">Fechar</button></div>`;
+    wrap.appendChild(btn); wrap.appendChild(panel);
+    const list=panel.querySelector('.av-dd-list'), search=panel.querySelector('input');
+    let loaded=false, options=[];
+    function refresh(){ const n=getSelected().length; btn.classList.toggle('has',n>0); btn.innerHTML=`<span>${label}</span>${ n?`<span class="cnt">${n}</span>`:'<span style="color:var(--text-4);font-weight:500;">Todos</span>' }`; }
+    function renderList(){ const q=(search.value||'').toLowerCase(); const sel=new Set(getSelected()); const items=options.filter(o=>!q||String(o.label).toLowerCase().includes(q)); list.innerHTML=items.length?items.map(o=>`<label class="av-dd-opt"><input type="checkbox" value="${avEsc(o.value)}" ${sel.has(o.value)?'checked':''}>${o.label}</label>`).join(''):'<div style="padding:8px;color:var(--text-3);font-size:12px;">nenhum</div>'; }
+    async function ensure(){ if(loaded) return; list.innerHTML='<div style="padding:10px;color:var(--text-3);font-size:12px;">Carregando…</div>'; try{options=await getOptions();}catch(e){list.innerHTML='<div style="padding:10px;color:var(--danger);font-size:12px;">erro</div>';return;} loaded=true; renderList(); }
+    btn.addEventListener('click', async e=>{ e.stopPropagation(); const open=wrap.classList.contains('open'); document.querySelectorAll('.av-dd.open').forEach(d=>d.classList.remove('open')); if(!open){ wrap.classList.add('open'); await ensure(); search.focus(); } });
+    panel.addEventListener('click', e=>e.stopPropagation());
+    list.addEventListener('change', e=>{ if(e.target.matches('input[type=checkbox]')){ setSelected(e.target.value,e.target.checked); refresh(); onChange(); } });
+    search.addEventListener('input', renderList);
+    panel.querySelector('[data-act=limpar]').addEventListener('click', ()=>{ setSelected(null,false,true); renderList(); refresh(); onChange(); });
+    panel.querySelector('[data-act=fechar]').addEventListener('click', ()=>wrap.classList.remove('open'));
+    refresh(); return wrap;
+  }
+  document.addEventListener('click', ()=>document.querySelectorAll('.av-dd.open').forEach(d=>d.classList.remove('open')));
+  function avMontarToolbar(){
+    const tb=document.getElementById('cx-toolbar'); if(!tb) return; tb.innerHTML='';
+    filtrosAtivos().forEach(d=>tb.appendChild(avMakeDropdown({ label:d.label, getOptions:()=>avCarregarValores(d), getSelected:()=>[...window._avSel[d.id]], setSelected:(v,ck,clr)=>{ const s=window._avSel[d.id]; if(clr){s.clear();return;} if(ck)s.add(v); else s.delete(v); }, onChange:cxAplicar })));
+    const limpar=document.createElement('button'); limpar.className='cx-btn'; limpar.type='button'; limpar.textContent='✕ Limpar filtros';
+    limpar.addEventListener('click', ()=>{ TODOS.forEach(f=>window._avSel[f.id].clear()); avMontarToolbar(); cxAplicar(); });
+    tb.appendChild(limpar);
+  }
+
+  document.getElementById('cx-search').addEventListener('input', ()=>renderTabela());
+  document.querySelectorAll('table.cx-tbl thead th').forEach(th=>th.addEventListener('click', ()=>{ const k=th.getAttribute('data-k'); if(!k) return; if(_sort.k===k) _sort.dir=_sort.dir==='desc'?'asc':'desc'; else { _sort.k=k; _sort.dir=(['qtd','punit','val'].includes(k))?'desc':'asc'; } renderTabela(); }));
+
+  document.addEventListener('DOMContentLoaded', async ()=>{
+    const _tb0=document.getElementById('cx-toolbar'); if(_tb0) _tb0.innerHTML='<span style="font-size:12px;color:var(--text-3);">Carregando filtros…</span>';
+    const banner=document.getElementById('cx-banner');
+    try {
+      await pbiConnect();
+      banner.innerHTML='⏳ Localizando o dataset de movimentações…';
+      _dsId = await resolveDataset();
+      banner.innerHTML='⏳ Lendo o catálogo do modelo…';
+      await carregarCatalogo();          // nome EXATO de cada tabela/coluna
+      await carregarRelacoes();           // quem realmente filtra o fato
+      resolverDims();
+      avMontarToolbar();
+      _ready=true;
+      banner.style.cssText='padding:11px 16px;border-radius:8px;font-size:13px;display:flex;align-items:center;gap:10px;background:#F0FDF4;border:1px solid #BBF7D0;color:#14532D;';
+      banner.innerHTML=`<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg> ✅ Conectado ao Power BI${_dimSkip.length?`<span style="color:#5B7189;font-weight:600;"> · ${_dimSkip.length} filtro(s) fora do modelo (pulados): ${_dimSkip.join(', ')}</span>`:''}`;
+      await cxAplicar();
+    } catch(err){
+      banner.style.cssText='padding:11px 16px;border-radius:8px;font-size:13px;display:flex;align-items:center;gap:10px;background:#FEF2F2;border:1px solid #FECACA;color:#7F1D1D;';
+      banner.innerHTML=`<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg> ${err.message}`;
+    }
+  });
+  </script>
+</body>
+</html>

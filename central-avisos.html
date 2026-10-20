@@ -1,0 +1,506 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Central de Avisos · Biomedical</title>
+  <link rel="stylesheet" href="styles.css?v=14">
+  <script src="auth.js?v=7"></script>
+  <style>
+    /* ── Central de Avisos ── */
+    .ca-layout { display: grid; grid-template-columns: 260px 1fr; gap: 0; min-height: calc(100vh - 60px); }
+    .ca-sidebar { background: var(--surface); border-right: 1px solid var(--border); padding: 24px 16px; position: sticky; top: 60px; height: calc(100vh - 60px); overflow-y: auto; display: flex; flex-direction: column; gap: 6px; }
+    .ca-sidebar-head { font-family: var(--font-mono); font-size: 10px; text-transform: uppercase; letter-spacing: .1em; color: var(--text-4); font-weight: 600; padding: 10px 12px 6px; }
+    .ca-filter-btn { display: flex; align-items: center; gap: 10px; padding: 9px 12px; border-radius: 8px; border: none; background: none; font-family: var(--font-body); font-size: 13px; font-weight: 500; color: var(--text-2); cursor: pointer; width: 100%; transition: all .15s; text-align: left; }
+    .ca-filter-btn:hover { background: var(--surface-2); color: var(--text); }
+    .ca-filter-btn.active { background: var(--bm-blue-900); color: #fff; }
+    .ca-filter-btn .dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+    .ca-filter-btn .cnt { margin-left: auto; font-family: var(--font-mono); font-size: 11px; background: rgba(0,0,0,.08); padding: 1px 7px; border-radius: 999px; }
+    .ca-filter-btn.active .cnt { background: rgba(255,255,255,.2); }
+    .ca-sep { height: 1px; background: var(--border); margin: 8px 4px; }
+
+    /* Main */
+    .ca-main { background: var(--bg); display: flex; flex-direction: column; }
+    .ca-toolbar { background: var(--surface); border-bottom: 1px solid var(--border); padding: 14px 24px; display: flex; align-items: center; gap: 12px; flex-wrap: wrap; position: sticky; top: 60px; z-index: 10; }
+    .ca-toolbar h2 { font-size: 16px; font-weight: 600; color: var(--text); margin: 0; letter-spacing: -.01em; flex-shrink: 0; }
+    .ca-sort { border: 1px solid var(--border); background: var(--surface); border-radius: 8px; padding: 7px 10px; font-size: 13px; font-family: var(--font-body); color: var(--text-2); cursor: pointer; }
+    .ca-btn-novo { display: inline-flex; align-items: center; gap: 7px; padding: 8px 14px; background: #3B82F6; color: #fff; border: none; border-radius: 8px; font-size: 13px; font-weight: 600; font-family: var(--font-body); cursor: pointer; transition: background .15s; }
+    .ca-btn-novo:hover { background: #2563EB; }
+
+    /* List */
+    .ca-list { flex: 1; padding: 20px 24px; display: flex; flex-direction: column; gap: 10px; }
+    .ca-empty { display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 80px 24px; color: var(--text-3); text-align: center; }
+    .ca-empty svg { color: var(--text-4); margin-bottom: 16px; opacity: .5; }
+
+    /* Aviso row */
+    .ca-row { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 18px 20px; display: grid; grid-template-columns: auto 1fr auto; gap: 16px; align-items: flex-start; cursor: pointer; transition: all .18s; }
+    .ca-row:hover { border-color: var(--bm-blue-600); box-shadow: var(--shadow); transform: translateY(-1px); }
+    .ca-row.unread { border-left: 3px solid var(--bm-blue-600); }
+    .ca-row-avatar { width: 38px; height: 38px; border-radius: 50%; background: var(--bm-blue-900); color: #fff; font-weight: 700; font-size: 13px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+    .ca-row-body { min-width: 0; }
+    .ca-row-top { display: flex; align-items: center; gap: 8px; margin-bottom: 5px; flex-wrap: wrap; }
+    .ca-row-author { font-size: 13px; font-weight: 600; color: var(--text); }
+    .ca-row-setor { font-size: 12px; color: var(--text-3); }
+    .ca-row-title { font-size: 15px; font-weight: 600; color: var(--text); margin-bottom: 5px; letter-spacing: -.01em; }
+    .ca-row.unread .ca-row-title { color: var(--bm-blue-900); }
+    .ca-row-excerpt { font-size: 13px; color: var(--text-2); line-height: 1.5; }
+    .ca-row-attach { display: inline-flex; align-items: center; gap: 5px; font-size: 12px; color: var(--bm-blue-700); margin-top: 6px; }
+    .ca-row-meta { display: flex; flex-direction: column; align-items: flex-end; gap: 8px; flex-shrink: 0; }
+    .ca-row-date { font-family: var(--font-mono); font-size: 11px; color: var(--text-4); white-space: nowrap; }
+    .ca-row-del { border: 1px solid var(--border); background: var(--surface); width: 28px; height: 28px; border-radius: 7px; color: var(--text-4); cursor: pointer; display: inline-flex; align-items: center; justify-content: center; transition: all .15s; }
+    .ca-row-del:hover { color: var(--danger); border-color: var(--danger); background: var(--danger-bg); }
+
+    /* Modal detalhe */
+    .ca-detail-overlay { position: fixed; inset: 0; background: rgba(15,23,42,.24); backdrop-filter: blur(4px); z-index: 500; display: none; align-items: flex-start; justify-content: flex-end; }
+    .ca-detail-overlay.open { display: flex; }
+    .ca-detail { background: var(--surface); width: 520px; height: 100vh; border-left: 1px solid var(--border); box-shadow: var(--shadow-lg); overflow-y: auto; display: flex; flex-direction: column; animation: slide-from-right .2s var(--ease); }
+    @keyframes slide-from-right { from { transform: translateX(40px); opacity: 0; } to { transform: none; opacity: 1; } }
+    .ca-detail-head { padding: 18px 20px; border-bottom: 1px solid var(--border); display: flex; align-items: flex-start; gap: 12px; position: sticky; top: 0; background: var(--surface); z-index: 1; }
+    .ca-detail-info { flex: 1; }
+    .ca-detail-title { font-size: 18px; font-weight: 700; color: var(--text); letter-spacing: -.015em; line-height: 1.3; margin-bottom: 8px; }
+    .ca-detail-meta { display: flex; flex-wrap: wrap; gap: 10px; font-size: 12.5px; color: var(--text-3); }
+    .ca-detail-close { border: 1px solid var(--border); background: var(--surface); width: 32px; height: 32px; border-radius: 8px; color: var(--text-3); cursor: pointer; display: flex; align-items: center; justify-content: center; flex-shrink: 0; transition: all .15s; }
+    .ca-detail-close:hover { color: var(--danger); border-color: var(--danger); }
+    .ca-detail-body { padding: 20px; flex: 1; }
+    .ca-detail-body p { font-size: 14.5px; line-height: 1.7; color: var(--text-2); white-space: pre-wrap; }
+    .ca-detail-attach { margin-top: 20px; padding-top: 16px; border-top: 1px solid var(--border); }
+    .ca-detail-attach h4 { font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: .06em; color: var(--text-3); font-family: var(--font-mono); margin-bottom: 10px; }
+    .ca-attach-file { display: flex; align-items: center; gap: 10px; padding: 10px 12px; background: var(--surface-2); border: 1px solid var(--border); border-radius: 8px; font-size: 13px; color: var(--text-2); }
+    .ca-attach-file svg { color: var(--bm-blue-700); flex-shrink: 0; }
+
+    /* BADGE COLORS */
+    .cb-diretoria { background: var(--bm-blue-100); color: var(--bm-blue-800); }
+    .cb-pessoas   { background: var(--bm-green-100); color: var(--bm-green-700); }
+    .cb-eventos   { background: #FFEDD5; color: #C2410C; }
+    .cb-qualidade { background: #EDE9FE; color: #6D28D9; }
+    .cb-ti        { background: #F0FDF4; color: #15803D; }
+    .cb-comercial { background: #FEF3C7; color: #92400E; }
+    .cb-financeiro{ background: var(--bm-blue-100); color: var(--bm-blue-800); }
+    .cb-logistica { background: #FFEDD5; color: #C2410C; }
+    .cb-estoque   { background: #EDE9FE; color: #6D28D9; }
+
+    @media (max-width: 900px) { .ca-layout { grid-template-columns: 1fr; } .ca-sidebar { position: static; height: auto; flex-direction: row; flex-wrap: wrap; } .ca-detail { width: 100%; } }
+  </style>
+  <!-- Layout v3 (Claude Design · animado): fonte + camada visual + motor de animações -->
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300..800&family=Manrope:wght@400..800&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="portal-v3.css?v=2">
+  <script src="portal-motion.js?v=3" defer></script>
+  <!-- Tema claro/escuro (menu do avatar): marca o <html> antes de pintar + camada escura -->
+  <script>try{if(localStorage.getItem('bm-tema')==='escuro')document.documentElement.setAttribute('data-tema','escuro')}catch(e){}</script>
+  <link rel="stylesheet" href="portal-tema.css?v=1">
+  <script src="portal-tema.js?v=1" defer></script>
+  <!-- Celular (varredura 15/10/26): só vale em tela < 768px; no computador não se aplica -->
+  <link rel="stylesheet" href="portal-mobile.css?v=1" media="(max-width: 767.98px)">
+  <script src="portal-mobile.js?v=1" defer></script>
+</head>
+<body>
+
+  <!-- HEADER GLOBAL -->
+  <header class="site-header">
+    <div class="container">
+      <a href="index.html" class="brand">
+        <img class="brand-logo" src="/icons/icon-192.png" alt="Biomedical" onerror="this.dataset.failed='true'">
+        <span class="brand-fallback">Biomedical</span>
+      </a>
+      <nav class="header-nav">
+        <a href="index.html">Início</a>
+        <a href="index.html#areas">Áreas</a>
+        <a href="index.html#sistemas">Sistemas</a>
+        <a href="index.html#avisos">Mural</a>
+        <a href="index.html#contato">Contato</a>
+      </nav>
+    </div>
+  </header>
+
+  <div class="ca-layout">
+
+    <!-- SIDEBAR DE FILTROS -->
+    <aside class="ca-sidebar">
+      <div class="ca-sidebar-head">Categorias</div>
+      <button class="ca-filter-btn active" data-cat="todos">
+        <span class="dot" style="background:var(--bm-blue-900);"></span>
+        Todos os avisos
+        <span class="cnt" id="cnt-todos">0</span>
+      </button>
+      <div class="ca-sep"></div>
+      <button class="ca-filter-btn" data-cat="diretoria">
+        <span class="dot" style="background:var(--bm-blue-700);"></span>
+        Diretoria
+        <span class="cnt" id="cnt-diretoria">0</span>
+      </button>
+      <button class="ca-filter-btn" data-cat="pessoas">
+        <span class="dot" style="background:var(--bm-green-600);"></span>
+        RH &amp; Pessoas
+        <span class="cnt" id="cnt-pessoas">0</span>
+      </button>
+      <button class="ca-filter-btn" data-cat="eventos">
+        <span class="dot" style="background:#C2410C;"></span>
+        Eventos
+        <span class="cnt" id="cnt-eventos">0</span>
+      </button>
+      <button class="ca-filter-btn" data-cat="qualidade">
+        <span class="dot" style="background:#6D28D9;"></span>
+        Qualidade
+        <span class="cnt" id="cnt-qualidade">0</span>
+      </button>
+      <button class="ca-filter-btn" data-cat="ti">
+        <span class="dot" style="background:#15803D;"></span>
+        TI
+        <span class="cnt" id="cnt-ti">0</span>
+      </button>
+      <button class="ca-filter-btn" data-cat="comercial">
+        <span class="dot" style="background:#92400E;"></span>
+        Comercial
+        <span class="cnt" id="cnt-comercial">0</span>
+      </button>
+      <button class="ca-filter-btn" data-cat="financeiro">
+        <span class="dot" style="background:var(--bm-blue-600);"></span>
+        Financeiro
+        <span class="cnt" id="cnt-financeiro">0</span>
+      </button>
+      <button class="ca-filter-btn" data-cat="logistica">
+        <span class="dot" style="background:#C2410C;"></span>
+        Logística
+        <span class="cnt" id="cnt-logistica">0</span>
+      </button>
+      <button class="ca-filter-btn" data-cat="estoque">
+        <span class="dot" style="background:#6D28D9;"></span>
+        Estoque
+        <span class="cnt" id="cnt-estoque">0</span>
+      </button>
+      <div class="ca-sep"></div>
+      <div class="ca-sidebar-head">Status</div>
+      <button class="ca-filter-btn" data-cat="unread">
+        <span class="dot" style="background:#3B82F6;"></span>
+        Não lidos
+        <span class="cnt" id="cnt-unread">0</span>
+      </button>
+    </aside>
+
+    <!-- ÁREA PRINCIPAL -->
+    <div class="ca-main">
+      <div class="ca-toolbar">
+        <h2 id="ca-list-title">Todos os avisos</h2>
+        <div class="search-wrap" style="flex:1;max-width:340px;">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+          <input type="text" class="search-input" id="ca-search" placeholder="Buscar por assunto, autor ou setor…">
+        </div>
+        <select class="ca-sort" id="ca-sort">
+          <option value="newest">Mais recente</option>
+          <option value="oldest">Mais antigo</option>
+          <option value="az">A → Z</option>
+        </select>
+        <button class="ca-btn-novo" id="ca-btn-novo">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+          Novo Aviso
+        </button>
+      </div>
+      <div class="ca-list" id="ca-list"></div>
+    </div>
+  </div>
+
+  <!-- MODAL DETALHE -->
+  <div class="ca-detail-overlay" id="ca-detail-overlay">
+    <div class="ca-detail">
+      <div class="ca-detail-head">
+        <div class="ca-detail-info">
+          <div id="ca-d-title" class="ca-detail-title"></div>
+          <div class="ca-detail-meta" id="ca-d-meta"></div>
+        </div>
+        <button class="ca-detail-close" id="ca-detail-close">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+        </button>
+      </div>
+      <div class="ca-detail-body">
+        <p id="ca-d-body"></p>
+        <div class="ca-detail-attach hidden" id="ca-d-attach">
+          <h4>Anexos</h4>
+          <div id="ca-d-attach-list"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL NOVO AVISO (inline) -->
+  <div class="cmdk-overlay" id="ca-novo-overlay">
+    <div class="cmdk" style="max-width:580px;">
+      <div class="cmdk-input-wrap" style="justify-content:space-between;">
+        <span style="font-size:15px;font-weight:600;color:var(--text);letter-spacing:-.01em;">Novo Aviso</span>
+        <button onclick="document.getElementById('ca-novo-overlay').classList.remove('open')" style="padding:5px 10px;border:1px solid var(--border);background:transparent;border-radius:6px;font-size:12px;color:var(--text-3);cursor:pointer;">✕ Fechar</button>
+      </div>
+      <div style="padding:20px 22px 24px;display:flex;flex-direction:column;gap:14px;">
+        <div style="display:flex;align-items:center;gap:10px;background:var(--surface-2);border:1px solid var(--border);border-radius:8px;padding:10px 14px;">
+          <div id="ca-perfil-avatar" style="width:34px;height:34px;border-radius:50%;background:var(--bm-blue-900);color:#fff;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:13px;flex-shrink:0;">··</div>
+          <div><div id="ca-perfil-nome" style="font-size:13px;font-weight:600;color:var(--text);word-break:break-all;">Identificando…</div><div id="ca-perfil-setor" style="font-size:11.5px;color:var(--text-3);"></div></div>
+          <span style="margin-left:auto;font-family:var(--font-mono);font-size:10px;color:var(--text-4);white-space:nowrap;">Perfil conectado</span>
+        </div>
+        <div>
+          <label style="font-family:var(--font-mono);font-size:10.5px;text-transform:uppercase;letter-spacing:.07em;color:var(--text-3);font-weight:600;display:block;margin-bottom:6px;">Assunto *</label>
+          <input id="ca-assunto" type="text" placeholder="Título do comunicado…" style="width:100%;border:1px solid var(--border);border-radius:8px;padding:9px 12px;font-size:14px;font-family:var(--font-body);color:var(--text);outline:none;" onfocus="this.style.borderColor='var(--bm-blue-600)'" onblur="this.style.borderColor='var(--border)'">
+        </div>
+        <div>
+          <label style="font-family:var(--font-mono);font-size:10.5px;text-transform:uppercase;letter-spacing:.07em;color:var(--text-3);font-weight:600;display:block;margin-bottom:6px;">Categoria</label>
+          <select id="ca-cat" style="width:100%;border:1px solid var(--border);border-radius:8px;padding:9px 12px;font-size:14px;font-family:var(--font-body);color:var(--text);outline:none;background:#fff;appearance:none;background-image:url(&quot;data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%236B7280' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E&quot;);background-repeat:no-repeat;background-position:right 12px center;padding-right:32px;">
+            <option value="diretoria">Diretoria</option>
+            <option value="pessoas">RH &amp; Pessoas</option>
+            <option value="eventos">Eventos</option>
+            <option value="qualidade">Qualidade</option>
+            <option value="ti" selected>TI</option>
+            <option value="comercial">Comercial</option>
+            <option value="financeiro">Financeiro</option>
+            <option value="logistica">Logística</option>
+            <option value="estoque">Estoque</option>
+          </select>
+        </div>
+        <div>
+          <label style="font-family:var(--font-mono);font-size:10.5px;text-transform:uppercase;letter-spacing:.07em;color:var(--text-3);font-weight:600;display:block;margin-bottom:6px;">Mensagem *</label>
+          <textarea id="ca-corpo" rows="5" placeholder="Escreva o comunicado…" style="width:100%;border:1px solid var(--border);border-radius:8px;padding:10px 12px;font-size:14px;font-family:var(--font-body);color:var(--text);resize:vertical;outline:none;line-height:1.55;" onfocus="this.style.borderColor='var(--bm-blue-600)'" onblur="this.style.borderColor='var(--border)'"></textarea>
+        </div>
+        <div>
+          <label style="font-family:var(--font-mono);font-size:10.5px;text-transform:uppercase;letter-spacing:.07em;color:var(--text-3);font-weight:600;display:block;margin-bottom:6px;">Anexo <span style="font-weight:400;text-transform:none;">(opcional)</span></label>
+          <div onclick="document.getElementById('ca-file').click()" style="border:1.5px dashed var(--border-2);border-radius:8px;padding:12px 16px;display:flex;align-items:center;gap:10px;cursor:pointer;">
+            <input type="file" id="ca-file" hidden multiple onchange="caHandleFile(this.files)">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--text-3)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+            <span id="ca-file-label" style="font-size:13px;color:var(--text-3);">Clique para anexar</span>
+          </div>
+        </div>
+        <div id="ca-erro" style="display:none;background:var(--danger-bg);color:var(--danger);border:1px solid #FCA5A5;border-radius:6px;padding:9px 13px;font-size:13px;"></div>
+        <div style="display:flex;gap:10px;justify-content:flex-end;">
+          <button onclick="document.getElementById('ca-novo-overlay').classList.remove('open')" style="padding:9px 16px;border:1px solid var(--border);background:#fff;border-radius:8px;font-size:13px;font-weight:500;cursor:pointer;font-family:var(--font-body);">Cancelar</button>
+          <button id="ca-btn-publicar" class="ca-btn-novo" style="padding:10px 20px;font-size:14px;">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+            Publicar
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- TOAST -->
+  <div class="cob-toast" id="ca-toast">
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+    Aviso publicado com sucesso!
+  </div>
+
+  <script src="script.js?v=8"></script>
+  <script src="avisos-user.js?v=1"></script>
+  <script src="avisos-data.js?v=2"></script>
+  <script>
+  (function () {
+    var LS_KEY = 'bm_avisos_v3';   // v3 = mural zerado (ver avisos-data.js)
+    // Autoria: identidade do login (e-mail) + área do grupo de segurança.
+    // Preenchido de verdade pelo bmAvisoUser() logo abaixo (ver render()).
+    var PERFIL = { nome: 'Usuário Portal', setor: '', sigla: 'US', cat: 'ti', email: '' };
+
+    var CAT_MAP = {
+      diretoria:'Diretoria', pessoas:'RH & Pessoas', eventos:'Eventos',
+      qualidade:'Qualidade', ti:'TI', comercial:'Comercial',
+      financeiro:'Financeiro', logistica:'Logística', estoque:'Estoque'
+    };
+
+    // Estado — o mural nasce VAZIO. Os avisos de demonstração ('s1'..'s6')
+    // saíram em 03/09/26 (nada ali era comunicado de verdade); a lista real vem
+    // do /api/avisos e o localStorage é só cache do que o backend devolveu.
+    function load() {
+      try { return JSON.parse(localStorage.getItem(LS_KEY)) || []; } catch(e) { return []; }
+    }
+    function save(list) { try { localStorage.setItem(LS_KEY, JSON.stringify(list)); } catch(e){} }
+
+    var avisos = load();
+    var curCat = 'todos';
+    var curSearch = '';
+    var curSort = 'newest';
+    var caAnexos = [];
+
+    function initials(n) { return (n||'').split(' ').slice(0,2).map(function(w){return w[0];}).join('').toUpperCase(); }
+    function esc(s) { return (s||'').replace(/[&<>"']/g,function(c){return({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]);}); }
+
+    function filtered() {
+      var list = avisos.slice();
+      if (curCat !== 'todos') {
+        if (curCat === 'unread') list = list.filter(function(a){return a.unread;});
+        else list = list.filter(function(a){return a.cat === curCat;});
+      }
+      if (curSearch) {
+        var q = curSearch.toLowerCase();
+        list = list.filter(function(a){ return (a.assunto+a.corpo+a.autor+a.setor).toLowerCase().indexOf(q) >= 0; });
+      }
+      if (curSort === 'newest') list.sort(function(a,b){return b.ts-a.ts;});
+      else if (curSort === 'oldest') list.sort(function(a,b){return a.ts-b.ts;});
+      else list.sort(function(a,b){return a.assunto.localeCompare(b.assunto);});
+      return list;
+    }
+
+    function updateCounts() {
+      document.getElementById('cnt-todos').textContent = avisos.length;
+      document.getElementById('cnt-unread').textContent = avisos.filter(function(a){return a.unread;}).length;
+      ['diretoria','pessoas','eventos','qualidade','ti','comercial','financeiro','logistica','estoque'].forEach(function(c){
+        var el = document.getElementById('cnt-'+c);
+        if (el) el.textContent = avisos.filter(function(a){return a.cat===c;}).length;
+      });
+    }
+
+    function render() {
+      updateCounts();
+      var list = filtered();
+      var container = document.getElementById('ca-list');
+      var titles = { todos:'Todos os avisos', unread:'Não lidos' };
+      document.getElementById('ca-list-title').textContent = titles[curCat] || (CAT_MAP[curCat]||curCat);
+      if (!list.length) {
+        container.innerHTML = '<div class="ca-empty"><svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg><p>Nenhum aviso encontrado.</p></div>';
+        return;
+      }
+      container.innerHTML = list.map(function(a){
+        var catLabel = CAT_MAP[a.cat]||a.cat;
+        var attach = a.anexos && a.anexos.length ? '<span class="ca-row-attach"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"/></svg>'+esc(a.anexos.join(', '))+'</span>' : '';
+        return '<div class="ca-row'+(a.unread?' unread':'')+'" data-id="'+esc(a.id)+'">'
+          +'<div class="ca-row-avatar">'+esc(a.sigla||initials(a.autor))+'</div>'
+          +'<div class="ca-row-body">'
+            +'<div class="ca-row-top"><span class="badge cb-'+esc(a.cat)+'">'+esc(catLabel)+'</span><span class="ca-row-author">'+esc(a.autor)+'</span><span class="ca-row-setor">· '+esc(a.setor)+'</span></div>'
+            +'<div class="ca-row-title">'+esc(a.assunto)+'</div>'
+            +'<div class="ca-row-excerpt">'+esc(a.corpo.slice(0,140))+(a.corpo.length>140?'…':'')+'</div>'
+            +attach
+          +'</div>'
+          +'<div class="ca-row-meta"><span class="ca-row-date">'+esc(a.data)+'</span>'
+            +'<button class="ca-row-del" data-id="'+esc(a.id)+'" title="Excluir" onclick="caDelete(\''+esc(a.id)+'\',event)">'
+              +'<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg>'
+            +'</button>'
+          +'</div>'
+        +'</div>';
+      }).join('');
+    }
+
+    // Abrir detalhe
+    document.getElementById('ca-list').addEventListener('click', function(e) {
+      if (e.target.closest('.ca-row-del')) return;
+      var row = e.target.closest('.ca-row[data-id]');
+      if (!row) return;
+      var id = row.dataset.id;
+      var a = avisos.find(function(x){return x.id===id;});
+      if (!a) return;
+      a.unread = false;
+      save(avisos);
+      row.classList.remove('unread');
+      updateCounts();
+      document.getElementById('ca-d-title').textContent = a.assunto;
+      var catLabel = CAT_MAP[a.cat]||a.cat;
+      document.getElementById('ca-d-meta').innerHTML =
+        '<span class="badge cb-'+a.cat+'">'+esc(catLabel)+'</span>'
+        +'<span>'+esc(a.autor)+'</span><span>·</span><span>'+esc(a.setor)+'</span><span>·</span><span>'+esc(a.data)+'</span>';
+      document.getElementById('ca-d-body').textContent = a.corpo;
+      var attachEl = document.getElementById('ca-d-attach');
+      var attachList = document.getElementById('ca-d-attach-list');
+      if (a.anexos && a.anexos.length) {
+        attachList.innerHTML = a.anexos.map(function(n){
+          return '<div class="ca-attach-file"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>'+esc(n)+'</div>';
+        }).join('');
+        attachEl.classList.remove('hidden');
+      } else { attachEl.classList.add('hidden'); }
+      document.getElementById('ca-detail-overlay').classList.add('open');
+    });
+    document.getElementById('ca-detail-close').onclick = function(){ document.getElementById('ca-detail-overlay').classList.remove('open'); };
+    document.getElementById('ca-detail-overlay').addEventListener('click', function(e){ if(e.target===this) this.classList.remove('open'); });
+
+    // Delete (via /api/avisos — só o autor ou diretoria/TI; cai no local se sem backend)
+    window.caDelete = function(id, e) {
+      e && e.stopPropagation();
+      if (!confirm('Excluir este aviso?')) return;
+      window.bmAvisos.remove(id).then(function (res) {
+        if (res && res.ok) {
+          avisos = avisos.filter(function(a){return a.id!==id;});
+          render();
+        } else {
+          alert((res && res.error) || 'Não foi possível excluir o aviso.');
+        }
+      });
+    };
+
+    // Filtros
+    document.querySelectorAll('.ca-filter-btn').forEach(function(btn) {
+      btn.addEventListener('click', function() {
+        document.querySelectorAll('.ca-filter-btn').forEach(function(b){b.classList.remove('active');});
+        btn.classList.add('active');
+        curCat = btn.dataset.cat;
+        render();
+      });
+    });
+
+    document.getElementById('ca-search').addEventListener('input', function(){ curSearch = this.value.trim(); render(); });
+    document.getElementById('ca-sort').addEventListener('change', function(){ curSort = this.value; render(); });
+
+    // Novo aviso
+    document.getElementById('ca-btn-novo').onclick = function() { document.getElementById('ca-novo-overlay').classList.add('open'); };
+    document.getElementById('ca-novo-overlay').addEventListener('click', function(e){ if(e.target===this) this.classList.remove('open'); });
+    document.addEventListener('keydown', function(e){ if(e.key==='Escape'){ document.getElementById('ca-detail-overlay').classList.remove('open'); document.getElementById('ca-novo-overlay').classList.remove('open'); }});
+
+    window.caHandleFile = function(files) {
+      caAnexos = Array.from(files).map(function(f){return f.name;});
+      document.getElementById('ca-file-label').textContent = caAnexos.length === 1 ? caAnexos[0] : caAnexos.length + ' arquivos';
+      document.getElementById('ca-file-label').style.color = 'var(--bm-blue-700)';
+    };
+
+    document.getElementById('ca-btn-publicar').onclick = function() {
+      var assunto = document.getElementById('ca-assunto').value.trim();
+      var corpo   = document.getElementById('ca-corpo').value.trim();
+      var cat     = document.getElementById('ca-cat').value;
+      var erro    = document.getElementById('ca-erro');
+      if (!assunto) { erro.textContent='Informe o assunto.'; erro.style.display='block'; return; }
+      if (!corpo)   { erro.textContent='A mensagem não pode ficar em branco.'; erro.style.display='block'; return; }
+      erro.style.display = 'none';
+      // Publica via /api/avisos — o AUTOR (e-mail) e o setor são definidos NO
+      // SERVIDOR pela identidade validada + grupo de segurança. Sem backend, o
+      // bmAvisos cai no localStorage usando a identidade do login.
+      var btn = this; btn.disabled = true;
+      window.bmAvisos.create({ assunto: assunto, corpo: corpo, cat: cat, anexos: caAnexos.slice() }).then(function (res) {
+        btn.disabled = false;
+        if (!res || res.error || !res.aviso) {
+          erro.textContent = (res && res.error) || 'Não foi possível publicar o aviso.';
+          erro.style.display = 'block';
+          return;
+        }
+        avisos.unshift(res.aviso);
+        document.getElementById('ca-assunto').value='';
+        document.getElementById('ca-corpo').value='';
+        document.getElementById('ca-file-label').textContent='Clique para anexar';
+        document.getElementById('ca-file-label').style.color='var(--text-3)';
+        caAnexos=[];
+        document.getElementById('ca-novo-overlay').classList.remove('open');
+        var toast = document.getElementById('ca-toast');
+        toast.classList.add('show');
+        setTimeout(function(){toast.classList.remove('show');}, 3000);
+        curCat = 'todos';
+        document.querySelectorAll('.ca-filter-btn').forEach(function(b){b.classList.remove('active');});
+        document.querySelector('.ca-filter-btn[data-cat="todos"]').classList.add('active');
+        render();
+      });
+    };
+
+    // ── Autoria pelo login ────────────────────────────────────────
+    // Puxa e-mail (autor) + área do grupo de segurança (setor) da pessoa
+    // logada e reflete no cartão "Perfil conectado" do modal + categoria.
+    if (window.bmAvisoUser) {
+      window.bmAvisoUser().then(function (p) {
+        if (!p || !p.email) return;
+        PERFIL = { nome: p.nome, setor: p.setor, sigla: p.sigla, cat: p.cat || PERFIL.cat, email: p.email };
+        var av = document.getElementById('ca-perfil-avatar');
+        var nm = document.getElementById('ca-perfil-nome');
+        var st = document.getElementById('ca-perfil-setor');
+        if (av) av.textContent = p.sigla;
+        if (nm) nm.textContent = p.email;   // "usuário" exibido = e-mail
+        if (st) st.textContent = p.setor;
+        if (p.cat) { var sel = document.getElementById('ca-cat'); if (sel) sel.value = p.cat; }
+      });
+    }
+
+    // Primeiro paint com o cache local; depois busca a lista COMPARTILHADA no
+    // backend (/api/avisos) e re-renderiza. Sem backend, mantém o cache local.
+    render();
+    if (window.bmAvisos && window.bmAvisos.list) {
+      window.bmAvisos.list().then(function (res) {
+        if (res && Array.isArray(res.itens)) { avisos = res.itens; render(); }
+      });
+    }
+  })();
+  </script>
+</body>
+</html>

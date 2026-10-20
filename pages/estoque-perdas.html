@@ -1,0 +1,629 @@
+﻿<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Análise de Perdas · Estoque · Biomedical</title>
+  <link rel="stylesheet" href="../styles.css?v=14">
+  <script src="https://unpkg.com/@azure/msal-browser@2.38.3/lib/msal-browser.min.js"></script>
+<script src="../pbi-throttle.js?v=3"></script>
+<script src="../pbi-modelo.js?v=2"></script>
+  <!-- Layout v3 (Claude Design · animado): fonte + camada visual + motor de animações -->
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300..800&family=Manrope:wght@400..800&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../portal-v3.css?v=2">
+  <script src="../portal-motion.js?v=3" defer></script>
+  <!-- Tema claro/escuro (menu do avatar): marca o <html> antes de pintar + camada escura -->
+  <script>try{if(localStorage.getItem('bm-tema')==='escuro')document.documentElement.setAttribute('data-tema','escuro')}catch(e){}</script>
+  <link rel="stylesheet" href="../portal-tema.css?v=1">
+  <script src="../portal-tema.js?v=1" defer></script>
+  <!-- Celular (varredura 15/10/26): só vale em tela < 768px; no computador não se aplica -->
+  <link rel="stylesheet" href="../portal-mobile.css?v=1" media="(max-width: 767.98px)">
+  <script src="../portal-mobile.js?v=1" defer></script>
+</head>
+<body class="dept">
+
+  <header class="site-header"><div class="container">
+    <a href="../index.html" class="brand" aria-label="Biomedical — Portal Corporativo"><img class="brand-logo" src="/icons/icon-192.png" alt="Biomedical" onerror="this.dataset.failed='true'"><span class="brand-fallback">Biomedical</span></a>
+    <nav class="header-nav"><a href="../index.html">Início</a><a href="../index.html#areas">Áreas</a><a href="../index.html#sistemas">Sistemas</a><a href="../index.html#avisos">Avisos</a><a href="../index.html#contato">Contato</a></nav>
+  </div></header>
+
+  <section class="area-header"><div class="container">
+    <div class="breadcrumb">
+      <a href="../index.html">Portal</a><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18l6-6-6-6"/></svg>
+      <a href="estoque.html">Estoque</a><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18l6-6-6-6"/></svg>
+      <span>Análise de Perdas</span>
+    </div>
+    <div class="area-header-top"><div><h1>Análise de Perdas</h1><p>Perdas por vencimento, avaria e extravio — visão analítica para gestão.</p></div>
+      <!-- o dw-pill.js procura .fx-head-right p/ pendurar o "DW atualizado" -->
+      <div class="fx-head-right" style="margin-left:auto;"></div></div>
+  </div></section>
+
+  <div class="area-body"><div class="container"><div class="area-grid">
+    <aside class="area-sidebar">
+      <div class="sb-card"><div class="sb-head"><span class="sb-ic"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="2" width="20" height="8" rx="2"/><rect x="2" y="14" width="20" height="8" rx="2"/><line x1="6" y1="6" x2="6.01" y2="6"/><line x1="6" y1="18" x2="6.01" y2="18"/></svg></span><div><div class="sb-tt">Estoque</div><div class="sb-st">Departamento</div></div></div><nav></nav></div>
+      <a href="../index.html" class="sb-back"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></svg>Voltar ao Portal</a>
+    </aside>
+
+    <div class="area-main">
+      <style>
+        .cx-wrap{padding:8px 0 48px;display:flex;flex-direction:column;gap:14px;}
+        .cx-card{background:#fff;border:1px solid var(--border);border-radius:var(--radius);padding:14px 16px;}
+        .cx-kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;}
+        @media(max-width:880px){.cx-kpis{grid-template-columns:repeat(2,1fr);}.cx-bars{grid-template-columns:1fr!important;}}
+        .cx-kpi{background:#fff;border:1px solid var(--border);border-radius:var(--radius);padding:16px 18px;position:relative;overflow:hidden;}
+        .cx-kpi::before{content:'';position:absolute;left:0;top:0;bottom:0;width:4px;background:var(--danger,#b91c1c);}
+        .cx-kpi.v::before{background:#7C3AED;}
+        .cx-kpi.a::before{background:#b45309;}
+        .cx-kpi.e::before{background:var(--bm-blue-600);}
+        .cx-kpi-l{font-size:10.5px;font-weight:600;text-transform:uppercase;letter-spacing:.05em;color:var(--text-3);margin-bottom:6px;}
+        .cx-kpi-v{font-family:var(--font-display);font-size:23px;font-weight:800;color:var(--bm-blue-900);line-height:1;}
+        .cx-kpi-s{font-size:11px;color:var(--text-3);margin-top:6px;}
+        .cx-panel{background:#fff;border:1px solid var(--border);border-radius:var(--radius);padding:16px 18px;}
+        .cx-panel h3{font-size:14px;font-weight:700;color:var(--text);margin:0 0 4px;}
+        .cx-panel .cx-sub{font-size:11.5px;color:var(--text-3);margin-bottom:14px;}
+        .cx-bars{display:grid;grid-template-columns:1fr 1fr;gap:14px;}
+        .cx-chart-wrap{position:relative;height:380px;}
+        .cx-chart-wrap.evo{height:280px;}
+        .cx-chart-wrap.tall{height:520px;}
+        .cx-tbl-wrap{overflow:auto;border:1px solid var(--border);border-radius:10px;max-height:600px;}
+        table.cx-tbl{width:100%;border-collapse:collapse;font-size:12px;}
+        table.cx-tbl thead th{position:sticky;top:0;z-index:3;background:var(--bm-blue-900);color:rgba(255,255,255,.95);text-align:right;padding:9px 12px;font-size:10px;font-weight:600;letter-spacing:.02em;text-transform:uppercase;white-space:nowrap;cursor:pointer;user-select:none;}
+        table.cx-tbl thead th.dim{text-align:left;}
+        table.cx-tbl tbody td{padding:7px 12px;border-bottom:1px solid var(--border);text-align:right;font-variant-numeric:tabular-nums;color:var(--text-2);white-space:nowrap;}
+        table.cx-tbl tbody td.dim{text-align:left;color:var(--text);font-weight:600;}
+        table.cx-tbl tbody td.cod{font-family:var(--font-mono,monospace);font-size:11px;color:var(--text-3);text-align:left;}
+        table.cx-tbl tbody tr:hover td{background:var(--bm-blue-50);}
+        table.cx-tbl tbody tr.cx-total td{background:var(--bm-blue-900);color:#fff;font-weight:800;border-top:2px solid var(--border-2);position:sticky;bottom:0;}
+        .cx-tp{display:inline-block;padding:2px 8px;border-radius:999px;font-size:10.5px;font-weight:700;}
+        .cx-tp.venc{background:#EDE9FE;color:#5B21B6;} .cx-tp.avaria{background:#FEF3C7;color:#b45309;} .cx-tp.extravio{background:#DBEAFE;color:#1E40AF;} .cx-tp.outro{background:var(--bm-blue-50);color:var(--text-3);}
+        .search-wrap{position:relative;}
+        .search-wrap svg{position:absolute;left:10px;top:50%;transform:translateY(-50%);color:var(--text-4);}
+        .search-input{padding:7px 10px 7px 32px;border:1px solid var(--border);border-radius:8px;font-size:12.5px;font-family:var(--font-body);width:300px;box-sizing:border-box;}
+        .av-toolbar{display:flex;gap:8px;flex-wrap:wrap;align-items:center;}
+        .av-dd{position:relative;display:inline-block;}
+        .av-dd-btn{padding:7px 12px;border-radius:8px;border:1px solid var(--border);background:#fff;font-size:12.5px;font-weight:600;color:var(--text-2);cursor:pointer;display:inline-flex;align-items:center;gap:10px;min-width:150px;justify-content:space-between;}
+        .av-dd-btn:hover{border-color:var(--bm-blue-500);}
+        .av-dd-btn.has{border-color:var(--bm-blue-600);background:var(--bm-blue-50);color:var(--bm-blue-800);}
+        .av-dd-btn .cnt{background:var(--bm-blue-600);color:#fff;border-radius:999px;padding:0 7px;font-size:11px;}
+        .av-dd-panel{position:absolute;z-index:40;top:calc(100% + 4px);left:0;width:300px;max-height:360px;display:none;flex-direction:column;background:#fff;border:1px solid var(--border);border-radius:10px;box-shadow:var(--shadow);overflow:hidden;}
+        .av-dd.open .av-dd-panel{display:flex;}
+        .av-dd-search{padding:8px;border-bottom:1px solid var(--border);}
+        .av-dd-search input{width:100%;padding:6px 8px;border:1px solid var(--border);border-radius:6px;font-size:12px;font-family:var(--font-body);box-sizing:border-box;}
+        .av-dd-list{overflow-y:auto;padding:4px;}
+        .av-dd-opt{display:flex;align-items:center;gap:8px;padding:6px 8px;border-radius:6px;font-size:12.5px;color:var(--text-2);cursor:pointer;}
+        .av-dd-opt:hover{background:var(--bm-blue-50);}
+        .av-dd-foot{display:flex;justify-content:space-between;padding:6px 10px;border-top:1px solid var(--border);}
+        .av-dd-foot button{font-size:11.5px;color:var(--bm-blue-700);background:none;border:none;cursor:pointer;font-weight:600;}
+        .cx-btn{padding:5px 13px;border-radius:6px;border:1px solid var(--border);background:#fff;font-size:12.5px;font-weight:600;color:var(--text-2);cursor:pointer;font-family:var(--font-body);}
+        .cx-fixed-flt{font-size:11px;color:var(--text-3);display:inline-flex;align-items:center;gap:6px;margin-top:8px;}
+        .cx-fixed-flt b{color:var(--danger,#b91c1c);}
+        .cx-tgwrap{display:inline-flex;align-items:center;gap:8px;margin-left:auto;}
+        .cx-tgwrap .lbl{font-size:11.5px;font-weight:600;color:var(--text-3);}
+        .cx-tg-group{display:inline-flex;border:1px solid var(--border);border-radius:8px;overflow:hidden;}
+        .cx-tg{padding:6px 14px;border:none;background:#fff;font-size:12.5px;font-weight:700;color:var(--text-3);cursor:pointer;font-family:var(--font-body);}
+        .cx-tg.active{background:var(--bm-blue-600);color:#fff;}
+        .cx-period{display:flex;gap:24px;flex-wrap:wrap;padding-bottom:11px;margin-bottom:11px;border-bottom:1px solid var(--border);}
+        .cx-prow{display:flex;align-items:center;gap:8px;flex-wrap:wrap;}
+        .cx-plabel{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.04em;color:var(--text-3);}
+        .cx-pbtns{display:flex;gap:5px;flex-wrap:wrap;}
+        .cx-fbtn{padding:5px 11px;border-radius:7px;border:1px solid var(--border);background:#fff;font-size:12px;font-weight:600;color:var(--text-2);cursor:pointer;font-family:var(--font-body);}
+        .cx-fbtn:hover{border-color:var(--bm-blue-500);}
+        .cx-fbtn.active{background:var(--bm-blue-600);border-color:var(--bm-blue-600);color:#fff;}
+        .cx-vtg-group{display:inline-flex;border:1px solid var(--border);border-radius:8px;overflow:hidden;}
+        .cx-vtg{padding:6px 14px;border:none;background:#fff;font-size:12.5px;font-weight:700;color:var(--text-3);cursor:pointer;font-family:var(--font-body);}
+        .cx-vtg.active{background:var(--bm-blue-900);color:#fff;}
+        .cx-xls{padding:6px 13px;border-radius:8px;border:1px solid var(--bm-green-600,#16a34a);background:#f0fdf4;color:var(--bm-green-700,#15803d);font-size:12.5px;font-weight:700;cursor:pointer;font-family:var(--font-body);display:inline-flex;align-items:center;gap:6px;}
+        .cx-xls:hover{background:#dcfce7;}
+        table.cx-tbl tbody td.mdim{text-align:left;color:var(--text);font-weight:600;cursor:pointer;user-select:none;}
+        table.cx-tbl tbody tr.lvl0 td.mdim{font-weight:800;color:var(--bm-blue-900);}
+        .cx-caret{display:inline-block;width:14px;color:var(--text-3);font-size:10px;}
+        .cx-caret.empty{visibility:hidden;}
+      </style>
+
+      <div class="cx-wrap">
+
+        <div id="cx-banner" style="padding:11px 16px;border-radius:8px;font-size:13px;display:flex;align-items:center;gap:10px;background:#EFF6FF;border:1px solid #BFDBFE;color:#1E40AF;">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+          Conectando ao Power BI…
+        </div>
+
+        <div class="cx-card">
+          <div class="cx-period">
+            <div class="cx-prow"><span class="cx-plabel">Mês</span><div class="cx-pbtns" id="cx-meses"></div></div>
+            <div class="cx-prow"><span class="cx-plabel">Ano</span><div class="cx-pbtns" id="cx-anos"></div></div>
+          </div>
+          <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;">
+            <div class="av-toolbar" id="cx-toolbar"></div>
+            <div class="cx-tgwrap">
+              <span class="lbl">Visualizar gráficos por:</span>
+              <div class="cx-tg-group">
+                <button type="button" class="cx-tg active" data-metric="val">Valor</button>
+                <button type="button" class="cx-tg" data-metric="qtd">Qtde</button>
+              </div>
+            </div>
+          </div>
+          <div class="cx-fixed-flt">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+            Filtro principal do relatório: <b>Tipo de transação (ajuste)</b> — padrão: perdas (vencimento, avaria, extravio)
+          </div>
+        </div>
+
+        <div class="cx-kpis">
+          <div class="cx-kpi"><div class="cx-kpi-l">Perda Total</div><div class="cx-kpi-v" id="cx-k-total">—</div><div class="cx-kpi-s" id="cx-k-total-s">—</div></div>
+          <div class="cx-kpi v"><div class="cx-kpi-l">Perda · Vencimento</div><div class="cx-kpi-v" id="cx-k-venc">—</div><div class="cx-kpi-s" id="cx-k-venc-s">—</div></div>
+          <div class="cx-kpi a"><div class="cx-kpi-l">Perda · Avaria</div><div class="cx-kpi-v" id="cx-k-avaria">—</div><div class="cx-kpi-s" id="cx-k-avaria-s">—</div></div>
+          <div class="cx-kpi e"><div class="cx-kpi-l">Perda · Extravio</div><div class="cx-kpi-v" id="cx-k-extravio">—</div><div class="cx-kpi-s" id="cx-k-extravio-s">—</div></div>
+        </div>
+
+        <div class="cx-panel">
+          <h3>Evolução das perdas</h3><div class="cx-sub" id="cx-evo-sub">Últimos 12 meses</div>
+          <div class="cx-chart-wrap evo"><canvas id="cx-ch-evo"></canvas></div>
+        </div>
+
+        <div class="cx-bars">
+          <div class="cx-panel"><h3>Top 10 Famílias</h3><div class="cx-sub" id="cx-fam-sub">Maiores perdas por família</div><div class="cx-chart-wrap"><canvas id="cx-ch-fam"></canvas></div></div>
+          <div class="cx-panel"><h3>Perdas por Estratégia</h3><div class="cx-sub" id="cx-estr-sub">Distribuição por estratégia</div><div class="cx-chart-wrap"><canvas id="cx-ch-estr"></canvas></div></div>
+        </div>
+
+        <div class="cx-bars">
+          <div class="cx-panel"><h3>Perdas por Linha</h3><div class="cx-sub" id="cx-linha-sub">Top 12 linhas</div><div class="cx-chart-wrap tall"><canvas id="cx-ch-linha"></canvas></div></div>
+          <div class="cx-panel"><h3>Top 20 Produtos</h3><div class="cx-sub" id="cx-prod-sub">Maiores perdas por produto</div><div class="cx-chart-wrap tall"><canvas id="cx-ch-prod"></canvas></div></div>
+        </div>
+
+        <div class="cx-panel">
+          <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;margin-bottom:12px;">
+            <div><h3 style="margin:0;">Perdas · consulta analítica</h3><div class="cx-sub" style="margin:0;" id="cx-tbl-info">—</div></div>
+            <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
+              <div class="cx-vtg-group">
+                <button type="button" class="cx-vtg active" data-view="matriz">Matriz</button>
+                <button type="button" class="cx-vtg" data-view="tabular">Tabular</button>
+              </div>
+              <div class="search-wrap"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg><input class="search-input" id="cx-search" type="text" placeholder="Buscar produto, família, linha, estratégia…"></div>
+              <button type="button" class="cx-xls" id="cx-excel"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>Excel</button>
+            </div>
+          </div>
+          <!-- MATRIZ -->
+          <div class="cx-tbl-wrap" id="cx-wrap-matriz">
+            <table class="cx-tbl">
+              <thead><tr>
+                <th class="dim">Estratégia › Família › Linha › Produto</th>
+                <th>Quantidade (Abs)</th>
+                <th>Custo da movim. (Abs)</th>
+              </tr></thead>
+              <tbody id="cx-mbody"><tr><td colspan="3" style="padding:20px;text-align:center;color:var(--text-3);">Carregando…</td></tr></tbody>
+            </table>
+          </div>
+          <!-- TABULAR -->
+          <div class="cx-tbl-wrap" id="cx-wrap-tabular" style="display:none;">
+            <table class="cx-tbl">
+              <thead><tr>
+                <th class="dim" data-k="estrategia">Estratégia</th>
+                <th class="dim" data-k="familia">Família</th>
+                <th class="dim" data-k="linha">Linha</th>
+                <th class="dim" data-k="produto">Produto</th>
+                <th class="dim" data-k="tipo">Tipo de transação</th>
+                <th data-k="qtd">Quantidade (Abs)</th>
+                <th data-k="val">Custo da movim. (Abs)</th>
+              </tr></thead>
+              <tbody id="cx-tbody"><tr><td colspan="7" style="padding:20px;text-align:center;color:var(--text-3);">Carregando…</td></tr></tbody>
+            </table>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </div></div></div>
+
+  <script src="../script.js?v=8"></script>
+  <script src="../nav-sidebar.js?v=52"></script>
+  <script src="../dw-pill.js?v=4"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+  <script>
+  // ================================================================
+  // ANÁLISE DE PERDAS — tabela 'Movimentações de estoque'
+  // Filtro principal: [Tipo de transação (ajuste)] (padrão = perdas)
+  // Valor = SUM([Custo da movimentação (Abs)])
+  // ================================================================
+  const PBI_CFG = {
+    clientId:'129978ce-ff3b-431d-98b3-66a1bcb766b1', tenantId:'c311c9e6-6017-42a9-b306-4057beba5786',
+    workspaceId:'8535f0a1-8dc6-4da0-93ce-bf20c1c14e27',
+    scopes:['https://analysis.windows.net/powerbi/api/Dataset.Read.All','https://analysis.windows.net/powerbi/api/Report.Read.All']
+  };
+  let _pbi=null,_token=null,_dsId=null,_ready=false;
+  // token/dataset expostos p/ o dw-pill.js ler o histórico de refresh do dataset
+  window.bmDwInfo = () => ({ token:_token, ws:PBI_CFG.workspaceId, ds:_dsId });
+  const DS_CACHE_KEY='bio_ds_perdas';
+
+  const FATO = "'Movimentações de estoque'";
+  const COL_TIPO = `${FATO}[Tipo de transação (ajuste)]`;
+  const COL_DATA = `${FATO}[Data da movimentação]`;
+
+  // medidas (CALCULATE força o context transition no SUMMARIZE)
+  const M_VAL = `CALCULATE(SUM(${FATO}[Custo da movimentação (Abs)]))`;
+  const M_QTD = `CALCULATE(SUM(${FATO}[Quantidade (Abs)]))`;
+
+  // dimensões (group-by) — colunas pedidas pelo gestor
+  const COL = {
+    estrategia: "'Famílias'[Estratégia]",
+    familia:    "'Famílias'[Família]",
+    linha:      "'Linhas'[Linha]",
+    produto:    "'Produtos'[Produto]",
+    tipo:       COL_TIPO
+  };
+  const RX = {
+    estrategia:/\[Estratégia\]$/i, familia:/\[Família\]$/i, linha:/\[Linha\]$/i,
+    produto:/\[Produto\]$/i, tipo:/Tipo de transação/i
+  };
+  // filtros (dropdowns) — o Tipo de transação é o principal
+  const FILTROS = [
+    { id:'tipo',       label:'Tipo de transação', col:COL.tipo },
+    { id:'estrategia', label:'Estratégia',        col:COL.estrategia },
+    { id:'familia',    label:'Família',           col:COL.familia },
+    { id:'linha',      label:'Linha',             col:COL.linha },
+    { id:'produto',    label:'Produto',           col:COL.produto }
+  ];
+  window._avSel = {}; FILTROS.forEach(f => window._avSel[f.id] = new Set());
+  let _metric = 'val';   // 'val' = Custo (Abs) · 'qtd' = Quantidade
+  // Ano/Mês são CONJUNTOS: clique = troca; Ctrl+clique = adiciona/remove
+  window._fAno = new Set();
+  window._fMes = new Set();
+  const _isMulti = () => !!(window.event && (window.event.ctrlKey || window.event.metaKey));
+  function _pickSet(set, v){
+    if (v == null) { set.clear(); return; }
+    if (_isMulti()) { if (set.has(v)) set.delete(v); else set.add(v); }
+    else { set.clear(); set.add(v); }
+  }
+  const MES_NOME = ['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];
+
+  const avDax = s => String(s==null?'':s).replace(/"/g,'""');
+  const avEsc = s => String(s==null?'':s).replace(/"/g,'&quot;');
+  const escH  = s => String(s==null?'':s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+  const _numN = x => (x==null||x===''||x==='-'||isNaN(Number(x)))?null:Number(x);
+  const _v = (r,re)=>{ const k=Object.keys(r).find(x=>re.test(x)); return k?r[k]:null; };
+  const setTxt=(id,t)=>{const el=document.getElementById(id);if(el)el.textContent=t;};
+  const fBRL = v => v==null?'—':'R$ '+Number(v).toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2});
+  function fMi(v){ if(v==null)return '—'; const a=Math.abs(v); if(a>=1e6) return 'R$ '+(v/1e6).toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2})+' Mi'; if(a>=1e3) return 'R$ '+(v/1e3).toLocaleString('pt-BR',{maximumFractionDigits:1})+'k'; return fBRL(v); }
+  const fNUM = v => v==null?'—':Number(v).toLocaleString('pt-BR',{maximumFractionDigits:2});
+  const fINT = v => v==null?'—':Number(v).toLocaleString('pt-BR',{maximumFractionDigits:0});
+  const fPCT = (n,d)=> (d&&d>0)? (n/d*100).toLocaleString('pt-BR',{maximumFractionDigits:1})+'%' : '—';
+  function dateObj(v){ if(v==null||v==='') return null; const m=String(v).match(/^(\d{4})-(\d{2})-(\d{2})/); return m?new Date(+m[1],+m[2]-1,+m[3]):null; }
+  const MES_ABR = ['jan','fev','mar','abr','mai','jun','jul','ago','set','out','nov','dez'];
+
+  async function pbiConnect(){
+    if (window._msalAuth){ _pbi = window._msalAuth; }
+    else { _pbi = new msal.PublicClientApplication({ auth:{ clientId:PBI_CFG.clientId, authority:`https://login.microsoftonline.com/${PBI_CFG.tenantId}`, redirectUri:window.location.origin+'/' }, cache:{ cacheLocation:'localStorage', storeAuthStateInCookie:true } }); if(_pbi.initialize) await _pbi.initialize(); await _pbi.handleRedirectPromise().catch(()=>{}); }
+    const accounts = _pbi.getAllAccounts();
+    try { const r = await _pbi.acquireTokenSilent({ scopes:PBI_CFG.scopes, account:accounts[0] }); _token = r.accessToken; }
+    catch { const r = await _pbi.loginPopup({ scopes:PBI_CFG.scopes }); _token = r.accessToken; }
+    const acc = _pbi.getAllAccounts()[0]; if (acc && typeof window.setSidebarUser==='function') window.setSidebarUser(acc.name||acc.username, acc.username);
+  }
+  function _pbiErr(text){ try { const j=JSON.parse(text); const e=j.error||{}; const pe=e['pbi.error']||{}; const det=(pe.details||[]).map(d=>d.detail&&d.detail.value).filter(Boolean).join(' | '); return det||e.message||pe.code||text.substring(0,200); } catch { return text.substring(0,200); } }
+  async function execQuery(dsId, dax){
+    const body=JSON.stringify({queries:[{query:dax}],serializerSettings:{includeNulls:true}});
+    const r=await PBIModelo.post(PBI_CFG.workspaceId, dsId, {method:'POST',headers:{Authorization:`Bearer ${_token}`,'Content-Type':'application/json'},body});
+    const text=await r.text(); if(!r.ok) throw new Error(`HTTP ${r.status}: ${_pbiErr(text)}`);
+    const d=JSON.parse(text); if(d.error) throw new Error(_pbiErr(text));
+    return d.results[0].tables[0].rows;
+  }
+  async function resolveDataset(){
+    const falhas = [];
+    const cached = localStorage.getItem(DS_CACHE_KEY);
+    if (cached){ try { await execQuery(cached, PBIModelo.sonda(FATO)); return cached; } catch(e){ falhas.push(['modelo da última visita', e]); localStorage.removeItem(DS_CACHE_KEY); } }
+    const list = await PBIModelo.candidatos(PBI_CFG.workspaceId, _token);
+    for (const ds of list){ if (ds.id===cached) continue; try { await execQuery(ds.id, PBIModelo.sonda(FATO)); localStorage.setItem(DS_CACHE_KEY, ds.id); return ds.id; } catch(e){ falhas.push([ds.name, e]); } }
+    throw PBIModelo.motivo(FATO, falhas);
+  }
+  async function pbiQuery(dax){ if(!_dsId) _dsId = await resolveDataset(); return execQuery(_dsId, dax); }
+
+  // filtros dos dropdowns (Tipo de transação inclusive)
+  function dimFilters(){
+    const f = [];
+    FILTROS.forEach(d => { const vals=[...window._avSel[d.id]]; if (vals.length) f.push(`${d.col} IN { ${vals.map(v=>'"'+avDax(v)+'"').join(', ')} }`); });
+    return f;
+  }
+  // filtros de período derivados do campo [Data da movimentação]
+  function dateFilters(){
+    const f = [];
+    const _anos=[...window._fAno], _meses=[...window._fMes];
+    if (_anos.length)  f.push(_anos.length===1  ? `YEAR(${COL_DATA}) = ${_anos[0]}`   : `YEAR(${COL_DATA}) IN { ${_anos.join(', ')} }`);
+    if (_meses.length) f.push(_meses.length===1 ? `MONTH(${COL_DATA}) = ${_meses[0]}` : `MONTH(${COL_DATA}) IN { ${_meses.join(', ')} }`);
+    return f;
+  }
+  function baseFilters(){ return dimFilters().concat(dateFilters()); }
+  function ctWrap(inner){ const f=baseFilters(); return f.length?`CALCULATETABLE(${inner}, ${f.join(', ')})`:inner; }
+  async function avCarregarValores(col){
+    const rows = await pbiQuery(`EVALUATE VALUES(${col})`);
+    if(!rows||!rows.length) return [];
+    const key=Object.keys(rows[0])[0];
+    return rows.map(r=>r[key]).filter(v=>v!=null&&v!=='').map(v=>({value:String(v),label:String(v)})).sort((a,b)=>a.label.localeCompare(b.label,'pt-BR'));
+  }
+  // anos que possuem dados (respeitando os filtros de dimensão, ignorando o próprio período)
+  async function anosComDados(){
+    const f = dimFilters();
+    // VALUES da coluna de data, não a tabela inteira: uma coluna calculada
+    // quebrada no modelo (que esta tela nem usa) derrubaria a consulta
+    const tbl = f.length ? `CALCULATETABLE(VALUES(${COL_DATA}), ${f.join(', ')})` : `VALUES(${COL_DATA})`;
+    const rows = await pbiQuery(`EVALUATE DISTINCT(SELECTCOLUMNS(${tbl}, "Ano", YEAR(${COL_DATA})))`);
+    return rows.map(r=>_numN(_v(r,/\[Ano\]$/i))).filter(v=>v!=null).sort((a,b)=>a-b);
+  }
+
+  let _rows=[];           // agregado por dimensões (sem data)
+  let _evo=[];            // perdas por mês {ym, val, qtd}
+  let _sort={k:'val',dir:'desc'};
+
+  async function carregar(){
+    const groupCols = [COL.estrategia, COL.familia, COL.linha, COL.produto, COL.tipo].join(', ');
+    const dax = `EVALUATE TOPN(8000, ${ctWrap(`ADDCOLUMNS(SUMMARIZE(${FATO}, ${groupCols}), "Val", ${M_VAL}, "Qtd", ${M_QTD})`)}, [Val], DESC)`;
+    const raw = await pbiQuery(dax);
+    _rows = raw.map(r=>({
+      estrategia:_v(r,RX.estrategia), familia:_v(r,RX.familia), linha:_v(r,RX.linha),
+      produto:_v(r,RX.produto), tipo:_v(r,RX.tipo),
+      val:_numN(_v(r,/\[Val\]$/))||0, qtd:_numN(_v(r,/\[Qtd\]$/))||0
+    }));
+    // evolução por mês (consulta separada, agrupada por data)
+    try {
+      const daxEvo = `EVALUATE TOPN(5000, ${ctWrap(`ADDCOLUMNS(SUMMARIZE(${FATO}, ${COL_DATA}), "Val", ${M_VAL}, "Qtd", ${M_QTD})`)}, ${COL_DATA}, DESC)`;
+      const rawE = await pbiQuery(daxEvo);
+      const byM = {};
+      rawE.forEach(r=>{ const d=dateObj(_v(r,/Data da movimenta/i)); if(!d) return; const ym=d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0');
+        if(!byM[ym]) byM[ym]={ym,val:0,qtd:0}; byM[ym].val+=_numN(_v(r,/\[Val\]$/))||0; byM[ym].qtd+=_numN(_v(r,/\[Qtd\]$/))||0; });
+      _evo = Object.values(byM).sort((a,b)=>a.ym.localeCompare(b.ym)).slice(-12);
+    } catch(e){ console.warn('[PERDAS] evolução:', e.message); _evo=[]; }
+  }
+
+  function sumWhere(pred){ return _rows.reduce((s,x)=> pred(String(x.tipo||'').toUpperCase())? s+x.val : s, 0); }
+  function renderKPIs(){
+    const total = _rows.reduce((s,x)=>s+x.val,0);
+    const venc = sumWhere(t=>t.includes('VENCIMENTO'));
+    const avaria = sumWhere(t=>t.includes('AVARIA'));
+    const extravio = sumWhere(t=>t.includes('EXTRAVIO'));
+    setTxt('cx-k-total', fMi(total));
+    setTxt('cx-k-venc', fMi(venc));   setTxt('cx-k-venc-s', fPCT(venc,total)+' do total');
+    setTxt('cx-k-avaria', fMi(avaria)); setTxt('cx-k-avaria-s', fPCT(avaria,total)+' do total');
+    setTxt('cx-k-extravio', fMi(extravio)); setTxt('cx-k-extravio-s', fPCT(extravio,total)+' do total');
+    const nprod = new Set(_rows.map(x=>x.produto==null?'':String(x.produto)).filter(Boolean)).size;
+    setTxt('cx-k-total-s', nprod+' produto(s) com perda');
+  }
+
+  const _charts={};
+  const _DPR = Math.max(2, Math.round(window.devicePixelRatio||1));
+  function trunc(s,n){ s=String(s==null?'—':s); return s.length>n ? s.slice(0,n-1)+'…' : s; }
+  function hbarChart(id, fulls, data, color){
+    const el=document.getElementById(id); if(!el||typeof Chart==='undefined') return;
+    const money = _metric==='val';
+    const labels = fulls.map(s=>trunc(s,30));
+    const tip = c=>money?fBRL(c.raw):fINT(c.raw)+' un';
+    const title = items=>fulls[items[0].dataIndex]||'';
+    const cfg={ labels, datasets:[{label:money?'Valor':'Qtde', data, backgroundColor:color, borderRadius:3, maxBarThickness:30}] };
+    if(_charts[id]){ _charts[id].data=cfg; _charts[id].$fulls=fulls; _charts[id].options.plugins.tooltip.callbacks.label=tip; _charts[id].options.plugins.tooltip.callbacks.title=ti=>(_charts[id].$fulls[ti[0].dataIndex]||''); _charts[id].options.scales.x.ticks.callback=v=>money?fMi(v):fINT(v); _charts[id].update(); return; }
+    const ch=new Chart(el.getContext('2d'),{ type:'bar', data:cfg,
+      options:{ indexAxis:'y', responsive:true, maintainAspectRatio:false, devicePixelRatio:_DPR,
+        layout:{padding:{top:6,right:18,left:2,bottom:2}},
+        plugins:{ legend:{display:false}, tooltip:{callbacks:{title, label:tip}} },
+        scales:{ x:{ticks:{callback:v=>money?fMi(v):fINT(v),font:{size:11}}, grid:{color:'rgba(15,23,42,.06)'}}, y:{ticks:{font:{size:12},autoSkip:false}, grid:{display:false}} } } });
+    ch.$fulls=fulls; _charts[id]=ch;
+  }
+  function lineChart(id, labels, data){
+    const el=document.getElementById(id); if(!el||typeof Chart==='undefined') return;
+    const money = _metric==='val';
+    const tip = c=>money?fBRL(c.raw):fINT(c.raw)+' un';
+    const cfg={ labels, datasets:[{label:money?'Valor':'Qtde', data, fill:true, borderColor:'#1C3F77', backgroundColor:'rgba(28,63,119,.12)', tension:.3, pointRadius:3, pointBackgroundColor:'#1C3F77', borderWidth:2}] };
+    if(_charts[id]){ _charts[id].data=cfg; _charts[id].options.plugins.tooltip.callbacks.label=tip; _charts[id].options.scales.y.ticks.callback=v=>money?fMi(v):fINT(v); _charts[id].update(); return; }
+    _charts[id]=new Chart(el.getContext('2d'),{ type:'line', data:cfg,
+      options:{ responsive:true, maintainAspectRatio:false, devicePixelRatio:_DPR,
+        layout:{padding:{top:12,right:14,left:4,bottom:2}},
+        plugins:{ legend:{display:false}, tooltip:{callbacks:{label:tip}} },
+        scales:{ y:{beginAtZero:true, grace:'8%', ticks:{callback:v=>money?fMi(v):fINT(v),font:{size:11}}, grid:{color:'rgba(15,23,42,.06)'}}, x:{ticks:{font:{size:11}}, grid:{display:false}} } } });
+  }
+  function aggBy(key){
+    const m={}; _rows.forEach(x=>{ const k=x[key]==null||String(x[key]).trim()===''?'(em branco)':String(x[key]); if(!m[k])m[k]={val:0,qtd:0}; m[k].val+=x.val; m[k].qtd+=x.qtd; });
+    return Object.entries(m).map(([k,o])=>({k,v:o[_metric]})).sort((a,b)=>b.v-a.v);
+  }
+  function renderCharts(){
+    const fam = aggBy('familia').slice(0,10);
+    hbarChart('cx-ch-fam', fam.map(x=>x.k), fam.map(x=>x.v), 'rgba(185,28,28,.85)');
+    const estr = aggBy('estrategia').slice(0,12);
+    hbarChart('cx-ch-estr', estr.map(x=>x.k), estr.map(x=>x.v), 'rgba(124,58,237,.85)');
+    const linha = aggBy('linha').slice(0,12);
+    hbarChart('cx-ch-linha', linha.map(x=>x.k), linha.map(x=>x.v), 'rgba(180,83,9,.85)');
+    const prod = aggBy('produto').slice(0,20);
+    hbarChart('cx-ch-prod', prod.map(x=>x.k), prod.map(x=>x.v), 'rgba(30,64,175,.85)');
+    // evolução
+    const lbl = _evo.map(e=>{ const p=e.ym.split('-'); return MES_ABR[+p[1]-1]+'/'+p[0].slice(2); });
+    lineChart('cx-ch-evo', lbl, _evo.map(e=>e[_metric]));
+    const unidade = _metric==='val'?'Valor (R$)':'Quantidade';
+    setTxt('cx-evo-sub', `Últimos ${_evo.length} meses · ${unidade}`);
+  }
+
+  function tipoCls(t){ const u=String(t||'').toUpperCase(); if(u.includes('VENCIMENTO'))return 'venc'; if(u.includes('AVARIA'))return 'avaria'; if(u.includes('EXTRAVIO'))return 'extravio'; return 'outro'; }
+  function filteredRows(){
+    const q=(document.getElementById('cx-search').value||'').trim().toLowerCase();
+    let rows=_rows.slice();
+    if(q) rows=rows.filter(x=>[x.estrategia,x.familia,x.linha,x.produto,x.tipo].some(v=>String(v==null?'':v).toLowerCase().includes(q)));
+    return rows;
+  }
+  function renderTabela(){
+    const tbody=document.getElementById('cx-tbody');
+    let rows=filteredRows();
+    const dir=_sort.dir==='desc'?-1:1, k=_sort.k;
+    rows.sort((a,b)=>{ const av=a[k], bv=b[k]; if(typeof av==='number'&&typeof bv==='number') return (av-bv)*dir; return String(av==null?'':av).localeCompare(String(bv==null?'':bv),'pt-BR')*dir; });
+    if(!rows.length){ tbody.innerHTML='<tr><td colspan="7" style="padding:20px;text-align:center;color:var(--text-3);">Nenhuma perda encontrada para o filtro atual.</td></tr>'; setTxt('cx-tbl-info','0 linhas'); return; }
+    const tot={qtd:0,val:0}; _rows.forEach(x=>{tot.qtd+=x.qtd;tot.val+=x.val;});
+    tbody.innerHTML = rows.map(x=>`<tr>
+      <td class="dim">${escH(x.estrategia==null?'—':x.estrategia)}</td>
+      <td class="dim">${escH(x.familia==null?'—':x.familia)}</td>
+      <td class="dim">${escH(x.linha==null?'—':x.linha)}</td>
+      <td class="cod">${escH(x.produto==null?'—':x.produto)}</td>
+      <td class="dim"><span class="cx-tp ${tipoCls(x.tipo)}">${escH(x.tipo==null?'—':x.tipo)}</span></td>
+      <td>${fINT(x.qtd)}</td>
+      <td style="font-weight:700;color:var(--bm-blue-900);">${fBRL(x.val)}</td></tr>`).join('')
+      + `<tr class="cx-total"><td class="dim" colspan="5">TOTAL · ${_rows.length} linhas</td><td>${fINT(tot.qtd)}</td><td>${fBRL(tot.val)}</td></tr>`;
+    setTxt('cx-tbl-info', `${rows.length} de ${_rows.length} linhas · ordenado por ${k}`);
+  }
+
+  // ── visão matriz (hierarquia Estratégia › Família › Linha › Produto) ──
+  const MLEVELS=['estrategia','familia','linha','produto'];
+  let _view='matriz';
+  let _expanded=new Set();
+  function buildTree(rows){
+    const root={children:{},val:0,qtd:0};
+    rows.forEach(x=>{ let node=root; node.val+=x.val; node.qtd+=x.qtd;
+      MLEVELS.forEach(lv=>{ const key=(x[lv]==null||String(x[lv]).trim()==='')?'(em branco)':String(x[lv]);
+        if(!node.children[key]) node.children[key]={name:key,children:{},val:0,qtd:0};
+        node=node.children[key]; node.val+=x.val; node.qtd+=x.qtd; }); });
+    return root;
+  }
+  function renderMatriz(){
+    const tbody=document.getElementById('cx-mbody'); if(!tbody) return;
+    const rows=filteredRows();
+    if(!rows.length){ tbody.innerHTML='<tr><td colspan="3" style="padding:20px;text-align:center;color:var(--text-3);">Nenhuma perda encontrada para o filtro atual.</td></tr>'; return; }
+    const root=buildTree(rows); const out=[];
+    (function walk(node,level,path){
+      Object.values(node.children).sort((a,b)=>b.val-a.val).forEach(ch=>{
+        const key=path+'›'+ch.name;
+        const hasKids=level<MLEVELS.length-1 && Object.keys(ch.children).length>0;
+        const open=_expanded.has(key);
+        out.push({name:ch.name,level,hasKids,open,key,val:ch.val,qtd:ch.qtd});
+        if(hasKids&&open) walk(ch,level+1,key);
+      });
+    })(root,0,'');
+    tbody.innerHTML = out.map(n=>{
+      const pad=8+n.level*18;
+      const caret = n.hasKids ? `<span class="cx-caret">${n.open?'▼':'▶'}</span>` : '<span class="cx-caret empty">▶</span>';
+      return `<tr class="lvl${n.level}" data-key="${escH(n.key)}" data-haskids="${n.hasKids?1:0}">
+        <td class="mdim" style="padding-left:${pad}px;">${caret}${escH(n.name)}</td>
+        <td>${fINT(n.qtd)}</td>
+        <td style="font-weight:700;color:var(--bm-blue-900);">${fBRL(n.val)}</td></tr>`;
+    }).join('') + `<tr class="cx-total"><td class="dim">TOTAL</td><td>${fINT(root.qtd)}</td><td>${fBRL(root.val)}</td></tr>`;
+  }
+  function cxSetView(v){
+    _view=v;
+    document.querySelectorAll('.cx-vtg').forEach(b=>b.classList.toggle('active', b.getAttribute('data-view')===v));
+    const mw=document.getElementById('cx-wrap-matriz'), tw=document.getElementById('cx-wrap-tabular');
+    if(mw) mw.style.display = v==='matriz'?'':'none';
+    if(tw) tw.style.display = v==='tabular'?'':'none';
+  }
+  // ── exportar Excel (.xlsx) ──
+  function cxExcel(){
+    if(typeof XLSX==='undefined'){ alert('Biblioteca de exportação não carregou.'); return; }
+    const rows=filteredRows(); let aoa;
+    if(_view==='matriz'){
+      aoa=[['Estratégia','Família','Linha','Produto','Quantidade (Abs)','Custo da movimentação (Abs)']];
+      const m={}; rows.forEach(x=>{ const k=[x.estrategia,x.familia,x.linha,x.produto].join('||'); if(!m[k])m[k]={e:x.estrategia,f:x.familia,l:x.linha,p:x.produto,qtd:0,val:0}; m[k].qtd+=x.qtd; m[k].val+=x.val; });
+      Object.values(m).sort((a,b)=>b.val-a.val).forEach(o=>aoa.push([o.e||'',o.f||'',o.l||'',o.p||'',o.qtd,o.val]));
+    } else {
+      aoa=[['Estratégia','Família','Linha','Produto','Tipo de transação','Quantidade (Abs)','Custo da movimentação (Abs)']];
+      rows.slice().sort((a,b)=>b.val-a.val).forEach(x=>aoa.push([x.estrategia||'',x.familia||'',x.linha||'',x.produto||'',x.tipo||'',x.qtd||0,x.val||0]));
+    }
+    const ws=XLSX.utils.aoa_to_sheet(aoa); const wb=XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, 'Perdas'); XLSX.writeFile(wb, `analise_perdas_${_view}.xlsx`);
+  }
+  window.cxExcel=cxExcel;
+
+  async function cxAplicar(){
+    if(!_ready) return;
+    document.getElementById('cx-tbody').innerHTML='<tr><td colspan="7" style="padding:20px;text-align:center;color:var(--text-3);">Carregando…</td></tr>';
+    document.getElementById('cx-mbody').innerHTML='<tr><td colspan="3" style="padding:20px;text-align:center;color:var(--text-3);">Carregando…</td></tr>';
+    try { await carregar(); renderKPIs(); renderCharts(); renderTabela(); renderMatriz(); }
+    catch(e){ console.error('[PERDAS]', e.message); const msg=`<td colspan="7" style="padding:18px;text-align:center;color:var(--danger);">Erro: ${e.message.substring(0,180)}</td>`; document.getElementById('cx-tbody').innerHTML='<tr>'+msg+'</tr>'; document.getElementById('cx-mbody').innerHTML=`<tr><td colspan="3" style="padding:18px;text-align:center;color:var(--danger);">Erro: ${e.message.substring(0,180)}</td></tr>`; }
+  }
+  window.cxAplicar=cxAplicar;
+
+  // ── dropdowns (multi-seleção) ──
+  function avMakeDropdown({ label, getOptions, getSelected, setSelected, onChange }){
+    const wrap=document.createElement('div'); wrap.className='av-dd';
+    const btn=document.createElement('button'); btn.className='av-dd-btn'; btn.type='button';
+    const panel=document.createElement('div'); panel.className='av-dd-panel';
+    panel.innerHTML = `<div class="av-dd-search"><input type="text" placeholder="Buscar…"></div><div class="av-dd-list"></div><div class="av-dd-foot"><button type="button" data-act="limpar">Limpar</button><button type="button" data-act="fechar">Fechar</button></div>`;
+    wrap.appendChild(btn); wrap.appendChild(panel);
+    const list=panel.querySelector('.av-dd-list'), search=panel.querySelector('input');
+    let loaded=false, options=[];
+    function refresh(){ const n=getSelected().length; btn.classList.toggle('has',n>0); btn.innerHTML=`<span>${label}</span>${ n?`<span class="cnt">${n}</span>`:'<span style="color:var(--text-4);font-weight:500;">Todos</span>' }`; }
+    function renderList(){ const q=(search.value||'').toLowerCase(); const sel=new Set(getSelected()); const items=options.filter(o=>!q||String(o.label).toLowerCase().includes(q)); list.innerHTML=items.length?items.map(o=>`<label class="av-dd-opt"><input type="checkbox" value="${avEsc(o.value)}" ${sel.has(o.value)?'checked':''}>${o.label}</label>`).join(''):'<div style="padding:8px;color:var(--text-3);font-size:12px;">nenhum</div>'; }
+    async function ensure(){ if(loaded) return; list.innerHTML='<div style="padding:10px;color:var(--text-3);font-size:12px;">Carregando…</div>'; try{options=await getOptions();}catch(e){list.innerHTML='<div style="padding:10px;color:var(--danger);font-size:12px;">erro</div>';return;} loaded=true; renderList(); }
+    btn.addEventListener('click', async e=>{ e.stopPropagation(); const open=wrap.classList.contains('open'); document.querySelectorAll('.av-dd.open').forEach(d=>d.classList.remove('open')); if(!open){ wrap.classList.add('open'); await ensure(); search.focus(); } });
+    panel.addEventListener('click', e=>e.stopPropagation());
+    list.addEventListener('change', e=>{ if(e.target.matches('input[type=checkbox]')){ setSelected(e.target.value,e.target.checked); refresh(); onChange(); } });
+    search.addEventListener('input', renderList);
+    panel.querySelector('[data-act=limpar]').addEventListener('click', ()=>{ setSelected(null,false,true); renderList(); refresh(); onChange(); });
+    panel.querySelector('[data-act=fechar]').addEventListener('click', ()=>wrap.classList.remove('open'));
+    refresh(); return wrap;
+  }
+  document.addEventListener('click', ()=>document.querySelectorAll('.av-dd.open').forEach(d=>d.classList.remove('open')));
+  function avMontarToolbar(){
+    const tb=document.getElementById('cx-toolbar'); if(!tb) return; tb.innerHTML='';
+    FILTROS.forEach(d=>tb.appendChild(avMakeDropdown({ label:d.label, getOptions:()=>avCarregarValores(d.col), getSelected:()=>[...window._avSel[d.id]], setSelected:(v,ck,clr)=>{ const s=window._avSel[d.id]; if(clr){s.clear();return;} if(ck)s.add(v); else s.delete(v); }, onChange:cxAplicar })));
+    const limpar=document.createElement('button'); limpar.className='cx-btn'; limpar.type='button'; limpar.textContent='✕ Limpar filtros';
+    limpar.addEventListener('click', ()=>{ FILTROS.forEach(f=>window._avSel[f.id].clear()); window._fAno.clear(); window._fMes.clear(); avMontarToolbar(); buildMeses(); buildAnos(_anosCache); cxAplicar(); });
+    tb.appendChild(limpar);
+  }
+
+  // ── período: botões de Mês e Ano (igual ao comercial) ──
+  let _anosCache=[];
+  function setMes(el, n){ _pickSet(window._fMes, n); buildMeses(); cxAplicar(); }
+  function setAno(el, y){ _pickSet(window._fAno, y); buildAnos(_anosCache); cxAplicar(); }
+  function buildMeses(){
+    const c=document.getElementById('cx-meses'); if(!c) return; c.innerHTML='';
+    const mk=(label,n)=>{ const b=document.createElement('button'); b.type='button';
+      const on = (n==null) ? !window._fMes.size : window._fMes.has(n);
+      b.className='cx-fbtn'+(on?' active':''); b.textContent=label;
+      b.title='Ctrl+clique seleciona mais de um';
+      b.onclick=function(){setMes(this,n);}; return b; };
+    c.appendChild(mk('Todos', null));
+    MES_NOME.forEach((m,i)=>c.appendChild(mk(m, i+1)));
+  }
+  function buildAnos(anos){
+    _anosCache = anos||[];
+    const c=document.getElementById('cx-anos'); if(!c) return; c.innerHTML='';
+    const mk=(label,y)=>{ const b=document.createElement('button'); b.type='button';
+      const on = (y==null) ? !window._fAno.size : window._fAno.has(y);
+      b.className='cx-fbtn'+(on?' active':''); b.textContent=label;
+      b.title='Ctrl+clique seleciona mais de um';
+      b.onclick=function(){setAno(this,y);}; return b; };
+    c.appendChild(mk('Todos', null));
+    _anosCache.forEach(y=>c.appendChild(mk(String(y), y)));
+  }
+
+  // padrão: seleciona automaticamente os tipos de "PERDA"
+  async function defaultTipoPerdas(){
+    try {
+      const rows = await pbiQuery(`EVALUATE VALUES(${COL_TIPO})`);
+      const key = rows.length?Object.keys(rows[0])[0]:null;
+      const all = key?rows.map(r=>r[key]).filter(v=>v!=null&&String(v).trim()!=='').map(String):[];
+      all.forEach(t=>{ if(/perda/i.test(t)) window._avSel['tipo'].add(t); });
+    } catch(e){ console.warn('[PERDAS] tipos:', e.message); }
+  }
+
+  document.getElementById('cx-search').addEventListener('input', ()=>{ renderTabela(); renderMatriz(); });
+  document.querySelectorAll('table.cx-tbl thead th').forEach(th=>th.addEventListener('click', ()=>{ const k=th.getAttribute('data-k'); if(!k) return; if(_sort.k===k) _sort.dir=_sort.dir==='desc'?'asc':'desc'; else { _sort.k=k; _sort.dir=(['qtd','val'].includes(k))?'desc':'asc'; } renderTabela(); }));
+  document.querySelectorAll('.cx-tg').forEach(b=>b.addEventListener('click', ()=>{ _metric=b.getAttribute('data-metric'); document.querySelectorAll('.cx-tg').forEach(x=>x.classList.toggle('active',x===b)); renderCharts(); }));
+  document.querySelectorAll('.cx-vtg').forEach(b=>b.addEventListener('click', ()=>cxSetView(b.getAttribute('data-view'))));
+  document.getElementById('cx-excel').addEventListener('click', cxExcel);
+  document.getElementById('cx-mbody').addEventListener('click', e=>{ const tr=e.target.closest('tr[data-key]'); if(!tr||tr.getAttribute('data-haskids')!=='1') return; const k=tr.getAttribute('data-key'); if(_expanded.has(k)) _expanded.delete(k); else _expanded.add(k); renderMatriz(); });
+
+  document.addEventListener('DOMContentLoaded', async ()=>{
+    avMontarToolbar();
+    buildMeses();
+    buildAnos([]);   // "Todos" já visível; anos reais carregam após conexão
+    const banner=document.getElementById('cx-banner');
+    try {
+      await pbiConnect();
+      banner.innerHTML='⏳ Localizando o dataset de movimentações…';
+      await resolveDataset();
+      await defaultTipoPerdas();
+      avMontarToolbar();   // reflete a seleção padrão (perdas) nos chips
+      buildMeses();
+      try { buildAnos(await anosComDados()); } catch(e){ console.warn('[PERDAS] anos:', e.message); buildAnos([]); }
+      _ready=true;
+      banner.style.cssText='padding:11px 16px;border-radius:8px;font-size:13px;display:flex;align-items:center;gap:10px;background:#F0FDF4;border:1px solid #BBF7D0;color:#14532D;';
+      banner.innerHTML=`<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg> ✅ Conectado ao Power BI`;
+      await cxAplicar();
+    } catch(err){
+      banner.style.cssText='padding:11px 16px;border-radius:8px;font-size:13px;display:flex;align-items:center;gap:10px;background:#FEF2F2;border:1px solid #FECACA;color:#7F1D1D;';
+      banner.innerHTML=`<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg> ${err.message}`;
+    }
+  });
+  </script>
+</body>
+</html>

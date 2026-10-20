@@ -1,0 +1,871 @@
+﻿<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Movimentações · Estoque · Biomedical</title>
+  <link rel="stylesheet" href="../styles.css?v=14">
+  <script src="https://unpkg.com/@azure/msal-browser@2.38.3/lib/msal-browser.min.js"></script>
+<script src="../pbi-throttle.js?v=3"></script>
+<script src="../pbi-modelo.js?v=2"></script>
+  <!-- Layout v3 (Claude Design · animado): fonte + camada visual + motor de animações -->
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300..800&family=Manrope:wght@400..800&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../portal-v3.css?v=2">
+  <script src="../portal-motion.js?v=3" defer></script>
+  <!-- Tema claro/escuro (menu do avatar): marca o <html> antes de pintar + camada escura -->
+  <script>try{if(localStorage.getItem('bm-tema')==='escuro')document.documentElement.setAttribute('data-tema','escuro')}catch(e){}</script>
+  <link rel="stylesheet" href="../portal-tema.css?v=1">
+  <script src="../portal-tema.js?v=1" defer></script>
+  <!-- Celular (varredura 15/10/26): só vale em tela < 768px; no computador não se aplica -->
+  <link rel="stylesheet" href="../portal-mobile.css?v=1" media="(max-width: 767.98px)">
+  <script src="../portal-mobile.js?v=1" defer></script>
+</head>
+<body class="dept">
+
+  <header class="site-header"><div class="container">
+    <a href="../index.html" class="brand" aria-label="Biomedical — Portal Corporativo"><img class="brand-logo" src="/icons/icon-192.png" alt="Biomedical" onerror="this.dataset.failed='true'"><span class="brand-fallback">Biomedical</span></a>
+    <nav class="header-nav"><a href="../index.html">Início</a><a href="../index.html#areas">Áreas</a><a href="../index.html#sistemas">Sistemas</a><a href="../index.html#avisos">Avisos</a><a href="../index.html#contato">Contato</a></nav>
+  </div></header>
+
+  <!-- cabeçalho movido para .fx-head (abas de submódulo, Claude Design) -->
+
+  <div class="area-body"><div class="container"><div class="area-grid">
+    <aside class="area-sidebar">
+      <div class="sb-card"><div class="sb-head"><span class="sb-ic"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="2" width="20" height="8" rx="2"/><rect x="2" y="14" width="20" height="8" rx="2"/><line x1="6" y1="6" x2="6.01" y2="6"/><line x1="6" y1="18" x2="6.01" y2="18"/></svg></span><div><div class="sb-tt">Estoque</div><div class="sb-st">Departamento</div></div></div><nav></nav></div>
+      <a href="../index.html" class="sb-back"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></svg>Voltar ao Portal</a>
+    </aside>
+
+    <div class="area-main">
+          <!-- ═══ Cabeçalho + abas de submódulo (Claude Design) ═══ -->
+          <style>
+            .fx-head{display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap;padding:22px 0 4px;}
+            .fx-bc{display:flex;align-items:center;gap:6px;font-size:12px;color:#7C93A8;}
+            .fx-title{margin:4px 0 0;font-size:23px;font-weight:800;letter-spacing:-0.5px;color:#0A2E5C;}
+            .fx-head-right{display:flex;align-items:center;gap:12px;flex-wrap:wrap;}
+            .fx-tabs{display:flex;align-items:center;background:#FFFFFF;border:1px solid #E3EAF2;border-radius:11px;padding:3px;flex-wrap:wrap;}
+            .fx-tabs a,.fx-tabs span{padding:8px 14px;border-radius:8px;font-size:12.5px;font-weight:600;color:#5B7189;text-decoration:none;white-space:nowrap;}
+            .fx-tabs a:hover{color:#0A2E5C;}
+            .fx-tabs .active{background:#0A2E5C;font-weight:700;color:#fff;}
+            .fx-filters{display:flex;align-items:center;gap:10px;flex-wrap:wrap;padding:12px 14px;background:#fff;border:1px solid #E3EAF2;border-radius:12px;}
+            .fx-fdiv{width:1px;height:24px;background:#E3EAF2;}
+            .fx-fbtn{display:inline-flex;align-items:center;gap:8px;padding:8px 12px;border-radius:9px;border:1px solid #E3EAF2;background:#fff;font-size:12.5px;font-weight:600;color:#33495E;cursor:pointer;font-family:inherit;white-space:nowrap;}
+            .fx-fbtn:hover{border-color:#1272C4;}
+            .fx-fbtn .fx-fk{font-weight:700;color:#93A7BA;}
+            .fx-fbtn svg{flex-shrink:0;}
+            .fxdd{position:relative;display:inline-block;}
+            .fxdd-panel{position:absolute;z-index:50;top:calc(100% + 6px);left:0;display:none;flex-direction:column;background:#fff;border:1px solid #E3EAF2;border-radius:12px;box-shadow:0 10px 30px rgba(10,46,92,0.14);padding:12px;min-width:210px;}
+            .fxdd.open .fxdd-panel{display:flex;}
+            /* esconde a faixa de cards de sub-modulos (estatica OU injetada pelo nav-sidebar.js) */
+            .area-main section:has(.modulo-card){display:none !important;}
+            @media(max-width:767.98px){
+              .fx-head{align-items:flex-start;padding-top:14px;}
+              .fx-title{font-size:17px;}
+              .fx-head-right{width:100%;}
+              .fx-tabs{width:100%;flex-wrap:nowrap;overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none;background:#F0F4F9;border:none;}
+              .fx-tabs::-webkit-scrollbar{display:none;}
+              .fx-tabs a,.fx-tabs span{flex:0 0 auto;}
+              .fx-filters{flex-wrap:nowrap;overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none;}
+              .fx-filters::-webkit-scrollbar{display:none;}
+              .fx-filters>*{flex-shrink:0;}
+            }
+          </style>
+
+          <div class="fx-head">
+            <div>
+              <div class="fx-bc"><span>Estoque</span><span>›</span><span>Gestão de Estoque</span></div>
+              <h1 class="fx-title">Movimentações</h1>
+            </div>
+            <div class="fx-head-right">
+              <div class="fx-tabs">
+                <a href="estoque-gestao.html">Visão Geral</a>
+                <a href="estoque-saldo.html">Saldo de Estoque</a>
+                <a href="estoque-ruptura.html">Ruptura de Estoque</a>
+                <a href="estoque-validade-curta.html">Validade Curta</a>
+                <span class="active">Movimentações</span>
+              </div>
+            </div>
+          </div>
+          <script>
+          /* dropdowns compactos da barra fx (Claude Design) */
+          (function(){
+            window.fxTogglePanel = function(btn){
+              var dd = btn.closest('.fxdd'); if(!dd) return;
+              var open = dd.classList.contains('open');
+              document.querySelectorAll('.fxdd.open').forEach(function(d){ d.classList.remove('open'); });
+              if(!open) dd.classList.add('open');
+            };
+            document.addEventListener('DOMContentLoaded', function(){
+              document.addEventListener('click', function(e){ if(e.target.closest && e.target.closest('.fxdd')) return; document.querySelectorAll('.fxdd.open').forEach(function(d){ d.classList.remove('open'); }); });
+            });
+          })();
+          </script>
+
+      <style>
+        .cx-wrap{padding:8px 0 48px;display:flex;flex-direction:column;gap:14px;}
+        .cx-panel{background:#fff;border:1px solid var(--border);border-radius:var(--radius);padding:16px 18px;}
+        .cx-panel h3{font-size:14px;font-weight:700;color:var(--text);margin:0 0 4px;}
+        .cx-panel .cx-sub{font-size:11.5px;color:var(--text-3);margin-bottom:14px;}
+        .cx-tbl-wrap{overflow:auto;border:1px solid var(--border);border-radius:10px;max-height:660px;}
+        table.cx-tbl{width:100%;border-collapse:collapse;font-size:12px;}
+        table.cx-tbl thead th{position:sticky;top:0;z-index:3;background:var(--bm-blue-900);color:rgba(255,255,255,.95);text-align:right;padding:9px 12px;font-size:10px;font-weight:600;letter-spacing:.02em;text-transform:uppercase;white-space:nowrap;cursor:pointer;user-select:none;}
+        table.cx-tbl thead th.dim{text-align:left;}
+        table.cx-tbl thead th.unres{color:#FCA5A5;}
+        table.cx-tbl tbody td{padding:7px 12px;border-bottom:1px solid var(--border);text-align:right;font-variant-numeric:tabular-nums;color:var(--text-2);white-space:nowrap;}
+        table.cx-tbl tbody td.dim{text-align:left;color:var(--text);font-weight:600;}
+        table.cx-tbl tbody td.cod{font-family:var(--font-mono,monospace);font-size:11px;color:var(--text-3);text-align:left;}
+        table.cx-tbl tbody td.ctr{text-align:center;}
+        table.cx-tbl tbody td.neg{color:var(--danger,#b91c1c);}
+        table.cx-tbl tbody tr:hover td{background:var(--bm-blue-50);}
+        table.cx-tbl tbody tr.cx-total td{background:var(--bm-blue-900);color:#fff;font-weight:800;border-top:2px solid var(--border-2);position:sticky;bottom:0;}
+        .search-wrap{position:relative;}
+        .search-wrap svg{position:absolute;left:10px;top:50%;transform:translateY(-50%);color:var(--text-4);}
+        .search-input{padding:7px 10px 7px 32px;border:1px solid var(--border);border-radius:8px;font-size:12.5px;font-family:var(--font-body);width:270px;box-sizing:border-box;}
+        .av-toolbar{display:flex;gap:8px;flex-wrap:wrap;align-items:center;}
+        .av-dd{position:relative;display:inline-block;}
+        .av-dd-btn{padding:7px 12px;border-radius:8px;border:1px solid var(--border);background:#fff;font-size:12.5px;font-weight:600;color:var(--text-2);cursor:pointer;display:inline-flex;align-items:center;gap:10px;min-width:150px;justify-content:space-between;}
+        .av-dd-btn:hover{border-color:var(--bm-blue-500);}
+        .av-dd-btn.has{border-color:var(--bm-blue-600);background:var(--bm-blue-50);color:var(--bm-blue-800);}
+        .av-dd-btn .cnt{background:var(--bm-blue-600);color:#fff;border-radius:999px;padding:0 7px;font-size:11px;}
+        .av-dd-panel{position:absolute;z-index:40;top:calc(100% + 4px);left:0;width:290px;max-height:340px;display:none;flex-direction:column;background:#fff;border:1px solid var(--border);border-radius:10px;box-shadow:var(--shadow);overflow:hidden;}
+        .av-dd.open .av-dd-panel{display:flex;}
+        .av-dd-search{padding:8px;border-bottom:1px solid var(--border);}
+        .av-dd-search input{width:100%;padding:6px 8px;border:1px solid var(--border);border-radius:6px;font-size:12px;font-family:var(--font-body);box-sizing:border-box;}
+        .av-dd-list{overflow-y:auto;padding:4px;}
+        .av-dd-opt{display:flex;align-items:center;gap:8px;padding:6px 8px;border-radius:6px;font-size:12.5px;color:var(--text-2);cursor:pointer;}
+        .av-dd-opt:hover{background:var(--bm-blue-50);}
+        .av-dd-foot{display:flex;justify-content:space-between;padding:6px 10px;border-top:1px solid var(--border);}
+        .av-dd-foot button{font-size:11.5px;color:var(--bm-blue-700);background:none;border:none;cursor:pointer;font-weight:600;}
+        .cx-btn{padding:6px 13px;border-radius:7px;border:1px solid var(--border);background:#fff;font-size:12.5px;font-weight:600;color:var(--text-2);cursor:pointer;font-family:var(--font-body);}
+        .cx-btn:hover{border-color:var(--bm-blue-500);}
+        .cx-btn.prim{background:#0E4A8A;border-color:#0E4A8A;color:#fff;}
+        .cx-btn.prim:hover{background:#0A3B70;}
+        .cx-btn.prim.dirty{box-shadow:0 0 0 3px rgba(18,114,196,.20);}
+        .cx-btn[disabled]{opacity:.55;cursor:default;}
+        /* dropdown de intervalo de datas */
+        .mv-dt label{display:flex;align-items:center;justify-content:space-between;gap:10px;font-size:12px;font-weight:600;color:var(--text-2);margin-bottom:8px;}
+        .mv-dt input[type=date]{padding:5px 7px;border:1px solid var(--border);border-radius:6px;font-size:12px;font-family:var(--font-body);}
+        .mv-dt .mv-dt-hint{font-size:11px;color:var(--text-3);line-height:1.5;margin-top:2px;}
+        .mv-dt .mv-dt-foot{display:flex;justify-content:space-between;margin-top:10px;padding-top:8px;border-top:1px solid var(--border);}
+        .mv-dt .mv-dt-foot button{font-size:11.5px;color:var(--bm-blue-700);background:none;border:none;cursor:pointer;font-weight:600;}
+        .mv-empty{padding:34px 20px;text-align:center;color:var(--text-3);font-size:13px;line-height:1.7;}
+        .mv-empty b{color:var(--text-2);}
+        .mv-note{font-size:11.5px;color:var(--text-3);line-height:1.6;margin:0 0 10px;}
+        .mv-note b{color:var(--text-2);font-weight:700;}
+        .mv-note .mv-w{color:#B45309;font-weight:700;}
+      </style>
+
+      <div class="cx-wrap">
+
+        <div id="cx-banner" style="padding:11px 16px;border-radius:8px;font-size:13px;display:flex;align-items:center;gap:10px;background:#EFF6FF;border:1px solid #BFDBFE;color:#1E40AF;">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+          Conectando ao Power BI…
+        </div>
+
+        <div class="fx-filters">
+          <div class="av-toolbar" id="cx-toolbar" style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
+            <span style="font-size:12px;color:var(--text-3);">Carregando filtros…</span>
+          </div>
+        </div>
+
+        <div class="cx-panel">
+          <div style="display:flex;align-items:flex-end;justify-content:space-between;gap:10px;flex-wrap:wrap;margin-bottom:12px;">
+            <div>
+              <h3 style="margin:0;">Movimentações de estoque</h3>
+              <div class="cx-sub" style="margin:0;" id="cx-info">—</div>
+            </div>
+            <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
+              <button type="button" class="cx-btn prim" id="cx-aplicar" disabled>Aplicar filtros</button>
+              <button type="button" class="cx-btn" id="cx-export" disabled title="Exportar as linhas carregadas para Excel (.csv)"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;margin-right:5px;"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>Exportar Excel</button>
+              <div class="search-wrap"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg><input class="search-input" id="cx-search" type="text" placeholder="Buscar produto, lote, cliente, movimento…"></div>
+            </div>
+          </div>
+
+          <div class="mv-note" id="cx-note">—</div>
+          <div class="cx-tbl-wrap">
+            <table class="cx-tbl" id="cx-tbl">
+              <thead><tr id="cx-head"></tr></thead>
+              <tbody id="cx-rows"><tr><td class="mv-empty">Conectando…</td></tr></tbody>
+            </table>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </div></div></div>
+
+  <footer class="site-footer"><div class="container"><p>© Biomedical — Portal Corporativo</p></div></footer>
+
+  <script src="../script.js?v=8"></script>
+  <script src="../nav-sidebar.js?v=77"></script>
+  <script src="../dw-pill.js?v=4"></script>
+  <script>
+  // ================================================================
+  // MOVIMENTAÇÕES · Gestão de Estoque
+  //   Tabela analítica única sobre o fato 'Movimentações de estoque'.
+  //   A pessoa escolhe os filtros na barra do topo e a tabela mostra as
+  //   movimentações no grão pedido (uma linha por combinação das colunas).
+  //
+  //   Motor igual ao do Saldo Consignado: cada coluna/medida declara
+  //   `cands` = [tabela, coluna] em ordem de preferência e o nome EXATO é
+  //   resolvido no modelo (INFO.VIEW.COLUMNS) sem depender de acento/grafia.
+  //   O que o modelo não tiver sai da consulta (a tabela continua de pé) e
+  //   é marcado com ⚠ no cabeçalho + banner.
+  //
+  //   NÃO carrega nada sozinho no boot: este fato é o maior do modelo e uma
+  //   consulta sem filtro no grão do movimento varre a base inteira. Mexer
+  //   em qualquer filtro (ou clicar em "Aplicar filtros") é o que dispara.
+  // ================================================================
+  const PBI_CFG = {
+    clientId:'129978ce-ff3b-431d-98b3-66a1bcb766b1', tenantId:'c311c9e6-6017-42a9-b306-4057beba5786',
+    workspaceId:'8535f0a1-8dc6-4da0-93ce-bf20c1c14e27',
+    scopes:['https://analysis.windows.net/powerbi/api/Dataset.Read.All','https://analysis.windows.net/powerbi/api/Report.Read.All']
+  };
+  let _pbi=null,_token=null,_dsId=null,_ready=false;
+  // token/dataset expostos p/ o dw-pill.js ler o histórico de refresh do dataset
+  window.bmDwInfo = () => ({ token:_token, ws:PBI_CFG.workspaceId, ds:_dsId });
+  const DS_CACHE_KEY = 'bio_ds_movimentacoes';
+  // mesmo modelo de Estoque das abas irmãs — aproveita o id que elas já cachearam
+  const DS_ALT_KEYS = ['bio_ds_validadecurta','bio_ds_saldoestoque'];
+
+  const FT   = 'Movimentações de estoque';
+  const FATO = "'" + FT + "'";
+
+  // ── helpers ──
+  const avDax = s => String(s==null?'':s).replace(/"/g,'""');
+  const avEsc = s => String(s==null?'':s).replace(/"/g,'&quot;');
+  const escH  = s => String(s==null?'':s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+  const _numN = x => (x==null||x===''||x==='-'||isNaN(Number(x)))?null:Number(x);
+  const setTxt = (id,t)=>{ const el=document.getElementById(id); if(el) el.textContent=t; };
+  const setHtml= (id,t)=>{ const el=document.getElementById(id); if(el) el.innerHTML=t; };
+  const fNUM = v => v==null?'—':Number(v).toLocaleString('pt-BR',{maximumFractionDigits:2});
+  const fINT = v => v==null?'—':Number(v).toLocaleString('pt-BR',{maximumFractionDigits:0});
+  function fDate(v){ if(v==null||v==='') return '—'; const m=String(v).match(/^(\d{4})-(\d{2})-(\d{2})/); if(m) return m[3]+'/'+m[2]+'/'+m[1]; const b=String(v).match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})/); if(b) return ('0'+b[1]).slice(-2)+'/'+('0'+b[2]).slice(-2)+'/'+b[3]; const n=String(v).match(/^(19|20|21)(\d{2})(\d{2})(\d{2})$/); if(n) return n[4]+'/'+n[3]+'/'+n[1]+n[2]; return String(v); }
+  // normaliza p/ casar nomes sem acento/caixa/espaços duplicados
+  const _norm = s => String(s==null?'':s).normalize('NFD').replace(/[̀-ͯ]/g,'').toLowerCase().replace(/\s+/g,' ').trim();
+
+  // ── COLUNAS e MEDIDA da tabela, NA ORDEM PEDIDA ──
+  //   A soma da Quantidade fica no meio da lista (como no relatório de origem),
+  //   então tudo vive numa lista só: `type:'meas'` é a soma, o resto é dimensão.
+  //   kind: dim (texto), cod (código, fonte mono), date (dd/mm/aaaa), ctr (centralizado)
+  const ITENS = [
+    { key:'deposito',  header:'Depósito',                    kind:'dim',  cands:[[FT,'Depósito'],['Depósitos','Depósito']] },
+    { key:'localiz',   header:'Localização',                 kind:'dim',  cands:[[FT,'Localização'],[FT,'Localizacao'],['Depósitos','Localização']] },
+    { key:'dataov',    header:'Data da OV',                  kind:'date', cands:[[FT,'Data da OV'],[FT,'Data da OV (tratada)']] },
+    { key:'datamov',   header:'Data da movimentação',        kind:'date', cands:[[FT,'Data da movimentação'],[FT,'Data da movimentacao']] },
+    { key:'datastat',  header:'Data do status',              kind:'date', cands:[[FT,'Data do status']] },
+    { key:'codcliov',  header:'Cód. do cliente da OV',       kind:'cod',  cands:[[FT,'Cód. do cliente da OV']] },
+    { key:'cliov',     header:'Cliente da OV',               kind:'dim',  cands:[[FT,'Cliente da OV']] },
+    { key:'tipocli',   header:'Tipo de Cliente',             kind:'dim',  cands:[[FT,'Tipo de Cliente'],[FT,'Tipo de cliente']] },
+    { key:'codprod',   header:'Cód. do produto',             kind:'cod',  cands:[[FT,'Cód. do produto'],['Produtos','Cód. do produto'],['Produtos','Cód. produto']] },
+    { key:'produto',   header:'Produto',                     kind:'dim',  cands:[['Produtos','Produto']] },
+    { key:'lote',      header:'Lote',                        kind:'cod',  cands:[[FT,'Lote'],['Lotes','Lote']] },
+    { key:'nmov',      header:'Número do movimento',         kind:'cod',  cands:[[FT,'Número do movimento'],[FT,'Numero do movimento']] },
+    { key:'nfat',      header:'Número da fatura',            kind:'cod',  cands:[[FT,'Número da fatura'],[FT,'Numero da fatura']] },
+    { key:'idmov',     header:'Identificador do movimento',  kind:'cod',  cands:[[FT,'Identificador do movimento']] },
+    { key:'seqmov',    header:'Sequencial do movimento',     kind:'cod',  cands:[[FT,'Sequencial do movimento']] },
+    { key:'tipoop',    header:'Tipo de operação',            kind:'dim',  cands:[['Operações','Tipo de operação'],['Operações','Tipo de Operação']] },
+    { key:'tiptran',   header:'Tipo de transação',           kind:'dim',  cands:[[FT,'Tipo de transação'],[FT,'Tipo de transacao']] },
+    { key:'tiptranaj', header:'Tipo de transação (ajuste)',  kind:'dim',  cands:[[FT,'Tipo de transação (ajuste)'],[FT,'Tipo de transacao (ajuste)']] },
+    // ── a MEDIDA fica exatamente aqui, no meio, como na lista pedida ──
+    { key:'qtd',       header:'Quantidade',  type:'meas', agg:'SUM', fmt:fNUM, strong:'font-weight:700;color:var(--bm-blue-900);', cands:[[FT,'Quantidade']] },
+    { key:'stent',     header:'Status de entrada',           kind:'dim',  cands:[[FT,'Status de entrada']] },
+    { key:'stsai',     header:'Status de saída',             kind:'dim',  cands:[[FT,'Status de saída'],[FT,'Status de saida']] },
+    { key:'saldofis',  header:'Considerar p/ saldo físico?', kind:'ctr',  cands:[[FT,'Considerar para saldo físico?'],[FT,'Considerar para saldo fisico?'],[FT,'Considerar para saldo físico']] }
+  ];
+  const COLS = ITENS.filter(i=>i.type!=='meas');
+  const MEAS = ITENS.filter(i=>i.type==='meas');
+
+  // ── CAMPOS DE FILTRO (dropdowns + 1 intervalo de datas) ──
+  //   `pair` = coluna companheira usada só no RÓTULO ("código · nome"), p/ achar
+  //   o item digitando o código OU o nome.
+  const FCAMPOS = [
+    { id:'dataov',   label:'Data da OV', tipo:'data', cands:[[FT,'Data da OV (tratada)'],[FT,'Data da OV']] },
+    { id:'empresa',  label:'Empresa',            cands:[['Empresas','Empresa'],['Empresa','Empresa']] },
+    { id:'ccusto',   label:'Centro de custo',    cands:[[FT,'Centro de custo'],['Centros de custo','Centro de custo']] },
+    { id:'codestado',label:'Cód. do Estado',     cands:[['Clientes','Cód. do estado'],['Clientes','Cód. Estado'],['Clientes','Cód. do Estado'],['Estados','Cód. do estado']], pair:[['Clientes','Estado']] },
+    { id:'estado',   label:'Estado',             cands:[['Clientes','Estado'],['Estados','Estado']] },
+    { id:'codcliov', label:'Cód. do cliente (OV)', cands:[[FT,'Cód. do cliente da OV']], pair:[[FT,'Cliente da OV']] },
+    { id:'cliov',    label:'Cliente da OV',      cands:[[FT,'Cliente da OV']] },
+    { id:'coddep',   label:'Cód. do depósito',   cands:[['Depósitos','Cód. do depósito'],['Depósitos','Cód. depósito'],['Depósitos','Código do depósito']], pair:[['Depósitos','Depósito']] },
+    { id:'linha',    label:'Linha',              cands:[['Linhas','Linha'],['Produtos','Linha'],['Famílias','Linha']] },
+    { id:'estrategia',label:'Estratégia',        cands:[['Famílias','Estratégia'],['Produtos','Estratégia']] },
+    { id:'familia',  label:'Família',            cands:[['Famílias','Família'],['Produtos','Família']] },
+    { id:'codprod',  label:'Cód. do produto',    cands:[['Produtos','Cód. do produto'],['Produtos','Cód. produto']], pair:[['Produtos','Produto']] },
+    { id:'produto',  label:'Produto',            cands:[['Produtos','Produto']], pair:[['Produtos','Cód. do produto'],['Produtos','Cód. produto']] },
+    { id:'tipoop',   label:'Tipo de operação',   cands:[['Operações','Tipo de operação'],['Operações','Tipo de Operação']] },
+    { id:'lote',     label:'Lote',               cands:[['Lotes','Lote'],[FT,'Lote']] }
+  ];
+  const FDATA = FCAMPOS.find(f=>f.tipo==='data');
+  FDATA.de=''; FDATA.ate='';
+  const _sel = {}; FCAMPOS.forEach(f=>{ if(f.tipo!=='data') _sel[f.id]=new Set(); });
+  window._mvSel = _sel;   // inspeção no console
+
+  // ── conexão / execução Power BI (MSAL delegado) ──
+  async function pbiConnect(){
+    if (window._msalAuth){ _pbi = window._msalAuth; }
+    else { _pbi = new msal.PublicClientApplication({ auth:{ clientId:PBI_CFG.clientId, authority:'https://login.microsoftonline.com/'+PBI_CFG.tenantId, redirectUri:window.location.origin+'/' }, cache:{ cacheLocation:'localStorage', storeAuthStateInCookie:true } }); if(_pbi.initialize) await _pbi.initialize(); await _pbi.handleRedirectPromise().catch(()=>{}); }
+    const accounts = _pbi.getAllAccounts();
+    try { const r = await _pbi.acquireTokenSilent({ scopes:PBI_CFG.scopes, account:accounts[0] }); _token = r.accessToken; }
+    catch { const r = await _pbi.loginPopup({ scopes:PBI_CFG.scopes }); _token = r.accessToken; }
+    const acc = _pbi.getAllAccounts()[0]; if (acc && typeof window.setSidebarUser==='function') window.setSidebarUser(acc.name||acc.username, acc.username);
+  }
+  function _pbiErr(text){ try { const j=JSON.parse(text); const e=j.error||{}; const pe=e['pbi.error']||{}; const det=(pe.details||[]).map(d=>d.detail&&d.detail.value).filter(Boolean).join(' | '); return det||e.message||pe.code||text.substring(0,200); } catch { return text.substring(0,200); } }
+
+  // ── RITMO: o Power BI limita as consultas por usuário/minuto ──
+  //   O <input type="date"> emite 'change' a CADA pedaço digitado (dia, mês, ano),
+  //   então digitar uma data virava 3 aplicações em segundos → HTTP 429 em todas, e a
+  //   tela ficava igual a "sem dados". Aqui o 429 não é erro: vira espera com contagem
+  //   regressiva e a consulta se repete sozinha (o debounce dos filtros faz o resto).
+  const _dorme = ms => new Promise(r=>setTimeout(r, ms));
+  let _cool=0, _coolT=null;
+  try { _cool=Number(sessionStorage.getItem('mv_cool'))||0; } catch(e){}   // sobrevive ao F5
+  function _coolBanner(){
+    clearTimeout(_coolT); _coolT=null;
+    const falta=Math.ceil((_cool-Date.now())/1000);
+    const b=document.getElementById('cx-banner');
+    if(falta<=0){ if(b && b.dataset.mot==='cool') mvBanner('ok','✅ Conectado ao Power BI.'); return; }
+    mvBanner('warn','<span><b>O Power BI limitou o ritmo das consultas.</b> Retomando em '+falta+'s — a tabela volta sozinha, não precisa mexer no filtro.</span>');
+    if(b) b.dataset.mot='cool';
+    _coolT=setTimeout(_coolBanner, 1000);
+  }
+  function _marcarRitmo(txt, retryAfter){
+    let seg=Number(retryAfter)||0;
+    if(!seg){ const m=/retry in (\d+)/i.exec(String(txt||'')); seg=m?+m[1]:20; }
+    seg=Math.max(5, Math.min(65, seg));
+    _cool=Math.max(_cool, Date.now()+seg*1000);
+    try { sessionStorage.setItem('mv_cool', String(_cool)); } catch(e){}
+    _coolBanner();
+  }
+  async function _aguardarRitmo(){ while(Date.now()<_cool){ _coolBanner(); await _dorme(Math.min(1000, Math.max(120, _cool-Date.now()+50))); } }
+
+  async function execQuery(dsId, dax){
+    const body=JSON.stringify({queries:[{query:dax}],serializerSettings:{includeNulls:true}});
+    const headers={Authorization:'Bearer '+_token,'Content-Type':'application/json'};
+    for(let tent=1; ; tent++){
+      await _aguardarRitmo();
+      const r=await PBIModelo.post(PBI_CFG.workspaceId, dsId, {method:'POST',headers,body});
+      const text=await r.text();
+      if(r.status===429){
+        _marcarRitmo(text, r.headers.get('Retry-After'));
+        if(tent<3) continue;                            // espera o tempo pedido e repete
+        throw new Error('HTTP 429: '+_pbiErr(text));
+      }
+      if(!r.ok) throw new Error('HTTP '+r.status+': '+_pbiErr(text));
+      const d=JSON.parse(text); if(d.error) throw new Error(_pbiErr(text));
+      return d.results[0].tables[0].rows;
+    }
+  }
+  async function resolveDataset(){
+    const falhas=[];
+    const cands=[];
+    [DS_CACHE_KEY].concat(DS_ALT_KEYS).forEach(k=>{ let v=null; try { v=localStorage.getItem(k); } catch(e){} if(v && cands.indexOf(v)<0) cands.push(v); });
+    for(const id of cands){ try { await execQuery(id, PBIModelo.sonda(FATO)); try{localStorage.setItem(DS_CACHE_KEY,id);}catch(e){} return (_dsId=id); } catch(e){ falhas.push(['modelo '+id, e]); } }
+    const list=await PBIModelo.candidatos(PBI_CFG.workspaceId, _token);
+    for(const ds of list){ if(cands.indexOf(ds.id)>=0) continue; try { await execQuery(ds.id, PBIModelo.sonda(FATO)); try{localStorage.setItem(DS_CACHE_KEY,ds.id);}catch(e){} return (_dsId=ds.id); } catch(e){ falhas.push([ds.name, e]); } }
+    throw PBIModelo.motivo(FATO, falhas);
+  }
+  async function pbiQuery(dax){ if(!_dsId) await resolveDataset(); return execQuery(_dsId, dax); }
+
+  // ── catálogo do modelo → resolve nomes EXATOS ──
+  let _colCat=null, _relG=null, _unres=[], _campoUnres=[];
+  function _indexCols(rows, tk, nk){ const idx={}; rows.forEach(r=>{ const t=r[tk], n=r[nk]; if(t==null||n==null)return; const tn=_norm(t); (idx[tn]=idx[tn]||{})[_norm(n)]=String(n); }); return idx; }
+  function _setRef(c,t,n){ c._t=t; c._n=n; c._ref="'"+t+"'["+n+"]"; c._out=t+'['+n+']'; c._include=true; }
+  // resolve c.cands ([tabela,coluna][]) → _t/_n/_ref/_out/_include (exato → fuzzy por tokens)
+  function resolveColSpec(c){
+    c._t=c._n=c._ref=c._out=null; c._include=false;
+    if(_colCat){
+      for(const p of c.cands){ const tb=_colCat[_norm(p[0])]; if(tb&&tb[_norm(p[1])]){ _setRef(c,p[0],tb[_norm(p[1])]); break; } }
+      if(!c._include){
+        for(const p of c.cands){
+          const tb=_colCat[_norm(p[0])]; if(!tb) continue;
+          const toks=_norm(p[1]).split(' ').filter(w=>w.length>2);
+          // nome de UMA palavra nao vai p/ o fuzzy: "Produto" casaria com "Cod. do produto"
+          // e a tela mostraria a coluna errada calada. Sem match exato, fica o ⚠ (honesto).
+          if(toks.length<2) continue;
+          let best=null; for(const nn in tb){ if(toks.every(w=>nn.includes(w))){ if(best===null||nn.length<best.length) best=nn; } }
+          if(best!==null){ _setRef(c,p[0],tb[best]); break; }
+        }
+      }
+    } else { _setRef(c, c.cands[0][0], c.cands[0][1]); }   // sem catálogo: melhor esforço
+  }
+  async function carregarCatalogo(){
+    try { const rows=await pbiQuery('EVALUATE SELECTCOLUMNS(INFO.VIEW.COLUMNS(), "T",[Table], "N",[Name])'); if(rows&&rows.length) _colCat=_indexCols(rows,'[T]','[N]'); }
+    catch(e){ console.warn('[MOV] INFO.VIEW.COLUMNS:', e.message); }
+    if(!_colCat){ try { const rows=await pbiQuery('EVALUATE SELECTCOLUMNS(COLUMNSTATISTICS(), "T",[Table Name], "N",[Column Name])'); if(rows&&rows.length) _colCat=_indexCols(rows,'[T]','[N]'); } catch(e){ console.warn('[MOV] COLUMNSTATISTICS:', e.message); } }
+  }
+  // grafo das relações (lado muitos → lado um): só filtra/agrupa o fato quem ele alcança.
+  // Coluna de tabela não alcançável faria produto cartesiano no SUMMARIZECOLUMNS e
+  // filtro que não filtra nada é pior que filtro ausente — os dois casos saem da tela.
+  async function carregarRelacoes(){
+    try {
+      const rows=await pbiQuery('EVALUATE SELECTCOLUMNS(INFO.VIEW.RELATIONSHIPS(), "F",[FromTable], "T",[ToTable], "A",[IsActive])');
+      const g={}; (rows||[]).forEach(r=>{
+        const f=_norm(r['[F]']), t=_norm(r['[T]']), a=r['[A]'];
+        if(!f||!t||a===false) return; (g[f]=g[f]||[]).push(t);
+      });
+      if(Object.keys(g).length) _relG=g;
+    } catch(e){ console.warn('[MOV] INFO.VIEW.RELATIONSHIPS:', e.message); }
+  }
+  function alcancavel(tab){
+    if(!_relG) return true;                                  // sem metadados: melhor esforço
+    const start=_norm(FT), goal=_norm(tab);
+    if(start===goal) return true;
+    const visto={}; visto[start]=1; const fila=[start];
+    while(fila.length){ const cur=fila.shift(); const nb=_relG[cur]||[];
+      for(const n of nb){ if(n===goal) return true; if(!visto[n]){ visto[n]=1; fila.push(n); } } }
+    return false;
+  }
+  // resolve as colunas da TABELA (dedup por referência: coluna repetida quebra o SUMMARIZECOLUMNS)
+  function resolverItens(){
+    _unres=[]; const vistos={};
+    ITENS.forEach(it=>{
+      resolveColSpec(it);
+      if(it._include && !alcancavel(it._t)){ it._include=false; it._motivo='sem relação com o fato'; }
+      if(it._include && vistos[_norm(it._ref)]){ it._include=false; it._motivo='coluna repetida'; }
+      if(it._include){ vistos[_norm(it._ref)]=1; if(it.type==='meas') it._mref=it.agg+'('+it._ref+')'; }
+      else if(_unres.indexOf(it.header)<0) _unres.push(it.header);
+    });
+  }
+  function resolverCampos(){
+    _campoUnres=[];
+    FCAMPOS.forEach(f=>{
+      try { resolveColSpec(f); } catch(e){ console.warn('[MOV] filtro', f.label, e.message); }
+      if(f._include && !alcancavel(f._t)) { f._include=false; }
+      if(!f._include){ if(_campoUnres.indexOf(f.label)<0) _campoUnres.push(f.label); console.warn('[MOV] campo de filtro fora do modelo:', f.label); return; }
+      if(f.pair){ const p={cands:f.pair}; resolveColSpec(p); if(p._include && _norm(p._t)===_norm(f._t) && _norm(p._n)!==_norm(f._n)) f._pair=p._ref; }
+    });
+  }
+
+  // ── intervalo de datas: o modelo pode guardar a data como DATA ou como TEXTO ──
+  //   Comparar texto com DATE() é erro de tipo e o serviço derruba a consulta INTEIRA.
+  //   O formato é descoberto no boot e o predicado sai no tipo certo, sempre sem
+  //   conversão (LEFT/MID nunca estouram; VALUE/DATEVALUE estouram).
+  const RX_ISO=/^(\d{4})-(\d{2})-(\d{2})/, RX_BR=/^(\d{1,2})\/(\d{1,2})\/(\d{4})/, RX_NUM=/^(19|20|21)\d{6}$/;
+  const FMT_ROT = { dt:'data', iso:'texto aaaa-mm-dd', br:'texto dd/mm/aaaa', num:'número aaaammdd', '?':'formato não reconhecido' };
+  function _fmtValor(v){ if(v==null) return null; const s=String(v).trim(); if(!s) return null; if(RX_ISO.test(s)) return 'iso'; if(RX_BR.test(s)) return 'br'; if(RX_NUM.test(s)) return 'num'; return '?'; }
+  async function sniffData(){
+    const c=FDATA; if(!c||!c._include) return;
+    try { await pbiQuery('EVALUATE ROW("t", COUNTROWS(FILTER(ALL('+c._ref+'), '+c._ref+' >= DATE(1900,1,1))))'); c.dfmt='dt'; }
+    catch(e){
+      try {
+        const rows=await pbiQuery('EVALUATE TOPN(200, VALUES('+c._ref+'), '+c._ref+', DESC)');
+        const cnt={}; rows.forEach(r=>{ const k=Object.keys(r)[0]; const f=_fmtValor(r[k]); if(f) cnt[f]=(cnt[f]||0)+1; });
+        let melhor=null; Object.keys(cnt).forEach(k=>{ if(melhor===null||cnt[k]>cnt[melhor]) melhor=k; });
+        c.dfmt=melhor||'?';
+      } catch(e2){ console.warn('[MOV] formato de '+c._ref+':', e2.message); c.dfmt='?'; }
+    }
+    console.info('[MOV] '+c._ref+' → '+(FMT_ROT[c.dfmt]||c.dfmt));
+  }
+  // comparação no tipo da coluna (iso: LEFT corta a hora; br: chave aaaammdd)
+  function _dtCmp(c, iso, lim){
+    const m=/^(\d{4})-(\d{2})-(\d{2})$/.exec(iso||''); if(!m) return null;
+    const a=m[1], me=m[2], dd=m[3], op=(lim==='de')?'>=':'<=';
+    switch(c.dfmt){
+      case 'iso': return 'LEFT('+c._ref+',10) '+op+' "'+a+'-'+me+'-'+dd+'"';
+      case 'br' : return '(MID('+c._ref+',7,4) & MID('+c._ref+',4,2) & LEFT('+c._ref+',2)) '+op+' "'+a+me+dd+'"';
+      case 'num': return c._ref+' '+op+' '+a+me+dd;
+      case '?'  : return null;                       // formato desconhecido: não filtra
+      // data de verdade: o limite de cima é "< dia seguinte" p/ não cortar a hora
+      default   : return (lim==='de') ? c._ref+' >= DATE('+(+a)+','+(+me)+','+(+dd)+')'
+                                      : c._ref+' < DATE('+(+a)+','+(+me)+','+(+dd)+') + 1';
+    }
+  }
+  function _dtPred(){
+    const c=FDATA; if(!c||!c._include) return null;
+    const p=[];
+    const de=c.de?_dtCmp(c,c.de,'de'):null, ate=c.ate?_dtCmp(c,c.ate,'ate'):null;
+    if(de) p.push(de); if(ate) p.push(ate);
+    return p.length?p.join(' && '):null;
+  }
+  // chave ordenável (aaaammdd) p/ ordenar coluna de data que é texto
+  function _dtOrd(v){ const s=String(v==null?'':v).trim(); let m;
+    if((m=RX_ISO.exec(s))) return m[1]+m[2]+m[3];
+    if((m=RX_BR.exec(s)))  return m[3]+('0'+m[2]).slice(-2)+('0'+m[1]).slice(-2);
+    if(RX_NUM.test(s))     return s;
+    return s; }
+
+  // literal DAX conforme o TIPO da coluna — código numérico não aceita aspas
+  function daxLit(v, t){
+    if(v==null) return 'BLANK()';
+    if(t==='number'){ const n=Number(v); return isNaN(n)?'"'+avDax(v)+'"':String(n); }
+    if(t==='boolean') return /^(true|verdadeiro|sim|1)$/i.test(String(v))?'TRUE()':'FALSE()';
+    return '"'+avDax(v)+'"';
+  }
+
+  // ── filtros de uma consulta = intervalo de datas + dropdowns marcados ──
+  //   (esta tela NÃO tem filtro fixo: o relatório de origem não aplica nenhum)
+  function baseFilters(){
+    const f=[];
+    const p=_dtPred(); if(p) f.push('FILTER(ALL('+FDATA._ref+'), '+p+')');
+    FCAMPOS.forEach(d=>{
+      if(d.tipo==='data' || !d._include) return;
+      const vals=[...(_sel[d.id]||[])];
+      if(vals.length) f.push('TREATAS({ '+vals.map(v=>daxLit(v,d._type)).join(', ')+' }, '+d._ref+')');
+    });
+    return f;
+  }
+  const temFiltro = () => baseFilters().length>0;
+  function ctWrap(inner){ const f=baseFilters(); return f.length?'CALCULATETABLE('+inner+', '+f.join(', ')+')':inner; }
+
+  // valores do dropdown DENTRO do escopo do fato (se a coluna não puder ser
+  // agrupada pelo fato, cai para a lista da própria dimensão)
+  async function avCarregarValores(d){
+    if(!d||!d._include) return [];
+    const sel = d._pair ? 'SELECTCOLUMNS(SUMMARIZE('+FATO+', '+d._ref+', '+d._pair+'), "V", '+d._ref+', "L", '+d._pair+')'
+                        : 'SELECTCOLUMNS(SUMMARIZE('+FATO+', '+d._ref+'), "V", '+d._ref+')';
+    const alt = d._pair ? 'SELECTCOLUMNS(SUMMARIZE(\''+d._t+'\', '+d._ref+', '+d._pair+'), "V", '+d._ref+', "L", '+d._pair+')'
+                        : 'SELECTCOLUMNS(VALUES('+d._ref+'), "V", '+d._ref+')';
+    let rows=null;
+    try { rows=await pbiQuery('EVALUATE '+sel); }
+    catch(e){ console.warn('[MOV] valores de '+d.label+' pelo fato:', e.message); rows=await pbiQuery('EVALUATE '+alt); }
+    if(!rows||!rows.length) return [];
+    const out=[], vistos={};
+    rows.forEach(r=>{
+      const v=r['[V]']; if(v==null||v==='') return;
+      if(d._type==null) d._type=typeof v;
+      const k=String(v); if(vistos[k]) return; vistos[k]=1;
+      const comp=d._pair?r['[L]']:null; const cs=(comp==null)?'':String(comp).trim();
+      out.push({ value:k, label:(cs&&cs!==k)?(k+' · '+cs):k });
+    });
+    return out.sort((a,b)=>a.label.localeCompare(b.label,'pt-BR',{numeric:true,sensitivity:'base'}));
+  }
+
+  // ── consulta da tabela ──
+  const LIMITE = 5000;               // teto de linhas devolvidas (o total do rodapé é corrigido se cortar)
+  const DBG = /[?&]debug\b/i.test(location.search);
+  let _rows=[], _tot=null, _nreal=null, _trunc=false, _carregado=false, _ordAlt=false;
+  let _sort={ k:'datamov', dir:'desc' };
+
+  const activeItens = () => ITENS.filter(i=>i._include!==false);
+  const activeCols  = () => COLS.filter(i=>i._include!==false);
+  const activeMeas  = () => MEAS.filter(i=>i._include!==false);
+  const itemDe = k => ITENS.find(i=>i.key===k);
+
+  // chave da linha ↔ coluna por nome NORMALIZADO: a API devolve "Tabela[Coluna]" com a
+  // grafia do MODELO e o `_out` pode vir do candidato — o literal não acharia a chave.
+  const rowKeyMap = row => { const m={}; Object.keys(row||{}).forEach(k=>{ m[_norm(k)]=k; }); return m; };
+  function cellVal(r, c, km){ if(c._out in r) return r[c._out]; const k=km[_norm(c._out)]; return k===undefined?null:r[k]; }
+
+  function ordExpr(ms){
+    const dm=itemDe('datamov');
+    if(!_ordAlt && dm && dm._include!==false) return dm._ref;    // mais recentes primeiro
+    return ms.length ? '['+ms[0].key+']' : null;
+  }
+  function montarDax(){
+    const cols=activeCols().map(c=>c._ref).join(', ');
+    const ms=activeMeas();
+    if(!cols) return null;
+    const flt=baseFilters(); const fstr=flt.length?flt.join(', ')+', ':'';
+    const meas=ms.map(m=>'"'+m.key+'", '+m._mref).join(', ');
+    const base='SUMMARIZECOLUMNS('+cols+', '+fstr+(meas||'"n", 1')+')';
+    const ord=ordExpr(ms);
+    return { base, dax:'EVALUATE '+(ord?('TOPN('+LIMITE+', '+base+', '+ord+', DESC)'):('TOPN('+LIMITE+', '+base+')')), ms };
+  }
+  // total REAL do rodapé quando o teto cortou: soma sobre o MESMO conjunto, sem o corte
+  async function carregarTotais(base, ms){
+    const parts=ms.map(m=>'"'+m.key+'", SUMX(B, ['+m.key+'])').join(', ');
+    const r=(await pbiQuery('EVALUATE VAR B = '+base+' RETURN ROW('+(parts?parts+', ':'')+'"n", COUNTROWS(B))'))[0]||{};
+    const o={}; ms.forEach(m=>{ o[m.key]=_numN(r['['+m.key+']'])||0; });
+    return { tot:o, n:_numN(r['[n]']) };
+  }
+  async function carregar(){
+    let tent=0; const maxTry=ITENS.length+2;
+    while(true){
+      const q=montarDax();
+      if(!q){ _rows=[]; return; }
+      if(DBG) console.log('[MOV] DAX >>', q.dax);
+      try {
+        const raw=await pbiQuery(q.dax);
+        if(DBG) console.log('[MOV] linhas:', raw.length, '| 1ª linha:', raw[0]);
+        const km=rowKeyMap(raw[0]);
+        _rows=raw.map(r=>{
+          const o={};
+          activeCols().forEach(c=>{ o[c.key]=cellVal(r,c,km); });
+          q.ms.forEach(m=>{ o[m.key]=_numN(r['['+m.key+']']); });
+          return o;
+        });
+        _trunc = raw.length>=LIMITE; _tot=null; _nreal=null;
+        if(_trunc){ try { const t=await carregarTotais(q.base, q.ms); _tot=t.tot; _nreal=t.n; } catch(e){ console.warn('[MOV] total real:', e.message||''); } }
+        return;
+      } catch(e){
+        const msg=(e.message||'').replace(/<\/?oii>/g,'');
+        // auto-heal 1: coluna inexistente → descarta a coluna e retenta
+        const mc=/Column '([^']+)' in table '([^']+)' cannot be found/i.exec(msg);
+        if(mc && tent<maxTry){
+          tent++;
+          const badN=_norm(mc[1]), badT=_norm(mc[2]);
+          const v = activeItens().find(c=>_norm(c._t)===badT && _norm(c._n)===badN) || activeItens().find(c=>_norm(c._n)===badN);
+          if(v){ v._include=false; v._motivo='não encontrada no modelo'; if(_unres.indexOf(v.header)<0) _unres.push(v.header); renderHead(); continue; }
+        }
+        // auto-heal 2: a coluna de ordenação não serve → ordena pela medida
+        if(!_ordAlt && tent<maxTry && /order|sort|ORDERBY|TOPN/i.test(msg)){ _ordAlt=true; tent++; continue; }
+        throw e;
+      }
+    }
+  }
+
+  // ── render ──
+  function renderHead(){
+    const tr=document.getElementById('cx-head'); if(!tr) return;
+    let h='';
+    ITENS.forEach(it=>{
+      const ok = it._include!==false;
+      const left = it.type!=='meas';
+      const cls=(left?'dim':'')+(ok?'':' unres');
+      const tt = ok?'':' title="'+escH(it._motivo||'não encontrada no modelo')+'"';
+      h+='<th class="'+cls.trim()+'" data-k="'+it.key+'"'+tt+'>'+escH(it.header)+(ok?'':' ⚠')+'</th>';
+    });
+    tr.innerHTML=h;
+    tr.querySelectorAll('th').forEach(th=>th.addEventListener('click', ()=>{
+      const k=th.getAttribute('data-k'); const it=itemDe(k); if(!it||it._include===false) return;
+      if(_sort.k===k) _sort.dir=(_sort.dir==='desc'?'asc':'desc');
+      else { _sort.k=k; _sort.dir=(it.type==='meas'||it.kind==='date')?'desc':'asc'; }
+      render();
+    }));
+  }
+  function cellFor(it,x){
+    const v=x[it.key];
+    if(it.type==='meas'){ const n=_numN(v); return '<td class="'+((n!=null&&n<0)?'neg':'')+'"'+(it.strong?' style="'+it.strong+'"':'')+'>'+it.fmt(n)+'</td>'; }
+    if(it.kind==='date') return '<td class="ctr">'+escH(fDate(v))+'</td>';
+    if(it.kind==='ctr')  return '<td class="ctr">'+escH(v==null?'—':v)+'</td>';
+    if(it.kind==='cod')  return '<td class="cod">'+escH(v==null?'—':v)+'</td>';
+    return '<td class="dim">'+escH(v==null?'—':v)+'</td>';
+  }
+  function sortRows(rows){
+    const it=itemDe(_sort.k)||activeItens()[0]; if(!it) return rows;
+    const dir=_sort.dir==='desc'?-1:1, k=it.key;
+    return rows.sort((a,b)=>{
+      const av=a[k], bv=b[k];
+      if(it.type==='meas'){ const x=_numN(av), y=_numN(bv); return (((x==null?-Infinity:x))-((y==null?-Infinity:y)))*dir; }
+      if(it.kind==='date'){ const x=_dtOrd(av), y=_dtOrd(bv); return (x<y?-1:x>y?1:0)*dir; }
+      return String(av==null?'':av).localeCompare(String(bv==null?'':bv),'pt-BR',{numeric:true})*dir;
+    });
+  }
+  function estadoVazio(html){
+    const tb=document.getElementById('cx-rows'); if(!tb) return;
+    tb.innerHTML='<tr><td class="mv-empty" colspan="'+Math.max(1,ITENS.length)+'">'+html+'</td></tr>';
+  }
+  function render(){
+    const tb=document.getElementById('cx-rows'); if(!tb) return;
+    const si=document.getElementById('cx-search');
+    const q=((si&&si.value)||'').trim().toLowerCase();
+    const cols=activeCols(), ms=activeMeas(), itens=ITENS;   // itens = TODOS (1:1 com o cabeçalho)
+    let rows=_rows.slice();
+    if(q) rows=rows.filter(x=>cols.some(c=>String(x[c.key]==null?'':x[c.key]).toLowerCase().includes(q)));
+    sortRows(rows);
+    if(!rows.length){
+      estadoVazio(_rows.length ? 'Nenhuma linha casa com a busca <b>'+escH(q)+'</b>.'
+                               : 'Sem movimentações para os filtros escolhidos.');
+      setTxt('cx-info', _rows.length? '0 de '+fINT(_rows.length)+' linhas' : '0 linhas');
+      return;
+    }
+    // TOTAL: quando o teto cortou, vem da consulta de totais (a soma da tela seria menor)
+    const tot={}; ms.forEach(m=>{ tot[m.key]=0; });
+    if(_tot) ms.forEach(m=>{ if(_tot[m.key]!=null) tot[m.key]=_tot[m.key]; });
+    else _rows.forEach(x=>ms.forEach(m=>{ tot[m.key]+=(_numN(x[m.key])||0); }));
+    const nTot=_trunc?(_nreal||_rows.length):_rows.length;
+    const iMeas=itens.findIndex(i=>i.type==='meas');
+    const lead=iMeas<0?itens.length:iMeas;
+    let totRow='<tr class="cx-total"><td class="dim" colspan="'+lead+'">TOTAL · '+fINT(nTot)+' linha(s)'+(_trunc?' na base ('+fINT(LIMITE)+' exibidas)':'')+'</td>';
+    for(let i=lead;i<itens.length;i++){ const it=itens[i]; totRow += it.type==='meas' ? '<td>'+it.fmt(tot[it.key])+'</td>' : '<td></td>'; }
+    totRow+='</tr>';
+    tb.innerHTML = rows.map(x=>'<tr>'+itens.map(it=>cellFor(it,x)).join('')+'</tr>').join('') + totRow;
+    setTxt('cx-info', fINT(rows.length)+' de '+fINT(_rows.length)+' linha(s) carregada(s)'
+      + (_trunc?' · teto de '+fINT(LIMITE)+' (a base tem '+fINT(nTot)+')':'')
+      + ' · ordenado por '+((itemDe(_sort.k)||{}).header||_sort.k)+' '+(_sort.dir==='desc'?'↓':'↑'));
+  }
+  function renderNota(){
+    const chips=[];
+    const p=_dtPred();
+    if(p) chips.push('Data da OV: <b>'+escH((FDATA.de?fDate(FDATA.de):'…')+' – '+(FDATA.ate?fDate(FDATA.ate):'…'))+'</b>');
+    FCAMPOS.forEach(d=>{ if(d.tipo==='data'||!d._include) return; const n=(_sel[d.id]||new Set()).size; if(n) chips.push(escH(d.label)+': <b>'+n+' selecionado(s)</b>'); });
+    const faltas=_faltas();
+    setHtml('cx-note',
+      '<b>Filtros aplicados:</b> ' + (chips.length?chips.join(' · '):'nenhum <span class="mv-w">(a consulta varre a base inteira e pode demorar)</span>')
+      + (faltas.length?' <span class="mv-w">⚠ fora do modelo: '+escH(faltas.join(', '))+'</span>':''));
+  }
+
+  // ── exportar as linhas carregadas ──
+  function exportExcel(){
+    if(!_rows.length) return;
+    const itens=ITENS;
+    const si=document.getElementById('cx-search'); const q=((si&&si.value)||'').trim().toLowerCase();
+    let rows=_rows.slice();
+    if(q) rows=rows.filter(x=>activeCols().some(c=>String(x[c.key]==null?'':x[c.key]).toLowerCase().includes(q)));
+    sortRows(rows);
+    const cel = v => '"'+String(v==null?'':v).replace(/"/g,'""')+'"';
+    const num = v => v==null?'':String(v).replace('.',',');
+    const linhas=[ itens.map(i=>cel(i.header)).join(';') ];
+    rows.forEach(x=>linhas.push(itens.map(i=> i.type==='meas' ? num(_numN(x[i.key])) : cel(i.kind==='date'?fDate(x[i.key]):x[i.key]) ).join(';')));
+    const d=new Date(), p=n=>String(n).padStart(2,'0');
+    const fname='movimentacoes_estoque_'+d.getFullYear()+p(d.getMonth()+1)+p(d.getDate())+'_'+p(d.getHours())+p(d.getMinutes())+'.csv';
+    const blob=new Blob(['﻿'+linhas.join('\r\n')],{type:'text/csv;charset=utf-8;'});
+    const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download=fname; document.body.appendChild(a); a.click();
+    setTimeout(()=>{ URL.revokeObjectURL(a.href); a.remove(); }, 0);
+  }
+
+  // ── banner ──
+  const _BAN={ info:['#EFF6FF','#BFDBFE','#1E40AF'], ok:['#F0FDF4','#BBF7D0','#14532D'], warn:['#FFFBEB','#FDE68A','#92400E'], erro:['#FEF2F2','#FECACA','#7F1D1D'] };
+  function mvBanner(tipo, html){
+    const b=document.getElementById('cx-banner'); if(!b) return;
+    const p=_BAN[tipo]||_BAN.info;
+    b.style.cssText='padding:11px 16px;border-radius:8px;font-size:13px;display:flex;align-items:center;gap:10px;background:'+p[0]+';border:1px solid '+p[1]+';color:'+p[2]+';';
+    b.innerHTML=html; b.dataset.tipo=tipo; delete b.dataset.mot;
+  }
+
+  // ── aplicar (com debounce: marcar 4 clientes ou digitar uma data são várias
+  //    mudanças seguidas, e cada uma disparava uma consulta — e o 429 vinha) ──
+  const _faltas = () => _unres.concat(_campoUnres.map(x=>x+' (filtro)'));
+  const RX_GRANDE=/too many|too large|exceed|excede|result set|maximum|memory|timeout|tempo limite|took too long/i;
+  let _aplicaT=null, _seq=0;
+  function aplicarDebounce(ms){
+    clearTimeout(_aplicaT);
+    const bt=document.getElementById('cx-aplicar'); if(bt) bt.classList.add('dirty');
+    setTxt('cx-info','aplicando filtro…');
+    _aplicaT=setTimeout(aplicar, ms||800);
+  }
+  async function aplicar(){
+    if(!_ready) return;
+    clearTimeout(_aplicaT); _aplicaT=null;
+    const seq=++_seq;
+    const bt=document.getElementById('cx-aplicar'); if(bt){ bt.classList.remove('dirty'); bt.disabled=true; }
+    const ex=document.getElementById('cx-export'); if(ex) ex.disabled=true;
+    renderNota();
+    estadoVazio('Consultando o Power BI…' + (temFiltro()?'':'<br><span style="font-size:12px;">sem filtro a base inteira é varrida — pode levar um bom tempo</span>'));
+    setTxt('cx-info','carregando…');
+    try {
+      await carregar();
+      if(seq!==_seq) return;                       // chegou tarde: outra aplicação já rodou
+      _carregado=true;
+      render();
+      if(_trunc) mvBanner('warn','⚠ A consulta bateu no teto de '+fINT(LIMITE)+' linhas — o TOTAL do rodapé é o da base inteira, mas a tela mostra só as primeiras. Estreite os filtros para ver tudo.');
+      else { const f=_faltas(); mvBanner(f.length?'warn':'ok', (f.length?'⚠':'✅')+' Conectado ao Power BI · '+fINT(_rows.length)+' linha(s)'
+        + (f.length?' · '+f.length+' campo(s) fora do modelo: '+escH(f.join(', ')):'')+'.'); }
+    } catch(e){
+      if(seq!==_seq) return;
+      const msg=(e.message||'').replace(/<\/?oii>/g,'');
+      console.error('[MOV] carregar:', msg);
+      if(RX_GRANDE.test(msg)) estadoVazio('A consulta ficou <b>grande demais</b> para o Power BI responder.<br>Escolha um período em <b>Data da OV</b> ou marque mais filtros e tente de novo.');
+      else estadoVazio('<span style="color:var(--danger);">Erro: '+escH(msg.substring(0,240))+'</span>');
+      setTxt('cx-info','—');
+    } finally {
+      if(bt) bt.disabled=false;
+      if(ex) ex.disabled=!_rows.length;
+    }
+  }
+  window.mvAplicar=aplicar;
+
+  // ── dropdown de multi-seleção ──
+  function avMakeDropdown(cfg){
+    const wrap=document.createElement('div'); wrap.className='av-dd';
+    const btn=document.createElement('button'); btn.className='av-dd-btn'; btn.type='button';
+    const panel=document.createElement('div'); panel.className='av-dd-panel';
+    panel.innerHTML='<div class="av-dd-search"><input type="text" placeholder="Buscar…"></div><div class="av-dd-list"></div><div class="av-dd-foot"><button type="button" data-act="limpar">Limpar</button><button type="button" data-act="fechar">Fechar</button></div>';
+    wrap.appendChild(btn); wrap.appendChild(panel);
+    const list=panel.querySelector('.av-dd-list'), busca=panel.querySelector('input');
+    let carregado=false, options=[];
+    function refresh(){ const n=cfg.getSelected().length; btn.classList.toggle('has',n>0); btn.innerHTML='<span>'+escH(cfg.label)+'</span>'+(n?'<span class="cnt">'+n+'</span>':'<span style="color:var(--text-4);font-weight:500;">Todos</span>'); }
+    function pintar(){ const q=(busca.value||'').toLowerCase(); const sel=new Set(cfg.getSelected()); const it=options.filter(o=>!q||String(o.label).toLowerCase().includes(q)); list.innerHTML=it.length?it.slice(0,3000).map(o=>'<label class="av-dd-opt"><input type="checkbox" value="'+avEsc(o.value)+'" '+(sel.has(o.value)?'checked':'')+'>'+escH(o.label)+'</label>').join(''):'<div style="padding:8px;color:var(--text-3);font-size:12px;">nenhum</div>'; }
+    async function ensure(){ if(carregado) return; list.innerHTML='<div style="padding:10px;color:var(--text-3);font-size:12px;">Carregando…</div>'; try{ options=await cfg.getOptions(); }catch(e){ list.innerHTML='<div style="padding:10px;color:var(--danger);font-size:12px;">erro: '+escH((e.message||'').substring(0,90))+'</div>'; return; } carregado=true; pintar(); }
+    btn.addEventListener('click', async e=>{ e.stopPropagation(); const open=wrap.classList.contains('open'); document.querySelectorAll('.av-dd.open,.fxdd.open').forEach(d=>d.classList.remove('open')); if(!open){ wrap.classList.add('open'); await ensure(); busca.focus(); } });
+    panel.addEventListener('click', e=>e.stopPropagation());
+    list.addEventListener('change', e=>{ if(e.target.matches('input[type=checkbox]')){ cfg.setSelected(e.target.value, e.target.checked); refresh(); cfg.onChange(); } });
+    busca.addEventListener('input', pintar);
+    panel.querySelector('[data-act=limpar]').addEventListener('click', ()=>{ cfg.setSelected(null,false,true); pintar(); refresh(); cfg.onChange(); });
+    panel.querySelector('[data-act=fechar]').addEventListener('click', ()=>wrap.classList.remove('open'));
+    refresh();
+    return { el:wrap, reset:()=>{ cfg.setSelected(null,false,true); refresh(); if(carregado) pintar(); } };
+  }
+  // ── dropdown de intervalo de datas ──
+  function criarData(d, onChange){
+    const dd=document.createElement('div'); dd.className='fxdd';
+    const btn=document.createElement('button'); btn.type='button'; btn.className='fx-fbtn';
+    const panel=document.createElement('div'); panel.className='fxdd-panel mv-dt';
+    panel.innerHTML='<label>De <input type="date" data-p="de"></label>'
+      + '<label>Até <input type="date" data-p="ate"></label>'
+      + '<div class="mv-dt-hint">Em branco = sem limite naquela ponta.</div>'
+      + '<div class="mv-dt-foot"><button type="button" data-act="limpar">Limpar</button><button type="button" data-act="fechar">Fechar</button></div>';
+    dd.appendChild(btn); dd.appendChild(panel);
+    const ide=panel.querySelector('[data-p=de]'), ida=panel.querySelector('[data-p=ate]');
+    if(d.dfmt==='?'){
+      ide.disabled=true; ida.disabled=true;
+      const h=panel.querySelector('.mv-dt-hint');
+      if(h) h.innerHTML='O modelo guarda <b>'+escH(d.label)+'</b> como texto num formato que a página não sabe ler — filtrar por período aqui derrubaria a consulta inteira.';
+    }
+    function rotulo(){
+      const tem=!!(d.de||d.ate);
+      btn.classList.toggle('has',tem);
+      const txt=tem?((d.de?fDate(d.de):'…')+' – '+(d.ate?fDate(d.ate):'…')):'Todos';
+      btn.innerHTML='<span class="fx-fk">'+escH(d.label)+'</span><span>'+escH(txt)+'</span>';
+      btn.style.borderColor=tem?'#1272C4':'';
+    }
+    btn.addEventListener('click', e=>{ e.stopPropagation(); document.querySelectorAll('.av-dd.open').forEach(x=>x.classList.remove('open')); window.fxTogglePanel(btn); });
+    panel.addEventListener('click', e=>e.stopPropagation());
+    const mudou=()=>{ d.de=ide.value||''; d.ate=ida.value||''; rotulo(); onChange(); };
+    ide.addEventListener('change', mudou); ida.addEventListener('change', mudou);
+    panel.querySelector('[data-act=limpar]').addEventListener('click', ()=>{ ide.value=''; ida.value=''; mudou(); });
+    panel.querySelector('[data-act=fechar]').addEventListener('click', ()=>dd.classList.remove('open'));
+    rotulo();
+    return { el:dd, reset:()=>{ ide.value=''; ida.value=''; d.de=''; d.ate=''; rotulo(); } };
+  }
+  // clique fora fecha os dropdowns (btn e panel dao stopPropagation)
+  document.addEventListener('click', ()=>document.querySelectorAll('.av-dd.open').forEach(d=>d.classList.remove('open')));
+  const _resets=[];
+  function montarToolbar(){
+    const tb=document.getElementById('cx-toolbar'); if(!tb) return;
+    tb.innerHTML=''; _resets.length=0;
+    FCAMPOS.forEach(d=>{
+      if(!d._include) return;
+      if(d.tipo==='data'){ const c=criarData(d, ()=>aplicarDebounce(900)); tb.appendChild(c.el); _resets.push(c.reset); return; }
+      const c=avMakeDropdown({ label:d.label,
+        getOptions:()=>avCarregarValores(d),
+        getSelected:()=>[..._sel[d.id]],
+        setSelected:(v,ck,clr)=>{ const s=_sel[d.id]; if(clr){ s.clear(); return; } if(ck) s.add(v); else s.delete(v); },
+        onChange:()=>aplicarDebounce(700) });
+      tb.appendChild(c.el); _resets.push(c.reset);
+    });
+    if(!tb.children.length){ tb.innerHTML='<span style="font-size:12.5px;color:var(--text-3);font-weight:600;">Nenhum filtro disponível neste modelo.</span>'; return; }
+    const limpar=document.createElement('button'); limpar.className='cx-btn'; limpar.type='button'; limpar.textContent='✕ Limpar filtros';
+    limpar.addEventListener('click', ()=>{ _resets.forEach(fn=>fn()); renderNota(); if(_carregado) aplicar(); });
+    tb.appendChild(limpar);
+  }
+
+  // ── boot ──
+  document.addEventListener('DOMContentLoaded', async ()=>{
+    renderHead();
+    const si=document.getElementById('cx-search'); if(si){ let t=null; si.addEventListener('input', ()=>{ clearTimeout(t); t=setTimeout(()=>{ if(_carregado) render(); }, 200); }); }
+    const ex=document.getElementById('cx-export'); if(ex) ex.addEventListener('click', exportExcel);
+    const bt=document.getElementById('cx-aplicar'); if(bt) bt.addEventListener('click', ()=>aplicar());
+    try {
+      mvBanner('info','⏳ Conectando ao Power BI…');
+      await pbiConnect();
+      mvBanner('info','⏳ Localizando o modelo de estoque…');
+      await resolveDataset();
+      mvBanner('info','⏳ Lendo o modelo (nomes exatos das colunas)…');
+      await carregarCatalogo();
+      await carregarRelacoes();
+      resolverItens();
+      resolverCampos();
+      // ordenacao padrao: data do movimento; se ela nao existir no modelo, a 1a coluna viva
+      if(!(itemDe(_sort.k)||{})._include){ const p0=activeItens()[0]; if(p0){ _sort.k=p0.key; _sort.dir=(p0.type==='meas'||p0.kind==='date')?'desc':'asc'; } }
+      await sniffData();
+      renderHead();
+      montarToolbar();
+      renderNota();
+      _ready=true;
+      if(bt) bt.disabled=false;
+      const faltas=_faltas();
+      mvBanner(faltas.length?'warn':'ok', (faltas.length?'⚠':'✅')+' Conectado ao Power BI'
+        + (faltas.length?' · '+faltas.length+' campo(s) não encontrados no modelo: '+escH(faltas.join(', ')):'')
+        + ' — escolha os filtros e a tabela carrega.');
+      estadoVazio('Escolha os filtros que quiser na barra acima — a tabela carrega sozinha.<br>'
+        + '<span style="font-size:12px;">Para ver <b>tudo</b>, clique em <b>Aplicar filtros</b> sem marcar nada (a base inteira é varrida e pode demorar).</span>');
+      setTxt('cx-info','aguardando filtro');
+    } catch(err){
+      mvBanner('erro','<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg> '+escH(err.message||''));
+      estadoVazio('<span style="color:var(--danger);">Não foi possível conectar ao modelo de estoque.</span>');
+    }
+  });
+  </script>
+</body>
+</html>
