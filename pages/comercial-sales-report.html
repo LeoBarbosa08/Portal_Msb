@@ -468,43 +468,114 @@
               .ix-ped-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px;}
               .ix-ped-title{font-size:13px;font-weight:700;color:var(--text);margin-bottom:12px;}
               @media(max-width:1100px){.ix-grid{grid-template-columns:1fr;}.ix-metrics{grid-template-columns:repeat(3,1fr);}}
+
+              /* HERO MSBio: consolidado à esquerda, regionais à direita (empilha
+                 quando o cartão fica estreito — container query, vale com o menu
+                 lateral aberto ou fechado). As regionais são uma grade de <div>
+                 com papéis de tabela: <table> herdaria o cabeçalho claro e as
+                 linhas das tabelas do portal (portal-v3.css, dash-v2.css). */
+              .ix-hero{container-type:inline-size;}
+              .ix-hero-body{position:relative;flex:1;display:grid;grid-template-columns:minmax(300px,.6fr) minmax(0,1.3fr);gap:0 28px;}
+              .ix-hero-main{display:flex;flex-direction:column;min-width:0;}
+              .ix-reg{container-type:inline-size;min-width:0;margin-top:14px;padding-left:26px;border-left:1px solid rgba(255,255,255,0.10);}
+              .ix-reg-tb{display:grid;grid-template-columns:repeat(7,minmax(max-content,1fr));row-gap:4px;overflow-x:auto;font-variant-numeric:tabular-nums;}
+              .ix-reg-r{display:grid;grid-column:1/-1;grid-template-columns:subgrid;align-items:center;border-radius:8px;background:rgba(255,255,255,0.05);}
+              @supports not (grid-template-columns:subgrid){.ix-reg-r{grid-template-columns:1.1fr 1.3fr 1fr 1.1fr .8fr .6fr .7fr;}}
+              .ix-reg-r>*{padding:5px 8px;text-align:right;white-space:nowrap;font-size:12.5px;font-weight:600;color:#C9D8DE;}
+              .ix-reg-r>:first-child{text-align:left;padding-left:10px;}
+              .ix-reg-r>:last-child{padding-right:10px;}
+              .ix-reg-hd{background:none;}
+              .ix-reg-hd>*{padding-top:0;padding-bottom:1px;cursor:default;font-size:10.5px;font-weight:700;color:#93AFB9;letter-spacing:.4px;}
+              .ix-reg-r .ix-reg-nome{font-weight:700;color:#FFFFFF;cursor:default;}
+              .ix-reg-r .ix-reg-fat{font-weight:800;color:#FFFFFF;font-size:13px;}
+              .ix-reg-r .ix-reg-pct{display:flex;align-items:center;justify-content:flex-end;gap:7px;font-weight:800;}
+              .ix-reg-bar{flex:none;width:34px;height:4px;border-radius:2px;background:rgba(255,255,255,0.14);overflow:hidden;}
+              .ix-reg-bar i{display:block;height:100%;border-radius:2px;background:currentColor;}
+              /* o portal-motion.js põe o brilho 3D das barras claras (bm3-track/bm3-hbar): aqui, no escuro, só a cor */
+              .ix-reg-bar,.ix-reg-bar i{box-shadow:none!important;}
+              .ix-reg-r .ix-reg-ok{color:#4FD98D;}
+              .ix-reg-r .ix-reg-mid{color:#F2C46B;}
+              .ix-reg-r .ix-reg-low,.ix-reg-r .ix-reg-neg{color:#FF9A87;}
+              .ix-reg-r .ix-reg-vz{grid-column:1/-1;text-align:left;color:#93AFB9;font-weight:500;}
+              .ix-reg-cel{display:none;}   /* só no cartão do celular: % da margem junto do índice */
+              .ix-reg-nota{margin-top:6px;font-size:10.5px;color:#7F9AA4;}
+              .ix-reg-nota:empty{display:none;}
+              @container (max-width: 660px){
+                .ix-reg-r>*{padding-left:5px;padding-right:5px;font-size:12px;}
+                .ix-reg-r .ix-reg-fat{font-size:12.5px;}
+                .ix-reg-r .ix-reg-pct{gap:5px;}
+                .ix-reg-bar{width:20px;}
+              }
+              @container (max-width: 960px){
+                .ix-hero-body{grid-template-columns:minmax(0,1fr);}
+                .ix-reg{padding-left:0;border-left:0;margin-top:18px;padding-top:14px;border-top:1px solid rgba(255,255,255,0.10);}
+              }
+              /* estreito (celular): cada regional vira um cartão — nome, faturamento
+                 e % na 1ª linha; meta, gap e margem embaixo, quebrando se precisar */
+              @container (max-width: 540px){
+                .ix-reg-tb{display:block;}
+                .ix-reg-r{display:flex;flex-wrap:wrap;align-items:center;gap:3px 10px;margin-bottom:6px;padding:8px 10px;border-radius:9px;}
+                .ix-reg-r::before{content:'';order:2;flex-basis:100%;height:0;}
+                .ix-reg-r>*{padding:0!important;}
+                .ix-reg-r .ix-reg-nome{order:1;flex:1 1 auto;text-align:left;}
+                .ix-reg-r .ix-reg-fat,.ix-reg-r .ix-reg-pct{order:1;}
+                .ix-reg-r .ix-reg-pct{min-width:54px;}
+                .ix-reg-r .ix-reg-meta,.ix-reg-r .ix-reg-gap,.ix-reg-r .ix-reg-mg,.ix-reg-r .ix-reg-mgp{order:3;font-size:11px;font-weight:500;color:#93AFB9;}
+                .ix-reg-r .ix-reg-gap.ix-reg-neg{color:#FF9A87;}
+                .ix-reg-r [data-l]::before{content:attr(data-l) ' ';color:#7F9AA4;}
+                .ix-reg-r .ix-reg-vz{flex:1 1 100%;}
+                .ix-reg-r.ix-reg-hd,.ix-reg-r .ix-reg-mgp{display:none;}
+                .ix-reg-r .ix-reg-cel{display:inline;}
+              }
             </style>
 
             <!-- ══ FAIXA DE KPIs (Claude Design · Faturamento Dashboard) ══ -->
             <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:14px;">
 
-              <!-- HERO MSBio -->
-              <div style="min-width:0;grid-row:span 2;padding:22px;border-radius:14px;background:linear-gradient(150deg,#0C2029,#1A5160);color:#FFFFFF;display:flex;flex-direction:column;position:relative;overflow:hidden;">
+              <!-- HERO MSBio · consolidado à esquerda, regionais à direita -->
+              <div class="ix-hero" style="min-width:0;grid-row:span 2;padding:22px;border-radius:14px;background:linear-gradient(150deg,#0C2029,#1A5160);color:#FFFFFF;display:flex;flex-direction:column;position:relative;overflow:hidden;">
                 <div style="position:absolute;inset:0;background-image:radial-gradient(circle at 90% 10%, rgba(47,191,113,0.16), transparent 45%);"></div>
                 <div style="position:relative;display:flex;align-items:center;justify-content:space-between;gap:10px;">
                   <span style="font-size:11.5px;font-weight:800;letter-spacing:1px;color:#ACC3CC;">FATURAMENTO × META · MSBIO</span>
                   <span id="ix-period" style="font-size:11px;font-weight:700;color:#E0EAEF;background:rgba(255,255,255,0.10);border-radius:999px;padding:3px 10px;white-space:nowrap;">Jun 2026</span>
                 </div>
-                <div style="position:relative;display:flex;align-items:baseline;gap:12px;margin-top:14px;flex-wrap:wrap;">
-                  <span id="ix-msbio-fat" style="font-size:31px;font-weight:800;letter-spacing:-0.8px;">—</span>
-                  <span style="display:inline-flex;align-items:center;gap:4px;font-size:13px;font-weight:800;color:#4FD98D;">
-                    <span id="ix-msbio-pct2">—</span>
-                  </span>
-                </div>
-                <div style="position:relative;margin-top:16px;">
-                  <div style="height:8px;border-radius:999px;background:rgba(255,255,255,0.14);overflow:hidden;">
-                    <div id="ix-msbio-bar" style="height:100%;width:0%;border-radius:999px;background:linear-gradient(90deg,#2FBF71,#4FD98D);transition:width .5s ease;"></div>
+                <div class="ix-hero-body">
+                  <div class="ix-hero-main">
+                    <div style="position:relative;display:flex;align-items:baseline;gap:12px;margin-top:14px;flex-wrap:wrap;">
+                      <span id="ix-msbio-fat" style="font-size:31px;font-weight:800;letter-spacing:-0.8px;">—</span>
+                      <span style="display:inline-flex;align-items:center;gap:4px;font-size:13px;font-weight:800;color:#4FD98D;">
+                        <span id="ix-msbio-pct2">—</span>
+                      </span>
+                    </div>
+                    <div style="position:relative;margin-top:16px;">
+                      <div style="height:8px;border-radius:999px;background:rgba(255,255,255,0.14);overflow:hidden;">
+                        <div id="ix-msbio-bar" style="height:100%;width:0%;border-radius:999px;background:linear-gradient(90deg,#2FBF71,#4FD98D);transition:width .5s ease;"></div>
+                      </div>
+                      <div style="display:flex;justify-content:space-between;gap:12px;margin-top:8px;font-size:11.5px;color:#93AFB9;">
+                        <span>Meta: <span id="ix-msbio-meta" style="color:#E0EAEF;font-weight:700;">—</span></span>
+                        <span>Gap: <span id="ix-msbio-gap" style="color:#E0EAEF;font-weight:700;">—</span></span>
+                      </div>
+                    </div>
+                    <div style="flex:1;"></div>
+                    <div style="position:relative;display:flex;gap:28px;margin-top:18px;padding-top:16px;border-top:1px solid rgba(255,255,255,0.10);flex-wrap:wrap;">
+                      <div>
+                        <div style="font-size:11px;font-weight:700;color:#93AFB9;">MARGEM · ÍNDICE</div>
+                        <div id="ix-msbio-margem" style="font-size:18px;font-weight:800;margin-top:3px;">—</div>
+                      </div>
+                      <div>
+                        <div style="font-size:11px;font-weight:700;color:#93AFB9;">% MARGEM</div>
+                        <div id="ix-msbio-margempct" style="font-size:18px;font-weight:800;margin-top:3px;">—</div>
+                      </div>
+                    </div>
                   </div>
-                  <div style="display:flex;justify-content:space-between;margin-top:8px;font-size:11.5px;color:#93AFB9;">
-                    <span>Meta: <span id="ix-msbio-meta" style="color:#E0EAEF;font-weight:700;">—</span></span>
-                    <span>Gap: <span id="ix-msbio-gap" style="color:#E0EAEF;font-weight:700;">—</span></span>
-                  </div>
-                </div>
-                <div style="flex:1;"></div>
-                <div style="position:relative;display:flex;gap:28px;margin-top:18px;padding-top:16px;border-top:1px solid rgba(255,255,255,0.10);flex-wrap:wrap;">
-                  <div>
-                    <div style="font-size:11px;font-weight:700;color:#93AFB9;">MARGEM · ÍNDICE</div>
-                    <div id="ix-msbio-margem" style="font-size:18px;font-weight:800;margin-top:3px;">—</div>
-                  </div>
-                  <div>
-                    <div style="font-size:11px;font-weight:700;color:#93AFB9;">% MARGEM</div>
-                    <div id="ix-msbio-margempct" style="font-size:18px;font-weight:800;margin-top:3px;">—</div>
-                  </div>
+
+                  <!-- Regionais: o mesmo faturamento × meta, quebrado pelo
+                       'Estados'[Cód. do estado] nas 5 regiões do Brasil
+                       (REGIONAIS, no script do Power BI mais abaixo) -->
+                  <section class="ix-reg">
+                    <div class="ix-reg-tb" id="ix-reg-rows" role="table" aria-label="Faturamento × meta por regional"></div>
+                    <div class="ix-reg-nota" id="ix-reg-nota"></div>
+                  </section>
                 </div>
               </div>
             </div>
@@ -1418,6 +1489,113 @@ async function medirNivel(groupCol, filtros, metaPai) {
 }
 const medirFiliais = (filtros) => medirNivel("'DIM_UNIDADE_DE_NEGOCIO_V2'[UNIDADE_DE_NEGOCIO]", filtros);
 
+// ── Regionais (lado direito do HERO MSBio) ───────────────────────────
+// Regional = região do Brasil, montada pelo 'Estados'[Cód. do estado] — o
+// mesmo filtro dos cartões "REGIONAL …" do relatório no Power BI (Nordeste =
+// AL, BA, CE, MA, PB, PE, PI, RN ou SE). Cada medida é avaliada NA REGIONAL
+// (não soma estados): o Gap e o % saem iguais aos do relatório.
+const UF_COL = "'Estados'[Cód. do estado]";
+const REGIONAIS = [
+  { id: 'NORDESTE',     nome: 'Nordeste',     ufs: ['AL', 'BA', 'CE', 'MA', 'PB', 'PE', 'PI', 'RN', 'SE'] },
+  { id: 'SUDESTE',      nome: 'Sudeste',      ufs: ['ES', 'MG', 'RJ', 'SP'] },
+  { id: 'SUL',          nome: 'Sul',          ufs: ['PR', 'RS', 'SC'] },
+  { id: 'CENTRO-OESTE', nome: 'Centro-Oeste', ufs: ['DF', 'GO', 'MS', 'MT'] },
+  { id: 'NORTE',        nome: 'Norte',        ufs: ['AC', 'AM', 'AP', 'PA', 'RO', 'RR', 'TO'] }
+];
+
+// 1 linha por regional (UNION de ROWs, cada uma com o filtro de UF dela).
+// Mesmo roteiro do medirNivel: faturamento isolado; Meta/%/Gap/Margem num
+// combinado e, se o OLS recusar, uma a uma.
+async function medirRegionais(filtros) {
+  const fStr = filtros.join(', ');
+  const val  = (r, re) => { const k = Object.keys(r).find(x => re.test(x)); return k ? r[k] : null; };
+  const out  = REGIONAIS.map(r => ({ id: r.id, nome: r.nome, ufs: r.ufs, fat: null, meta: null, pct: null, gap: null, mgPct: null, mgNota: null }));
+  const daxReg = cols => 'EVALUATE CALCULATETABLE(UNION('
+    + REGIONAIS.map(r => `CALCULATETABLE(ROW("Reg", "${r.id}", ${cols}), ${UF_COL} IN { ${r.ufs.map(u => '"' + u + '"').join(', ')} })`).join(', ')
+    + '), ' + fStr + ')';
+  const casar = (rows, alias, campo) => {
+    const re = new RegExp('\\[' + alias + '\\]$');
+    (rows || []).forEach(r => { const it = out.find(x => x.id === val(r, /\[Reg\]$/)); if (it) it[campo] = _numN(val(r, re)); });
+  };
+
+  // 1) Faturamento
+  try { casar(await pbiQuery(daxReg('"Fat", ' + MEDIDAS.faturamento)), 'Fat', 'fat'); }
+  catch (e) { console.warn('[PBI] regionais (faturamento) falhou:', e.message); out.erro = e.message; return out; }
+
+  // 2) Meta / % / Gap / Margem
+  const TODAS = [
+    ['Meta',   MEDIDAS.meta,       'meta'],
+    ['Pct',    MEDIDAS.pct,        'pct'],
+    ['Gap',    MEDIDAS.gap,        'gap'],
+    ['MgPct',  MEDIDAS.margemPct,  'mgPct'],
+    ['MgNota', MEDIDAS.margemNota, 'mgNota']
+  ];
+  const VIVAS = _olsMem.vivas(TODAS, e => e[1]);
+  const EXTRAS = VIVAS.length ? VIVAS : TODAS;      // todas "bloqueadas" = memória velha: tenta tudo
+  try {
+    const rows = await pbiQuery(daxReg(EXTRAS.map(e => '"' + e[0] + '", ' + e[1]).join(', ')));
+    EXTRAS.forEach(e => casar(rows, e[0], e[2]));
+  } catch (e) {
+    if (!_olsMem.leque(e)) console.warn('[PBI] regionais (medidas extras combinado) no limite de ritmo:', e.message);
+    else {
+      console.warn('[PBI] regionais (medidas extras combinado) falharam, medindo individualmente:', e.message);
+      const falhas = [];
+      for (const [alias, medida, campo] of EXTRAS) {
+        try { casar(await pbiQuery(daxReg('"' + alias + '", ' + medida)), alias, campo); }
+        catch (e2) { console.warn('[PBI] regionais: medida "' + alias + '" (' + medida + ') bloqueada/indisponível:', e2.message); falhas.push([medida, e2]); }
+      }
+      _olsMem.aprender(falhas, falhas.length < EXTRAS.length);
+    }
+  }
+  // meta que não desce para a UF volta igual nas 5: não é da regional
+  if (_metaRepetida(out, null)) out.forEach(x => { x.meta = null; x.pct = null; x.gap = null; });
+  return out.sort((a, b) => ((b.fat || 0) - (a.fat || 0)) || ((b.meta || 0) - (a.meta || 0)));
+}
+
+// R$ curto, como nos cartões do Power BI: R$ 682,88 mil · R$ 1,12 mi
+function fBRLc(v) {
+  if (v == null) return '—';
+  const n = Number(v), a = Math.abs(n), s = n < 0 ? '-' : '';
+  const f2 = x => x.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  if (a >= 999995) return s + 'R$ ' + f2(a / 1e6) + ' mi';
+  if (a >= 999.995) return s + 'R$ ' + f2(a / 1e3) + ' mil';
+  return s + 'R$ ' + f2(a);
+}
+
+const REG_CAB = '<div class="ix-reg-r ix-reg-hd" role="row">'
+  + '<span role="columnheader" title="Regiões do Brasil pela UF do faturamento (Cód. do estado)">REGIONAL</span>'
+  + ['FATURAMENTO', 'META', 'GAP', '% META', 'MARGEM', '% MARGEM'].map(t => `<span role="columnheader">${t}</span>`).join('')
+  + '</div>';
+// regs = null → carregando. totalFat = faturamento do consolidado, para
+// avisar o que não cai em regional nenhuma (nota sem UF / exterior).
+function pintarRegionais(regs, totalFat) {
+  const tb = document.getElementById('ix-reg-rows');
+  if (!tb) return;
+  const nota = document.getElementById('ix-reg-nota');
+  if (nota) nota.textContent = '';
+  const aviso = t => `<div class="ix-reg-r" role="row"><span class="ix-reg-vz" role="cell">${t}</span></div>`;
+  if (!regs) { tb.innerHTML = REG_CAB + aviso('Carregando…'); return; }
+  if (regs.erro) { tb.innerHTML = REG_CAB + aviso('Não foi possível carregar as regionais agora.'); return; }
+  const corPct = p => p == null ? '' : p >= 1 ? 'ix-reg-ok' : p >= 0.8 ? 'ix-reg-mid' : 'ix-reg-low';
+  tb.innerHTML = REG_CAB + regs.map(r => {
+    const p = r.pct;
+    const larg = p == null ? 0 : Math.max(0, Math.min(p * 100, 100));
+    const mgp = r.mgPct == null ? '—' : fPCT(r.mgPct * 100);
+    return `<div class="ix-reg-r" role="row">
+      <span role="rowheader" class="ix-reg-nome" title="${_esc(r.nome + ': ' + r.ufs.join(', '))}">${r.nome}</span>
+      <span role="cell" class="ix-reg-fat">${fBRL(r.fat)}</span>
+      <span role="cell" class="ix-reg-meta" data-l="Meta" title="${_esc(fBRL(r.meta))}">${fBRLc(r.meta)}</span>
+      <span role="cell" class="ix-reg-gap${(r.gap || 0) < 0 ? ' ix-reg-neg' : ''}" data-l="Gap" title="${_esc(fGAP(r.gap))}">${fBRLc(r.gap)}</span>
+      <span role="cell" class="ix-reg-pct ${corPct(p)}"><span class="ix-reg-bar" aria-hidden="true"><i style="width:${larg}%"></i></span>${p == null ? '—' : fPCT(p * 100)}</span>
+      <span role="cell" class="ix-reg-mg" data-l="Margem">${fNUM(r.mgNota)}<span class="ix-reg-cel"> · ${mgp}</span></span>
+      <span role="cell" class="ix-reg-mgp">${mgp}</span>
+    </div>`;
+  }).join('');
+  const soma = regs.reduce((s, r) => s + (r.fat || 0), 0);
+  const fora = totalFat == null ? 0 : Number(totalFat) - soma;
+  if (nota && fora >= 0.5) nota.textContent = fBRL(fora) + ' sem UF do Brasil (exterior ou sem estado) ficam fora das regionais.';
+}
+
 function _linhaFilial(item, level, expandable, attrs) {
   const ind = level * 18;
   const tg = expandable
@@ -1725,6 +1903,7 @@ async function aplicarFiltroFaturamento() {
 
   // estado "carregando"
   setTxt('ix-msbio-fat', '…');
+  pintarRegionais(null);
 
   // filtro de Empresa do topo (Todos = sem filtro) aplicado ao bloco consolidado
   const empresaFiltro = srFiltroEmpresa();
@@ -1755,8 +1934,9 @@ async function aplicarFiltroFaturamento() {
       .then(([det, tot]) => { if (seqD === _srSeqDiario) renderPedidosDetalhe(det, tot, { filtros: filtrosPedDet, query: pbiQuery }); })
       .catch(e => console.warn('[SR] pedidos em andamento:', e.message));
 
-    const [msbio, diario, filiais, dwUpdate, evol, metaEvol] = await Promise.all([
+    const [msbio, regionais, diario, filiais, dwUpdate, evol, metaEvol] = await Promise.all([
       medirSegmento(base, empresaFiltro),  // consolidado (respeita Empresa)
+      medirRegionais(filtrosDia),          // regionais, ao lado do consolidado
       medirFaturamentoDiario(filtrosDia),  // gráfico Faturamento por Dia
       medirFiliais(filtrosDia),            // tabela Performance por Filial
       pbiQuery("EVALUATE ROW(\"UltimaAtualizacao\", MAX('Atualizações DW'[Última atualização]))").catch(()=>[]),
@@ -1789,6 +1969,7 @@ async function aplicarFiltroFaturamento() {
     // barra de % Margem
     const mbar = document.getElementById('ix-msbio-margem-bar');
     if (mbar && r.mpct != null) mbar.style.width = Math.max(0, Math.min(r.mpct, 100)) + '%';
+    pintarRegionais(regionais, msbio.fat);
 
     // Gráfico Faturamento por Dia
     if (window.renderChartDiario) window.renderChartDiario(diario.labels, diario.valores);
@@ -1809,6 +1990,7 @@ window.aplicarFiltroFaturamento = aplicarFiltroFaturamento;
 // ── Executa ao carregar ─────────────────────────────────────────
 document.addEventListener('DOMContentLoaded', async () => {
   if (window.srMontarToolbar) window.srMontarToolbar();   // dropdowns de valor (Empresa · Tipo de Cliente)
+  pintarRegionais(null);
   // Banner de status
   const wrap = document.querySelector('.sr-wrap');
   const banner = document.createElement('div');
@@ -1832,6 +2014,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   } catch (err) {
     console.error('[PBI] Erro:', err.message);
+    pintarRegionais({ erro: err.message });
     banner.style.cssText = 'padding:11px 16px;border-radius:8px;font-size:13px;margin-bottom:16px;display:flex;align-items:center;gap:10px;background:#FEF2F2;border:1px solid #FECACA;color:#7F1D1D;';
     banner.innerHTML = `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg> ${err.message}`;
   }

@@ -70,6 +70,18 @@ inteiro** (chegou a ser ocultado e voltou no mesmo dia). Marcado no código com
 
 Para voltar um módulo: recoloque-o nesses pontos.
 
+### Sales Report da MSB (20/10/2026)
+
+`pages/comercial-sales-report.html` já não é igual ao do completo — ao trazer
+novidades de lá, reaplique:
+
+- **Sem os cards Bio e MSB** — só o consolidado de Faturamento × Meta (MSBio).
+- **Regionais no banner** — à direita do número grande, Faturamento, Meta, Gap,
+  % Meta e Margem das 5 regiões do Brasil, montadas pelo
+  `'Estados'[Cód. do estado]` (`REGIONAIS`, `medirRegionais`,
+  `pintarRegionais`). Cada medida é avaliada na regional, com os mesmos filtros
+  do banner. Em tela estreita a tabela desce para baixo do número.
+
 ### Identidade visual MSB (20/10/2026)
 
 O portal usa a marca da **MSB · Medical System do Brasil** (msbbrasil.com), não
