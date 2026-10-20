@@ -3,13 +3,13 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Movimentações · Estoque · Biomedical</title>
+  <title>Movimentações · Estoque · MSB</title>
   <link rel="stylesheet" href="../styles.css?v=14">
   <script src="https://unpkg.com/@azure/msal-browser@2.38.3/lib/msal-browser.min.js"></script>
 <script src="../pbi-throttle.js?v=3"></script>
 <script src="../pbi-modelo.js?v=2"></script>
   <!-- Layout v3 (Claude Design · animado): fonte + camada visual + motor de animações -->
-  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300..800&family=Manrope:wght@400..800&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300..900&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="../portal-v3.css?v=2">
   <script src="../portal-motion.js?v=3" defer></script>
   <!-- Tema claro/escuro (menu do avatar): marca o <html> antes de pintar + camada escura -->
@@ -23,7 +23,7 @@
 <body class="dept">
 
   <header class="site-header"><div class="container">
-    <a href="../index.html" class="brand" aria-label="Biomedical — Portal Corporativo"><img class="brand-logo" src="/icons/icon-192.png" alt="Biomedical" onerror="this.dataset.failed='true'"><span class="brand-fallback">Biomedical</span></a>
+    <a href="../index.html" class="brand" aria-label="Portal MSB — página inicial"><img class="brand-logo" src="/icons/logo-msb.png" alt="MSB · Medical System do Brasil" onerror="this.dataset.failed='true'"><span class="brand-fallback">MSB</span></a>
     <nav class="header-nav"><a href="../index.html">Início</a><a href="../index.html#areas">Áreas</a><a href="../index.html#sistemas">Sistemas</a><a href="../index.html#avisos">Avisos</a><a href="../index.html#contato">Contato</a></nav>
   </div></header>
 
@@ -39,21 +39,21 @@
           <!-- ═══ Cabeçalho + abas de submódulo (Claude Design) ═══ -->
           <style>
             .fx-head{display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap;padding:22px 0 4px;}
-            .fx-bc{display:flex;align-items:center;gap:6px;font-size:12px;color:#7C93A8;}
-            .fx-title{margin:4px 0 0;font-size:23px;font-weight:800;letter-spacing:-0.5px;color:#0A2E5C;}
+            .fx-bc{display:flex;align-items:center;gap:6px;font-size:12px;color:#81939B;}
+            .fx-title{margin:4px 0 0;font-size:23px;font-weight:800;letter-spacing:-0.5px;color:#10323E;}
             .fx-head-right{display:flex;align-items:center;gap:12px;flex-wrap:wrap;}
-            .fx-tabs{display:flex;align-items:center;background:#FFFFFF;border:1px solid #E3EAF2;border-radius:11px;padding:3px;flex-wrap:wrap;}
-            .fx-tabs a,.fx-tabs span{padding:8px 14px;border-radius:8px;font-size:12.5px;font-weight:600;color:#5B7189;text-decoration:none;white-space:nowrap;}
-            .fx-tabs a:hover{color:#0A2E5C;}
-            .fx-tabs .active{background:#0A2E5C;font-weight:700;color:#fff;}
-            .fx-filters{display:flex;align-items:center;gap:10px;flex-wrap:wrap;padding:12px 14px;background:#fff;border:1px solid #E3EAF2;border-radius:12px;}
-            .fx-fdiv{width:1px;height:24px;background:#E3EAF2;}
-            .fx-fbtn{display:inline-flex;align-items:center;gap:8px;padding:8px 12px;border-radius:9px;border:1px solid #E3EAF2;background:#fff;font-size:12.5px;font-weight:600;color:#33495E;cursor:pointer;font-family:inherit;white-space:nowrap;}
-            .fx-fbtn:hover{border-color:#1272C4;}
-            .fx-fbtn .fx-fk{font-weight:700;color:#93A7BA;}
+            .fx-tabs{display:flex;align-items:center;background:#FFFFFF;border:1px solid #E5EAED;border-radius:11px;padding:3px;flex-wrap:wrap;}
+            .fx-tabs a,.fx-tabs span{padding:8px 14px;border-radius:8px;font-size:12.5px;font-weight:600;color:#5F727A;text-decoration:none;white-space:nowrap;}
+            .fx-tabs a:hover{color:#10323E;}
+            .fx-tabs .active{background:#10323E;font-weight:700;color:#fff;}
+            .fx-filters{display:flex;align-items:center;gap:10px;flex-wrap:wrap;padding:12px 14px;background:#fff;border:1px solid #E5EAED;border-radius:12px;}
+            .fx-fdiv{width:1px;height:24px;background:#E5EAED;}
+            .fx-fbtn{display:inline-flex;align-items:center;gap:8px;padding:8px 12px;border-radius:9px;border:1px solid #E5EAED;background:#fff;font-size:12.5px;font-weight:600;color:#374951;cursor:pointer;font-family:inherit;white-space:nowrap;}
+            .fx-fbtn:hover{border-color:#287A8E;}
+            .fx-fbtn .fx-fk{font-weight:700;color:#97A8AE;}
             .fx-fbtn svg{flex-shrink:0;}
             .fxdd{position:relative;display:inline-block;}
-            .fxdd-panel{position:absolute;z-index:50;top:calc(100% + 6px);left:0;display:none;flex-direction:column;background:#fff;border:1px solid #E3EAF2;border-radius:12px;box-shadow:0 10px 30px rgba(10,46,92,0.14);padding:12px;min-width:210px;}
+            .fxdd-panel{position:absolute;z-index:50;top:calc(100% + 6px);left:0;display:none;flex-direction:column;background:#fff;border:1px solid #E5EAED;border-radius:12px;box-shadow:0 10px 30px rgba(16,50,62,0.14);padding:12px;min-width:210px;}
             .fxdd.open .fxdd-panel{display:flex;}
             /* esconde a faixa de cards de sub-modulos (estatica OU injetada pelo nav-sidebar.js) */
             .area-main section:has(.modulo-card){display:none !important;}
@@ -61,7 +61,7 @@
               .fx-head{align-items:flex-start;padding-top:14px;}
               .fx-title{font-size:17px;}
               .fx-head-right{width:100%;}
-              .fx-tabs{width:100%;flex-wrap:nowrap;overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none;background:#F0F4F9;border:none;}
+              .fx-tabs{width:100%;flex-wrap:nowrap;overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none;background:#F1F4F6;border:none;}
               .fx-tabs::-webkit-scrollbar{display:none;}
               .fx-tabs a,.fx-tabs span{flex:0 0 auto;}
               .fx-filters{flex-wrap:nowrap;overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none;}
@@ -137,9 +137,9 @@
         .av-dd-foot button{font-size:11.5px;color:var(--bm-blue-700);background:none;border:none;cursor:pointer;font-weight:600;}
         .cx-btn{padding:6px 13px;border-radius:7px;border:1px solid var(--border);background:#fff;font-size:12.5px;font-weight:600;color:var(--text-2);cursor:pointer;font-family:var(--font-body);}
         .cx-btn:hover{border-color:var(--bm-blue-500);}
-        .cx-btn.prim{background:#0E4A8A;border-color:#0E4A8A;color:#fff;}
-        .cx-btn.prim:hover{background:#0A3B70;}
-        .cx-btn.prim.dirty{box-shadow:0 0 0 3px rgba(18,114,196,.20);}
+        .cx-btn.prim{background:#1A5160;border-color:#1A5160;color:#fff;}
+        .cx-btn.prim:hover{background:#13404D;}
+        .cx-btn.prim.dirty{box-shadow:0 0 0 3px rgba(40,122,142,.20);}
         .cx-btn[disabled]{opacity:.55;cursor:default;}
         /* dropdown de intervalo de datas */
         .mv-dt label{display:flex;align-items:center;justify-content:space-between;gap:10px;font-size:12px;font-weight:600;color:var(--text-2);margin-bottom:8px;}
@@ -156,7 +156,7 @@
 
       <div class="cx-wrap">
 
-        <div id="cx-banner" style="padding:11px 16px;border-radius:8px;font-size:13px;display:flex;align-items:center;gap:10px;background:#EFF6FF;border:1px solid #BFDBFE;color:#1E40AF;">
+        <div id="cx-banner" style="padding:11px 16px;border-radius:8px;font-size:13px;display:flex;align-items:center;gap:10px;background:#F0F7FA;border:1px solid #BDDEEA;color:#235063;">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
           Conectando ao Power BI…
         </div>
@@ -193,7 +193,7 @@
     </div>
   </div></div></div>
 
-  <footer class="site-footer"><div class="container"><p>© Biomedical — Portal Corporativo</p></div></footer>
+  <footer class="site-footer"><div class="container"><p>© MSB — Portal MSB</p></div></footer>
 
   <script src="../script.js?v=8"></script>
   <script src="../nav-sidebar.js?v=77"></script>
@@ -705,7 +705,7 @@
   }
 
   // ── banner ──
-  const _BAN={ info:['#EFF6FF','#BFDBFE','#1E40AF'], ok:['#F0FDF4','#BBF7D0','#14532D'], warn:['#FFFBEB','#FDE68A','#92400E'], erro:['#FEF2F2','#FECACA','#7F1D1D'] };
+  const _BAN={ info:['#F0F7FA','#BDDEEA','#235063'], ok:['#F0FDF4','#BBF7D0','#14532D'], warn:['#FFFBEB','#FDE68A','#92400E'], erro:['#FEF2F2','#FECACA','#7F1D1D'] };
   function mvBanner(tipo, html){
     const b=document.getElementById('cx-banner'); if(!b) return;
     const p=_BAN[tipo]||_BAN.info;
@@ -797,7 +797,7 @@
       btn.classList.toggle('has',tem);
       const txt=tem?((d.de?fDate(d.de):'…')+' – '+(d.ate?fDate(d.ate):'…')):'Todos';
       btn.innerHTML='<span class="fx-fk">'+escH(d.label)+'</span><span>'+escH(txt)+'</span>';
-      btn.style.borderColor=tem?'#1272C4':'';
+      btn.style.borderColor=tem?'#287A8E':'';
     }
     btn.addEventListener('click', e=>{ e.stopPropagation(); document.querySelectorAll('.av-dd.open').forEach(x=>x.classList.remove('open')); window.fxTogglePanel(btn); });
     panel.addEventListener('click', e=>e.stopPropagation());

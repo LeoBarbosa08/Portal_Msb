@@ -3,14 +3,13 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Agente de Vendas · Biomedical</title>
+  <title>Agente de Vendas · MSB</title>
   <link rel="stylesheet" href="../styles.css?v=14">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="../dash-v2.css?v=3">
   <!-- Layout v3 (Claude Design · animado): fonte + camada visual + motor de animações -->
-  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300..800&family=Manrope:wght@400..800&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300..900&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="../portal-v3.css?v=2">
   <script src="../portal-motion.js?v=3" defer></script>
   <!-- Tema claro/escuro (menu do avatar): marca o <html> antes de pintar + camada escura -->
@@ -26,9 +25,9 @@
   <!-- HEADER -->
   <header class="site-header">
     <div class="container">
-      <a href="../index.html" class="brand" aria-label="Biomedical — Portal Corporativo">
-        <img class="brand-logo" src="/icons/icon-192.png" alt="Biomedical" onerror="this.dataset.failed='true'">
-        <span class="brand-fallback">Biomedical</span>
+      <a href="../index.html" class="brand" aria-label="Portal MSB — página inicial">
+        <img class="brand-logo" src="/icons/logo-msb.png" alt="MSB · Medical System do Brasil" onerror="this.dataset.failed='true'">
+        <span class="brand-fallback">MSB</span>
       </a>
       <span class="header-divider"></span>
       <nav class="header-nav">
@@ -116,7 +115,7 @@
                       <div style="font-family:var(--font-display);font-size:15px;font-weight:600;color:#fff;">Agente de Vendas</div>
                       <div style="font-size:12px;color:rgba(255,255,255,0.7);display:flex;align-items:center;gap:6px;margin-top:2px;">
                         <span style="width:7px;height:7px;border-radius:50%;background:var(--bm-green-500);display:inline-block;"></span>
-                        Online · Biomedical IA
+                        Online · MSB IA
                       </div>
                     </div>
                   </div>
@@ -136,7 +135,7 @@
   <footer class="site-footer">
     <div class="container">
       <div class="bm-footer-bottom">
-        <span>© 2026 Biomedical · Portal Corporativo</span>
+        <span>© 2026 MSB · Portal MSB</span>
         <a href="comercial.html">← Voltar a Comercial</a>
       </div>
     </div>
@@ -155,8 +154,8 @@
     function showError(msg) {
       el.innerHTML = '<div style="padding:28px 26px;display:flex;flex-direction:column;gap:10px;color:#7F1D1D;font-family:var(--font-body,sans-serif);font-size:14px;line-height:1.55;">'
         + '<strong style="font-size:15px;">Não foi possível conectar ao Agente de Vendas.</strong>'
-        + '<span style="color:#475569;">' + msg + '</span>'
-        + '<span style="color:#94A3B8;font-size:12.5px;">Verifique se o segredo <code>DIRECTLINE_SECRET</code> está configurado nas App Settings do Static Web App.</span>'
+        + '<span style="color:#49565C;">' + msg + '</span>'
+        + '<span style="color:#95A4AB;font-size:12.5px;">Verifique se o segredo <code>DIRECTLINE_SECRET</code> está configurado nas App Settings do Static Web App.</span>'
         + '</div>';
     }
 
@@ -167,20 +166,20 @@
       if (!data.token) throw new Error(data.error || 'Token vazio.');
 
       const styleOptions = {
-        // Marca Biomedical
-        accent: '#0A4FA0',
+        // Marca MSB (teal)
+        accent: '#19576A',
         backgroundColor: '#FFFFFF',
-        bubbleBackground: '#F1F5F9',
-        bubbleTextColor: '#0F172A',
+        bubbleBackground: '#F2F5F7',
+        bubbleTextColor: '#10181E',
         bubbleBorderRadius: 14,
-        bubbleFromUserBackground: '#002E5D',
+        bubbleFromUserBackground: '#0E333C',
         bubbleFromUserTextColor: '#FFFFFF',
         bubbleFromUserBorderRadius: 14,
         botAvatarInitials: 'BV',
         userAvatarInitials: 'EU',
-        botAvatarBackgroundColor: '#002E5D',
-        userAvatarBackgroundColor: '#0A4FA0',
-        sendBoxButtonColor: '#0A4FA0',
+        botAvatarBackgroundColor: '#0E333C',
+        userAvatarBackgroundColor: '#19576A',
+        sendBoxButtonColor: '#19576A',
         sendBoxHeight: 52,
         hideUploadButton: true,
         rootHeight: '100%',

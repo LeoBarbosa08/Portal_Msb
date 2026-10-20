@@ -514,15 +514,15 @@
     box.style.cssText = alvo ? 'padding:48px 16px;'
       : 'position:fixed;inset:0;z-index:9500;display:flex;align-items:center;justify-content:center;padding:16px;background:var(--bmt-page,#F4F7FB);';
     box.innerHTML = '<div style="max-width:540px;margin:0 auto;padding:30px 26px;border-radius:16px;text-align:center;' +
-        'background:var(--bmt-card,#fff);border:1px solid var(--bmt-line,#E3EAF2);box-shadow:0 12px 36px rgba(15,23,42,.10);' +
-        'color:var(--bmt-ink,#0F172A);font:14px/1.55 Inter,system-ui,-apple-system,\'Segoe UI\',sans-serif;">' +
+        'background:var(--bmt-card,#fff);border:1px solid var(--bmt-line,#E5EAED);box-shadow:0 12px 36px rgba(16,24,30,.10);' +
+        'color:var(--bmt-ink,#10181E);font:14px/1.55 Roboto,system-ui,-apple-system,\'Segoe UI\',sans-serif;">' +
       '<div style="width:50px;height:50px;border-radius:50%;background:#FEF3C7;display:flex;align-items:center;justify-content:center;margin:0 auto 14px;">' +
         '<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#b45309" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg></div>' +
       '<h3 style="margin:0 0 8px;font-size:18px;font-weight:700;">Sem acesso aos dados do Power BI</h3>' +
       '<p style="margin:0 0 10px;">' + (TXT_TRAVA[n.classe] || TXT_TRAVA.build) + ' Por segurança, nada desta tela é exibido.</p>' +
-      '<p style="margin:0 0 18px;font-size:13px;color:var(--bmt-muted,#5B7189);">Para liberar, o TI / admin do Power BI precisa pôr você num grupo de segurança do modelo e dar a permissão de Build. Depois é só recarregar a página.</p>' +
-      '<button type="button" id="pbiq-trava-retry" style="border:none;border-radius:8px;padding:10px 26px;font-size:14px;font-weight:600;background:#002E5D;color:#fff;cursor:pointer;">Tentar de novo</button>' +
-      (n.detalhe ? '<div style="margin-top:14px;font-size:11.5px;color:var(--bmt-muted,#7C93A8);word-break:break-word;">Detalhe: ' + esc(n.detalhe) + '</div>' : '') +
+      '<p style="margin:0 0 18px;font-size:13px;color:var(--bmt-muted,#5F727A);">Para liberar, o TI / admin do Power BI precisa pôr você num grupo de segurança do modelo e dar a permissão de Build. Depois é só recarregar a página.</p>' +
+      '<button type="button" id="pbiq-trava-retry" style="border:none;border-radius:8px;padding:10px 26px;font-size:14px;font-weight:600;background:#0E333C;color:#fff;cursor:pointer;">Tentar de novo</button>' +
+      (n.detalhe ? '<div style="margin-top:14px;font-size:11.5px;color:var(--bmt-muted,#81939B);word-break:break-word;">Detalhe: ' + esc(n.detalhe) + '</div>' : '') +
       '</div>';
     if (alvo) alvo.insertBefore(box, alvo.firstChild); else document.body.appendChild(box);
     var b = document.getElementById('pbiq-trava-retry');

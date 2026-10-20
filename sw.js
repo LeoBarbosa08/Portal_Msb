@@ -1,11 +1,11 @@
 /* ================================================================
-   sw.js — Service Worker do Portal Biomedical (PWA)
+   sw.js — Service Worker do Portal MSB (PWA)
    Estratégia:
    - Navegações (HTML): network-first → cache → offline.html
    - Assets estáticos: cache-first com atualização em background
    - Ignora outras origens (MSAL/Power BI/CDN) e rotas /api e /.auth
    ================================================================ */
-const VERSION = 'bm-comest-v2';   // portal Comercial + Estoque (cache próprio) · v2 = recorte MSB (20/10/26)
+const VERSION = 'bm-comest-v3';   // portal Comercial + Estoque (cache próprio) · v2 = recorte MSB · v3 = identidade visual MSB (20/10/26)
 const STATIC_CACHE  = VERSION + '-static';
 const RUNTIME_CACHE = VERSION + '-runtime';
 
@@ -20,7 +20,8 @@ const PRECACHE = [
   '/offline.html',
   '/icons/icon-512.png',
   '/icons/icon-192.png',
-  '/icons/apple-touch-icon.png'
+  '/icons/apple-touch-icon.png',
+  '/icons/logo-msb.png'
 ];
 
 self.addEventListener('install', (event) => {

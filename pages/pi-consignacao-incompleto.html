@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>PI · Consignação (INCOMPLETO) · Biomedical</title>
+  <title>PI · Consignação (INCOMPLETO) · MSB</title>
   <link rel="stylesheet" href="../styles.css?v=14">
   <script src="https://unpkg.com/@azure/msal-browser@2.38.3/lib/msal-browser.min.js"></script>
   <script src="../auth.js?v=7"></script>
@@ -16,26 +16,26 @@
     .pi-steps { display: flex; gap: 6px; flex-wrap: wrap; padding: 14px 22px; border-bottom: 1px solid var(--border); background: #f8fafc; }
     .pi-step { font-size: 12px; font-weight: 600; color: var(--text-3); padding: 6px 12px; border-radius: 999px; border: 1px solid var(--border); background: #fff; }
     .pi-step.atual { color: #fff; background: var(--bm-blue-900); border-color: var(--bm-blue-900); }
-    .pi-step.feito { color: var(--bm-blue-900); border-color: var(--bm-blue-900); background: #eef4fb; }
+    .pi-step.feito { color: var(--bm-blue-900); border-color: var(--bm-blue-900); background: #eff4f7; }
     .pi-body { padding: 26px 22px 30px; }
     .pi-body h3 { margin: 0 0 6px; font-family: var(--font-display); font-size: 17px; color: var(--text-1); }
     .pi-sub { font-size: 13.5px; color: var(--text-3); margin: 0 0 18px; line-height: 1.55; }
-    .pi-msg { display: none; margin: 14px 0 0; padding: 12px 14px; border-radius: 10px; font-size: 13.5px; line-height: 1.5; background: #eef4fb; border: 1px solid #c6dbf2; color: var(--bm-blue-900, #0C547C); }
+    .pi-msg { display: none; margin: 14px 0 0; padding: 12px 14px; border-radius: 10px; font-size: 13.5px; line-height: 1.5; background: #eff4f7; border: 1px solid #c9dbe4; color: var(--bm-blue-900, #195663); }
     .pi-msg-err { background: #fef2f2; border-color: #fecaca; color: #b91c1c; }
     .pi-msg-ok  { background: #f0fdf4; border-color: #bbf7d0; color: #15803d; }
-    .pi-spin { display: inline-block; width: 13px; height: 13px; vertical-align: -2px; border: 2px solid rgba(12,84,124,.25); border-top-color: var(--bm-blue-900, #0C547C); border-radius: 50%; animation: pi-spin .65s linear infinite; }
+    .pi-spin { display: inline-block; width: 13px; height: 13px; vertical-align: -2px; border: 2px solid rgba(25,86,99,.25); border-top-color: var(--bm-blue-900, #195663); border-radius: 50%; animation: pi-spin .65s linear infinite; }
     @keyframes pi-spin { to { transform: rotate(360deg); } }
-    .pi-drop { border: 2px dashed #b9cfe2; border-radius: 14px; padding: 44px 20px; text-align: center; cursor: pointer; transition: background .15s, border-color .15s; color: var(--text-3); }
-    .pi-drop:hover, .pi-drop.drag { background: #eef4fb; border-color: var(--bm-blue-900); }
+    .pi-drop { border: 2px dashed #becfd6; border-radius: 14px; padding: 44px 20px; text-align: center; cursor: pointer; transition: background .15s, border-color .15s; color: var(--text-3); }
+    .pi-drop:hover, .pi-drop.drag { background: #eff4f7; border-color: var(--bm-blue-900); }
     .pi-drop .pi-drop-ic { color: var(--bm-blue-900); margin-bottom: 10px; }
     .pi-drop strong { color: var(--text-1); }
     .pi-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px 16px; }
     .pi-field { display: flex; flex-direction: column; gap: 5px; }
     .pi-field.full { grid-column: 1 / -1; }
-    .pi-field label { font-size: 12.5px; font-weight: 600; color: var(--text-2, #334155); }
+    .pi-field label { font-size: 12.5px; font-weight: 600; color: var(--text-2, #354249); }
     .pi-field label .req { color: #dc2626; }
     .pi-field input, .pi-field select, .pi-field textarea { font: inherit; font-size: 14px; color: var(--text-1); border: 1px solid var(--border); border-radius: 9px; padding: 9px 11px; background: #fff; outline: none; width: 100%; }
-    .pi-field input:focus, .pi-field select:focus, .pi-field textarea:focus { border-color: var(--bm-blue-900); box-shadow: 0 0 0 3px rgba(12,84,124,.12); }
+    .pi-field input:focus, .pi-field select:focus, .pi-field textarea:focus { border-color: var(--bm-blue-900); box-shadow: 0 0 0 3px rgba(25,86,99,.12); }
     .pi-field textarea { resize: vertical; min-height: 64px; }
     .pi-actions { display: flex; gap: 10px; margin-top: 22px; flex-wrap: wrap; }
     .pi-btn { display: inline-flex; align-items: center; gap: 8px; cursor: pointer; font: inherit; font-size: 14px; font-weight: 600; border-radius: 10px; padding: 11px 20px; border: 1px solid transparent; transition: opacity .15s; }
@@ -75,8 +75,8 @@
     .pi-head .cs-reiniciar:hover { background: rgba(255,255,255,.22); }
     .cs-opcoes { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
     .cs-op { display: flex; flex-direction: column; align-items: flex-start; gap: 8px; text-align: left; font: inherit; color: inherit; background: #fff; border: 1px solid var(--border); border-radius: 14px; padding: 22px 20px; cursor: pointer; transition: border-color .15s, box-shadow .15s, transform .15s; }
-    .cs-op:hover, .cs-op:focus-visible { border-color: var(--bm-blue-900); box-shadow: 0 8px 22px rgba(12,84,124,.12); transform: translateY(-1px); outline: none; }
-    .cs-op-num { width: 34px; height: 34px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; font-weight: 700; color: var(--bm-blue-900); background: #eef4fb; border: 1px solid #c6dbf2; }
+    .cs-op:hover, .cs-op:focus-visible { border-color: var(--bm-blue-900); box-shadow: 0 8px 22px rgba(25,86,99,.12); transform: translateY(-1px); outline: none; }
+    .cs-op-num { width: 34px; height: 34px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; font-weight: 700; color: var(--bm-blue-900); background: #eff4f7; border: 1px solid #c9dbe4; }
     .cs-op h4 { margin: 4px 0 0; font-family: var(--font-display); font-size: 16px; color: var(--text-1); }
     .cs-op p { margin: 0; font-size: 13px; line-height: 1.55; color: var(--text-3); }
     .cs-op-ir { margin-top: auto; padding-top: 6px; font-size: 13px; font-weight: 700; color: var(--bm-blue-900); }
@@ -92,14 +92,14 @@
     .cs-cli-meta { display: flex; flex-wrap: wrap; gap: 6px 14px; align-items: center; margin-top: 4px; font-size: 12.5px; color: var(--text-3); }
     .cs-cli-aviso { margin-top: 6px; font-size: 12.5px; color: #92400e; }
     .cs-manual { margin-top: 10px; }
-    .cs-chip { display: inline-block; font-size: 11.5px; font-weight: 700; line-height: 1.5; padding: 1px 9px; border-radius: 999px; background: #eef4fb; color: var(--bm-blue-900); border: 1px solid #c6dbf2; white-space: nowrap; }
+    .cs-chip { display: inline-block; font-size: 11.5px; font-weight: 700; line-height: 1.5; padding: 1px 9px; border-radius: 999px; background: #eff4f7; color: var(--bm-blue-900); border: 1px solid #c9dbe4; white-space: nowrap; }
     .cs-chip-ok { background: #f0fdf4; color: #15803d; border-color: #bbf7d0; }
     .cs-chip-warn { background: #fffbeb; color: #92400e; border-color: #fde68a; }
     .cs-chip-err { background: #fef2f2; color: #b91c1c; border-color: #fecaca; }
     .cs-x { width: 28px; height: 28px; border-radius: 8px; border: 1px solid var(--border); background: #fff; color: var(--text-3); font-size: 16px; line-height: 1; cursor: pointer; }
     .cs-x:hover { color: #b91c1c; border-color: #fecaca; background: #fef2f2; }
-    .cs-add { margin-top: 10px; font: inherit; font-size: 13px; font-weight: 600; color: var(--bm-blue-900); background: none; border: 1px dashed #b9cfe2; border-radius: 9px; padding: 8px 14px; cursor: pointer; }
-    .cs-add:hover { background: #eef4fb; }
+    .cs-add { margin-top: 10px; font: inherit; font-size: 13px; font-weight: 600; color: var(--bm-blue-900); background: none; border: 1px dashed #becfd6; border-radius: 9px; padding: 8px 14px; cursor: pointer; }
+    .cs-add:hover { background: #eff4f7; }
     .cs-conf { margin: 4px 0 6px; border: 1px solid var(--border); border-radius: 12px; padding: 12px 14px; background: #f8fafc; }
     .cs-conf-head { display: flex; justify-content: space-between; align-items: center; gap: 10px; font-size: 13.5px; color: var(--text-1); }
     .cs-link { font: inherit; font-size: 12.5px; font-weight: 600; color: var(--bm-blue-900); background: none; border: 0; cursor: pointer; padding: 2px 4px; }
@@ -112,7 +112,7 @@
     .cs-dev { margin-top: 14px; border: 1px solid var(--border); border-radius: 12px; overflow: hidden; background: #fff; }
     .cs-dev-head { display: flex; flex-wrap: wrap; gap: 6px 14px; align-items: center; padding: 10px 14px; background: #f8fafc; border-bottom: 1px solid var(--border); font-size: 13px; color: var(--text-3); }
     .cs-dev-head strong { font-size: 14px; color: var(--text-1); }
-    .cs-row-sel td { background: #f0f7ff; }
+    .cs-row-sel td { background: #f2f7fb; }
     .cs-actions-sel { align-items: center; }
     .cs-contador { margin-left: auto; font-size: 13px; color: var(--text-3); }
     .cs-vazio { margin-top: 14px; padding: 26px 16px; text-align: center; font-size: 14px; line-height: 1.6; color: var(--text-2); border: 1px dashed var(--border); border-radius: 12px; }
@@ -128,7 +128,7 @@
     .cs-map td { padding: 4px 6px; border-bottom: 1px solid var(--border); vertical-align: top; word-break: break-word; }
     .cs-map td:first-child { color: var(--text-3); white-space: nowrap; }
     .pi-card code { font-family: 'JetBrains Mono', Consolas, monospace; font-size: .92em; }
-    .cs-json { margin: 12px 0 0; padding: 12px 14px; border-radius: 10px; background: #0f172a; color: #e2e8f0; font: 12px/1.5 'JetBrains Mono', Consolas, monospace; overflow: auto; max-height: 340px; white-space: pre; }
+    .cs-json { margin: 12px 0 0; padding: 12px 14px; border-radius: 10px; background: #10181e; color: #e3e8eb; font: 12px/1.5 'JetBrains Mono', Consolas, monospace; overflow: auto; max-height: 340px; white-space: pre; }
     .cs-fim-tt { display: flex; gap: 14px; align-items: center; margin-bottom: 16px; }
     .cs-fim-tt h3 { margin: 0 0 2px; }
     .cs-fim-ic { flex: none; width: 52px; height: 52px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 24px; color: #16a34a; background: #f0fdf4; border: 2px solid #86efac; }
@@ -151,7 +151,7 @@
     }
   </style>
   <!-- Layout v3 (Claude Design · animado): fonte + camada visual + motor de animações -->
-  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300..800&family=Manrope:wght@400..800&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300..900&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="../portal-v3.css?v=2">
   <script src="../portal-motion.js?v=3" defer></script>
   <!-- Tema claro/escuro (menu do avatar): marca o <html> antes de pintar + camada escura -->
@@ -167,9 +167,9 @@
   <!-- HEADER -->
   <header class="site-header">
     <div class="container">
-      <a href="../index.html" class="brand" aria-label="Biomedical — Portal Corporativo">
-        <img class="brand-logo" src="/icons/icon-192.png" alt="Biomedical" onerror="this.dataset.failed='true'">
-        <span class="brand-fallback">Biomedical</span>
+      <a href="../index.html" class="brand" aria-label="Portal MSB — página inicial">
+        <img class="brand-logo" src="/icons/logo-msb.png" alt="MSB · Medical System do Brasil" onerror="this.dataset.failed='true'">
+        <span class="brand-fallback">MSB</span>
       </a>
       <span class="header-divider"></span>
       <nav class="header-nav">
@@ -452,7 +452,7 @@
   <footer class="site-footer">
     <div class="container">
       <div class="bm-footer-bottom">
-        <span>© 2026 Biomedical · Portal Corporativo</span>
+        <span>© 2026 MSB · Portal MSB</span>
         <a href="comercial.html">← Voltar ao Comercial</a>
       </div>
     </div>

@@ -3,16 +3,15 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Comportamento de Clientes · Comercial · Biomedical</title>
+  <title>Comportamento de Clientes · Comercial · MSB</title>
   <link rel="stylesheet" href="../styles.css?v=14">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="../dash-v2.css?v=3">
   <script src="https://unpkg.com/@azure/msal-browser@2.38.3/lib/msal-browser.min.js"></script>
 <script src="../pbi-throttle.js?v=3"></script>
   <!-- Layout v3 (Claude Design · animado): fonte + camada visual + motor de animações -->
-  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300..800&family=Manrope:wght@400..800&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300..900&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="../portal-v3.css?v=2">
   <script src="../portal-motion.js?v=3" defer></script>
   <!-- Tema claro/escuro (menu do avatar): marca o <html> antes de pintar + camada escura -->
@@ -27,9 +26,9 @@
 
   <header class="site-header">
     <div class="container">
-      <a href="../index.html" class="brand" aria-label="Biomedical — Portal Corporativo">
-        <img class="brand-logo" src="/icons/icon-192.png" alt="Biomedical" onerror="this.dataset.failed='true'">
-        <span class="brand-fallback">Biomedical</span>
+      <a href="../index.html" class="brand" aria-label="Portal MSB — página inicial">
+        <img class="brand-logo" src="/icons/logo-msb.png" alt="MSB · Medical System do Brasil" onerror="this.dataset.failed='true'">
+        <span class="brand-fallback">MSB</span>
       </a>
       <nav class="header-nav">
         <a href="../index.html">Início</a>
@@ -63,27 +62,27 @@
           <!-- ═══ Cabeçalho + abas de submódulo (Claude Design) ═══ -->
           <style>
             .fx-head{display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap;padding:22px 0 4px;}
-            .fx-bc{display:flex;align-items:center;gap:6px;font-size:12px;color:#7C93A8;}
-            .fx-title{margin:4px 0 0;font-size:23px;font-weight:800;letter-spacing:-0.5px;color:#0A2E5C;}
+            .fx-bc{display:flex;align-items:center;gap:6px;font-size:12px;color:#81939B;}
+            .fx-title{margin:4px 0 0;font-size:23px;font-weight:800;letter-spacing:-0.5px;color:#10323E;}
             .fx-head-right{display:flex;align-items:center;gap:12px;flex-wrap:wrap;}
-            .fx-tabs{display:flex;align-items:center;background:#FFFFFF;border:1px solid #E3EAF2;border-radius:11px;padding:3px;flex-wrap:wrap;}
-            .fx-tabs a,.fx-tabs span{padding:8px 14px;border-radius:8px;font-size:12.5px;font-weight:600;color:#5B7189;text-decoration:none;white-space:nowrap;}
-            .fx-tabs a:hover{color:#0A2E5C;}
-            .fx-tabs .active{background:#0A2E5C;font-weight:700;color:#fff;}
-            .fx-filters{display:flex;align-items:center;gap:10px;flex-wrap:wrap;padding:12px 14px;background:#fff;border:1px solid #E3EAF2;border-radius:12px;}
-            .fx-fdiv{width:1px;height:24px;background:#E3EAF2;}
-            .fx-fbtn{display:inline-flex;align-items:center;gap:8px;padding:8px 12px;border-radius:9px;border:1px solid #E3EAF2;background:#fff;font-size:12.5px;font-weight:600;color:#33495E;cursor:pointer;font-family:inherit;white-space:nowrap;}
-            .fx-fbtn:hover{border-color:#1272C4;}
-            .fx-fbtn .fx-fk{font-weight:700;color:#93A7BA;}
+            .fx-tabs{display:flex;align-items:center;background:#FFFFFF;border:1px solid #E5EAED;border-radius:11px;padding:3px;flex-wrap:wrap;}
+            .fx-tabs a,.fx-tabs span{padding:8px 14px;border-radius:8px;font-size:12.5px;font-weight:600;color:#5F727A;text-decoration:none;white-space:nowrap;}
+            .fx-tabs a:hover{color:#10323E;}
+            .fx-tabs .active{background:#10323E;font-weight:700;color:#fff;}
+            .fx-filters{display:flex;align-items:center;gap:10px;flex-wrap:wrap;padding:12px 14px;background:#fff;border:1px solid #E5EAED;border-radius:12px;}
+            .fx-fdiv{width:1px;height:24px;background:#E5EAED;}
+            .fx-fbtn{display:inline-flex;align-items:center;gap:8px;padding:8px 12px;border-radius:9px;border:1px solid #E5EAED;background:#fff;font-size:12.5px;font-weight:600;color:#374951;cursor:pointer;font-family:inherit;white-space:nowrap;}
+            .fx-fbtn:hover{border-color:#287A8E;}
+            .fx-fbtn .fx-fk{font-weight:700;color:#97A8AE;}
             .fx-fbtn svg{flex-shrink:0;}
-            .fx-flimpar{margin-left:auto;display:inline-flex;align-items:center;gap:6px;padding:8px 12px;border-radius:9px;border:none;background:transparent;font-size:12.5px;font-weight:600;color:#5B7189;cursor:pointer;font-family:inherit;white-space:nowrap;}
+            .fx-flimpar{margin-left:auto;display:inline-flex;align-items:center;gap:6px;padding:8px 12px;border-radius:9px;border:none;background:transparent;font-size:12.5px;font-weight:600;color:#5F727A;cursor:pointer;font-family:inherit;white-space:nowrap;}
             .fx-flimpar:hover{color:#B54545;}
             .fxdd{position:relative;display:inline-block;}
-            .fxdd-panel{position:absolute;z-index:50;top:calc(100% + 6px);left:0;display:none;flex-direction:column;background:#fff;border:1px solid #E3EAF2;border-radius:12px;box-shadow:0 10px 30px rgba(10,46,92,0.14);padding:12px;}
+            .fxdd-panel{position:absolute;z-index:50;top:calc(100% + 6px);left:0;display:none;flex-direction:column;background:#fff;border:1px solid #E5EAED;border-radius:12px;box-shadow:0 10px 30px rgba(16,50,62,0.14);padding:12px;}
             .fxdd.open .fxdd-panel{display:flex;}
-            .fxdd-sec{font-size:10.5px;font-weight:800;letter-spacing:0.8px;text-transform:uppercase;color:#93A7BA;margin:2px 2px 8px;}
+            .fxdd-sec{font-size:10.5px;font-weight:800;letter-spacing:0.8px;text-transform:uppercase;color:#97A8AE;margin:2px 2px 8px;}
             .fxdd-sec.mt{margin-top:12px;}
-            .fxdd-hint{font-size:11px;color:#93A7BA;margin-top:10px;}
+            .fxdd-hint{font-size:11px;color:#97A8AE;margin-top:10px;}
             /* Periodo: painel largo e horizontal (mes em cima; ano/semestre/trimestre embaixo) */
             .fxdd-panel{min-width:210px;}
             #fx-periodo .fxdd-panel{width:720px;max-width:calc(100vw - 48px);}
@@ -95,7 +94,7 @@
               .fx-head{align-items:flex-start;padding-top:14px;}
               .fx-title{font-size:17px;}
               .fx-head-right{width:100%;}
-              .fx-tabs{width:100%;flex-wrap:nowrap;overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none;background:#F0F4F9;border:none;}
+              .fx-tabs{width:100%;flex-wrap:nowrap;overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none;background:#F1F4F6;border:none;}
               .fx-tabs::-webkit-scrollbar{display:none;}
               .fx-tabs a,.fx-tabs span{flex:0 0 auto;}
               /* ── FILTROS mobile: controles empilhados em largura total; cada
@@ -126,7 +125,7 @@
               .fxdd-panel .sr-divider,.fxdd-panel .av-divider,.fxdd-panel .pv-divider{flex:0 0 100%;width:100% !important;height:0 !important;border:0 !important;background:transparent !important;margin:0 !important;}
               /* botões preenchem a largura numa grade uniforme (sobrepõe flex-shrink:0 global) */
               .fxdd-panel .sr-btn,.fxdd-panel .av-btn,.fxdd-panel .pv-btn{flex:1 1 auto !important;min-width:52px;text-align:center;padding:8px 6px;}
-              .fx-filters .fx-flimpar{width:100%;justify-content:center;margin:2px 0 0;padding:11px;border:1px solid #E3EAF2;border-radius:9px;}
+              .fx-filters .fx-flimpar{width:100%;justify-content:center;margin:2px 0 0;padding:11px;border:1px solid #E5EAED;border-radius:9px;}
             }
           </style>
 
@@ -220,132 +219,132 @@
             /* ── KPIs ── */
             /* 6 cartões: 6 numa fileira só em tela larga; 3+3 no desktop comum
                (a área útil ao lado da sidebar é ~910px em 1280px de viewport). */
-            .cb-escopo{display:flex;align-items:center;gap:10px;flex-wrap:wrap;font-size:12px;color:#33495E;
-                       background:#F1F7FE;border:1px solid #D6E6F7;border-radius:10px;padding:9px 14px;}
-            .cb-escopo b{font-weight:800;color:#0A2E5C;}
-            .cb-escopo .cb-esc-x{margin-left:auto;background:#fff;border:1px solid #C7DBF0;color:#1E88E5;
+            .cb-escopo{display:flex;align-items:center;gap:10px;flex-wrap:wrap;font-size:12px;color:#374951;
+                       background:#F3F7FA;border:1px solid #D9E7ED;border-radius:10px;padding:9px 14px;}
+            .cb-escopo b{font-weight:800;color:#10323E;}
+            .cb-escopo .cb-esc-x{margin-left:auto;background:#fff;border:1px solid #CADBE3;color:#3690A7;
                        border-radius:7px;padding:3px 9px;font-size:11px;font-weight:700;cursor:pointer;}
-            .cb-escopo .cb-esc-x:hover{background:#1E88E5;border-color:#1E88E5;color:#fff;}
+            .cb-escopo .cb-esc-x:hover{background:#3690A7;border-color:#3690A7;color:#fff;}
             .cb-kpis{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:12px;}
             @media (max-width:1560px){ .cb-kpis{grid-template-columns:repeat(3,minmax(0,1fr));} }
             @media (max-width:900px){  .cb-kpis{grid-template-columns:repeat(2,minmax(0,1fr));} }
-            .cb-kpi{position:relative;background:#fff;border:1px solid #E3EAF2;border-radius:12px;padding:14px 16px 13px 18px;overflow:hidden;}
-            .cb-kpi::before{content:"";position:absolute;left:0;top:0;bottom:0;width:3px;background:var(--kc,#1E88E5);}
-            .cb-kpi-l{font-size:10px;font-weight:800;letter-spacing:.09em;text-transform:uppercase;color:#8FA3B6;}
-            .cb-kpi-v{margin-top:6px;font-size:25px;font-weight:800;letter-spacing:-.6px;color:#0A2E5C;line-height:1.05;font-variant-numeric:tabular-nums;}
-            .cb-kpi-s{margin-top:5px;font-size:11.5px;font-weight:600;color:#7C93A8;}
+            .cb-kpi{position:relative;background:#fff;border:1px solid #E5EAED;border-radius:12px;padding:14px 16px 13px 18px;overflow:hidden;}
+            .cb-kpi::before{content:"";position:absolute;left:0;top:0;bottom:0;width:3px;background:var(--kc,#3690A7);}
+            .cb-kpi-l{font-size:10px;font-weight:800;letter-spacing:.09em;text-transform:uppercase;color:#93A4AA;}
+            .cb-kpi-v{margin-top:6px;font-size:25px;font-weight:800;letter-spacing:-.6px;color:#10323E;line-height:1.05;font-variant-numeric:tabular-nums;}
+            .cb-kpi-s{margin-top:5px;font-size:11.5px;font-weight:600;color:#81939B;}
             .cb-kpi-s .up{color:#12874A;}
             .cb-kpi-s .dn{color:#C2410C;}
 
             /* ── Cartão de seção ── */
-            .cb-card{background:#fff;border:1px solid #E3EAF2;border-radius:12px;padding:16px 18px 18px;}
+            .cb-card{background:#fff;border:1px solid #E5EAED;border-radius:12px;padding:16px 18px 18px;}
             .cb-ch{display:flex;align-items:flex-start;justify-content:space-between;gap:14px;flex-wrap:wrap;margin-bottom:14px;}
-            .cb-ct{margin:0;font-size:14.5px;font-weight:700;color:#0A4FA0;letter-spacing:-.2px;}
-            .cb-cs{margin:3px 0 0;font-size:11.5px;color:#8FA3B6;}
-            .cb-chint{font-size:11px;color:#A7B7C6;font-weight:600;}
+            .cb-ct{margin:0;font-size:14.5px;font-weight:700;color:#19576A;letter-spacing:-.2px;}
+            .cb-cs{margin:3px 0 0;font-size:11.5px;color:#93A4AA;}
+            .cb-chint{font-size:11px;color:#ABB7BC;font-weight:600;}
 
             /* ── Curva ABC: 3 classes ── */
             .cb-abc{display:grid;grid-template-columns:repeat(auto-fit,minmax(268px,1fr));gap:12px;}
-            .cb-abc-c{position:relative;text-align:left;background:#fff;border:1.5px solid #E3EAF2;border-radius:11px;padding:13px 15px;cursor:pointer;font-family:inherit;transition:border-color .15s,box-shadow .15s,background .15s;}
-            .cb-abc-c:hover{border-color:#9FC3E8;}
-            .cb-abc-c.on{border-color:#0A2E5C;box-shadow:0 3px 12px rgba(10,46,92,.13);background:#FBFDFF;}
+            .cb-abc-c{position:relative;text-align:left;background:#fff;border:1.5px solid #E5EAED;border-radius:11px;padding:13px 15px;cursor:pointer;font-family:inherit;transition:border-color .15s,box-shadow .15s,background .15s;}
+            .cb-abc-c:hover{border-color:#A1C6D1;}
+            .cb-abc-c.on{border-color:#10323E;box-shadow:0 3px 12px rgba(16,50,62,.13);background:#FBFDFF;}
             .cb-abc-top{display:flex;align-items:center;gap:9px;}
-            .cb-abc-b{flex:0 0 auto;width:19px;height:19px;border-radius:5px;display:grid;place-items:center;font-size:11px;font-weight:800;color:#fff;background:var(--ac,#1E88E5);}
-            .cb-abc-n{font-size:12.5px;font-weight:600;color:#33495E;}
-            .cb-abc-p{margin-left:auto;font-size:19px;font-weight:800;color:#0A2E5C;letter-spacing:-.5px;font-variant-numeric:tabular-nums;}
-            .cb-abc-bar{margin:10px 0 9px;height:5px;border-radius:99px;background:#EEF3F8;overflow:hidden;}
-            .cb-abc-bar i{display:block;height:100%;border-radius:99px;background:var(--ac,#1E88E5);}
-            .cb-abc-m{display:flex;align-items:baseline;justify-content:space-between;gap:10px;font-size:11px;color:#8FA3B6;}
-            .cb-abc-m b{font-weight:700;color:#33495E;font-variant-numeric:tabular-nums;}
+            .cb-abc-b{flex:0 0 auto;width:19px;height:19px;border-radius:5px;display:grid;place-items:center;font-size:11px;font-weight:800;color:#fff;background:var(--ac,#3690A7);}
+            .cb-abc-n{font-size:12.5px;font-weight:600;color:#374951;}
+            .cb-abc-p{margin-left:auto;font-size:19px;font-weight:800;color:#10323E;letter-spacing:-.5px;font-variant-numeric:tabular-nums;}
+            .cb-abc-bar{margin:10px 0 9px;height:5px;border-radius:99px;background:#F0F3F5;overflow:hidden;}
+            .cb-abc-bar i{display:block;height:100%;border-radius:99px;background:var(--ac,#3690A7);}
+            .cb-abc-m{display:flex;align-items:baseline;justify-content:space-between;gap:10px;font-size:11px;color:#93A4AA;}
+            .cb-abc-m b{font-weight:700;color:#374951;font-variant-numeric:tabular-nums;}
 
-            .cb-abc-h{margin-top:4px;padding-top:4px;border-top:1px dashed #E3EAF2;color:#8FA3B8;}
-            .cb-abc-h b{color:#8FA3B8;font-weight:700;}
+            .cb-abc-h{margin-top:4px;padding-top:4px;border-top:1px dashed #E5EAED;color:#92A3AB;}
+            .cb-abc-h b{color:#92A3AB;font-weight:700;}
 
             /* ── Ciclo de vida: 6 segmentos ── */
             .cb-seg{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:12px;}
             @media (max-width:1560px){ .cb-seg{grid-template-columns:repeat(3,minmax(0,1fr));} }
             @media (max-width:900px){  .cb-seg{grid-template-columns:repeat(2,minmax(0,1fr));} }
-            .cb-seg-c{position:relative;text-align:left;background:#fff;border:1.5px solid #E3EAF2;border-radius:11px;padding:12px 14px 11px;cursor:pointer;font-family:inherit;transition:border-color .15s,box-shadow .15s,background .15s;}
-            .cb-seg-c:hover{border-color:#9FC3E8;}
-            .cb-seg-c.on{border-color:var(--sc,#1E88E5);background:var(--sbg,#F7FBFF);box-shadow:0 3px 12px rgba(10,46,92,.11);}
+            .cb-seg-c{position:relative;text-align:left;background:#fff;border:1.5px solid #E5EAED;border-radius:11px;padding:12px 14px 11px;cursor:pointer;font-family:inherit;transition:border-color .15s,box-shadow .15s,background .15s;}
+            .cb-seg-c:hover{border-color:#A1C6D1;}
+            .cb-seg-c.on{border-color:var(--sc,#3690A7);background:var(--sbg,#F8FBFD);box-shadow:0 3px 12px rgba(16,50,62,.11);}
             .cb-seg-h{display:flex;align-items:center;gap:7px;}
-            .cb-seg-d{width:7px;height:7px;border-radius:99px;background:var(--sc,#1E88E5);flex:0 0 auto;}
-            .cb-seg-n{font-size:12px;font-weight:700;color:var(--sc,#1E88E5);}
-            .cb-seg-v{margin-top:7px;font-size:22px;font-weight:800;color:#0A2E5C;letter-spacing:-.5px;line-height:1;font-variant-numeric:tabular-nums;}
-            .cb-seg-r{margin-top:4px;font-size:11.5px;font-weight:700;color:#5B7189;font-variant-numeric:tabular-nums;}
-            .cb-seg-x{margin-top:4px;font-size:11px;font-weight:600;color:#7C93A8;}
+            .cb-seg-d{width:7px;height:7px;border-radius:99px;background:var(--sc,#3690A7);flex:0 0 auto;}
+            .cb-seg-n{font-size:12px;font-weight:700;color:var(--sc,#3690A7);}
+            .cb-seg-v{margin-top:7px;font-size:22px;font-weight:800;color:#10323E;letter-spacing:-.5px;line-height:1;font-variant-numeric:tabular-nums;}
+            .cb-seg-r{margin-top:4px;font-size:11.5px;font-weight:700;color:#5F727A;font-variant-numeric:tabular-nums;}
+            .cb-seg-x{margin-top:4px;font-size:11px;font-weight:600;color:#81939B;}
             .cb-seg-x .up{color:#12874A;}
             .cb-seg-x .dn{color:#C2410C;}
-            .cb-seg-k{margin-top:7px;padding-top:7px;border-top:1px dashed #E7EEF5;font-size:10.5px;color:#A7B7C6;line-height:1.35;}
+            .cb-seg-k{margin-top:7px;padding-top:7px;border-top:1px dashed #E8EEF0;font-size:10.5px;color:#ABB7BC;line-height:1.35;}
 
             /* ── Tabelas ── */
             .cb-tsub{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin:18px 0 8px;}
-            .cb-tsub h5{margin:0;font-size:11px;font-weight:800;letter-spacing:.09em;text-transform:uppercase;color:#5B7189;}
-            .cb-scroll{max-height:58vh;overflow:auto;-webkit-overflow-scrolling:touch;border:1px solid #EDF2F7;border-radius:10px;}
+            .cb-tsub h5{margin:0;font-size:11px;font-weight:800;letter-spacing:.09em;text-transform:uppercase;color:#5F727A;}
+            .cb-scroll{max-height:58vh;overflow:auto;-webkit-overflow-scrolling:touch;border:1px solid #EEF2F4;border-radius:10px;}
             table.cb-tbl{border-collapse:separate;border-spacing:0;width:100%;font-size:12px;white-space:nowrap;}
-            body.dept .area-main table.cb-tbl thead th{position:sticky;top:0;z-index:2;background:#F7FAFD;color:#7C93A8;text-align:left;padding:9px 12px;font-size:10px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;cursor:pointer;user-select:none;border-top:none;}
+            body.dept .area-main table.cb-tbl thead th{position:sticky;top:0;z-index:2;background:#F7FAFD;color:#81939B;text-align:left;padding:9px 12px;font-size:10px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;cursor:pointer;user-select:none;border-top:none;}
             body.dept .area-main table.cb-tbl thead th.num{text-align:right;}
-            body.dept .area-main table.cb-tbl tbody td{padding:8px 12px;border-bottom:1px solid #F1F5F9;color:#4A5F75;}
+            body.dept .area-main table.cb-tbl tbody td{padding:8px 12px;border-bottom:1px solid #F2F5F7;color:#4E5F67;}
             body.dept .area-main table.cb-tbl tbody td.num{text-align:right;font-variant-numeric:tabular-nums;}
-            body.dept .area-main table.cb-tbl tbody td.nome{font-weight:600;color:#0A2E5C;max-width:330px;overflow:hidden;text-overflow:ellipsis;}
-            body.dept .area-main table.cb-tbl tbody td.forte{color:#0A2E5C;font-weight:700;}
-            body.dept .area-main table.cb-tbl tbody tr:hover td{background:#F7FBFF;}
+            body.dept .area-main table.cb-tbl tbody td.nome{font-weight:600;color:#10323E;max-width:330px;overflow:hidden;text-overflow:ellipsis;}
+            body.dept .area-main table.cb-tbl tbody td.forte{color:#10323E;font-weight:700;}
+            body.dept .area-main table.cb-tbl tbody tr:hover td{background:#F8FBFD;}
             body.dept .area-main table.cb-tbl tbody tr:last-child td{background:inherit;font-weight:inherit;border-top:none;}
             .cb-pill{display:inline-block;padding:2px 8px;border-radius:99px;font-size:10.5px;font-weight:700;}
             .cb-badge{display:inline-grid;place-items:center;width:18px;height:18px;border-radius:5px;font-size:10px;font-weight:800;color:#fff;}
-            .cb-vazio{padding:22px;text-align:center;color:#A7B7C6;font-size:12.5px;}
-            body.dept .area-main table.cb-tbl tbody td.motivo{max-width:270px;overflow:hidden;text-overflow:ellipsis;font-size:11px;color:#7C93A8;cursor:help;}
+            .cb-vazio{padding:22px;text-align:center;color:#ABB7BC;font-size:12.5px;}
+            body.dept .area-main table.cb-tbl tbody td.motivo{max-width:270px;overflow:hidden;text-overflow:ellipsis;font-size:11px;color:#81939B;cursor:help;}
 
             /* ── Ajuda: "como esta coluna e' calculada" ──
                Balao em position:fixed no BODY: dentro da tabela ele seria cortado
                pelo overflow do .cb-scroll. O title nativo nao serve (demora ~1s,
                corta o texto e nao aparece no celular) — por isso o dicionario. */
-            .cb-tip{position:fixed;z-index:9600;max-width:340px;padding:10px 12px;border-radius:9px;background:#0A2E5C;color:#EAF3FF;font-size:11.5px;font-weight:500;line-height:1.5;box-shadow:0 10px 30px rgba(10,46,92,.3);pointer-events:none;opacity:0;transition:opacity .12s;}
+            .cb-tip{position:fixed;z-index:9600;max-width:340px;padding:10px 12px;border-radius:9px;background:#10323E;color:#EBF3F8;font-size:11.5px;font-weight:500;line-height:1.5;box-shadow:0 10px 30px rgba(16,50,62,.3);pointer-events:none;opacity:0;transition:opacity .12s;}
             .cb-tip.on{opacity:1;}
-            .cb-tip b{display:block;color:#8FC4FF;font-weight:800;font-size:10px;letter-spacing:.08em;text-transform:uppercase;margin-bottom:4px;}
+            .cb-tip b{display:block;color:#86CADE;font-weight:800;font-size:10px;letter-spacing:.08em;text-transform:uppercase;margin-bottom:4px;}
             .cb-kpi[data-tip],.cb-kpi-s[data-tip]{cursor:help;}
-            .cb-thint{font-size:11px;color:#A7B7C6;font-weight:600;display:inline-flex;align-items:center;gap:5px;}
-            .cb-thint::before{content:'?';display:inline-grid;place-items:center;width:14px;height:14px;border-radius:99px;background:#E7EFF8;color:#4A72A8;font-size:9.5px;font-weight:800;}
-            .cb-dic{margin-top:11px;font-size:11.5px;color:#5B7189;}
-            .cb-dic>summary{cursor:pointer;font-size:10.5px;font-weight:800;letter-spacing:.07em;text-transform:uppercase;color:#7C93A8;list-style:none;display:inline-flex;align-items:center;gap:6px;}
+            .cb-thint{font-size:11px;color:#ABB7BC;font-weight:600;display:inline-flex;align-items:center;gap:5px;}
+            .cb-thint::before{content:'?';display:inline-grid;place-items:center;width:14px;height:14px;border-radius:99px;background:#E9EFF3;color:#4E7683;font-size:9.5px;font-weight:800;}
+            .cb-dic{margin-top:11px;font-size:11.5px;color:#5F727A;}
+            .cb-dic>summary{cursor:pointer;font-size:10.5px;font-weight:800;letter-spacing:.07em;text-transform:uppercase;color:#81939B;list-style:none;display:inline-flex;align-items:center;gap:6px;}
             .cb-dic>summary::-webkit-details-marker{display:none;}
-            .cb-dic>summary::before{content:'?';display:inline-grid;place-items:center;width:15px;height:15px;border-radius:99px;background:#E7EFF8;color:#4A72A8;font-size:10px;font-weight:800;}
-            .cb-dic dl{margin:10px 0 0;display:grid;grid-template-columns:auto 1fr;gap:6px 14px;padding:12px 14px;background:#F8FBFE;border:1px solid #EDF2F7;border-radius:9px;}
-            .cb-dic dt{font-weight:800;color:#0A2E5C;white-space:nowrap;}
+            .cb-dic>summary::before{content:'?';display:inline-grid;place-items:center;width:15px;height:15px;border-radius:99px;background:#E9EFF3;color:#4E7683;font-size:10px;font-weight:800;}
+            .cb-dic dl{margin:10px 0 0;display:grid;grid-template-columns:auto 1fr;gap:6px 14px;padding:12px 14px;background:#F8FBFE;border:1px solid #EEF2F4;border-radius:9px;}
+            .cb-dic dt{font-weight:800;color:#10323E;white-space:nowrap;}
             .cb-dic dd{margin:0;line-height:1.5;}
 
             /* ── Matriz Cliente × Família × Mês ── */
             .cb-mx-tools{display:flex;align-items:center;gap:8px;flex-wrap:wrap;}
-            .cb-tg{display:inline-flex;background:#F0F4F9;border:1px solid #E3EAF2;border-radius:9px;padding:2px;}
-            .cb-tg button{padding:6px 13px;border:none;background:none;border-radius:7px;font-size:12px;font-weight:600;color:#5B7189;cursor:pointer;font-family:inherit;}
-            .cb-tg button.on{background:#0A4FA0;color:#fff;font-weight:700;}
-            .cb-leg{display:inline-flex;align-items:center;gap:5px;font-size:10.5px;color:#A7B7C6;font-weight:600;}
+            .cb-tg{display:inline-flex;background:#F1F4F6;border:1px solid #E5EAED;border-radius:9px;padding:2px;}
+            .cb-tg button{padding:6px 13px;border:none;background:none;border-radius:7px;font-size:12px;font-weight:600;color:#5F727A;cursor:pointer;font-family:inherit;}
+            .cb-tg button.on{background:#19576A;color:#fff;font-weight:700;}
+            .cb-leg{display:inline-flex;align-items:center;gap:5px;font-size:10.5px;color:#ABB7BC;font-weight:600;}
             .cb-leg i{width:15px;height:11px;border-radius:3px;display:inline-block;}
-            .cb-mx-scroll{overflow:auto;max-height:74vh;-webkit-overflow-scrolling:touch;border:1px solid #EDF2F7;border-radius:10px;}
+            .cb-mx-scroll{overflow:auto;max-height:74vh;-webkit-overflow-scrolling:touch;border:1px solid #EEF2F4;border-radius:10px;}
             table.cb-mx{border-collapse:separate;border-spacing:0;width:100%;font-size:11.5px;white-space:nowrap;}
-            body.dept .area-main table.cb-mx thead th{position:sticky;top:0;z-index:3;background:#F7FAFD;color:#7C93A8;padding:9px 10px;font-size:10px;font-weight:800;letter-spacing:.07em;text-transform:uppercase;text-align:center;border-top:none;}
+            body.dept .area-main table.cb-mx thead th{position:sticky;top:0;z-index:3;background:#F7FAFD;color:#81939B;padding:9px 10px;font-size:10px;font-weight:800;letter-spacing:.07em;text-transform:uppercase;text-align:center;border-top:none;}
             body.dept .area-main table.cb-mx thead th:first-child{left:0;z-index:4;text-align:left;min-width:250px;}
-            body.dept .area-main table.cb-mx tbody td{padding:5px 6px;border-bottom:1px solid #F4F7FA;text-align:center;color:#4A5F75;}
-            body.dept .area-main table.cb-mx tbody td:first-child{position:sticky;left:0;z-index:1;background:#fff;text-align:left;padding:7px 12px;border-right:1px solid #EDF2F7;}
+            body.dept .area-main table.cb-mx tbody td{padding:5px 6px;border-bottom:1px solid #F4F7FA;text-align:center;color:#4E5F67;}
+            body.dept .area-main table.cb-mx tbody td:first-child{position:sticky;left:0;z-index:1;background:#fff;text-align:left;padding:7px 12px;border-right:1px solid #EEF2F4;}
             body.dept .area-main table.cb-mx tbody tr.fam td:first-child{background:#FBFDFF;padding-left:30px;}
-            body.dept .area-main table.cb-mx tbody tr:hover td:first-child{background:#F7FBFF;}
+            body.dept .area-main table.cb-mx tbody tr:hover td:first-child{background:#F8FBFD;}
             body.dept .area-main table.cb-mx tbody tr:last-child td{font-weight:inherit;border-top:none;}
             .cb-mx-cli{display:flex;align-items:center;gap:8px;cursor:pointer;}
-            .cb-mx-exp{flex:0 0 auto;width:15px;height:15px;border-radius:4px;border:1px solid #DCE6F0;background:#fff;color:#7C93A8;font-size:10px;font-weight:800;display:grid;place-items:center;line-height:1;}
-            .cb-mx-nm{font-size:12px;font-weight:700;color:#0A2E5C;max-width:300px;overflow:hidden;text-overflow:ellipsis;}
-            .cb-mx-sub{margin-top:2px;font-size:10px;color:#A7B7C6;font-weight:600;padding-left:23px;}
-            .cb-mx-fam{font-size:11.5px;color:#5B7189;font-weight:600;max-width:290px;overflow:hidden;text-overflow:ellipsis;}
+            .cb-mx-exp{flex:0 0 auto;width:15px;height:15px;border-radius:4px;border:1px solid #DFE6EA;background:#fff;color:#81939B;font-size:10px;font-weight:800;display:grid;place-items:center;line-height:1;}
+            .cb-mx-nm{font-size:12px;font-weight:700;color:#10323E;max-width:300px;overflow:hidden;text-overflow:ellipsis;}
+            .cb-mx-sub{margin-top:2px;font-size:10px;color:#ABB7BC;font-weight:600;padding-left:23px;}
+            .cb-mx-fam{font-size:11.5px;color:#5F727A;font-weight:600;max-width:290px;overflow:hidden;text-overflow:ellipsis;}
             .cb-cel{display:block;border-radius:5px;padding:4px 2px;font-size:11px;font-weight:700;font-variant-numeric:tabular-nums;}
             .cb-cel.zero{background:#FEF3F2;color:#E3A9A3;font-weight:600;}
-            .cb-tot{font-weight:800;color:#0A2E5C;font-variant-numeric:tabular-nums;text-align:right !important;padding-right:12px !important;}
-            .cb-more{width:100%;padding:10px;border:none;border-top:1px solid #EDF2F7;background:#FBFDFF;color:#0A4FA0;font-size:12px;font-weight:700;cursor:pointer;font-family:inherit;}
-            .cb-more:hover{background:#F2F8FF;}
+            .cb-tot{font-weight:800;color:#10323E;font-variant-numeric:tabular-nums;text-align:right !important;padding-right:12px !important;}
+            .cb-more{width:100%;padding:10px;border:none;border-top:1px solid #EEF2F4;background:#FBFDFF;color:#19576A;font-size:12px;font-weight:700;cursor:pointer;font-family:inherit;}
+            .cb-more:hover{background:#F3F8FB;}
 
             /* ── Barra de ferramentas própria da página ── */
-            .cb-bar{display:flex;align-items:center;gap:10px;flex-wrap:wrap;padding:10px 14px;background:#fff;border:1px solid #E3EAF2;border-radius:12px;}
+            .cb-bar{display:flex;align-items:center;gap:10px;flex-wrap:wrap;padding:10px 14px;background:#fff;border:1px solid #E5EAED;border-radius:12px;}
             .cb-search{position:relative;flex:1 1 240px;min-width:190px;display:flex;align-items:center;}
-            .cb-search svg{position:absolute;left:10px;color:#A7B7C6;}
-            .cb-search input{width:100%;padding:8px 10px 8px 32px;border:1px solid #E3EAF2;border-radius:8px;font-size:12.5px;font-family:inherit;box-sizing:border-box;color:var(--text);}
+            .cb-search svg{position:absolute;left:10px;color:#ABB7BC;}
+            .cb-search input{width:100%;padding:8px 10px 8px 32px;border:1px solid #E5EAED;border-radius:8px;font-size:12.5px;font-family:inherit;box-sizing:border-box;color:var(--text);}
             .cb-search input:focus{outline:none;border-color:var(--bm-blue-500);}
             .cb-xls{display:inline-flex;align-items:center;gap:6px;padding:8px 13px;border-radius:8px;border:1px solid var(--bm-green-600);background:var(--bm-green-600);color:#fff;font-size:12.5px;font-weight:700;cursor:pointer;font-family:inherit;}
             .cb-xls:hover{filter:brightness(.94);}
@@ -354,7 +353,7 @@
             .cb-xls-mini{padding:6px 11px;font-size:11.5px;gap:5px;}
             /* a contagem absorve a folga: titulo e dica ficam a esquerda, contagem e botao a direita */
             .cb-tsub .cb-chint{margin-left:auto;}
-            .cb-info{font-size:11.5px;color:#8FA3B6;margin-left:auto;white-space:nowrap;font-weight:600;}
+            .cb-info{font-size:11.5px;color:#93A4AA;margin-left:auto;white-space:nowrap;font-weight:600;}
             .cb-aviso{padding:9px 14px;border-radius:8px;font-size:12px;background:#FFFBEB;border:1px solid #FDE68A;color:#854D0E;}
 
             @media (max-width:767.98px){
@@ -373,7 +372,7 @@
           <div class="cb-wrap">
 
             <!-- Banner de status da conexão -->
-            <div id="cb-banner" style="padding:11px 16px;border-radius:8px;font-size:13px;display:flex;align-items:center;gap:10px;background:#EFF6FF;border:1px solid #BFDBFE;color:#1E40AF;">
+            <div id="cb-banner" style="padding:11px 16px;border-radius:8px;font-size:13px;display:flex;align-items:center;gap:10px;background:#F0F7FA;border:1px solid #BDDEEA;color:#235063;">
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
               Conectando ao Power BI…
             </div>
@@ -383,7 +382,7 @@
               <div class="fxdd" id="fx-periodo">
                 <button type="button" class="fx-fbtn" onclick="fxTogglePanel(this)">
                   <span class="fx-fk">Ano</span><span id="fx-periodo-lbl">2026</span>
-                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#7C93A8" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg>
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#81939B" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg>
                 </button>
                 <div class="fxdd-panel">
                   <div class="fxdd-sec">Ano de análise</div>
@@ -407,9 +406,9 @@
             <!-- ── KPIs ── -->
             <div class="cb-escopo" id="cb-escopo" hidden></div>
             <div class="cb-kpis" id="cb-kpis">
-              <div class="cb-kpi" style="--kc:#1E88E5;" data-tip-t="Clientes ativos" data-tip="Clientes distintos com faturamento maior que zero no ano selecionado, dentro do recorte ativo (classe, segmento e os filtros do topo). A comparação é com o número de clientes ativos do ano anterior."><div class="cb-kpi-l">Clientes ativos</div><div class="cb-kpi-v" id="k-ativos">—</div><div class="cb-kpi-s" id="k-ativos-s">&nbsp;</div></div>
+              <div class="cb-kpi" style="--kc:#3690A7;" data-tip-t="Clientes ativos" data-tip="Clientes distintos com faturamento maior que zero no ano selecionado, dentro do recorte ativo (classe, segmento e os filtros do topo). A comparação é com o número de clientes ativos do ano anterior."><div class="cb-kpi-l">Clientes ativos</div><div class="cb-kpi-v" id="k-ativos">—</div><div class="cb-kpi-s" id="k-ativos-s">&nbsp;</div></div>
               <div class="cb-kpi" style="--kc:#16A34A;" data-tip-t="Faturamento" data-tip="Soma de Faturamentos[Faturamento] no ano, sem INTERCOMPANY, só operações que geram fatura a receber e sem as notas ocultas. A consulta roda com o SEU login no Power BI, então soma apenas o que o seu perfil pode ver (RLS do modelo). A comparação é com o MESMO período do ano anterior, não com o ano fechado."><div class="cb-kpi-l">Faturamento</div><div class="cb-kpi-v" id="k-fat">—</div><div class="cb-kpi-s" id="k-fat-s">&nbsp;</div></div>
-              <div class="cb-kpi" style="--kc:#0A4FA0;" data-tip-t="Ticket médio" data-tip="Faturamento do recorte dividido pelo número de notas distintas (DISTINCTCOUNT de Faturamentos[Número da fatura]). O rodapé traz o faturamento médio por cliente."><div class="cb-kpi-l">Ticket médio</div><div class="cb-kpi-v" id="k-ticket">—</div><div class="cb-kpi-s" id="k-ticket-s">&nbsp;</div></div>
+              <div class="cb-kpi" style="--kc:#19576A;" data-tip-t="Ticket médio" data-tip="Faturamento do recorte dividido pelo número de notas distintas (DISTINCTCOUNT de Faturamentos[Número da fatura]). O rodapé traz o faturamento médio por cliente."><div class="cb-kpi-l">Ticket médio</div><div class="cb-kpi-v" id="k-ticket">—</div><div class="cb-kpi-s" id="k-ticket-s">&nbsp;</div></div>
               <div class="cb-kpi" style="--kc:#7C3AED;" data-tip-t="Margem média" data-tip="Medida Margem de contribuição (nota) somada e dividida pelo faturamento do recorte. Fica em branco quando o seu perfil não tem acesso à medida."><div class="cb-kpi-l">Margem média</div><div class="cb-kpi-v" id="k-margem">—</div><div class="cb-kpi-s" id="k-margem-s">&nbsp;</div></div>
               <div class="cb-kpi" style="--kc:#D97706;" data-tip-t="Taxa de recompra" data-tip="Percentual dos clientes ativos que compraram mais de uma vez no ano: 2 notas ou mais, ou compra em 2 meses ou mais."><div class="cb-kpi-l">Taxa de recompra</div><div class="cb-kpi-v" id="k-recompra">—</div><div class="cb-kpi-s" id="k-recompra-s">&nbsp;</div></div>
               <div class="cb-kpi" style="--kc:#DC2626;" data-tip-t="Clientes em risco" data-tip="Quantos clientes caíram no segmento Em risco do Ciclo de Vida: sem compra há 61 a 120 dias, OU queda de 30% ou mais contra o mesmo período do ano anterior. Este cartão ignora de propósito o recorte de segmento, senão viraria tautologia."><div class="cb-kpi-l">Clientes em risco</div><div class="cb-kpi-v" id="k-risco">—</div><div class="cb-kpi-s" id="k-risco-s">&nbsp;</div></div>
@@ -499,7 +498,7 @@
                     <button type="button" onclick="cbSetMedida('qtd')">Quantidade</button>
                   </div>
                   <span class="cb-leg">Sem faturamento <i style="background:#FEF3F2;border:1px solid #F6DCD8;"></i></span>
-                  <span class="cb-leg"><i style="background:#DCEAFB;"></i><i style="background:#B6D4F5;"></i><i style="background:#7FB2E8;"></i><i style="background:#3E85D0;"></i><i style="background:#0A4FA0;"></i> Alto</span>
+                  <span class="cb-leg"><i style="background:#DEEBF1;"></i><i style="background:#B7D6E1;"></i><i style="background:#7BB7C7;"></i><i style="background:#468B9F;"></i><i style="background:#19576A;"></i> Alto</span>
                 </div>
               </div>
               <div class="cb-mx-scroll tbl-wrap">
@@ -509,9 +508,9 @@
                 </table>
               </div>
               <button type="button" class="cb-more" id="cb-mx-more" hidden onclick="cbMaisLinhas()"></button>
-              <div style="margin-top:10px;font-size:11px;color:#A7B7C6;">
-                <b style="color:#5B7189;">Meses sem compra</b> destacados em vermelho claro por família ·
-                <b style="color:#5B7189;">Linha do cliente</b> soma todas as famílias do período ·
+              <div style="margin-top:10px;font-size:11px;color:#ABB7BC;">
+                <b style="color:#5F727A;">Meses sem compra</b> destacados em vermelho claro por família ·
+                <b style="color:#5F727A;">Linha do cliente</b> soma todas as famílias do período ·
                 clique no cliente para abrir as famílias.
               </div>
             </div>
@@ -526,7 +525,7 @@
   <footer class="site-footer">
     <div class="container">
       <div class="bm-footer-bottom">
-        <span>© <span id="year"></span> Biomedical · Portal Corporativo Interno</span>
+        <span>© <span id="year"></span> MSB · Medical System do Brasil · Portal interno</span>
         <span class="bm-footer-meta">Belo Horizonte · São Paulo · Rio de Janeiro · Curitiba · Recife · Porto Alegre</span>
       </div>
     </div>
@@ -603,20 +602,20 @@
       tip:'Cliente sem NENHUMA nota antes de 1º de janeiro do ano selecionado (consulta própria no histórico) e com faturamento no ano. Só é avaliado depois de recência: quem entrou e já parou aparece em risco/dormente, não em novos.' },
     { id:'fieis',       nome:'Fiéis',       cor:'#16A34A', bg:'#F4FCF6', crit:'compra em ≥70% dos meses do ano e recência ≤60d',
       tip:'Comprou em pelo menos 70% dos meses DECORRIDOS do ano (mínimo de 4 meses) e a última compra foi há 60 dias ou menos. Os meses decorridos são contados até hoje, não até dezembro.' },
-    { id:'recorrentes', nome:'Recorrentes', cor:'#1E88E5', bg:'#F5FAFF', crit:'compra ativa (recência ≤60d), cadência abaixo de fiel',
+    { id:'recorrentes', nome:'Recorrentes', cor:'#3690A7', bg:'#F7FAFC', crit:'compra ativa (recência ≤60d), cadência abaixo de fiel',
       tip:'Compra ativa (última nota há 60 dias ou menos), sem queda relevante, mas com cadência abaixo do corte de fiel. É o "resto" da regra: quem não é perdido, dormente, em risco, novo nem fiel.' },
     { id:'risco',       nome:'Em risco',    cor:'#D97706', bg:'#FFFBF2', crit:'recência 61–120d ou queda ≥30% vs mesmo período',
       tip:'Uma das duas condições basta: (a) última compra há 61 a 120 dias; ou (b) faturamento 30% ou mais abaixo do MESMO período do ano anterior (mesma janela de dias). A comparação é dia a dia de propósito — contra o ano anterior fechado, um cliente com ritmo idêntico apareceria em queda só porque o ano em curso ainda não terminou. A coluna Motivo da tabela diz qual das duas pegou cada cliente.' },
-    { id:'dormentes',   nome:'Dormentes',   cor:'#64748B', bg:'#F8FAFC', crit:'sem compra há 121–240 dias',
+    { id:'dormentes',   nome:'Dormentes',   cor:'#67757D', bg:'#F8FAFC', crit:'sem compra há 121–240 dias',
       tip:'Última compra há 121 a 240 dias, contados da data de referência (hoje, ou 31/12 quando o ano selecionado já fechou).' },
     { id:'perdidos',    nome:'Perdidos',    cor:'#DC2626', bg:'#FFF6F6', crit:'sem compra há mais de 240 dias',
       tip:'Última compra há mais de 240 dias. No ano em curso isso implica faturamento zero no ano — por isso as colunas Fat. histórico e Potencial/mês, que dizem quanto o cliente vale de volta.' }
   ];
   const SEG_IX = {}; SEGS.forEach((s,i) => SEG_IX[s.id] = i);
   const ABC = [
-    { id:'A', nome:'Alta representatividade',  cor:'#0A4FA0', ate:70 },
-    { id:'B', nome:'Média representatividade', cor:'#1E88E5', ate:90 },
-    { id:'C', nome:'Baixa representatividade', cor:'#93B7DA', ate:100 }
+    { id:'A', nome:'Alta representatividade',  cor:'#19576A', ate:70 },
+    { id:'B', nome:'Média representatividade', cor:'#3690A7', ate:90 },
+    { id:'C', nome:'Baixa representatividade', cor:'#96B9C4', ate:100 }
   ];
   const MESES = ['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];
   const MES_NOME = { jan:1,fev:2,mar:3,abr:4,mai:5,jun:6,jul:7,ago:8,set:9,out:10,nov:11,dez:12,
@@ -1297,7 +1296,7 @@
   }
   function badgeABC(cl){
     const a = ABC.find(x => x.id === cl);
-    if (!a) return '<span style="color:#C3D0DC;">—</span>';
+    if (!a) return '<span style="color:#C6D0D4;">—</span>';
     return '<span class="cb-badge" style="background:' + a.cor + ';">' + a.id + '</span>';
   }
 
@@ -1400,7 +1399,7 @@
         const sub = col.t === 'cod' ? escH(c.cod)
           : escH(c.cod) + (c.tipo ? ' · ' + escH(c.tipo) : '') + (c.uf ? ' · ' + escH(c.uf) : '');
         return '<td class="nome" title="' + cbEsc(c.cod + ' · ' + c.nome) + '">' + escH(c.nome)
-             + '<span style="display:block;font-size:10px;color:#A7B7C6;font-weight:600;">' + sub + '</span></td>';
+             + '<span style="display:block;font-size:10px;color:#ABB7BC;font-weight:600;">' + sub + '</span></td>';
       }
       case 'txt':  return '<td>' + (v ? escH(v) : '—') + '</td>';
       case 'brl':  return '<td class="num' + (col.forte ? ' forte' : '') + '">' + (v == null ? '—' : brl0(v)) + '</td>';
@@ -1409,15 +1408,15 @@
       case 'int':  return '<td class="num">' + (v == null ? '—' : int(v)) + '</td>';
       case 'pct':  return '<td class="num">' + (v == null ? '—' : pct(v)) + '</td>';
       case 'pct1': return '<td class="num forte">' + pct(v) + '</td>';
-      case 'pctm': return '<td class="num" style="color:#A7B7C6;">' + pct(v) + '</td>';
+      case 'pctm': return '<td class="num" style="color:#ABB7BC;">' + pct(v) + '</td>';
       case 'seg':  return '<td>' + pillSeg(c.seg, c.motivo) + '</td>';
       // faturamento do mês de referência: cinza quando é zero, para o vazio saltar
-      case 'mesatual': return '<td class="num" style="color:' + (v > 0 ? '#0A2E5C' : '#C3D0DC') + ';font-weight:' + (v > 0 ? 700 : 500) + ';">' + (v > 0 ? brl0(v) : '—') + '</td>';
+      case 'mesatual': return '<td class="num" style="color:' + (v > 0 ? '#10323E' : '#C6D0D4') + ';font-weight:' + (v > 0 ? 700 : 500) + ';">' + (v > 0 ? brl0(v) : '—') + '</td>';
       case 'motivo': return '<td class="motivo"' + tipAttr(c.motivo, 'Por que está neste segmento') + '>' + escH(c.motivo || '—') + '</td>';
-      case 'abc':  return '<td>' + badgeABC(c.classeEf) + (c.herdada ? '<span title="classe herdada de ' + (ST.ano-1) + ': sem compra em ' + ST.ano + '" style="color:#A7B7C6;font-weight:700;">*</span>' : '') + '</td>';
+      case 'abc':  return '<td>' + badgeABC(c.classeEf) + (c.herdada ? '<span title="classe herdada de ' + (ST.ano-1) + ': sem compra em ' + ST.ano + '" style="color:#ABB7BC;font-weight:700;">*</span>' : '') + '</td>';
       case 'mes':  return '<td class="num">' + int(v) + '/' + (ST.mesesDecorridos || 12) + '</td>';
       case 'data': return '<td class="num">' + dataBR(v) + '</td>';
-      case 'rec':  return '<td class="num" style="color:' + (v == null ? '#A7B7C6' : v > REGRA.recDormente ? '#DC2626' : v > REGRA.recRisco ? '#D97706' : '#4A5F75') + ';">' + (v == null ? '—' : int(v) + 'd') + '</td>';
+      case 'rec':  return '<td class="num" style="color:' + (v == null ? '#ABB7BC' : v > REGRA.recDormente ? '#DC2626' : v > REGRA.recRisco ? '#D97706' : '#4E5F67') + ';">' + (v == null ? '—' : int(v) + 'd') + '</td>';
       case 'var':  return '<td class="num">' + varHTML(v) + '</td>';
       default:     return '<td>' + escH(v) + '</td>';
     }
@@ -1493,8 +1492,8 @@
         + '<div class="cb-seg-v">' + int(cs.length) + '</div>'
         + '<div class="cb-seg-r">' + brl0(f) + '</div>'
         + '<div class="cb-seg-x">' + (delta == null ? (cs.length ? 'sem base em ' + (ST.ano-1) : '&nbsp;') : varHTML(delta) + ' vs. ' + brl0(fPer) + ' em ' + ST.perLbl) + '</div>'
-        + '<div class="cb-seg-x" style="color:#5B7189;">' + (ST.mesRefLbl && ST.mesRefLbl !== '—' ? brl0(fMes) + ' em ' + ST.mesRefLbl : '&nbsp;') + '</div>'
-        + '<div class="cb-seg-x" style="color:#5B7189;">' + (pot ? 'vale ' + brl0(pot) + '/mês no histórico' : '&nbsp;') + '</div>'
+        + '<div class="cb-seg-x" style="color:#5F727A;">' + (ST.mesRefLbl && ST.mesRefLbl !== '—' ? brl0(fMes) + ' em ' + ST.mesRefLbl : '&nbsp;') + '</div>'
+        + '<div class="cb-seg-x" style="color:#5F727A;">' + (pot ? 'vale ' + brl0(pot) + '/mês no histórico' : '&nbsp;') + '</div>'
         + '<div class="cb-seg-k">' + escH(s.crit) + '</div>'
         + '</button>';
     }).join('');
@@ -1527,7 +1526,7 @@
   // ══════════════════════════════════════════════════════════════════
   //  MATRIZ CLIENTE × FAMÍLIA × MÊS
   // ══════════════════════════════════════════════════════════════════
-  const HEAT = ['#EDF5FD','#DCEAFB','#B6D4F5','#7FB2E8','#3E85D0','#0A4FA0'];
+  const HEAT = ['#EFF5F8','#DEEBF1','#B7D6E1','#7BB7C7','#468B9F','#19576A'];
   // escala por QUANTIL: com faturamento muito concentrado, uma escala linear
   // pintaria quase tudo da cor mais clara e o heatmap não diria nada.
   function escala(vals){
@@ -1538,7 +1537,7 @@
     return x => {
       if (!(x > 0)) return null;
       let i = 0; while (i < cortes.length && x >= cortes[i]) i++;
-      return { bg:HEAT[i], fg:(i >= 4 ? '#fff' : (i >= 2 ? '#0A2E5C' : '#5B7189')) };
+      return { bg:HEAT[i], fg:(i >= 4 ? '#fff' : (i >= 2 ? '#10323E' : '#5F727A')) };
     };
   }
   const valMes = (o, m) => ST.medida === 'qtd' ? n0(o.mesQ[m]) : n0(o.mes[m]);
@@ -1578,9 +1577,9 @@
       if (aberto){
         const fams = ST.expandido[o.cod];
         if (fams === 'load'){
-          html.push('<tr class="fam"><td colspan="14" style="text-align:left;padding:8px 30px;color:#A7B7C6;font-size:11.5px;">Carregando famílias…</td></tr>');
+          html.push('<tr class="fam"><td colspan="14" style="text-align:left;padding:8px 30px;color:#ABB7BC;font-size:11.5px;">Carregando famílias…</td></tr>');
         } else if (!fams.length){
-          html.push('<tr class="fam"><td colspan="14" style="text-align:left;padding:8px 30px;color:#A7B7C6;font-size:11.5px;">Sem detalhe de família para este cliente.</td></tr>');
+          html.push('<tr class="fam"><td colspan="14" style="text-align:left;padding:8px 30px;color:#ABB7BC;font-size:11.5px;">Sem detalhe de família para este cliente.</td></tr>');
         } else {
           fams.forEach(f => {
             const t = ST.medida === 'qtd' ? f.totQ : f.tot;

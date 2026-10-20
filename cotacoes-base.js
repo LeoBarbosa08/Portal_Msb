@@ -236,7 +236,7 @@
     try { el.setSelectionRange(p, p); } catch (e) {}
     return novo;
   }
-  var PALETA = ['#1A66D2', '#5A3BC4', '#0891B2', '#138A4B', '#D97706', '#CF3434', '#C026D3', '#475569', '#4F46E5', '#0F766E'];
+  var PALETA = ['#2C7288', '#5A3BC4', '#2B6CC4', '#138A4B', '#D97706', '#CF3434', '#C026D3', '#49565C', '#4F46E5', '#0F766E'];
   function corDe(s) { var h = 0; s = String(s || ''); for (var i = 0; i < s.length; i++) h = (h * 31 + s.charCodeAt(i)) >>> 0; return PALETA[h % PALETA.length]; }
   function iniciais(nome, email) {
     var n = String(nome || '').trim() || String(email || '').split('@')[0].replace(/[._-]+/g, ' ');
@@ -307,15 +307,15 @@
   // A cotação nasce SEMPRE Cotada (09/10/26: "Em cotação" saiu — caso antigo
   // nessa fase é lido como Cotada). Vencida é automática: a validade passou.
   var FASES = [
-    { id: 'cotada', nome: 'Cotada', curto: 'Cotada', cor: '#1A66D2', aberta: true, desc: 'proposta enviada no portal, aguardando o resultado' },
+    { id: 'cotada', nome: 'Cotada', curto: 'Cotada', cor: '#2C7288', aberta: true, desc: 'proposta enviada no portal, aguardando o resultado' },
     { id: 'negociacao', nome: 'Em negociação', curto: 'Negociação', cor: '#5A3BC4', aberta: true, desc: 'contraproposta, ajuste de preço ou análise do comprador' },
     { id: 'pedido', nome: 'Virou pedido', curto: 'Virou pedido', cor: '#138A4B', ganha: true, desc: 'o portal gerou o pedido — o PDF dele está no caso' },
     { id: 'perdida', nome: 'Perdida', curto: 'Perdida', cor: '#CF3434', perdida: true, desc: 'o comprador fechou com outro fornecedor' },
     { id: 'vencida', nome: 'Vencida', curto: 'Vencida', cor: '#B45309', perdida: true, desc: 'a data de vencimento passou sem resultado — sai sozinha do funil' },
-    { id: 'cancelada', nome: 'Cancelada', curto: 'Cancelada', cor: '#8394A8', perdida: true, desc: 'cancelada pelo comprador ou deserta' }
+    { id: 'cancelada', nome: 'Cancelada', curto: 'Cancelada', cor: '#85949C', perdida: true, desc: 'cancelada pelo comprador ou deserta' }
   ];
   function faseAtual(id) { return id === 'em_cotacao' ? 'cotada' : id; }
-  function fase(id) { id = faseAtual(id); return FASES.filter(function (f) { return f.id === id; })[0] || { id: id, nome: id, curto: id, cor: '#94A3B8' }; }
+  function fase(id) { id = faseAtual(id); return FASES.filter(function (f) { return f.id === id; })[0] || { id: id, nome: id, curto: id, cor: '#95A4AB' }; }
   function aberta(id) { return !!fase(id).aberta; }
   function chipFase(id) { id = faseAtual(id); return '<span class="cs-chip f-' + esc(id) + '"><span class="bol"></span>' + esc(fase(id).curto) + '</span>'; }
 
@@ -441,7 +441,7 @@
   // abre o PDF numa aba (a janela abre NO CLIQUE, senão o bloqueador barra)
   function abrirAnexo(numero, a) {
     var janela = W.open('', '_blank');
-    if (janela) { try { janela.document.title = a.nome || 'Anexo'; janela.document.body.innerHTML = '<p style="font:15px system-ui;padding:40px;color:#0A2447">Abrindo ' + esc(a.nome || 'o anexo') + '…</p>'; } catch (e) {} }
+    if (janela) { try { janela.document.title = a.nome || 'Anexo'; janela.document.body.innerHTML = '<p style="font:15px system-ui;padding:40px;color:#0F2831">Abrindo ' + esc(a.nome || 'o anexo') + '…</p>'; } catch (e) {} }
     return baixarAnexo(numero, a.id).then(function (arq) {
       var url = urlDoArquivo(arq);
       var pdf = /pdf/i.test(arq.tipo || '');
@@ -714,7 +714,7 @@
     if (!W.CSPI) { toast('A ponte com o PI não carregou', 'Recarregue a página.', 'erro'); return Promise.resolve(false); }
     if (!c.pedido) { toast('Sem o PDF do pedido', 'Anexe o pedido do portal primeiro.', 'erro'); return Promise.resolve(false); }
     var janela = W.open('', '_blank');
-    if (janela) { try { janela.opener = null; janela.document.title = 'Abrindo o PI…'; janela.document.body.innerHTML = '<p style="font:15px system-ui;padding:40px;color:#0A2447">Preparando o pedido da cotação ' + esc(c.numero) + '…</p>'; } catch (e) {} }
+    if (janela) { try { janela.opener = null; janela.document.title = 'Abrindo o PI…'; janela.document.body.innerHTML = '<p style="font:15px system-ui;padding:40px;color:#0F2831">Preparando o pedido da cotação ' + esc(c.numero) + '…</p>'; } catch (e) {} }
     var destino = new URL('pedido-inteligente.html?cot=' + encodeURIComponent(c.numero), location.href).href;
     return baixarAnexo(c.numero, c.pedido.anexoId).then(function (arq) {
       return W.CSPI.guardar({

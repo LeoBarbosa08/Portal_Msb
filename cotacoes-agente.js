@@ -675,7 +675,7 @@
   function verProposta(caso) {
     if (!P) return;
     var janela = window.open('', '_blank');
-    if (janela) { try { janela.document.title = 'Proposta'; janela.document.body.innerHTML = '<p style="font:15px system-ui;padding:40px;color:#0A2447">Gerando a proposta…</p>'; } catch (e) {} }
+    if (janela) { try { janela.document.title = 'Proposta'; janela.document.body.innerHTML = '<p style="font:15px system-ui;padding:40px;color:#0F2831">Gerando a proposta…</p>'; } catch (e) {} }
     P.gerar(caso, operador()).then(function (pdf) {
       var url = URL.createObjectURL(pdf.blob);
       if (janela && !janela.closed) janela.location.href = url; else window.open(url, '_blank');

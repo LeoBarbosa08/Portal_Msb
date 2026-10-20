@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Central de Avisos · Biomedical</title>
+  <title>Central de Avisos · MSB</title>
   <link rel="stylesheet" href="styles.css?v=14">
   <script src="auth.js?v=7"></script>
   <style>
@@ -24,8 +24,8 @@
     .ca-toolbar { background: var(--surface); border-bottom: 1px solid var(--border); padding: 14px 24px; display: flex; align-items: center; gap: 12px; flex-wrap: wrap; position: sticky; top: 60px; z-index: 10; }
     .ca-toolbar h2 { font-size: 16px; font-weight: 600; color: var(--text); margin: 0; letter-spacing: -.01em; flex-shrink: 0; }
     .ca-sort { border: 1px solid var(--border); background: var(--surface); border-radius: 8px; padding: 7px 10px; font-size: 13px; font-family: var(--font-body); color: var(--text-2); cursor: pointer; }
-    .ca-btn-novo { display: inline-flex; align-items: center; gap: 7px; padding: 8px 14px; background: #3B82F6; color: #fff; border: none; border-radius: 8px; font-size: 13px; font-weight: 600; font-family: var(--font-body); cursor: pointer; transition: background .15s; }
-    .ca-btn-novo:hover { background: #2563EB; }
+    .ca-btn-novo { display: inline-flex; align-items: center; gap: 7px; padding: 8px 14px; background: #318FAF; color: #fff; border: none; border-radius: 8px; font-size: 13px; font-weight: 600; font-family: var(--font-body); cursor: pointer; transition: background .15s; }
+    .ca-btn-novo:hover { background: #2C7591; }
 
     /* List */
     .ca-list { flex: 1; padding: 20px 24px; display: flex; flex-direction: column; gap: 10px; }
@@ -51,7 +51,7 @@
     .ca-row-del:hover { color: var(--danger); border-color: var(--danger); background: var(--danger-bg); }
 
     /* Modal detalhe */
-    .ca-detail-overlay { position: fixed; inset: 0; background: rgba(15,23,42,.24); backdrop-filter: blur(4px); z-index: 500; display: none; align-items: flex-start; justify-content: flex-end; }
+    .ca-detail-overlay { position: fixed; inset: 0; background: rgba(16,24,30,.24); backdrop-filter: blur(4px); z-index: 500; display: none; align-items: flex-start; justify-content: flex-end; }
     .ca-detail-overlay.open { display: flex; }
     .ca-detail { background: var(--surface); width: 520px; height: 100vh; border-left: 1px solid var(--border); box-shadow: var(--shadow-lg); overflow-y: auto; display: flex; flex-direction: column; animation: slide-from-right .2s var(--ease); }
     @keyframes slide-from-right { from { transform: translateX(40px); opacity: 0; } to { transform: none; opacity: 1; } }
@@ -82,7 +82,7 @@
     @media (max-width: 900px) { .ca-layout { grid-template-columns: 1fr; } .ca-sidebar { position: static; height: auto; flex-direction: row; flex-wrap: wrap; } .ca-detail { width: 100%; } }
   </style>
   <!-- Layout v3 (Claude Design · animado): fonte + camada visual + motor de animações -->
-  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300..800&family=Manrope:wght@400..800&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300..900&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="portal-v3.css?v=2">
   <script src="portal-motion.js?v=3" defer></script>
   <!-- Tema claro/escuro (menu do avatar): marca o <html> antes de pintar + camada escura -->
@@ -99,8 +99,8 @@
   <header class="site-header">
     <div class="container">
       <a href="index.html" class="brand">
-        <img class="brand-logo" src="/icons/icon-192.png" alt="Biomedical" onerror="this.dataset.failed='true'">
-        <span class="brand-fallback">Biomedical</span>
+        <img class="brand-logo" src="/icons/logo-msb.png" alt="MSB · Medical System do Brasil" onerror="this.dataset.failed='true'">
+        <span class="brand-fallback">MSB</span>
       </a>
       <nav class="header-nav">
         <a href="index.html">Início</a>
@@ -171,7 +171,7 @@
       <div class="ca-sep"></div>
       <div class="ca-sidebar-head">Status</div>
       <button class="ca-filter-btn" data-cat="unread">
-        <span class="dot" style="background:#3B82F6;"></span>
+        <span class="dot" style="background:#318FAF;"></span>
         Não lidos
         <span class="cnt" id="cnt-unread">0</span>
       </button>
@@ -240,7 +240,7 @@
         </div>
         <div>
           <label style="font-family:var(--font-mono);font-size:10.5px;text-transform:uppercase;letter-spacing:.07em;color:var(--text-3);font-weight:600;display:block;margin-bottom:6px;">Categoria</label>
-          <select id="ca-cat" style="width:100%;border:1px solid var(--border);border-radius:8px;padding:9px 12px;font-size:14px;font-family:var(--font-body);color:var(--text);outline:none;background:#fff;appearance:none;background-image:url(&quot;data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%236B7280' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E&quot;);background-repeat:no-repeat;background-position:right 12px center;padding-right:32px;">
+          <select id="ca-cat" style="width:100%;border:1px solid var(--border);border-radius:8px;padding:9px 12px;font-size:14px;font-family:var(--font-body);color:var(--text);outline:none;background:#fff;appearance:none;background-image:url(&quot;data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%236B7277' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E&quot;);background-repeat:no-repeat;background-position:right 12px center;padding-right:32px;">
             <option value="diretoria">Diretoria</option>
             <option value="pessoas">RH &amp; Pessoas</option>
             <option value="eventos">Eventos</option>

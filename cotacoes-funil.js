@@ -28,11 +28,11 @@
   if (!D.body || D.body.getAttribute('data-cot-pagina') !== 'funil') return;
 
   var SIT = {
-    and: { label: 'Em andamento', cor: '#3F8FD2' },
+    and: { label: 'Em andamento', cor: '#4894A7' },
     gan: { label: 'Viraram pedido', cor: '#2FBF71' },
     per: { label: 'Não viraram', cor: '#E4574C' }
   };
-  var COR_FN = { cotada: '#5C9FDF', negociacao: '#2A6CB8', pedido: '#2FBF71', perdida: '#E4574C', vencida: '#D9822B', cancelada: '#93A7BA' };
+  var COR_FN = { cotada: '#57A4B9', negociacao: '#367284', pedido: '#2FBF71', perdida: '#E4574C', vencida: '#D9822B', cancelada: '#97A8AE' };
   var PERIODOS = [['30d', 'Últimos 30 dias'], ['mes', 'Este mês'], ['tri', 'Este trimestre'], ['ano', 'Este ano'], ['12m', 'Últimos 12 meses'], ['tudo', 'Tudo']];
   var SS = 'cot-funil-filtros';
 
@@ -88,7 +88,7 @@
   function tinta(hex) {
     var h = String(hex).replace('#', ''); if (h.length === 3) h = h.split('').map(function (x) { return x + x; }).join('');
     var r = parseInt(h.slice(0, 2), 16), g = parseInt(h.slice(2, 4), 16), b = parseInt(h.slice(4, 6), 16);
-    return (r * 299 + g * 587 + b * 114) / 1000 > 160 ? '#0A2E5C' : '#fff';
+    return (r * 299 + g * 587 + b * 114) / 1000 > 160 ? '#10323E' : '#fff';
   }
   function hexA(hex, a) { var h = String(hex).replace('#', ''); return 'rgba(' + parseInt(h.slice(0, 2), 16) + ',' + parseInt(h.slice(2, 4), 16) + ',' + parseInt(h.slice(4, 6), 16) + ',' + a + ')'; }
   function fm(x, met) { return (met || S.met) === 'n' ? C.int(x) : C.brlCurto(x); }
@@ -163,7 +163,7 @@
       var a = css(w), b = css(wn), on = S.fase === e.f.id, algum = !!S.fase;
       var dentro = met === 'n' ? '<b>' + C.int(e.g.n) + ' cot.</b> · ' + C.brlCurto(e.g.v) : '<b>' + C.brlCurto(e.g.v) + '</b> · ' + C.int(e.g.n) + ' cot.';
       var clip = prox ? 'polygon(calc(50% - ' + a + ' / 2) 0%, calc(50% + ' + a + ' / 2) 0%, calc(50% + ' + b + ' / 2) 100%, calc(50% - ' + b + ' / 2) 100%)' : '';
-      var estilo = vazia ? 'width:' + a + ';background:' + hexA(cor, 0.14) + ';color:#5B7189;border:1px dashed ' + hexA(cor, 0.8) + ';box-shadow:none;' : 'width:' + a + ';background:' + cor + ';color:' + tinta(cor) + ';';
+      var estilo = vazia ? 'width:' + a + ';background:' + hexA(cor, 0.14) + ';color:#5F727A;border:1px dashed ' + hexA(cor, 0.8) + ';box-shadow:none;' : 'width:' + a + ';background:' + cor + ';color:' + tinta(cor) + ';';
       h += '<div class="fv-fn-row' + (on ? ' on' : '') + (algum && !on ? ' dim' : '') + '" data-fase-f="' + e.f.id + '" title="' + esc(e.f.nome) + ': ' + C.brl(e.g.v) + ' · ' + C.int(e.g.n) + ' cotações">' +
         '<div class="fv-fn-lb"><div class="t">' + esc(e.f.nome) + '</div><div class="s"><b>' + C.brlCurto(e.g.v) + '</b> · ' + C.int(e.g.n) + ' cot. · ' + C.pct(val(e.g) / totP, 0) + '</div></div>' +
         '<div class="fv-fn-w"><div class="fv-fn-bar' + (vazia ? ' vazia' : '') + '" style="' + estilo + '"><span>' + dentro + '</span></div>' +
@@ -205,14 +205,14 @@
     var and = ls.filter(function (c) { return sit(c) === 'and'; }).length;
     var vR = r.reduce(function (s, c) { return s + (c.total || 0); }, 0), vP = p.reduce(function (s, c) { return s + vPedido(c); }, 0), vD = d.reduce(function (s, c) { return s + vPedido(c); }, 0);
     var cards = [
-      ['Entraram', N, N, 'cotações no período · ' + C.int(and) + ' ainda em andamento', '#3F8FD2'],
-      ['Proposta enviada', r.length, N, C.brlCurto(vR) + ' em propostas ao comprador', '#2A6CB8'],
+      ['Entraram', N, N, 'cotações no período · ' + C.int(and) + ' ainda em andamento', '#4894A7'],
+      ['Proposta enviada', r.length, N, C.brlCurto(vR) + ' em propostas ao comprador', '#367284'],
       ['Viraram pedido', p.length, N, C.brlCurto(vP) + ' em pedidos' + (N ? ' · ' + C.pct(p.length / N, 0) + ' das que entraram' : ''), '#2FBF71'],
       ['Lançadas no Dynamics', d.length, N, C.brlCurto(vD) + ' pelo PI' + (p.length ? ' · ' + C.pct(d.length / p.length, 0) + ' dos pedidos' : ''), '#138A4B']
     ];
     setH('conv-host', N ? cards.map(function (k) {
       var x = k[2] ? k[1] / k[2] : 0;
-      return '<div class="cot-conv-p" style="--c:' + k[4] + '"><div class="k">' + esc(k[0]) + '</div><div class="v">' + C.int(k[1]) + ' <small style="font-size:13px;color:#7C93A8">' + C.pct(x, 0) + '</small></div>' +
+      return '<div class="cot-conv-p" style="--c:' + k[4] + '"><div class="k">' + esc(k[0]) + '</div><div class="v">' + C.int(k[1]) + ' <small style="font-size:13px;color:#81939B">' + C.pct(x, 0) + '</small></div>' +
         '<div class="s">' + esc(k[3]) + '</div><div class="b"><i style="width:' + (x * 100).toFixed(1) + '%"></i></div></div>';
     }).join('') : '<div class="fv-empty" style="grid-column:1/-1">Nenhuma cotação neste recorte.</div>');
   }
@@ -252,7 +252,7 @@
     setH('sem-tb', '<thead><tr><th>Semana</th><th class="n">Entraram</th><th class="n">Valor que entrou</th><th class="n">Viraram pedido</th><th class="n">Valor dos pedidos</th><th class="n">Não viraram</th><th class="n">Valor perdido</th><th class="n">Conversão</th></tr></thead><tbody>' +
       semanas.slice().reverse().map(function (s, i) {
         var fimV = new Date(s.fim.getTime() - 86400e3);
-        return '<tr><td><b>' + dd(s.ini) + ' a ' + dd(fimV) + '</b>' + (i === 0 ? ' <span style="color:#1272C4;font-weight:700">· em curso</span>' : '') + '</td>' +
+        return '<tr><td><b>' + dd(s.ini) + ' a ' + dd(fimV) + '</b>' + (i === 0 ? ' <span style="color:#287A8E;font-weight:700">· em curso</span>' : '') + '</td>' +
           '<td class="n">' + C.int(s.ent.n) + '</td><td class="n">' + C.brl(s.ent.v) + '</td><td class="n gan">' + C.int(s.gan.n) + '</td><td class="n gan">' + C.brl(s.gan.vPed) + '</td>' +
           '<td class="n per">' + C.int(s.per.n) + '</td><td class="n per">' + C.brl(s.per.v) + '</td>' + txCel(s.gan.n, s.per.n) + '</tr>';
       }).join('') + '</tbody><tfoot><tr><td>Total · 12 semanas</td><td class="n">' + C.int(tot.ent.n) + '</td><td class="n">' + C.brl(tot.ent.v) + '</td><td class="n">' + C.int(tot.gan.n) + '</td><td class="n">' + C.brl(tot.gan.vPed) + '</td>' +
@@ -303,11 +303,11 @@
       (l.length ? l.slice(0, MAX).map(function (c) {
         return '<tr data-num="' + esc(c.numero) + '" tabindex="0"><td class="num">' + esc(c.numero) + '</td>' +
           '<td class="nm"><b title="' + esc((c.cliente && c.cliente.nome) || '') + '">' + esc((c.cliente && c.cliente.nome) || 'Cliente não informado') + '</b><span>' + esc(C.tituloCaso(c)) + (c.cliente && c.cliente.uf ? ' · ' + esc(c.cliente.uf) : '') + '</span></td>' +
-          '<td>' + esc(C.dataBR(c.criadoEm)) + '</td><td>' + (c.descartado ? '' : C.chipFase(c.fase)) + '</td><td>' + (C.chipPrazo(c, avisoDias()) || '<span style="color:#93A7BA">—</span>') + '</td>' +
-          '<td class="n"><b style="color:#0A2E5C">' + C.brl(c.total) + '</b></td><td class="n">' + (c.fase === 'pedido' ? '<b style="color:#22794C">' + C.brl(vPedido(c)) + '</b>' : '—') + '</td>' +
+          '<td>' + esc(C.dataBR(c.criadoEm)) + '</td><td>' + (c.descartado ? '' : C.chipFase(c.fase)) + '</td><td>' + (C.chipPrazo(c, avisoDias()) || '<span style="color:#97A8AE">—</span>') + '</td>' +
+          '<td class="n"><b style="color:#10323E">' + C.brl(c.total) + '</b></td><td class="n">' + (c.fase === 'pedido' ? '<b style="color:#22794C">' + C.brl(vPedido(c)) + '</b>' : '—') + '</td>' +
           '<td>' + (c.dono ? esc(c.dono.nome) : '<span style="color:#A8541F;font-weight:700">sem responsável</span>') + '</td></tr>';
-      }).join('') + (l.length > MAX ? '<tr><td colspan="8" style="text-align:center;color:#7C93A8">Mostrando ' + MAX + ' de ' + l.length + ' — use os filtros.</td></tr>' : '')
-        : '<tr><td colspan="8" style="text-align:center;padding:26px;color:#93A7BA">Nenhuma cotação com esses filtros.</td></tr>') + '</tbody>');
+      }).join('') + (l.length > MAX ? '<tr><td colspan="8" style="text-align:center;color:#81939B">Mostrando ' + MAX + ' de ' + l.length + ' — use os filtros.</td></tr>' : '')
+        : '<tr><td colspan="8" style="text-align:center;padding:26px;color:#97A8AE">Nenhuma cotação com esses filtros.</td></tr>') + '</tbody>');
   }
 
   /* ── render geral ───────────────────────────────────────────── */

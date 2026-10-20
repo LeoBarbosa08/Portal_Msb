@@ -26,13 +26,13 @@
 
   // Manifest + tema da barra de status
   ensureLink('manifest', '/manifest.webmanifest');
-  ensureMeta('theme-color', '#002E5D');
+  ensureMeta('theme-color', '#0E333C');
 
   // iOS / Android — comportamento de app em tela cheia
   ensureMeta('apple-mobile-web-app-capable', 'yes');
   ensureMeta('mobile-web-app-capable', 'yes');
   ensureMeta('apple-mobile-web-app-status-bar-style', 'black-translucent');
-  ensureMeta('apple-mobile-web-app-title', 'Biomedical');
+  ensureMeta('apple-mobile-web-app-title', 'Portal MSB');
   ensureLink('apple-touch-icon', '/icons/apple-touch-icon.png');
 
   // Registra o service worker

@@ -29,7 +29,7 @@
   var D = document, $ = C.$, esc = C.esc, IC = C.IC;
 
   var F = { el: null, ov: null, num: '', o: null, volta: null, casos: {}, histTudo: false, itensTudo: false, notasTudo: false };
-  var COR_HIST = { criado: '#1A66D2', fase: '#5A3BC4', nota: '#D97706', pi: '#5A3BC4', pedido: '#138A4B', anexo: '#0891B2', ia: '#C026D3', campo: '#8DBBF5', proposta: '#0E7490', erp: '#0F766E' };
+  var COR_HIST = { criado: '#2C7288', fase: '#5A3BC4', nota: '#D97706', pi: '#5A3BC4', pedido: '#138A4B', anexo: '#2B6CC4', ia: '#C026D3', campo: '#83C1D4', proposta: '#1E3A8A', erp: '#0F766E' };
   var IC_X = C.svg('<line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>', 18);
   var IC_EXT = C.svg('<path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/>', 13);
 
@@ -507,7 +507,7 @@
       var corpo = (h.tipo === 'campo' || h.tipo === 'fase')
         ? '<b>' + esc(h.campo) + '</b>: ' + (h.de ? '<span class="de">' + esc(h.de) + '</span> → ' : '') + '<span class="para">' + esc(h.para || '—') + '</span>' + (h.texto ? '<br>' + esc(h.texto) : '')
         : esc(h.texto || '');
-      return '<li style="--c:' + (COR_HIST[h.tipo] || '#8DBBF5') + '">' + corpo + '<small>' + esc(quem(h.por) || 'Portal') + ' · ' + esc(C.dataBR(h.em, true)) + '</small></li>';
+      return '<li style="--c:' + (COR_HIST[h.tipo] || '#83C1D4') + '">' + corpo + '<small>' + esc(quem(h.por) || 'Portal') + ' · ' + esc(C.dataBR(h.em, true)) + '</small></li>';
     }).join('') + '</ul>' + maisBtn('hist', F.histTudo, l.length, LIM, 'o histórico'));
   }
 

@@ -33,7 +33,7 @@
   var DIMS = ['estr', 'cli', 'fam', 'vend', 'unid'];
   var ROT = { fase: 'Fase', estr: 'Estratégia', cli: 'Cliente', fam: 'Família', vend: 'Vendedor', unid: 'Filial' };
   var MEDS = '"v", [Preco total oportunidades], "q", [quantidade oportunidades]';
-  var COR = { fam: '#2E9E63', cli: '#1272C4', estr: '#135E97', vend: '#4596CC', unid: '#1272C4' };
+  var COR = { fam: '#2E9E63', cli: '#287A8E', estr: '#226372', vend: '#4F9AAA', unid: '#287A8E' };
 
   var P = null;          // dependências da página (init)
   var E = null;          // recorte aberto
@@ -347,7 +347,7 @@
     if (!itens.length) { c.innerHTML = '<div class="fv-dw-nada">Nada neste recorte.</div>'; return; }
     var tot = parcial ? totalRecorte() : itens.reduce(function (a, x) { return a + x.v; }, 0);
     var max = Math.max.apply(null, itens.map(function (x) { return x.v; }).concat([1]));
-    var cor = COR[dim] || '#1272C4';
+    var cor = COR[dim] || '#287A8E';
     c.innerHTML = itens.map(function (x, i) {
       var w = Math.max(2, Math.round(x.v / max * 100));
       var meta = [x.q && dim !== 'estr' ? fINT(x.q) + ' op.' : x.n ? fINT(x.n) + ' fam.' : '', tot ? fPct(x.v / tot) : ''].filter(Boolean).join(' · ');

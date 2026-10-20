@@ -150,7 +150,7 @@
     var enc = vivos.filter(function (c) { return !C.aberta(c.fase) && C.ms(c.fechadoEm) >= d90; });
     var gan = enc.filter(function (c) { return c.fase === 'pedido'; }).length;
     var K = [
-      ['andamento', IC.inbox, C.int(n.andamento), 'Em andamento', C.brlCurto(vAnd) + ' cotados', '#1A66D2', '#EEF4FE'],
+      ['andamento', IC.inbox, C.int(n.andamento), 'Em andamento', C.brlCurto(vAnd) + ' cotados', '#2C7288', '#EEF5F9'],
       ['vencendo', IC.alarm, C.int(n.vencendo), 'Prazo vencendo', vencidas ? vencidas + ' já vencida(s)' : 'vencem nos próximos ' + aviso() + ' dia(s)', '#D97706', '#FEF1DA', n.vencendo > 0],
       ['sem_dono', IC.userx, C.int(n.sem_dono), 'Sem responsável', 'esperando alguém assumir', '#EA580C', '#FFEDD5', n.sem_dono > 0],
       ['pedido', IC.trophy, C.int(ganhasMes.length), 'Viraram pedido no mês', C.brlCurto(vGanhoMes), '#138A4B', '#DDF5E7'],
@@ -189,7 +189,7 @@
       ' <i>· ' + c.nItens + ' item(ns)' + (c.cliente && c.cliente.uf ? ' · ' + esc(c.cliente.uf) : '') + '</i>';
     var val = '<b>' + C.brl(c.total) + '</b>' + (c.fase === 'pedido' && c.totalPedido ? '<small class="ped">pedido ' + C.brlCurto(c.totalPedido) + (c.oc ? ' · OC ' + esc(c.oc) : '') + '</small>' : '<small>cotado</small>');
     var prazo = pr && !pr.semData ? C.chipPrazo(c, aviso()) : (!C.aberta(c.fase) && c.fechadoEm ? '<span class="tk-vazio">' + esc((c.fase === 'pedido' ? 'Pedido ' : 'Fechada ') + C.quando(c.fechadoEm)) + '</span>' : '<span class="tk-vazio">—</span>');
-    return '<div class="cot-row' + (chegou ? ' chegou' : '') + (c.descartado ? ' desc' : '') + '" role="row" tabindex="0" data-num="' + esc(c.numero) + '" style="--c:' + (c.descartado ? '#94A3B8' : f.cor) + '">' +
+    return '<div class="cot-row' + (chegou ? ' chegou' : '') + (c.descartado ? ' desc' : '') + '" role="row" tabindex="0" data-num="' + esc(c.numero) + '" style="--c:' + (c.descartado ? '#95A4AB' : f.cor) + '">' +
       '<span class="cot-c cot-c-num" role="cell"><b class="cs-mono">' + esc(c.numero) + '</b><small title="Registrada ' + esc(C.dataBR(c.criadoEm, true)) + '">' + esc(C.chegada(c.criadoEm)) + '</small></span>' +
       '<span class="cot-c cot-c-cli" role="cell"><b>' + esc((c.cliente && c.cliente.nome) || 'Cliente não informado') + '</b><small>' + sub + '</small></span>' +
       '<span class="cot-c cot-c-val" role="cell">' + val + '</span>' +
@@ -291,7 +291,7 @@
     var pedBox = ped
       ? '<div class="tk-hero-conta ganho"><small>Pedido</small><b class="grande">' + C.brl((ped.previa && ped.previa.total) || ped.total || 0) + '</b><span>' + esc(ped.oc ? 'OC ' + ped.oc : ped.nome) + ((c.ovs || []).length ? ' · ' + c.ovs[0].numero + (c.ovs.length > 1 ? ' +' + (c.ovs.length - 1) : '') : c.pi && c.pi.estado === 'enviado' ? ' · aguardando OV' : ' · aguardando o PI') + '</span></div>'
       : '<div class="tk-hero-conta"><small>Responsável</small><b>' + (c.dono ? esc(c.dono.nome) : 'Sem responsável') + '</b><span>' + (c.dono ? esc(c.dono.email) : 'clique em Assumir') + '</span></div>';
-    return '<section class="cs-card tk-hero" style="--c:' + (c.descartado ? '#94A3B8' : f.cor) + '">' +
+    return '<section class="cs-card tk-hero" style="--c:' + (c.descartado ? '#95A4AB' : f.cor) + '">' +
       '<div class="tk-hero-l1"><span class="cs-d-num" id="cot-copiar" title="Copiar o número e o link">' + esc(c.numero) + IC.copy + '</span>' +
         (c.descartado ? '<span class="cs-chip descartada">Descartada</span>' : C.chipFase(c.fase)) + '<span class="cs-chip portal">' + esc(c.portal || 'sem portal') + '</span>' +
         '<span class="tk-hero-meta" title="' + esc(C.dataBR(c.criadoEm, true)) + '">Registrada ' + esc(C.chegada(c.criadoEm)) + (c.criadoPor ? ' por ' + esc(c.criadoPor.nome) : '') + '</span></div>' +
@@ -457,7 +457,7 @@
   }
   function verProposta(c) {
     var janela = W.open('', '_blank');
-    if (janela) { try { janela.document.title = 'Proposta ' + c.numero; janela.document.body.innerHTML = '<p style="font:15px system-ui;padding:40px;color:#0A2447">Gerando a proposta…</p>'; } catch (e) {} }
+    if (janela) { try { janela.document.title = 'Proposta ' + c.numero; janela.document.body.innerHTML = '<p style="font:15px system-ui;padding:40px;color:#0F2831">Gerando a proposta…</p>'; } catch (e) {} }
     W.COTPROP.gerar(c, operador(c)).then(function (pdf) {
       var url = URL.createObjectURL(pdf.blob);
       if (janela && !janela.closed) janela.location.href = url; else W.open(url, '_blank');
@@ -602,12 +602,12 @@
   }
   function htmlHist(c) {
     var l = (c.historico || []).slice().reverse().slice(0, 60);
-    var cor = { criado: '#1A66D2', fase: '#5A3BC4', nota: '#D97706', pi: '#5A3BC4', pedido: '#138A4B', anexo: '#0891B2', ia: '#C026D3', campo: '#8DBBF5', proposta: '#0E7490', erp: '#0F766E', ov: '#138A4B' };
+    var cor = { criado: '#2C7288', fase: '#5A3BC4', nota: '#D97706', pi: '#5A3BC4', pedido: '#138A4B', anexo: '#2B6CC4', ia: '#C026D3', campo: '#83C1D4', proposta: '#1E3A8A', erp: '#0F766E', ov: '#138A4B' };
     return '<ul class="cs-hist">' + l.map(function (h) {
       var corpo = (h.tipo === 'campo' || h.tipo === 'fase')
         ? '<b>' + esc(h.campo) + '</b>: ' + (h.de ? '<span class="de">' + esc(h.de) + '</span> → ' : '') + '<span class="para">' + esc(h.para || '—') + '</span>' + (h.texto ? '<br>' + esc(h.texto) : '')
         : esc(h.texto || '');
-      return '<li style="--c:' + (cor[h.tipo] || '#8DBBF5') + '">' + corpo + '<small>' + esc((h.por && h.por.nome) || 'Portal') + ' · ' + esc(C.dataBR(h.em, true)) + '</small></li>';
+      return '<li style="--c:' + (cor[h.tipo] || '#83C1D4') + '">' + corpo + '<small>' + esc((h.por && h.por.nome) || 'Portal') + ' · ' + esc(C.dataBR(h.em, true)) + '</small></li>';
     }).join('') + '</ul>';
   }
 

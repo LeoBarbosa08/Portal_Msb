@@ -162,12 +162,12 @@ if (!window._bmPerfilSheetLoaded && !window._bmPerfilSheetInjected) {
     var ov = document.getElementById('bm-ind-overlay');
     if (ov) return ov;
     ov = document.createElement('div'); ov.id = 'bm-ind-overlay';
-    ov.style.cssText = 'display:none;position:fixed;inset:0;z-index:100000;background:rgba(15,23,42,.5);align-items:center;justify-content:center;font-family:Inter,system-ui,-apple-system,sans-serif;';
-    ov.innerHTML = '<div style="background:#fff;border-radius:16px;max-width:420px;width:90%;padding:28px 26px;box-shadow:0 24px 64px rgba(15,23,42,.3);text-align:center;">'
+    ov.style.cssText = 'display:none;position:fixed;inset:0;z-index:100000;background:rgba(16,24,30,.5);align-items:center;justify-content:center;font-family:Roboto,system-ui,-apple-system,sans-serif;';
+    ov.innerHTML = '<div style="background:#fff;border-radius:16px;max-width:420px;width:90%;padding:28px 26px;box-shadow:0 24px 64px rgba(16,24,30,.3);text-align:center;">'
       + '<div style="width:50px;height:50px;border-radius:50%;background:#FEF3C7;display:flex;align-items:center;justify-content:center;margin:0 auto 14px;"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#b45309" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg></div>'
-      + '<h3 style="margin:0 0 8px;font-size:18px;font-weight:700;color:#0F172A;">Módulo indisponível</h3>'
-      + '<p style="margin:0 0 18px;font-size:14px;color:#334155;line-height:1.55;">Este módulo está disponível apenas para usuários autorizados. Em breve estará liberado no portal.</p>'
-      + '<button id="bm-ind-ok" style="border:none;border-radius:8px;padding:10px 26px;font-size:14px;font-weight:600;background:#002E5D;color:#fff;cursor:pointer;">Entendi</button></div>';
+      + '<h3 style="margin:0 0 8px;font-size:18px;font-weight:700;color:#10181E;">Módulo indisponível</h3>'
+      + '<p style="margin:0 0 18px;font-size:14px;color:#354249;line-height:1.55;">Este módulo está disponível apenas para usuários autorizados. Em breve estará liberado no portal.</p>'
+      + '<button id="bm-ind-ok" style="border:none;border-radius:8px;padding:10px 26px;font-size:14px;font-weight:600;background:#0E333C;color:#fff;cursor:pointer;">Entendi</button></div>';
     var place = function(){ (document.body || document.documentElement).appendChild(ov); };
     if (document.body) place(); else document.addEventListener('DOMContentLoaded', place);
     var redir = false;
@@ -338,12 +338,12 @@ if (!window._bmPerfilSheetLoaded && !window._bmPerfilSheetInjected) {
     }
     var ov = document.createElement('div');
     ov.id = 'bm-area-block';
-    ov.style.cssText = 'position:fixed;inset:0;z-index:100001;background:rgba(15,23,42,.55);display:flex;align-items:center;justify-content:center;font-family:Inter,system-ui,-apple-system,sans-serif;';
-    ov.innerHTML = '<div style="background:#fff;border-radius:16px;max-width:440px;width:90%;padding:28px 26px;box-shadow:0 24px 64px rgba(15,23,42,.3);text-align:center;">'
+    ov.style.cssText = 'position:fixed;inset:0;z-index:100001;background:rgba(16,24,30,.55);display:flex;align-items:center;justify-content:center;font-family:Roboto,system-ui,-apple-system,sans-serif;';
+    ov.innerHTML = '<div style="background:#fff;border-radius:16px;max-width:440px;width:90%;padding:28px 26px;box-shadow:0 24px 64px rgba(16,24,30,.3);text-align:center;">'
       + '<div style="width:50px;height:50px;border-radius:50%;background:#FEF3C7;display:flex;align-items:center;justify-content:center;margin:0 auto 14px;"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#b45309" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg></div>'
-      + '<h3 style="margin:0 0 8px;font-size:18px;font-weight:700;color:#0F172A;">' + titulo + '</h3>'
-      + '<p style="margin:0 0 18px;font-size:14px;color:#334155;line-height:1.55;">' + texto + '</p>'
-      + '<button id="bm-area-ok" style="border:none;border-radius:8px;padding:10px 26px;font-size:14px;font-weight:600;background:#002E5D;color:#fff;cursor:pointer;">Voltar ao portal</button></div>';
+      + '<h3 style="margin:0 0 8px;font-size:18px;font-weight:700;color:#10181E;">' + titulo + '</h3>'
+      + '<p style="margin:0 0 18px;font-size:14px;color:#354249;line-height:1.55;">' + texto + '</p>'
+      + '<button id="bm-area-ok" style="border:none;border-radius:8px;padding:10px 26px;font-size:14px;font-weight:600;background:#0E333C;color:#fff;cursor:pointer;">Voltar ao portal</button></div>';
     function go() { location.href = '../index.html'; }
     var put = function () {
       (document.body || document.documentElement).appendChild(ov);

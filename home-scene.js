@@ -20,7 +20,7 @@
   var THREE_URL = 'https://cdnjs.cloudflare.com/ajax/libs/three.js/0.186.1/three.module.min.js';
 
   function buildNiko(THREE, low) {
-    var NAVY = '#1A5586', WHITE = '#F4F8FC', LINING = '#D3DEEB', CYAN = '#3AA8C8', CYAN_L = '#5EC0DA', RIB = '#9CC3DB', CHEEK = '#C2CFE3', EYE = '#0E2C4F';
+    var NAVY = '#245866', WHITE = '#F5F8FA', LINING = '#D6DFE3', CYAN = '#3AA8C8', CYAN_L = '#5EC0DA', RIB = '#A6C3CB', CHEEK = '#C4D0D7', EYE = '#132E39';
     var grad = new THREE.DataTexture(new Uint8Array([120, 190, 255]), 3, 1, THREE.RedFormat);
     grad.minFilter = grad.magFilter = THREE.NearestFilter; grad.needsUpdate = true;
     var toon = function (c, extra) { var o = { color: c, gradientMap: grad }; if (extra) for (var k in extra) o[k] = extra[k]; return new THREE.MeshToonMaterial(o); };
@@ -74,10 +74,10 @@
     body.scale.set(1, 1, 0.82); body.position.y = -0.55; niko.add(body);
     var logoTex = (function () {
       var c = document.createElement('canvas'); c.width = c.height = 256; var g = c.getContext('2d');
-      var gr = g.createLinearGradient(50, 40, 210, 220); gr.addColorStop(0, '#2E8FE0'); gr.addColorStop(1, '#1FB8A6');
+      var gr = g.createLinearGradient(50, 40, 210, 220); gr.addColorStop(0, '#3D95AC'); gr.addColorStop(1, '#1FB8A6');
       g.beginPath(); g.arc(128, 128, 92, 0, Math.PI * 2); g.fillStyle = gr; g.fill();
       g.save(); g.translate(128, 128); g.rotate(-0.5);
-      g.beginPath(); g.ellipse(0, 0, 118, 46, 0, 0, Math.PI * 2); g.lineWidth = 16; g.strokeStyle = '#1A5586'; g.stroke();
+      g.beginPath(); g.ellipse(0, 0, 118, 46, 0, 0, Math.PI * 2); g.lineWidth = 16; g.strokeStyle = '#245866'; g.stroke();
       g.beginPath(); g.ellipse(0, 12, 72, 26, 0, Math.PI * 1.05, Math.PI * 1.95); g.lineWidth = 15; g.lineCap = 'round'; g.strokeStyle = '#FFFFFF'; g.stroke();
       g.restore();
       var t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace; t.anisotropy = 4; return t;
@@ -127,9 +127,9 @@
       var scene = new THREE.Scene();
       var camera = new THREE.PerspectiveCamera(32, 1, 0.1, 100);
       camera.position.set(0, 0, 11);
-      scene.add(new THREE.HemisphereLight('#ffffff', '#5a7fb5', 1.35));
+      scene.add(new THREE.HemisphereLight('#ffffff', '#588492', 1.35));
       var key = new THREE.DirectionalLight('#ffffff', 1.9); key.position.set(3.5, 4, 6); scene.add(key);
-      var rim = new THREE.DirectionalLight('#8fd8ff', 1.2); rim.position.set(-5, 2, -4); scene.add(rim);
+      var rim = new THREE.DirectionalLight('#9ed9e4', 1.2); rim.position.set(-5, 2, -4); scene.add(rim);
 
       var root = new THREE.Group(); scene.add(root);
       var N = opts.niko === false ? null : buildNiko(THREE, low);
@@ -139,7 +139,7 @@
       var haloTex = (function () {
         var c = document.createElement('canvas'); c.width = c.height = 128;
         var g = c.getContext('2d'), gr = g.createRadialGradient(64, 64, 0, 64, 64, 64);
-        gr.addColorStop(0, 'rgba(127,227,240,0.45)'); gr.addColorStop(0.4, 'rgba(70,140,240,0.22)'); gr.addColorStop(1, 'rgba(40,90,200,0)');
+        gr.addColorStop(0, 'rgba(127,227,240,0.45)'); gr.addColorStop(0.4, 'rgba(57,152,181,0.22)'); gr.addColorStop(1, 'rgba(48,104,124,0)');
         g.fillStyle = gr; g.fillRect(0, 0, 128, 128);
         var t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace; return t;
       })();
@@ -164,7 +164,7 @@
       }
       var dotTex = (function () { var c = document.createElement('canvas'); c.width = c.height = 32; var g = c.getContext('2d'); var gr = g.createRadialGradient(16, 16, 0, 16, 16, 16); gr.addColorStop(0, 'rgba(255,255,255,1)'); gr.addColorStop(1, 'rgba(255,255,255,0)'); g.fillStyle = gr; g.fillRect(0, 0, 32, 32); return new THREE.CanvasTexture(c); })();
       var dustGeo = new THREE.BufferGeometry(); dustGeo.setAttribute('position', new THREE.BufferAttribute(dp, 3));
-      var dust = new THREE.Points(dustGeo, new THREE.PointsMaterial({ size: 0.07, map: dotTex, color: '#a8c8ff', transparent: true, opacity: 0.6, depthWrite: false, blending: THREE.AdditiveBlending }));
+      var dust = new THREE.Points(dustGeo, new THREE.PointsMaterial({ size: 0.07, map: dotTex, color: '#99cfe2', transparent: true, opacity: 0.6, depthWrite: false, blending: THREE.AdditiveBlending }));
       root.add(dust);
 
       /* layout responsivo: à direita no desktop, no topo no celular */

@@ -3,17 +3,16 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Sales Report · Comercial · Biomedical</title>
+  <title>Sales Report · Comercial · MSB</title>
   <link rel="stylesheet" href="../styles.css?v=14">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="../dash-v2.css?v=3">
   <!-- MSAL via unpkg (CDN mais confiável) -->
   <script src="https://unpkg.com/@azure/msal-browser@2.38.3/lib/msal-browser.min.js"></script>
 <script src="../pbi-throttle.js?v=3"></script>
   <!-- Layout v3 (Claude Design · animado): fonte + camada visual + motor de animações -->
-  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300..800&family=Manrope:wght@400..800&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300..900&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="../portal-v3.css?v=2">
   <!-- Pedidos em andamento + Faturamento Diário: listas no molde das Negociações e a ficha à direita -->
   <link rel="stylesheet" href="../sr-diario.css?v=2">
@@ -30,9 +29,9 @@
 
   <header class="site-header">
     <div class="container">
-      <a href="../index.html" class="brand" aria-label="Biomedical — Portal Corporativo">
-        <img class="brand-logo" src="/icons/icon-192.png" alt="Biomedical" onerror="this.dataset.failed='true'">
-        <span class="brand-fallback">Biomedical</span>
+      <a href="../index.html" class="brand" aria-label="Portal MSB — página inicial">
+        <img class="brand-logo" src="/icons/logo-msb.png" alt="MSB · Medical System do Brasil" onerror="this.dataset.failed='true'">
+        <span class="brand-fallback">MSB</span>
       </a>
       <nav class="header-nav">
         <a href="../index.html">Início</a>
@@ -100,30 +99,30 @@
           <!-- ═══ Cabeçalho + abas de submódulo (Claude Design) ═══ -->
           <style>
             .fx-head{display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap;padding:22px 0 4px;}
-            .fx-bc{display:flex;align-items:center;gap:6px;font-size:12px;color:#7C93A8;}
-            .fx-title{margin:4px 0 0;font-size:23px;font-weight:800;letter-spacing:-0.5px;color:#0A2E5C;}
+            .fx-bc{display:flex;align-items:center;gap:6px;font-size:12px;color:#81939B;}
+            .fx-title{margin:4px 0 0;font-size:23px;font-weight:800;letter-spacing:-0.5px;color:#10323E;}
             .fx-head-right{display:flex;align-items:center;gap:12px;flex-wrap:wrap;}
             .fx-dw{display:inline-flex;align-items:center;gap:8px;padding:6px 12px;border-radius:999px;background:#EAF8F0;border:1px solid #CFEEDD;font-size:11.5px;font-weight:700;color:#22794C;white-space:nowrap;}
             .fx-dw i{width:7px;height:7px;border-radius:999px;background:#2FBF71;display:inline-block;}
-            .fx-tabs{display:flex;align-items:center;background:#FFFFFF;border:1px solid #E3EAF2;border-radius:11px;padding:3px;flex-wrap:wrap;}
-            .fx-tabs a,.fx-tabs span{padding:8px 14px;border-radius:8px;font-size:12.5px;font-weight:600;color:#5B7189;text-decoration:none;white-space:nowrap;}
-            .fx-tabs a:hover{color:#0A2E5C;}
-            .fx-tabs .active{background:#0A2E5C;font-weight:700;color:#fff;}
+            .fx-tabs{display:flex;align-items:center;background:#FFFFFF;border:1px solid #E5EAED;border-radius:11px;padding:3px;flex-wrap:wrap;}
+            .fx-tabs a,.fx-tabs span{padding:8px 14px;border-radius:8px;font-size:12.5px;font-weight:600;color:#5F727A;text-decoration:none;white-space:nowrap;}
+            .fx-tabs a:hover{color:#10323E;}
+            .fx-tabs .active{background:#10323E;font-weight:700;color:#fff;}
             /* filtros · 1 linha */
-            .fx-filters{display:flex;align-items:center;gap:10px;flex-wrap:wrap;padding:12px 14px;background:#fff;border:1px solid #E3EAF2;border-radius:12px;}
-            .fx-fdiv{width:1px;height:24px;background:#E3EAF2;}
-            .fx-fbtn{display:inline-flex;align-items:center;gap:8px;padding:8px 12px;border-radius:9px;border:1px solid #E3EAF2;background:#fff;font-size:12.5px;font-weight:600;color:#33495E;cursor:pointer;font-family:inherit;white-space:nowrap;}
-            .fx-fbtn:hover{border-color:#1272C4;}
-            .fx-fbtn .fx-fk{font-weight:700;color:#93A7BA;}
+            .fx-filters{display:flex;align-items:center;gap:10px;flex-wrap:wrap;padding:12px 14px;background:#fff;border:1px solid #E5EAED;border-radius:12px;}
+            .fx-fdiv{width:1px;height:24px;background:#E5EAED;}
+            .fx-fbtn{display:inline-flex;align-items:center;gap:8px;padding:8px 12px;border-radius:9px;border:1px solid #E5EAED;background:#fff;font-size:12.5px;font-weight:600;color:#374951;cursor:pointer;font-family:inherit;white-space:nowrap;}
+            .fx-fbtn:hover{border-color:#287A8E;}
+            .fx-fbtn .fx-fk{font-weight:700;color:#97A8AE;}
             .fx-fbtn svg{flex-shrink:0;}
-            .fx-flimpar{margin-left:auto;display:inline-flex;align-items:center;gap:6px;padding:8px 12px;border-radius:9px;border:none;background:transparent;font-size:12.5px;font-weight:600;color:#5B7189;cursor:pointer;font-family:inherit;white-space:nowrap;}
+            .fx-flimpar{margin-left:auto;display:inline-flex;align-items:center;gap:6px;padding:8px 12px;border-radius:9px;border:none;background:transparent;font-size:12.5px;font-weight:600;color:#5F727A;cursor:pointer;font-family:inherit;white-space:nowrap;}
             .fx-flimpar:hover{color:#B54545;}
             .fxdd{position:relative;display:inline-block;}
-            .fxdd-panel{position:absolute;z-index:50;top:calc(100% + 6px);left:0;display:none;flex-direction:column;background:#fff;border:1px solid #E3EAF2;border-radius:12px;box-shadow:0 10px 30px rgba(10,46,92,0.14);padding:12px;}
+            .fxdd-panel{position:absolute;z-index:50;top:calc(100% + 6px);left:0;display:none;flex-direction:column;background:#fff;border:1px solid #E5EAED;border-radius:12px;box-shadow:0 10px 30px rgba(16,50,62,0.14);padding:12px;}
             .fxdd.open .fxdd-panel{display:flex;}
-            .fxdd-sec{font-size:10.5px;font-weight:800;letter-spacing:0.8px;text-transform:uppercase;color:#93A7BA;margin:2px 2px 8px;}
+            .fxdd-sec{font-size:10.5px;font-weight:800;letter-spacing:0.8px;text-transform:uppercase;color:#97A8AE;margin:2px 2px 8px;}
             .fxdd-sec.mt{margin-top:12px;}
-            .fxdd-hint{font-size:11px;color:#93A7BA;margin-top:10px;}
+            .fxdd-hint{font-size:11px;color:#97A8AE;margin-top:10px;}
             /* Periodo: painel largo e horizontal (mes em cima; ano/semestre/trimestre embaixo) */
             .fxdd-panel{min-width:210px;}
             #fx-periodo .fxdd-panel{width:720px;max-width:calc(100vw - 48px);}
@@ -135,7 +134,7 @@
               .fx-head{align-items:flex-start;padding-top:14px;}
               .fx-title{font-size:17px;}
               .fx-head-right{width:100%;}
-              .fx-tabs{width:100%;flex-wrap:nowrap;overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none;background:#F0F4F9;border:none;}
+              .fx-tabs{width:100%;flex-wrap:nowrap;overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none;background:#F1F4F6;border:none;}
               .fx-tabs::-webkit-scrollbar{display:none;}
               .fx-tabs a,.fx-tabs span{flex:0 0 auto;}
               /* ── FILTROS mobile: controles empilhados em largura total; cada
@@ -166,7 +165,7 @@
               .fxdd-panel .sr-divider,.fxdd-panel .av-divider,.fxdd-panel .pv-divider{flex:0 0 100%;width:100% !important;height:0 !important;border:0 !important;background:transparent !important;margin:0 !important;}
               /* botões preenchem a largura numa grade uniforme (sobrepõe flex-shrink:0 global) */
               .fxdd-panel .sr-btn,.fxdd-panel .av-btn,.fxdd-panel .pv-btn{flex:1 1 auto !important;min-width:52px;text-align:center;padding:8px 6px;}
-              .fx-filters .fx-flimpar{width:100%;justify-content:center;margin:2px 0 0;padding:11px;border:1px solid #E3EAF2;border-radius:9px;}
+              .fx-filters .fx-flimpar{width:100%;justify-content:center;margin:2px 0 0;padding:11px;border:1px solid #E5EAED;border-radius:9px;}
             }
           </style>
 
@@ -340,7 +339,7 @@
               <div class="fxdd" id="fx-periodo">
                 <button type="button" class="fx-fbtn" onclick="fxTogglePanel(this)">
                   <span class="fx-fk">Período</span><span id="fx-periodo-lbl">2026</span>
-                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#7C93A8" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg>
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#81939B" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg>
                 </button>
                 <div class="fxdd-panel">
                   <div class="sr-row">
@@ -475,11 +474,11 @@
             <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:14px;">
 
               <!-- HERO MSBio -->
-              <div style="min-width:0;grid-row:span 2;padding:22px;border-radius:14px;background:linear-gradient(150deg,#071E3D,#0E4A8A);color:#FFFFFF;display:flex;flex-direction:column;position:relative;overflow:hidden;">
+              <div style="min-width:0;grid-row:span 2;padding:22px;border-radius:14px;background:linear-gradient(150deg,#0C2029,#1A5160);color:#FFFFFF;display:flex;flex-direction:column;position:relative;overflow:hidden;">
                 <div style="position:absolute;inset:0;background-image:radial-gradient(circle at 90% 10%, rgba(47,191,113,0.16), transparent 45%);"></div>
                 <div style="position:relative;display:flex;align-items:center;justify-content:space-between;gap:10px;">
-                  <span style="font-size:11.5px;font-weight:800;letter-spacing:1px;color:#A8C3DD;">FATURAMENTO × META · MSBIO</span>
-                  <span id="ix-period" style="font-size:11px;font-weight:700;color:#DCEAF7;background:rgba(255,255,255,0.10);border-radius:999px;padding:3px 10px;white-space:nowrap;">Jun 2026</span>
+                  <span style="font-size:11.5px;font-weight:800;letter-spacing:1px;color:#ACC3CC;">FATURAMENTO × META · MSBIO</span>
+                  <span id="ix-period" style="font-size:11px;font-weight:700;color:#E0EAEF;background:rgba(255,255,255,0.10);border-radius:999px;padding:3px 10px;white-space:nowrap;">Jun 2026</span>
                 </div>
                 <div style="position:relative;display:flex;align-items:baseline;gap:12px;margin-top:14px;flex-wrap:wrap;">
                   <span id="ix-msbio-fat" style="font-size:31px;font-weight:800;letter-spacing:-0.8px;">—</span>
@@ -491,57 +490,57 @@
                   <div style="height:8px;border-radius:999px;background:rgba(255,255,255,0.14);overflow:hidden;">
                     <div id="ix-msbio-bar" style="height:100%;width:0%;border-radius:999px;background:linear-gradient(90deg,#2FBF71,#4FD98D);transition:width .5s ease;"></div>
                   </div>
-                  <div style="display:flex;justify-content:space-between;margin-top:8px;font-size:11.5px;color:#8FAECB;">
-                    <span>Meta: <span id="ix-msbio-meta" style="color:#DCEAF7;font-weight:700;">—</span></span>
-                    <span>Gap: <span id="ix-msbio-gap" style="color:#DCEAF7;font-weight:700;">—</span></span>
+                  <div style="display:flex;justify-content:space-between;margin-top:8px;font-size:11.5px;color:#93AFB9;">
+                    <span>Meta: <span id="ix-msbio-meta" style="color:#E0EAEF;font-weight:700;">—</span></span>
+                    <span>Gap: <span id="ix-msbio-gap" style="color:#E0EAEF;font-weight:700;">—</span></span>
                   </div>
                 </div>
                 <div style="flex:1;"></div>
                 <div style="position:relative;display:flex;gap:28px;margin-top:18px;padding-top:16px;border-top:1px solid rgba(255,255,255,0.10);flex-wrap:wrap;">
                   <div>
-                    <div style="font-size:11px;font-weight:700;color:#8FAECB;">MARGEM · ÍNDICE</div>
+                    <div style="font-size:11px;font-weight:700;color:#93AFB9;">MARGEM · ÍNDICE</div>
                     <div id="ix-msbio-margem" style="font-size:18px;font-weight:800;margin-top:3px;">—</div>
                   </div>
                   <div>
-                    <div style="font-size:11px;font-weight:700;color:#8FAECB;">% MARGEM</div>
+                    <div style="font-size:11px;font-weight:700;color:#93AFB9;">% MARGEM</div>
                     <div id="ix-msbio-margempct" style="font-size:18px;font-weight:800;margin-top:3px;">—</div>
                   </div>
                 </div>
               </div>
 
               <!-- BIO -->
-              <div style="min-width:0;padding:18px 20px;border-radius:14px;background:#FFFFFF;border:1px solid #E3EAF2;">
+              <div style="min-width:0;padding:18px 20px;border-radius:14px;background:#FFFFFF;border:1px solid #E5EAED;">
                 <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;">
-                  <span style="font-size:12.5px;font-weight:800;color:#0A2E5C;">Bio</span>
+                  <span style="font-size:12.5px;font-weight:800;color:#10323E;">Bio</span>
                   <span id="ix-bio-badge" style="display:inline-flex;align-items:center;gap:4px;font-size:11.5px;font-weight:800;color:#22794C;background:#EAF8F0;border-radius:999px;padding:3px 9px;white-space:nowrap;"><span class="arr"></span><span id="ix-bio-pct">—</span></span>
                 </div>
-                <div id="ix-bio-fat" style="font-size:22px;font-weight:800;color:#0A2E5C;margin-top:8px;letter-spacing:-0.4px;">—</div>
-                <div style="height:6px;border-radius:999px;background:#EDF2F8;overflow:hidden;margin-top:10px;">
+                <div id="ix-bio-fat" style="font-size:22px;font-weight:800;color:#10323E;margin-top:8px;letter-spacing:-0.4px;">—</div>
+                <div style="height:6px;border-radius:999px;background:#EEF2F5;overflow:hidden;margin-top:10px;">
                   <div id="ix-bio-minibar" style="height:100%;width:0%;border-radius:999px;background:#2FBF71;transition:width .5s ease;"></div>
                 </div>
-                <div style="display:flex;gap:16px;margin-top:10px;font-size:11.5px;color:#5B7189;flex-wrap:wrap;">
-                  <span>Meta <strong style="color:#33495E;" id="ix-bio-meta">—</strong></span>
-                  <span>Gap <strong style="color:#33495E;" id="ix-bio-gap">—</strong></span>
-                  <span>Margem <strong style="color:#33495E;"><span id="ix-bio-margempct">—</span> · <span id="ix-bio-margem">—</span></strong></span>
-                  <span>Pedidos <strong style="color:#33495E;"><span id="ix-ped-bio-qtd">—</span> · <span id="ix-ped-bio-valor">—</span></strong></span>
+                <div style="display:flex;gap:16px;margin-top:10px;font-size:11.5px;color:#5F727A;flex-wrap:wrap;">
+                  <span>Meta <strong style="color:#374951;" id="ix-bio-meta">—</strong></span>
+                  <span>Gap <strong style="color:#374951;" id="ix-bio-gap">—</strong></span>
+                  <span>Margem <strong style="color:#374951;"><span id="ix-bio-margempct">—</span> · <span id="ix-bio-margem">—</span></strong></span>
+                  <span>Pedidos <strong style="color:#374951;"><span id="ix-ped-bio-qtd">—</span> · <span id="ix-ped-bio-valor">—</span></strong></span>
                 </div>
               </div>
 
               <!-- MSB -->
-              <div style="min-width:0;padding:18px 20px;border-radius:14px;background:#FFFFFF;border:1px solid #E3EAF2;">
+              <div style="min-width:0;padding:18px 20px;border-radius:14px;background:#FFFFFF;border:1px solid #E5EAED;">
                 <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;">
-                  <span style="font-size:12.5px;font-weight:800;color:#0A2E5C;">MSB</span>
+                  <span style="font-size:12.5px;font-weight:800;color:#10323E;">MSB</span>
                   <span id="ix-msb-badge" style="display:inline-flex;align-items:center;gap:4px;font-size:11.5px;font-weight:800;color:#22794C;background:#EAF8F0;border-radius:999px;padding:3px 9px;white-space:nowrap;"><span class="arr"></span><span id="ix-msb-pct">—</span></span>
                 </div>
-                <div id="ix-msb-fat" style="font-size:22px;font-weight:800;color:#0A2E5C;margin-top:8px;letter-spacing:-0.4px;">—</div>
-                <div style="height:6px;border-radius:999px;background:#EDF2F8;overflow:hidden;margin-top:10px;">
+                <div id="ix-msb-fat" style="font-size:22px;font-weight:800;color:#10323E;margin-top:8px;letter-spacing:-0.4px;">—</div>
+                <div style="height:6px;border-radius:999px;background:#EEF2F5;overflow:hidden;margin-top:10px;">
                   <div id="ix-msb-minibar" style="height:100%;width:0%;border-radius:999px;background:#2FBF71;transition:width .5s ease;"></div>
                 </div>
-                <div style="display:flex;gap:16px;margin-top:10px;font-size:11.5px;color:#5B7189;flex-wrap:wrap;">
-                  <span>Meta <strong style="color:#33495E;" id="ix-msb-meta">—</strong></span>
-                  <span>Gap <strong style="color:#33495E;" id="ix-msb-gap">—</strong></span>
-                  <span>Margem <strong style="color:#33495E;"><span id="ix-msb-margempct">—</span> · <span id="ix-msb-margem">—</span></strong></span>
-                  <span>Pedidos <strong style="color:#33495E;"><span id="ix-ped-msb-qtd">—</span> · <span id="ix-ped-msb-valor">—</span></strong></span>
+                <div style="display:flex;gap:16px;margin-top:10px;font-size:11.5px;color:#5F727A;flex-wrap:wrap;">
+                  <span>Meta <strong style="color:#374951;" id="ix-msb-meta">—</strong></span>
+                  <span>Gap <strong style="color:#374951;" id="ix-msb-gap">—</strong></span>
+                  <span>Margem <strong style="color:#374951;"><span id="ix-msb-margempct">—</span> · <span id="ix-msb-margem">—</span></strong></span>
+                  <span>Pedidos <strong style="color:#374951;"><span id="ix-ped-msb-qtd">—</span> · <span id="ix-ped-msb-valor">—</span></strong></span>
                 </div>
               </div>
             </div>
@@ -685,9 +684,9 @@
           // Claude Design: tipografia e grade sutil nos gráficos
           if(window.Chart){
             Chart.defaults.font.weight='600';
-            Chart.defaults.font.family="'Plus Jakarta Sans', system-ui, sans-serif";
-            Chart.defaults.color='#7C93A8';
-            Chart.defaults.borderColor='#EDF2F8';
+            Chart.defaults.font.family="'Roboto', system-ui, sans-serif";
+            Chart.defaults.color='#81939B';
+            Chart.defaults.borderColor='#EEF2F5';
           }
           </script>
           <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
@@ -758,7 +757,7 @@
           window.renderChartDiario = function(labels, valores){
             const el = document.getElementById('sr-chart-daily');
             if(!el || typeof Chart === 'undefined') return;
-            const cores = valores.map(v => Number(v) > 0 ? 'rgba(39,208,69,.7)' : 'rgba(203,213,225,.45)');
+            const cores = valores.map(v => Number(v) > 0 ? 'rgba(39,208,69,.7)' : 'rgba(206,213,218,.45)');
             if(_chartDiario){
               _chartDiario.data.labels = labels;
               _chartDiario.data.datasets[0].data = valores;
@@ -774,7 +773,7 @@
                 plugins:{ legend:{ display:false }, tooltip:{ callbacks:{ label:c=>'R$ '+Number(c.raw).toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2}) } } },
                 scales:{
                   x:{ grid:{ display:false }, ticks:{ font:{ size:10 }, maxRotation:0, autoSkip:true, autoSkipPadding:8 } },
-                  y:{ grid:{ color:'rgba(15,23,42,.05)' }, ticks:{ font:{ size:10 }, callback:v=>'R$'+(v/1000).toFixed(0)+'k' } }
+                  y:{ grid:{ color:'rgba(16,24,30,.05)' }, ticks:{ font:{ size:10 }, callback:v=>'R$'+(v/1000).toFixed(0)+'k' } }
                 }
               }
             });
@@ -791,9 +790,9 @@
             // cor da barra: verde se faturamento > meta, vermelho se <= meta; cinza sem faturamento; azul sem meta p/ comparar
             const cores = valores.map((v,i)=>{
               const fv = Number(v)||0, mv = Number((metas||[])[i])||0;
-              if(fv<=0) return 'rgba(203,213,225,.45)';
+              if(fv<=0) return 'rgba(206,213,218,.45)';
               if(mv>0)  return fv>mv ? 'rgba(34,163,63,.82)' : 'rgba(220,38,38,.80)';
-              return 'rgba(30,136,229,.8)';
+              return 'rgba(54,144,167,.8)';
             });
             if(_chartMensal){
               _chartMensal.data.datasets[0].data = valores;
@@ -809,7 +808,7 @@
               ] },
               options:{ responsive:true, maintainAspectRatio:false,
                 plugins:{ legend:{ display:true, position:'top', labels:{ usePointStyle:true, font:{ size:11 } } }, tooltip:{ callbacks:{ label:c=>c.dataset.label+': R$ '+Number(c.raw).toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2}) } } },
-                scales:{ x:{ grid:{ display:false }, ticks:{ font:{ size:10 } } }, y:{ grid:{ color:'rgba(15,23,42,.05)' }, ticks:{ font:{ size:10 }, callback:v=>'R$'+(v/1000).toFixed(0)+'k' } } }
+                scales:{ x:{ grid:{ display:false }, ticks:{ font:{ size:10 } } }, y:{ grid:{ color:'rgba(16,24,30,.05)' }, ticks:{ font:{ size:10 }, callback:v=>'R$'+(v/1000).toFixed(0)+'k' } } }
               }
             });
           };
@@ -1004,64 +1003,55 @@
       <div class="bm-footer-grid">
 
         <div class="bm-footer-col">
-          <img class="footer-logo" src="/icons/icon-192.png" alt="Biomedical">
-          <h5>Unidades</h5>
-          <div class="bm-units">
-            <div class="bm-unit"><span class="city">Belo Horizonte</span><a href="tel:+553121294000">(31) 2129-4000</a></div>
-            <div class="bm-unit"><span class="city">São Paulo</span><a href="tel:+551136626263">(11) 3662-6263</a></div>
-            <div class="bm-unit"><span class="city">Rio de Janeiro</span><a href="tel:+552133115376">(21) 3311-5376</a></div>
-            <div class="bm-unit"><span class="city">Curitiba</span><a href="tel:+554132093960">(41) 3209-3960</a></div>
-            <div class="bm-unit"><span class="city">Recife</span><a href="tel:+558130978110">(81) 3097-8110</a></div>
-            <div class="bm-unit"><span class="city">Porto Alegre</span><a href="tel:+555135739515">(51) 3573-9515</a></div>
+          <img class="footer-logo" src="/icons/logo-msb.png" alt="MSB · Medical System do Brasil">
+          <p class="bm-footer-sobre">Fabricante brasileira de dispositivos médicos em Endourologia, Endovascular, Cardiologia e Cirurgia Cardíaca/Torácica.</p>
+          <div class="bm-social">
+            <a href="https://www.instagram.com/msb.brasil/" target="_blank" rel="noopener" aria-label="Instagram da MSB"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="2" y="2" width="20" height="20" rx="5"/><path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"/><path d="M17.5 6.5h.01"/></svg></a>
+            <a href="https://www.linkedin.com/company/msb-medical-system-do-brasil" target="_blank" rel="noopener" aria-label="LinkedIn da MSB"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M16 8a6 6 0 0 1 6 6v7h-4v-7a2 2 0 0 0-4 0v7h-4v-7a6 6 0 0 1 6-6z"/><rect x="2" y="9" width="4" height="12"/><circle cx="4" cy="4" r="2"/></svg></a>
           </div>
-          <a href="https://api.whatsapp.com/send?phone=553121294000&text=Ol%C3%A1,%20gostaria%20de%20mais%20informa%C3%A7%C3%B5es%20sobre%20a%20Biomedical." target="_blank" rel="noopener" class="bm-whatsapp">
-            <svg viewBox="0 0 24 24" fill="currentColor"><path d="M.057 24l1.687-6.163a11.867 11.867 0 0 1-1.587-5.946C.16 5.335 5.495 0 12.05 0a11.817 11.817 0 0 1 8.413 3.488 11.824 11.824 0 0 1 3.48 8.414c-.003 6.557-5.338 11.892-11.893 11.892a11.9 11.9 0 0 1-5.688-1.448L.057 24zm6.597-3.807c1.676.995 3.276 1.591 5.392 1.592 5.448 0 9.886-4.434 9.889-9.885.002-5.462-4.415-9.89-9.881-9.892-5.452 0-9.887 4.434-9.889 9.884a9.86 9.86 0 0 0 1.515 5.26l-.999 3.648 3.973-1.042zm11.387-5.464c-.074-.124-.272-.198-.57-.347-.297-.149-1.758-.868-2.031-.967-.272-.099-.47-.149-.669.149-.198.297-.768.967-.941 1.165-.173.198-.347.223-.644.074-.297-.149-1.255-.462-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.297-.347.446-.521.151-.172.2-.296.3-.495.099-.198.05-.372-.025-.521-.075-.148-.669-1.611-.916-2.206-.242-.579-.487-.501-.669-.51l-.57-.01c-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.095 3.2 5.076 4.487.71.306 1.263.489 1.694.626.712.226 1.36.194 1.872.118.571-.085 1.758-.719 2.006-1.413.248-.695.248-1.29.173-1.414z"/></svg>
+          <a href="https://msbbrasil.com/contato/" target="_blank" rel="noopener" class="bm-whatsapp bm-contato">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"/></svg>
             Entre em contato!
           </a>
         </div>
 
         <div class="bm-footer-col">
-          <h5>Sobre</h5>
+          <h5>A MSB</h5>
           <ul>
-            <li><a href="https://biomedical.com.br/institucional/" target="_blank" rel="noopener">Nosso Legado</a></li>
-            <li><a href="https://biomedical.com.br/#hub" target="_blank" rel="noopener">HUB de Negócios</a></li>
-            <li><a href="https://biomedical.com.br/fale-conosco/" target="_blank" rel="noopener">Grupo MSBIO</a></li>
-            <li><a href="https://biomedical.com.br/institucional/#certificacoes" target="_blank" rel="noopener">Certificações</a></li>
-            <li><a href="https://biomedical.com.br/fale-conosco/" target="_blank" rel="noopener">Imprensa</a></li>
-            <li><a href="https://vemprabiomedical.gupy.io/" target="_blank" rel="noopener">Carreira</a></li>
+            <li><a href="https://msbbrasil.com/quem-somos/" target="_blank" rel="noopener">Sobre a MSB</a></li>
+            <li><a href="https://msbbrasil.com/noticias/" target="_blank" rel="noopener">Notícias</a></li>
+            <li><a href="https://msbbrasil.com/conteudos/" target="_blank" rel="noopener">Conteúdos</a></li>
+            <li><a href="https://msbbrasil.com/certificacao-anvisa/" target="_blank" rel="noopener">Anvisa / ISO</a></li>
+            <li><a href="https://vemprabiomedical.gupy.io/" target="_blank" rel="noopener">Vagas · MSBio Group</a></li>
           </ul>
         </div>
 
         <div class="bm-footer-col">
-          <h5>Contatos</h5>
+          <h5>Contato</h5>
           <ul>
-            <li><a href="https://biomedical.com.br/wp-content/uploads/2023/08/Codigo-de-Etica-e-Conduta-Biomedical.pdf" target="_blank" rel="noopener">Ética e Compliance</a></li>
-            <li><a href="https://biomedical.com.br/institucional/#certificacoes" target="_blank" rel="noopener">Segurança e Certificações</a></li>
-            <li><a href="https://biomedical.com.br/fale-conosco/" target="_blank" rel="noopener">Central de Vendas</a></li>
-            <li><a href="https://api.whatsapp.com/send?phone=553121294000" target="_blank" rel="noopener">Fale com a gente</a></li>
-            <li><a href="https://biomedical.com.br/canal-de-denuncias/" target="_blank" rel="noopener">Ouvidoria</a></li>
+            <li><a href="https://msbbrasil.com/contato/" target="_blank" rel="noopener">Fale com a MSB</a></li>
+            <li><a href="https://msbbrasil.com/contato/" target="_blank" rel="noopener">Quero comprar</a></li>
+            <li><a href="https://msbbrasil.com/instrucao-de-uso/" target="_blank" rel="noopener">Instruções de Uso</a></li>
+            <li><a href="https://msbbrasil.com/" target="_blank" rel="noopener">Site oficial</a></li>
           </ul>
         </div>
 
         <div class="bm-footer-col">
           <h5>Produtos</h5>
           <ul>
-            <li><a href="https://biomedical.com.br/produtos/" target="_blank" rel="noopener">Vascular</a></li>
-            <li><a href="https://biomedical.com.br/produtos/" target="_blank" rel="noopener">Heart e Rhythm</a></li>
-            <li><a href="https://biomedical.com.br/produtos/" target="_blank" rel="noopener">Intensive Care</a></li>
-            <li><a href="https://biomedical.com.br/produtos/" target="_blank" rel="noopener">Dialysis</a></li>
-            <li><a href="https://biomedical.com.br/produtos/" target="_blank" rel="noopener">Accessories</a></li>
-            <li><a href="https://biomedical.com.br/produtos/" target="_blank" rel="noopener">Guidewires</a></li>
-            <li><a href="https://biomedical.com.br/produtos/" target="_blank" rel="noopener">Cath Lab</a></li>
-            <li><a href="https://biomedical.com.br/produtos/" target="_blank" rel="noopener">Segurança do Paciente</a></li>
+            <li><a href="https://msbbrasil.com/produtos/" target="_blank" rel="noopener">Endourologia</a></li>
+            <li><a href="https://msbbrasil.com/produtos/" target="_blank" rel="noopener">Endovascular</a></li>
+            <li><a href="https://msbbrasil.com/produtos/" target="_blank" rel="noopener">Cardiologia</a></li>
+            <li><a href="https://msbbrasil.com/produtos/" target="_blank" rel="noopener">Cirurgia Cardíaca/Torácica</a></li>
+            <li><a href="https://msbbrasil.com/produtos/" target="_blank" rel="noopener">Todos os produtos</a></li>
           </ul>
         </div>
 
       </div>
 
       <div class="bm-footer-bottom">
-        <span>© <span id="year"></span> Biomedical · Portal Corporativo Interno</span>
-        <span class="bm-footer-meta">Belo Horizonte · São Paulo · Rio de Janeiro · Curitiba · Recife · Porto Alegre</span>
+        <span>© <span id="year"></span> MSB · Medical System do Brasil · Portal interno</span>
+        <span class="bm-footer-meta">Endourologia · Endovascular · Cardiologia · Cirurgia Cardíaca/Torácica</span>
       </div>
     </div>
   </footer>
@@ -1875,7 +1865,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   const wrap = document.querySelector('.sr-wrap');
   const banner = document.createElement('div');
   banner.id = 'pbi-banner';
-  banner.style.cssText = 'padding:11px 16px;border-radius:8px;font-size:13px;margin-bottom:16px;display:flex;align-items:center;gap:10px;background:#EFF6FF;border:1px solid #BFDBFE;color:#1E40AF;';
+  banner.style.cssText = 'padding:11px 16px;border-radius:8px;font-size:13px;margin-bottom:16px;display:flex;align-items:center;gap:10px;background:#F0F7FA;border:1px solid #BDDEEA;color:#235063;';
   banner.innerHTML = `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg> Conectando ao Power BI…`;
   if (wrap) wrap.insertBefore(banner, wrap.firstChild);
 

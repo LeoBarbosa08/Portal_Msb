@@ -3,13 +3,13 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>GMROI · Estoque · Biomedical</title>
+  <title>GMROI · Estoque · MSB</title>
   <link rel="stylesheet" href="../styles.css?v=14">
   <script src="https://unpkg.com/@azure/msal-browser@2.38.3/lib/msal-browser.min.js"></script>
 <script src="../pbi-throttle.js?v=3"></script>
 <script src="../pbi-modelo.js?v=2"></script>
   <!-- Layout v3 (Claude Design · animado): fonte + camada visual + motor de animações -->
-  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300..800&family=Manrope:wght@400..800&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300..900&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="../portal-v3.css?v=2">
   <script src="../portal-motion.js?v=3" defer></script>
   <!-- Tema claro/escuro (menu do avatar): marca o <html> antes de pintar + camada escura -->
@@ -23,7 +23,7 @@
 <body class="dept">
 
   <header class="site-header"><div class="container">
-    <a href="../index.html" class="brand" aria-label="Biomedical — Portal Corporativo"><img class="brand-logo" src="/icons/icon-192.png" alt="Biomedical" onerror="this.dataset.failed='true'"><span class="brand-fallback">Biomedical</span></a>
+    <a href="../index.html" class="brand" aria-label="Portal MSB — página inicial"><img class="brand-logo" src="/icons/logo-msb.png" alt="MSB · Medical System do Brasil" onerror="this.dataset.failed='true'"><span class="brand-fallback">MSB</span></a>
     <nav class="header-nav"><a href="../index.html">Início</a><a href="../index.html#areas">Áreas</a><a href="../index.html#sistemas">Sistemas</a><a href="../index.html#avisos">Avisos</a><a href="../index.html#contato">Contato</a></nav>
   </div></header>
 
@@ -39,27 +39,27 @@
           <!-- ═══ Cabeçalho + abas de submódulo (Claude Design) ═══ -->
           <style>
             .fx-head{display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap;padding:22px 0 4px;}
-            .fx-bc{display:flex;align-items:center;gap:6px;font-size:12px;color:#7C93A8;}
-            .fx-title{margin:4px 0 0;font-size:23px;font-weight:800;letter-spacing:-0.5px;color:#0A2E5C;}
+            .fx-bc{display:flex;align-items:center;gap:6px;font-size:12px;color:#81939B;}
+            .fx-title{margin:4px 0 0;font-size:23px;font-weight:800;letter-spacing:-0.5px;color:#10323E;}
             .fx-head-right{display:flex;align-items:center;gap:12px;flex-wrap:wrap;}
-            .fx-tabs{display:flex;align-items:center;background:#FFFFFF;border:1px solid #E3EAF2;border-radius:11px;padding:3px;flex-wrap:wrap;}
-            .fx-tabs a,.fx-tabs span{padding:8px 14px;border-radius:8px;font-size:12.5px;font-weight:600;color:#5B7189;text-decoration:none;white-space:nowrap;}
-            .fx-tabs a:hover{color:#0A2E5C;}
-            .fx-tabs .active{background:#0A2E5C;font-weight:700;color:#fff;}
-            .fx-filters{display:flex;align-items:center;gap:10px;flex-wrap:wrap;padding:12px 14px;background:#fff;border:1px solid #E3EAF2;border-radius:12px;}
-            .fx-fdiv{width:1px;height:24px;background:#E3EAF2;}
-            .fx-fbtn{display:inline-flex;align-items:center;gap:8px;padding:8px 12px;border-radius:9px;border:1px solid #E3EAF2;background:#fff;font-size:12.5px;font-weight:600;color:#33495E;cursor:pointer;font-family:inherit;white-space:nowrap;}
-            .fx-fbtn:hover{border-color:#1272C4;}
-            .fx-fbtn .fx-fk{font-weight:700;color:#93A7BA;}
+            .fx-tabs{display:flex;align-items:center;background:#FFFFFF;border:1px solid #E5EAED;border-radius:11px;padding:3px;flex-wrap:wrap;}
+            .fx-tabs a,.fx-tabs span{padding:8px 14px;border-radius:8px;font-size:12.5px;font-weight:600;color:#5F727A;text-decoration:none;white-space:nowrap;}
+            .fx-tabs a:hover{color:#10323E;}
+            .fx-tabs .active{background:#10323E;font-weight:700;color:#fff;}
+            .fx-filters{display:flex;align-items:center;gap:10px;flex-wrap:wrap;padding:12px 14px;background:#fff;border:1px solid #E5EAED;border-radius:12px;}
+            .fx-fdiv{width:1px;height:24px;background:#E5EAED;}
+            .fx-fbtn{display:inline-flex;align-items:center;gap:8px;padding:8px 12px;border-radius:9px;border:1px solid #E5EAED;background:#fff;font-size:12.5px;font-weight:600;color:#374951;cursor:pointer;font-family:inherit;white-space:nowrap;}
+            .fx-fbtn:hover{border-color:#287A8E;}
+            .fx-fbtn .fx-fk{font-weight:700;color:#97A8AE;}
             .fx-fbtn svg{flex-shrink:0;}
-            .fx-flimpar{margin-left:auto;display:inline-flex;align-items:center;gap:6px;padding:8px 12px;border-radius:9px;border:none;background:transparent;font-size:12.5px;font-weight:600;color:#5B7189;cursor:pointer;font-family:inherit;white-space:nowrap;}
+            .fx-flimpar{margin-left:auto;display:inline-flex;align-items:center;gap:6px;padding:8px 12px;border-radius:9px;border:none;background:transparent;font-size:12.5px;font-weight:600;color:#5F727A;cursor:pointer;font-family:inherit;white-space:nowrap;}
             .fx-flimpar:hover{color:#B54545;}
             .fxdd{position:relative;display:inline-block;}
-            .fxdd-panel{position:absolute;z-index:50;top:calc(100% + 6px);left:0;display:none;flex-direction:column;background:#fff;border:1px solid #E3EAF2;border-radius:12px;box-shadow:0 10px 30px rgba(10,46,92,0.14);padding:12px;min-width:210px;}
+            .fxdd-panel{position:absolute;z-index:50;top:calc(100% + 6px);left:0;display:none;flex-direction:column;background:#fff;border:1px solid #E5EAED;border-radius:12px;box-shadow:0 10px 30px rgba(16,50,62,0.14);padding:12px;min-width:210px;}
             .fxdd.open .fxdd-panel{display:flex;}
-            .fxdd-sec{font-size:10.5px;font-weight:800;letter-spacing:0.8px;text-transform:uppercase;color:#93A7BA;margin:2px 2px 8px;}
+            .fxdd-sec{font-size:10.5px;font-weight:800;letter-spacing:0.8px;text-transform:uppercase;color:#97A8AE;margin:2px 2px 8px;}
             .fxdd-sec.mt{margin-top:12px;}
-            .fxdd-hint{font-size:11px;color:#93A7BA;margin-top:10px;}
+            .fxdd-hint{font-size:11px;color:#97A8AE;margin-top:10px;}
             /* esconde a faixa de cards de sub-modulos (estatica OU injetada pelo nav-sidebar.js) — navegacao agora pelas abas */
             .area-main section:has(.modulo-card){display:none !important;}
             /* periodo largo/horizontal p/ dropdowns com botoes de mes */
@@ -72,7 +72,7 @@
               .fx-head{align-items:flex-start;padding-top:14px;}
               .fx-title{font-size:17px;}
               .fx-head-right{width:100%;}
-              .fx-tabs{width:100%;flex-wrap:nowrap;overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none;background:#F0F4F9;border:none;}
+              .fx-tabs{width:100%;flex-wrap:nowrap;overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none;background:#F1F4F6;border:none;}
               .fx-tabs::-webkit-scrollbar{display:none;}
               .fx-tabs a,.fx-tabs span{flex:0 0 auto;}
               .fx-filters{flex-wrap:nowrap;overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none;}
@@ -188,17 +188,17 @@
         .cx-fix{font-size:11px;color:var(--text-3);line-height:1.6;margin:0 0 10px;}
         .cx-fix b{color:var(--text-2);font-weight:700;}
         .cx-fix .cx-fix-w{color:#B45309;font-weight:700;}
-        .cx-kpi-src{display:inline-block;margin-left:6px;padding:1px 6px;border-radius:999px;background:#EFF6FF;color:#1D4ED8;font-size:9px;font-weight:700;letter-spacing:.03em;text-transform:none;vertical-align:middle;}
+        .cx-kpi-src{display:inline-block;margin-left:6px;padding:1px 6px;border-radius:999px;background:#F0F7FA;color:#28627A;font-size:9px;font-weight:700;letter-spacing:.03em;text-transform:none;vertical-align:middle;}
         /* ── VISUAIS (graficos) ── */
         .cx-bars{display:grid;grid-template-columns:1fr 1fr;gap:14px;}
         @media(max-width:880px){.cx-bars{grid-template-columns:1fr !important;}}
         .cx-chart-wrap{position:relative;height:300px;}
         .cx-chart-wrap.tall{height:360px;}
         .cx-gsec{display:flex;align-items:flex-end;justify-content:space-between;gap:14px;flex-wrap:wrap;}
-        .cx-seg{display:inline-flex;background:#F0F4F9;border:1px solid var(--border);border-radius:9px;padding:3px;gap:2px;}
+        .cx-seg{display:inline-flex;background:#F1F4F6;border:1px solid var(--border);border-radius:9px;padding:3px;gap:2px;}
         .cx-seg button{padding:6px 12px;border:none;background:transparent;border-radius:7px;font-size:12px;font-weight:700;color:var(--text-3);cursor:pointer;font-family:inherit;white-space:nowrap;}
-        .cx-seg button:hover:not(:disabled){color:var(--bm-blue-800,#0A2E5C);}
-        .cx-seg button.on{background:#fff;color:var(--bm-blue-900);box-shadow:0 1px 3px rgba(10,46,92,.14);}
+        .cx-seg button:hover:not(:disabled){color:var(--bm-blue-800,#10323E);}
+        .cx-seg button.on{background:#fff;color:var(--bm-blue-900);box-shadow:0 1px 3px rgba(16,50,62,.14);}
         .cx-seg button:disabled{opacity:.45;cursor:not-allowed;}
         .cx-ph{padding:24px 12px;text-align:center;color:var(--text-3);font-size:12.5px;}
         .cx-gwarn{font-size:11px;line-height:1.6;color:#B45309;font-weight:700;}
@@ -206,7 +206,7 @@
 
       <div class="cx-wrap">
 
-        <div id="cx-banner" style="padding:11px 16px;border-radius:8px;font-size:13px;display:flex;align-items:center;gap:10px;background:#EFF6FF;border:1px solid #BFDBFE;color:#1E40AF;">
+        <div id="cx-banner" style="padding:11px 16px;border-radius:8px;font-size:13px;display:flex;align-items:center;gap:10px;background:#F0F7FA;border:1px solid #BDDEEA;color:#235063;">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
           Conectando ao Power BI…
         </div>
@@ -267,7 +267,7 @@
     </div>
   </div></div></div>
 
-  <footer class="site-footer"><div class="container"><p>© Biomedical — Portal Corporativo</p></div></footer>
+  <footer class="site-footer"><div class="container"><p>© MSB — Portal MSB</p></div></footer>
 
   <script src="../script.js?v=8"></script>
   <script src="../nav-sidebar.js?v=52"></script>
@@ -398,7 +398,7 @@
   // ══ VISUAIS (gráficos) ══
   const GMEAS = [
     // GMROI e margem média são índice/razão: somar não quer dizer nada (`nosoma`)
-    { m:'g', key:'gmroi',  mk:'gmroi',  label:'GMROI',             fmt:fPCT, tick:v=>fPCT(v), cor:'rgba(18,114,196,.85)', nosoma:true },
+    { m:'g', key:'gmroi',  mk:'gmroi',  label:'GMROI',             fmt:fPCT, tick:v=>fPCT(v), cor:'rgba(40,122,142,.85)', nosoma:true },
     { m:'m', key:'margem', mk:'margem', label:'Margem média (6m)', fmt:fIDX, tick:v=>fIDX(v), cor:'rgba(180,83,9,.85)',   nosoma:true },
     { m:'c', key:'custo',  mk:'custo',  label:'Saldo em custo',    fmt:fBRL, tick:v=>fMi(v),  cor:'rgba(21,128,61,.85)'  }
   ];
@@ -699,16 +699,16 @@
         } catch(e){ s='ERRO'; d=(e.message||'').replace(/<\/?oii>/g,'').slice(0,140); }
       }
       const bad = /VAZIA|ERRO|resolv/.test(s);
-      linhas.push(`<tr><td style="padding:5px 10px;border-bottom:1px solid #eee;font-weight:600;">${escH(c.header)}</td><td style="padding:5px 10px;border-bottom:1px solid #eee;font-family:monospace;font-size:11px;color:#64748b;">${escH(c._ref||'')}</td><td style="padding:5px 10px;border-bottom:1px solid #eee;font-weight:700;color:${bad?'#b91c1c':'#15803d'};">${escH(s)}</td><td style="padding:5px 10px;border-bottom:1px solid #eee;color:#475569;">${escH(d)}</td></tr>`);
+      linhas.push(`<tr><td style="padding:5px 10px;border-bottom:1px solid #eee;font-weight:600;">${escH(c.header)}</td><td style="padding:5px 10px;border-bottom:1px solid #eee;font-family:monospace;font-size:11px;color:#67757d;">${escH(c._ref||'')}</td><td style="padding:5px 10px;border-bottom:1px solid #eee;font-weight:700;color:${bad?'#b91c1c':'#15803d'};">${escH(s)}</td><td style="padding:5px 10px;border-bottom:1px solid #eee;color:#49565C;">${escH(d)}</td></tr>`);
     }
-    return `<div style="background:#fff;border:1px solid #E3EAF2;border-radius:12px;padding:16px;margin-bottom:14px;overflow:auto;">
+    return `<div style="background:#fff;border:1px solid #E5EAED;border-radius:12px;padding:16px;margin-bottom:14px;overflow:auto;">
       <h3 style="margin:0 0 4px;">🔎 Diagnóstico "${escH(T.name)}" — cada coluna SOZINHA + medida <code>${escH(bareRef(meaRef))}</code> (sem filtros fixos)</h3>
-      <div style="font-size:12px;color:#64748b;margin-bottom:12px;">"VAZIA" = a coluna existe mas não traz valor junto com a medida → a dimensão não está ligada a esse fato por esse caminho.</div>
+      <div style="font-size:12px;color:#67757d;margin-bottom:12px;">"VAZIA" = a coluna existe mas não traz valor junto com a medida → a dimensão não está ligada a esse fato por esse caminho.</div>
       <table style="width:100%;border-collapse:collapse;font-size:12.5px;"><thead><tr>
-        <th style="text-align:left;padding:5px 10px;border-bottom:2px solid #E3EAF2;">Coluna</th>
-        <th style="text-align:left;padding:5px 10px;border-bottom:2px solid #E3EAF2;">Referência DAX</th>
-        <th style="text-align:left;padding:5px 10px;border-bottom:2px solid #E3EAF2;">Resultado</th>
-        <th style="text-align:left;padding:5px 10px;border-bottom:2px solid #E3EAF2;">Exemplos</th>
+        <th style="text-align:left;padding:5px 10px;border-bottom:2px solid #E5EAED;">Coluna</th>
+        <th style="text-align:left;padding:5px 10px;border-bottom:2px solid #E5EAED;">Referência DAX</th>
+        <th style="text-align:left;padding:5px 10px;border-bottom:2px solid #E5EAED;">Resultado</th>
+        <th style="text-align:left;padding:5px 10px;border-bottom:2px solid #E5EAED;">Exemplos</th>
       </tr></thead><tbody>${linhas.join('')}</tbody></table></div>`;
   }
 
@@ -730,13 +730,13 @@
     }}
     const aggMiss=[];
     TABLES.forEach(T=>T.meas.forEach(m=>{ if(m.agg && !m._ref){ const tbl=m.cands[0][0]; const tb=_colCat&&_colCat[_norm(tbl)]; const cols=tb?Object.values(tb).filter(c=>['qtde','disponiv','custo','quant','saldo','medio','estoque'].some(t=>_norm(c).includes(t))):[]; aggMiss.push(`<div style="margin:2px 0;"><b>${escH(m.header)}</b> — tabela <code>${escH(tbl)}</code>: ${tb?'existe':'<span style="color:#b91c1c">NÃO existe</span>'}; colunas parecidas: <b>${cols.map(escH).join(' · ')||'(nenhuma)'}</b></div>`); } }));
-    return `<div style="background:#fff;border:1px solid #E3EAF2;border-radius:12px;padding:16px;margin-bottom:14px;overflow:auto;">
+    return `<div style="background:#fff;border:1px solid #E5EAED;border-radius:12px;padding:16px;margin-bottom:14px;overflow:auto;">
       <h3 style="margin:0 0 8px;">🔎 Catálogo — medidas & colunas do modelo</h3>
       <div style="font-size:12.5px;margin-bottom:6px;">Colunas (_colCat): <b>${_colCat?Object.keys(_colCat).length+' tabelas':'<span style="color:#b91c1c">null</span>'}</b></div>
       <div style="font-size:12.5px;margin-bottom:10px;">Medidas (_meaCat): ${meaHtml}</div>
       ${aggMiss.length?`<div style="font-size:12.5px;background:#FFFBEB;border:1px solid #FDE68A;border-radius:8px;padding:8px;margin-bottom:10px;">${aggMiss.join('')}</div>`:''}
       <table style="width:100%;border-collapse:collapse;font-size:12.5px;"><thead><tr>
-        <th style="text-align:left;padding:4px 10px;border-bottom:2px solid #E3EAF2;">Tabela</th><th style="text-align:left;padding:4px 10px;border-bottom:2px solid #E3EAF2;">Medida</th><th style="text-align:left;padding:4px 10px;border-bottom:2px solid #E3EAF2;">Ref resolvida</th><th style="text-align:left;padding:4px 10px;border-bottom:2px solid #E3EAF2;">Probe (valor / erro)</th>
+        <th style="text-align:left;padding:4px 10px;border-bottom:2px solid #E5EAED;">Tabela</th><th style="text-align:left;padding:4px 10px;border-bottom:2px solid #E5EAED;">Medida</th><th style="text-align:left;padding:4px 10px;border-bottom:2px solid #E5EAED;">Ref resolvida</th><th style="text-align:left;padding:4px 10px;border-bottom:2px solid #E5EAED;">Probe (valor / erro)</th>
       </tr></thead><tbody>${proberows.join('')}</tbody></table></div>`;
   }
 
@@ -1019,7 +1019,7 @@
           afterBody: afterBody||undefined } }
       },
       scales:{
-        x:{ beginAtZero:true, ticks:{ callback:v=>(_gcur[id]||GMEAS[0]).tick(v), font:{size:10} }, grid:{color:'#EEF3F8'} },
+        x:{ beginAtZero:true, ticks:{ callback:v=>(_gcur[id]||GMEAS[0]).tick(v), font:{size:10} }, grid:{color:'#F0F3F5'} },
         y:{ ticks:{font:{size:10}}, grid:{display:false} }
       } } });
   }

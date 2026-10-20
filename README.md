@@ -1,4 +1,4 @@
-# Portal Comercial & Estoque · Biomedical
+# Portal MSB · Comercial & Estoque
 
 Cópia enxuta do Portal Corporativo com **só as áreas Comercial e Estoque**
 (repositório `LeoBarbosa08/Portal_Msb`). Montada em 16/10/2026 e atualizada
@@ -70,6 +70,41 @@ inteiro** (chegou a ser ocultado e voltou no mesmo dia). Marcado no código com
 
 Para voltar um módulo: recoloque-o nesses pontos.
 
+### Identidade visual MSB (20/10/2026)
+
+O portal usa a marca da **MSB · Medical System do Brasil** (msbbrasil.com), não
+a da Biomedical:
+
+- **Cores** — a família azul/navy da Biomedical virou o teal da MSB
+  (`#56A4BB`, o do logo). A troca foi feita por `scripts/msb-cores.js`: muda o
+  matiz para o teal, reduz a saturação e **mantém a luminância** de cada cor, para
+  nenhum contraste mudar (o primário `#1A66D2` virou `#2C7288`, o navy
+  `#0A2E5C` virou `#10323E`). Verde, âmbar, vermelho, violeta e índigo (status
+  e categorias) ficaram. Nas paletas de categoria em que o azul e um teal antigo
+  ficariam iguais (status das Cotações, histórico, Calendário Cirúrgico, Análise
+  de Pedidos), o teal antigo virou azul (`#2B6CC4`). Tema escuro:
+  `NAVY_H = 198` em `portal-tema.js` (petróleo, não navy).
+- **Fonte** — Roboto (a do site da MSB) no lugar de Outfit, Manrope, Plus
+  Jakarta Sans e Inter; JetBrains Mono continua nos números/códigos.
+- **Logo e ícones** — `icons/logo-msb.png` (logo horizontal, teal, fundo
+  transparente; em fundo escuro vira branco com `filter: brightness(0) invert(1)`),
+  `logo-msb-branco.png`, `msb-simbolo*.png` (só o "mSb", usados pelo InventarIA),
+  `icon-192/512`, `apple-touch-icon` e `favicon.ico` com o "mSb" branco no teal.
+  Gerados a partir do logo do site (`logo-msb-2.png`).
+- **Nomes** — "Portal MSB" (título da home, PWA, manifest); as abas terminam em
+  "· MSB"; rodapés "© MSB · Medical System do Brasil".
+- **Login** — logo da MSB, "Tudo da MSB em um só lugar."; o BioNiko (mascote da
+  Biomedical) está desligado (`MASCOTE = false` em `auth.js`) e fica o brilho em CSS.
+- **Rodapé** — links do msbbrasil.com (institucional, contato, produtos,
+  Instagram, LinkedIn). O site não publica telefones, então não há "Unidades".
+- `sw.js` — cache `bm-comest-v3`, para o navegador não servir o visual antigo.
+
+**Continua Biomedical, de propósito:** a proposta comercial em PDF
+(`cotacoes-proposta.js` + `assets/proposta-*.jpg`, timbrado e razão social), o
+"Cód. Biomedical" dos produtos, os atalhos de sistemas compartilhados (Salesforce,
+SharePoint BioPortal, Zendesk, e-mails @biomedical), as pastas de materiais de
+marketing e o texto do Sales Playbook.
+
 ## Como colocar no ar
 
 1. **Repositório no GitHub** — crie um repositório **privado e vazio** (sem
@@ -131,6 +166,18 @@ Os arquivos são os mesmos do completo. Para atualizar um módulo, copie o
 arquivo de lá e, se for um dos arquivos da lista "O que mudou", reaplique o
 trecho `RECORTE COMERCIAL + ESTOQUE`. Página ou Function nova: confira se ela
 chama outra Function ou script que ainda não está aqui.
+
+O arquivo do completo chega **azul e com as fontes da Biomedical**. Depois de
+copiar, converta **só os arquivos que acabaram de chegar** (rodar de novo num
+arquivo já convertido acinzenta as cores):
+
+```bash
+node scripts/msb-cores.js . --write pages/arquivo-novo.html
+```
+
+e troque as fontes (`Outfit`/`Manrope`/`Plus Jakarta Sans` → `Roboto`, link do
+Google Fonts `family=Roboto:wght@300..900`), o logo (`/icons/logo-msb.png`) e o
+"· Biomedical" do `<title>`.
 
 ## Teste local
 

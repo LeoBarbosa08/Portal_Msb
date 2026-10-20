@@ -1,9 +1,10 @@
 // ================================================================
-// auth.js — Portal Biomedical · Authentication Guard
+// auth.js — Portal MSB · Authentication Guard
 // Bloqueia acesso total sem login @biomedical.com.br, @bio-id.com ou @msbbrasil.com
 // Layout da tela de login: "Login Desktop/Mobile" (Claude Design) com o
-// painel da marca do Layout v3 — BioNiko 3D (home-scene.js), balão de fala,
-// piso em perspectiva, status/aviso e entrada em cascata.
+// painel da marca do Layout v3 — logo da MSB, brilho em CSS, piso em perspectiva,
+// status/aviso e entrada em cascata. O BioNiko 3D (mascote da Biomedical) fica
+// desligado aqui (MASCOTE = false).
 // ================================================================
 (function () {
   'use strict';
@@ -216,7 +217,7 @@
     } catch (e) { console.warn('[Auth] patch de popup falhou:', e); }
   }
 
-  // ── Fontes do design (Outfit + Manrope — as do Layout v3) ─────
+  // ── Fontes do design (Roboto — a do site da MSB) ─────
   (function loadFonts() {
     const add = (rel, href, cross) => {
       const l = document.createElement('link');
@@ -226,20 +227,20 @@
     };
     add('preconnect', 'https://fonts.googleapis.com');
     add('preconnect', 'https://fonts.gstatic.com', true);
-    add('stylesheet', 'https://fonts.googleapis.com/css2?family=Outfit:wght@300..800&family=Manrope:wght@400..800&family=JetBrains+Mono:wght@400;500;700&display=swap');
+    add('stylesheet', 'https://fonts.googleapis.com/css2?family=Roboto:wght@300..900&family=JetBrains+Mono:wght@400;500;700&display=swap');
   })();
 
   // ── CSS da tela de login ──────────────────────────────────────
   const css = `
     #portal-auth-screen {
       position: fixed; inset: 0; z-index: 99999; overflow: auto;
-      display: flex; color: #0F1E33; background: #0A1B39;
-      font-family: 'Manrope', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+      display: flex; color: #121F26; background: #0D1E26;
+      font-family: 'Roboto', system-ui, -apple-system, 'Segoe UI', sans-serif;
       -webkit-font-smoothing: antialiased; text-rendering: optimizeLegibility;
     }
     #portal-auth-screen * { box-sizing: border-box; }
-    #portal-auth-screen a { color: #1E5AD1; text-decoration: none; font-weight: 600; }
-    #portal-auth-screen a:hover { color: #123C97; }
+    #portal-auth-screen a { color: #2B6980; text-decoration: none; font-weight: 600; }
+    #portal-auth-screen a:hover { color: #1A485A; }
 
     /* ============ PAINEL DE MARCA (navy) · Layout v3 com o BioNiko 3D ============ */
     .pa-brand {
@@ -248,14 +249,14 @@
       display: flex; flex-direction: column; justify-content: flex-start; gap: var(--pa-gap);
       padding: 44px 56px 40px; color: #fff;
       background:
-        radial-gradient(700px 520px at 68% 34%, rgba(47,127,230,.42), transparent 64%),
-        radial-gradient(600px 400px at 0% 100%, rgba(19,64,125,.9), transparent 70%),
-        linear-gradient(170deg, #061631 0%, #0A2447 55%, #0C2C57 100%);
+        radial-gradient(700px 520px at 68% 34%, rgba(54,138,163,.42), transparent 64%),
+        radial-gradient(600px 400px at 0% 100%, rgba(26,70,84,.9), transparent 70%),
+        linear-gradient(170deg, #0A1820 0%, #0F2831 55%, #12313B 100%);
     }
     /* piso em perspectiva (o mesmo do hero da home) */
     .pa-floor {
       position: absolute; left: -30%; right: -30%; bottom: -8%; height: 55%; z-index: -2; pointer-events: none;
-      background-image: linear-gradient(rgba(141,187,245,.12) 1px, transparent 1px), linear-gradient(90deg, rgba(141,187,245,.12) 1px, transparent 1px);
+      background-image: linear-gradient(rgba(131,193,212,.12) 1px, transparent 1px), linear-gradient(90deg, rgba(131,193,212,.12) 1px, transparent 1px);
       background-size: 60px 60px;
       transform: perspective(700px) rotateX(62deg); transform-origin: 50% 100%;
       -webkit-mask-image: radial-gradient(ellipse 55% 70% at 60% 10%, #000 10%, transparent 70%);
@@ -273,38 +274,36 @@
     .pa-fallback { position: relative; z-index: -1; flex: 1 1 auto; min-height: 0; margin: calc(var(--pa-gap) * -1) 0; pointer-events: none; transition: opacity 1s; }
     .pa-niko.is-ready ~ .pa-fallback { opacity: 0; }
     .pa-fallback i { position: absolute; left: 57%; top: 50%; translate: -50% -50%; display: block; border-radius: 50%; animation: pa-fade 1.2s ease .45s backwards; }
-    .pa-fallback i:nth-child(1) { height: min(250px, 78%); aspect-ratio: 1; background: radial-gradient(circle, rgba(127,227,240,.35), rgba(47,127,230,.18) 45%, transparent 70%); filter: blur(8px); animation: pa-fade 1.2s ease .45s backwards, pa-breathe 5s ease-in-out 1.65s infinite; }
+    .pa-fallback i:nth-child(1) { height: min(250px, 78%); aspect-ratio: 1; background: radial-gradient(circle, rgba(127,227,240,.35), rgba(54,138,163,.18) 45%, transparent 70%); filter: blur(8px); animation: pa-fade 1.2s ease .45s backwards, pa-breathe 5s ease-in-out 1.65s infinite; }
     .pa-fallback i:nth-child(2) { height: min(310px, 96%); aspect-ratio: 1.4; border: 1px solid rgba(127,227,240,.4); transform: rotate(-18deg) scaleY(.32); }
     @keyframes pa-breathe { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.06); } }
     /* balão de fala: o canto de baixo-direita segue a cabeça (onAnchor da cena) */
     .pa-bubble {
       position: absolute; z-index: 2; left: 0; top: 0; margin: 0; max-width: 260px; padding: 12px 16px;
-      border-radius: 18px 18px 4px 18px; background: rgba(255,255,255,.96); color: #0A2447;
+      border-radius: 18px 18px 4px 18px; background: rgba(255,255,255,.96); color: #0F2831;
       font-weight: 700; font-size: 14.5px; line-height: 1.35; box-shadow: 0 18px 40px -14px rgba(0,0,0,.55);
       transform: translate(-100%, -100%) translate(var(--bx, -9999px), var(--by, -9999px));
       opacity: 0; transition: opacity .5s cubic-bezier(.22,1,.36,1); pointer-events: none; will-change: transform;
     }
     .pa-bubble.is-on { opacity: 1; }
-    .pa-bubble small { display: block; font-weight: 600; color: #56657A; font-size: 12.5px; margin-top: 2px; }
+    .pa-bubble small { display: block; font-weight: 600; color: #58666D; font-size: 12.5px; margin-top: 2px; }
 
     .pa-logo { display: flex; align-items: center; gap: 12px; align-self: flex-start; }
-    .pa-logo-mark {
-      width: 44px; height: 44px; border-radius: 13px; display: block; object-fit: cover;
-      box-shadow: 0 8px 18px -8px rgba(0,0,0,.6);
-    }
-    .pa-logo-word { font-family: 'Outfit', 'Segoe UI', sans-serif; font-weight: 700; font-size: 24px; letter-spacing: -.02em; color: #fff; }
+    /* logo horizontal da MSB (mSb + "Medical System do Brasil") em branco sobre o petróleo */
+    .pa-logo-full { height: 48px; width: auto; display: block; filter: brightness(0) invert(1); }
+    .pa-logo-word { font-family: 'Roboto', 'Segoe UI', sans-serif; font-weight: 700; font-size: 24px; letter-spacing: -.02em; color: #fff; }
 
     .pa-hero { position: relative; z-index: 1; display: flex; flex-direction: column; gap: 14px; max-width: 560px; margin-top: auto; }
     .pa-eyebrow {
       display: inline-flex; align-items: center; gap: 10px;
-      color: #9CC8FF; font-weight: 700; font-size: 12px; letter-spacing: .16em;
+      color: #91CEE0; font-weight: 700; font-size: 12px; letter-spacing: .16em;
     }
-    .pa-eyebrow span { width: 28px; height: 2px; background: #9CC8FF; border-radius: 2px; }
+    .pa-eyebrow span { width: 28px; height: 2px; background: #91CEE0; border-radius: 2px; }
     .pa-hero h1 {
-      margin: 0; font-family: 'Outfit', 'Segoe UI', sans-serif; font-weight: 600; font-size: clamp(32px, 3.2vw, 48px);
+      margin: 0; font-family: 'Roboto', 'Segoe UI', sans-serif; font-weight: 600; font-size: clamp(32px, 3.2vw, 48px);
       line-height: 1.1; letter-spacing: -.035em; color: #fff; text-wrap: balance;
     }
-    .pa-hero h1 span { background: linear-gradient(95deg, #FFFFFF 0%, #B9D8FF 55%, #FFD08A 100%); -webkit-background-clip: text; background-clip: text; color: transparent; }
+    .pa-hero h1 span { background: linear-gradient(95deg, #FFFFFF 0%, #B6DCE9 50%, #7CC0D4 100%); -webkit-background-clip: text; background-clip: text; color: transparent; }
     .pa-hero p { margin: 0; font-size: 16.5px; line-height: 1.55; color: rgba(255,255,255,.78); max-width: 46ch; }
     /* informações úteis: status dos sistemas + último aviso (texto de LOGIN_INFO) */
     .pa-infos { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 8px; }
@@ -317,10 +316,10 @@
     .pa-dot::after { content: ""; position: absolute; inset: -4px; border-radius: 50%; border: 2px solid currentColor; color: #3DDC84; opacity: 0; animation: pa-live 2.4s cubic-bezier(.22,1,.36,1) 1.6s infinite; }
     .pa-dot.is-warn { background: #F4A62A; box-shadow: 0 0 0 4px rgba(244,166,42,.2); }
     .pa-dot.is-warn::after { color: #F4A62A; }
-    .pa-dot.is-info { background: #8DBBF5; box-shadow: 0 0 0 4px rgba(141,187,245,.18); }
+    .pa-dot.is-info { background: #83C1D4; box-shadow: 0 0 0 4px rgba(131,193,212,.18); }
     .pa-dot.is-info::after { display: none; }
     @keyframes pa-live { 0% { transform: scale(.6); opacity: .9; } 100% { transform: scale(2.1); opacity: 0; } }
-    .pa-tag { display: block; margin-bottom: 2px; color: #9CC8FF; font-size: 10.5px; font-weight: 800; letter-spacing: .08em; }
+    .pa-tag { display: block; margin-bottom: 2px; color: #91CEE0; font-size: 10.5px; font-weight: 800; letter-spacing: .08em; }
     .pa-info b { display: block; font-size: 14px; line-height: 1.35; font-weight: 700; }
     .pa-info small { display: block; margin-top: 2px; color: rgba(255,255,255,.7); font-size: 12.5px; line-height: 1.4; }
     .pa-copyright { color: rgba(255,255,255,.62); font-size: 12.5px; }
@@ -358,33 +357,33 @@
     .pa-login {
       position: relative; flex: 1 1 44.44%; min-width: 0;
       background: #F6F8FC; display: flex; align-items: center; justify-content: center;
-      padding: 40px 72px; box-shadow: inset 30px 0 60px -46px rgba(9,22,46,.55);
+      padding: 40px 72px; box-shadow: inset 30px 0 60px -46px rgba(12,24,30,.55);
     }
     .pa-login-inner { width: 100%; max-width: 384px; }
     .pa-badge {
       display: inline-flex; align-items: center; gap: 8px; padding: 7px 14px; border-radius: 999px;
-      background: #EDF1FA; border: 1px solid #E0E8F5; color: #4A5C7E;
+      background: #EDF1F5; border: 1px solid #E1E8ED; color: #4B5F68;
       font-weight: 700; font-size: 11.5px; letter-spacing: .13em; margin-bottom: 26px;
     }
     .pa-login h2 {
-      margin: 0 0 10px; font-family: 'Outfit', 'Segoe UI', sans-serif; font-weight: 600; font-size: 32px;
-      letter-spacing: -.02em; color: #0F1E33;
+      margin: 0 0 10px; font-family: 'Roboto', 'Segoe UI', sans-serif; font-weight: 600; font-size: 32px;
+      letter-spacing: -.02em; color: #121F26;
     }
-    .pa-lead { margin: 0 0 26px; font-size: 15px; line-height: 1.55; color: #5A6B85; }
+    .pa-lead { margin: 0 0 26px; font-size: 15px; line-height: 1.55; color: #5C6D75; }
     .pa-email {
       display: inline-flex; align-items: center; gap: 9px; padding: 9px 15px; border-radius: 11px;
-      background: #EAF0FB; border: 1px solid #DBE6F8; color: #1E5AD1;
+      background: #EAF0F5; border: 1px solid #DCE7EE; color: #2B6980;
       font-weight: 600; font-size: 14px; margin-bottom: 26px;
     }
     #portal-auth-btn {
       width: 100%; display: flex; align-items: center; justify-content: center; gap: 12px;
       padding: 16px 22px; border: none; border-radius: 13px;
-      background: linear-gradient(180deg, #2E71EA, #1E5AD1); color: #fff;
-      font-family: 'Manrope', sans-serif; font-weight: 600; font-size: 16px; cursor: pointer;
-      box-shadow: 0 12px 26px -10px rgba(30,90,209,.75);
+      background: linear-gradient(180deg, #317F9B, #2B6980); color: #fff;
+      font-family: 'Roboto', sans-serif; font-weight: 600; font-size: 16px; cursor: pointer;
+      box-shadow: 0 12px 26px -10px rgba(43,105,128,.75);
       transition: transform .16s ease, box-shadow .16s ease, filter .16s ease;
     }
-    #portal-auth-btn:hover:not(:disabled) { transform: translateY(-1px); box-shadow: 0 16px 32px -10px rgba(30,90,209,.85); filter: brightness(1.06); }
+    #portal-auth-btn:hover:not(:disabled) { transform: translateY(-1px); box-shadow: 0 16px 32px -10px rgba(43,105,128,.85); filter: brightness(1.06); }
     #portal-auth-btn:active:not(:disabled) { transform: translateY(0); }
     #portal-auth-btn:disabled { cursor: default; opacity: .92; }
     .pa-btn-inner { display: inline-flex; align-items: center; gap: 12px; }
@@ -403,11 +402,11 @@
 
     .pa-divider {
       display: flex; align-items: center; gap: 14px; margin: 24px 0;
-      color: #98A6C0; font-size: 11px; font-weight: 700; letter-spacing: .08em;
+      color: #98A8B0; font-size: 11px; font-weight: 700; letter-spacing: .08em;
     }
-    .pa-divider span { flex: 1; height: 1px; background: #E4EAF3; }
-    .pa-secure { display: flex; align-items: center; justify-content: center; gap: 8px; color: #7A8AA6; font-size: 13px; }
-    .pa-support { text-align: center; font-size: 13.5px; color: #5A6B85; margin-top: 22px; }
+    .pa-divider span { flex: 1; height: 1px; background: #E5EAEE; }
+    .pa-secure { display: flex; align-items: center; justify-content: center; gap: 8px; color: #7A8C95; font-size: 13px; }
+    .pa-support { text-align: center; font-size: 13.5px; color: #5C6D75; margin-top: 22px; }
     #portal-auth-error {
       display: none; margin-top: 18px;
       background: rgba(239,68,68,.10); border: 1px solid rgba(239,68,68,.32);
@@ -438,13 +437,13 @@
 
     /* ============ MOBILE (coluna: faixa navy com o BioNiko, folha clara embaixo) ============ */
     @media (max-width: 860px) {
-      #portal-auth-screen { flex-direction: column; background: #0A2447; }
+      #portal-auth-screen { flex-direction: column; background: #0F2831; }
       .pa-brand {
         --pa-gap: 0px; flex: none; min-height: 300px;
         padding: calc(env(safe-area-inset-top, 0px) + 22px) 22px 44px;
       }
       .pa-fallback i { left: 64%; }
-      .pa-logo-mark { width: 38px; height: 38px; border-radius: 11px; }
+      .pa-logo-full { height: 40px; }
       .pa-logo-word { font-size: 21px; }
       /* na faixa do celular quem aparece é o BioNiko; o texto só volta sem WebGL */
       .pa-hero, .pa-copyright, .pa-bubble { display: none; }
@@ -459,7 +458,7 @@
       .pa-login {
         flex: 1 1 auto; margin-top: -24px; border-radius: 30px 30px 0 0; align-items: flex-start;
         padding: 34px 30px calc(env(safe-area-inset-bottom, 0px) + 30px);
-        box-shadow: 0 -18px 40px -24px rgba(9,22,46,.4);
+        box-shadow: 0 -18px 40px -24px rgba(12,24,30,.4);
       }
       .pa-login-inner { max-width: 420px; }
       .pa-badge { font-size: 11px; margin-bottom: 18px; }
@@ -510,14 +509,14 @@
       <div class="pa-niko" id="pa-niko" aria-hidden="true"></div>
       <p class="pa-bubble" id="pa-bubble" aria-hidden="true"></p>
       <div class="pa-logo">
-        <img class="pa-logo-mark" src="/icons/icon-192.png" alt="Biomedical"
-             onerror="this.style.display='none'">
-        <span class="pa-logo-word">Biomedical</span>
+        <img class="pa-logo-full" src="/icons/logo-msb.png" alt="MSB · Medical System do Brasil"
+             onerror="this.style.display='none';this.nextElementSibling.hidden=false">
+        <span class="pa-logo-word" hidden>MSB</span>
       </div>
       <div class="pa-fallback" aria-hidden="true"><i></i><i></i></div>
       <div class="pa-hero">
-        <div class="pa-eyebrow"><span></span>PORTAL CORPORATIVO</div>
-        <h1>Tudo da Biomedical <span>em um só lugar.</span></h1>
+        <div class="pa-eyebrow"><span></span>PORTAL MSB</div>
+        <h1>Tudo da MSB <span>em um só lugar.</span></h1>
         <p>Aprovações, áreas, sistemas e agentes IA em um único acesso com a sua conta corporativa.</p>
         <div class="pa-infos">
           <div class="pa-info">
@@ -530,7 +529,7 @@
           </div>
         </div>
       </div>
-      <div class="pa-copyright">© 2026 Biomedical S.A. · Todos os direitos reservados.</div>
+      <div class="pa-copyright">© 2026 MSB · Medical System do Brasil · Todos os direitos reservados.</div>
     </div>
 
     <!-- Painel de login (claro) -->
@@ -538,12 +537,12 @@
       <div class="pa-login-inner">
         <div class="pa-badge">${IC_LOCK} ACESSO RESTRITO</div>
         <h2>Bem-vindo de volta</h2>
-        <p class="pa-lead">Entre com sua conta corporativa Microsoft para continuar no Portal Corporativo.</p>
+        <p class="pa-lead">Entre com sua conta corporativa Microsoft para continuar no Portal MSB.</p>
         <div class="pa-email">${IC_MAIL} @biomedical.com.br · @bio-id.com · @msbbrasil.com</div>
         <button type="button" id="portal-auth-btn">${BTN_DEFAULT}</button>
         <div id="portal-auth-error"></div>
         <div class="pa-divider"><span></span>AUTENTICAÇÃO MICROSOFT 365<span></span></div>
-        <div class="pa-secure">${IC_LOCK} Ambiente protegido · Biomedical S.A.</div>
+        <div class="pa-secure">${IC_LOCK} Ambiente protegido · MSB</div>
         <div class="pa-support">Problemas para acessar? <a href="mailto:chamados.ti@biomedical.com.br">Falar com o Suporte de TI</a></div>
       </div>
     </div>
@@ -572,6 +571,9 @@
   // (home-scene.js), no modo "panel", e o login nunca espera por ela: vem
   // depois do botão, em tempo ocioso. Sem WebGL de verdade (VDI/acesso
   // remoto cai no WebGL por SOFTWARE, que come CPU) fica o brilho em CSS.
+  // MSB: o BioNiko é o mascote da Biomedical — neste portal o painel fica com o
+  // brilho em CSS (o mesmo de quando não há WebGL) e o Three.js nem é baixado.
+  const MASCOTE = false;
   let _niko = null, _nikoRO = null, _nikoOn = false, _nikoOff = false;
 
   function motionReduced() {
@@ -604,7 +606,7 @@
     const hero   = screen.querySelector('.pa-hero');
     const logo   = screen.querySelector('.pa-logo');
     if (!brand || !box || !bubble || !faixa || !hero || !logo) return;
-    if (!webglOk()) { brand.classList.add('pa-no3d'); return; }
+    if (!MASCOTE || !webglOk()) { brand.classList.add('pa-no3d'); return; }
     bubble.innerHTML = saudacao() + '! Eu sou o BioNiko.<small>Entre com sua conta para começar.</small>';
     const mm = q => !!(window.matchMedia && window.matchMedia(q).matches);
     const low = mm('(max-width: 860px)') || mm('(pointer: coarse)') || (navigator.hardwareConcurrency || 8) <= 4;

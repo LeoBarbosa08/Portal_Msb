@@ -10,7 +10,7 @@
 // data-tema="escuro" ANTES do primeiro quadro, e o portal-tema.css troca
 // os tokens (texto, linha, fundo, cartão). Este arquivo cuida do resto,
 // que nenhum token alcança: são ~140 páginas com cor fixa no próprio
-// <style> (#fff, #0A2447, #E3E9F2…) e HTML montado por JS com style="…".
+// <style> (#fff, #0F2831, #E4E9ED…) e HTML montado por JS com style="…".
 //
 //   1. GERADOR — percorre o CSSOM de todas as folhas (menos a do tema e a
 //      da tela de login) e, para cada regra com cor, emite a MESMA regra
@@ -46,9 +46,9 @@
   var PRE_RAIZ = ':where([data-tema="escuro"])';        // para seletor que começa em html/:root
   var ILHA = '#portal-auth-screen, .bm-tema-claro';
   var ILHA_RX = /#portal-auth-screen|\.pa-[\w-]|\.auth-spinner|\.bm-tema-claro/;
-  var NAVY_H = 214;
-  var CARD = { r: 0x21, g: 0x32, b: 0x47, a: 1 };        // = --bmt-card do portal-tema.css
-  var COR_META = '#1B293C';                              // = --bmt-head (barra do navegador no celular)
+  var NAVY_H = 198;                                    // matiz do petróleo da MSB (o --bmt-card)
+  var CARD = { r: 0x24, g: 0x34, b: 0x3B, a: 1 };        // = --bmt-card do portal-tema.css
+  var COR_META = '#1D2A31';                              // = --bmt-head (barra do navegador no celular)
 
   function safe(fn) { return function () { try { return fn.apply(this, arguments); } catch (e) { if (W.console) console.warn('[tema]', e); } }; }
   function salvo() { try { return localStorage.getItem(KEY) === ESCURO ? ESCURO : CLARO; } catch (e) { return CLARO; } }

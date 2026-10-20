@@ -3,13 +3,13 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Análise de Perdas · Estoque · Biomedical</title>
+  <title>Análise de Perdas · Estoque · MSB</title>
   <link rel="stylesheet" href="../styles.css?v=14">
   <script src="https://unpkg.com/@azure/msal-browser@2.38.3/lib/msal-browser.min.js"></script>
 <script src="../pbi-throttle.js?v=3"></script>
 <script src="../pbi-modelo.js?v=2"></script>
   <!-- Layout v3 (Claude Design · animado): fonte + camada visual + motor de animações -->
-  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300..800&family=Manrope:wght@400..800&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300..900&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="../portal-v3.css?v=2">
   <script src="../portal-motion.js?v=3" defer></script>
   <!-- Tema claro/escuro (menu do avatar): marca o <html> antes de pintar + camada escura -->
@@ -23,7 +23,7 @@
 <body class="dept">
 
   <header class="site-header"><div class="container">
-    <a href="../index.html" class="brand" aria-label="Biomedical — Portal Corporativo"><img class="brand-logo" src="/icons/icon-192.png" alt="Biomedical" onerror="this.dataset.failed='true'"><span class="brand-fallback">Biomedical</span></a>
+    <a href="../index.html" class="brand" aria-label="Portal MSB — página inicial"><img class="brand-logo" src="/icons/logo-msb.png" alt="MSB · Medical System do Brasil" onerror="this.dataset.failed='true'"><span class="brand-fallback">MSB</span></a>
     <nav class="header-nav"><a href="../index.html">Início</a><a href="../index.html#areas">Áreas</a><a href="../index.html#sistemas">Sistemas</a><a href="../index.html#avisos">Avisos</a><a href="../index.html#contato">Contato</a></nav>
   </div></header>
 
@@ -75,7 +75,7 @@
         table.cx-tbl tbody tr:hover td{background:var(--bm-blue-50);}
         table.cx-tbl tbody tr.cx-total td{background:var(--bm-blue-900);color:#fff;font-weight:800;border-top:2px solid var(--border-2);position:sticky;bottom:0;}
         .cx-tp{display:inline-block;padding:2px 8px;border-radius:999px;font-size:10.5px;font-weight:700;}
-        .cx-tp.venc{background:#EDE9FE;color:#5B21B6;} .cx-tp.avaria{background:#FEF3C7;color:#b45309;} .cx-tp.extravio{background:#DBEAFE;color:#1E40AF;} .cx-tp.outro{background:var(--bm-blue-50);color:var(--text-3);}
+        .cx-tp.venc{background:#EDE9FE;color:#5B21B6;} .cx-tp.avaria{background:#FEF3C7;color:#b45309;} .cx-tp.extravio{background:#DBEBF3;color:#235063;} .cx-tp.outro{background:var(--bm-blue-50);color:var(--text-3);}
         .search-wrap{position:relative;}
         .search-wrap svg{position:absolute;left:10px;top:50%;transform:translateY(-50%);color:var(--text-4);}
         .search-input{padding:7px 10px 7px 32px;border:1px solid var(--border);border-radius:8px;font-size:12.5px;font-family:var(--font-body);width:300px;box-sizing:border-box;}
@@ -122,7 +122,7 @@
 
       <div class="cx-wrap">
 
-        <div id="cx-banner" style="padding:11px 16px;border-radius:8px;font-size:13px;display:flex;align-items:center;gap:10px;background:#EFF6FF;border:1px solid #BFDBFE;color:#1E40AF;">
+        <div id="cx-banner" style="padding:11px 16px;border-radius:8px;font-size:13px;display:flex;align-items:center;gap:10px;background:#F0F7FA;border:1px solid #BDDEEA;color:#235063;">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
           Conectando ao Power BI…
         </div>
@@ -401,20 +401,20 @@
       options:{ indexAxis:'y', responsive:true, maintainAspectRatio:false, devicePixelRatio:_DPR,
         layout:{padding:{top:6,right:18,left:2,bottom:2}},
         plugins:{ legend:{display:false}, tooltip:{callbacks:{title, label:tip}} },
-        scales:{ x:{ticks:{callback:v=>money?fMi(v):fINT(v),font:{size:11}}, grid:{color:'rgba(15,23,42,.06)'}}, y:{ticks:{font:{size:12},autoSkip:false}, grid:{display:false}} } } });
+        scales:{ x:{ticks:{callback:v=>money?fMi(v):fINT(v),font:{size:11}}, grid:{color:'rgba(16,24,30,.06)'}}, y:{ticks:{font:{size:12},autoSkip:false}, grid:{display:false}} } } });
     ch.$fulls=fulls; _charts[id]=ch;
   }
   function lineChart(id, labels, data){
     const el=document.getElementById(id); if(!el||typeof Chart==='undefined') return;
     const money = _metric==='val';
     const tip = c=>money?fBRL(c.raw):fINT(c.raw)+' un';
-    const cfg={ labels, datasets:[{label:money?'Valor':'Qtde', data, fill:true, borderColor:'#1C3F77', backgroundColor:'rgba(28,63,119,.12)', tension:.3, pointRadius:3, pointBackgroundColor:'#1C3F77', borderWidth:2}] };
+    const cfg={ labels, datasets:[{label:money?'Valor':'Qtde', data, fill:true, borderColor:'#1F4451', backgroundColor:'rgba(31,68,81,.12)', tension:.3, pointRadius:3, pointBackgroundColor:'#1F4451', borderWidth:2}] };
     if(_charts[id]){ _charts[id].data=cfg; _charts[id].options.plugins.tooltip.callbacks.label=tip; _charts[id].options.scales.y.ticks.callback=v=>money?fMi(v):fINT(v); _charts[id].update(); return; }
     _charts[id]=new Chart(el.getContext('2d'),{ type:'line', data:cfg,
       options:{ responsive:true, maintainAspectRatio:false, devicePixelRatio:_DPR,
         layout:{padding:{top:12,right:14,left:4,bottom:2}},
         plugins:{ legend:{display:false}, tooltip:{callbacks:{label:tip}} },
-        scales:{ y:{beginAtZero:true, grace:'8%', ticks:{callback:v=>money?fMi(v):fINT(v),font:{size:11}}, grid:{color:'rgba(15,23,42,.06)'}}, x:{ticks:{font:{size:11}}, grid:{display:false}} } } });
+        scales:{ y:{beginAtZero:true, grace:'8%', ticks:{callback:v=>money?fMi(v):fINT(v),font:{size:11}}, grid:{color:'rgba(16,24,30,.06)'}}, x:{ticks:{font:{size:11}}, grid:{display:false}} } } });
   }
   function aggBy(key){
     const m={}; _rows.forEach(x=>{ const k=x[key]==null||String(x[key]).trim()===''?'(em branco)':String(x[key]); if(!m[k])m[k]={val:0,qtd:0}; m[k].val+=x.val; m[k].qtd+=x.qtd; });
@@ -428,7 +428,7 @@
     const linha = aggBy('linha').slice(0,12);
     hbarChart('cx-ch-linha', linha.map(x=>x.k), linha.map(x=>x.v), 'rgba(180,83,9,.85)');
     const prod = aggBy('produto').slice(0,20);
-    hbarChart('cx-ch-prod', prod.map(x=>x.k), prod.map(x=>x.v), 'rgba(30,64,175,.85)');
+    hbarChart('cx-ch-prod', prod.map(x=>x.k), prod.map(x=>x.v), 'rgba(35,80,99,.85)');
     // evolução
     const lbl = _evo.map(e=>{ const p=e.ym.split('-'); return MES_ABR[+p[1]-1]+'/'+p[0].slice(2); });
     lineChart('cx-ch-evo', lbl, _evo.map(e=>e[_metric]));

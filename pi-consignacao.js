@@ -344,10 +344,10 @@
       proximo:     { l: 'Próximo do venc. (≤30d)', c: '#dc2626', b: '#fef2f2' },
       muito_curta: { l: 'Muito curta (1–3 meses)', c: '#ea580c', b: '#fff7ed' },
       curta:       { l: 'Curta (≤6 meses)',        c: '#b45309', b: '#fffbeb' },
-      normal:      { l: 'Normal (≤1 ano)',         c: '#2563eb', b: '#eff6ff' },
+      normal:      { l: 'Normal (≤1 ano)',         c: '#2c7591', b: '#f0f7fa' },
       boa:         { l: 'Boa (>1 ano)',            c: '#16a34a', b: '#f0fdf4' },
       muito_boa:   { l: 'Muito boa (>2 anos)',     c: '#0d9488', b: '#f0fdfa' },
-      sem_data:    { l: 'Sem validade',            c: '#64748b', b: '#f8fafc' }
+      sem_data:    { l: 'Sem validade',            c: '#67757d', b: '#f8fafc' }
     };
     return m[k] || m.sem_data;
   }

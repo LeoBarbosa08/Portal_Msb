@@ -1,7 +1,7 @@
 /* =====================================================================
    portal-tema.css — TEMA ESCURO do portal (menu do avatar › Tema)
    ---------------------------------------------------------------------
-   Escuro "navy suave": o fundo é o azul-marinho da marca bem apagado,
+   Escuro "petróleo suave": o fundo é o teal da MSB bem escuro e apagado,
    não preto. As cores saem de três camadas, nesta ordem de força:
      1. AQUI — os tokens de papel claro (texto, linha, fundo, cartão) das
         famílias do portal: --bm3-* (Layout v3), legado do styles.css,
@@ -9,7 +9,7 @@
         JS rodar, então a página já nasce escura (o <head> marca o <html>
         com data-tema="escuro" antes do primeiro quadro).
      2. portal-tema.js — lê TODO o CSS das páginas (os <style> de cada
-        módulo, cores fixas como #fff, #0A2447…) e o estilo inline do JS
+        módulo, cores fixas como #fff, #0F2831…) e o estilo inline do JS
         e gera a versão escura de cada cor, mantendo a especificidade.
      3. Ajustes à mão (seção 3) onde o automático não basta.
    Tudo dentro de @media screen: impressão sai sempre clara.
@@ -21,32 +21,32 @@
    --------------------------------------------------------------------- */
 .bmt-row {
   display: flex; align-items: center; justify-content: space-between; gap: 12px;
-  padding: 10px 12px 10px 16px; border-bottom: 1px solid var(--bm3-line, #E3E9F2);
+  padding: 10px 12px 10px 16px; border-bottom: 1px solid var(--bm3-line, #E4E9ED);
 }
 .bmt-row > span {
   display: inline-flex; align-items: center; gap: 10px;
-  font-size: 14px; font-weight: 600; color: var(--bm3-ink-2, #3A4A60);
+  font-size: 14px; font-weight: 600; color: var(--bm3-ink-2, #3D4B53);
 }
 .bmt-row > span svg { width: 16px; height: 16px; flex: none; }
 .bmt-seg {
   display: inline-flex; gap: 2px; padding: 3px; border-radius: 12px;
-  background: var(--bm3-surface-2, #F7F9FC); border: 1px solid var(--bm3-line, #E3E9F2);
+  background: var(--bm3-surface-2, #F7F9FC); border: 1px solid var(--bm3-line, #E4E9ED);
 }
 .bmt-seg button {
   display: inline-flex; align-items: center; gap: 6px; height: 30px; padding: 0 10px;
   border: 0; border-radius: 9px; background: transparent; cursor: pointer;
-  font: 700 12.5px/1 var(--bm3-font-text, 'Manrope', 'Segoe UI', sans-serif);
-  color: var(--bm3-muted, #56657A); transition: background-color .2s, color .2s, box-shadow .2s;
+  font: 700 12.5px/1 var(--bm3-font-text, 'Roboto', 'Segoe UI', sans-serif);
+  color: var(--bm3-muted, #58666D); transition: background-color .2s, color .2s, box-shadow .2s;
 }
 .bmt-seg button svg { width: 14px !important; height: 14px !important; flex: none; }
-.bmt-seg button:hover { color: var(--bm3-ink, #0B1B30); }
+.bmt-seg button:hover { color: var(--bm3-ink, #0F1D23); }
 .bmt-seg button[aria-pressed="true"] {
-  background: #fff; color: var(--bm3-ink, #0B1B30);
-  box-shadow: 0 1px 2px rgba(11,27,48,.08), 0 3px 10px -4px rgba(11,27,48,.18);
+  background: #fff; color: var(--bm3-ink, #0F1D23);
+  box-shadow: 0 1px 2px rgba(15,29,35,.08), 0 3px 10px -4px rgba(15,29,35,.18);
 }
-.bmt-seg button:focus-visible { outline: 2px solid var(--bm3-blue-500, #2F7FE6); outline-offset: 1px; }
+.bmt-seg button:focus-visible { outline: 2px solid var(--bm3-blue-500, #368AA3); outline-offset: 1px; }
 /* versão da aba Perfil (celular): linha mais alta, fonte do sheet */
-.bmt-row.bmt-row--sheet { padding: 14px 2px; margin: 4px 0 12px; border-top: 1px solid var(--bm3-line, #E3E9F2); }
+.bmt-row.bmt-row--sheet { padding: 14px 2px; margin: 4px 0 12px; border-top: 1px solid var(--bm3-line, #E4E9ED); }
 .bmt-row--sheet .bmt-seg button { height: 34px; padding: 0 14px; font-size: 13.5px; }
 
 /* troca de tema com cruzamento suave (View Transitions) */
@@ -59,17 +59,17 @@
    --------------------------------------------------------------------- */
 html[data-tema="escuro"] {
   color-scheme: dark;
-  --bmt-page:  #192637;   /* fundo da página — navy apagado, não preto */
-  --bmt-head:  #1B293C;   /* cabeçalho global (vidro) */
-  --bmt-card:  #213247;   /* cartões, painéis, barra lateral */
-  --bmt-elev:  #263951;   /* menus, popovers, modais */
-  --bmt-soft:  #2A3D55;   /* hover, faixas internas */
-  --bmt-line:  #34465D;
-  --bmt-line-2:#3D516C;
-  --bmt-ink:   #E5ECF5;
-  --bmt-ink-2: #BAC7D8;
-  --bmt-muted: #91A1B6;
-  --bmt-blue:  #6AA4F0;
+  --bmt-page:  #1B272C;   /* fundo da página — petróleo apagado, não preto */
+  --bmt-head:  #1D2A31;   /* cabeçalho global (vidro) */
+  --bmt-card:  #24343B;   /* cartões, painéis, barra lateral */
+  --bmt-elev:  #293A43;   /* menus, popovers, modais */
+  --bmt-soft:  #2D3E47;   /* hover, faixas internas */
+  --bmt-line:  #37484F;
+  --bmt-line-2:#40535B;
+  --bmt-ink:   #E7ECF0;
+  --bmt-ink-2: #BCC8CD;
+  --bmt-muted: #93A1A9;
+  --bmt-blue:  #59ACC6;
 
   /* Layout v3 */
   --bm3-ink: var(--bmt-ink); --bm3-ink-2: var(--bmt-ink-2); --bm3-muted: var(--bmt-muted);
@@ -80,8 +80,8 @@ html[data-tema="escuro"] {
   --bm3-shadow-3: 0 30px 80px -24px rgba(0,0,0,.7);
   /* legado (styles.css / portal-v3) */
   --bg: var(--bmt-page); --surface: var(--bmt-card); --surface-2: var(--bmt-soft); --surface-3: var(--bmt-line);
-  --border: var(--bmt-line); --border-2: var(--bmt-line-2); --border-3: #4A6080;
-  --text: var(--bmt-ink); --text-2: var(--bmt-ink-2); --text-3: var(--bmt-muted); --text-4: #7D8EA5;
+  --border: var(--bmt-line); --border-2: var(--bmt-line-2); --border-3: #4D626C;
+  --text: var(--bmt-ink); --text-2: var(--bmt-ink-2); --text-3: var(--bmt-muted); --text-4: #7F8F97;
   --shadow-xs: 0 1px 2px rgba(0,0,0,.2);
   --shadow-sm: 0 1px 2px rgba(0,0,0,.2), 0 1px 3px rgba(0,0,0,.25);
   --shadow: var(--bm3-shadow-1); --shadow-lg: var(--bm3-shadow-2);
@@ -89,16 +89,16 @@ html[data-tema="escuro"] {
 /* dash-v2 (body.dept) e home v2 (.home-v2) declaram os tokens no body */
 html[data-tema="escuro"] body.dept {
   --dv-ink: var(--bmt-ink); --dv-body: var(--bmt-ink-2); --dv-muted: var(--bmt-muted);
-  --dv-muted2: #8496AD; --dv-muted3: #7D8EA5;
-  --dv-border: var(--bmt-line); --dv-border-soft: #2E4058; --dv-border-hover: #4A6C9A;
-  --dv-page: var(--bmt-page); --dv-headbg: var(--bmt-soft); --dv-zebra: #25374F;
+  --dv-muted2: #86979F; --dv-muted3: #7F8F97;
+  --dv-border: var(--bmt-line); --dv-border-soft: #314149; --dv-border-hover: #4D6F7B;
+  --dv-page: var(--bmt-page); --dv-headbg: var(--bmt-soft); --dv-zebra: #283940;
   --dv-shadow: var(--bm3-shadow-1); --dv-shadow-hover: var(--bm3-shadow-2);
 }
 html[data-tema="escuro"] .home-v2 {
   --v2-page: var(--bmt-page); --v2-card: var(--bmt-card); --v2-input: var(--bmt-soft);
-  --v2-border: var(--bmt-line); --v2-border-soft: #2E4058; --v2-border-hover: #4A6C9A;
+  --v2-border: var(--bmt-line); --v2-border-soft: #314149; --v2-border-hover: #4D6F7B;
   --v2-ink: var(--bmt-ink); --v2-body: var(--bmt-ink-2); --v2-muted: var(--bmt-muted);
-  --v2-muted-2: #8496AD; --v2-muted-3: #7D8EA5;
+  --v2-muted-2: #86979F; --v2-muted-3: #7F8F97;
   --v2-shadow: var(--bm3-shadow-1); --v2-shadow-hover: var(--bm3-shadow-2);
 }
 
@@ -107,22 +107,22 @@ html[data-tema="escuro"] .home-v2 {
    voltam aos valores claros dentro delas */
 html[data-tema="escuro"] :is(#portal-auth-screen, .bm-tema-claro) {
   color-scheme: light;
-  --bm3-ink: #0B1B30; --bm3-ink-2: #3A4A60; --bm3-muted: #56657A;
-  --bm3-line: #E3E9F2; --bm3-line-2: #D3DCE9;
-  --bm3-page: #F3F6FB; --bm3-surface: #FFFFFF; --bm3-surface-2: #F7F9FC;
-  --bm3-shadow-1: 0 1px 2px rgba(11,27,48,.05), 0 6px 18px -8px rgba(11,27,48,.10);
-  --bm3-shadow-2: 0 2px 6px rgba(11,27,48,.05), 0 24px 48px -20px rgba(11,27,48,.25);
-  --bm3-shadow-3: 0 30px 80px -24px rgba(5,19,41,.45);
-  --bg: #FFFFFF; --surface: #FFFFFF; --surface-2: #F3F6FB; --surface-3: #E2E8F0;
-  --border: #E3E9F2; --border-2: #D3DCE9; --border-3: #B8C2CF;
-  --text: #0B1B30; --text-2: #3A4A60; --text-3: #56657A; --text-4: #94A3B8;
-  --dv-ink: #0A2447; --dv-body: #3A4A60; --dv-muted: #56657A; --dv-muted2: #6B7A90; --dv-muted3: #8C99AD;
-  --dv-border: #E3E9F2; --dv-border-soft: #EDF1F7; --dv-border-hover: #8DBBF5;
-  --dv-page: #F3F6FB; --dv-headbg: #F8FAFD; --dv-zebra: #F1F4F9;
-  --v2-page: #F4F7FB; --v2-card: #FFFFFF; --v2-input: #F0F4F9;
-  --v2-border: #E3EAF2; --v2-border-soft: #EDF2F8; --v2-border-hover: #C8DCEF;
-  --v2-ink: #0A2E5C; --v2-body: #33495E; --v2-muted: #5B7189; --v2-muted-2: #7C93A8; --v2-muted-3: #93A7BA;
-  color: #0B1B30;
+  --bm3-ink: #0F1D23; --bm3-ink-2: #3D4B53; --bm3-muted: #58666D;
+  --bm3-line: #E4E9ED; --bm3-line-2: #D5DCE1;
+  --bm3-page: #F4F7F8; --bm3-surface: #FFFFFF; --bm3-surface-2: #F7F9FC;
+  --bm3-shadow-1: 0 1px 2px rgba(15,29,35,.05), 0 6px 18px -8px rgba(15,29,35,.10);
+  --bm3-shadow-2: 0 2px 6px rgba(15,29,35,.05), 0 24px 48px -20px rgba(15,29,35,.25);
+  --bm3-shadow-3: 0 30px 80px -24px rgba(8,21,27,.45);
+  --bg: #FFFFFF; --surface: #FFFFFF; --surface-2: #F4F7F8; --surface-3: #E3E8EB;
+  --border: #E4E9ED; --border-2: #D5DCE1; --border-3: #BAC2C7;
+  --text: #0F1D23; --text-2: #3D4B53; --text-3: #58666D; --text-4: #95A4AB;
+  --dv-ink: #0F2831; --dv-body: #3D4B53; --dv-muted: #58666D; --dv-muted2: #6E7B83; --dv-muted3: #8E9AA1;
+  --dv-border: #E4E9ED; --dv-border-soft: #EEF2F4; --dv-border-hover: #83C1D4;
+  --dv-page: #F4F7F8; --dv-headbg: #F8FAFD; --dv-zebra: #F2F4F6;
+  --v2-page: #F4F7FB; --v2-card: #FFFFFF; --v2-input: #F1F4F6;
+  --v2-border: #E5EAED; --v2-border-soft: #EEF2F5; --v2-border-hover: #CDDCE3;
+  --v2-ink: #10323E; --v2-body: #374951; --v2-muted: #5F727A; --v2-muted-2: #81939B; --v2-muted-3: #97A8AE;
+  color: #0F1D23;
 }
 
 /* ---------------------------------------------------------------------
@@ -138,22 +138,22 @@ html[data-tema="escuro"]:not(.bmt-ok) body > *:not(script):not(style):not(#porta
   visibility: hidden; animation: bmt-revela 0s linear 1.5s forwards;
 }
 @keyframes bmt-revela { to { visibility: visible; } }
-html[data-tema="escuro"] ::selection { background: rgba(106,164,240,.38); color: #fff; }
-html[data-tema="escuro"] body.dept .dept-main { scrollbar-color: #3D516C transparent; }
+html[data-tema="escuro"] ::selection { background: rgba(89,172,198,.38); color: #fff; }
+html[data-tema="escuro"] body.dept .dept-main { scrollbar-color: #40535B transparent; }
 
 /* ---------------------------------------------------------------------
    3. AJUSTES À MÃO — o que o gerador automático não resolve sozinho
    --------------------------------------------------------------------- */
 /* cabeçalho global: vidro navy (o automático daria cor de cartão) */
 html[data-tema="escuro"] .site-header {
-  background: rgba(27,41,60,.86);
+  background: rgba(29,42,49,.86);
   border-bottom-color: var(--bmt-line);
   box-shadow: 0 1px 0 rgba(0,0,0,.18);
 }
 html[data-tema="escuro"] .site-header .header-nav a:hover,
 html[data-tema="escuro"] .bm3-iconbtn:hover { background: rgba(255,255,255,.07); }
 html[data-tema="escuro"] .site-header .header-search { background: rgba(255,255,255,.05); }
-html[data-tema="escuro"] .site-header .header-search:hover { background: var(--bmt-card); border-color: #4A6C9A; }
+html[data-tema="escuro"] .site-header .header-search:hover { background: var(--bmt-card); border-color: #4D6F7B; }
 html[data-tema="escuro"] .site-header .brand-fallback { color: var(--bmt-ink); }
 html[data-tema="escuro"] .bm3-ink { background: var(--bmt-blue); }
 
@@ -164,7 +164,7 @@ html[data-tema="escuro"] .bm3-menu button.bm3-menu-item:hover { background: rgba
 html[data-tema="escuro"] .bm3-menu button.bm3-menu-item.is-danger:hover { background: rgba(207,52,52,.16); color: #F29B9B; }
 html[data-tema="escuro"] .bm3-avatar { box-shadow: 0 0 0 2px var(--bmt-head), 0 6px 14px -6px rgba(0,0,0,.7); }
 html[data-tema="escuro"] .bm3-menu-head .bm3-avatar { box-shadow: none; }
-html[data-tema="escuro"] .bm3-iconbtn .bm3-badge { box-shadow: 0 0 0 2px var(--bmt-head); color: #1B293C; }
+html[data-tema="escuro"] .bm3-iconbtn .bm3-badge { box-shadow: 0 0 0 2px var(--bmt-head); color: #1D2A31; }
 
 /* seletor de tema no escuro */
 html[data-tema="escuro"] .bmt-seg { background: rgba(0,0,0,.18); border-color: var(--bmt-line); }
@@ -177,10 +177,10 @@ html[data-tema="escuro"] .bmt-seg button[aria-pressed="true"] {
 html[data-tema="escuro"] body.dshell .area-sidebar nav a.active,
 html[data-tema="escuro"] body.dshell .area-sidebar .sb-children a.active,
 html[data-tema="escuro"] body.dshell .area-sidebar .sb-group.open > .sb-parent {
-  background: rgba(47,127,230,.16); color: #9CC3F7;
+  background: rgba(54,138,163,.16); color: #93C9D9;
 }
 html[data-tema="escuro"] body.dshell .area-sidebar nav a.active > svg,
-html[data-tema="escuro"] body.dshell .area-sidebar .sb-group.open .sb-parent .sb-caret { color: #9CC3F7; }
+html[data-tema="escuro"] body.dshell .area-sidebar .sb-group.open .sb-parent .sb-caret { color: #93C9D9; }
 
 /* hero navy do departamento: ganha um fio de luz para descolar do fundo */
 html[data-tema="escuro"] body.dept.dshell .area-header {
@@ -189,20 +189,20 @@ html[data-tema="escuro"] body.dept.dshell .area-header {
 
 /* links "Abrir módulo" e afins: o azul da marca clareado para ler no escuro */
 html[data-tema="escuro"] body.dept.dshell .modulo-card .mc-open { color: var(--bmt-blue); }
-html[data-tema="escuro"] body.dept.dshell .modulo-card:hover { border-color: #4A6C9A; }
+html[data-tema="escuro"] body.dept.dshell .modulo-card:hover { border-color: #4D6F7B; }
 
 /* campo, botão e diálogo SEM cor própria: no escuro o navegador pinta um
    cinza neutro que destoa do navy. Peso zero (:where) — qualquer regra da
    página (já escurecida pelo gerador) continua valendo por cima. */
 :where(html[data-tema="escuro"]) :where(input:not([type="checkbox"], [type="radio"], [type="range"], [type="color"], [type="file"], [type="image"], [type="button"], [type="submit"], [type="reset"]), select, textarea) {
-  background-color: #1D2C40; color: var(--bmt-ink); border-color: var(--bmt-line-2);
+  background-color: #202D34; color: var(--bmt-ink); border-color: var(--bmt-line-2);
 }
 :where(html[data-tema="escuro"]) :where(button, input[type="button"], input[type="submit"], input[type="reset"]) {
   background-color: var(--bmt-soft); color: var(--bmt-ink); border-color: var(--bmt-line-2);
 }
 :where(html[data-tema="escuro"]) :where(dialog) { background-color: var(--bmt-elev); color: var(--bmt-ink); border-color: var(--bmt-line); }
 html[data-tema="escuro"] input::placeholder,
-html[data-tema="escuro"] textarea::placeholder { color: #7D8EA5; }
+html[data-tema="escuro"] textarea::placeholder { color: #7F8F97; }
 
 /* relatórios do Power BI continuam claros (o conteúdo é do próprio BI):
    só a moldura acompanha o tema */

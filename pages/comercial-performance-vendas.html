@@ -3,16 +3,15 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Performance de Vendas · Comercial · Biomedical</title>
+  <title>Performance de Vendas · Comercial · MSB</title>
   <link rel="stylesheet" href="../styles.css?v=14">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="../dash-v2.css?v=3">
   <script src="https://unpkg.com/@azure/msal-browser@2.38.3/lib/msal-browser.min.js"></script>
 <script src="../pbi-throttle.js?v=3"></script>
   <!-- Layout v3 (Claude Design · animado): fonte + camada visual + motor de animações -->
-  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300..800&family=Manrope:wght@400..800&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300..900&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="../portal-v3.css?v=2">
   <script src="../portal-motion.js?v=3" defer></script>
   <!-- Tema claro/escuro (menu do avatar): marca o <html> antes de pintar + camada escura -->
@@ -27,9 +26,9 @@
 
   <header class="site-header">
     <div class="container">
-      <a href="../index.html" class="brand" aria-label="Biomedical — Portal Corporativo">
-        <img class="brand-logo" src="/icons/icon-192.png" alt="Biomedical" onerror="this.dataset.failed='true'">
-        <span class="brand-fallback">Biomedical</span>
+      <a href="../index.html" class="brand" aria-label="Portal MSB — página inicial">
+        <img class="brand-logo" src="/icons/logo-msb.png" alt="MSB · Medical System do Brasil" onerror="this.dataset.failed='true'">
+        <span class="brand-fallback">MSB</span>
       </a>
       <nav class="header-nav">
         <a href="../index.html">Início</a>
@@ -63,27 +62,27 @@
           <!-- ═══ Cabeçalho + abas de submódulo (Claude Design) ═══ -->
           <style>
             .fx-head{display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap;padding:22px 0 4px;}
-            .fx-bc{display:flex;align-items:center;gap:6px;font-size:12px;color:#7C93A8;}
-            .fx-title{margin:4px 0 0;font-size:23px;font-weight:800;letter-spacing:-0.5px;color:#0A2E5C;}
+            .fx-bc{display:flex;align-items:center;gap:6px;font-size:12px;color:#81939B;}
+            .fx-title{margin:4px 0 0;font-size:23px;font-weight:800;letter-spacing:-0.5px;color:#10323E;}
             .fx-head-right{display:flex;align-items:center;gap:12px;flex-wrap:wrap;}
-            .fx-tabs{display:flex;align-items:center;background:#FFFFFF;border:1px solid #E3EAF2;border-radius:11px;padding:3px;flex-wrap:wrap;}
-            .fx-tabs a,.fx-tabs span{padding:8px 14px;border-radius:8px;font-size:12.5px;font-weight:600;color:#5B7189;text-decoration:none;white-space:nowrap;}
-            .fx-tabs a:hover{color:#0A2E5C;}
-            .fx-tabs .active{background:#0A2E5C;font-weight:700;color:#fff;}
-            .fx-filters{display:flex;align-items:center;gap:10px;flex-wrap:wrap;padding:12px 14px;background:#fff;border:1px solid #E3EAF2;border-radius:12px;}
-            .fx-fdiv{width:1px;height:24px;background:#E3EAF2;}
-            .fx-fbtn{display:inline-flex;align-items:center;gap:8px;padding:8px 12px;border-radius:9px;border:1px solid #E3EAF2;background:#fff;font-size:12.5px;font-weight:600;color:#33495E;cursor:pointer;font-family:inherit;white-space:nowrap;}
-            .fx-fbtn:hover{border-color:#1272C4;}
-            .fx-fbtn .fx-fk{font-weight:700;color:#93A7BA;}
+            .fx-tabs{display:flex;align-items:center;background:#FFFFFF;border:1px solid #E5EAED;border-radius:11px;padding:3px;flex-wrap:wrap;}
+            .fx-tabs a,.fx-tabs span{padding:8px 14px;border-radius:8px;font-size:12.5px;font-weight:600;color:#5F727A;text-decoration:none;white-space:nowrap;}
+            .fx-tabs a:hover{color:#10323E;}
+            .fx-tabs .active{background:#10323E;font-weight:700;color:#fff;}
+            .fx-filters{display:flex;align-items:center;gap:10px;flex-wrap:wrap;padding:12px 14px;background:#fff;border:1px solid #E5EAED;border-radius:12px;}
+            .fx-fdiv{width:1px;height:24px;background:#E5EAED;}
+            .fx-fbtn{display:inline-flex;align-items:center;gap:8px;padding:8px 12px;border-radius:9px;border:1px solid #E5EAED;background:#fff;font-size:12.5px;font-weight:600;color:#374951;cursor:pointer;font-family:inherit;white-space:nowrap;}
+            .fx-fbtn:hover{border-color:#287A8E;}
+            .fx-fbtn .fx-fk{font-weight:700;color:#97A8AE;}
             .fx-fbtn svg{flex-shrink:0;}
-            .fx-flimpar{margin-left:auto;display:inline-flex;align-items:center;gap:6px;padding:8px 12px;border-radius:9px;border:none;background:transparent;font-size:12.5px;font-weight:600;color:#5B7189;cursor:pointer;font-family:inherit;white-space:nowrap;}
+            .fx-flimpar{margin-left:auto;display:inline-flex;align-items:center;gap:6px;padding:8px 12px;border-radius:9px;border:none;background:transparent;font-size:12.5px;font-weight:600;color:#5F727A;cursor:pointer;font-family:inherit;white-space:nowrap;}
             .fx-flimpar:hover{color:#B54545;}
             .fxdd{position:relative;display:inline-block;}
-            .fxdd-panel{position:absolute;z-index:50;top:calc(100% + 6px);left:0;display:none;flex-direction:column;background:#fff;border:1px solid #E3EAF2;border-radius:12px;box-shadow:0 10px 30px rgba(10,46,92,0.14);padding:12px;}
+            .fxdd-panel{position:absolute;z-index:50;top:calc(100% + 6px);left:0;display:none;flex-direction:column;background:#fff;border:1px solid #E5EAED;border-radius:12px;box-shadow:0 10px 30px rgba(16,50,62,0.14);padding:12px;}
             .fxdd.open .fxdd-panel{display:flex;}
-            .fxdd-sec{font-size:10.5px;font-weight:800;letter-spacing:0.8px;text-transform:uppercase;color:#93A7BA;margin:2px 2px 8px;}
+            .fxdd-sec{font-size:10.5px;font-weight:800;letter-spacing:0.8px;text-transform:uppercase;color:#97A8AE;margin:2px 2px 8px;}
             .fxdd-sec.mt{margin-top:12px;}
-            .fxdd-hint{font-size:11px;color:#93A7BA;margin-top:10px;}
+            .fxdd-hint{font-size:11px;color:#97A8AE;margin-top:10px;}
             /* Periodo: painel largo e horizontal (mes em cima; ano/semestre/trimestre embaixo) */
             .fxdd-panel{min-width:210px;}
             #fx-periodo .fxdd-panel{width:720px;max-width:calc(100vw - 48px);}
@@ -95,7 +94,7 @@
               .fx-head{align-items:flex-start;padding-top:14px;}
               .fx-title{font-size:17px;}
               .fx-head-right{width:100%;}
-              .fx-tabs{width:100%;flex-wrap:nowrap;overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none;background:#F0F4F9;border:none;}
+              .fx-tabs{width:100%;flex-wrap:nowrap;overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none;background:#F1F4F6;border:none;}
               .fx-tabs::-webkit-scrollbar{display:none;}
               .fx-tabs a,.fx-tabs span{flex:0 0 auto;}
               /* ── FILTROS mobile: controles empilhados em largura total; cada
@@ -126,7 +125,7 @@
               .fxdd-panel .sr-divider,.fxdd-panel .av-divider,.fxdd-panel .pv-divider{flex:0 0 100%;width:100% !important;height:0 !important;border:0 !important;background:transparent !important;margin:0 !important;}
               /* botões preenchem a largura numa grade uniforme (sobrepõe flex-shrink:0 global) */
               .fxdd-panel .sr-btn,.fxdd-panel .av-btn,.fxdd-panel .pv-btn{flex:1 1 auto !important;min-width:52px;text-align:center;padding:8px 6px;}
-              .fx-filters .fx-flimpar{width:100%;justify-content:center;margin:2px 0 0;padding:11px;border:1px solid #E3EAF2;border-radius:9px;}
+              .fx-filters .fx-flimpar{width:100%;justify-content:center;margin:2px 0 0;padding:11px;border:1px solid #E5EAED;border-radius:9px;}
             }
           </style>
 
@@ -326,7 +325,7 @@
           <div class="pv-wrap">
 
             <!-- Banner status -->
-            <div id="pv-banner" style="padding:11px 16px;border-radius:8px;font-size:13px;display:flex;align-items:center;gap:10px;background:#EFF6FF;border:1px solid #BFDBFE;color:#1E40AF;">
+            <div id="pv-banner" style="padding:11px 16px;border-radius:8px;font-size:13px;display:flex;align-items:center;gap:10px;background:#F0F7FA;border:1px solid #BDDEEA;color:#235063;">
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
               Conectando ao Power BI…
             </div>
@@ -336,7 +335,7 @@
               <div class="fxdd" id="fx-periodo">
                 <button type="button" class="fx-fbtn" onclick="fxTogglePanel(this)">
                   <span class="fx-fk">Período</span><span id="fx-periodo-lbl">2026</span>
-                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#7C93A8" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg>
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#81939B" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg>
                 </button>
                 <div class="fxdd-panel">
                   <div class="fxdd-sec">Mês · Semestre · Trimestre · Ano</div>
@@ -479,7 +478,7 @@
   <footer class="site-footer">
     <div class="container">
       <div class="bm-footer-bottom">
-        <span>© <span id="year"></span> Biomedical · Portal Corporativo Interno</span>
+        <span>© <span id="year"></span> MSB · Medical System do Brasil · Portal interno</span>
         <span class="bm-footer-meta">Belo Horizonte · São Paulo · Rio de Janeiro · Curitiba · Recife · Porto Alegre</span>
       </div>
     </div>
@@ -878,9 +877,9 @@
     }
     _pvChart = new Chart(el.getContext('2d'), {
       data:{ labels:MES_LBL, datasets:[
-        { type:'bar', label:`Faturamento ${yp}`, data:m.anterior, backgroundColor:'rgba(148,163,184,.55)', borderRadius:4, yAxisID:'y', order:3 },
-        { type:'bar', label:`Faturamento ${ya}`,    data:m.atual,    backgroundColor:'rgba(30,136,229,.85)', borderRadius:4, yAxisID:'y', order:3 },
-        { type:'line', label:`Margem % ${yp}`, data:mgPctP, borderColor:'rgba(148,163,184,.95)', backgroundColor:'rgba(148,163,184,.95)', borderDash:[5,4], borderWidth:2, tension:.3, pointRadius:3, yAxisID:'y1', order:1, spanGaps:true },
+        { type:'bar', label:`Faturamento ${yp}`, data:m.anterior, backgroundColor:'rgba(149,164,171,.55)', borderRadius:4, yAxisID:'y', order:3 },
+        { type:'bar', label:`Faturamento ${ya}`,    data:m.atual,    backgroundColor:'rgba(54,144,167,.85)', borderRadius:4, yAxisID:'y', order:3 },
+        { type:'line', label:`Margem % ${yp}`, data:mgPctP, borderColor:'rgba(149,164,171,.95)', backgroundColor:'rgba(149,164,171,.95)', borderDash:[5,4], borderWidth:2, tension:.3, pointRadius:3, yAxisID:'y1', order:1, spanGaps:true },
         { type:'line', label:`Margem % ${ya}`,    data:mgPctA, borderColor:'rgba(39,174,96,.95)',  backgroundColor:'rgba(39,174,96,.95)',  borderWidth:2.5, tension:.3, pointRadius:3, yAxisID:'y1', order:0, spanGaps:true }
       ]},
       options:{ responsive:true, maintainAspectRatio:false,
@@ -891,7 +890,7 @@
             : `${c.dataset.label}: ${fmtTip(c.raw)}` } } },
         scales:{
           x:{ grid:{ display:false }, ticks:{ font:{size:11} } },
-          y:{ position:'left', grid:{ color:'rgba(15,23,42,.05)' }, ticks:{ font:{size:10}, callback:v => 'R$ '+(v/1e6).toFixed(1)+' Mi' }, title:{ display:true, text:'Faturamento', font:{size:10} } },
+          y:{ position:'left', grid:{ color:'rgba(16,24,30,.05)' }, ticks:{ font:{size:10}, callback:v => 'R$ '+(v/1e6).toFixed(1)+' Mi' }, title:{ display:true, text:'Faturamento', font:{size:10} } },
           y1:{ position:'right', grid:{ display:false }, ticks:{ font:{size:10}, callback:v => v.toFixed(0)+'%' }, title:{ display:true, text:'Margem %', font:{size:10} } }
         } } });
   }
@@ -932,7 +931,7 @@
     const labels = rows.map(r => r.nome);
     const data   = rows.map(r => r.fat || 0);
     const lbl   = _pvDrillLevel === 0 ? 'Faturamento por estratégia' : 'Faturamento por família';
-    const color = _pvDrillLevel === 0 ? 'rgba(30,136,229,.85)' : 'rgba(39,174,96,.85)';
+    const color = _pvDrillLevel === 0 ? 'rgba(54,144,167,.85)' : 'rgba(39,174,96,.85)';
     if (_pvDrillChart){
       _pvDrillChart.data.labels = labels;
       _pvDrillChart.data.datasets[0].data = data;
@@ -950,7 +949,7 @@
           tooltip:{ callbacks:{ label:c => `${c.dataset.label}: ${fBRL(c.raw)}` } } },
         scales:{
           x:{ grid:{ display:false }, ticks:{ font:{size:10}, maxRotation:50, minRotation:0, autoSkip:false } },
-          y:{ grid:{ color:'rgba(15,23,42,.05)' }, ticks:{ font:{size:10}, callback:v => 'R$ '+(v/1e6).toFixed(1)+' Mi' } }
+          y:{ grid:{ color:'rgba(16,24,30,.05)' }, ticks:{ font:{size:10}, callback:v => 'R$ '+(v/1e6).toFixed(1)+' Mi' } }
         } } });
     el.onmousemove = (e)=>{ if (_pvDrillLevel !== 0){ el.style.cursor='default'; return; } const pts = _pvDrillChart.getElementsAtEventForMode(e, 'nearest', { intersect:true }, false); el.style.cursor = pts.length ? 'pointer' : 'default'; };
   }

@@ -3,13 +3,13 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Vigia de Consignação · Agente · Estoque · Biomedical</title>
+  <title>Vigia de Consignação · Agente · Estoque · MSB</title>
   <link rel="stylesheet" href="../styles.css?v=14">
   <script src="https://unpkg.com/@azure/msal-browser@2.38.3/lib/msal-browser.min.js"></script>
 <script src="../pbi-throttle.js?v=3" data-bi-trava="off"></script>
 <script src="../pbi-modelo.js?v=2"></script>
   <!-- Layout v3 (Claude Design · animado): fonte + camada visual + motor de animações -->
-  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300..800&family=Manrope:wght@400..800&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300..900&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="../portal-v3.css?v=2">
   <script src="../portal-motion.js?v=3" defer></script>
   <!-- Tema claro/escuro (menu do avatar): marca o <html> antes de pintar + camada escura -->
@@ -23,7 +23,7 @@
 <body class="dept">
 
   <header class="site-header"><div class="container">
-    <a href="../index.html" class="brand" aria-label="Biomedical — Portal Corporativo"><img class="brand-logo" src="/icons/icon-192.png" alt="Biomedical" onerror="this.dataset.failed='true'"><span class="brand-fallback">Biomedical</span></a>
+    <a href="../index.html" class="brand" aria-label="Portal MSB — página inicial"><img class="brand-logo" src="/icons/logo-msb.png" alt="MSB · Medical System do Brasil" onerror="this.dataset.failed='true'"><span class="brand-fallback">MSB</span></a>
     <nav class="header-nav"><a href="../index.html">Início</a><a href="../index.html#areas">Áreas</a><a href="../index.html#sistemas">Sistemas</a><a href="../index.html#avisos">Avisos</a><a href="../index.html#contato">Contato</a></nav>
   </div></header>
 
@@ -38,23 +38,23 @@
       <!-- ═══ Cabeçalho + abas de submódulo (Claude Design) ═══ -->
       <style>
         .fx-head{display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap;padding:22px 0 4px;}
-        .fx-bc{display:flex;align-items:center;gap:6px;font-size:12px;color:#7C93A8;}
-        .fx-title{margin:4px 0 0;font-size:23px;font-weight:800;letter-spacing:-0.5px;color:#0A2E5C;}
+        .fx-bc{display:flex;align-items:center;gap:6px;font-size:12px;color:#81939B;}
+        .fx-title{margin:4px 0 0;font-size:23px;font-weight:800;letter-spacing:-0.5px;color:#10323E;}
         .fx-head-right{display:flex;align-items:center;gap:12px;flex-wrap:wrap;}
-        .fx-tabs{display:flex;align-items:center;background:#FFFFFF;border:1px solid #E3EAF2;border-radius:11px;padding:3px;flex-wrap:wrap;}
-        .fx-tabs a,.fx-tabs span{padding:8px 14px;border-radius:8px;font-size:12.5px;font-weight:600;color:#5B7189;text-decoration:none;white-space:nowrap;}
-        .fx-tabs a:hover{color:#0A2E5C;}
-        .fx-tabs .active{background:#0A2E5C;font-weight:700;color:#fff;}
+        .fx-tabs{display:flex;align-items:center;background:#FFFFFF;border:1px solid #E5EAED;border-radius:11px;padding:3px;flex-wrap:wrap;}
+        .fx-tabs a,.fx-tabs span{padding:8px 14px;border-radius:8px;font-size:12.5px;font-weight:600;color:#5F727A;text-decoration:none;white-space:nowrap;}
+        .fx-tabs a:hover{color:#10323E;}
+        .fx-tabs .active{background:#10323E;font-weight:700;color:#fff;}
         /* Selo de agente: o Vigia nao e' aba de Gestao de Consignacao, e' agente
            do Estoque (mesmo lugar do LICI na Licitacao). Sem faixa de abas. */
         .fx-agente{display:inline-flex;align-items:center;gap:7px;padding:7px 13px;border-radius:999px;
-          background:#0A2E5C;color:#fff;font-size:12px;font-weight:700;letter-spacing:.01em;white-space:nowrap;}
+          background:#10323E;color:#fff;font-size:12px;font-weight:700;letter-spacing:.01em;white-space:nowrap;}
         .fx-agente svg{width:14px;height:14px;flex-shrink:0;}
         .fx-agente .dot{width:6px;height:6px;border-radius:50%;background:#4ADE80;flex-shrink:0;}
-        .fx-filters{display:flex;align-items:center;gap:10px;flex-wrap:wrap;padding:12px 14px;background:#fff;border:1px solid #E3EAF2;border-radius:12px;}
+        .fx-filters{display:flex;align-items:center;gap:10px;flex-wrap:wrap;padding:12px 14px;background:#fff;border:1px solid #E5EAED;border-radius:12px;}
         @media (max-width:640px){
           .fx-head{padding:16px 0 4px;}
-          .fx-tabs{width:100%;flex-wrap:nowrap;overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none;background:#F0F4F9;border:none;}
+          .fx-tabs{width:100%;flex-wrap:nowrap;overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none;background:#F1F4F6;border:none;}
           .fx-tabs::-webkit-scrollbar{display:none;}
           .fx-tabs a,.fx-tabs span{flex:0 0 auto;}
           .fx-filters{flex-wrap:nowrap;overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none;}
@@ -79,37 +79,37 @@
 
       <style>
         .vg-wrap{padding:8px 0 48px;display:flex;flex-direction:column;gap:14px;}
-        .vg-banner{padding:11px 16px;border-radius:8px;font-size:13px;display:flex;align-items:center;gap:10px;background:#EFF6FF;border:1px solid #BFDBFE;color:#1E40AF;}
+        .vg-banner{padding:11px 16px;border-radius:8px;font-size:13px;display:flex;align-items:center;gap:10px;background:#F0F7FA;border:1px solid #BDDEEA;color:#235063;}
         .vg-banner.warn{background:#FFFBEB;border-color:#FDE68A;color:#92400E;}
         .vg-banner.err{background:#FEF2F2;border-color:#FECACA;color:#991B1B;}
         .vg-banner.ok{background:#F0FDF4;border-color:#BBF7D0;color:#166534;}
-        .vg-btn{padding:8px 15px;border-radius:8px;border:1px solid #E3EAF2;background:#fff;font-size:12.5px;font-weight:700;color:#33495E;cursor:pointer;font-family:inherit;}
-        .vg-btn:hover{border-color:#1272C4;color:#0A2E5C;}
+        .vg-btn{padding:8px 15px;border-radius:8px;border:1px solid #E5EAED;background:#fff;font-size:12.5px;font-weight:700;color:#374951;cursor:pointer;font-family:inherit;}
+        .vg-btn:hover{border-color:#287A8E;color:#10323E;}
         .vg-btn:disabled{opacity:.5;cursor:not-allowed;}
-        .vg-btn.primary{background:#0A2E5C;border-color:#0A2E5C;color:#fff;}
-        .vg-btn.primary:hover{background:#123F79;}
+        .vg-btn.primary{background:#10323E;border-color:#10323E;color:#fff;}
+        .vg-btn.primary:hover{background:#194452;}
         .vg-kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:12px;}
-        .vg-kpi{background:#fff;border:1px solid #E3EAF2;border-radius:12px;padding:14px 16px;border-left:4px solid #94A3B8;}
-        .vg-kpi .l{font-size:10.5px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:#7C93A8;}
-        .vg-kpi .v{font-size:21px;font-weight:800;color:#0A2E5C;margin-top:5px;letter-spacing:-0.5px;}
-        .vg-kpi .s{font-size:11.5px;color:#7C93A8;margin-top:3px;}
+        .vg-kpi{background:#fff;border:1px solid #E5EAED;border-radius:12px;padding:14px 16px;border-left:4px solid #95A4AB;}
+        .vg-kpi .l{font-size:10.5px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:#81939B;}
+        .vg-kpi .v{font-size:21px;font-weight:800;color:#10323E;margin-top:5px;letter-spacing:-0.5px;}
+        .vg-kpi .s{font-size:11.5px;color:#81939B;margin-top:3px;}
         .vg-kpi.c-vencido{border-left-color:#B91C1C;}
         .vg-kpi.c-vencer_sem_giro{border-left-color:#EA580C;}
         .vg-kpi.c-vencer_com_giro{border-left-color:#CA8A04;}
         .vg-kpi.c-parado{border-left-color:#7C3AED;}
         .vg-kpi.c-excesso{border-left-color:#0891B2;}
-        .vg-kpi.total{border-left-color:#0A2E5C;background:#F8FAFC;}
-        .vg-panel{background:#fff;border:1px solid #E3EAF2;border-radius:12px;padding:16px;}
-        .vg-fix{font-size:11px;color:#7C93A8;line-height:1.6;margin:0 0 10px;}
-        .vg-fix b{color:#33495E;font-weight:700;}
+        .vg-kpi.total{border-left-color:#10323E;background:#F8FAFC;}
+        .vg-panel{background:#fff;border:1px solid #E5EAED;border-radius:12px;padding:16px;}
+        .vg-fix{font-size:11px;color:#81939B;line-height:1.6;margin:0 0 10px;}
+        .vg-fix b{color:#374951;font-weight:700;}
         .vg-fix .w{color:#B45309;font-weight:700;}
         .vg-tools{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:12px;}
-        .vg-tools input[type=search]{padding:7px 10px;border:1px solid #E3EAF2;border-radius:8px;font-size:12.5px;font-family:inherit;min-width:200px;}
-        .vg-tools select{padding:7px 10px;border:1px solid #E3EAF2;border-radius:8px;font-size:12.5px;font-family:inherit;background:#fff;color:#33495E;font-weight:600;}
+        .vg-tools input[type=search]{padding:7px 10px;border:1px solid #E5EAED;border-radius:8px;font-size:12.5px;font-family:inherit;min-width:200px;}
+        .vg-tools select{padding:7px 10px;border:1px solid #E5EAED;border-radius:8px;font-size:12.5px;font-family:inherit;background:#fff;color:#374951;font-weight:600;}
         .vg-tbl-wrap{overflow-x:auto;}
         table.vg-tbl{width:100%;border-collapse:collapse;font-size:12.5px;}
-        table.vg-tbl th{position:sticky;top:0;background:#F8FAFC;text-align:left;padding:9px 10px;font-size:10.5px;font-weight:800;letter-spacing:.04em;text-transform:uppercase;color:#7C93A8;border-bottom:1px solid #E3EAF2;white-space:nowrap;}
-        table.vg-tbl td{padding:9px 10px;border-bottom:1px solid #F1F5F9;color:#33495E;vertical-align:top;}
+        table.vg-tbl th{position:sticky;top:0;background:#F8FAFC;text-align:left;padding:9px 10px;font-size:10.5px;font-weight:800;letter-spacing:.04em;text-transform:uppercase;color:#81939B;border-bottom:1px solid #E5EAED;white-space:nowrap;}
+        table.vg-tbl td{padding:9px 10px;border-bottom:1px solid #F2F5F7;color:#374951;vertical-align:top;}
         table.vg-tbl tr:hover td{background:#F8FBFF;}
         table.vg-tbl td.num{text-align:right;white-space:nowrap;font-variant-numeric:tabular-nums;}
         .vg-tag{display:inline-block;padding:2px 8px;border-radius:999px;font-size:10.5px;font-weight:800;white-space:nowrap;}
@@ -118,18 +118,18 @@
         .t-vencer_com_giro{background:#FEF9C3;color:#854D0E;}
         .t-parado{background:#EDE9FE;color:#5B21B6;}
         .t-excesso{background:#CFFAFE;color:#155E75;}
-        .s-pendente{background:#E0F2FE;color:#075985;}
+        .s-pendente{background:#E6F2F6;color:#195C6A;}
         .s-aprovado{background:#DCFCE7;color:#166534;}
         .s-executado{background:#D1FAE5;color:#065F46;}
-        .s-descartado{background:#F1F5F9;color:#475569;}
-        .s-resolvido{background:#F1F5F9;color:#64748B;}
-        .vg-porque{color:#5B7189;font-size:11.5px;line-height:1.5;max-width:340px;}
+        .s-descartado{background:#F2F5F7;color:#49565C;}
+        .s-resolvido{background:#F2F5F7;color:#67757D;}
+        .vg-porque{color:#5F727A;font-size:11.5px;line-height:1.5;max-width:340px;}
         .vg-acoes{display:flex;gap:5px;flex-wrap:wrap;}
-        .vg-acoes button{padding:4px 9px;border-radius:6px;border:1px solid #E3EAF2;background:#fff;font-size:11px;font-weight:700;cursor:pointer;font-family:inherit;color:#5B7189;}
+        .vg-acoes button{padding:4px 9px;border-radius:6px;border:1px solid #E5EAED;background:#fff;font-size:11px;font-weight:700;cursor:pointer;font-family:inherit;color:#5F727A;}
         .vg-acoes button.ap:hover{border-color:#16A34A;color:#166534;}
         .vg-acoes button.de:hover{border-color:#DC2626;color:#991B1B;}
         .vg-acoes button.ex:hover{border-color:#0891B2;color:#155E75;}
-        .vg-empty{padding:28px;text-align:center;color:#7C93A8;font-size:13px;}
+        .vg-empty{padding:28px;text-align:center;color:#81939B;font-size:13px;}
       </style>
 
       <div class="vg-wrap">
@@ -143,7 +143,7 @@
           <button class="vg-btn primary" id="vg-run" disabled>Rodar varredura</button>
           <button class="vg-btn" id="vg-reload" disabled>Recarregar fila</button>
           <button class="vg-btn" id="vg-csv" disabled>Exportar CSV</button>
-          <span id="vg-status" style="font-size:12px;color:#7C93A8;"></span>
+          <span id="vg-status" style="font-size:12px;color:#81939B;"></span>
         </div>
 
         <div class="vg-kpis" id="vg-kpis"></div>
@@ -152,14 +152,14 @@
           <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;margin-bottom:10px;">
             <div>
               <h3 style="margin:0;">Fila de aprovação</h3>
-              <div style="font-size:12px;color:#7C93A8;margin-top:2px;" id="vg-info">—</div>
+              <div style="font-size:12px;color:#81939B;margin-top:2px;" id="vg-info">—</div>
             </div>
           </div>
           <div class="vg-fix" id="vg-fix">Filtros fixos: lendo o modelo…</div>
           <!-- Radiografia das operações: mostra o que EXISTE no recorte e o que a
                whitelist deixou entrar. Sem ela, o corte por texto seria fé. -->
           <details id="vg-ops-box" style="display:none;margin:0 0 12px;">
-            <summary style="cursor:pointer;font-size:11.5px;font-weight:700;color:#5B7189;">Tipos de operação encontrados <span id="vg-ops-cnt" style="color:#93A7BA;font-weight:600;"></span></summary>
+            <summary style="cursor:pointer;font-size:11.5px;font-weight:700;color:#5F727A;">Tipos de operação encontrados <span id="vg-ops-cnt" style="color:#97A8AE;font-weight:600;"></span></summary>
             <div class="vg-tbl-wrap" style="margin-top:8px;"><table class="vg-tbl" id="vg-ops"></table></div>
           </details>
           <div class="vg-tools">
@@ -643,11 +643,11 @@
   const COLUNAS = [
     { k:'score',      h:'Prioridade', num:true,  f:i=>fMi(i.score) },
     { k:'classe',     h:'Classe',                f:i=>`<span class="vg-tag t-${i.classe}">${escH(i.rotulo||CLASSES[i.classe]||i.classe)}</span>` },
-    { k:'cliente',    h:'Cliente',               f:i=>`<b>${escH(i.cliente||i.codcli)}</b><div style="font-size:11px;color:#93A7BA;">${escH(i.codcli)}${i.vendedor?' · '+escH(i.vendedor):''}</div>` },
-    { k:'produto',    h:'Produto',               f:i=>`${escH(i.produto||i.codprod)}<div style="font-size:11px;color:#93A7BA;">${escH(i.codprod)}${i.familia?' · '+escH(i.familia):''}</div>` },
+    { k:'cliente',    h:'Cliente',               f:i=>`<b>${escH(i.cliente||i.codcli)}</b><div style="font-size:11px;color:#97A8AE;">${escH(i.codcli)}${i.vendedor?' · '+escH(i.vendedor):''}</div>` },
+    { k:'produto',    h:'Produto',               f:i=>`${escH(i.produto||i.codprod)}<div style="font-size:11px;color:#97A8AE;">${escH(i.codprod)}${i.familia?' · '+escH(i.familia):''}</div>` },
     { k:'lote',       h:'Lote',                  f:i=>escH(i.lote||'—')
-        + (i.operacao?`<div style="font-size:10.5px;color:#93A7BA;max-width:150px;">${escH(i.operacao)}</div>`:'')
-        + (i.idOperacao?`<div style="font-size:10px;color:#B6C4D2;">${escH(i.idOperacao)}</div>`:'') },
+        + (i.operacao?`<div style="font-size:10.5px;color:#97A8AE;max-width:150px;">${escH(i.operacao)}</div>`:'')
+        + (i.idOperacao?`<div style="font-size:10px;color:#B9C4C9;">${escH(i.idOperacao)}</div>`:'') },
     // Consignado em / Dias consig. vêm da remessa mais ANTIGA ainda parada
     // naquele cliente × produto × lote (MIN da data, MAX dos dias).
     { k:'datacons',   h:'Consignado em',
@@ -655,16 +655,16 @@
       f:i=>fDate(i.dataConsignacao) },
     { k:'diascons',   h:'Dias no cliente', num:true,
       t:'Dias em consignação da remessa mais antiga desse lote. Âmbar acima de 180 dias, vermelho acima de 365.',
-      f:i=>i.diasEmConsignacao==null?'—':`<b style="color:${i.diasEmConsignacao>=365?'#B91C1C':(i.diasEmConsignacao>=180?'#B45309':'#33495E')};">${fNUM(i.diasEmConsignacao)}</b>` },
-    { k:'datavenc',   h:'Vence',                 f:i=>fDate(i.datavenc)+(i.diasParaVencer!=null?`<div style="font-size:11px;color:${i.diasParaVencer<0?'#B91C1C':'#93A7BA'};">${i.diasParaVencer<0?Math.abs(i.diasParaVencer)+'d vencido':i.diasParaVencer+'d'}</div>`:'') },
+      f:i=>i.diasEmConsignacao==null?'—':`<b style="color:${i.diasEmConsignacao>=365?'#B91C1C':(i.diasEmConsignacao>=180?'#B45309':'#374951')};">${fNUM(i.diasEmConsignacao)}</b>` },
+    { k:'datavenc',   h:'Vence',                 f:i=>fDate(i.datavenc)+(i.diasParaVencer!=null?`<div style="font-size:11px;color:${i.diasParaVencer<0?'#B91C1C':'#97A8AE'};">${i.diasParaVencer<0?Math.abs(i.diasParaVencer)+'d vencido':i.diasParaVencer+'d'}</div>`:'') },
     { k:'qtde',       h:'Saldo',      num:true,  f:i=>fNUM(i.qtde) },
     { k:'custo',      h:'R$ saldo',   num:true,  f:i=>fBRL(i.custo) },
-    { k:'custoEmRisco',h:'R$ em risco',num:true, f:i=>`<b style="color:#0A2E5C;">${fBRL(i.custoEmRisco)}</b>` },
+    { k:'custoEmRisco',h:'R$ em risco',num:true, f:i=>`<b style="color:#10323E;">${fBRL(i.custoEmRisco)}</b>` },
     { k:'consumo90',  h:'Consumo 90/180d', num:true, f:i=>`${fNUM(i.consumo90)} / ${fNUM(i.consumo180)}` },
-    { k:'porque',     h:'Por quê',               f:i=>`<div class="vg-porque">${escH(i.porque)}</div><div style="font-size:11px;color:#33495E;margin-top:3px;"><b>→ ${escH(i.acao)}</b></div>` },
+    { k:'porque',     h:'Por quê',               f:i=>`<div class="vg-porque">${escH(i.porque)}</div><div style="font-size:11px;color:#374951;margin-top:3px;"><b>→ ${escH(i.acao)}</b></div>` },
     { k:'status',     h:'Status',                f:i=>`<span class="vg-tag s-${i.status}">${escH(i.status)}</span>`
         + (i.reincidencias?`<div style="font-size:10.5px;color:#B45309;margin-top:3px;">reincidiu ${i.reincidencias}x</div>`:'')
-        + (i.motivo?`<div style="font-size:10.5px;color:#93A7BA;margin-top:3px;">${escH(i.motivo)}</div>`:'') },
+        + (i.motivo?`<div style="font-size:10.5px;color:#97A8AE;margin-top:3px;">${escH(i.motivo)}</div>`:'') },
     { k:'acoes',      h:'',                      f:i=>acoesDe(i) }
   ];
   function acoesDe(i){
@@ -711,7 +711,7 @@
         : '');
       document.getElementById('vg-ops').innerHTML =
         '<thead><tr><th>Tipo de operação</th><th>ID (D365)</th><th style="text-align:right">Linhas</th><th style="text-align:right">R$ saldo</th><th>Na fila?</th></tr></thead><tbody>'
-        + ops.map(o=>`<tr><td>${escH(o.operacao)}</td><td style="color:#93A7BA;">${escH(o.idop||'—')}</td><td class="num">${fNUM(o.itens)}</td><td class="num">${fBRL(o.custo)}</td>`
+        + ops.map(o=>`<tr><td>${escH(o.operacao)}</td><td style="color:#97A8AE;">${escH(o.idop||'—')}</td><td class="num">${fNUM(o.itens)}</td><td class="num">${fBRL(o.custo)}</td>`
             + `<td>${o.incluida?'<span class="vg-tag s-pendente">sim — remessa</span>'
                               :(o.comodato?'<span class="vg-tag s-descartado">fora — comodato</span>'
                                           :'<span class="vg-tag s-descartado">fora — outra operação</span>')}</td></tr>`).join('')
@@ -726,7 +726,7 @@
 
     // tabela
     document.getElementById('vg-head').innerHTML = '<tr>'+COLUNAS.map(c=>
-      `<th${c.t?` title="${escH(c.t)}" style="${c.num?'text-align:right;':''}cursor:help;border-bottom:2px dotted #C7D3E0;"`:(c.num?' style="text-align:right"':'')}>${escH(c.h)}</th>`).join('')+'</tr>';
+      `<th${c.t?` title="${escH(c.t)}" style="${c.num?'text-align:right;':''}cursor:help;border-bottom:2px dotted #CAD4D8;"`:(c.num?' style="text-align:right"':'')}>${escH(c.h)}</th>`).join('')+'</tr>';
     const its = filtrados();
     document.getElementById('vg-rows').innerHTML = its.length
       ? its.map(i=>`<tr data-id="${i.id}">`+COLUNAS.map(c=>`<td${c.num?' class="num"':''}>${c.f(i)}</td>`).join('')+'</tr>').join('')

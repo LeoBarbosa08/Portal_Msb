@@ -250,15 +250,15 @@
     });
     return cls;
   }
-  var COR_ABC = { A: '#4FD98D', B: '#4596CC', C: 'rgba(255,255,255,.32)' };
+  var COR_ABC = { A: '#4FD98D', B: '#4F9AAA', C: 'rgba(255,255,255,.32)' };
   function pintarHero() {
     var el = $('an-hero'); if (!el) return;
     var k = '<span class="fx-hero-k">SKUS NO PIPELINE</span>';
     if (ST.erro) { el.innerHTML = k + '<div class="fx-empty" style="color:#FFB4B4;">Erro: ' + esc(String(ST.erro).slice(0, 160)) + '</div>'; return; }
-    if (!ST.skus) { el.innerHTML = k + '<div class="fx-hero-vrow"><span class="fx-hero-v">—</span></div><div class="fx-empty" style="color:#8FAECB;">Carregando…</div>'; return; }
+    if (!ST.skus) { el.innerHTML = k + '<div class="fx-hero-vrow"><span class="fx-hero-v">—</span></div><div class="fx-empty" style="color:#93AFB9;">Carregando…</div>'; return; }
     var skus = ST.skus.filter(function (s) { return s.v > 0; }).sort(function (a, b) { return b.v - a.v; });
     var t = totais(), n = skus.length;
-    if (!n) { el.innerHTML = k + '<div class="fx-empty" style="color:#8FAECB;">Sem itens no período.</div>'; return; }
+    if (!n) { el.innerHTML = k + '<div class="fx-empty" style="color:#93AFB9;">Sem itens no período.</div>'; return; }
     var cls = abc(skus, t.v);
     var pares = ST.skus.reduce(function (a, s) { return a + s.q; }, 0);
     var maior = skus[0];
@@ -302,7 +302,7 @@
       var dica = s.nome + ' — ' + s.sub + '\n' + fBRL(s.v) + ' · ' + fINT(s.q) + ' oportunidade' + (s.q === 1 ? '' : 's') + (ST.U ? ' · ' + fUn(s.u) : '') + '\n'
         + fs.filter(function (f) { return s.f[f] && s.f[f].v > 0; }).map(function (f) { return P.curto(f) + ': ' + fMi(s.f[f].v); }).join(' · ') + '\nclique para a ficha do SKU';
       return '<div class="fx-brow" data-an-sku="' + esc(s.id) + '" role="button" tabindex="0" title="' + esc(dica) + '"><span class="fx-bname">' + esc(s.nome) + '</span>'
-        + '<div class="fx-btrack"><div class="fx-bfill fx-bstk" style="width:' + Math.max(Math.round(s.v / max * 100), 3) + '%;background:#C8D6E4;">' + segs + '</div></div>'
+        + '<div class="fx-btrack"><div class="fx-bfill fx-bstk" style="width:' + Math.max(Math.round(s.v / max * 100), 3) + '%;background:#CBD6DB;">' + segs + '</div></div>'
         + '<span class="fx-bval">' + esc(fMi(s.v)) + '</span></div>';
     }).join('');
   }
@@ -559,9 +559,9 @@
     }, falhou('ops'));
     if (o.g !== 'sku') P.query(daxDim(o, fase, COL.prod, 10)).then(function (rows) {
       if (!vale()) return;
-      barras('skus', (rows || []).map(function (r) { return { nome: nomeDe(val(r, 'PRODUTO'), '(produto sem nome)'), v: num(val(r, 'v')), q: num(val(r, 'q')), u: num(val(r, 'u')) }; }), '#135E97', true);
+      barras('skus', (rows || []).map(function (r) { return { nome: nomeDe(val(r, 'PRODUTO'), '(produto sem nome)'), v: num(val(r, 'v')), q: num(val(r, 'q')), u: num(val(r, 'u')) }; }), '#226372', true);
     }, falhou('skus'));
-    [['cli', COL.cli, 8, '#1272C4'], ['vend', COL.vend, 6, '#4596CC']].forEach(function (d) {
+    [['cli', COL.cli, 8, '#287A8E'], ['vend', COL.vend, 6, '#4F9AAA']].forEach(function (d) {
       P.query(daxDim(o, fase, d[1], d[2])).then(function (rows) {
         if (!vale()) return;
         var campo = d[1].replace(/^.*\[/, '').replace(']', '');

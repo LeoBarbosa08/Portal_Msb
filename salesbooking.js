@@ -327,13 +327,13 @@
 
     if (q) {
       view.innerHTML = telaBusca(q);
-      document.title = 'Busca: ' + q + ' · Sales Playbook · Biomedical';
+      document.title = 'Busca: ' + q + ' · Sales Playbook · MSB';
       bc.push({ t: 'Sales Playbook', h: '?' });
       bc.push({ t: 'Busca' });
     } else if (aid && artigo(aid)) {
       var a = artigo(aid);
       view.innerHTML = telaArtigo(a);
-      document.title = a.titulo + ' · Sales Playbook · Biomedical';
+      document.title = a.titulo + ' · Sales Playbook · MSB';
       bc.push({ t: 'Sales Playbook', h: '?' });
       var cA = capitulo(a.capitulo);
       if (cA) bc.push({ t: cA.titulo, h: '?c=' + cA.id });
@@ -342,12 +342,12 @@
     } else if (cid && capitulo(cid)) {
       var c = capitulo(cid);
       view.innerHTML = telaCapitulo(c);
-      document.title = c.titulo + ' · Sales Playbook · Biomedical';
+      document.title = c.titulo + ' · Sales Playbook · MSB';
       bc.push({ t: 'Sales Playbook', h: '?' });
       bc.push({ t: c.titulo });
     } else {
       view.innerHTML = telaHub();
-      document.title = 'Sales Playbook · Comercial · Biomedical';
+      document.title = 'Sales Playbook · Comercial · MSB';
       bc.push({ t: 'Sales Playbook' });
     }
 

@@ -8,44 +8,44 @@
 
 .home-v2 {
   /* Paleta v2 */
-  --v2-navy-900: #071E3D;
-  --v2-navy-800: #0A2E5C;
-  --v2-navy-700: #0E4A8A;
-  --v2-blue-600: #1272C4;
-  --v2-blue-active: #0A5A9E;
+  --v2-navy-900: #0C2029;
+  --v2-navy-800: #10323E;
+  --v2-navy-700: #1A5160;
+  --v2-blue-600: #287A8E;
+  --v2-blue-active: #1B6072;
   --v2-green: #2E9E63;
   --v2-green-vivid: #2FBF71;
   --v2-green-logo: #7FE0A8;
   --v2-page: #F4F7FB;
   --v2-card: #FFFFFF;
-  --v2-border: #E3EAF2;
-  --v2-border-soft: #EDF2F8;
-  --v2-border-hover: #C8DCEF;
-  --v2-ink: #0A2E5C;
-  --v2-body: #33495E;
-  --v2-muted: #5B7189;
-  --v2-muted-2: #7C93A8;
-  --v2-muted-3: #93A7BA;
-  --v2-input: #F0F4F9;
+  --v2-border: #E5EAED;
+  --v2-border-soft: #EEF2F5;
+  --v2-border-hover: #CDDCE3;
+  --v2-ink: #10323E;
+  --v2-body: #374951;
+  --v2-muted: #5F727A;
+  --v2-muted-2: #81939B;
+  --v2-muted-3: #97A8AE;
+  --v2-input: #F1F4F6;
   /* Sobre navy */
-  --v2-on-navy: #A8C3DD;
-  --v2-on-navy-2: #8FAECB;
-  --v2-on-navy-3: #6E8CA8;
-  --v2-shadow: 0 1px 3px rgba(10,46,92,0.05);
-  --v2-shadow-hover: 0 8px 24px rgba(10,46,92,0.10);
+  --v2-on-navy: #ACC3CC;
+  --v2-on-navy-2: #93AFB9;
+  --v2-on-navy-3: #728E97;
+  --v2-shadow: 0 1px 3px rgba(16,50,62,0.05);
+  --v2-shadow-hover: 0 8px 24px rgba(16,50,62,0.10);
 
-  font-family: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
+  font-family: 'Roboto', system-ui, -apple-system, sans-serif;
   background: var(--v2-page);
-  color: #10273F;
+  color: #152831;
   -webkit-font-smoothing: antialiased;
 }
 .home-v2,
 .home-v2 * { box-sizing: border-box; }
 
-/* títulos da home também usam Plus Jakarta Sans (styles.css usa Poppins) */
+/* títulos da home também usam Roboto (styles.css usa Poppins) */
 .home-v2 h1, .home-v2 h2, .home-v2 h3, .home-v2 h4,
 .home-v2 .hv-greeting {
-  font-family: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
+  font-family: 'Roboto', system-ui, -apple-system, sans-serif;
 }
 
 /* A home é larga: cabeçalho, hero, corpo e rodapé encostam nas bordas
@@ -74,22 +74,22 @@
 .home-v2 .header-nav { display: flex; gap: 4px; flex: 1; }
 .home-v2 .header-nav a {
   padding: 7px 13px; border-radius: 8px; font-size: 13px; font-weight: 600;
-  color: #4E657C; text-decoration: none; transition: background .15s, color .15s;
+  color: #52656D; text-decoration: none; transition: background .15s, color .15s;
 }
-.home-v2 .header-nav a:hover { color: var(--v2-ink); background: #F0F5FA; }
+.home-v2 .header-nav a:hover { color: var(--v2-ink); background: #F1F5F7; }
 .home-v2 .header-nav a.active,
 .home-v2 .header-nav a[aria-current="page"] {
-  font-weight: 700; color: var(--v2-ink); background: #EAF2FA;
+  font-weight: 700; color: var(--v2-ink); background: #ECF2F5;
 }
 .home-v2 .header-spacer { display: none; }
 .home-v2 .header-search {
   display: flex; align-items: center; gap: 10px;
   width: 280px; height: 38px; padding: 0 14px; border-radius: 10px;
   background: var(--v2-input); border: 1px solid var(--v2-border);
-  color: #8CA0B3; cursor: pointer; flex-shrink: 0; transition: border-color .15s;
+  color: #90A0A7; cursor: pointer; flex-shrink: 0; transition: border-color .15s;
 }
 .home-v2 .header-search:hover { border-color: var(--v2-border-hover); }
-.home-v2 .header-search .ph { font-size: 13px; color: #8CA0B3; flex: 1; text-align: left; }
+.home-v2 .header-search .ph { font-size: 13px; color: #90A0A7; flex: 1; text-align: left; }
 .home-v2 .header-search .kbd {
   font-size: 10.5px; font-weight: 700; color: var(--v2-muted-2);
   background: #fff; border: 1px solid var(--v2-border); border-radius: 5px; padding: 2px 6px;
@@ -112,7 +112,7 @@
 .home-v2 .hero {
   position: relative; overflow: hidden;
   padding: 0;
-  background: linear-gradient(120deg, #071E3D 0%, #0A2E5C 60%, #0E4A8A 100%);
+  background: linear-gradient(120deg, #0C2029 0%, #10323E 60%, #1A5160 100%);
 }
 .home-v2 .hero::before {
   content: ""; position: absolute; inset: 0; z-index: 0; opacity: 1;
@@ -217,12 +217,12 @@
 /* mata a barrinha gradiente no topo do card (styles.css) */
 .home-v2 .area-card::before { display: none; }
 .home-v2 .area-card:hover {
-  box-shadow: 0 8px 20px rgba(10,46,92,0.10); transform: translateY(-2px);
+  box-shadow: 0 8px 20px rgba(16,50,62,0.10); transform: translateY(-2px);
   border-color: var(--v2-border-hover);
 }
 .home-v2 .area-card .area-card-icon {
   width: 42px; height: 42px; border-radius: 12px; display: grid; place-items: center;
-  background: #EAF2FA; color: var(--v2-blue-600); margin: 0;
+  background: #ECF2F5; color: var(--v2-blue-600); margin: 0;
 }
 .home-v2 .area-card .area-card-icon svg { width: 20px; height: 20px; }
 .home-v2 .area-card h3 {
@@ -233,7 +233,7 @@
 .home-v2 .area-card .area-card-arrow { display: none; }
 
 /* pares pastel ciclando (mesmo espírito do protótipo) */
-.home-v2 .area-card:nth-child(4n+1) .area-card-icon { background: #EAF2FA; color: #1272C4; }
+.home-v2 .area-card:nth-child(4n+1) .area-card-icon { background: #ECF2F5; color: #287A8E; }
 .home-v2 .area-card:nth-child(4n+2) .area-card-icon { background: #EAF8F0; color: #2E9E63; }
 .home-v2 .area-card:nth-child(4n+3) .area-card-icon { background: #FDF3E7; color: #C77E22; }
 .home-v2 .area-card:nth-child(4n+4) .area-card-icon { background: #F3ECFB; color: #7A4BC4; }
@@ -268,7 +268,7 @@
   border-radius: 12px; background: var(--v2-card); border: 1px solid var(--v2-border);
   box-shadow: none; text-decoration: none; transition: border-color .15s, box-shadow .15s; min-width: 0;
 }
-.home-v2 .sistema-card:hover { border-color: var(--v2-border-hover); box-shadow: 0 4px 14px rgba(10,46,92,0.08); transform: none; }
+.home-v2 .sistema-card:hover { border-color: var(--v2-border-hover); box-shadow: 0 4px 14px rgba(16,50,62,0.08); transform: none; }
 .home-v2 .sistema-card .icon {
   width: 36px; height: 36px; border-radius: 10px; background: var(--v2-input);
   display: grid; place-items: center; flex-shrink: 0; color: var(--v2-blue-600);
@@ -308,7 +308,7 @@
 .home-v2 .aviso-card:hover { border-color: var(--v2-border-hover); transform: none; box-shadow: none; }
 .home-v2 .aviso-card.featured {
   padding: 18px; border-radius: 14px; border: 0; color: #fff;
-  background: linear-gradient(135deg, #0A2E5C, #0E4A8A);
+  background: linear-gradient(135deg, #10323E, #1A5160);
 }
 .home-v2 .aviso-card.featured:hover { box-shadow: var(--v2-shadow-hover); }
 .home-v2 .aviso-card.featured .aviso-lead-icon { display: none; }
@@ -317,11 +317,11 @@
   font-size: 10.5px; font-weight: 800; letter-spacing: 0.8px; border-radius: 999px; padding: 3px 9px;
   color: #22794C; background: #EAF8F0;
 }
-.home-v2 .aviso-card .aviso-badge.b-diretoria { color: #0E4A8A; background: #EAF2FA; }
+.home-v2 .aviso-card .aviso-badge.b-diretoria { color: #1A5160; background: #ECF2F5; }
 .home-v2 .aviso-card .aviso-badge.b-pessoas   { color: #22794C; background: #EAF8F0; }
 .home-v2 .aviso-card .aviso-badge.b-qualidade { color: #7A4BC4; background: #F3ECFB; }
 .home-v2 .aviso-card .aviso-badge.b-eventos   { color: #A8541F; background: #FDF3E7; }
-.home-v2 .aviso-card .aviso-badge.b-ti        { color: #1272C4; background: #EAF2FA; }
+.home-v2 .aviso-card .aviso-badge.b-ti        { color: #287A8E; background: #ECF2F5; }
 .home-v2 .aviso-card.featured .aviso-badge { background: transparent; padding: 0; color: var(--v2-green-logo); letter-spacing: 1px; }
 .home-v2 .aviso-card .aviso-date { font-size: 11px; color: var(--v2-muted-3); }
 .home-v2 .aviso-card.featured .aviso-date { color: var(--v2-on-navy-2); }
@@ -445,7 +445,7 @@
   }
   .home-v2 .area-card { padding: 13px 4px 11px; border-radius: 13px; gap: 7px; }
   .home-v2 .area-card:hover { transform: none; box-shadow: var(--v2-shadow); }
-  .home-v2 .area-card:active { background: #F0F5FA; }
+  .home-v2 .area-card:active { background: #F1F5F7; }
   .home-v2 .area-card .area-card-icon { width: 40px; height: 40px; border-radius: 11px; }
   .home-v2 .area-card .area-card-icon svg { width: 19px; height: 19px; }
   /* Rótulo do departamento: centralizado, sem corte com "…".
@@ -479,11 +479,11 @@
   .home-v2 .sistema-card::after {
     content: ""; width: 15px; height: 15px; flex-shrink: 0;
     background: center / contain no-repeat
-      url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%2393A7BA' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m9 18 6-6-6-6'/%3E%3C/svg%3E");
+      url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%2397A8AE' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m9 18 6-6-6-6'/%3E%3C/svg%3E");
   }
-  .home-v2 .sistema-card:active { background: #F0F5FA; }
+  .home-v2 .sistema-card:active { background: #F1F5F7; }
 
-  .home-v2 .aviso-card:active { background: #F0F5FA; }
+  .home-v2 .aviso-card:active { background: #F1F5F7; }
 
   /* Contato empilha */
   .home-v2 .contato-grid { grid-template-columns: 1fr; }
@@ -581,20 +581,20 @@
 }
 .home-v2 .al-card:first-child { border-top: 0; }
 .home-v2 .al-card::before { display: none; }   /* a barrinha virou a régua do texto */
-.home-v2 .al-card:hover { background: #F7FBFF; transform: none; box-shadow: none; }
+.home-v2 .al-card:hover { background: #F8FBFD; transform: none; box-shadow: none; }
 .home-v2 .al-card.com-x { padding-right: 44px; }  /* reserva o espaço do × */
 .home-v2 .al-card.p-alta  { --al-accent: #E0574B; }
-.home-v2 .al-card.p-media { --al-accent: #1272C4; }
-.home-v2 .al-card.p-baixa { --al-accent: #93A7BA; }
+.home-v2 .al-card.p-media { --al-accent: #287A8E; }
+.home-v2 .al-card.p-baixa { --al-accent: #97A8AE; }
 .home-v2 .al-card.al-saindo { opacity: 0; }
 
 .home-v2 .al-ic {
   width: 34px; height: 34px; border-radius: 10px; display: grid; place-items: center;
-  flex-shrink: 0; background: #EAF2FA; color: #1272C4;
+  flex-shrink: 0; background: #ECF2F5; color: #287A8E;
 }
 .home-v2 .al-ic svg { width: 18px; height: 18px; }
 .home-v2 .al-card.t-aprovacao .al-ic { background: #FDF3E7; color: #C77E22; }
-.home-v2 .al-card.t-pendencia .al-ic { background: #EAF2FA; color: #1272C4; }
+.home-v2 .al-card.t-pendencia .al-ic { background: #ECF2F5; color: #287A8E; }
 .home-v2 .al-card.t-insight   .al-ic { background: #F3ECFB; color: #7A4BC4; }
 .home-v2 .al-card.t-aviso     .al-ic { background: #EAF8F0; color: #2E9E63; }
 .home-v2 .al-ic.t-ok { background: #EAF8F0; color: #2E9E63; }
@@ -605,7 +605,7 @@
   flex: 1 1 auto; min-width: 0;
   display: grid; grid-template-columns: auto minmax(0, 1fr);
   align-items: baseline; column-gap: 10px;
-  border-left: 3px solid var(--al-accent, #1272C4);
+  border-left: 3px solid var(--al-accent, #287A8E);
   padding: 1px 0 1px 14px;
 }
 .home-v2 .al-body h3 {
@@ -648,7 +648,7 @@
   position: static; flex: 0 0 auto; order: 0; pointer-events: none;
   min-width: 22px; height: 22px; padding: 0 7px; border-radius: 999px;
   display: grid; place-items: center; font-size: 11.5px; font-weight: 800;
-  color: #fff; background: var(--al-accent, #1272C4);
+  color: #fff; background: var(--al-accent, #287A8E);
 }
 .home-v2 .al-x {
   position: absolute; top: 50%; bottom: auto; right: 12px; z-index: 2;
@@ -658,7 +658,7 @@
   opacity: 0; transition: opacity .15s, background .15s, color .15s; padding: 0;
 }
 .home-v2 .al-card:hover .al-x { opacity: 1; }
-.home-v2 .al-x:hover { background: #EDF3FA; color: var(--v2-body); }
+.home-v2 .al-x:hover { background: #EEF3F6; color: var(--v2-body); }
 .home-v2 .al-x svg { width: 13px; height: 13px; }
 /* sem hover (touch) o × precisa nascer visível, senão não há como dispensar */
 @media (hover: none) {
@@ -673,7 +673,7 @@
   font-family: inherit; font-size: 12.5px; font-weight: 700; cursor: pointer;
   transition: background .15s, color .15s;
 }
-.home-v2 .hv-al-toggle:hover { background: #F7FBFF; color: var(--v2-blue-active); }
+.home-v2 .hv-al-toggle:hover { background: #F8FBFD; color: var(--v2-blue-active); }
 .home-v2 .hv-al-toggle[hidden] { display: none; }
 
 /* "nada pendente" — a linha discreta que fecha a caixa quando não há nada */
@@ -686,7 +686,7 @@
 /* esqueleto de carregamento — linhas, não cartões */
 .home-v2 .al-skel {
   height: 61px; border-radius: 0; border: 0; border-top: 1px solid var(--v2-border-soft);
-  background: linear-gradient(100deg, #F7FAFD 30%, #EDF3FA 50%, #F7FAFD 70%);
+  background: linear-gradient(100deg, #F7FAFD 30%, #EEF3F6 50%, #F7FAFD 70%);
   background-size: 200% 100%; animation: al-shimmer 1.3s linear infinite;
 }
 .home-v2 .al-skel:first-child { border-top: 0; }
@@ -699,7 +699,7 @@
 .home-v2 .hv-head-actions { display: flex; align-items: center; gap: 10px; flex-shrink: 0; }
 .home-v2 .hv-bell {
   position: relative; width: 38px; height: 38px; border-radius: 10px;
-  border: 1px solid var(--v2-border); background: var(--v2-input); color: #6B8299;
+  border: 1px solid var(--v2-border); background: var(--v2-input); color: #6F838B;
   cursor: pointer; display: grid; place-items: center; padding: 0; flex-shrink: 0;
   transition: border-color .15s, color .15s, background .15s;
 }
@@ -745,7 +745,7 @@
     display: grid; grid-template-columns: minmax(0, 1fr) auto;
     grid-template-areas: "meta lado" "corpo lado";
     align-items: center; column-gap: 10px; row-gap: 1px;
-    padding: 11px 14px; border-left: 3px solid var(--al-accent, #1272C4);
+    padding: 11px 14px; border-left: 3px solid var(--al-accent, #287A8E);
   }
   .home-v2.al-aberto .al-card.al-extra { display: grid; }
   .home-v2 .al-card.com-x { padding-right: 40px; }
@@ -773,7 +773,7 @@
   .home-v2 .al-card:not(.com-badge):not(.al-vazio):not(.com-x)::after {
     content: ""; grid-area: lado; width: 16px; height: 16px; flex-shrink: 0;
     background: center / contain no-repeat
-      url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%2393A7BA' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m9 18 6-6-6-6'/%3E%3C/svg%3E");
+      url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%2397A8AE' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m9 18 6-6-6-6'/%3E%3C/svg%3E");
   }
   /* o CTA continua sendo o link da linha, só que sem texto */
   .home-v2 .al-cta {

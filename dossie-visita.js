@@ -833,7 +833,7 @@
   // cabeçalho só do papel: marca, quem gerou e quando
   function topoPapel(d){
     const u = window._portalUser || {};
-    return '<div class="dv-topo"><div class="dv-topo-m"><img src="/icons/icon-192.png" alt=""><div><b>Biomedical</b><br><span>Dossiê de visita · Comercial</span></div></div>'
+    return '<div class="dv-topo"><div class="dv-topo-m"><img src="/icons/icon-192.png" alt=""><div><b>MSB</b><br><span>Dossiê de visita · Comercial</span></div></div>'
       + '<div class="dv-topo-d">Gerado em ' + esc(new Date(d.geradoEm).toLocaleString('pt-BR', { dateStyle:'short', timeStyle:'short' }))
       + (u.name || u.email ? '<br>por ' + esc(u.name || u.email) : '') + '<br>Uso interno · dados lidos com o login de quem gerou</div></div>';
   }
@@ -1284,7 +1284,7 @@
     if (!st) { st = document.createElement('style'); st.id = 'dv-papel-pagina'; document.head.appendChild(st); }
     const cssTxt = s => '"' + String(s).replace(/[\\"]/g, '').replace(/[\r\n]+/g, ' ') + '"';
     const nome = d.cliente.nome || (d.cliente.salesforce && d.cliente.salesforce.nome) || 'Cliente';
-    const fonte = 'font-family:Manrope,"Segoe UI",sans-serif;font-size:7.5pt;color:#8C99AD;';
+    const fonte = 'font-family:Roboto,"Segoe UI",sans-serif;font-size:7.5pt;color:#8E9AA1;';
     st.textContent = '@media print{@page{'
       + '@bottom-left{content:' + cssTxt('Dossiê de Visita · ' + nome + ' · ' + dataBR(d.hoje)) + ';' + fonte + '}'
       + '@bottom-right{content:"página " counter(page) " de " counter(pages);' + fonte + '}}}';

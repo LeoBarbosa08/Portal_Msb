@@ -9,19 +9,19 @@
 
 body.dept {
   /* tokens da referência */
-  --dv-ink: #0A2E5C;
-  --dv-body: #33495E;
-  --dv-muted: #5B7189;
-  --dv-muted2: #7C93A8;
-  --dv-muted3: #93A7BA;
-  --dv-border: #E3EAF2;
-  --dv-border-soft: #EDF2F8;
-  --dv-border-hover: #C8DCEF;
+  --dv-ink: #10323E;
+  --dv-body: #374951;
+  --dv-muted: #5F727A;
+  --dv-muted2: #81939B;
+  --dv-muted3: #97A8AE;
+  --dv-border: #E5EAED;
+  --dv-border-soft: #EEF2F5;
+  --dv-border-hover: #CDDCE3;
   --dv-page: #F4F7FB;
   --dv-headbg: #F7FAFD;
-  --dv-zebra: #F0F5FA;
-  --dv-blue: #1272C4;
-  --dv-navy: #0A2E5C;
+  --dv-zebra: #F1F5F7;
+  --dv-blue: #287A8E;
+  --dv-navy: #10323E;
   --dv-green: #2FBF71;
   --dv-green-ink: #22794C;
   --dv-green-bg: #EAF8F0;
@@ -32,9 +32,9 @@ body.dept {
   --dv-red-ink: #B54545;
   --dv-red-bg: #FCEDED;
   --dv-radius: 14px;
-  --dv-shadow: 0 1px 3px rgba(10,46,92,0.05);
-  --dv-shadow-hover: 0 8px 24px rgba(10,46,92,0.10);
-  --dv-font: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
+  --dv-shadow: 0 1px 3px rgba(16,50,62,0.05);
+  --dv-shadow-hover: 0 8px 24px rgba(16,50,62,0.10);
+  --dv-font: 'Roboto', system-ui, -apple-system, sans-serif;
 
   background: var(--dv-page);
 }
@@ -54,11 +54,11 @@ body.dept .area-main h4, body.dept .area-main h5 {
   color: var(--dv-ink);
 }
 /* O h1 do hero fica FORA de .area-main e caia em --font-display (Poppins),
-   brigando com o Plus Jakarta do conteudo logo abaixo. */
+   brigando com o Roboto do conteudo logo abaixo. */
 body.dept .area-header-top h1 { font-family: var(--dv-font); }
 
 /* =====================================================================
-   1. CARDS — raio 14px, borda #E3EAF2, sombra suave (tudo branco)
+   1. CARDS — raio 14px, borda #E5EAED, sombra suave (tudo branco)
    ===================================================================== */
 body.dept .sr-panel,
 body.dept .sr-kpi,
@@ -227,7 +227,7 @@ body.dept .sr-kpi-badge.dn { background: var(--dv-red-bg); color: var(--dv-red-i
 body.dept .badge--critico  { background: var(--dv-red-bg);   color: var(--dv-red-ink); }
 body.dept .badge--grave    { background: var(--dv-amber-bg); color: var(--dv-amber-ink); }
 body.dept .badge--moderado { background: var(--dv-amber-bg); color: #C77E22; }
-body.dept .badge--recente  { background: #EAF2FA; color: var(--dv-blue); }
+body.dept .badge--recente  { background: #ECF2F5; color: var(--dv-blue); }
 body.dept .badge--avencer  { background: var(--dv-green-bg); color: var(--dv-green-ink); }
 body.dept .dias-badge      { background: var(--dv-red-bg);   color: var(--dv-red-ink); }
 body.dept .dias-badge--ok  { background: var(--dv-green-bg); color: var(--dv-green-ink); }
@@ -293,7 +293,7 @@ body.dept .sr-btn.excel {
 body.dept .action-btn--success:hover { border-color: #2E9E63; }
 
 body.dept .sr-label { color: var(--dv-muted2); font-weight: 800; letter-spacing: 0.8px; }
-body.dept .search-input { border-radius: 10px; background: #F0F4F9; border-color: var(--dv-border); }
+body.dept .search-input { border-radius: 10px; background: #F1F4F6; border-color: var(--dv-border); }
 body.dept .search-input:focus { background: #fff; }
 
 /* dropdowns de filtro (av-dd) */
@@ -309,7 +309,7 @@ body.dept .av-dd-panel { border-radius: 12px; border: 1px solid var(--dv-border)
    6. HERO MSBIO (Sales Report) — card gradiente navy
    ===================================================================== */
 body.dept .ix-msbio {
-  background: linear-gradient(150deg, #071E3D, #0E4A8A);
+  background: linear-gradient(150deg, #0C2029, #1A5160);
   border: none;
   color: #fff;
   position: relative;
@@ -320,16 +320,16 @@ body.dept .ix-msbio::after {
   background-image: radial-gradient(circle at 90% 10%, rgba(47,191,113,0.16), transparent 45%);
 }
 body.dept .ix-msbio > * { position: relative; z-index: 1; }
-body.dept .ix-msbio .ix-card-head { color: #A8C3DD; font-size: 11.5px; font-weight: 800; letter-spacing: 1px; text-transform: uppercase; }
+body.dept .ix-msbio .ix-card-head { color: #ACC3CC; font-size: 11.5px; font-weight: 800; letter-spacing: 1px; text-transform: uppercase; }
 body.dept .ix-msbio .ix-card-head svg { color: #4FD98D; }
-body.dept .ix-msbio .ix-period { background: rgba(255,255,255,0.10); color: #DCEAF7; }
+body.dept .ix-msbio .ix-period { background: rgba(255,255,255,0.10); color: #E0EAEF; }
 body.dept .ix-msbio .ix-block { border-top-color: rgba(255,255,255,0.10); }
 body.dept .ix-msbio .ix-block::before { background: #2FBF71; }
 body.dept .ix-msbio .ix-block.warn::before { background: var(--dv-amber); }
-body.dept .ix-msbio .ix-block-title { color: #A8C3DD; font-weight: 800; }
+body.dept .ix-msbio .ix-block-title { color: #ACC3CC; font-weight: 800; }
 body.dept .ix-msbio .ix-fat { color: #fff; font-family: var(--dv-font); font-size: 30px; letter-spacing: -0.8px; }
 body.dept .ix-msbio .ix-fatpct { color: #4FD98D; font-family: var(--dv-font); font-weight: 800; }
-body.dept .ix-msbio .ix-k { color: #8FAECB; }
+body.dept .ix-msbio .ix-k { color: #93AFB9; }
 body.dept .ix-msbio .ix-v { color: #fff; }
 body.dept .ix-msbio .ix-v.ix-ok { color: #4FD98D; }
 body.dept .ix-msbio .ix-v.ix-neg { color: #FFB4A8; }
@@ -340,8 +340,8 @@ body.dept .ix-msbio .ix-bar-track {
 body.dept .ix-msbio .ix-bar-fill { background: linear-gradient(90deg, #2FBF71, #4FD98D); border-radius: 999px; }
 body.dept .ix-msbio .ix-bar-fill.ix-warn { background: linear-gradient(90deg, #E8A33D, #F2C063); }
 body.dept .ix-msbio .ix-bar-mark { background: rgba(255,255,255,0.5); }
-body.dept .ix-msbio .ix-bar-legend { color: #8FAECB; }
-body.dept .ix-msbio .ix-bar-legend span { color: #8FAECB !important; }
+body.dept .ix-msbio .ix-bar-legend { color: #93AFB9; }
+body.dept .ix-msbio .ix-bar-legend span { color: #93AFB9 !important; }
 
 /* Barra do herói MSBio (novo markup inline): estados do JS vencem o inline */
 body.dept #ix-msbio-bar.ix-warn { background: linear-gradient(90deg, #E8A33D, #F2C063) !important; }
@@ -443,9 +443,9 @@ body.dept .dv-hero-pill {
   display: inline-flex; align-items: center; gap: 7px;
   padding: 7px 13px; border-radius: 999px;
   background: rgba(255,255,255,0.10); border: 1px solid rgba(255,255,255,0.16);
-  font-size: 12px; font-weight: 700; color: #DCEAF7; white-space: nowrap;
+  font-size: 12px; font-weight: 700; color: #E0EAEF; white-space: nowrap;
 }
-body.dept .dv-hero-pill svg { width: 14px; height: 14px; color: #A8C3DD; }
+body.dept .dv-hero-pill svg { width: 14px; height: 14px; color: #ACC3CC; }
 body.dept .dv-hero-pill .dv-dot {
   width: 7px; height: 7px; border-radius: 999px; background: #2FBF71;
   box-shadow: 0 0 8px rgba(47,191,113,0.8);
@@ -491,9 +491,9 @@ body.dept .modulo-card:hover[data-tone="dre"] .mc-icon { background: var(--dv-am
 body.dept .modulo-card[data-tone="pagar"] .mc-icon,
 body.dept .modulo-card:hover[data-tone="pagar"] .mc-icon { background: var(--dv-red-bg); color: #C24545; }
 body.dept .modulo-card[data-tone="inadim"] .mc-icon,
-body.dept .modulo-card:hover[data-tone="inadim"] .mc-icon { background: #EAF2FA; color: var(--dv-blue); }
+body.dept .modulo-card:hover[data-tone="inadim"] .mc-icon { background: #ECF2F5; color: var(--dv-blue); }
 body.dept .modulo-card[data-tone="conciliacao"] .mc-icon,
-body.dept .modulo-card:hover[data-tone="conciliacao"] .mc-icon { background: #EAF2FA; color: var(--dv-blue); }
+body.dept .modulo-card:hover[data-tone="conciliacao"] .mc-icon { background: #ECF2F5; color: var(--dv-blue); }
 body.dept .modulo-card[data-tone="cobranca"] .mc-icon,
 body.dept .modulo-card:hover[data-tone="cobranca"] .mc-icon { background: #F3ECFB; color: #7A4BC4; }
 body.dept .modulo-card[data-tone="nf"] .mc-icon,

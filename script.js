@@ -582,8 +582,8 @@ document.addEventListener('DOMContentLoaded', () => {
     st.id = 'bm-fab-style';
     st.textContent =
       '.fab-stack{position:fixed;right:22px;bottom:24px;z-index:8900;display:flex;flex-direction:column-reverse;align-items:center;gap:12px;}' +
-      '.fab-btn{width:50px;height:50px;border-radius:50%;background:#002E5D;color:#fff;border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;text-decoration:none;box-shadow:0 6px 20px rgba(0,46,93,.40);transition:opacity .2s ease,transform .2s ease,background .15s,box-shadow .15s;}' +
-      '.fab-btn:hover{background:#0A4FA0;color:#fff;transform:translateY(-3px);box-shadow:0 10px 26px rgba(0,46,93,.48);}' +
+      '.fab-btn{width:50px;height:50px;border-radius:50%;background:#0E333C;color:#fff;border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;text-decoration:none;box-shadow:0 6px 20px rgba(14,51,60,.40);transition:opacity .2s ease,transform .2s ease,background .15s,box-shadow .15s;}' +
+      '.fab-btn:hover{background:#19576A;color:#fff;transform:translateY(-3px);box-shadow:0 10px 26px rgba(14,51,60,.48);}' +
       '.fab-top{opacity:0;visibility:hidden;pointer-events:none;transform:translateY(8px);}' +
       '.fab-top.show{opacity:1;visibility:visible;pointer-events:auto;transform:translateY(0);}' +
       '@media(max-width:640px){.fab-stack{right:14px;bottom:14px;gap:10px;}.fab-btn{width:46px;height:46px;}}';
@@ -658,7 +658,7 @@ document.addEventListener('DOMContentLoaded', () => {
         return fmtCompact(v);
       };
       const ctx = chart.ctx; ctx.save();
-      ctx.font='700 10.5px Manrope, "Segoe UI", system-ui, -apple-system, sans-serif';
+      ctx.font='700 10.5px Roboto, "Segoe UI", system-ui, -apple-system, sans-serif';
       // barras 3D do layout v3 (portal-motion.js): o rótulo sobe/afasta o
       // tanto da tampa/face lateral, senão encosta no volume
       const lift = (el)=>{
@@ -683,7 +683,7 @@ document.addEventListener('DOMContentLoaded', () => {
           if(type==='bar' && horizontal){
             ctx.textBaseline='middle';
             const w = ctx.measureText(label).width, d = lift(el);
-            if(el.x + 6 + d + w <= area.right){ ctx.textAlign='left';  ctx.fillStyle='#334155'; ctx.fillText(label, el.x+6+d, el.y); }
+            if(el.x + 6 + d + w <= area.right){ ctx.textAlign='left';  ctx.fillStyle='#354249'; ctx.fillText(label, el.x+6+d, el.y); }
             else                              { ctx.textAlign='right'; ctx.fillStyle='#ffffff'; ctx.fillText(label, el.x-6, el.y); }
           } else if(type==='bar'){
             ctx.textAlign='center';
@@ -692,8 +692,8 @@ document.addEventListener('DOMContentLoaded', () => {
               // número DENTRO da coluna, próximo ao topo (branco); se a barra for muito baixa, joga acima
               const base = (el.base!=null ? el.base : area.bottom);
               if(el.y + 16 <= base){ ctx.textBaseline='top'; ctx.fillStyle='#ffffff'; ctx.fillText(label, el.x, el.y+5); }
-              else                 { ctx.textBaseline='bottom'; ctx.fillStyle='#334155'; ctx.fillText(label, el.x+dx, el.y-4-up); }
-            } else if(el.y - 14 - up >= area.top){ ctx.textBaseline='bottom'; ctx.fillStyle='#334155'; ctx.fillText(label, el.x+dx, el.y-4-up); }
+              else                 { ctx.textBaseline='bottom'; ctx.fillStyle='#354249'; ctx.fillText(label, el.x+dx, el.y-4-up); }
+            } else if(el.y - 14 - up >= area.top){ ctx.textBaseline='bottom'; ctx.fillStyle='#354249'; ctx.fillText(label, el.x+dx, el.y-4-up); }
             else                                 { ctx.textBaseline='top';    ctx.fillStyle='#ffffff'; ctx.fillText(label, el.x, el.y+4); }
           } else { // line
             ctx.textAlign='center';
@@ -703,7 +703,7 @@ document.addEventListener('DOMContentLoaded', () => {
             // halo branco p/ o número ficar legível mesmo sobre barras coloridas
             ctx.lineWidth=3; ctx.lineJoin='round'; ctx.strokeStyle='rgba(255,255,255,.9)';
             ctx.strokeText(label, el.x, ly);
-            ctx.fillStyle = ds.bmLabelColor || (typeof ds.borderColor==='string' ? ds.borderColor : '#1e293b');
+            ctx.fillStyle = ds.bmLabelColor || (typeof ds.borderColor==='string' ? ds.borderColor : '#202a30');
             ctx.fillText(label, el.x, ly);
           }
         });

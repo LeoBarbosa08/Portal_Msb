@@ -26,8 +26,8 @@
   var MQ_REDUCE = mm('(prefers-reduced-motion: reduce)');
   var MQ_FINE = mm('(hover: hover) and (pointer: fine)');
   var IO_OK = 'IntersectionObserver' in W;
-  var FONT_TEXT = "'Manrope', 'Segoe UI', system-ui, sans-serif";
-  var FONT_DISPLAY = "'Outfit', 'Segoe UI', system-ui, sans-serif";
+  var FONT_TEXT = "'Roboto', 'Segoe UI', system-ui, sans-serif";
+  var FONT_DISPLAY = "'Roboto', 'Segoe UI', system-ui, sans-serif";
   var inPages = location.pathname.indexOf('/pages/') >= 0;
   var ROOT = inPages ? '../' : '';
   var revealed = false, revealAt = 0;
@@ -693,7 +693,7 @@
       var d = depthFor(r); if (!d) continue;
       var dy = d * 0.62, col = el.options && el.options.backgroundColor;
       if (!r.hz && h > 6) {
-        ctx.fillStyle = 'rgba(11,27,48,.10)';
+        ctx.fillStyle = 'rgba(15,29,35,.10)';
         ctx.beginPath(); ctx.ellipse((r.L + r.R + d) / 2, r.B + 1, (w + d) * 0.6, 2.6, 0, 0, Math.PI * 2); ctx.fill();
       }
       ctx.fillStyle = shade(col, -0.34);
@@ -731,7 +731,7 @@
       ctx.save();
       ctx.translate(c0.x, c0.y + R0 + depth * 0.55); ctx.scale(1, 0.16);
       var sg = ctx.createRadialGradient(0, 0, 0, 0, 0, R0 * 0.92);
-      sg.addColorStop(0, 'rgba(11,27,48,.20)'); sg.addColorStop(1, 'rgba(11,27,48,0)');
+      sg.addColorStop(0, 'rgba(15,29,35,.20)'); sg.addColorStop(1, 'rgba(15,29,35,0)');
       ctx.fillStyle = sg; ctx.beginPath(); ctx.arc(0, 0, R0 * 0.92, 0, Math.PI * 2); ctx.fill();
       ctx.restore();
     }
@@ -831,7 +831,7 @@
       if (meta.type === 'doughnut' || meta.type === 'pie') { drawArcDepth(chart, meta); return; }
       if (meta.type === 'line') {
         var ds = chart.data.datasets[args.index] || {};
-        var col = typeof ds.borderColor === 'string' ? ds.borderColor : '#1F6FD6';
+        var col = typeof ds.borderColor === 'string' ? ds.borderColor : '#31798F';
         ctx.save(); meta.$bm3saved = true;
         ctx.shadowColor = shade(col, 0).replace(/,[\d.]+\)$/, ',.32)'); ctx.shadowBlur = 10; ctx.shadowOffsetY = 5;
         var st = chart.$bm3, a = chart.chartArea;
@@ -856,7 +856,7 @@
     C.__bm3 = true;
     var d = C.defaults;
     try {
-      d.font.family = FONT_TEXT; d.color = '#56657A';
+      d.font.family = FONT_TEXT; d.color = '#58666D';
       if (d.animation) {
         d.animation.duration = reduced() ? 0 : 1100; d.animation.easing = 'easeOutQuart';
         d.animation.delay = function (ctx) {
@@ -871,13 +871,13 @@
       }
       var tt = d.plugins && d.plugins.tooltip;
       if (tt) {
-        tt.backgroundColor = '#051329'; tt.titleColor = '#fff'; tt.bodyColor = 'rgba(255,255,255,.86)'; tt.footerColor = 'rgba(255,255,255,.7)';
+        tt.backgroundColor = '#08151B'; tt.titleColor = '#fff'; tt.bodyColor = 'rgba(255,255,255,.86)'; tt.footerColor = 'rgba(255,255,255,.7)';
         tt.padding = 12; tt.cornerRadius = 12; tt.caretSize = 6; tt.boxPadding = 6; tt.usePointStyle = true;
         tt.titleFont = { family: FONT_TEXT, weight: '800', size: 12.5 }; tt.bodyFont = { family: FONT_TEXT, weight: '600', size: 12.5 };
       }
       var lg = d.plugins && d.plugins.legend && d.plugins.legend.labels;
       if (lg) { lg.usePointStyle = true; lg.pointStyle = 'rectRounded'; lg.boxWidth = 10; lg.boxHeight = 10; lg.font = { family: FONT_TEXT, weight: '600', size: 12.5 }; }
-      if (d.scale && d.scale.grid) d.scale.grid.color = '#E9EEF5';
+      if (d.scale && d.scale.grid) d.scale.grid.color = '#EAEEF1';
       if (d.elements && d.elements.point) { d.elements.point.hoverRadius = 6; d.elements.point.hoverBorderWidth = 2; }
       if (d.elements && d.elements.line) { d.elements.line.borderCapStyle = 'round'; d.elements.line.borderJoinStyle = 'round'; }
     } catch (e) {}

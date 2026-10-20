@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>PI · Consignação · Biomedical</title>
+  <title>PI · Consignação · MSB</title>
   <script>
     /* MODO QUIOSQUE — trava o usuário (por e-mail) no ecossistema PI.
        Chaves COMPARTILHADAS com o PI Pedido: quem entra no quiosque acessa
@@ -56,11 +56,11 @@
     html.pi-kiosk .brand { pointer-events: none; }
     /* alternador PI Pedido <-> Consignação (só no quiosque) */
     .pi-kiosk-switch { display: none; }
-    html.pi-kiosk .pi-kiosk-switch { display: flex; gap: 8px; align-items: center; justify-content: center; flex-wrap: wrap; padding: 10px 12px; background: var(--bm-blue-900, #0C547C); position: sticky; top: 0; z-index: 60; }
+    html.pi-kiosk .pi-kiosk-switch { display: flex; gap: 8px; align-items: center; justify-content: center; flex-wrap: wrap; padding: 10px 12px; background: var(--bm-blue-900, #195663); position: sticky; top: 0; z-index: 60; }
     .pi-kiosk-switch .pks-brand { color: var(--bm-green-500, #24A7AF); font-weight: 800; font-family: var(--font-display); margin-right: 4px; letter-spacing: .02em; }
     .pi-kiosk-switch a { color: #fff; text-decoration: none; font-weight: 600; font-size: 13px; padding: 7px 16px; border-radius: 999px; border: 1px solid rgba(255,255,255,.3); transition: background .15s; }
     .pi-kiosk-switch a:hover { background: rgba(255,255,255,.12); }
-    .pi-kiosk-switch a.active { background: #fff; color: var(--bm-blue-900, #0C547C); border-color: #fff; }
+    .pi-kiosk-switch a.active { background: #fff; color: var(--bm-blue-900, #195663); border-color: #fff; }
 
     .pi-card { background: #fff; border: 1px solid var(--border); border-radius: 16px; box-shadow: var(--shadow-lg); overflow: hidden; }
     .pi-head { background: var(--bm-blue-900); padding: 16px 22px; color: #fff; display: flex; align-items: center; gap: 12px; }
@@ -70,11 +70,11 @@
     .pi-steps { display: flex; gap: 6px; flex-wrap: wrap; padding: 14px 22px; border-bottom: 1px solid var(--border); background: #f8fafc; }
     .pi-step { font-size: 12px; font-weight: 600; color: var(--text-3); padding: 6px 12px; border-radius: 999px; border: 1px solid var(--border); background: #fff; }
     .pi-step.atual { color: #fff; background: var(--bm-blue-900); border-color: var(--bm-blue-900); }
-    .pi-step.feito { color: var(--bm-blue-900); border-color: var(--bm-blue-900); background: #eef4fb; }
+    .pi-step.feito { color: var(--bm-blue-900); border-color: var(--bm-blue-900); background: #eff4f7; }
     .pi-body { padding: 26px 22px 30px; }
     .pi-body h3 { margin: 0 0 6px; font-family: var(--font-display); font-size: 17px; color: var(--text-1); }
     .pi-sub { font-size: 13.5px; color: var(--text-3); margin: 0 0 18px; line-height: 1.55; }
-    .pi-msg { display: none; margin: 14px 0 0; padding: 12px 14px; border-radius: 10px; font-size: 13.5px; line-height: 1.5; background: #eef4fb; border: 1px solid #c6dbf2; color: var(--bm-blue-900, #0C547C); }
+    .pi-msg { display: none; margin: 14px 0 0; padding: 12px 14px; border-radius: 10px; font-size: 13.5px; line-height: 1.5; background: #eff4f7; border: 1px solid #c9dbe4; color: var(--bm-blue-900, #195663); }
     .pi-msg-err { background: #fef2f2; border-color: #fecaca; color: #b91c1c; }
     /* conferência da leitura do PDF (quantidade x valor trocados etc.) */
     .pi-msg-warn { background: #fffbeb; border-color: #fde68a; color: #b45309; }
@@ -82,16 +82,16 @@
     .pi-avisos li { margin: 3px 0; }
     .pi-table tr.pi-row-warn > td { background: #fffbeb; }
     .pi-msg-ok  { background: #f0fdf4; border-color: #bbf7d0; color: #15803d; }
-    .pi-spin { display: inline-block; width: 13px; height: 13px; vertical-align: -2px; border: 2px solid rgba(12,84,124,.25); border-top-color: var(--bm-blue-900, #0C547C); border-radius: 50%; animation: pi-spin .65s linear infinite; }
+    .pi-spin { display: inline-block; width: 13px; height: 13px; vertical-align: -2px; border: 2px solid rgba(25,86,99,.25); border-top-color: var(--bm-blue-900, #195663); border-radius: 50%; animation: pi-spin .65s linear infinite; }
     @keyframes pi-spin { to { transform: rotate(360deg); } }
-    .pi-drop { border: 2px dashed #b9cfe2; border-radius: 14px; padding: 44px 20px; text-align: center; cursor: pointer; transition: background .15s, border-color .15s; color: var(--text-3); }
-    .pi-drop:hover, .pi-drop.drag { background: #eef4fb; border-color: var(--bm-blue-900); }
+    .pi-drop { border: 2px dashed #becfd6; border-radius: 14px; padding: 44px 20px; text-align: center; cursor: pointer; transition: background .15s, border-color .15s; color: var(--text-3); }
+    .pi-drop:hover, .pi-drop.drag { background: #eff4f7; border-color: var(--bm-blue-900); }
     .pi-drop .pi-drop-ic { color: var(--bm-blue-900); margin-bottom: 10px; }
     .pi-drop strong { color: var(--text-1); }
     .pi-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px 16px; }
     .pi-field { display: flex; flex-direction: column; gap: 5px; }
     .pi-field.full { grid-column: 1 / -1; }
-    .pi-field label { font-size: 12.5px; font-weight: 600; color: var(--text-2, #334155); }
+    .pi-field label { font-size: 12.5px; font-weight: 600; color: var(--text-2, #354249); }
     .pi-field label .req { color: #dc2626; }
     .pi-lbl-row { display: flex; justify-content: space-between; align-items: center; gap: 8px; }
     .pi-ni { display: inline-flex; align-items: center; gap: 4px; font-size: 11.5px; font-weight: 400; color: var(--text-3); cursor: pointer; }
@@ -101,7 +101,7 @@
     #cli-res { display: none; margin-top: 16px; padding: 14px 16px; border-radius: 10px; background: #f0fdf4; border: 1px solid #bbf7d0; font-size: 14px; color: var(--text-1); flex-direction: column; gap: 4px; }
     .pi-cli-ok { font-weight: 700; color: #15803d; margin-bottom: 4px; }
     .pi-field input, .pi-field select, .pi-field textarea { font: inherit; font-size: 14px; color: var(--text-1); border: 1px solid var(--border); border-radius: 9px; padding: 9px 11px; background: #fff; outline: none; width: 100%; }
-    .pi-field input:focus, .pi-field select:focus, .pi-field textarea:focus { border-color: var(--bm-blue-900); box-shadow: 0 0 0 3px rgba(12,84,124,.12); }
+    .pi-field input:focus, .pi-field select:focus, .pi-field textarea:focus { border-color: var(--bm-blue-900); box-shadow: 0 0 0 3px rgba(25,86,99,.12); }
     .pi-field textarea { resize: vertical; min-height: 64px; }
     .pi-actions { display: flex; gap: 10px; margin-top: 22px; flex-wrap: wrap; }
     .pi-btn { display: inline-flex; align-items: center; gap: 8px; cursor: pointer; font: inherit; font-size: 14px; font-weight: 600; border-radius: 10px; padding: 11px 20px; border: 1px solid transparent; transition: opacity .15s; }
@@ -148,7 +148,7 @@
   </style>
 <script src="../pbi-throttle.js?v=3" data-bi-trava="off"></script>
   <!-- Layout v3 (Claude Design · animado): fonte + camada visual + motor de animações -->
-  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300..800&family=Manrope:wght@400..800&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300..900&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="../portal-v3.css?v=2">
   <script src="../portal-motion.js?v=3" defer></script>
   <!-- Tema claro/escuro (menu do avatar): marca o <html> antes de pintar + camada escura -->
@@ -171,9 +171,9 @@
   <!-- HEADER -->
   <header class="site-header">
     <div class="container">
-      <a href="../index.html" class="brand" aria-label="Biomedical — Portal Corporativo">
-        <img class="brand-logo" src="/icons/icon-192.png" alt="Biomedical" onerror="this.dataset.failed='true'">
-        <span class="brand-fallback">Biomedical</span>
+      <a href="../index.html" class="brand" aria-label="Portal MSB — página inicial">
+        <img class="brand-logo" src="/icons/logo-msb.png" alt="MSB · Medical System do Brasil" onerror="this.dataset.failed='true'">
+        <span class="brand-fallback">MSB</span>
       </a>
       <span class="header-divider"></span>
       <nav class="header-nav">
@@ -400,7 +400,7 @@
   <footer class="site-footer">
     <div class="container">
       <div class="bm-footer-bottom">
-        <span>© 2026 Biomedical · Portal Corporativo</span>
+        <span>© 2026 MSB · Portal MSB</span>
         <a href="comercial.html">← Voltar ao Comercial</a>
       </div>
     </div>
