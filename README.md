@@ -52,9 +52,10 @@ Tudo marcado no código com o comentário `RECORTE COMERCIAL + ESTOQUE`.
 
 ### Recorte MSB (20/10/2026)
 
-No portal da MSB **só aparecem o Sales Report (todas as abas) e a Tabela de
-Preços** do Comercial. O resto está **oculto, não apagado**: as páginas
-continuam nos arquivos e abrem pelo endereço direto. Marcado no código com
+No portal da MSB o **Comercial mostra só o Sales Report (todas as abas) e a
+Tabela de Preços**. O resto do Comercial está **oculto, não apagado**: as
+páginas continuam nos arquivos e abrem pelo endereço direto. O **Estoque fica
+inteiro** (chegou a ser ocultado e voltou no mesmo dia). Marcado no código com
 `RECORTE MSB`:
 
 - `nav-sidebar.js` — `NAV.comercial` só com Visão geral, Sales Report e Tabela
@@ -62,10 +63,9 @@ continuam nos arquivos e abrem pelo endereço direto. Marcado no código com
   "Atalhos" da visão geral saem daí).
 - `pages/comercial.html` — saíram os cartões de Negociações, Cotações, FCA,
   Sales Playbook e Materiais e Recursos.
-- `portal-catalogo.js` — a busca (Ctrl+K) só lista o Comercial e as páginas de
-  `MSB_VISIVEIS`; sem Estoque, agentes e automações.
-- `index.html` — sem o card e a sugestão do Estoque; título "Portal Comercial".
-- `api/alertas` — saiu o coletor do Vigia (Estoque) da faixa "Para você".
+- `portal-catalogo.js` — na busca (Ctrl+K), do Comercial só entram as páginas
+  de `MSB_VISIVEIS`; o Estoque aparece completo.
+- `index.html` — o card do Comercial descreve só Sales Report e Tabela de Preços.
 - `sw.js` — cache `bm-comest-v2`, para o navegador não servir o menu antigo.
 
 Para voltar um módulo: recoloque-o nesses pontos.

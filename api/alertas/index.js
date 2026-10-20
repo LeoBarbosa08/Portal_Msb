@@ -507,18 +507,18 @@ const regras = {
 // do portal completo (alçada do PI de teste, comissão, LICI, Sentinela,
 // Cobrança e Votação OKR) apontavam para páginas que não existem aqui. As
 // regras puras deles, acima, ficaram como estavam — sem coletor, não rodam.
-//
-// RECORTE MSB (20/10/26): o Estoque ficou oculto neste portal, então o
-// coletor do Vigia também saiu — o alerta levava a estoque-vigia.html. Para
-// voltar, é recolocar o bloco abaixo (igual ao do portal completo):
-//   { id: 'vigia', rotulo: 'Vigia de Consignação', async coletar(ctx) {
-//       if (!ctx.temArea('estoque')) return [];
-//       const blob = require('../shared/vigia-blob');
-//       if (!blob.configurado()) return [];
-//       const f = await blob.lerJson('fila.json', { itens: [] });
-//       return regras.vigia(Array.isArray(f.itens) ? f.itens : [], ctx); } },
 // ═════════════════════════════════════════════════════════════════
 const COLETORES = [
+  {
+    id: 'vigia', rotulo: 'Vigia de Consignação',
+    async coletar(ctx) {
+      if (!ctx.temArea('estoque')) return [];
+      const blob = require('../shared/vigia-blob');
+      if (!blob.configurado()) return [];
+      const f = await blob.lerJson('fila.json', { itens: [] });
+      return regras.vigia(Array.isArray(f.itens) ? f.itens : [], ctx);
+    }
+  },
   {
     id: 'avisos', rotulo: 'Mural de avisos',
     async coletar(ctx) {
