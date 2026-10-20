@@ -50,6 +50,26 @@ Tudo marcado no código com o comentário `RECORTE COMERCIAL + ESTOQUE`.
   `comercial-automacao-cotacoes`, `comercial-cotacoes`, `comercial-oportunidades`)
   e a versão Copilot antiga do PI (`agente-pedidos`).
 
+### Recorte MSB (20/10/2026)
+
+No portal da MSB **só aparecem o Sales Report (todas as abas) e a Tabela de
+Preços** do Comercial. O resto está **oculto, não apagado**: as páginas
+continuam nos arquivos e abrem pelo endereço direto. Marcado no código com
+`RECORTE MSB`:
+
+- `nav-sidebar.js` — `NAV.comercial` só com Visão geral, Sales Report e Tabela
+  de Preços; sem agentes, automações e atalhos (os cartões "Agentes de IA" e
+  "Atalhos" da visão geral saem daí).
+- `pages/comercial.html` — saíram os cartões de Negociações, Cotações, FCA,
+  Sales Playbook e Materiais e Recursos.
+- `portal-catalogo.js` — a busca (Ctrl+K) só lista o Comercial e as páginas de
+  `MSB_VISIVEIS`; sem Estoque, agentes e automações.
+- `index.html` — sem o card e a sugestão do Estoque; título "Portal Comercial".
+- `api/alertas` — saiu o coletor do Vigia (Estoque) da faixa "Para você".
+- `sw.js` — cache `bm-comest-v2`, para o navegador não servir o menu antigo.
+
+Para voltar um módulo: recoloque-o nesses pontos.
+
 ## Como colocar no ar
 
 1. **Repositório no GitHub** — crie um repositório **privado e vazio** (sem

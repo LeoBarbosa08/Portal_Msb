@@ -27,7 +27,7 @@
 window.PORTAL_CATALOGO = (function () {
   'use strict';
 
-  var versao = '2026-10-16b';
+  var versao = '2026-10-20-msb';
 
   /* ── icones dos itens ─────────────────────────────────────────── */
   var S = ' viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">';
@@ -286,6 +286,23 @@ window.PORTAL_CATALOGO = (function () {
   MODULOS    = MODULOS.filter(daqui);
   AUTOMACOES = AUTOMACOES.filter(daqui);
   AGENTES    = AGENTES.filter(daqui);
+
+  /* ── RECORTE MSB (20/10/26) ───────────────────────────────────── */
+  // No portal da MSB só aparecem o Sales Report (com as abas) e a Tabela de
+  // Preços do Comercial. O Estoque, os outros módulos do Comercial, as
+  // automações e os agentes saem da busca — mesmo recorte do NAV.comercial
+  // de nav-sidebar.js e dos cartões de pages/comercial.html.
+  var MSB_VISIVEIS = [
+    'comercial-sales-report.html', 'comercial-performance-vendas.html', 'comercial-vendas.html',
+    'comercial-clientes.html', 'comercial-base-notas-fiscais.html', 'comercial-novos-negocios.html',
+    'comercial-clientes-perdidos.html', 'comercial-comportamento-clientes.html',
+    'comercial-calendario-cirurgico.html', 'comercial-tabela-precos.html'
+  ];
+  AREAS      = AREAS.filter(function (a) { return a[0] === 'comercial'; })
+    .map(function (a) { return [a[0], a[1], 'Sales Report e Tabela de Preços.', a[3], a[4], a[5]]; });
+  MODULOS    = MODULOS.filter(function (m) { return MSB_VISIVEIS.indexOf(m[3]) >= 0; });
+  AUTOMACOES = [];
+  AGENTES    = [];
 
   function fav(d) {
     return '<img src="https://www.google.com/s2/favicons?domain=' + d + '&sz=64" alt="">';

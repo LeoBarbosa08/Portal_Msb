@@ -664,34 +664,20 @@ if (!window._bmPerfilSheetLoaded && !window._bmPerfilSheetInjected) {
           {id:'comercial-comportamento-clientes', label:'Comportamento de Clientes', href:'comercial-comportamento-clientes.html'},
           {id:'comercial-calendario-cirurgico', label:'Calendário Cirúrgico', href:'comercial-calendario-cirurgico.html'},
         ]},
-        // Negociações (02/10/26): so o Funil. Visao Geral e Cotacoes sairam —
-        // o modulo abre direto no funil. 15/10/26: o funil ganhou a aba
-        // Analítico (por SKU/família/estratégia) — `also` mantém o item aceso.
-        {id:'comercial-funil',    label:'Negociações',           href:'comercial-funil.html',       icon:I.brief, also:['comercial-funil-analitico']},
-        // Customer Service: saiu daqui em 08/10/26 — virou a área própria
-        // "Canal de Atendimento" (NAV.atendimento, no fim deste mapa).
-        // Cotações (08/10/26): a cotação respondida no portal de compras vira
-        // caso (o Agente de Cotações lê o PDF), acompanhada até virar pedido —
-        // o PDF do pedido segue para o PI · Pedido — com o funil de conversão.
-        // RESERVADO por e-mail no gate do topo deste arquivo (restrito()).
-        {id:'comercial-cot',      label:'Cotações',              href:'comercial-cot-funil.html', icon:I.tag, children:[
-          {id:'comercial-cot-funil', label:'Funil de conversão',  href:'comercial-cot-funil.html'},
-          {id:'comercial-cot-casos', label:'Gestão de Cotações',  href:'comercial-cot-casos.html'},
-        ]},
-        {id:'comercial-fca',      label:'FCA',                   href:'comercial-fca.html',         icon:I.file},
-        {id:'comercial-salesbooking', label:'Sales Playbook',    href:'comercial-salesbooking.html',icon:I.book},
-        {id:'comercial-materiais',label:'Materiais e Recursos',  href:'comercial-materiais.html',   icon:I.brief},
+        // RECORTE MSB (20/10/26): no portal da MSB o Comercial mostra SÓ o
+        // Sales Report e a Tabela de Preços. Saíram do menu (e, por tabela,
+        // dos cartões de agentes/atalhos da visão geral, que o portal-motion.js
+        // monta a partir deste menu): Negociações, Cotações, FCA, Sales
+        // Playbook, Materiais e Recursos, os agentes (Dossiê de Visita,
+        // PI · Pedido, PI · Consignação, PI · Consignação INCOMPLETO, Agente de
+        // Cotações) e os atalhos (Salesforce, Metas & Pipeline). As páginas
+        // continuam nos arquivos; para voltar, é recolocar aqui, nos cartões
+        // de pages/comercial.html e no MSB_VISIVEIS do portal-catalogo.js.
         {id:'comercial-tabela-precos', label:'Tabela de Preços', href:'comercial-tabela-precos.html', icon:I.dollar},
       ],
       auto:[],
-      // OCULTOS para todos (07/10): PI · Pedido (TESTE) e PI · Cotação
-      // saíram do menu e dos cartões da home. As páginas continuam no ar
-      // (pi-pedido-teste, pi-cotacao); para voltar, é recolocar aqui.
-      // PI · Consignação (INCOMPLETO) voltou em 19/10 para os testes.
-      // Agente de Cotações (08/10/26): o PDF da cotação do portal vira caso
-      // do módulo Cotações — reservado junto com ele (restrito()).
-      agen:[{l:'Dossiê de Visita',h:'comercial-dossie-visita.html'},{l:'PI · Pedido',h:'pedido-inteligente.html'},{l:'PI · Consignação',h:'pi-consignacao.html'},{l:'PI · Consignação (INCOMPLETO)',h:'pi-consignacao-incompleto.html'},{l:'Agente de Cotações',h:'comercial-cot-nova.html'}],
-      atal:[{l:'Salesforce',h:'https://biomedical.lightning.force.com/lightning/page/home',e:true},{l:'Metas & Pipeline',h:'comercial.html#metas'}]
+      agen:[],
+      atal:[]
     },
 
     financeiro: {

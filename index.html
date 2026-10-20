@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Portal Comercial &amp; Estoque · Biomedical</title>
+  <title>Portal Comercial · Biomedical</title>
   <link rel="icon" type="image/png" href="/icons/icon-192.png">
   <link rel="stylesheet" href="styles.css?v=14">
   <!-- Layout v3 (Claude Design · animado) — fonte Outfit + Manrope + JetBrains Mono -->
@@ -36,7 +36,7 @@
   <script src="avisos-user.js?v=1"></script>
   <script src="avisos-data.js?v=2"></script>
   <script src="/pwa.js" defer></script>
-  <script src="portal-catalogo.js?v=18"></script>
+  <script src="portal-catalogo.js?v=19"></script>
   <!-- TRAVA DE ACESSO (fail-closed) — a grade de Áreas nasce ESCONDIDA e só
        aparece quando o /api/my-areas disser o que esta pessoa pode ver. NÃO existe
        mais "backstop" revelando a grade depois de N segundos: era exatamente essa
@@ -102,7 +102,7 @@
       <div class="hv3-copy">
         <div class="hv-kicker">
           <span class="dot"></span>
-          <span>PORTAL COMERCIAL &amp; ESTOQUE · ACESSO INTERNO</span>
+          <span>PORTAL COMERCIAL · ACESSO INTERNO</span>
         </div>
         <h1 class="hv-greeting" id="hv-greeting"><span class="hv3-w"><span>Bem-vindo</span></span></h1>
         <p class="hv-sub">O que você precisa hoje?<span class="hv-sub-extra"> Suas áreas e sistemas estão logo abaixo.</span></p>
@@ -192,22 +192,15 @@
               <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="8.5" cy="7" r="4"/><path d="M20 8v6"/><path d="M23 11h-6"/></svg>
             </span>
           <h3>Comercial</h3>
-          <p>Vendas, cotações, clientes e processos comerciais.</p>
+          <p>Sales Report e Tabela de Preços.</p>
           <span class="area-card-arrow">Acessar
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
           </span>
         </a>
 
-        <a href="pages/estoque.html" class="area-card" data-area="estoque">
-          <span class="area-card-icon">
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><polyline points="3.27 6.96 12 12.01 20.73 6.96"/><line x1="12" y1="22.08" x2="12" y2="12"/></svg>
-            </span>
-          <h3>Estoque</h3>
-          <p>Gestão de estoque, inventário, entradas e saídas de materiais.</p>
-          <span class="area-card-arrow">Acessar
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
-          </span>
-        </a>
+        <!-- RECORTE MSB (20/10/26): o card do Estoque saiu — no portal da MSB
+             só o Comercial (Sales Report + Tabela de Preços) fica à vista.
+             As páginas do Estoque seguem nos arquivos. -->
 
       </div>
     </div>
@@ -689,8 +682,9 @@
     if (!listEl) return;
 
     // Páginas que saíram do portal não voltam como atalho nos Recentes
-    // (Funil de Conversão da Licitação, removido em 15/10/2026)
-    const REMOVIDAS = ['pages/licitacao-funil-vendas.html', 'pages/licitacao-funil-vendas-analitico.html'];
+    // (Funil de Conversão da Licitação, removido em 15/10/2026; o Estoque,
+    // oculto no RECORTE MSB de 20/10/2026)
+    const REMOVIDAS = ['pages/licitacao-funil-vendas.html', 'pages/licitacao-funil-vendas-analitico.html', 'pages/estoque.html'];
     const read = () => {
       let arr;
       try { arr = JSON.parse(localStorage.getItem(KEY)) || []; } catch (e) { arr = []; }
@@ -702,8 +696,7 @@
     const defaults = [
       { name: 'Comercial', meta: 'Departamento', href: 'pages/comercial.html', ext: false,
         iconHTML: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="8.5" cy="7" r="4"/><path d="M20 8v6"/><path d="M23 11h-6"/></svg>' },
-      { name: 'Estoque', meta: 'Departamento', href: 'pages/estoque.html', ext: false,
-        iconHTML: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="2" width="20" height="8" rx="2"/><rect x="2" y="14" width="20" height="8" rx="2"/><line x1="6" y1="6" x2="6.01" y2="6"/><line x1="6" y1="18" x2="6.01" y2="18"/></svg>' },
+      // RECORTE MSB (20/10/26): a sugestão do Estoque saiu, junto com o card.
       { name: 'Outlook · E-mail', meta: 'Microsoft 365', href: 'https://outlook.cloud.microsoft/mail/', ext: true,
         iconHTML: '<img src="https://www.google.com/s2/favicons?domain=outlook.com&amp;sz=64" alt="">' },
       { name: 'Power BI', meta: 'Dados', href: 'https://app.powerbi.com/home?experience=power-bi', ext: true,
