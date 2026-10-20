@@ -507,42 +507,6 @@
                   </div>
                 </div>
               </div>
-
-              <!-- BIO -->
-              <div style="min-width:0;padding:18px 20px;border-radius:14px;background:#FFFFFF;border:1px solid #E5EAED;">
-                <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;">
-                  <span style="font-size:12.5px;font-weight:800;color:#10323E;">Bio</span>
-                  <span id="ix-bio-badge" style="display:inline-flex;align-items:center;gap:4px;font-size:11.5px;font-weight:800;color:#22794C;background:#EAF8F0;border-radius:999px;padding:3px 9px;white-space:nowrap;"><span class="arr"></span><span id="ix-bio-pct">—</span></span>
-                </div>
-                <div id="ix-bio-fat" style="font-size:22px;font-weight:800;color:#10323E;margin-top:8px;letter-spacing:-0.4px;">—</div>
-                <div style="height:6px;border-radius:999px;background:#EEF2F5;overflow:hidden;margin-top:10px;">
-                  <div id="ix-bio-minibar" style="height:100%;width:0%;border-radius:999px;background:#2FBF71;transition:width .5s ease;"></div>
-                </div>
-                <div style="display:flex;gap:16px;margin-top:10px;font-size:11.5px;color:#5F727A;flex-wrap:wrap;">
-                  <span>Meta <strong style="color:#374951;" id="ix-bio-meta">—</strong></span>
-                  <span>Gap <strong style="color:#374951;" id="ix-bio-gap">—</strong></span>
-                  <span>Margem <strong style="color:#374951;"><span id="ix-bio-margempct">—</span> · <span id="ix-bio-margem">—</span></strong></span>
-                  <span>Pedidos <strong style="color:#374951;"><span id="ix-ped-bio-qtd">—</span> · <span id="ix-ped-bio-valor">—</span></strong></span>
-                </div>
-              </div>
-
-              <!-- MSB -->
-              <div style="min-width:0;padding:18px 20px;border-radius:14px;background:#FFFFFF;border:1px solid #E5EAED;">
-                <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;">
-                  <span style="font-size:12.5px;font-weight:800;color:#10323E;">MSB</span>
-                  <span id="ix-msb-badge" style="display:inline-flex;align-items:center;gap:4px;font-size:11.5px;font-weight:800;color:#22794C;background:#EAF8F0;border-radius:999px;padding:3px 9px;white-space:nowrap;"><span class="arr"></span><span id="ix-msb-pct">—</span></span>
-                </div>
-                <div id="ix-msb-fat" style="font-size:22px;font-weight:800;color:#10323E;margin-top:8px;letter-spacing:-0.4px;">—</div>
-                <div style="height:6px;border-radius:999px;background:#EEF2F5;overflow:hidden;margin-top:10px;">
-                  <div id="ix-msb-minibar" style="height:100%;width:0%;border-radius:999px;background:#2FBF71;transition:width .5s ease;"></div>
-                </div>
-                <div style="display:flex;gap:16px;margin-top:10px;font-size:11.5px;color:#5F727A;flex-wrap:wrap;">
-                  <span>Meta <strong style="color:#374951;" id="ix-msb-meta">—</strong></span>
-                  <span>Gap <strong style="color:#374951;" id="ix-msb-gap">—</strong></span>
-                  <span>Margem <strong style="color:#374951;"><span id="ix-msb-margempct">—</span> · <span id="ix-msb-margem">—</span></strong></span>
-                  <span>Pedidos <strong style="color:#374951;"><span id="ix-ped-msb-qtd">—</span> · <span id="ix-ped-msb-valor">—</span></strong></span>
-                </div>
-              </div>
             </div>
 
             <!-- ── GRÁFICO EVOLUÇÃO MENSAL ──────────────────────── -->
@@ -1760,10 +1724,8 @@ async function aplicarFiltroFaturamento() {
   if (tipoFiltro) basePedidos.push(tipoFiltro);
 
   // estado "carregando"
-  ['ix-msbio-fat','ix-bio-fat','ix-msb-fat'].forEach(id => setTxt(id, '…'));
+  setTxt('ix-msbio-fat', '…');
 
-  const segBio = `${MEDIDAS.segCol} = "${MEDIDAS.segBio}"`;
-  const segMsb = `${MEDIDAS.segCol} = "${MEDIDAS.segMsb}"`;
   // filtro de Empresa do topo (Todos = sem filtro) aplicado ao bloco consolidado
   const empresaFiltro = srFiltroEmpresa();
 
@@ -1793,12 +1755,8 @@ async function aplicarFiltroFaturamento() {
       .then(([det, tot]) => { if (seqD === _srSeqDiario) renderPedidosDetalhe(det, tot, { filtros: filtrosPedDet, query: pbiQuery }); })
       .catch(e => console.warn('[SR] pedidos em andamento:', e.message));
 
-    const [msbio, bio, msb, pedBio, pedMsb, diario, filiais, dwUpdate, evol, metaEvol] = await Promise.all([
+    const [msbio, diario, filiais, dwUpdate, evol, metaEvol] = await Promise.all([
       medirSegmento(base, empresaFiltro),  // consolidado (respeita Empresa)
-      medirSegmento(base, segBio),
-      medirSegmento(base, segMsb),
-      medirPedidos(basePedidos, segBio),
-      medirPedidos(basePedidos, segMsb),
       medirFaturamentoDiario(filtrosDia),  // gráfico Faturamento por Dia
       medirFiliais(filtrosDia),            // tabela Performance por Filial
       pbiQuery("EVALUATE ROW(\"UltimaAtualizacao\", MAX('Atualizações DW'[Última atualização]))").catch(()=>[]),
@@ -1831,16 +1789,6 @@ async function aplicarFiltroFaturamento() {
     // barra de % Margem
     const mbar = document.getElementById('ix-msbio-margem-bar');
     if (mbar && r.mpct != null) mbar.style.width = Math.max(0, Math.min(r.mpct, 100)) + '%';
-
-    // Bio / MSB
-    pintarSegmento('ix-bio', bio);
-    pintarSegmento('ix-msb', msb);
-
-    // Pedidos em andamento
-    setTxt('ix-ped-bio-valor', fBRL(pedBio.valor));
-    setTxt('ix-ped-bio-qtd',   fINT(pedBio.qtd));
-    setTxt('ix-ped-msb-valor', fBRL(pedMsb.valor));
-    setTxt('ix-ped-msb-qtd',   fINT(pedMsb.qtd));
 
     // Gráfico Faturamento por Dia
     if (window.renderChartDiario) window.renderChartDiario(diario.labels, diario.valores);
