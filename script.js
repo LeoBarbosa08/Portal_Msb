@@ -241,7 +241,7 @@ document.addEventListener('DOMContentLoaded', () => {
     ['Logística','logistica.html','Fluxo logístico, relatórios de distribuição e cotação de frete.','logistica distribuicao carga cargas expedicao rotas entregas transporte fornecedor fornecedores frete cotacao transportadora'],
     ['Marketing','marketing.html','Captação de leads, formulários e materiais institucionais.','marketing campanha campanhas evento eventos redes sociais instagram formularios materiais comunicacao midia'],
     ['Estoque','estoque.html','Saldo, ruptura, validade curta, consignação e InventarIA.','estoque consignado saldo inventario ordens de compra roi armazem deposito produto material'],
-    ['Contábil','contabil.html','Margem de contribuição e gestão de custos SG&A.','contabil contabilidade fiscal imposto impostos obrigacoes acessorias fechamento patrimonio inventario nota fiscal escrituracao'],
+    ['Contábil','contabil.html','Gestão de custos SG&A da MSB.','contabil contabilidade fiscal imposto impostos obrigacoes acessorias fechamento patrimonio inventario nota fiscal escrituracao'],
     ['Licitação','licitacao.html','Editais, Sales Report da Licitação e Comitê de Produto.','licitacao licitacoes edital editais pregao pregoes contrato contratos publico governo orgao publico compra publica'],
     ['Administrativo','administrativo.html','Requisições de compra, lançamento de faturas no Dynamics e pagamento de comissão dos vendedores PJ.','administrativo requisicao requisicoes compra compras oc ordem de compra comissao comissionado fatura lancamento diario'],
     ['Produtos','produtos.html','Linhas, estratégias e famílias de produtos, e cadastro de novos SKUs.','produtos produto familia familias estrategia registro registros anvisa regulatorio portfolio fornecedor pesquisa mercado'],
@@ -257,10 +257,10 @@ document.addEventListener('DOMContentLoaded', () => {
     ['Comportamento de Clientes','comercial-comportamento-clientes.html','Comercial','comportamento cliente clientes curva abc pareto ciclo de vida fiel fieis recorrente em risco dormente perdido recencia carteira matriz familia mes recompra ticket medio'],
     ['Base de Notas Fiscais','comercial-base-notas-fiscais.html','Comercial','base notas fiscais nf faturamento item nota detalhado exportar excel'],
     ['Análise de Clientes','comercial-clientes.html','Comercial','analise clientes carteira'],
-    ['Novos Negócios','comercial-novos-negocios.html','Comercial','novos negocios prospeccao'],
     ['Funil de Oportunidades','comercial-funil.html','Comercial','funil pipeline etapas negociacao negociacoes oportunidade oportunidades'],
     ['FCA','comercial-fca.html','Comercial','fca ficha atividade comercial visita'],
     ['Materiais e Recursos','comercial-materiais.html','Comercial','materiais recursos apoio'],
+    ['Gestão de Custos SG&A','contabil-custos-sgna.html','Contábil','custo custos sgna sga despesa administrativa orcado realizado centro de custo pacote conta'],
     ['Cobrança Automática','cobranca-automatica.html','Financeiro','cobranca carta vencidos titulos boleto inadimplencia cobrar enviar pdf sharepoint cartas de cobranca'],
     ['Cobrança · Notas em Aberto','cobranca-notas.html','Financeiro','cobranca notas em aberto faturas dynamics custtransopen nao liquidado sinief tipo de cliente responsavel status power automate selecionar notas'],
     ['Inadimplência','financeiro-inadimplencia.html','Financeiro','inadimplencia atraso devedor'],
@@ -301,7 +301,7 @@ document.addEventListener('DOMContentLoaded', () => {
   // RECORTE COMERCIAL + ESTOQUE: as duas listas acima ficam iguais às do
   // portal completo; aqui sai o que é das outras áreas, que não existem
   // neste portal (o guia levaria a página que não abre).
-  const AREAS_DESTE_PORTAL = ['Comercial', 'Estoque'];
+  const AREAS_DESTE_PORTAL = ['Comercial', 'Estoque', 'Contábil'];   // Contábil (22/10/26): só a Gestão de Custos SG&A
   for (let i = AREAS.length - 1; i >= 0; i--) if (AREAS_DESTE_PORTAL.indexOf(AREAS[i][0]) < 0) AREAS.splice(i, 1);
   for (let i = MODULES.length - 1; i >= 0; i--) if (AREAS_DESTE_PORTAL.indexOf(MODULES[i][2]) < 0) MODULES.splice(i, 1);
 

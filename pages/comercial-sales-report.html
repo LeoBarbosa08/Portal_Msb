@@ -10,7 +10,7 @@
   <link rel="stylesheet" href="../dash-v2.css?v=3">
   <!-- MSAL via unpkg (CDN mais confiável) -->
   <script src="https://unpkg.com/@azure/msal-browser@2.38.3/lib/msal-browser.min.js"></script>
-<script src="../pbi-throttle.js?v=4"></script>
+<script src="../pbi-throttle.js?v=5"></script>
   <!-- Layout v3 (Claude Design · animado): fonte + camada visual + motor de animações -->
   <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300..900&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="../portal-v3.css?v=2">
@@ -63,7 +63,6 @@
                 <div class="sb-children">
                   <a href="comercial-vendas.html">Análise de Vendas</a>
                   <a href="comercial-clientes.html">Análise de Clientes</a>
-                  <a href="comercial-novos-negocios.html">Novos Negócios</a>
                 </div>
               </div>
               <a href="comercial-funil.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 7V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v2"/></svg>Negociações</a>
@@ -182,10 +181,7 @@
                 <a href="comercial-vendas.html">Análise de Vendas</a>
                 <a href="comercial-clientes.html">Análise de Pedidos</a>
                 <a href="comercial-base-notas-fiscais.html">Base de Notas Fiscais</a>
-                <a href="comercial-novos-negocios.html">Novos Negócios</a>
-                <a href="comercial-clientes-perdidos.html">Clientes Perdidos</a>
                 <a href="comercial-comportamento-clientes.html">Comportamento de Clientes</a>
-                <a href="comercial-calendario-cirurgico.html">Calendário Cirúrgico</a>
               </div>
             </div>
           </div>
@@ -224,20 +220,6 @@
                   <div class="mc-top"><span class="mc-icon"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg></span></div>
                   <div class="mc-name" style="font-size:14px;">Análise de Pedidos</div>
                   <div class="mc-desc">Notas fiscais detalhadas.</div>
-                  <div class="mc-open" style="font-size:12px;">Ver <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg></div>
-                </a>
-
-                <a href="comercial-novos-negocios.html" class="modulo-card" data-tone="dre" style="min-height:0;padding:18px 20px;">
-                  <div class="mc-top"><span class="mc-icon"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="8.5" cy="7" r="4"/><path d="M20 8v6"/><path d="M23 11h-6"/></svg></span></div>
-                  <div class="mc-name" style="font-size:14px;">Novos Negócios</div>
-                  <div class="mc-desc">Aquisição e expansão de clientes.</div>
-                  <div class="mc-open" style="font-size:12px;">Ver <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg></div>
-                </a>
-
-                <a href="comercial-clientes-perdidos.html" class="modulo-card" data-tone="dre" style="min-height:0;padding:18px 20px;">
-                  <div class="mc-top"><span class="mc-icon"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="8.5" cy="7" r="4"/><line x1="23" y1="11" x2="17" y2="11"/></svg></span></div>
-                  <div class="mc-name" style="font-size:14px;">Clientes Perdidos</div>
-                  <div class="mc-desc">Clientes que deixaram de comprar.</div>
                   <div class="mc-open" style="font-size:12px;">Ver <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg></div>
                 </a>
 
@@ -1017,16 +999,6 @@
                   <div class="mc-desc">Carteira de clientes e concentração de receita.</div>
                   <div class="mc-open">Abrir módulo <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg></div>
                 </a>
-                <a href="comercial-novos-negocios.html" class="modulo-card" data-tone="receber">
-                  <div class="mc-top">
-                    <span class="mc-icon">
-                      <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="8.5" cy="7" r="4"/><path d="M20 8v6"/><path d="M23 11h-6"/></svg>
-                    </span>
-                  </div>
-                  <div class="mc-name">Novos Negócios</div>
-                  <div class="mc-desc">Aquisição e expansão de clientes.</div>
-                  <div class="mc-open">Abrir módulo <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg></div>
-                </a>
               </div>
             </div>
           </section>
@@ -1097,6 +1069,7 @@
   <script src="../script.js?v=8"></script>
 <script src="../nav-sidebar.js?v=52"></script>
 <script src="../sr-intercompany.js?v=1"></script>
+<script src="../sr-regional.js?v=1"></script>
 <script src="../sr-diario.js?v=3"></script>
 <script>
 // ================================================================
@@ -1492,27 +1465,15 @@ async function medirNivel(groupCol, filtros, metaPai) {
 
 // ── Regionais (HERO MSBio e tabela Performance por Regional) ─────────
 // Regional = região do Brasil, montada pelo 'Estados'[Cód. do estado] — o
-// mesmo filtro dos cartões "REGIONAL …" do relatório no Power BI (Nordeste =
-// AL, BA, CE, MA, PB, PE, PI, RN ou SE). Cada medida é avaliada NA REGIONAL
-// (não soma estados): o Gap e o % saem iguais aos do relatório.
-const UF_COL = "'Estados'[Cód. do estado]";
-const REGIONAIS = [
-  { id: 'NORDESTE',     nome: 'Nordeste',     ufs: ['AL', 'BA', 'CE', 'MA', 'PB', 'PE', 'PI', 'RN', 'SE'] },
-  { id: 'SUDESTE',      nome: 'Sudeste',      ufs: ['ES', 'MG', 'RJ', 'SP'] },
-  { id: 'SUL',          nome: 'Sul',          ufs: ['PR', 'RS', 'SC'] },
-  { id: 'CENTRO-OESTE', nome: 'Centro-Oeste', ufs: ['DF', 'GO', 'MS', 'MT'] },
-  { id: 'NORTE',        nome: 'Norte',        ufs: ['AC', 'AM', 'AP', 'PA', 'RO', 'RR', 'TO'] }
-];
-// o que não cai em nenhuma das 5 (exterior, UF em branco ou sem estado): o
-// NOT … IN pega também a linha em branco do 'Estados' — assim as regionais +
-// esta linha fecham com o TOTAL da tabela
-const REG_OUTRAS = { id: 'OUTRAS', nome: 'Exterior / sem UF', ufs: [] };
-const _ufLista = ufs => '{ ' + ufs.map(u => '"' + u + '"').join(', ') + ' }';
-function regFiltro(id) {
-  if (id === REG_OUTRAS.id) return `NOT(${UF_COL} IN ${_ufLista(REGIONAIS.flatMap(r => r.ufs))})`;
-  const r = REGIONAIS.find(x => x.id === id);
-  return r ? `${UF_COL} IN ${_ufLista(r.ufs)}` : null;
-}
+// mesmo filtro dos cartões "REGIONAL …" do relatório no Power BI. As 5
+// regionais, a linha "Exterior / sem UF" (REG_OUTRAS: o que não cai em
+// nenhuma, para fechar com o TOTAL) e o filtro de UF de cada uma moram no
+// ../sr-regional.js — a mesma lista da Performance de Vendas e das Análises
+// de Vendas e de Pedidos. Cada medida é avaliada NA REGIONAL (não soma
+// estados): o Gap e o % saem iguais aos do relatório.
+const REGIONAIS  = SRRegional.REGIONAIS;
+const REG_OUTRAS = SRRegional.OUTRAS;
+const regFiltro  = id => SRRegional.filtro(id);
 
 // 1 linha por regional + OUTRAS (UNION de ROWs, cada uma com o filtro de UF
 // dela). Mesmo roteiro do medirNivel: faturamento isolado; Meta/%/Gap/Margem

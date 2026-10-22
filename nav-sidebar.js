@@ -659,10 +659,7 @@ if (!window._bmPerfilSheetLoaded && !window._bmPerfilSheetInjected) {
           {id:'comercial-vendas',          label:'Análise de Vendas',  href:'comercial-vendas.html'},
           {id:'comercial-clientes',        label:'Análise de Pedidos',href:'comercial-clientes.html'},
           {id:'comercial-base-notas-fiscais', label:'Base de Notas Fiscais', href:'comercial-base-notas-fiscais.html'},
-          {id:'comercial-novos-negocios',  label:'Novos Negócios',     href:'comercial-novos-negocios.html'},
-          {id:'comercial-clientes-perdidos', label:'Clientes Perdidos', href:'comercial-clientes-perdidos.html'},
           {id:'comercial-comportamento-clientes', label:'Comportamento de Clientes', href:'comercial-comportamento-clientes.html'},
-          {id:'comercial-calendario-cirurgico', label:'Calendário Cirúrgico', href:'comercial-calendario-cirurgico.html'},
         ]},
         // RECORTE MSB (20/10/26): no portal da MSB o Comercial mostra SÓ o
         // Sales Report e a Tabela de Preços. Saíram do menu (e, por tabela,
@@ -797,13 +794,10 @@ if (!window._bmPerfilSheetLoaded && !window._bmPerfilSheetInjected) {
       label:'Contábil',
       nav:[
         {id:'contabil',              label:'Visão geral',          href:'contabil.html',              icon:I.grid},
-        {id:'contabil-dre',          label:'DRE',                  href:'contabil-dre.html',          icon:I.file},
+        // RECORTE MSB (22/10/26): o Contábil da MSB tem só a Gestão de Custos
+        // SG&A, recortada na empresa MSB. DRE e Margem de Contribuição do
+        // portal completo não vieram (ver PAGINAS_FORA em api/shared/auth.js).
         {id:'contabil-custos-sgna',  label:'Gestão de Custos SG&A',href:'contabil-custos-sgna.html',  icon:I.dollar},
-        {id:'contabil-margem-g',     label:'Margem de Contribuição',href:'contabil-margem.html',      icon:I.bars, children:[
-          {id:'contabil-margem',           label:'Visão Geral',      href:'contabil-margem.html'},
-          {id:'contabil-margem-analitico', label:'Analítico',        href:'contabil-margem-analitico.html'},
-          {id:'contabil-margem-nf',        label:'Analítico por NF', href:'contabil-margem-nf.html'},
-        ]},
       ],
       auto:[],
       agen:[],

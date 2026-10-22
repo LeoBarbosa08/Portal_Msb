@@ -1,0 +1,932 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Gestão de Custos SG&A · Contábil · MSB</title>
+  <link rel="stylesheet" href="../styles.css?v=14">
+  <script src="https://unpkg.com/@azure/msal-browser@2.38.3/lib/msal-browser.min.js"></script>
+<script src="../pbi-throttle.js?v=5"></script>
+  <!-- Layout v3 (Claude Design · animado): fonte + camada visual + motor de animações -->
+  <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300..900&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../portal-v3.css?v=2">
+  <script src="../portal-motion.js?v=3" defer></script>
+  <!-- Tema claro/escuro (menu do avatar): marca o <html> antes de pintar + camada escura -->
+  <script>try{if(localStorage.getItem('bm-tema')==='escuro')document.documentElement.setAttribute('data-tema','escuro')}catch(e){}</script>
+  <link rel="stylesheet" href="../portal-tema.css?v=1">
+  <script src="../portal-tema.js?v=1" defer></script>
+  <!-- Celular (varredura 15/10/26): só vale em tela < 768px; no computador não se aplica -->
+  <link rel="stylesheet" href="../portal-mobile.css?v=1" media="(max-width: 767.98px)">
+  <script src="../portal-mobile.js?v=1" defer></script>
+</head>
+<body class="dept">
+
+  <header class="site-header">
+    <div class="container">
+      <a href="../index.html" class="brand" aria-label="Portal MSB — página inicial">
+        <img class="brand-logo" src="/icons/logo-msb.png" alt="MSB · Medical System do Brasil" onerror="this.dataset.failed='true'">
+        <span class="brand-fallback">MSB</span>
+      </a>
+      <nav class="header-nav">
+        <a href="../index.html">Início</a>
+        <a href="../index.html#areas">Áreas</a>
+        <a href="../index.html#sistemas">Sistemas</a>
+        <a href="../index.html#avisos">Avisos</a>
+        <a href="../index.html#contato">Contato</a>
+      </nav>
+    </div>
+  </header>
+
+  <section class="area-header">
+    <div class="container">
+      <div class="breadcrumb">
+        <a href="../index.html">Portal</a><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18l6-6-6-6"/></svg>
+        <a href="contabil.html">Contábil</a><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18l6-6-6-6"/></svg>
+        <span>Gestão de Custos SG&A</span>
+      </div>
+      <div class="area-header-top">
+        <div>
+          <h1>Gestão de Custos SG&A</h1>
+          <p>Análise de orçado x realizado por centro de custo, pacote e conta contábil.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <div class="area-body">
+    <div class="container">
+      <div class="area-grid">
+
+        <aside class="area-sidebar">
+          <div class="sb-card">
+            <div class="sb-head">
+              <span class="sb-ic"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="9" y1="15" x2="15" y2="15"/></svg></span>
+              <div><div class="sb-tt">Contábil</div><div class="sb-st">Departamento</div></div>
+            </div>
+            <nav></nav>
+          </div>
+          <a href="../index.html" class="sb-back"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></svg>Voltar ao Portal</a>
+        </aside>
+
+        <div class="area-main">
+
+          <!-- ═══════════ GESTÃO DE CUSTOS SG&A ═══════════ -->
+          <style>
+            .cx-wrap{padding:8px 0 48px;display:flex;flex-direction:column;gap:14px;}
+            .cx-row-f{display:flex;align-items:center;gap:8px;flex-wrap:wrap;}
+            .cx-label{font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--text-4);margin-right:4px;}
+            .cx-btn{padding:5px 13px;border-radius:6px;border:1px solid var(--border);background:#fff;font-size:12.5px;font-weight:600;color:var(--text-2);cursor:pointer;font-family:var(--font-body);transition:all .15s;}
+            .cx-btn:hover{border-color:var(--bm-blue-500);color:var(--bm-blue-700);}
+            .cx-btn.active{background:var(--bm-blue-900);color:#fff;border-color:var(--bm-blue-900);}
+            .cx-btn.active-green{background:var(--bm-green-700,#15803d);color:#fff;border-color:var(--bm-green-700,#15803d);}
+            .cx-btn.cx-ico{display:inline-flex;align-items:center;gap:5px;}
+            .cx-btn:disabled{opacity:.45;cursor:default;pointer-events:none;}
+            .cx-sep{width:1px;height:22px;background:var(--border);margin:0 4px;}
+            .cx-card{background:#fff;border:1px solid var(--border);border-radius:var(--radius);padding:14px 16px;}
+            .cx-kpis{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;max-width:760px;}
+            .cx-kpi{background:#fff;border:1px solid var(--border);border-radius:var(--radius);padding:16px 18px;position:relative;overflow:hidden;}
+            .cx-kpi::before{content:'';position:absolute;left:0;top:0;bottom:0;width:4px;background:var(--bm-blue-600);}
+            .cx-kpi.g::before{background:var(--bm-green-600);}
+            .cx-kpi.p::before{background:#b45309;}
+            .cx-kpi-l{font-size:10.5px;font-weight:600;text-transform:uppercase;letter-spacing:.05em;color:var(--text-3);margin-bottom:6px;}
+            .cx-kpi-v{font-family:var(--font-display);font-size:26px;font-weight:800;color:var(--bm-blue-900);line-height:1;}
+            .cx-panel{background:#fff;border:1px solid var(--border);border-radius:var(--radius);padding:16px 18px;}
+            .cx-panel h3{font-size:14px;font-weight:700;color:var(--text);margin:0 0 4px;}
+            .cx-panel .cx-sub{font-size:11.5px;color:var(--text-3);margin-bottom:14px;}
+            .cx-bars{display:grid;grid-template-columns:1.3fr 1fr;gap:14px;}
+            @media(max-width:1080px){.cx-bars{grid-template-columns:1fr;}.cx-kpis{grid-template-columns:1fr;}}
+            .cx-chart-wrap{position:relative;height:300px;}
+            /* matriz analítica */
+            .cx-tbl-wrap{overflow:auto;border:1px solid var(--border);border-radius:10px;max-height:620px;}
+            table.cx-tbl{width:100%;border-collapse:collapse;font-size:12px;}
+            table.cx-tbl thead th{position:sticky;top:0;z-index:3;background:var(--bm-blue-900);color:rgba(255,255,255,.95);text-align:right;padding:8px 12px;font-size:10px;font-weight:600;letter-spacing:.02em;text-transform:uppercase;white-space:nowrap;}
+            table.cx-tbl thead tr.cx-h2 th{top:30px;}
+            table.cx-tbl thead th.dim{text-align:left;left:0;z-index:4;}
+            table.cx-tbl thead th.grp{text-align:center;border-left:1px solid rgba(255,255,255,.18);}
+            table.cx-tbl thead th.tot{background:#19576a;}
+            table.cx-tbl tbody td{padding:7px 12px;border-bottom:1px solid var(--border);text-align:right;font-variant-numeric:tabular-nums;color:var(--text-2);white-space:nowrap;}
+            table.cx-tbl tbody td.dim{position:sticky;left:0;z-index:1;background:#fff;text-align:left;color:var(--text);font-weight:700;border-right:1px solid var(--border);}
+            table.cx-tbl tbody td.tot{background:var(--bm-blue-50);font-weight:700;color:var(--bm-blue-900);}
+            table.cx-tbl tbody td.grp{border-left:1px solid var(--border);}
+            table.cx-tbl tbody tr:hover td{background:var(--bm-blue-50);}
+            table.cx-tbl tbody tr:hover td.dim{background:var(--bm-blue-50);}
+            table.cx-tbl tbody tr.cx-total td{background:var(--bm-blue-900);color:#fff;font-weight:800;border-top:2px solid var(--border-2);position:sticky;bottom:0;z-index:2;}
+            table.cx-tbl tbody tr.cx-total td.dim{background:var(--bm-blue-900);color:#fff;}
+            .cx-tg{cursor:pointer;display:inline-block;width:14px;color:var(--bm-blue-600);font-weight:700;}
+            .cx-pct-ok{color:var(--bm-green-700,#15803d);font-weight:700;}
+            .cx-pct-warn{color:#b45309;font-weight:700;}
+            .cx-pct-over{color:var(--danger,#b91c1c);font-weight:700;}
+            /* dropdowns (padrão av-dd) */
+            .av-toolbar{display:flex;gap:8px;flex-wrap:wrap;align-items:center;}
+            .av-dd{position:relative;display:inline-block;}
+            .av-dd-btn{padding:7px 12px;border-radius:8px;border:1px solid var(--border);background:#fff;font-size:12.5px;font-weight:600;color:var(--text-2);cursor:pointer;display:inline-flex;align-items:center;gap:10px;min-width:150px;justify-content:space-between;}
+            .av-dd-btn:hover{border-color:var(--bm-blue-500);}
+            .av-dd-btn.has{border-color:var(--bm-blue-600);background:var(--bm-blue-50);color:var(--bm-blue-800);}
+            .av-dd-btn .cnt{background:var(--bm-blue-600);color:#fff;border-radius:999px;padding:0 7px;font-size:11px;}
+            .av-dd-panel{position:absolute;z-index:40;top:calc(100% + 4px);left:0;width:280px;max-height:340px;display:none;flex-direction:column;background:#fff;border:1px solid var(--border);border-radius:10px;box-shadow:var(--shadow);overflow:hidden;}
+            .av-dd.open .av-dd-panel{display:flex;}
+            .av-dd-search{padding:8px;border-bottom:1px solid var(--border);}
+            .av-dd-search input{width:100%;padding:6px 8px;border:1px solid var(--border);border-radius:6px;font-size:12px;font-family:var(--font-body);box-sizing:border-box;}
+            .av-dd-list{overflow-y:auto;padding:4px;}
+            .av-dd-opt{display:flex;align-items:center;gap:8px;padding:6px 8px;border-radius:6px;font-size:12.5px;color:var(--text-2);cursor:pointer;}
+            .av-dd-opt:hover{background:var(--bm-blue-50);}
+            .av-dd-foot{display:flex;justify-content:space-between;padding:6px 10px;border-top:1px solid var(--border);}
+            .av-dd-foot button{font-size:11.5px;color:var(--bm-blue-700);background:none;border:none;cursor:pointer;font-weight:600;}
+            /* Empresa fixa (recorte MSB): mesmo visual do dropdown, sem abrir */
+            .av-dd-fixa .av-dd-btn{cursor:default;}
+            .av-dd-fixa .av-dd-btn .fixo{font-weight:800;}
+          </style>
+
+          <div class="cx-wrap">
+
+            <div id="cx-banner" style="padding:11px 16px;border-radius:8px;font-size:13px;display:flex;align-items:center;gap:10px;background:#F0F7FA;border:1px solid #BDDEEA;color:#235063;">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+              Conectando ao Power BI…
+            </div>
+
+            <!-- ── FILTROS ── -->
+            <div class="cx-card" style="display:flex;flex-direction:column;gap:12px;">
+              <div class="cx-row-f" style="gap:20px;flex-wrap:wrap;">
+                <div class="cx-row-f" style="gap:6px;">
+                  <span class="cx-label">Mês</span>
+                  <div class="cx-row-f" id="cx-meses" style="gap:6px;"></div>
+                </div>
+                <div class="cx-row-f" style="gap:6px;">
+                  <span class="cx-label">Trimestre</span>
+                  <div class="cx-row-f" id="cx-trims" style="gap:6px;">
+                    <button class="cx-btn" onclick="cxSetTrim(this,1,event)">Trim 1</button>
+                    <button class="cx-btn" onclick="cxSetTrim(this,2,event)">Trim 2</button>
+                    <button class="cx-btn" onclick="cxSetTrim(this,3,event)">Trim 3</button>
+                    <button class="cx-btn" onclick="cxSetTrim(this,4,event)">Trim 4</button>
+                  </div>
+                </div>
+                <div class="cx-row-f" style="gap:6px;">
+                  <span class="cx-label">Ano</span>
+                  <div class="cx-row-f" id="cx-anos" style="gap:6px;"></div>
+                </div>
+              </div>
+              <div style="font-size:11.5px;color:var(--text-3);margin-top:-4px;">💡 Segure <strong>Ctrl</strong> (⌘ no Mac) para selecionar mais de um mês, trimestre ou ano.</div>
+              <div class="av-toolbar" id="cx-toolbar"></div>
+            </div>
+
+            <!-- ── KPIs ── -->
+            <div class="cx-kpis">
+              <div class="cx-kpi"><div class="cx-kpi-l">Valor Orçado</div><div class="cx-kpi-v" id="cx-k-orc">—</div></div>
+              <div class="cx-kpi g"><div class="cx-kpi-l">Valor Realizado</div><div class="cx-kpi-v" id="cx-k-real">—</div></div>
+              <div class="cx-kpi p"><div class="cx-kpi-l">% Realizado</div><div class="cx-kpi-v" id="cx-k-pct">—</div></div>
+            </div>
+
+            <!-- ── MATRIZ ORÇADO x REALIZADO ── -->
+            <div class="cx-panel">
+              <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;margin-bottom:12px;">
+                <div>
+                  <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;">
+                    <h3 style="margin:0;">Orçado x Realizado</h3>
+                    <div class="cx-row-f" style="gap:6px;">
+                      <button class="cx-btn active" id="cx-mode-ambos" onclick="cxSetMode(this,'ambos')">Orçado x Realizado</button>
+                      <button class="cx-btn" id="cx-mode-real" onclick="cxSetMode(this,'realizado')">Visão Realizado</button>
+                    </div>
+                  </div>
+                  <div class="cx-sub" style="margin:6px 0 0;" id="cx-mx-sub">Linhas: Centro de Custo › Combinação › Conta › Modalidade › Fornecedor › Pacote · Colunas: mês/ano</div>
+                </div>
+                <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
+                  <div class="cx-row-f" style="gap:6px;">
+                    <button class="cx-btn cx-ico" id="cx-btn-nivel" type="button" onclick="cxMaisNivel()" disabled title="Abre mais um nível em todas as linhas">
+                      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
+                      <span>+ Nível</span></button>
+                    <button class="cx-btn cx-ico" id="cx-btn-recolher" type="button" onclick="cxRecolher()" disabled title="Recolher tudo (volta ao 1º nível)">
+                      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg>
+                      Recolher</button>
+                    <button class="cx-btn cx-ico" id="cx-btn-xls" type="button" onclick="cxExportExcel()" disabled title="Exporta para Excel o que está aberto na tela — use + Nível / Recolher para escolher até onde descer">
+                      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                      Excel</button>
+                  </div>
+                  <span class="cx-sep"></span>
+                  <span class="cx-label" style="margin:0;">Visualizar por</span>
+                  <div class="cx-row-f" id="cx-rootdim" style="gap:6px;"></div>
+                </div>
+              </div>
+              <div class="cx-tbl-wrap">
+                <table class="cx-tbl">
+                  <thead id="cx-mx-thead"></thead>
+                  <tbody id="cx-mx-tbody"><tr><td style="padding:20px;text-align:center;color:var(--text-3);">Carregando…</td></tr></tbody>
+                </table>
+              </div>
+              <div style="font-size:11px;color:var(--text-3);margin-top:8px;" id="cx-mx-info"></div>
+            </div>
+
+            <!-- ── GRÁFICOS ── -->
+            <div class="cx-bars">
+              <div class="cx-panel">
+                <h3>Orçado x Realizado por mês</h3>
+                <div class="cx-sub">Evolução mensal no período selecionado</div>
+                <div class="cx-chart-wrap"><canvas id="cx-ch-mes"></canvas></div>
+              </div>
+              <div class="cx-panel">
+                <h3>Top 10 · Realizado por Centro de Custo</h3>
+                <div class="cx-sub">Maiores realizados no período</div>
+                <div class="cx-chart-wrap"><canvas id="cx-ch-cc"></canvas></div>
+              </div>
+            </div>
+
+            <div class="cx-bars">
+              <div class="cx-panel">
+                <h3>Top 10 · Realizado por Pacote</h3>
+                <div class="cx-sub">Maiores realizados por pacote</div>
+                <div class="cx-chart-wrap"><canvas id="cx-ch-pac"></canvas></div>
+              </div>
+              <div class="cx-panel">
+                <h3>Orçado x Realizado por Conta</h3>
+                <div class="cx-sub">Top 10 contas contábeis por realizado</div>
+                <div class="cx-chart-wrap"><canvas id="cx-ch-conta"></canvas></div>
+              </div>
+            </div>
+
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="../script.js?v=8"></script>
+  <script src="../nav-sidebar.js?v=52"></script>
+  <script src="../dax-lit.js?v=1"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+  <script>
+  // ================================================================
+  // GESTÃO DE CUSTOS SG&A — Orçado x Realizado (FATO_COMBINADO)
+  // ================================================================
+  const PBI_CFG = {
+    clientId:'129978ce-ff3b-431d-98b3-66a1bcb766b1', tenantId:'c311c9e6-6017-42a9-b306-4057beba5786',
+    workspaceId:'8535f0a1-8dc6-4da0-93ce-bf20c1c14e27',
+    datasetId:'ec803f3a-a108-4ac2-bd73-cc60c165ff87',
+    scopes:['https://analysis.windows.net/powerbi/api/Dataset.Read.All','https://analysis.windows.net/powerbi/api/Report.Read.All']
+  };
+  let _pbi=null,_token=null,_ready=false;
+
+  // medidas
+  const M_ORC  = '[VALOR_ORÇADO_UNIAO]';
+  const M_REAL = '[VALOR_REALIZADO_UNIAO]';
+  const M_PCT  = '[% de diferenca]';
+  const FATO   = 'FATO_COMBINADO';
+  const COL_PER = "'Calendario'[mes/ano]";
+
+  // dimensões (linhas da matriz) na ordem pedida
+  // RECORTE MSB: Empresa não é escolha — o freio (../pbi-throttle.js) já
+  // recorta toda consulta deste modelo em DIM_EMPRESAS[EMPRESA] = MSB; na
+  // barra fica só o rótulo fixo (fixa) e a lista de Empresa não aparece.
+  const DIMS = [
+    { id:'empresa',    label:'Empresa',         col:`DIM_EMPRESAS[EMPRESA]`,    re:/\[EMPRESA\]/i, fixa:'MSB' },
+    { id:'centro',     label:'Centro de Custo', col:`${FATO}[CENTRO_DE_CUSTO]`, re:/CENTRO_DE_CUSTO\]/i },
+    { id:'combinacao', label:'Combinação',      col:`${FATO}[COMBINACAO]`,      re:/\[COMBINACAO\]/i },
+    { id:'conta',      label:'Conta',           col:`${FATO}[CONTA]`,           re:/\[CONTA\]/i },
+    { id:'modalidade', label:'Modalidade',      col:`${FATO}[Modalidade]`,      re:/\[Modalidade\]/i },
+    { id:'fornecedor', label:'Fornecedor',      col:`${FATO}[NOME_FORNECEDOR]`, re:/NOME_FORNECEDOR\]/i },
+    { id:'pacote',     label:'Pacote',          col:`${FATO}[PACOTE]`,          re:/\[PACOTE\]/i }
+  ];
+  // hierarquia (ordem de drill-down) específica por visão
+  const HIER = {
+    centro: ['centro','pacote','conta','fornecedor','modalidade','combinacao'],
+    pacote: ['pacote','conta','centro','fornecedor','modalidade','combinacao'],
+    conta:  ['conta','centro','pacote','fornecedor','modalidade','combinacao']
+  };
+  // filtro global do relatório inteiro: VOUCHER <> "Fechamento 2025"
+  const FILTRO_VOUCHER = `${FATO}[VOUCHER] <> "Fechamento 2025"`;
+
+  // estado
+  window._cxAno = null;          // ano selecionado (número) ou null = todos
+  window._cxMes = null;          // mês 1..12 ou null
+  window._cxTrim = null;         // 1..4 ou null
+  window._cxRoot = 'centro';     // dimensão raiz da matriz
+  window._cxMode = 'ambos';      // 'ambos' (Orçado x Realizado) | 'realizado' (só Realizado)
+  window._allPeriods = [];       // [{label, month, year}]
+  window._avSel = {}; DIMS.forEach(d => window._avSel[d.id] = new Set());
+
+  const avDax = s => String(s==null?'':s).replace(/"/g,'""');
+  const avEsc = s => String(s==null?'':s).replace(/"/g,'&quot;');
+  const _numN = x => (x==null||x===''||x==='-'||isNaN(Number(x)))?null:Number(x);
+  const setTxt = (id,t)=>{const el=document.getElementById(id);if(el)el.textContent=t;};
+  const _v = (r,re)=>{ const k=Object.keys(r).find(x=>re.test(x)); return k?r[k]:null; };
+
+  // formatação compacta de moeda
+  function fMi(v){
+    if (v==null) return '—';
+    const a=Math.abs(v);
+    if (a>=1e6) return 'R$ '+(v/1e6).toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2})+' Mi';
+    if (a>=1e3) return 'R$ '+(v/1e3).toLocaleString('pt-BR',{maximumFractionDigits:1})+'k';
+    return 'R$ '+Number(v).toLocaleString('pt-BR',{maximumFractionDigits:0});
+  }
+  function fBRL(v){ return v==null?'—':'R$ '+Number(v).toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2}); }
+  function fPct(ratio){ return ratio==null?'—':(ratio*100).toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2})+'%'; }
+  function pctClass(ratio){ if(ratio==null) return ''; if(ratio>1.02) return 'cx-pct-over'; if(ratio>=0.9) return 'cx-pct-ok'; return 'cx-pct-warn'; }
+
+  // ── meses pt-BR ──
+  const MES_ABR = ['jan','fev','mar','abr','mai','jun','jul','ago','set','out','nov','dez'];
+  const MES_FULL = ['janeiro','fevereiro','março','abril','maio','junho','julho','agosto','setembro','outubro','novembro','dezembro'];
+  function parsePeriodo(label){
+    const s = String(label||'').trim().toLowerCase();
+    // formatos: "jan/2026", "jan-26", "janeiro/2026", "2026-01", "01/2026"
+    let m = s.match(/^([a-zç]{3,})[\/\-\s]+(\d{2,4})$/);
+    if (m){ let mi=MES_ABR.indexOf(m[1].slice(0,3)); if(mi<0) mi=MES_FULL.indexOf(m[1]); if(mi>=0){ let y=+m[2]; if(y<100) y+=2000; return {month:mi+1, year:y}; } }
+    m = s.match(/^(\d{1,2})[\/\-](\d{4})$/); if(m) return {month:+m[1], year:+m[2]};
+    m = s.match(/^(\d{4})[\/\-](\d{1,2})$/); if(m) return {month:+m[2], year:+m[1]};
+    return {month:null, year:null};
+  }
+
+  // ── conexão Power BI ──
+  async function pbiConnect(){
+    if (window._msalAuth){ _pbi = window._msalAuth; }
+    else { _pbi = new msal.PublicClientApplication({ auth:{ clientId:PBI_CFG.clientId, authority:`https://login.microsoftonline.com/${PBI_CFG.tenantId}`, redirectUri:window.location.origin+'/' }, cache:{ cacheLocation:'localStorage', storeAuthStateInCookie:true } }); if(_pbi.initialize) await _pbi.initialize(); await _pbi.handleRedirectPromise().catch(()=>{}); }
+    const accounts = _pbi.getAllAccounts();
+    try { const r = await _pbi.acquireTokenSilent({ scopes:PBI_CFG.scopes, account:accounts[0] }); _token = r.accessToken; }
+    catch { const r = await _pbi.loginPopup({ scopes:PBI_CFG.scopes }); _token = r.accessToken; }
+    const acc = _pbi.getAllAccounts()[0]; if (acc && typeof window.setSidebarUser==='function') window.setSidebarUser(acc.name||acc.username, acc.username);
+  }
+  function _pbiErr(text){
+    try { const j=JSON.parse(text); const e=j.error||{}; const pe=e['pbi.error']||{}; const det=(pe.details||[]).map(d=>d.detail&&d.detail.value).filter(Boolean).join(' | '); return det||e.message||pe.code||text.substring(0,200); }
+    catch { return text.substring(0,200); }
+  }
+  async function pbiQuery(dax){
+    const dsId = PBI_CFG.datasetId;
+    const u1=`https://api.powerbi.com/v1.0/myorg/groups/${PBI_CFG.workspaceId}/datasets/${dsId}/executeQueries`;
+    const u2=`https://api.powerbi.com/v1.0/myorg/datasets/${dsId}/executeQueries`;
+    const body=JSON.stringify({queries:[{query:dax}],serializerSettings:{includeNulls:true}});
+    const headers={Authorization:`Bearer ${_token}`,'Content-Type':'application/json'};
+    let r=await fetch(u1,{method:'POST',headers,body});
+    if(r.status===401||r.status===403) r=await fetch(u2,{method:'POST',headers,body});
+    if(r.status===401||r.status===403){
+      try{ const _a=_pbi.getAllAccounts()[0]; const _t=await _pbi.acquireTokenSilent({scopes:PBI_CFG.scopes,account:_a,forceRefresh:true}); _token=_t.accessToken; }
+      catch(_e){ try{ const _t=await _pbi.loginPopup({scopes:PBI_CFG.scopes}); _token=_t.accessToken; }catch(__e){} }
+      const h2={Authorization:`Bearer ${_token}`,'Content-Type':'application/json'};
+      r=await fetch(u1,{method:'POST',headers:h2,body}); if(r.status===401||r.status===403) r=await fetch(u2,{method:'POST',headers:h2,body});
+    }
+    const text=await r.text();
+    if(!r.ok) throw new Error(`HTTP ${r.status}: ${_pbiErr(text)}`);
+    const d=JSON.parse(text); if(d.error) throw new Error(_pbiErr(text));
+    return d.results[0].tables[0].rows;
+  }
+  window.PBIData={connect:pbiConnect,query:pbiQuery};
+
+  // ── períodos ativos (labels mes/ano) conforme seleção de ano/mês/trimestre ──
+  function trimMeses(t){ return {1:[1,2,3],2:[4,5,6],3:[7,8,9],4:[10,11,12]}[t]||[]; }
+  function activePeriods(){
+    const trims = window._cxTrim==null?[]:[].concat(window._cxTrim);   // 1..4 ou lista (Ctrl+clique)
+    const tmSet = trims.length ? new Set(trims.reduce((a,t)=>a.concat(trimMeses(t)),[])) : null;
+    const anos = window._cxAno==null?[]:[].concat(window._cxAno);   // nº ou lista (Ctrl+clique)
+    const meses = window._cxMes==null?[]:[].concat(window._cxMes);
+    return window._allPeriods.filter(p=>{
+      if (anos.length && anos.indexOf(p.year) < 0) return false;
+      if (meses.length && meses.indexOf(p.month) < 0) return false;
+      if (tmSet && !tmSet.has(p.month)) return false;
+      return true;
+    }).slice().sort((a,b)=> (a.year-b.year) || (a.month-b.month));
+  }
+
+  // ── filtros (predicados p/ CALCULATETABLE) ──
+  function avBase(){
+    const base = [FILTRO_VOUCHER];   // relatório inteiro: VOUCHER <> "Fechamento 2025"
+    const per = activePeriods();
+    if (per.length && per.length < window._allPeriods.length){
+      base.push(`${COL_PER} IN { ${per.map(p=>'"'+avDax(p.label)+'"').join(', ')} }`);
+    }
+    // literal pelo TIPO da coluna (d._tipo, lido em avCarregarValores):
+    // conta/centro numéricos entre aspas fazem o BI recusar a consulta
+    DIMS.forEach(d => { const pred = DaxLit.em(d.col, [...window._avSel[d.id]], d._tipo); if (pred) base.push(pred); });
+    return base;
+  }
+  function ctWrap(inner, extra){
+    const f = avBase().concat(extra||[]);
+    return f.length ? `CALCULATETABLE(${inner}, ${f.join(', ')})` : inner;
+  }
+
+  // recebe a entrada de DIMS (ou só a coluna); guarda em d._tipo o tipo que o
+  // BI devolveu, p/ o filtro sair com o literal certo.
+  async function avCarregarValores(d){
+    const col = (d && d.col) ? d.col : d;
+    const rows = await pbiQuery(`EVALUATE VALUES(${col})`);
+    if (!rows||!rows.length) return [];
+    const key = Object.keys(rows[0])[0];
+    const brutos = rows.map(r=>r[key]).filter(v=>v!=null&&v!=='');
+    if (d && d.col && d._tipo==null && brutos.length) d._tipo = DaxLit.tipoDe(brutos[0]);
+    return brutos.map(v=>({value:String(v),label:String(v)})).sort((a,b)=>a.label.localeCompare(b.label,'pt-BR'));
+  }
+
+  // ════════════ KPIs ════════════
+  async function renderKPIs(){
+    try {
+      const dax = `EVALUATE ${ctWrap(`ROW("O", ${M_ORC}, "R", ${M_REAL}, "P", ${M_PCT})`)}`;
+      const rows = await pbiQuery(dax);
+      const r = rows && rows[0] ? rows[0] : {};
+      const o = _numN(_v(r,/\[O\]$/)), real = _numN(_v(r,/\[R\]$/)), p = _numN(_v(r,/\[P\]$/));
+      setTxt('cx-k-orc', fMi(o));
+      setTxt('cx-k-real', fMi(real));
+      // % Realizado: usa a medida [% de diferenca]; fallback p/ realizado/orçado
+      let pct = p;
+      if (pct != null && Math.abs(pct) > 2) pct = pct/100;       // medida veio em pontos percentuais
+      if (pct == null && o) pct = (real||0)/o;
+      setTxt('cx-k-pct', pct==null?'—':fPct(pct));
+    } catch(e){ console.warn('[SG&A] KPIs:', e.message); }
+  }
+
+  // ════════════ MATRIZ pivô (mês/ano nas colunas) ════════════
+  let MX_PERIODS = [];   // períodos exibidos (colunas)
+  let _mxSeq = 0; const _mxPath = {};   // idx da linha -> {path, level, g, nomes}
+  let _mxTotal = null;   // linha TOTAL (vai também para o Excel)
+  let _mxGen = 0;        // sobe a cada redesenho: resposta de drill que chega atrasada não pinta em cima
+  let _mxCache = {};     // nível -> Promise<Map(chave do pai -> filhos)>, do "+ Nível"; zera a cada redesenho
+  let _mxAbrindo = false;
+  const MX_TETO = 100000;   // teto de linhas por consulta do executeQueries
+
+  function dimByRoot(){
+    const order = HIER[window._cxRoot] || HIER.centro;
+    return order.map(id=>DIMS.find(d=>d.id===id)).filter(Boolean);
+  }
+
+  const mxBranco = v => v==null || String(v).trim()==='';
+  // chave do caminho até um nó: os valores CRUS do BI (branco = null)
+  const mxChave = vals => JSON.stringify(vals.map(v => mxBranco(v) ? null : v));
+
+  // linhas do BI (dimensão × mês/ano) -> nós da matriz, separados por pai.
+  // paiDe(rw) devolve a chave do pai quando a consulta traz o nível inteiro.
+  function mxAgrupa(rows, dim, paiDe){
+    const pais = new Map();
+    rows.forEach(rw=>{
+      const pai = paiDe ? paiDe(rw) : '';
+      if (!pais.has(pai)) pais.set(pai, new Map());
+      const map = pais.get(pai);
+      const dv  = _v(rw, dim.re);
+      const per = _v(rw, /\[mes\/ano\]/i);
+      const o = _numN(_v(rw,/\[O\]$/))||0, r = _numN(_v(rw,/\[R\]$/))||0;
+      const blank = mxBranco(dv);
+      const key = blank?'—':String(dv);
+      // raw fica no tipo em que o BI devolveu (conta numérica continua número): é o que o DaxLit filtra no drill
+      if (!map.has(key)) map.set(key, {nome:key, raw:(blank?null:dv), cells:{}, totO:0, totR:0});
+      const g = map.get(key);
+      const pk = per==null?'':String(per);
+      if (!g.cells[pk]) g.cells[pk] = {o:0,r:0};
+      g.cells[pk].o += o; g.cells[pk].r += r;
+      g.totO += o; g.totR += r;
+    });
+    // Ocultar Campos: remove zerados. Na Visão Realizado, oculta linhas sem realizado (ex.: orçado que não desce até fornecedor)
+    const real = window._cxMode === 'realizado';
+    const out = new Map();
+    pais.forEach((map, pai)=>{
+      const arr = [...map.values()].filter(g => real ? (g.totR !== 0) : (g.totO !== 0 || g.totR !== 0));
+      // ordem alfabética (blank "—" por último) — vale para Centro de Custo, Pacote e todos os níveis
+      arr.sort((a,b)=>{
+        if (a.nome==='—') return 1; if (b.nome==='—') return -1;
+        return String(a.nome).localeCompare(String(b.nome),'pt-BR',{numeric:true,sensitivity:'base'});
+      });
+      out.set(pai, arr);
+    });
+    return out;
+  }
+
+  async function mxLevel(dim, pathFilters){
+    const dax = `EVALUATE ${ctWrap(`ADDCOLUMNS(SUMMARIZE(${FATO}, ${dim.col}, ${COL_PER}), "O", ${M_ORC}, "R", ${M_REAL})`, pathFilters)}`;
+    return mxAgrupa(await pbiQuery(dax), dim).get('') || [];
+  }
+
+  // "+ Nível": o nível INTEIRO numa consulta só (os filhos de todas as linhas
+  // do nível de cima de uma vez), em vez de uma consulta por linha aberta
+  function mxNivelTodo(dims, nivel){
+    if (_mxCache[nivel]) return _mxCache[nivel];
+    const pais = dims.slice(0, nivel);
+    const cols = dims.slice(0, nivel+1).map(d=>d.col).join(', ');
+    const dax = `EVALUATE ${ctWrap(`ADDCOLUMNS(SUMMARIZE(${FATO}, ${cols}, ${COL_PER}), "O", ${M_ORC}, "R", ${M_REAL})`)}`;
+    const p = pbiQuery(dax).then(rows=>{
+      if (rows.length >= MX_TETO) throw new Error(`o nível ${dims[nivel].label} passa de ${MX_TETO.toLocaleString('pt-BR')} linhas — filtre o período ou um ${dims[0].label} e tente de novo`);
+      return mxAgrupa(rows, dims[nivel], rw => mxChave(pais.map(d=>_v(rw, d.re))));
+    });
+    const cache = _mxCache; cache[nivel] = p;
+    p.catch(()=>{ if (cache[nivel]===p) delete cache[nivel]; });   // erro não fica guardado
+    return p;
+  }
+
+  // filhos de UMA linha: do "+ Nível" já trazido, se houver; senão consulta só ela
+  async function mxFilhos(dims, info){
+    const nivel = info.level + 1;
+    if (_mxCache[nivel]){
+      try { return (await _mxCache[nivel]).get(mxChave(info.path.map(p=>p.value))) || []; } catch(e){}
+    }
+    const pathFilters = info.path.map(p=> DaxLit.igual(p.col, p.value));
+    return mxLevel(dims[nivel], pathFilters);
+  }
+
+  function mxRatio(g){ return g.totO ? (g.totR/g.totO) : (g.totR?null:0); }
+
+  function mxCellsHTML(g){
+    const real = window._cxMode === 'realizado';
+    let html = '';
+    MX_PERIODS.forEach((p)=>{
+      const c = g.cells[p.label] || {o:0,r:0};
+      if (real) html += `<td class="grp">${fBRL(c.r)}</td>`;
+      else html += `<td class="grp">${fBRL(c.o)}</td><td>${fBRL(c.r)}</td>`;
+    });
+    if (real){
+      html += `<td class="tot">${fBRL(g.totR)}</td>`;
+    } else {
+      const ratio = mxRatio(g);
+      html += `<td class="tot">${fBRL(g.totO)}</td><td class="tot">${fBRL(g.totR)}</td><td class="tot ${pctClass(ratio)}">${ratio==null?'—':fPct(ratio)}</td>`;
+    }
+    return html;
+  }
+
+  function mxRow(g, level, dims, path, nomes){
+    const expandable = level < dims.length - 1;
+    const ind = level*16;
+    const tg = expandable ? `<span class="cx-tg">▶</span>` : `<span style="display:inline-block;width:14px;"></span>`;
+    const idx = _mxSeq++; _mxPath[idx] = {path, level, g, nomes};
+    const st = level===0?'font-weight:700;':'font-weight:600;color:var(--text-2);';
+    return `<tr class="cx-mrow" data-level="${level}" data-idx="${idx}"><td class="dim" style="padding-left:${10+ind}px;${st}">${tg} ${g.nome}</td>${mxCellsHTML(g)}</tr>`;
+  }
+
+  function mxAbre(tr, filhos, dims){
+    const info = _mxPath[+tr.dataset.idx]; const nivel = info.level + 1;
+    tr.classList.add('open'); const tg = tr.querySelector('.cx-tg'); if (tg) tg.textContent = '▼';
+    tr.insertAdjacentHTML('afterend', filhos.map(c=>mxRow(c, nivel, dims, info.path.concat({col:dims[nivel].col, value:c.raw}), info.nomes.concat(c.nome))).join(''));
+  }
+  function mxFecha(tr){
+    const level = +tr.dataset.level;
+    let n = tr.nextElementSibling;
+    while (n && n.classList.contains('cx-mrow') && +n.dataset.level > level){ const nx = n.nextElementSibling; delete _mxPath[n.dataset.idx]; n.remove(); n = nx; }
+    tr.classList.remove('open'); const tg = tr.querySelector('.cx-tg'); if (tg) tg.textContent = '▶';
+  }
+
+  // botões + linha de info conforme o que está aberto na tela
+  function mxEstado(erro){
+    const dims = dimByRoot();
+    const rows = [...document.querySelectorAll('#cx-mx-tbody tr.cx-mrow')];
+    const fundo = rows.reduce((m,tr)=>Math.max(m, +tr.dataset.level), 0);
+    const podeAbrir = rows.some(tr=>!tr.classList.contains('open') && +tr.dataset.level < dims.length-1);
+    const aberto = rows.some(tr=>tr.classList.contains('open'));
+    const bt = (id,on)=>{ const b=document.getElementById(id); if(b) b.disabled=!on; return b; };
+    const bn = bt('cx-btn-nivel', !_mxAbrindo && podeAbrir);
+    if (bn && bn.querySelector('span')) bn.querySelector('span').textContent = _mxAbrindo ? 'Abrindo…' : '+ Nível';
+    bt('cx-btn-recolher', !_mxAbrindo && aberto);
+    bt('cx-btn-xls', !_mxAbrindo && rows.length > 0);
+    if (!rows.length) return;   // "sem dados"/erro: o renderMatriz já escreveu a info
+    const n0 = rows.filter(tr=>tr.dataset.level==='0').length;
+    const info = `${n0} ${dims[0].label.toLowerCase()}(s) no 1º nível`
+      + (fundo > 0 ? ` · aberto até ${dims[fundo].label} (${fundo+1}º nível) · ${rows.length} linhas na tela` : ' · clique no ▶ ou em + Nível para detalhar');
+    const el = document.getElementById('cx-mx-info'); if (!el) return;
+    el.textContent = info + (erro ? ` · ⚠ ${erro}` : '');
+    el.style.color = erro ? 'var(--danger,#b91c1c)' : '';
+  }
+
+  function mxHeader(dims){
+    const thead = document.getElementById('cx-mx-thead');
+    const title = dims.length ? dims[0].label : 'Dimensão';   // só a raiz; a hierarquia completa fica no subtítulo
+    const real = window._cxMode === 'realizado';
+    let h1 = `<tr><th class="dim" rowspan="2">${title}</th>`;
+    let h2 = `<tr class="cx-h2">`;
+    MX_PERIODS.forEach(p=>{
+      if (real){ h1 += `<th class="grp">${p.label}</th>`; h2 += `<th class="grp">Realizado</th>`; }
+      else { h1 += `<th class="grp" colspan="2">${p.label}</th>`; h2 += `<th class="grp">Orçado</th><th>Realizado</th>`; }
+    });
+    if (real){ h1 += `<th class="tot">Total</th></tr>`; h2 += `<th class="tot">Realizado</th></tr>`; }
+    else { h1 += `<th class="tot" colspan="3">Total</th></tr>`; h2 += `<th class="tot">Orçado</th><th class="tot">Realizado</th><th class="tot">%</th></tr>`; }
+    thead.innerHTML = h1 + h2;
+  }
+
+  async function renderMatriz(){
+    const dims = dimByRoot();
+    const gen = ++_mxGen; _mxCache = {}; _mxTotal = null;
+    MX_PERIODS = activePeriods();
+    _mxSeq = 0; for(const k in _mxPath) delete _mxPath[k];
+    const tbody = document.getElementById('cx-mx-tbody');
+    const ncol = (window._cxMode==='realizado') ? (MX_PERIODS.length + 1 + 1) : (MX_PERIODS.length*2 + 3 + 1);
+    mxHeader(dims);
+    setTxt('cx-mx-sub', `Linhas: ${dims.map(d=>d.label).join(' › ')} · Colunas: mês/ano (${MX_PERIODS.length})`);
+    tbody.innerHTML = `<tr><td colspan="${ncol}" style="padding:20px;text-align:center;color:var(--text-3);">Carregando…</td></tr>`;
+    mxEstado();
+    try {
+      const rows = await mxLevel(dims[0], []);
+      if (gen !== _mxGen) return;   // outro filtro já pediu um redesenho mais novo
+      if (!rows.length){ tbody.innerHTML = `<tr><td colspan="${ncol}" style="padding:20px;text-align:center;color:var(--text-3);">Sem dados no período.</td></tr>`; setTxt('cx-mx-info','0 linhas'); mxEstado(); return; }
+      // linha total
+      const tot = {nome:'TOTAL', cells:{}, totO:0, totR:0};
+      rows.forEach(g=>{ tot.totO+=g.totO; tot.totR+=g.totR; MX_PERIODS.forEach(p=>{ const c=g.cells[p.label]; if(c){ if(!tot.cells[p.label]) tot.cells[p.label]={o:0,r:0}; tot.cells[p.label].o+=c.o; tot.cells[p.label].r+=c.r; } }); });
+      _mxTotal = tot;
+      const body = rows.map(g=>mxRow(g,0,dims,[{col:dims[0].col,value:g.raw}],[g.nome])).join('');
+      const totRow = `<tr class="cx-total"><td class="dim">TOTAL</td>${mxCellsHTML(tot)}</tr>`;
+      tbody.innerHTML = body + totRow;
+      mxEstado();
+    } catch(e){
+      if (gen !== _mxGen) return;
+      console.error('[SG&A] matriz:', e.message); tbody.innerHTML = `<tr><td colspan="${ncol}" style="padding:18px;text-align:center;color:var(--danger);">Erro: ${e.message.substring(0,180)}</td></tr>`; mxEstado();
+    }
+  }
+
+  // drill-down ao clicar
+  document.addEventListener('click', async (ev)=>{
+    const tg = ev.target.closest && ev.target.closest('.cx-tg');
+    if (!tg) return;
+    const tr = tg.closest('tr'); if(!tr || !tr.classList.contains('cx-mrow')) return;
+    const dims = dimByRoot();
+    const level = +tr.dataset.level;
+    if (tr.classList.contains('open')){ mxFecha(tr); mxEstado(); return; }
+    if (level >= dims.length-1 || tg.textContent==='…') return;
+    const info = _mxPath[+tr.dataset.idx] || {path:[], level, nomes:[]};
+    const gen = _mxGen;
+    tg.textContent='…';
+    let children=[];
+    try { children = await mxFilhos(dims, info); } catch(e){ tg.textContent='▶'; return; }
+    if (gen !== _mxGen || !tr.isConnected || tr.classList.contains('open')) return;
+    mxAbre(tr, children, dims);
+    mxEstado();
+  });
+
+  // "+ Nível": abre mais UM degrau em todas as linhas da tela (o ▶ continua
+  // abrindo uma linha só). "Recolher" volta tudo para o 1º nível.
+  async function cxMaisNivel(){
+    if (_mxAbrindo) return;
+    const dims = dimByRoot();
+    const fechadas = [...document.querySelectorAll('#cx-mx-tbody tr.cx-mrow:not(.open)')].filter(tr=>+tr.dataset.level < dims.length-1);
+    if (!fechadas.length) return;
+    const nivel = Math.min(...fechadas.map(tr=>+tr.dataset.level));
+    const alvo = fechadas.filter(tr=>+tr.dataset.level===nivel);
+    const gen = _mxGen;
+    const marca = t => alvo.forEach(tr=>{ const tg=tr.querySelector('.cx-tg'); if(tg && !tr.classList.contains('open')) tg.textContent=t; });
+    _mxAbrindo = true; mxEstado(); marca('…');
+    let erro = null;
+    try {
+      const porPai = await mxNivelTodo(dims, nivel+1);
+      if (gen !== _mxGen) return;
+      alvo.forEach(tr=>{
+        if (!tr.isConnected || tr.classList.contains('open')) return;
+        const info = _mxPath[+tr.dataset.idx];
+        mxAbre(tr, porPai.get(mxChave(info.path.map(p=>p.value))) || [], dims);
+      });
+    } catch(e){
+      console.warn('[SG&A] + nível:', e.message);
+      erro = 'não deu para abrir o próximo nível: ' + String(e.message).substring(0,160);
+      if (gen === _mxGen) marca('▶');
+    } finally {
+      _mxAbrindo = false;
+      if (gen === _mxGen) mxEstado(erro);
+    }
+  }
+  function cxRecolher(){
+    if (_mxAbrindo) return;
+    document.querySelectorAll('#cx-mx-tbody tr.cx-mrow.open[data-level="0"]').forEach(mxFecha);
+    mxEstado();
+  }
+
+  // ════════════ EXPORTAR EXCEL ════════════
+  // Vai o que está ABERTO na tela (+ Nível / Recolher escolhem até onde descer):
+  // uma coluna por nível da hierarquia, os meses e a linha TOTAL no fim. As
+  // linhas ficam agrupadas no Excel (+/− na margem), como na matriz.
+  function mxPlanilha(linhas, dims, periodos, real, total){
+    const nd = linhas.reduce((m,l)=>Math.max(m, l.level), 0) + 1;   // níveis abertos
+    const cent = v => Math.round(v*100)/100;
+    const head = ['Nível'].concat(dims.slice(0,nd).map(d=>d.label));
+    periodos.forEach(p=>{ if (real) head.push(`${p.label} · Realizado`); else head.push(`${p.label} · Orçado`, `${p.label} · Realizado`); });
+    if (real) head.push('Total · Realizado'); else head.push('Total · Orçado', 'Total · Realizado', '% Realizado');
+    const valores = g=>{
+      const v = [];
+      periodos.forEach(p=>{ const c = g.cells[p.label] || {o:0,r:0}; if (real) v.push(cent(c.r)); else v.push(cent(c.o), cent(c.r)); });
+      if (real) v.push(cent(g.totR));
+      else { const ratio = mxRatio(g); v.push(cent(g.totO), cent(g.totR), ratio==null ? '' : ratio); }
+      return v;
+    };
+    const aoa = [head], niveis = [0];
+    linhas.forEach(l=>{ aoa.push([l.level+1].concat(dims.slice(0,nd).map((d,i)=> i<=l.level ? l.nomes[i] : ''), valores(l.g))); niveis.push(l.level); });
+    if (total){ aoa.push([''].concat(dims.slice(0,nd).map((d,i)=> i===0 ? 'TOTAL' : ''), valores(total))); niveis.push(0); }
+    return { aoa, niveis, nd, colPct: real ? -1 : head.length-1 };
+  }
+  function mxFiltrosUsados(dims, nd){
+    const per = MX_PERIODS.map(p=>p.label);
+    const out = [
+      ['Gestão de Custos SG&A', window._cxMode==='realizado' ? 'Visão Realizado' : 'Orçado x Realizado'],
+      ['Gerado em', new Date().toLocaleString('pt-BR')],
+      ['Linhas', dims.slice(0,nd).map(d=>d.label).join(' › ') + (nd < dims.length ? ` (aberto até o ${nd}º de ${dims.length} níveis)` : '')],
+      ['Períodos', per.length ? per.join(', ') : '—']
+    ];
+    DIMS.forEach(d=>{ const s = d.fixa ? [d.fixa] : [...window._avSel[d.id]]; if (s.length) out.push([d.label, s.join(', ')]); });
+    out.push(['Filtro fixo', 'VOUCHER diferente de "Fechamento 2025"']);
+    out.push(['Atenção', 'Cada linha já soma as de baixo: para somar sem duplicar, filtre um único valor na coluna Nível.']);
+    return out;
+  }
+  function mxNomeArquivo(dims, real){
+    const per = MX_PERIODS.map(p=>p.label.replace(/[\/\\]/g,'-'));
+    const periodo = !per.length ? 'sem-periodo' : per.length===1 ? per[0] : `${per[0]}_a_${per[per.length-1]}`;
+    const raiz = dims[0].label.normalize('NFD').replace(/[̀-ͯ]/g,'').replace(/\s+/g,'');
+    return `SGA_${real ? 'Realizado' : 'Orcado_x_Realizado'}_${raiz}_${periodo}.xlsx`;
+  }
+  function cxExportExcel(){
+    if (typeof XLSX === 'undefined'){ alert('A biblioteca do Excel não carregou — recarregue a página e tente de novo.'); return; }
+    const linhas = [...document.querySelectorAll('#cx-mx-tbody tr.cx-mrow')].map(tr=>_mxPath[+tr.dataset.idx]).filter(Boolean);
+    if (!linhas.length) return;
+    const dims = dimByRoot(), real = window._cxMode === 'realizado';
+    const { aoa, niveis, nd, colPct } = mxPlanilha(linhas, dims, MX_PERIODS, real, _mxTotal);
+    const ws = XLSX.utils.aoa_to_sheet(aoa);
+    const rg = XLSX.utils.decode_range(ws['!ref']);
+    for (let R=1; R<=rg.e.r; R++) for (let C=1+nd; C<=rg.e.c; C++){
+      const c = ws[XLSX.utils.encode_cell({r:R, c:C})];
+      if (c && c.t==='n') c.z = (C===colPct) ? '0.00%' : '#,##0.00';
+    }
+    ws['!cols'] = aoa[0].map((h,i)=>({ wch: i===0 ? 7 : i<=nd ? 30 : 20 }));
+    ws['!rows'] = niveis.map(l=>(l ? {level:l} : {}));
+    ws['!outline'] = { above:true };   // o +/− fica na linha-pai (em cima), como na matriz
+    const ultima = _mxTotal ? rg.e.r - 1 : rg.e.r;   // auto-filtro sem a linha TOTAL
+    ws['!autofilter'] = { ref: XLSX.utils.encode_range({ s:{r:0,c:0}, e:{r:ultima, c:rg.e.c} }) };
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, real ? 'Realizado' : 'Orçado x Realizado');
+    const wf = XLSX.utils.aoa_to_sheet(mxFiltrosUsados(dims, nd)); wf['!cols'] = [{wch:24},{wch:90}];
+    XLSX.utils.book_append_sheet(wb, wf, 'Filtros');
+    XLSX.writeFile(wb, mxNomeArquivo(dims, real));
+  }
+
+  // ════════════ GRÁFICOS ════════════
+  const _charts = {};
+  function barChart(id, labels, dsO, dsR){
+    const el=document.getElementById(id); if(!el||typeof Chart==='undefined') return;
+    const cfg = { labels, datasets:[
+      {label:'Orçado', data:dsO, backgroundColor:'rgba(54,144,167,.85)', borderRadius:3},
+      {label:'Realizado', data:dsR, backgroundColor:'rgba(21,128,61,.85)', borderRadius:3}
+    ]};
+    if (_charts[id]){ _charts[id].data=cfg; _charts[id].update(); return; }
+    _charts[id]=new Chart(el.getContext('2d'),{ type:'bar', data:cfg,
+      options:{ responsive:true, maintainAspectRatio:false,
+        plugins:{ legend:{labels:{font:{size:11},boxWidth:12,usePointStyle:true,pointStyle:'rectRounded'}},
+          tooltip:{callbacks:{label:c=>`${c.dataset.label}: ${fMi(c.raw)}`}} },
+        scales:{ y:{ticks:{callback:v=>fMi(v),font:{size:10}}}, x:{ticks:{font:{size:10}}} } } });
+  }
+  function lineChart(id, labels, dsO, dsR){
+    const el=document.getElementById(id); if(!el||typeof Chart==='undefined') return;
+    const cfg = { labels, datasets:[
+      {label:'Orçado', data:dsO, borderColor:'rgba(54,144,167,1)', backgroundColor:'rgba(54,144,167,.12)', borderWidth:2, fill:true, tension:.3, pointRadius:3, pointBackgroundColor:'rgba(54,144,167,1)'},
+      {label:'Realizado', data:dsR, borderColor:'rgba(21,128,61,1)', backgroundColor:'rgba(21,128,61,.12)', borderWidth:2, fill:true, tension:.3, pointRadius:3, pointBackgroundColor:'rgba(21,128,61,1)'}
+    ]};
+    if (_charts[id]){ _charts[id].data=cfg; _charts[id].update(); return; }
+    _charts[id]=new Chart(el.getContext('2d'),{ type:'line', data:cfg,
+      options:{ responsive:true, maintainAspectRatio:false,
+        plugins:{ legend:{labels:{font:{size:11},boxWidth:12,usePointStyle:true,pointStyle:'line'}},
+          tooltip:{callbacks:{label:c=>`${c.dataset.label}: ${fMi(c.raw)}`}} },
+        scales:{ y:{ticks:{callback:v=>fMi(v),font:{size:10}}}, x:{ticks:{font:{size:10}}} } } });
+  }
+  function hbarChart(id, labels, data, color){
+    const el=document.getElementById(id); if(!el||typeof Chart==='undefined') return;
+    const cfg = { labels, datasets:[{label:'Realizado', data, backgroundColor:color, borderRadius:3}] };
+    if (_charts[id]){ _charts[id].data=cfg; _charts[id].update(); return; }
+    _charts[id]=new Chart(el.getContext('2d'),{ type:'bar', data:cfg,
+      options:{ indexAxis:'y', responsive:true, maintainAspectRatio:false,
+        plugins:{ legend:{display:false}, tooltip:{callbacks:{label:c=>fMi(c.raw)}} },
+        scales:{ x:{ticks:{callback:v=>fMi(v),font:{size:10}}}, y:{ticks:{font:{size:10}}} } } });
+  }
+
+  async function renderCharts(){
+    // por mês (orçado x realizado)
+    try {
+      const per = activePeriods();
+      const dax = `EVALUATE ${ctWrap(`ADDCOLUMNS(SUMMARIZE(${FATO}, ${COL_PER}), "O", ${M_ORC}, "R", ${M_REAL})`)}`;
+      const rows = await pbiQuery(dax);
+      const m = {}; rows.forEach(rw=>{ const p=String(_v(rw,/\[mes\/ano\]/i)); m[p]={o:_numN(_v(rw,/\[O\]$/))||0, r:_numN(_v(rw,/\[R\]$/))||0}; });
+      const labels = per.map(p=>p.label);
+      lineChart('cx-ch-mes', labels, labels.map(l=>(m[l]||{}).o||0), labels.map(l=>(m[l]||{}).r||0));
+    } catch(e){ console.warn('[SG&A] chart mes:', e.message); }
+    // top 10 centro de custo (realizado)
+    await topChart('cx-ch-cc', DIMS.find(d=>d.id==='centro'), 'hbar', 'rgba(21,128,61,.85)');
+    // top 10 pacote (realizado)
+    await topChart('cx-ch-pac', DIMS.find(d=>d.id==='pacote'), 'hbar', 'rgba(54,144,167,.85)');
+    // top 10 conta (orçado x realizado)
+    await topChart('cx-ch-conta', DIMS.find(d=>d.id==='conta'), 'bar');
+  }
+  async function topChart(id, dim, kind, color){
+    try {
+      const dax = `EVALUATE TOPN(10, ${ctWrap(`ADDCOLUMNS(SUMMARIZE(${FATO}, ${dim.col}), "O", ${M_ORC}, "R", ${M_REAL})`)}, [R], DESC)`;
+      const rows = await pbiQuery(dax);
+      const items = rows.map(rw=>({nome:String(_v(rw,dim.re)??'—'), o:_numN(_v(rw,/\[O\]$/))||0, r:_numN(_v(rw,/\[R\]$/))||0}))
+                        .filter(x=>x.o!==0||x.r!==0).sort((a,b)=>b.r-a.r).slice(0,10);
+      const labels = items.map(x=>x.nome.length>22?x.nome.slice(0,21)+'…':x.nome);
+      if (kind==='hbar') hbarChart(id, labels, items.map(x=>x.r), color);
+      else barChart(id, labels, items.map(x=>x.o), items.map(x=>x.r));
+    } catch(e){ console.warn('[SG&A] top '+id+':', e.message); }
+  }
+
+  // ════════════ aplicar (recarrega tudo) ════════════
+  async function cxAplicar(){
+    if (!_ready) return;
+    await Promise.all([ renderKPIs(), renderMatriz(), renderCharts() ]);
+  }
+  window.cxAplicar = cxAplicar;
+
+  // ── controles mês/ano/trimestre ──
+  function clearActive(containerId, cls){ document.querySelectorAll(`#${containerId} .cx-btn.${cls}`).forEach(b=>b.classList.remove(cls)); }
+  // Ctrl+clique (ou Cmd no Mac) permite selecionar MAIS DE UM mês/ano/trimestre.
+  // Recebe o event explicitamente (window.event é frágil/deprecado).
+  const _cxMulti = (ev) => { const e = ev || window.event; return !!(e && (e.ctrlKey || e.metaKey)); };
+  function cxSetMes(btn, m, ev){
+    const v = m||null; let cur = window._cxMes==null?[]:[].concat(window._cxMes);
+    if (v==null) cur=[]; else if (_cxMulti(ev)){ cur = cur.includes(v) ? cur.filter(x=>x!==v) : cur.concat(v); } else cur=[v];
+    window._cxMes = cur.length ? (cur.length===1?cur[0]:cur) : null; window._cxTrim=null; clearActive('cx-trims','active');
+    document.querySelectorAll('#cx-meses .cx-btn').forEach(x=>{
+      const mm = x.dataset.mes;   // botão de mês tem data-mes; "Todos" não tem
+      x.classList.toggle('active', mm ? cur.includes(Number(mm)) : !cur.length);
+    });
+    cxAplicar();
+  }
+  function cxSetTrim(btn, t, ev){
+    let cur = window._cxTrim==null?[]:[].concat(window._cxTrim);
+    if (_cxMulti(ev)) cur = cur.includes(t) ? cur.filter(x=>x!==t) : cur.concat(t);
+    else cur = (cur.length===1 && cur[0]===t) ? [] : [t];
+    window._cxTrim = cur.length ? (cur.length===1?cur[0]:cur) : null;
+    clearActive('cx-trims','active');
+    document.querySelectorAll('#cx-trims .cx-btn').forEach(x=>{ const mm=(x.getAttribute('onclick')||'').match(/cxSetTrim\([^,]*,\s*(\d+)/); if(mm) x.classList.toggle('active', cur.includes(Number(mm[1]))); });
+    window._cxMes=null; clearActive('cx-meses','active'); const t0=document.querySelector('#cx-meses .cx-btn'); if(t0) t0.classList.add('active');
+    cxAplicar();
+  }
+  function cxSetAno(btn, a, ev){
+    const v = a?Number(a):null; let cur = window._cxAno==null?[]:[].concat(window._cxAno);
+    if (v==null) cur=[]; else if (_cxMulti(ev)){ cur = cur.includes(v) ? cur.filter(x=>x!==v) : cur.concat(v); if(!cur.length) cur=[v]; } else cur=[v];
+    window._cxAno = cur.length ? (cur.length===1?cur[0]:cur) : null;
+    document.querySelectorAll('#cx-anos .cx-btn').forEach(x=>{
+      const yy = x.dataset.ano;   // botão de ano tem data-ano; "Todos" não tem
+      x.classList.toggle('active-green', yy ? cur.includes(Number(yy)) : !cur.length);
+    });
+    cxAplicar();
+  }
+  function cxSetRoot(btn, id){ clearActive('cx-rootdim','active'); btn.classList.add('active'); window._cxRoot = id; renderMatriz(); }
+  function cxSetMode(btn, mode){ const a=document.getElementById('cx-mode-ambos'), r=document.getElementById('cx-mode-real'); if(a)a.classList.toggle('active',mode==='ambos'); if(r)r.classList.toggle('active',mode==='realizado'); window._cxMode=mode; renderMatriz(); }
+  window.cxSetMes=cxSetMes; window.cxSetTrim=cxSetTrim; window.cxSetAno=cxSetAno; window.cxSetRoot=cxSetRoot; window.cxSetMode=cxSetMode;
+  window.cxMaisNivel=cxMaisNivel; window.cxRecolher=cxRecolher; window.cxExportExcel=cxExportExcel;
+
+  // ── dropdown multi-select (padrão av-dd) ──
+  function avMakeDropdown({ label, getOptions, getSelected, setSelected, onChange }){
+    const wrap=document.createElement('div'); wrap.className='av-dd';
+    const btn=document.createElement('button'); btn.className='av-dd-btn'; btn.type='button';
+    const panel=document.createElement('div'); panel.className='av-dd-panel';
+    panel.innerHTML = `<div class="av-dd-search"><input type="text" placeholder="Buscar…"></div><div class="av-dd-list"></div><div class="av-dd-foot"><button type="button" data-act="limpar">Limpar</button><button type="button" data-act="fechar">Fechar</button></div>`;
+    wrap.appendChild(btn); wrap.appendChild(panel);
+    const list=panel.querySelector('.av-dd-list'), search=panel.querySelector('input');
+    let loaded=false, options=[];
+    function refresh(){ const n=getSelected().length; btn.classList.toggle('has',n>0); btn.innerHTML=`<span>${label}</span>${ n?`<span class="cnt">${n}</span>`:'<span style="color:var(--text-4);font-weight:500;">Todos</span>' }`; }
+    function renderList(){ const q=(search.value||'').toLowerCase(); const sel=new Set(getSelected()); const items=options.filter(o=>!q||String(o.label).toLowerCase().includes(q)); list.innerHTML=items.length?items.map(o=>`<label class="av-dd-opt"><input type="checkbox" value="${avEsc(o.value)}" ${sel.has(o.value)?'checked':''}>${o.label}</label>`).join(''):'<div style="padding:8px;color:var(--text-3);font-size:12px;">nenhum</div>'; }
+    async function ensure(){ if(loaded) return; list.innerHTML='<div style="padding:10px;color:var(--text-3);font-size:12px;">Carregando…</div>'; try{options=await getOptions();}catch(e){list.innerHTML=`<div style="padding:10px;color:var(--danger);font-size:12px;">erro: ${e.message.substring(0,60)}</div>`;return;} loaded=true; renderList(); }
+    btn.addEventListener('click', async e=>{ e.stopPropagation(); const open=wrap.classList.contains('open'); document.querySelectorAll('.av-dd.open').forEach(d=>d.classList.remove('open')); if(!open){ wrap.classList.add('open'); await ensure(); search.focus(); } });
+    panel.addEventListener('click', e=>e.stopPropagation());
+    list.addEventListener('change', e=>{ if(e.target.matches('input[type=checkbox]')){ setSelected(e.target.value,e.target.checked); refresh(); onChange(); } });
+    search.addEventListener('input', renderList);
+    panel.querySelector('[data-act=limpar]').addEventListener('click', ()=>{ setSelected(null,false,true); renderList(); refresh(); onChange(); });
+    panel.querySelector('[data-act=fechar]').addEventListener('click', ()=>wrap.classList.remove('open'));
+    refresh(); return wrap;
+  }
+  document.addEventListener('click', ()=>document.querySelectorAll('.av-dd.open').forEach(d=>d.classList.remove('open')));
+  function avMontarToolbar(){
+    const tb=document.getElementById('cx-toolbar'); if(!tb) return; tb.innerHTML='';
+    DIMS.filter(d=>d.fixa).forEach(d=>tb.insertAdjacentHTML('beforeend', `<div class="av-dd av-dd-fixa"><span class="av-dd-btn has" title="Neste portal todos os relatórios são da MSB"><span>${d.label}</span><span class="fixo">${d.fixa}</span></span></div>`));
+    DIMS.filter(d=>!d.fixa).forEach(d=>tb.appendChild(avMakeDropdown({ label:d.label, getOptions:()=>avCarregarValores(d), getSelected:()=>[...window._avSel[d.id]], setSelected:(v,ck,clr)=>{ const s=window._avSel[d.id]; if(clr){s.clear();return;} if(ck)s.add(v); else s.delete(v); }, onChange:cxAplicar })));
+    const limpar=document.createElement('button'); limpar.className='cx-btn'; limpar.type='button'; limpar.textContent='✕ Limpar filtros';
+    limpar.addEventListener('click', ()=>{ DIMS.forEach(d=>window._avSel[d.id].clear()); avMontarToolbar(); cxAplicar(); });
+    tb.appendChild(limpar);
+  }
+
+  // ── botões raiz da matriz ──
+  function montarRootBtns(){
+    const c=document.getElementById('cx-rootdim'); if(!c) return; c.innerHTML='';
+    ['centro','pacote'].forEach((id,i)=>{ const d=DIMS.find(x=>x.id===id); const b=document.createElement('button'); b.className='cx-btn'+(id===window._cxRoot?' active':''); b.textContent=d.label; b.onclick=function(){cxSetRoot(this,id);}; c.appendChild(b); });
+  }
+
+  // ── carregar períodos + montar botões mês/ano ──
+  async function carregarPeriodos(){
+    const rows = await pbiQuery(`EVALUATE VALUES(${COL_PER})`);
+    const key = rows.length ? Object.keys(rows[0])[0] : null;
+    const ANOS_VALIDOS = [2025, 2026];   // somente 2025 e 2026
+    const list = (key?rows.map(r=>r[key]):[]).filter(v=>v!=null&&v!=='').map(v=>{ const p=parsePeriodo(v); return {label:String(v), month:p.month, year:p.year}; })
+                  .filter(p=>ANOS_VALIDOS.includes(p.year));
+    window._allPeriods = list;
+    // anos (fixos: 2025 e 2026)
+    const anos = ANOS_VALIDOS.filter(y=>list.some(p=>p.year===y));
+    const ca=document.getElementById('cx-anos'); ca.innerHTML='';
+    const bTodosA=document.createElement('button'); bTodosA.className='cx-btn'; bTodosA.textContent='Todos'; bTodosA.onclick=function(ev){cxSetAno(this,'',ev);}; ca.appendChild(bTodosA);
+    (anos.length?anos:ANOS_VALIDOS).forEach(y=>{ const b=document.createElement('button'); b.className='cx-btn'; b.dataset.ano=y; b.textContent=y; b.onclick=function(ev){cxSetAno(this,y,ev);}; ca.appendChild(b); });
+    const lastY = (anos.length?anos:ANOS_VALIDOS).slice(-1)[0];
+    if (lastY){ window._cxAno=lastY; const m=[...ca.querySelectorAll('.cx-btn')].find(x=>x.dataset.ano===String(lastY)); if(m) m.classList.add('active-green'); }
+    else bTodosA.classList.add('active-green');
+    // meses
+    const cm=document.getElementById('cx-meses'); cm.innerHTML='';
+    const bTodosM=document.createElement('button'); bTodosM.className='cx-btn active'; bTodosM.textContent='Todos'; bTodosM.onclick=function(ev){cxSetMes(this,null,ev);}; cm.appendChild(bTodosM);
+    MES_ABR.forEach((mn,i)=>{ const b=document.createElement('button'); b.className='cx-btn'; b.dataset.mes=i+1; b.textContent=mn.charAt(0).toUpperCase()+mn.slice(1); b.onclick=function(ev){cxSetMes(this,i+1,ev);}; cm.appendChild(b); });
+  }
+
+  // ── init ──
+  document.addEventListener('DOMContentLoaded', async ()=>{
+    avMontarToolbar();
+    montarRootBtns();
+    const banner=document.getElementById('cx-banner');
+    try {
+      await pbiConnect(); _ready=true;
+      banner.style.cssText='padding:11px 16px;border-radius:8px;font-size:13px;display:flex;align-items:center;gap:10px;background:#F0FDF4;border:1px solid #BBF7D0;color:#14532D;';
+      banner.innerHTML=`<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg> ✅ Conectado ao Power BI`;
+      try { await carregarPeriodos(); } catch(e){ console.warn('[SG&A] períodos:', e.message); }
+      await cxAplicar();
+    } catch(err){
+      banner.style.cssText='padding:11px 16px;border-radius:8px;font-size:13px;display:flex;align-items:center;gap:10px;background:#FEF2F2;border:1px solid #FECACA;color:#7F1D1D;';
+      banner.innerHTML=`<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg> ${err.message}`;
+    }
+  });
+  </script>
+</body>
+</html>

@@ -9,7 +9,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link rel="stylesheet" href="../dash-v2.css?v=3">
   <script src="https://unpkg.com/@azure/msal-browser@2.38.3/lib/msal-browser.min.js"></script>
-<script src="../pbi-throttle.js?v=4"></script>
+<script src="../pbi-throttle.js?v=5"></script>
   <!-- Layout v3 (Claude Design · animado): fonte + camada visual + motor de animações -->
   <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300..900&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="../portal-v3.css?v=2">
@@ -141,10 +141,7 @@
                 <a href="comercial-vendas.html">Análise de Vendas</a>
                 <a href="comercial-clientes.html">Análise de Pedidos</a>
                 <a href="comercial-base-notas-fiscais.html">Base de Notas Fiscais</a>
-                <a href="comercial-novos-negocios.html">Novos Negócios</a>
-                <a href="comercial-clientes-perdidos.html">Clientes Perdidos</a>
                 <a href="comercial-comportamento-clientes.html">Comportamento de Clientes</a>
-                <a href="comercial-calendario-cirurgico.html">Calendário Cirúrgico</a>
               </div>
             </div>
           </div>
@@ -219,20 +216,6 @@
                   <div class="mc-top"><span class="mc-icon"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg></span></div>
                   <div class="mc-name" style="font-size:14px;">Análise de Pedidos</div>
                   <div class="mc-desc">Notas fiscais detalhadas.</div>
-                  <div class="mc-open" style="font-size:12px;">Ver <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg></div>
-                </a>
-
-                <a href="comercial-novos-negocios.html" class="modulo-card" data-tone="dre" style="min-height:0;padding:18px 20px;">
-                  <div class="mc-top"><span class="mc-icon"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="8.5" cy="7" r="4"/><path d="M20 8v6"/><path d="M23 11h-6"/></svg></span></div>
-                  <div class="mc-name" style="font-size:14px;">Novos Negócios</div>
-                  <div class="mc-desc">Aquisição e expansão de clientes.</div>
-                  <div class="mc-open" style="font-size:12px;">Ver <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg></div>
-                </a>
-
-                <a href="comercial-clientes-perdidos.html" class="modulo-card" data-tone="dre" style="min-height:0;padding:18px 20px;">
-                  <div class="mc-top"><span class="mc-icon"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="8.5" cy="7" r="4"/><line x1="23" y1="11" x2="17" y2="11"/></svg></span></div>
-                  <div class="mc-name" style="font-size:14px;">Clientes Perdidos</div>
-                  <div class="mc-desc">Clientes que deixaram de comprar.</div>
                   <div class="mc-open" style="font-size:12px;">Ver <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg></div>
                 </a>
 
@@ -322,6 +305,9 @@
             table.pv-tbl tbody td.cur{font-weight:700;color:var(--bm-blue-900);}
             table.pv-tbl tbody td.grp{border-left:1px solid var(--border);}
             table.pv-tbl tbody tr:hover td{background:var(--bm-blue-50);}
+            /* Regional escolhida no filtro da barra: em destaque; as outras ficam à vista, apagadas */
+            table.pv-tbl tbody tr.pv-reg-sel td.dim{box-shadow:inset 3px 0 0 var(--bm-blue-600);}
+            table.pv-tbl tbody tr.pv-reg-off td{opacity:.5;}
             @media(max-width:1100px){.pv-cmp-grid{grid-template-columns:1fr;}.pv-mg-grid{grid-template-columns:1fr;}.pv-mg-cell{border-right:none;border-bottom:1px solid var(--border);}}
           </style>
 
@@ -437,6 +423,34 @@
               </div>
             </div>
 
+            <!-- ── PERFORMANCE POR REGIONAL (comparativos YTD/QTD/MTD) ──
+                 as 5 regiões do Brasil pela UF do faturamento (../sr-regional.js),
+                 as mesmas da Visão Geral; o ▶ abre Estratégia › Família -->
+            <div class="pv-card" style="overflow:hidden;">
+              <div style="padding:12px 18px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:6px;">
+                <div style="font-size:14px;font-weight:700;color:var(--bm-blue-900);">Performance por Regional</div>
+                <span style="font-size:11px;color:var(--text-3);">anterior vs atual · regiões pela UF do faturamento · ▶ abre Estratégia › Família</span>
+              </div>
+              <div style="overflow-x:auto;">
+                <table class="pv-tbl">
+                  <thead>
+                    <tr class="pv-grp">
+                      <th rowspan="2" class="dim">Regional</th>
+                      <th colspan="3">Acumulado no Ano · YTD</th>
+                      <th colspan="3">Trimestre · QTD</th>
+                      <th colspan="3">Mês · MTD</th>
+                    </tr>
+                    <tr>
+                      <th>Cresc.</th><th>Ano ant.</th><th>Ano atual</th>
+                      <th>Cresc.</th><th>Tri ant.</th><th>Tri atual</th>
+                      <th>Cresc.</th><th>Mês ant.</th><th>Mês atual</th>
+                    </tr>
+                  </thead>
+                  <tbody id="pv-reg-tbody"><tr><td colspan="10" style="text-align:center;color:var(--text-3);padding:18px;">Carregando…</td></tr></tbody>
+                </table>
+              </div>
+            </div>
+
             <!-- ── PERFORMANCE POR FILIAL (comparativos YTD/QTD/MTD) ── -->
             <div class="pv-card" style="overflow:hidden;">
               <div style="padding:12px 18px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:6px;">
@@ -490,6 +504,7 @@
   <script src="../nav-sidebar.js?v=52"></script>
   <script src="../dax-lit.js?v=1"></script>
   <script src="../sr-intercompany.js?v=1"></script>
+  <script src="../sr-regional.js?v=1"></script>
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
   <script>if(window.Chart){Chart.defaults.font.weight='600';}</script>
   <script>
@@ -594,7 +609,11 @@
   // assim que o <select> antigo se enchia (pvPopularUnidades).
   // RECORTE MSB: Empresa não é mais escolha — é sempre MSB (pvFiltrosValor e o
   // freio pbi-throttle.js); na barra fica só o rótulo fixo.
+  // Regional: as 5 regiões do Brasil + "Exterior / sem UF", pela UF do
+  // faturamento (../sr-regional.js) — não é coluna do modelo, o predicado sai
+  // do SRRegional.filtroSel.
   const PV_FILTROS = [
+    { id:'regional',    label:'Regional',           regional:true },
     { id:'tipoCliente', label:'Tipo de Cliente',    col:"'Clientes'[Tipo de cliente (Revisado)]",
       valores:['Distribuidor','Órgão Público','Representante','Venda Direta'] },
     { id:'unidade',     label:'Unidade de Negócio', col:"'DIM_UNIDADE_DE_NEGOCIO_V2'[UNIDADE_DE_NEGOCIO]",
@@ -619,10 +638,13 @@
     const ft = PV_FILTROS.find(f => f.id === id); if (!ft) return null;
     const v = _pvVals(id);
     if (!v.length) return null;
+    if (ft.regional) return SRRegional.filtroSel(v);
     return DaxLit.em(ft.col, v, ft._tipo);
   }
-  // devolve a Empresa (sempre MSB) + os predicados dos filtros de valor, já sem os vazios
-  const pvFiltrosValor = () => [`${MEDIDAS.segCol} = "${MEDIDAS.segMsb}"`].concat(PV_FILTROS.map(f => pvPredicado(f.id)).filter(Boolean));
+  // devolve a Empresa (sempre MSB) + os predicados dos filtros de valor, já sem os vazios.
+  // semRegional: a tabela por Regional ignora o PRÓPRIO filtro (mostra as 5, com as escolhidas em destaque)
+  const pvFiltrosValor = (semRegional) => [`${MEDIDAS.segCol} = "${MEDIDAS.segMsb}"`]
+    .concat(PV_FILTROS.filter(f => !(semRegional && f.regional)).map(f => pvPredicado(f.id)).filter(Boolean));
 
   // ── Formatadores ──
   const _n = x => (x==null||x===''||isNaN(Number(x)))?null:Number(x);
@@ -633,7 +655,7 @@
   const setTxt = (id,t)=>{const el=document.getElementById(id);if(el)el.textContent=t;};
 
   // ── filtro base do período/segmento ──
-  function pvBase(comMes){
+  function pvBase(comMes, semRegional){
     const f = window._pvFiltro;
     const anos = [].concat(f.ano);
     const base = [anos.length===1 ? `YEAR('Calendário'[Data]) = ${anos[0]}` : `YEAR('Calendário'[Data]) IN { ${anos.join(', ')} }`, MEDIDAS.semIntercompany, MEDIDAS.geraFatura, MEDIDAS.semNfOculta].concat(SRInterco.filtros());
@@ -645,7 +667,7 @@
       else if (meses.length){ mc = meses.length===1 ? `MONTH('Calendário'[Data]) = ${meses[0]}` : `MONTH('Calendário'[Data]) IN { ${meses.join(', ')} }`; }
       if (mc) base.unshift(mc);
     }
-    return base.concat(pvFiltrosValor());
+    return base.concat(pvFiltrosValor(semRegional));
   }
 
   const _v = (r,re)=>{ const k=Object.keys(r).find(x=>re.test(x)); return k?r[k]:null; };
@@ -768,19 +790,36 @@
     { col:COL_ESTR, re:/\[Estratégia\]$/i },
     { col:COL_FAM,  re:/\[Família\]$/i }
   ];
-  async function pvFilNivel(level, pathFilters){
+  const _pvMedFil = r => ({
+    ytdAnt:_n(_v(r,/\[YtdAnt\]$/)), ytdAtu:_n(_v(r,/\[YtdAtu\]$/)), crescYtd:_n(_v(r,/\[CrescYtd\]$/)),
+    qtdAnt:_n(_v(r,/\[QtdAnt\]$/)), qtdAtu:_n(_v(r,/\[QtdAtu\]$/)), crescQtd:_n(_v(r,/\[CrescQtd\]$/)),
+    mesAnt:_n(_v(r,/\[MesAnt\]$/)), mesAtu:_n(_v(r,/\[MesAtu\]$/)), crescMes:_n(_v(r,/\[CrescMes\]$/))
+  });
+  const _pvTemValor = x => (x.ytdAtu||0) > 0 || (x.ytdAnt||0) > 0 || (x.mesAtu||0) > 0;
+  // semRegional: o drill de uma linha da tabela por Regional — a regional já vem
+  // no caminho e o filtro de Regional da barra não vale ali (ver pvCarregarRegionais)
+  async function pvFilNivel(level, pathFilters, semRegional){
     const dim = PV_HIER[level];
-    const base = pvBase(true).concat(pathFilters);
+    const base = pvBase(true, semRegional).concat(pathFilters);
     const rows = await pbiQuery(`EVALUATE CALCULATETABLE(ADDCOLUMNS(VALUES(${dim.col}), ${MED_FIL}), ${base.join(', ')})`);
-    return rows.map(r => ({
-      nome:_v(r,dim.re),
-      ytdAnt:_n(_v(r,/\[YtdAnt\]$/)), ytdAtu:_n(_v(r,/\[YtdAtu\]$/)), crescYtd:_n(_v(r,/\[CrescYtd\]$/)),
-      qtdAnt:_n(_v(r,/\[QtdAnt\]$/)), qtdAtu:_n(_v(r,/\[QtdAtu\]$/)), crescQtd:_n(_v(r,/\[CrescQtd\]$/)),
-      mesAnt:_n(_v(r,/\[MesAnt\]$/)), mesAtu:_n(_v(r,/\[MesAtu\]$/)), crescMes:_n(_v(r,/\[CrescMes\]$/))
-    })).filter(x => x.nome != null && ((x.ytdAtu||0) > 0 || (x.ytdAnt||0) > 0 || (x.mesAtu||0) > 0))
+    return rows.map(r => Object.assign({ nome:_v(r,dim.re) }, _pvMedFil(r)))
+       .filter(x => x.nome != null && _pvTemValor(x))
        .sort((a,b) => (b.ytdAtu||0) - (a.ytdAtu||0));
   }
   async function pvCarregarFiliais(){ return pvFilNivel(0, []); }
+
+  // ── Query por Regional (as 5 regiões pela UF + "Exterior / sem UF", ../sr-regional.js) ──
+  // Uma consulta só: 1 linha por regional com as mesmas medidas da tabela por
+  // filial. Ignora o PRÓPRIO filtro de Regional da barra — as 5 ficam à vista e
+  // as escolhidas vão em destaque; os outros filtros valem. "Exterior / sem UF"
+  // só aparece quando tem valor.
+  async function pvCarregarRegionais(){
+    const rows = await pbiQuery(SRRegional.porRegional(MED_FIL, pvBase(true, true)));
+    const lidas = {}; rows.forEach(r => { lidas[SRRegional.idDe(r)] = _pvMedFil(r); });
+    const regs = SRRegional.TODAS.map(g => Object.assign({ id:g.id, nome:g.nome }, lidas[g.id] || {}))
+      .filter(x => x.id !== SRRegional.OUTRAS.id || _pvTemValor(x));
+    return SRRegional.ordenar(regs, x => x.ytdAtu);
+  }
 
   // ── Render dos comparativos ──
   function pvSetBar(idAnt, idAtu, ant, atu){
@@ -824,21 +863,31 @@
       + `${_pvGcell(r.crescQtd)}<td>${fBRL(r.qtdAnt)}</td><td class="cur">${fBRL(r.qtdAtu)}</td>`
       + `${_pvGcell(r.crescMes)}<td>${fBRL(r.mesAnt)}</td><td class="cur">${fBRL(r.mesAtu)}</td>`;
   }
+  // caminho do drill de cada linha das DUAS tabelas (Regional e Filial): {col, value}
+  // vira TREATAS; {pred} é o filtro de UF de uma regional, que entra como está
   let _pvFilSeq=0; const _pvFilPath={};
-  function _pvFilRow(r, level, path){
+  function _pvFilRow(r, level, path, cls, dica){
     const expandable = level < PV_HIER.length - 1;
     const ind = level*16;
     const tg = expandable ? `<span class="pv-ftg" style="cursor:pointer;display:inline-block;width:14px;color:var(--bm-blue-600);font-weight:700;">▶</span>` : `<span style="display:inline-block;width:14px;"></span>`;
     const idx=_pvFilSeq++; _pvFilPath[idx]=path;
     const st = level===0?'font-weight:700;':'font-weight:600;color:var(--text-2);';
-    return `<tr class="pv-frow" data-level="${level}" data-idx="${idx}"><td class="dim" style="padding-left:${10+ind}px;${st}">${tg} ${r.nome ?? '—'}</td>${_pvFilCells(r)}</tr>`;
+    return `<tr class="pv-frow${cls||''}" data-level="${level}" data-idx="${idx}"><td class="dim" style="padding-left:${10+ind}px;${st}"${dica ? ` title="${pvEsc(dica)}"` : ''}>${tg} ${r.nome ?? '—'}</td>${_pvFilCells(r)}</tr>`;
   }
+  // o índice do caminho NÃO zera a cada render: as duas tabelas dividem o
+  // mesmo armazém, e zerar numa apagaria o caminho das linhas da outra
   function pvRenderFiliais(rows){
     const tb = document.getElementById('pv-fil-tbody');
     if (!tb) return;
-    _pvFilSeq=0; for(const k in _pvFilPath) delete _pvFilPath[k];
     if (!rows.length){ tb.innerHTML = '<tr><td colspan="10" style="text-align:center;color:var(--text-3);padding:18px;">Sem dados no período</td></tr>'; return; }
     tb.innerHTML = rows.map(r => _pvFilRow(r, 0, [{col:PV_HIER[0].col, value:r.nome}])).join('');
+  }
+  function pvRenderRegionais(regs){
+    const tb = document.getElementById('pv-reg-tbody');
+    if (!tb) return;
+    const sel = window._pvSel.regional;
+    tb.innerHTML = regs.map(r => _pvFilRow(r, 0, [{ pred:SRRegional.filtro(r.id) }],
+      !sel.size ? '' : sel.has(r.id) ? ' pv-reg-sel' : ' pv-reg-off', SRRegional.dica(r.id))).join('');
   }
   // drill: clique no ▶ expande para o próximo nível (Estratégia, depois Família)
   document.addEventListener('click', async (ev)=>{
@@ -850,8 +899,8 @@
     tg.textContent='…';
     const path = _pvFilPath[+tr.dataset.idx] || [];
     const childLevel = level+1;
-    const pathFilters = path.map(p => DaxLit.treatas(p.col, [p.value]));
-    let children=[]; try { children = await pvFilNivel(childLevel, pathFilters); } catch(e){ console.error('[PV] filial drill:', e.message); tg.textContent='▶'; return; }
+    const pathFilters = path.map(p => p.pred || DaxLit.treatas(p.col, [p.value]));
+    let children=[]; try { children = await pvFilNivel(childLevel, pathFilters, path.some(p => p.pred)); } catch(e){ console.error('[PV] drill:', e.message); tg.textContent='▶'; return; }
     tg.textContent='▼'; tr.classList.add('open');
     const frag = children.map(c => _pvFilRow(c, childLevel, path.concat({col:PV_HIER[childLevel].col, value:c.nome}))).join('');
     tr.insertAdjacentHTML('afterend', frag);
@@ -973,11 +1022,13 @@
   async function pvAplicar(){
     if (!_pvReady) return;
     // separa as queries para identificar qual falha
-    let cmp = null, fil = null, mensal = null, erros = [];
+    let cmp = null, reg = null, fil = null, mensal = null, erros = [];
     try { cmp = await pvCarregarComparativos(); } catch(e){ console.error('[PV] comparativos:', e.message); erros.push('Comparativos → '+e.message); }
+    try { reg = await pvCarregarRegionais(); }   catch(e){ console.error('[PV] regionais:', e.message);    erros.push('Por regional → '+e.message); }
     try { fil = await pvCarregarFiliais(); }      catch(e){ console.error('[PV] filiais:', e.message);     erros.push('Por filial → '+e.message); }
     try { mensal = await pvCarregarMensal(); }   catch(e){ console.error('[PV] mensal:', e.message);       erros.push('Evolução mensal → '+e.message); }
     if (cmp) pvRender(cmp);
+    if (reg) pvRenderRegionais(reg);
     if (fil) pvRenderFiliais(fil);
     if (mensal) pvRenderChart(mensal);
     if (erros.length) pvErro('Erro: ' + erros.join('  ·  '));
@@ -1021,6 +1072,7 @@
      Os valores vêm do modelo; se a query falhar cai na lista fixa de reserva. */
   const pvEsc = s => String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
   async function pvCarregarValores(ft){
+    if (ft.regional) return SRRegional.opcoes();
     if (!ft.doModelo) return (ft.valores || []).map(v => ({ value:v, label:v }));
     // só a Unidade de Negócio: mesma query que o <select> antigo usava
     try {

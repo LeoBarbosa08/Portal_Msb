@@ -9,7 +9,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link rel="stylesheet" href="../dash-v2.css?v=3">
   <script src="https://unpkg.com/@azure/msal-browser@2.38.3/lib/msal-browser.min.js"></script>
-<script src="../pbi-throttle.js?v=4"></script>
+<script src="../pbi-throttle.js?v=5"></script>
   <!-- Layout v3 (Claude Design · animado): fonte + camada visual + motor de animações -->
   <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300..900&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="../portal-v3.css?v=2">
@@ -141,10 +141,7 @@
                 <a href="comercial-vendas.html">Análise de Vendas</a>
                 <span class="active">Análise de Pedidos</span>
                 <a href="comercial-base-notas-fiscais.html">Base de Notas Fiscais</a>
-                <a href="comercial-novos-negocios.html">Novos Negócios</a>
-                <a href="comercial-clientes-perdidos.html">Clientes Perdidos</a>
                 <a href="comercial-comportamento-clientes.html">Comportamento de Clientes</a>
-                <a href="comercial-calendario-cirurgico.html">Calendário Cirúrgico</a>
               </div>
             </div>
           </div>
@@ -221,20 +218,6 @@
                   <div class="mc-top"><span class="mc-icon"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="9" y1="15" x2="15" y2="15"/></svg></span></div>
                   <div class="mc-name" style="font-size:14px;">Análise de Pedidos</div>
                   <div class="mc-desc">Pedidos e status detalhados.</div>
-                  <div class="mc-open" style="font-size:12px;">Ver <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg></div>
-                </a>
-
-                <a href="comercial-novos-negocios.html" class="modulo-card" data-tone="dre" style="min-height:0;padding:18px 20px;">
-                  <div class="mc-top"><span class="mc-icon"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="8.5" cy="7" r="4"/><path d="M20 8v6"/><path d="M23 11h-6"/></svg></span></div>
-                  <div class="mc-name" style="font-size:14px;">Novos Negócios</div>
-                  <div class="mc-desc">Clientes que compraram 1 vez.</div>
-                  <div class="mc-open" style="font-size:12px;">Ver <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg></div>
-                </a>
-
-                <a href="comercial-clientes-perdidos.html" class="modulo-card" data-tone="dre" style="min-height:0;padding:18px 20px;">
-                  <div class="mc-top"><span class="mc-icon"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="8.5" cy="7" r="4"/><line x1="23" y1="11" x2="17" y2="11"/></svg></span></div>
-                  <div class="mc-name" style="font-size:14px;">Clientes Perdidos</div>
-                  <div class="mc-desc">Clientes que deixaram de comprar.</div>
                   <div class="mc-open" style="font-size:12px;">Ver <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg></div>
                 </a>
 
@@ -370,6 +353,31 @@
               <div class="av-kpi w"><div class="av-kpi-l">Ticket Médio</div><div class="av-kpi-v" id="av-k-tk">—</div></div>
             </div>
 
+            <!-- ── PEDIDOS POR REGIONAL ──
+                 as 5 regiões do Brasil pela UF do cliente (../sr-regional.js), as
+                 mesmas da Visão Geral. Clicar numa linha filtra a página pela
+                 regional (o filtro "Regional" da barra); a tabela ignora o próprio
+                 filtro para as outras continuarem à vista. -->
+            <style>
+              .av-reg-tbl tbody tr{cursor:pointer;}
+              .av-reg-tbl tbody tr.av-reg-sel td.dim{box-shadow:inset 3px 0 0 var(--bm-blue-600);}
+              .av-reg-tbl tbody tr.av-reg-off td{opacity:.5;}
+              .av-reg-part{display:inline-flex;align-items:center;justify-content:flex-end;gap:7px;}
+              .av-reg-bar{width:44px;height:5px;border-radius:3px;background:var(--bm-blue-50);overflow:hidden;}
+              .av-reg-bar i{display:block;height:100%;border-radius:3px;background:var(--bm-blue-600);}
+            </style>
+            <div class="av-tbl-wrap">
+              <div class="av-tbl-head">
+                <h4>Pedidos por Regional <span style="font-weight:500;color:var(--text-3);font-size:11px;">· regiões pela UF do cliente · clique numa regional para filtrar a página</span></h4>
+              </div>
+              <div style="overflow-x:auto;">
+                <table class="av-tbl av-reg-tbl">
+                  <thead><tr><th class="dim">Regional</th><th>Valor Total</th><th>Part.</th><th>Qtd Pedidos</th><th>Quantidade</th><th>Ticket Médio</th></tr></thead>
+                  <tbody id="av-reg-tbody"><tr><td colspan="6" style="text-align:center;color:var(--text-3);padding:16px;">Carregando…</td></tr></tbody>
+                </table>
+              </div>
+            </div>
+
             <!-- ── GRÁFICOS (todos ordenados por Valor do Pedido) ── -->
             <div class="av-charts">
               <div class="av-panel t1"><h4>Estratégia · Valor</h4><div class="av-chart-wrap"><canvas id="ap-c1"></canvas></div></div>
@@ -421,6 +429,7 @@
 
   <script src="../script.js?v=8"></script>
   <script src="../nav-sidebar.js?v=52"></script>
+  <script src="../sr-regional.js?v=1"></script>
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
   <script>if(window.Chart){Chart.defaults.font.weight='600';}</script>
   <script>
@@ -478,6 +487,11 @@
   window._avFiltro = { mes:(new Date().getMonth()+1), ano:2026, sem:null, tri:null };   // padrão = mês atual (calendário)
   window._avDims = ['numov','cliente','produto','stpedido'];
   window._avSel = {}; FILTROS.forEach(f => window._avSel[f.id] = new Set());
+  // Regional: as 5 regiões do Brasil + "Exterior / sem UF" (../sr-regional.js).
+  // Não é coluna do modelo: o predicado sai do SRRegional.filtroSel, pela UF do
+  // cliente — Clientes[Cód. Estado] é a UF que chega ao fato Pedidos.
+  const REG_COL = "Clientes[Cód. Estado]";
+  window._avSel.regional = new Set();
   const MES_NUM = { Jan:1,Fev:2,Mar:3,Abr:4,Mai:5,Jun:6,Jul:7,Ago:8,Set:9,Out:10,Nov:11,Dez:12 };
   // Padrão: ao abrir, destaca o botão do mês atual em vez de "Todos"
   (function(){ try {
@@ -547,8 +561,10 @@
   let _icFiltro = null;   // predicado DAX pronto (null = não resolvido)
   let _icAviso  = null;   // motivo, quando não resolve
 
-  // base filtra Pedidos pelo período via sua própria coluna de data (evita depender de relação)
-  function avBase(){
+  // base filtra Pedidos pelo período via sua própria coluna de data (evita depender de relação).
+  // semRegional: a tabela por Regional ignora o PRÓPRIO filtro (mostra todas,
+  // com as escolhidas em destaque)
+  function avBase(semRegional){
     const f = window._avFiltro;
     const dc = "Pedidos[Data da ordem de venda]";
     let mc = null;
@@ -561,6 +577,8 @@
     if (mc) base.unshift(mc);
     if (_icFiltro) base.push(_icFiltro);   // ← ÚNICO filtro fixo do relatório
     FILTROS.forEach(ft => { const vals=[...window._avSel[ft.id]]; if (vals.length) base.push(`${ft.col} IN { ${vals.map(v=>'"'+avDax(v)+'"').join(', ')} }`); });
+    const reg = semRegional ? null : SRRegional.filtroSel([...window._avSel.regional], REG_COL);
+    if (reg) base.push(reg);
     return base;
   }
   const _v = (r,re)=>{ const k=Object.keys(r).find(x=>re.test(x)); return k?r[k]:null; };
@@ -645,6 +663,46 @@
     return r.map(rr => ({ nome:_vCol(rr, col), v:_numN(_v(rr,/\[v\]$/)), n:_numN(_v(rr,/\[n\]$/)) }))
             .sort((a,b)=>(b.v||0)-(a.v||0));   // ordena por Valor Total do pedido (desc)
   }
+
+  // ── Pedidos por Regional (../sr-regional.js) ──
+  // Uma consulta: 1 linha por regional com as medidas dos KPIs. Ignora o
+  // PRÓPRIO filtro de Regional (avBase(true)); os outros valem. "Exterior /
+  // sem UF" só aparece quando tem pedido.
+  async function avRegionais(){
+    const rows = await pbiQuery(SRRegional.porRegional(TOT_DAX, avBase(true), REG_COL));
+    const lidas = {};
+    (rows||[]).forEach(r => { lidas[SRRegional.idDe(r)] = { tot:_numN(_v(r,/\[Tot\]$/)), qt:_numN(_v(r,/\[Qt\]$/)), ped:_numN(_v(r,/\[Ped\]$/)) }; });
+    const regs = SRRegional.TODAS.map(g => Object.assign({}, lidas[g.id] || {}, { id:g.id, nome:g.nome }))
+      .filter(x => x.id !== SRRegional.OUTRAS.id || x.tot || x.ped);
+    return SRRegional.ordenar(regs, x => x.tot);
+  }
+  function avRenderRegionais(regs){
+    const tb = document.getElementById('av-reg-tbody');
+    if (!tb) return;
+    if (!regs || regs.erro){ tb.innerHTML = '<tr><td colspan="6" style="text-align:center;color:var(--text-3);padding:16px;">Não foi possível carregar as regionais agora.</td></tr>'; return; }
+    const sel = window._avSel.regional;
+    const tot = regs.reduce((s, r) => s + (r.tot || 0), 0);
+    tb.innerHTML = regs.map(r => {
+      const part = tot ? (r.tot || 0) / tot : null, larg = part == null ? 0 : Math.max(0, Math.min(part * 100, 100));
+      const cls = !sel.size ? '' : sel.has(r.id) ? 'av-reg-sel' : 'av-reg-off';
+      return `<tr class="${cls}" data-reg="${avEsc(r.id)}" title="${avEsc(SRRegional.dica(r.id) + ' · clique para ' + (sel.has(r.id) ? 'tirar do' : 'pôr no') + ' filtro')}">
+        <td class="dim">${r.nome}</td>
+        <td style="font-weight:700;color:var(--bm-blue-900);">${fBRL(r.tot)}</td>
+        <td><span class="av-reg-part"><span class="av-reg-bar" aria-hidden="true"><i style="width:${larg}%"></i></span>${part == null ? '—' : fNUM(part * 100) + '%'}</span></td>
+        <td>${fINT(r.ped)}</td>
+        <td>${fNUM(r.qt)}</td>
+        <td>${r.tot != null && r.ped ? fBRL(r.tot / r.ped) : '—'}</td>
+      </tr>`;
+    }).join('');
+  }
+  // clique numa regional = põe/tira do filtro "Regional" da barra
+  document.addEventListener('click', ev => {
+    const tr = ev.target.closest && ev.target.closest('#av-reg-tbody tr[data-reg]');
+    if (!tr) return;
+    const s = window._avSel.regional, id = tr.dataset.reg;
+    if (s.has(id)) s.delete(id); else s.add(id);
+    avMontarToolbar(); avAplicar();
+  });
 
   // ── tabular ──
   let dimsArr=[];
@@ -795,8 +853,9 @@
     const ncol = dimsArr.length + 3;
     document.getElementById('av-tbody').innerHTML = `<tr><td colspan="${ncol||4}" style="text-align:center;color:var(--text-3);padding:20px;">Carregando…</td></tr>`;
     try {
-      const [tot, rows, gEs, gUn, gFam, gTipo, gSt] = await Promise.all([
+      const [tot, regs, rows, gEs, gUn, gFam, gTipo, gSt] = await Promise.all([
         avTotais(),
+        avRegionais().catch(e => { console.warn('[AP] regionais:', e.message); return { erro:e.message }; }),
         avTabular(),
         avAgrupar("'Famílias'[Estratégia]", 12).catch(()=>[]),
         avAgrupar("'DIM_UNIDADE_DE_NEGOCIO_V2'[UNIDADE_DE_NEGOCIO]").catch(()=>[]),
@@ -806,6 +865,7 @@
       ]);
       setTxt('av-k-tot', fBRL(tot.tot)); setTxt('av-k-ped', fINT(tot.ped)); setTxt('av-k-qt', fNUM(tot.qt));
       setTxt('av-k-tk',  tot.tot != null && tot.ped ? fBRL(tot.tot/tot.ped) : '—');
+      avRenderRegionais(regs);
       avRenderTabular(rows, tot);
       const _moeda = v => 'R$ '+Number(v).toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2});
       // todos os visuais ordenados por Valor Total do pedido (SUM Preço total) — avAgrupar: TOPN [v] DESC + sort
@@ -880,6 +940,8 @@
   function avMontarToolbar(){
     const tb=document.getElementById('av-toolbar'); const cp=document.getElementById('av-campos'); if(!tb) return; tb.innerHTML=''; if(cp) cp.innerHTML='';
     (cp||tb).appendChild(avMakeDropdown({ label:'➕ Campos', getOptions:async()=>DIMS.map(d=>({value:d.id,label:d.label})), getSelected:()=>window._avDims.slice(), setSelected:(id,ck,clr)=>{ if(clr){window._avDims=[];return;} const i=window._avDims.indexOf(id); if(ck){if(i<0)window._avDims.push(id);}else if(i>=0)window._avDims.splice(i,1); }, onChange:avAplicar }));
+    tb.appendChild(avMakeDropdown({ label:'Regional', getOptions:async()=>SRRegional.opcoes(),
+      getSelected:()=>[...window._avSel.regional], setSelected:(v,ck,clr)=>{ const s=window._avSel.regional; if(clr){s.clear();return;} if(ck)s.add(v); else s.delete(v); }, onChange:avAplicar }));
     FILTROS.forEach(ft=>tb.appendChild(avMakeDropdown({
       label: ft.label,
       getOptions: ft.id==='numov' ? avCarregarOVs : (()=>avCarregarValores(ft.col)),
@@ -887,7 +949,7 @@
       dica: ft.id==='numov' ? 'Buscar Nº da OV…' : 'Buscar…',
       getSelected:()=>[...window._avSel[ft.id]], setSelected:(v,ck,clr)=>{ const s=window._avSel[ft.id]; if(clr){s.clear();return;} if(ck)s.add(v); else s.delete(v); }, onChange:avAplicar })));
     const limpar=document.createElement('button'); limpar.className='av-btn'; limpar.type='button'; limpar.textContent='✕ Limpar'; limpar.style.fontSize='11px';
-    limpar.addEventListener('click', ()=>{ FILTROS.forEach(f=>window._avSel[f.id].clear()); avMontarToolbar(); avAplicar(); });
+    limpar.addEventListener('click', ()=>{ FILTROS.forEach(f=>window._avSel[f.id].clear()); window._avSel.regional.clear(); avMontarToolbar(); avAplicar(); });
     tb.appendChild(limpar);
   }
 

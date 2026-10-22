@@ -387,9 +387,7 @@
 
         { t: 'h2', x: 'Onde olhar os números' },
         { t: 'links', x: [
-          { label: 'Clientes Perdidos — quem parou de comprar', href: 'comercial-clientes-perdidos.html' },
-          { label: 'Análise de Vendas — cesta por cliente', href: 'comercial-vendas.html' },
-          { label: 'Novos Negócios', href: 'comercial-novos-negocios.html' }
+          { label: 'Análise de Vendas — cesta por cliente', href: 'comercial-vendas.html' }
         ]}
       ]
     },
@@ -455,9 +453,7 @@
           ['Visão geral', 'Como está o faturamento no período, contra o período anterior.'],
           ['Análise de Vendas', 'Quem comprou o quê, com que valor e margem.'],
           ['Análise de Pedidos', 'O que foi pedido e como está o comportamento de compra.'],
-          ['Novos Negócios', 'Quanto do resultado veio de cliente ou produto novo.'],
-          ['Performance de Vendas', 'Como está cada vendedor e cada região contra a meta.'],
-          ['Clientes Perdidos', 'Quem comprava e parou.']
+          ['Performance de Vendas', 'Como está cada vendedor e cada região contra a meta.']
         ]},
 
         { t: 'h2', x: 'Como filtrar sem se enganar' },

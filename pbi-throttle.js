@@ -574,8 +574,9 @@
   // Fica de fora só metadado (INFO.*, COLUMNSTATISTICS), que não tem empresa.
   // Um filtro de empresa POR DENTRO da consulta (CALCULATE(…, "BIO")) passa
   // por cima do recorte — por isso nenhuma tela oferece outra empresa.
+  // DIM_EMPRESAS[EMPRESA] é a do modelo de Gestão de Custos SG&A (Contábil).
   var RC = {
-    cols:  ["'Empresas'[Código da empresa]", "'Empresas'[Empresa]", "'Empresa'[Empresa]"],
+    cols:  ["'Empresas'[Código da empresa]", "'Empresas'[Empresa]", "'Empresa'[Empresa]", "DIM_EMPRESAS[EMPRESA]"],
     valor: 'MSB',
     nome:  /\bMSB\b|MEDICAL\s+SYSTEM/i
   };

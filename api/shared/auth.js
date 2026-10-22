@@ -53,7 +53,9 @@ const GUID = /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a
 // por esta lista (authorizedAreas filtra por ela; os fail-open e o acesso
 // full entregam exatamente ela). Assim o mapa pode ser recopiado do portal
 // completo sem ajuste.
-const ALL_AREAS = ['comercial', 'estoque'];
+// RECORTE MSB (22/10/26): entra o Contábil, só com a Gestão de Custos SG&A
+// (as páginas que não vieram estão em PAGINAS_FORA, mais abaixo).
+const ALL_AREAS = ['comercial', 'estoque', 'contabil'];
 
 // Áreas ABERTAS a qualquer pessoa autenticada — entram no allowed mesmo de
 // quem cai numa regra de grupo restritiva.
@@ -294,8 +296,13 @@ const GRUPO_MODULOS = {
 // Área "dona" de um id de página pelo PREFIXO do arquivo (contabil-margem ->
 // contabil). Serve para não repetir no payload um módulo cuja área a pessoa
 // já tem inteira.
+// RECORTE MSB: páginas de área DESTE portal que não vieram do completo (o
+// Contábil daqui tem só a Gestão de Custos SG&A). Módulo avulso apontando
+// para elas é tratado como de outra área: não entra no payload.
+const PAGINAS_FORA = ['contabil-dre', 'contabil-margem', 'contabil-margem-analitico', 'contabil-margem-nf', 'agente-contabil'];
 function areaDoModulo(id) {
   const f = String(id || '').toLowerCase();
+  if (PAGINAS_FORA.indexOf(f) >= 0) return null;
   for (const a of ALL_AREAS) if (f === a || f.indexOf(a + '-') === 0) return a;
   return null;
 }

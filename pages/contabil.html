@@ -1,0 +1,152 @@
+﻿<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Contábil · MSB</title>
+  <link rel="stylesheet" href="../styles.css?v=14">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="../dash-v2.css?v=3">
+  <!-- Layout v3 (Claude Design · animado): fonte + camada visual + motor de animações -->
+  <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300..900&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../portal-v3.css?v=2">
+  <script src="../portal-motion.js?v=3" defer></script>
+  <!-- Tema claro/escuro (menu do avatar): marca o <html> antes de pintar + camada escura -->
+  <script>try{if(localStorage.getItem('bm-tema')==='escuro')document.documentElement.setAttribute('data-tema','escuro')}catch(e){}</script>
+  <link rel="stylesheet" href="../portal-tema.css?v=1">
+  <script src="../portal-tema.js?v=1" defer></script>
+  <!-- Celular (varredura 15/10/26): só vale em tela < 768px; no computador não se aplica -->
+  <link rel="stylesheet" href="../portal-mobile.css?v=1" media="(max-width: 767.98px)">
+  <script src="../portal-mobile.js?v=1" defer></script>
+</head>
+<body class="dept">
+  <header class="site-header">
+    <div class="container">
+      <a href="../index.html" class="brand" aria-label="Portal MSB — página inicial">
+        <img class="brand-logo" src="/icons/logo-msb.png" alt="MSB · Medical System do Brasil" onerror="this.dataset.failed='true'">
+        <span class="brand-fallback">MSB</span>
+      </a>
+      <nav class="header-nav">
+        <a href="../index.html">Início</a>
+        <a href="../index.html#areas">Áreas</a>
+        <a href="../index.html#sistemas">Sistemas</a>
+        <a href="../index.html#avisos">Avisos</a>
+        <a href="../index.html#contato">Contato</a>
+      </nav>
+    </div>
+  </header>
+  <section class="area-header">
+    <div class="container">
+      <div class="breadcrumb">
+        <a href="../index.html">Portal</a><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18l6-6-6-6"/></svg><span>Contábil</span>
+      </div>
+      <div class="area-header-top">
+        <div><h1>Contábil</h1><p>Gestão de custos SG&amp;A da MSB: orçado x realizado por centro de custo, pacote e conta.</p></div>
+      </div>
+    </div>
+  </section>
+  <div class="area-body">
+    <div class="container">
+      <div class="area-grid">
+        <aside class="area-sidebar">
+          <div class="sb-card">
+            <div class="sb-head">
+              <span class="sb-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg></span>
+              <div><div class="sb-tt">Contábil</div><div class="sb-st">Departamento</div></div>
+            </div>
+            <nav>
+              <div class="sb-section">Navegação</div>
+              <a href="#overview" class="active"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>Visão geral</a>
+              <a href="contabil-custos-sgna.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>Gestão de Custos SG&amp;A</a>
+              <div class="sb-divider"></div>
+              <div class="sb-section">Atalhos</div>
+              <a href="https://mlb.operations.dynamics.com/" target="_blank" rel="noopener"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>Dynamics 365</a>
+            </nav>
+          </div>
+          <a href="../index.html" class="sb-back"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></svg>Voltar ao Portal</a>
+        </aside>
+        <div class="area-main">
+          <!-- RECORTE MSB (22/10/26): o Contábil da MSB tem só a Gestão de Custos
+               SG&A (recortada na empresa MSB). DRE, Margem de Contribuição e o
+               Agente Contábil do portal completo não vieram. -->
+          <section class="modulos-section">
+            <div class="container">
+              <div class="fin-subhead"><h2>Módulos</h2><span class="sub">Áreas de trabalho do Contábil</span></div>
+              <div class="modulos-grid">
+                <a href="contabil-custos-sgna.html" class="modulo-card" data-tone="pagar">
+                  <div class="mc-top">
+                    <span class="mc-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg></span>
+                  </div>
+                  <span class="mc-name">Gestão de Custos SG&amp;A</span>
+                  <span class="mc-desc">Orçado x Realizado da MSB por centro de custo, pacote e conta contábil.</span>
+                  <span class="mc-open">Abrir módulo <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg></span>
+                </a>
+              </div>
+            </div>
+          </section>
+        </div>
+      </div>
+    </div>
+  </div>
+  <footer class="site-footer">
+    <div class="container">
+      <div class="bm-footer-grid">
+
+        <div class="bm-footer-col">
+          <img class="footer-logo" src="/icons/logo-msb.png" alt="MSB · Medical System do Brasil">
+          <p class="bm-footer-sobre">Fabricante brasileira de dispositivos médicos em Endourologia, Endovascular, Cardiologia e Cirurgia Cardíaca/Torácica.</p>
+          <div class="bm-social">
+            <a href="https://www.instagram.com/msb.brasil/" target="_blank" rel="noopener" aria-label="Instagram da MSB"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="2" y="2" width="20" height="20" rx="5"/><path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"/><path d="M17.5 6.5h.01"/></svg></a>
+            <a href="https://www.linkedin.com/company/msb-medical-system-do-brasil" target="_blank" rel="noopener" aria-label="LinkedIn da MSB"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M16 8a6 6 0 0 1 6 6v7h-4v-7a2 2 0 0 0-4 0v7h-4v-7a6 6 0 0 1 6-6z"/><rect x="2" y="9" width="4" height="12"/><circle cx="4" cy="4" r="2"/></svg></a>
+          </div>
+          <a href="https://msbbrasil.com/contato/" target="_blank" rel="noopener" class="bm-whatsapp bm-contato">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"/></svg>
+            Entre em contato!
+          </a>
+        </div>
+
+        <div class="bm-footer-col">
+          <h5>A MSB</h5>
+          <ul>
+            <li><a href="https://msbbrasil.com/quem-somos/" target="_blank" rel="noopener">Sobre a MSB</a></li>
+            <li><a href="https://msbbrasil.com/noticias/" target="_blank" rel="noopener">Notícias</a></li>
+            <li><a href="https://msbbrasil.com/conteudos/" target="_blank" rel="noopener">Conteúdos</a></li>
+            <li><a href="https://msbbrasil.com/certificacao-anvisa/" target="_blank" rel="noopener">Anvisa / ISO</a></li>
+            <li><a href="https://vemprabiomedical.gupy.io/" target="_blank" rel="noopener">Vagas · MSBio Group</a></li>
+          </ul>
+        </div>
+
+        <div class="bm-footer-col">
+          <h5>Contato</h5>
+          <ul>
+            <li><a href="https://msbbrasil.com/contato/" target="_blank" rel="noopener">Fale com a MSB</a></li>
+            <li><a href="https://msbbrasil.com/contato/" target="_blank" rel="noopener">Quero comprar</a></li>
+            <li><a href="https://msbbrasil.com/instrucao-de-uso/" target="_blank" rel="noopener">Instruções de Uso</a></li>
+            <li><a href="https://msbbrasil.com/" target="_blank" rel="noopener">Site oficial</a></li>
+          </ul>
+        </div>
+
+        <div class="bm-footer-col">
+          <h5>Produtos</h5>
+          <ul>
+            <li><a href="https://msbbrasil.com/produtos/" target="_blank" rel="noopener">Endourologia</a></li>
+            <li><a href="https://msbbrasil.com/produtos/" target="_blank" rel="noopener">Endovascular</a></li>
+            <li><a href="https://msbbrasil.com/produtos/" target="_blank" rel="noopener">Cardiologia</a></li>
+            <li><a href="https://msbbrasil.com/produtos/" target="_blank" rel="noopener">Cirurgia Cardíaca/Torácica</a></li>
+            <li><a href="https://msbbrasil.com/produtos/" target="_blank" rel="noopener">Todos os produtos</a></li>
+          </ul>
+        </div>
+
+      </div>
+
+      <div class="bm-footer-bottom">
+        <span>© <span id="year"></span> MSB · Medical System do Brasil · Portal interno</span>
+        <span class="bm-footer-meta">Endourologia · Endovascular · Cardiologia · Cirurgia Cardíaca/Torácica</span>
+      </div>
+    </div>
+  </footer>
+  <script src="../script.js?v=8"></script>
+<script src="../nav-sidebar.js?v=52"></script>
+</body>
+</html>

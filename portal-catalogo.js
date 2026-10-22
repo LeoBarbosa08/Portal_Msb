@@ -98,10 +98,7 @@ window.PORTAL_CATALOGO = (function () {
     ['comercial', 'Análise de Vendas',         'Sales Report', 'comercial-vendas.html',                 'sub',   'analise vendas faturamento familia produto uf representante'],
     ['comercial', 'Análise de Pedidos',        'Sales Report', 'comercial-clientes.html',               'sub',   'analise pedidos pedido status intercompany ov carteira'],
     ['comercial', 'Base de Notas Fiscais',     'Sales Report', 'comercial-base-notas-fiscais.html',     'sub',   'base notas fiscais nf item nota exportar excel detalhado'],
-    ['comercial', 'Novos Negócios',            'Sales Report', 'comercial-novos-negocios.html',         'sub',   'novos negocios prospeccao matriz analitica primeira compra'],
-    ['comercial', 'Clientes Perdidos',         'Sales Report', 'comercial-clientes-perdidos.html',      'sub',   'clientes perdidos churn recuperacao inativo'],
     ['comercial', 'Comportamento de Clientes', 'Sales Report', 'comercial-comportamento-clientes.html', 'sub',   'comportamento cliente curva abc pareto segmento fiel recorrente em risco dormente recencia recompra ticket medio'],
-    ['comercial', 'Calendário Cirúrgico',      'Sales Report', 'comercial-calendario-cirurgico.html',   'sub',   'calendario cirurgico cirurgia agenda procedimento medico hospital'],
     ['comercial', 'Negociações',               '',             'comercial-funil.html',                  'brief', 'negociacoes oportunidades pipeline salesforce funil etapa fase conversao oportunidade'],
     ['comercial', 'Analítico',                 'Negociações',  'comercial-funil-analitico.html',        'sub',   'analitico negociacoes funil oportunidades sku produto item itens por fase familia estrategia curva abc mix'],
     ['comercial', 'FCA',                       '',             'comercial-fca.html',                    'file',  'fca ficha atividade comercial visita relato'],
@@ -280,7 +277,7 @@ window.PORTAL_CATALOGO = (function () {
   // portal completo (dá para recopiá-las de lá) e o filtro abaixo tira o que
   // é das outras áreas — senão a busca levaria a páginas que não existem aqui.
   // SISTEMAS (links externos) não tem área e fica inteiro.
-  var AREAS_DESTE_PORTAL = ['comercial', 'estoque'];
+  var AREAS_DESTE_PORTAL = ['comercial', 'estoque', 'contabil'];   // + Contábil (só SG&A) em 22/10/26
   function daqui(linha) { return AREAS_DESTE_PORTAL.indexOf(linha[0]) >= 0; }
   AREAS      = AREAS.filter(daqui);
   MODULOS    = MODULOS.filter(daqui);
@@ -292,15 +289,18 @@ window.PORTAL_CATALOGO = (function () {
   // Tabela de Preços: os outros módulos e os agentes do Comercial saem da
   // busca — mesmo recorte do NAV.comercial de nav-sidebar.js e dos cartões
   // de pages/comercial.html. O Estoque fica inteiro (voltou no mesmo dia).
+  // O Contábil (22/10/26) tem só a Gestão de Custos SG&A — mesmo recorte do
+  // NAV.contabil e de pages/contabil.html.
   var MSB_VISIVEIS = [
     'comercial-sales-report.html', 'comercial-performance-vendas.html', 'comercial-vendas.html',
-    'comercial-clientes.html', 'comercial-base-notas-fiscais.html', 'comercial-novos-negocios.html',
-    'comercial-clientes-perdidos.html', 'comercial-comportamento-clientes.html',
-    'comercial-calendario-cirurgico.html', 'comercial-tabela-precos.html'
+    'comercial-clientes.html', 'comercial-base-notas-fiscais.html',
+    'comercial-comportamento-clientes.html', 'comercial-tabela-precos.html',
+    'contabil-custos-sgna.html'
   ];
-  function msbVisivel(area, arquivo) { return area !== 'comercial' || MSB_VISIVEIS.indexOf(arquivo) >= 0; }
+  var AREAS_RECORTADAS = { comercial: 'Sales Report e Tabela de Preços.', contabil: 'Gestão de custos SG&A da MSB.' };
+  function msbVisivel(area, arquivo) { return !AREAS_RECORTADAS[area] || MSB_VISIVEIS.indexOf(arquivo) >= 0; }
   AREAS      = AREAS.map(function (a) {
-    return a[0] !== 'comercial' ? a : [a[0], a[1], 'Sales Report e Tabela de Preços.', a[3], a[4], a[5]];
+    return !AREAS_RECORTADAS[a[0]] ? a : [a[0], a[1], AREAS_RECORTADAS[a[0]], a[3], a[4], a[5]];
   });
   MODULOS    = MODULOS.filter(function (m) { return msbVisivel(m[0], m[3]); });
   AUTOMACOES = AUTOMACOES.filter(function (a) { return msbVisivel(a[0], a[2]); });

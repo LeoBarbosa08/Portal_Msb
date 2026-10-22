@@ -16,10 +16,11 @@ no portal completo e vice-versa.
 
 | Área | Páginas |
 |---|---|
-| Comercial | Visão geral · Sales Report (9 abas) · Negociações + Analítico · Cotações (reservado ao dono, como no completo) · FCA · Sales Playbook · Materiais · Tabela de Preços |
+| Comercial | Visão geral · Sales Report (6 abas) · Negociações + Analítico · Cotações (reservado ao dono, como no completo) · FCA · Sales Playbook · Materiais · Tabela de Preços |
 | Comercial · agentes | Dossiê de Visita · PI · Pedido · PI · Consignação · PI · Consignação (INCOMPLETO, em testes) · Agente de Cotações · Agente Comercial |
 | Estoque | Visão geral · Gestão de Estoque (Saldo, Ruptura, Validade Curta, Movimentações) · Gestão de Consignação (Saldo Consignado, Saldo por Nota, Devoluções, Rastreabilidade, GMROI) · Perdas · InventarIA · Consignado |
 | Estoque · agentes | Vigia de Consignação · Agente de Estoque |
+| Contábil | Visão geral · Gestão de Custos SG&A (só a MSB) |
 | Comum | Home, busca (Ctrl+K), Central de Avisos, tema escuro, celular, PWA |
 
 22 Functions em `api/`: `my-areas`, `alertas`, `avisos`, `pbi-query`,
@@ -32,7 +33,7 @@ no portal completo e vice-versa.
 
 Tudo marcado no código com o comentário `RECORTE COMERCIAL + ESTOQUE`.
 
-- `api/shared/auth.js` — `ALL_AREAS` = só `comercial` e `estoque`. O mapa de
+- `api/shared/auth.js` — `ALL_AREAS` = `comercial`, `estoque` e (desde 22/10/2026) `contabil`. O mapa de
   grupos (`GRUPO_AREAS`) ficou **igual** ao do completo: quem tem outra área lá
   não ganha nada aqui. Módulo avulso de outra área (`GRUPO_MODULOS`) não passa.
 - `api/my-areas` — saíram o convite da Votação OKR e o líder dos Indicadores
@@ -79,7 +80,8 @@ exportações e o assistente de voz): cada `EVALUATE` vira
 `EVALUATE CALCULATETABLE(<consulta>, 'Empresas'[Código da empresa] IN { "MSB" })`.
 
 - A coluna e o valor são descobertos uma vez por modelo, nesta ordem:
-  `'Empresas'[Código da empresa]`, `'Empresas'[Empresa]`, `'Empresa'[Empresa]`;
+  `'Empresas'[Código da empresa]`, `'Empresas'[Empresa]`, `'Empresa'[Empresa]`,
+  `DIM_EMPRESAS[EMPRESA]` (o modelo de Gestão de Custos SG&A);
   vale o valor `MSB` (ou, sem ele, o que tiver MSB / MEDICAL SYSTEM no nome).
   `PBIQ.recorte()` no F12 mostra o que foi achado em cada modelo.
 - Modelo com a coluna mas **sem a MSB** → nenhuma consulta vai; a tela fica sem
@@ -118,6 +120,56 @@ novidades de lá, reaplique:
   linhas do banner (uma consulta só), mais "Exterior / sem UF" quando houver,
   para fechar com o TOTAL; abre em Estratégia › Família. O Excel sai como
   `Performance_Regional_<mês>_<ano>.xlsx`.
+- **Regionais numa lista só** — as 5 regiões + "Exterior / sem UF" e o filtro
+  de UF de cada uma moram em `sr-regional.js` (`SRRegional`); a Visão Geral
+  lê `REGIONAIS`/`REG_OUTRAS`/`regFiltro` de lá.
+
+### Abas do Sales Report (22/10/2026)
+
+- **Saíram** Calendário Cirúrgico, Novos Negócios e Clientes Perdidos — páginas
+  apagadas e tiradas das abas, do menu (`nav-sidebar.js`), da busca
+  (`portal-catalogo.js`, `script.js`) e do Sales Playbook. Ficaram 6 abas:
+  Visão Geral, Performance de Vendas, Análise de Vendas, Análise de Pedidos,
+  Base de Notas Fiscais e Comportamento de Clientes.
+- **Regional** (pela UF, `sr-regional.js`, as mesmas da Visão Geral) em três abas:
+  - filtro **Regional** na barra (multi-seleção; vale para a página toda);
+  - **Performance de Vendas** — tabela "Performance por Regional" (YTD/QTD/MTD,
+    abre em Estratégia › Família), acima da por Filial;
+  - **Análise de Vendas** — "Faturamento × Meta por Regional" (Faturamento,
+    Part., Meta, Gap, % Meta, % Margem, Margem);
+  - **Análise de Pedidos** — "Pedidos por Regional" (Valor, Part., Qtd de
+    Pedidos, Quantidade, Ticket). Aqui a UF é `Clientes[Cód. Estado]`, a que
+    chega ao fato Pedidos; nas outras é `'Estados'[Cód. do estado]`.
+  - Cada tabela por Regional ignora o próprio filtro (as outras regionais
+    continuam à vista, apagadas; as escolhidas em destaque). Nas duas Análises
+    clicar numa regional põe/tira ela do filtro.
+  - Na Análise de Vendas o campo antigo "Regional" da matriz virou
+    "Regional (Sales Vertical)" — é a regional do cadastro, não a da UF.
+- `sw.js` — cache `bm-comest-v5`.
+
+### Contábil · Gestão de Custos SG&A (22/10/2026)
+
+Entrou a área **Contábil** só com a **Gestão de Custos SG&A**, trazida do portal
+completo (`origin/master` c5aa0cf de `Claude.rep`, 22/10) e recortada na MSB.
+DRE, Margem de Contribuição e o Agente Contábil do completo **não vieram**.
+
+- `pages/contabil-custos-sgna.html` — cópia do completo convertida para a marca
+  (`scripts/msb-cores.js`, Roboto, logo, "· MSB"). **Empresa fixa em MSB**: na
+  barra fica o rótulo "Empresa MSB" (`fixa` no `DIMS`), sem a lista; o Excel
+  registra "Empresa: MSB". Quem recorta de fato é o `pbi-throttle.js`, que agora
+  conhece `DIM_EMPRESAS[EMPRESA]` (ver "Só a empresa MSB"). Se esse modelo não
+  tiver a MSB, a tela fica sem números, com a faixa de aviso.
+- `pages/contabil.html` — visão geral com o cartão do SG&A (casca MSB da
+  `estoque.html`).
+- Acesso: `ALL_AREAS` ganhou `contabil` — entra quem já tem o Contábil no
+  completo (os grupos do `GRUPO_AREAS`, admin e acesso full). `PAGINAS_FORA`
+  barra módulo avulso das páginas que não vieram (a Margem da Coordenação de
+  Compras não vira porta para o Contábil).
+- `nav-sidebar.js` (`NAV.contabil` só Visão geral + SG&A), `index.html`
+  (cartão Contábil), `portal-catalogo.js` (busca: Contábil só com o SG&A) e
+  `script.js` (guia).
+- `pbi-throttle.js?v=5` nas páginas, para nenhum navegador ficar com o recorte
+  antigo.
 
 ### Identidade visual MSB (20/10/2026)
 
