@@ -62,7 +62,7 @@
 if (!window._portalAuthLoaded) {
   window._portalAuthLoaded = true;
   const isPages = location.pathname.includes('/pages/');
-  const authSrc = (isPages ? '../' : '') + 'auth.js?v=7';
+  const authSrc = (isPages ? '../' : '') + 'auth.js?v=8';
   const s = document.createElement('script');
   s.src = authSrc;
   document.head.appendChild(s);
@@ -322,7 +322,15 @@ if (!window._bmPerfilSheetLoaded && !window._bmPerfilSheetInjected) {
     // translucido durante os 6s antes de voltar ao portal.
     velar();
     var titulo, texto;
-    if (motivo === 'sem-area') {
+    // sessao Microsoft vencida (sem token / 401): renova ali mesmo e volta
+    // para ESTA pagina. Antes caia no "Acesso nao confirmado" e a pessoa so
+    // saia dele com logout.
+    var sessao = (/^token:/.test(motivo) || motivo === 'HTTP 401') && typeof window.portalReauth === 'function';
+    if (sessao) {
+      titulo = 'Sessão expirada';
+      texto  = 'Sua sessão com a Microsoft precisa ser renovada para abrir esta página. '
+             + 'Clique em <strong>Entrar novamente</strong> — você volta para cá, sem precisar sair do portal.';
+    } else if (motivo === 'sem-area') {
       titulo = 'Área restrita';
       texto  = 'Você não tem acesso a este módulo. Ele pertence à área de <strong>'
              + rotulo + '</strong>, que não está liberada no seu perfil de acesso. '
@@ -343,14 +351,26 @@ if (!window._bmPerfilSheetLoaded && !window._bmPerfilSheetInjected) {
       + '<div style="width:50px;height:50px;border-radius:50%;background:#FEF3C7;display:flex;align-items:center;justify-content:center;margin:0 auto 14px;"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#b45309" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg></div>'
       + '<h3 style="margin:0 0 8px;font-size:18px;font-weight:700;color:#10181E;">' + titulo + '</h3>'
       + '<p style="margin:0 0 18px;font-size:14px;color:#354249;line-height:1.55;">' + texto + '</p>'
-      + '<button id="bm-area-ok" style="border:none;border-radius:8px;padding:10px 26px;font-size:14px;font-weight:600;background:#0E333C;color:#fff;cursor:pointer;">Voltar ao portal</button></div>';
+      + (sessao ? '<button id="bm-area-reauth" style="border:none;border-radius:8px;padding:10px 26px;font-size:14px;font-weight:600;background:#0E333C;color:#fff;cursor:pointer;margin:0 6px 8px;">Entrar novamente</button>' : '')
+      + '<button id="bm-area-ok" style="border-radius:8px;padding:10px 26px;font-size:14px;font-weight:600;cursor:pointer;margin:0 6px 8px;'
+      + (sessao ? 'border:1px solid #CBD5DB;background:#fff;color:#0E333C;' : 'border:none;background:#0E333C;color:#fff;') + '">Voltar ao portal</button></div>';
     function go() { location.href = '../index.html'; }
+    function renovar(btn) {
+      btn.disabled = true;
+      btn.textContent = 'Abrindo a Microsoft…';
+      // o MSAL recusou antes de sair da pagina: recarregar limpa o estado
+      window.portalReauth(['openid', 'profile']).catch(function () { location.reload(); });
+    }
     var put = function () {
       (document.body || document.documentElement).appendChild(ov);
-      ov.addEventListener('click', function (e) { if (e.target === ov || (e.target.closest && e.target.closest('#bm-area-ok'))) go(); });
+      ov.addEventListener('click', function (e) {
+        var re = e.target.closest && e.target.closest('#bm-area-reauth');
+        if (re) { if (!re.disabled) renovar(re); return; }
+        if ((e.target === ov && !sessao) || (e.target.closest && e.target.closest('#bm-area-ok'))) go();
+      });
     };
     if (document.body) put(); else document.addEventListener('DOMContentLoaded', put);
-    setTimeout(go, 6000);   // volta sozinho apos 6s
+    if (!sessao) setTimeout(go, 6000);   // volta sozinho apos 6s (sessao: espera a pessoa renovar)
     console.error('[AreaGuard] BLOQUEADO em "' + (rotulo || file()) + '" -> ' + motivo);
   }
 
@@ -532,7 +552,10 @@ if (!window._bmPerfilSheetLoaded && !window._bmPerfilSheetInjected) {
     try {
       // openid/profile: o backend so precisa IDENTIFICAR a pessoa (os grupos
       // ele consulta app-only). Escopo minimo = o silent acerta quase sempre.
-      if (typeof window.portalToken === 'function') {
+      // portalIdToken (auth.js novo) ja renova o id token do cache vencendo
+      if (typeof window.portalIdToken === 'function') {
+        tok = await window.portalIdToken();
+      } else if (typeof window.portalToken === 'function') {
         var r = await window.portalToken(['openid', 'profile'], { noPopup: true });
         tok = r && r.idToken;
       } else {

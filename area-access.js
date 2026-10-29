@@ -192,7 +192,10 @@
   }
 
   // ── Falhou: não libera NADA ───────────────────────────────────
-  function negar(motivo) {
+  // `sessao` = a falha é da sessão Microsoft (sem token / 401): o aviso
+  // oferece renovar o login ali mesmo, em vez do recarregar que caía no
+  // mesmo erro e levava a pessoa a fazer logout.
+  function negar(motivo, sessao) {
     esconderTudo();
     window._allowedAreas   = new Set();   // busca/drawer também ficam vazios
     window._allowedModulos = new Set();
@@ -200,32 +203,51 @@
     // não gravamos cache: falha aqui não deve trancar as páginas internas,
     // que fazem a própria consulta.
     console.error(TAG, '🔒 acesso NÃO confirmado →', motivo, '· nada foi liberado');
-    avisar(motivo);
+    avisar(motivo, sessao);
     pronto({ restricted: true, allowed: [], erro: motivo });
   }
 
   // aviso visível no lugar da grade, com botão de tentar de novo
-  function avisar(motivo) {
+  function avisar(motivo, sessao) {
     var grid = document.querySelector('.areas-grid');
     var alvo = (grid && grid.parentNode) || document.getElementById('areas');
     if (!alvo || document.getElementById('aa-erro')) return;
+    var renovar = !!sessao && typeof window.portalReauth === 'function';
     var box = document.createElement('div');
     box.id = 'aa-erro';
     box.style.cssText = 'margin:18px 0;padding:18px 20px;border-radius:14px;background:#FEF3C7;'
       + 'border:1px solid #FCD34D;color:#78350F;font-size:14.5px;line-height:1.55;';
-    box.innerHTML = '<strong>Não foi possível confirmar seu perfil de acesso.</strong><br>'
-      + 'Por segurança os departamentos não foram exibidos. Recarregue a página; '
-      + 'se continuar, avise a TI. <span style="opacity:.7">(' + String(motivo).replace(/</g, '&lt;') + ')</span>'
+    box.innerHTML = (renovar
+        ? '<strong>Sua sessão com a Microsoft precisa ser renovada.</strong><br>'
+          + 'Por segurança os departamentos não foram exibidos. Clique em <strong>Entrar novamente</strong> '
+          + '— você volta para esta página, sem precisar sair do portal. '
+        : '<strong>Não foi possível confirmar seu perfil de acesso.</strong><br>'
+          + 'Por segurança os departamentos não foram exibidos. Recarregue a página; '
+          + 'se continuar, avise a TI. ')
+      + '<span style="opacity:.7">(' + String(motivo).replace(/</g, '&lt;') + ')</span>'
       + '<br><button type="button" id="aa-retry" style="margin-top:12px;border:none;border-radius:9px;'
       + 'padding:9px 20px;font-size:14px;font-weight:600;background:#78350F;color:#fff;cursor:pointer;">'
-      + 'Tentar de novo</button>';
+      + (renovar ? 'Entrar novamente' : 'Tentar de novo') + '</button>';
     alvo.insertBefore(box, grid || null);
     var b = document.getElementById('aa-retry');
-    if (b) b.addEventListener('click', function () { location.reload(); });
+    if (!b) return;
+    b.addEventListener('click', function () {
+      if (!renovar) { location.reload(); return; }
+      b.disabled = true;
+      b.textContent = 'Abrindo a Microsoft…';
+      // o MSAL recusou antes de sair da página (outra interação aberta, por
+      // ex.): recarregar limpa esse estado e o broker tenta o redirect sozinho
+      window.portalReauth(SCOPES).catch(function (e) {
+        console.warn(TAG, 'renovação falhou →', e && (e.errorCode || e.message), '· recarregando');
+        location.reload();
+      });
+    });
   }
 
   // ── Token: só pelo broker do auth.js (nunca popup) ────────────
   async function idToken() {
+    // com o auth.js novo: já vem renovado se o do cache estiver vencendo
+    if (typeof window.portalIdToken === 'function') return window.portalIdToken();
     if (typeof window.portalToken === 'function') {
       const r = await window.portalToken(SCOPES, { noPopup: true });
       if (r && r.idToken) return r.idToken;
@@ -281,19 +303,20 @@
 
     let token;
     try { token = await idToken(); }
-    catch (e) { negar('sem ID token (' + (e && (e.errorCode || e.message)) + ')'); return; }
+    catch (e) { negar('sem ID token (' + (e && (e.errorCode || e.message)) + ')', true); return; }
 
     const claims = account.idTokenClaims || {};
-    let j = null, ultimoErro = '';
+    let j = null, ultimoErro = '', ultimoStatus = 0;
     for (var i = 0; i < TENTATIVAS; i++) {
       try { j = await consultar(token, claims, account.username); break; }
       catch (e) {
         ultimoErro = (e && e.name === 'AbortError') ? 'tempo esgotado' : (e && e.message) || 'erro';
+        ultimoStatus = (e && e.status) || 0;
         console.warn(TAG, 'tentativa', i + 1, 'falhou:', ultimoErro);
         if (e && e.status && e.status !== 429 && e.status < 500) break;   // 401/403 não melhora com retry
       }
     }
-    if (!j) { negar(ultimoErro || 'falha em ' + ENDPOINT); return; }
+    if (!j) { negar(ultimoErro || 'falha em ' + ENDPOINT, ultimoStatus === 401); return; }
 
     if (j.reason === 'groups_unavailable') {
       console.warn(TAG, '⚠️ Graph NÃO listou os grupos → status=', j.graphStatus, '· erro=', j.graphError,

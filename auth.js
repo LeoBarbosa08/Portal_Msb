@@ -9,6 +9,18 @@
 (function () {
   'use strict';
 
+  // Vencimento escrito NO PRÓPRIO token (claim exp). O acquireTokenSilent
+  // devolve o id token do CACHE, que pode já estar vencido; contar 50 min
+  // a partir do pedido mandava token vencido para o backend — foi o
+  // "Não autenticado." da Cobrança aberta havia mais de 1 h (15/10/2026).
+  // Usado pelo patch de fetch abaixo e pelo window.portalIdToken do broker.
+  const _expDe = function (t) {
+    try {
+      const b = String(t).split('.')[1].replace(/-/g, '+').replace(/_/g, '/');
+      return (JSON.parse(atob(b + '==='.slice((b.length + 3) % 4))).exp || 0) * 1000;
+    } catch (e) { return 0; }
+  };
+
   // ── Transporte de identidade p/ o backend ──────────────────────────
   // O Azure SWA descarta o header Authorization; por isso a identidade vai
   // num header CUSTOM que o SWA repassa: x-portal-idtoken (id token do Entra).
@@ -20,16 +32,6 @@
     window.__portalApiAuthPatched = true;
     const _origFetch = window.fetch.bind(window);
     let _tok = null, _tokExp = 0;
-    // Vencimento escrito NO PRÓPRIO token (claim exp). O acquireTokenSilent
-    // devolve o id token do CACHE, que pode já estar vencido; contar 50 min
-    // a partir do pedido mandava token vencido para o backend — foi o
-    // "Não autenticado." da Cobrança aberta havia mais de 1 h (15/10/2026).
-    const _expDe = function (t) {
-      try {
-        const b = String(t).split('.')[1].replace(/-/g, '+').replace(/_/g, '/');
-        return (JSON.parse(atob(b + '==='.slice((b.length + 3) % 4))).exp || 0) * 1000;
-      } catch (e) { return 0; }
-    };
     const _idToken = async function (forcar) {
       try {
         const inst = window._msalAuth;
@@ -141,6 +143,10 @@
     } catch (e) { return null; }
   }
 
+  function _chave(scopes) {
+    return scopes.join(' ').toLowerCase().replace(/[^a-z0-9]+/g, '_').slice(0, 60);
+  }
+
   // Trava anti-loop: sem ela, um token que NUNCA pode ser emitido (falta de
   // licenca/consentimento) viraria recarregamento infinito da pagina.
   function _redirectAllowed(key) {
@@ -151,11 +157,18 @@
       return true;
     } catch (e) { return true; }
   }
+  // Tentativa que nem saiu da pagina (o MSAL recusou antes de navegar:
+  // interaction_in_progress, redirect_in_iframe...) nao conta. Antes ela
+  // gastava a trava e a pessoa ficava 5 min em portal_redirect_suppressed
+  // sem nunca ter ido a Microsoft.
+  function _soltarTrava(key) {
+    try { sessionStorage.removeItem('bm_authredir_' + key); } catch (e) {}
+  }
 
   async function acquire(inst, req, popupFn) {
     req = Object.assign({}, req || {});
     const scopes  = req.scopes || ['openid', 'profile'];
-    const key     = scopes.join(' ').toLowerCase().replace(/[^a-z0-9]+/g, '_').slice(0, 60);
+    const key     = _chave(scopes);
     const acct    = _acctOf(inst, req);
     const forceUI = !!req.prompt;   // quem pediu prompt QUER a tela (login inicial)
 
@@ -183,10 +196,13 @@
         redirectStartPage: window.location.href   // volta para ESTA pagina
       });
       delete rq.noPopup;
-      console.log('[Auth] token via redirect (' + (IS_IN_POPUP ? 'dentro de popup' : 'celular') + ') scopes=' + scopes.join(' '));
-      if (acct && inst.acquireTokenRedirect) await inst.acquireTokenRedirect(rq);
-      else if (inst.loginRedirect)           await inst.loginRedirect(rq);
-      else throw new Error('sem fluxo de redirect disponivel');
+      delete rq.forceRefresh;
+      console.log('[Auth] token via redirect (' + (IS_IN_POPUP ? 'dentro de popup' : IS_MOBILE ? 'celular' : 'sem popup') + ') scopes=' + scopes.join(' '));
+      try {
+        if (acct && inst.acquireTokenRedirect) await inst.acquireTokenRedirect(rq);
+        else if (inst.loginRedirect)           await inst.loginRedirect(rq);
+        else throw new Error('sem fluxo de redirect disponivel');
+      } catch (e) { _soltarTrava(key); throw e; }
       return await new Promise(function () {});   // a pagina esta navegando
     }
 
@@ -210,6 +226,40 @@
         const inst = window._msalAuth || _msalInstance;
         if (!inst) return Promise.reject(new Error('msal-not-ready'));
         return acquire(inst, Object.assign({ scopes: [].concat(scopes || ['openid', 'profile']) }, opts || {}), origAcq);
+      };
+      // ID token VALIDO para quem o manda ao backend a mao (area-access.js,
+      // nav-sidebar.js). O silent devolve o do cache, que pode ja ter vencido
+      // (o access token vive ate 90 min, o id token 60): o /api/my-areas
+      // respondia 401 "expired" e so o logout tirava a pessoa dali.
+      window.portalIdToken = async function () {
+        const sc = ['openid', 'profile'];
+        let r = await window.portalToken(sc, { noPopup: true });
+        const exp = _expDe(r && r.idToken);
+        if (exp && exp - Date.now() < 5 * 60000) {
+          try { r = await window.portalToken(sc, { noPopup: true, forceRefresh: true }); }
+          catch (e) { if (exp - Date.now() < 30000) throw e; }   // o do cache ainda vale: serve
+        }
+        if (!r || !r.idToken) throw new Error('broker sem idToken');
+        return r.idToken;
+      };
+      // "Entrar novamente" dos avisos de acesso: renovacao PEDIDA pela pessoa,
+      // num clique. Vai por redirect (volta para esta mesma pagina) e passa por
+      // cima da trava anti-loop - era o portal_redirect_suppressed que so o
+      // logout destravava. A tentativa marca a trava: se na volta o token ainda
+      // nao sair, o aviso reaparece em vez de outro redirect sozinho.
+      window.portalReauth = function (scopes) {
+        const inst = window._msalAuth || _msalInstance;
+        if (!inst) return Promise.reject(new Error('msal-not-ready'));
+        const sc   = [].concat(scopes || ['openid', 'profile']);
+        const key  = _chave(sc);
+        const acct = _acctOf(inst, null);
+        const rq   = { scopes: sc, redirectStartPage: window.location.href };
+        if (acct) { rq.account = acct; rq.loginHint = acct.username; }
+        try { sessionStorage.setItem('bm_authredir_' + key, String(Date.now())); } catch (e) {}
+        console.log('[Auth] renovacao pedida pela pessoa (redirect) scopes=' + sc.join(' '));
+        return (acct ? inst.acquireTokenRedirect(rq) : inst.loginRedirect(rq)).then(
+          function () { return new Promise(function () {}); },   // a pagina esta navegando
+          function (e) { _soltarTrava(key); throw e; });
       };
       console.log('[Auth] broker de token ativo'
         + (IS_MOBILE ? ' | celular: sem popup' : '')
