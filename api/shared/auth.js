@@ -289,7 +289,7 @@ const GRUPO_MODULOS = {
     'estoque-gestao', 'estoque-saldo', 'estoque-validade-curta', 'estoque-movimentacoes',
     'estoque-gestao-consignacao', 'estoque-saldo-consignado', 'estoque-contagem-saldo-nota',
     'estoque-devolucoes-faturamento', 'estoque-rastreabilidade', 'estoque-gmroi',
-    'estoque-perdas', 'estoque-consignado-inventario'
+    'estoque-perdas'
   ],
 };
 
@@ -297,9 +297,11 @@ const GRUPO_MODULOS = {
 // contabil). Serve para não repetir no payload um módulo cuja área a pessoa
 // já tem inteira.
 // RECORTE MSB: páginas de área DESTE portal que não vieram do completo (o
-// Contábil daqui tem só a Gestão de Custos SG&A). Módulo avulso apontando
-// para elas é tratado como de outra área: não entra no payload.
-const PAGINAS_FORA = ['contabil-dre', 'contabil-margem', 'contabil-margem-analitico', 'contabil-margem-nf', 'agente-contabil'];
+// Contábil daqui tem só a Gestão de Custos SG&A; o InventarIA e o Vigia de
+// Consignação do Estoque saíram em 30/10/26). Módulo avulso apontando para
+// elas é tratado como de outra área: não entra no payload.
+const PAGINAS_FORA = ['contabil-dre', 'contabil-margem', 'contabil-margem-analitico', 'contabil-margem-nf', 'agente-contabil',
+  'estoque-consignado-inventario', 'estoque-vigia'];
 function areaDoModulo(id) {
   const f = String(id || '').toLowerCase();
   if (PAGINAS_FORA.indexOf(f) >= 0) return null;

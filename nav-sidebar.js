@@ -618,7 +618,7 @@ if (!window._bmPerfilSheetLoaded && !window._bmPerfilSheetInjected) {
 
   // Paginas que carregam este arquivo SO para herdar o portao de acesso
   // (auth.js + guard de area) e NAO querem menu lateral nem os ajustes
-  // mobile: InventarIA, agentes avulsos, etc. Elas setam
+  // mobile: agentes avulsos, etc. Elas setam
   // window.BM_SEM_SIDEBAR = true antes de incluir o script.
   if (window.BM_SEM_SIDEBAR) return;
 
@@ -803,13 +803,12 @@ if (!window._bmPerfilSheetLoaded && !window._bmPerfilSheetInjected) {
           {id:'estoque-gmroi',                  label:'GMROI',                            href:'estoque-gmroi.html'},
         ]},
         {id:'estoque-perdas',   label:'Análise de Perdas',href:'estoque-perdas.html', icon:I.brief},
-        {id:'estoque-consignado-inventario', label:'InventarIA',href:'estoque-consignado-inventario.html', icon:I.server},
+        // RECORTE MSB (30/10/26): o InventarIA saiu do portal da MSB (página apagada).
       ],
       auto:[],
-      // O Vigia NAO e' submodulo de Gestao de Consignacao: ele nao mostra saldo,
-      // ele DECIDE (regras + fila de aprovacao). Entra aqui como AGENTE da area,
-      // no mesmo padrao do LICI na Licitacao (agente fora da arvore de modulos).
-      agen:[{l:'Vigia de Consignação',h:'estoque-vigia.html'}],
+      // RECORTE MSB (30/10/26): o Vigia de Consignação saiu do portal da MSB
+      // (página e Functions apagadas; a fila no blob é do portal completo).
+      agen:[],
       atal:[]
     },
 
@@ -1186,48 +1185,6 @@ if (!window._bmPerfilSheetLoaded && !window._bmPerfilSheetInjected) {
     sbCard.innerHTML = buildSidebar(NAV[deptId], pid, deptId);
     // tira do menu o que a pessoa nao pode abrir (grant por MODULO avulso)
     if (typeof window.bmPodarNavegacao === 'function') window.bmPodarNavegacao();
-
-    /* ── ALERTA do Vigia de Consignacao no menu ────────────────────
-       Contador de itens PENDENTES no proprio item de menu. So roda se o
-       link existir na sidebar (ou seja: e' Estoque e a pessoa pode abrir).
-       Usa /api/consig-vigia-fila?resumo=1 — so os contadores, nunca a fila
-       inteira, que carrega carteira e valor por cliente.
-       Cache em sessionStorage (10 min) para nao bater na API a cada pagina. */
-    window.bmVigiaBadge = (function () {
-      var KEY = 'bm-vigia-resumo-v1', TTL = 10 * 60 * 1000;
-      function pintar(r) {
-        var a = document.querySelector('.area-sidebar nav a[href$="estoque-vigia.html"]');
-        if (!a || !r || !r.configured) return;
-        var b = a.querySelector('.sb-vigia');
-        // o item ja' carrega o selo "IA" (secao AGENTES). Com contador, o selo
-        // sai de cena: em 248px de sidebar dois pills comem o rotulo inteiro.
-        var ia = a.querySelector('.sb-badge-ia');
-        if (!r.pendentes) { if (b) b.remove(); if (ia) ia.style.display = ''; return; }
-        if (ia) ia.style.display = 'none';
-        if (!b) { b = document.createElement('span'); b.className = 'sb-badge sb-vigia'; b.style.marginLeft = 'auto'; a.appendChild(b); }
-        var urgente = r.vencidos > 0;
-        b.textContent = r.pendentes > 99 ? '99+' : String(r.pendentes);
-        b.style.background = urgente ? '#DC2626' : '#F59E0B';
-        b.style.color = '#fff';
-        a.title = r.pendentes + ' item(ns) aguardando decisao'
-                + (r.vencidos ? ' · ' + r.vencidos + ' ja vencido(s) no cliente' : '');
-      }
-      function ler() { try { var c = JSON.parse(sessionStorage.getItem(KEY) || 'null'); return (c && Date.now() - c.em < TTL) ? c.r : null; } catch (e) { return null; } }
-      return function (forcar) {
-        if (!document.querySelector('.area-sidebar nav a[href$="estoque-vigia.html"]')) return;
-        var c = forcar ? null : ler();
-        if (c) { pintar(c); return; }
-        fetch('/api/consig-vigia-fila?resumo=1')
-          .then(function (r) { return r.ok ? r.json() : null; })
-          .then(function (j) {
-            if (!j || !j.ok) return;
-            try { sessionStorage.setItem(KEY, JSON.stringify({ em: Date.now(), r: j })); } catch (e) {}
-            pintar(j);
-          })
-          .catch(function () {});   // alerta e' enfeite: falhar aqui nao pode quebrar o menu
-      };
-    })();
-    window.bmVigiaBadge();
 
     /* ── Recolher/expandir a sidebar (248px ↔ 64px) ───────────────
        Estado persistido em localStorage. Em telas estreitas (<1100px)

@@ -161,7 +161,6 @@ window.PORTAL_CATALOGO = (function () {
     ['estoque', 'Rastreabilidade de Consignação', 'Gestão de Consignação', 'estoque-rastreabilidade.html',        'sub',    'rastreabilidade remessa devolucao venda lote serie'],
     ['estoque', 'GMROI',                          'Gestão de Consignação', 'estoque-gmroi.html',                  'sub',    'gmroi roi margem giro retorno investimento'],
     ['estoque', 'Análise de Perdas',              '',                      'estoque-perdas.html',                 'brief',  'perda perdas vencido avaria descarte quebra'],
-    ['estoque', 'InventarIA',                     '',                      'estoque-consignado-inventario.html',  'server', 'inventaria inventario contagem consignado importacao planilha'],
 
     // ── Contábil ──────────────────────────────────────────────────
     ['contabil', 'DRE',                    '',                       'contabil-dre.html',              'file',  'dre demonstrativo resultado exercicio ebitda ebit lucro liquido rol receita liquida margem gastos fixos variaveis saude financeira pecld ppr'],
@@ -249,7 +248,6 @@ window.PORTAL_CATALOGO = (function () {
     ['licitacao', 'Sentinela · Contratos a Vencer', 'licitacao-sentinela.html#vencer', 'sentinela contratos a vencer vencimento 30 60 90 dias oficio contratante'],
     ['licitacao', 'Sentinela · Atas e Contratos Vencidos', 'licitacao-sentinela.html#vencidos', 'sentinela vencidos vencido vigencia encerrada saldo nao consumido perdido aditivo prorrogacao'],
     ['licitacao', 'Sentinela · Gerenciamento de Adesões', 'licitacao-sentinela-adesoes.html', 'sentinela adesao adesoes carona ata registro de precos orgao aderente negociacao da adesao limite dobro 50%'],
-    ['estoque',   'Vigia de Consignação',          'estoque-vigia.html',             'vigia consignacao regra fila aprovacao dias no cliente'],
     ['marketing', 'Agente de Conteúdo',            'agente-marketing.html',          'agente conteudo copilot post texto'],
     ['ti',        'Agente de TI',                  'agente-ti.html',                 'agente ti copilot incidente suporte'],
     ['pessoas',   'Agente de RH',                  'agente-rh.html',                 'agente rh copilot pessoas duvida']

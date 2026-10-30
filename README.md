@@ -9,7 +9,7 @@ completo não foi alterado.
 Usa as **mesmas fontes de dados** do portal completo: o mesmo login do Entra
 (App Registration `129978ce…`), o mesmo Power BI, Dynamics 365, Salesforce,
 Azure OpenAI, os mesmos fluxos do Power Automate e os **mesmos blobs** — o
-que alguém faz aqui (FCA, Cotações, fila do Vigia, avisos do mural) aparece
+que alguém faz aqui (FCA, Cotações, avisos do mural) aparece
 no portal completo e vice-versa.
 
 ## O que tem
@@ -18,16 +18,16 @@ no portal completo e vice-versa.
 |---|---|
 | Comercial | Visão geral · Sales Report (6 abas) · Negociações + Analítico · Cotações (reservado ao dono, como no completo) · FCA · Sales Playbook · Materiais · Tabela de Preços |
 | Comercial · agentes | Dossiê de Visita · PI · Pedido · PI · Consignação · PI · Consignação (INCOMPLETO, em testes) · Agente de Cotações · Agente Comercial |
-| Estoque | Visão geral · Gestão de Estoque (Saldo, Ruptura, Validade Curta, Movimentações) · Gestão de Consignação (Saldo Consignado, Saldo por Nota, Devoluções, Rastreabilidade, GMROI) · Perdas · InventarIA · Consignado |
-| Estoque · agentes | Vigia de Consignação · Agente de Estoque |
+| Estoque | Visão geral · Gestão de Estoque (Saldo, Ruptura, Validade Curta, Movimentações) · Gestão de Consignação (Saldo Consignado, Saldo por Nota, Devoluções, Rastreabilidade, GMROI) · Perdas · Consignado |
+| Estoque · agentes | Agente de Estoque |
 | Contábil | Visão geral · Gestão de Custos SG&A (só a MSB) |
 | Comum | Home, busca (Ctrl+K), Central de Avisos, tema escuro, celular, PWA |
 
-22 Functions em `api/`: `my-areas`, `alertas`, `avisos`, `pbi-query`,
+20 Functions em `api/`: `my-areas`, `alertas`, `avisos`, `pbi-query`,
 `directline-token`, `chat`, `transcrever`, `comercial-funil`, `cot-casos`,
 `cot-config`, `fca`, `pedido-extrair`, `pedido-enviar`, `pedido-lotes`,
 `consig-lote`, `consig-faturar`, `consig-processo`, `dossie-cliente`,
-`dossie-ganchos`, `dossie-agenda`, `consig-vigia-scan`, `consig-vigia-fila`.
+`dossie-ganchos`, `dossie-agenda`.
 
 ## O que mudou em relação ao portal completo
 
@@ -38,7 +38,8 @@ Tudo marcado no código com o comentário `RECORTE COMERCIAL + ESTOQUE`.
   não ganha nada aqui. Módulo avulso de outra área (`GRUPO_MODULOS`) não passa.
 - `api/my-areas` — saíram o convite da Votação OKR e o líder dos Indicadores
   (Diretoria e Gerencial não existem aqui).
-- `api/alertas` — a faixa "Para você" só tem o Vigia de Consignação e o mural.
+- `api/alertas` — a faixa "Para você" só tem o mural (o Vigia de Consignação
+  saiu em 30/10/2026).
 - `index.html` — só os cartões Comercial e Estoque; título "Portal Comercial
   & Estoque"; sugestões dos Recentes = Comercial e Estoque.
 - `portal-catalogo.js` (busca Ctrl+K) e `script.js` (guia) — filtram as listas
@@ -95,8 +96,7 @@ exportações e o assistente de voz): cada `EVALUATE` vira
   já recortada (só MSB); o assistente de voz recusa DAX com `"BIO"`
   (`voz-embed.js`) e o prompt (`api/shared/comercial-schema.js`) diz que o
   portal é só da MSB.
-- Ficam de fora o InventarIA (planilha enviada pela pessoa, sem coluna de
-  empresa) e o que o portal não lê do Power BI.
+- Fica de fora o que o portal não lê do Power BI.
 - É filtro do portal, no navegador. Para o dado nem sair do Power BI, o lugar é
   uma função de RLS no modelo para as contas da MSB.
 
@@ -171,6 +171,26 @@ DRE, Margem de Contribuição e o Agente Contábil do completo **não vieram**.
 - `pbi-throttle.js?v=5` nas páginas, para nenhum navegador ficar com o recorte
   antigo.
 
+### Sem o InventarIA e o Vigia (30/10/2026)
+
+- **Saiu** o InventarIA (inventário de consignado em campo) — página
+  `estoque-consignado-inventario.html` apagada e tirada do menu
+  (`nav-sidebar.js`), do cartão de Módulos e das barras laterais do Estoque
+  (`estoque.html`, `estoque-consignado.html`, `agente-estoque.html`), da busca
+  (`portal-catalogo.js`, `script.js`) e da liberação por página da Equipe
+  Comercial - Assistentes Venda Recorrente (`api/shared/auth.js`).
+  `PAGINAS_FORA` barra módulo avulso que ainda aponte para ela. Foram junto
+  os ícones `msb-simbolo*.png`, que só ela usava.
+- **Saiu** o Vigia de Consignação (agente do Estoque: regras + fila de
+  aprovação) — página `estoque-vigia.html` apagada e tirada da seção Agentes
+  do menu, com o contador de pendentes (`nav-sidebar.js`), e da busca
+  (`portal-catalogo.js`). Foram apagadas as Functions `consig-vigia-scan` e
+  `consig-vigia-fila` e o que só elas usavam (`api/shared/vigia-blob.js`,
+  `api/shared/consig-regras.js`); o `api/alertas` perdeu o coletor do Vigia
+  (a regra pura ficou, como as do completo). A fila no blob é do portal
+  completo e continua lá, intacta. `PAGINAS_FORA` ganhou `estoque-vigia`.
+- `sw.js` — cache `bm-comest-v6`.
+
 ### Identidade visual MSB (20/10/2026)
 
 O portal usa a marca da **MSB · Medical System do Brasil** (msbbrasil.com), não
@@ -189,7 +209,7 @@ a da Biomedical:
   Jakarta Sans e Inter; JetBrains Mono continua nos números/códigos.
 - **Logo e ícones** — `icons/logo-msb.png` (logo horizontal, teal, fundo
   transparente; em fundo escuro vira branco com `filter: brightness(0) invert(1)`),
-  `logo-msb-branco.png`, `msb-simbolo*.png` (só o "mSb", usados pelo InventarIA),
+  `logo-msb-branco.png`,
   `icon-192/512`, `apple-touch-icon` e `favicon.ico` com o "mSb" branco no teal.
   Gerados a partir do logo do site (`logo-msb-2.png`).
 - **Nomes** — "Portal MSB" (título da home, PWA, manifest); as abas terminam em
@@ -240,9 +260,9 @@ marketing e o texto do Sales Playbook.
    ```
    Cole o conteúdo de `variaveis-novo.json` no *Advanced edit* da Static Web
    App NOVA e salve. **Apague os dois arquivos** depois (têm segredos; o
-   `.gitignore` já impede que subam). O filtro deixa só as variáveis que as 22
+   `.gitignore` já impede que subam). O filtro deixa só as variáveis que as 20
    Functions leem (PORTAL_*, PBI_*, D365_*, SF_*, AOAI_*, PEDIDO_*, COT_*,
-   VIGIA_*, FCA_*, os blobs, os fluxos e o Direct Line) e troca
+   FCA_*, os blobs, os fluxos e o Direct Line) e troca
    `PORTAL_ALLOWED_ORIGINS` para o endereço novo.
 5. **Domínio (opcional)** — ex.: `comercial.biomedical.com.br`: *Custom
    domains* na Static Web App + CNAME no DNS (TI). Se usar, cadastre também

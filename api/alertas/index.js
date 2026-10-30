@@ -503,22 +503,13 @@ const regras = {
 // não o endpoint inteiro.
 //
 // RECORTE COMERCIAL + ESTOQUE: este portal só tem as duas áreas, então só
-// ficam o coletor delas (Vigia do Estoque) e o do mural, que é de todos. Os
-// do portal completo (alçada do PI de teste, comissão, LICI, Sentinela,
-// Cobrança e Votação OKR) apontavam para páginas que não existem aqui. As
-// regras puras deles, acima, ficaram como estavam — sem coletor, não rodam.
+// fica o coletor do mural, que é de todos. Os do portal completo (alçada do
+// PI de teste, comissão, LICI, Sentinela, Cobrança e Votação OKR) apontavam
+// para páginas que não existem aqui; o do Vigia do Estoque saiu no RECORTE
+// MSB (30/10/26). As regras puras deles, acima, ficaram como estavam — sem
+// coletor, não rodam.
 // ═════════════════════════════════════════════════════════════════
 const COLETORES = [
-  {
-    id: 'vigia', rotulo: 'Vigia de Consignação',
-    async coletar(ctx) {
-      if (!ctx.temArea('estoque')) return [];
-      const blob = require('../shared/vigia-blob');
-      if (!blob.configurado()) return [];
-      const f = await blob.lerJson('fila.json', { itens: [] });
-      return regras.vigia(Array.isArray(f.itens) ? f.itens : [], ctx);
-    }
-  },
   {
     id: 'avisos', rotulo: 'Mural de avisos',
     async coletar(ctx) {
