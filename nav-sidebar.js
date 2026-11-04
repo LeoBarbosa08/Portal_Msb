@@ -130,6 +130,8 @@ if (!window._bmPerfilSheetLoaded && !window._bmPerfilSheetInjected) {
     //   um redirecionamento, não casa). É SÓ do dono, a pedido dele: o
     //   /api/cot-* também só aceita o e-mail dele (DONO em
     //   api/shared/cot-motor.js) — não há equipe, variável nem admin que abra.
+    //   04/11/26 — SAIU deste gate: virou o CRM › Venda Recorrente da MSB, aberto
+    //   ao Comercial (ver restrito() abaixo e o bloco BMCRM no topo).
     //
     // 04/11/26 — RECORTE MSB: PI · Pedido volta ao menu do Comercial (agentes)
     //   atualizado com o do portal completo, SÓ PARA O DONO (pedido dele:
@@ -148,7 +150,10 @@ if (!window._bmPerfilSheetLoaded && !window._bmPerfilSheetInjected) {
   function email(){ return ((window._portalUser && window._portalUser.email) || '').trim().toLowerCase(); }
   // o e-mail logado pode abrir ESTE módulo restrito?
   function allowed(id){ var em = email(), lista = SO_DONO[id]; return lista ? lista.indexOf(em) >= 0 : em === ALLOWED; }
-  function restrito(id){ return !!RESTRICTED[id] || /^comercial-cot-/.test(id); }
+  // 04/11/26 — RECORTE MSB: as comercial-cot-* (o CRM › Venda Recorrente) SAÍRAM
+  // deste gate: abrem para quem tem a área Comercial, como no completo desde
+  // 20/10/26 (o /api/cot-* exige a área Comercial; ver api/shared/cot-motor.js).
+  function restrito(id){ return !!RESTRICTED[id]; }
 
   // 0) quem NÃO é o autorizado nem vê o link: some do menu lateral, dos cards
   //    do departamento e de onde mais houver âncora. Só poda com o e-mail JÁ
@@ -242,6 +247,148 @@ if (!window._bmPerfilSheetLoaded && !window._bmPerfilSheetInjected) {
     }, 200);
   }
 })();
+
+// ================================================================
+// CRM DO COMERCIAL (04/11/2026, pedido do dono) — window.BMCRM
+//
+// RECORTE MSB (04/11/2026, pedido do dono): o CRM da MSB veio do portal da
+// BIO com UM submódulo só — a Venda Recorrente (a Gestão de Cotações, com as
+// cotações da MSB, num container próprio: COT_MSB_BLOB_URL). BIO.ID e Venda
+// Consultiva ficaram de fora (SUBS abaixo); as funções são as do completo, e
+// sem ?sub= a aba fica na Venda Recorrente (o único submódulo de cotações).
+// O texto abaixo é o do completo:
+//
+// Um módulo, três SUBMÓDULOS. Cada um é um "Funil de Oportunidade"; o que
+// os separa é o submódulo (e tudo — negociação ou cotação — se chama
+// OPORTUNIDADE nas telas):
+//   . Venda Recorrente — a Gestão de Cotações SÓ da unidade VENDA RECORRENTE
+//   . BIO.ID           — a Gestão de Cotações SÓ da unidade BIO.ID
+//   . Venda Consultiva — as Negociações (o funil do Salesforce)
+//
+// Quem cai onde (a home do CRM, pages/comercial-crm.html, decide):
+//   . ACESSO FULL (o dono, admin, grupo sem restrição) -> escolhe;
+//   . quem é da Venda Recorrente / BIO.ID (a unidade do RLS do Power BI —
+//     a mesma que a Gestão de Cotações já usa) -> abre direto o seu;
+//   . as outras unidades do Comercial -> Venda Consultiva;
+//   . mais de um submódulo -> escolhe entre os seus.
+//
+// As páginas das cotações (comercial-cot-*) ficam PRESAS ao submódulo pelo
+// ?sub= (recorrente | bioid) — guardado na aba (sessionStorage) para
+// sobreviver aos links internos e ao ?caso=. Sem submódulo, a tela segue
+// como antes (todas as unidades da pessoa). O servidor continua sendo quem
+// decide o que a pessoa vê (/api/cot-casos, a unidade do RLS): isto aqui é
+// navegação, nunca permissão.
+//
+// Puro (sem DOM): o scripts/test-comercial-crm.js roda este bloco num vm,
+// entre os marcadores BMCRM-INICIO / BMCRM-FIM.
+// ================================================================
+// BMCRM-INICIO
+(function () {
+  'use strict';
+  if (window.BMCRM) return;
+  var SUBS = [
+    { id: 'recorrente', rotulo: 'Venda Recorrente', unidade: 'VENDA RECORRENTE', tipo: 'cot',
+      href: 'comercial-cot-funil.html?sub=recorrente',
+      desc: 'As oportunidades da unidade Venda Recorrente: o funil, a gestão, o quadro e o histórico do cliente.' },
+    // RECORTE MSB: BIO.ID e Venda Consultiva (as Negociações) não vieram
+  ];
+  var CHAVE_SUB = 'bm-crm-sub';        // sessionStorage: o submódulo desta aba
+  var CHAVE_PESSOA = 'bm-crm-pessoa';  // localStorage: os submódulos da pessoa (o menu)
+  var PESSOA_TTL = 12 * 3600e3;
+
+  function chave(s) { return String(s == null ? '' : s).normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().replace(/[^a-z0-9]+/g, ''); }
+  function porId(id) { for (var i = 0; i < SUBS.length; i++) if (SUBS[i].id === id) return SUBS[i]; return null; }
+  function ehCot(id) { var s = porId(id); return !!(s && s.tipo === 'cot'); }
+  // o submódulo de cotações da unidade (a grafia do Power BI varia: "VENDA
+  // RECORRENTE", "Venda Recorrente", "BIO.ID", "BIO ID", "BIOID")
+  function daUnidade(u) {
+    var k = chave(u);
+    if (!k) return null;
+    if (k.indexOf('recorrente') >= 0) return porId('recorrente');
+    if (k.indexOf('bioid') === 0) return porId('bioid');
+    return null;
+  }
+  // os submódulos da pessoa, na ordem do CRM. eu = o `eu` do /api/cot-casos
+  function subsDe(eu) {
+    var todos = SUBS.map(function (s) { return s.id; });
+    if (!eu || eu.admin || eu.full || eu.unidadeConfirmada === false) return todos;
+    var achou = {}, outras = false;
+    (eu.unidades || []).forEach(function (u) { var s = daUnidade(u); if (s) achou[s.id] = 1; else outras = true; });
+    // RECORTE MSB: sem a Venda Consultiva, quem não é de unidade nenhuma do CRM
+    // fica com a Venda Recorrente (o servidor fixa a unidade da MSB nela)
+    if (outras || !Object.keys(achou).length) achou[porId('consultiva') ? 'consultiva' : 'recorrente'] = 1;
+    return todos.filter(function (id) { return achou[id]; });
+  }
+  // a decisão da home do CRM: { ir: href } (um submódulo só) ou
+  // { escolher: [ids], aviso } (acesso full, mais de um, ou sem a unidade)
+  function destino(eu) {
+    if (!eu) return { escolher: subsDe(null), aviso: 'sem-eu' };
+    if (eu.admin || eu.full) return { escolher: subsDe(eu), full: true };
+    if (eu.unidadeConfirmada === false) return { escolher: subsDe(eu), aviso: 'sem-unidade', motivo: eu.unidadeMotivo || '' };
+    var ids = subsDe(eu);
+    if (ids.length === 1) return { ir: porId(ids[0]).href, sub: ids[0] };
+    return { escolher: ids };
+  }
+  function ss() { try { return window.sessionStorage; } catch (e) { return null; } }
+  function ls() { try { return window.localStorage; } catch (e) { return null; } }
+  function daUrl() {
+    try { return new URLSearchParams(String((window.location && window.location.search) || '')).get('sub') || ''; } catch (e) { return ''; }
+  }
+  // o submódulo de cotações desta aba: ?sub= da URL (e guarda), senão o guardado
+  function atual() {
+    var u = daUrl(), st = ss();
+    if (u && ehCot(u)) { try { st && st.setItem(CHAVE_SUB, u); } catch (e) {} return u; }
+    var g = '';
+    try { g = (st && st.getItem(CHAVE_SUB)) || ''; } catch (e) {}
+    if (ehCot(g)) return g;
+    // RECORTE MSB: um submódulo de cotações só — as páginas das cotações são dele
+    var cots = SUBS.filter(function (s) { return s.tipo === 'cot'; });
+    return cots.length === 1 ? cots[0].id : '';
+  }
+  function fixar(id) { var st = ss(); try { if (st) { if (ehCot(id)) st.setItem(CHAVE_SUB, id); else st.removeItem(CHAVE_SUB); } } catch (e) {} }
+  // o link de uma página das cotações já com o submódulo (o resto fica igual)
+  function comSub(href, id) {
+    id = id === undefined ? atual() : id;
+    var h = String(href || '');
+    if (!ehCot(id) || !/(^|\/)comercial-cot-[a-z-]+\.html/i.test(h) || /[?&]sub=/.test(h)) return h;
+    var i = h.indexOf('#'), base = i >= 0 ? h.slice(0, i) : h, hash = i >= 0 ? h.slice(i) : '';
+    return base + (base.indexOf('?') >= 0 ? '&' : '?') + 'sub=' + id + hash;
+  }
+  // a cotação é do submódulo? (sem unidade = a anterior a 20/10/2026, que só
+  // o dono recebe do servidor: aparece nos dois para ele acertar a unidade)
+  function doSub(c, id) {
+    var s = porId(id);
+    if (!s || s.tipo !== 'cot') return true;
+    if (!c || !c.unidade) return true;
+    var d = daUnidade(c.unidade);
+    return !!(d && d.id === s.id);
+  }
+  function filtrar(casos, id) {
+    id = id === undefined ? atual() : id;
+    if (!ehCot(id)) return casos || [];
+    return (casos || []).filter(function (c) { return doSub(c, id); });
+  }
+  // a pessoa tem a unidade do submódulo? (o dono e o acesso full: sempre)
+  function temSub(eu, id) { return subsDe(eu).indexOf(id) >= 0; }
+  // o menu lateral poda o CRM pelos submódulos da pessoa (guardado quando a
+  // home do CRM ou uma tela das cotações leu o /api/cot-casos)
+  function guardarPessoa(email, eu) {
+    var l = ls(); if (!l || !email || !eu) return;
+    try { l.setItem(CHAVE_PESSOA, JSON.stringify({ email: String(email).toLowerCase(), full: !!(eu.admin || eu.full), subs: subsDe(eu), t: Date.now() })); } catch (e) {}
+  }
+  function pessoa(email) {
+    var l = ls(); if (!l || !email) return null;
+    try {
+      var p = JSON.parse(l.getItem(CHAVE_PESSOA) || 'null');
+      if (!p || p.email !== String(email).toLowerCase() || !(Date.now() - p.t < PESSOA_TTL)) return null;
+      return p;
+    } catch (e) { return null; }
+  }
+  window.BMCRM = { SUBS: SUBS, porId: porId, ehCot: ehCot, daUnidade: daUnidade, subsDe: subsDe, destino: destino,
+    atual: atual, fixar: fixar, comSub: comSub, doSub: doSub, filtrar: filtrar, temSub: temSub,
+    guardarPessoa: guardarPessoa, pessoa: pessoa, chave: chave };
+})();
+// BMCRM-FIM
 
 // ================================================================
 // CONTROLE DE ACESSO POR AREA (grupo do Entra) - bloqueia a pagina
@@ -679,6 +826,8 @@ if (!window._bmPerfilSheetLoaded && !window._bmPerfilSheetInjected) {
     bot:    '<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="10" rx="2"/><path d="M12 11V7"/><circle cx="12" cy="5" r="2"/><circle cx="8" cy="16" r="1" fill="currentColor"/><circle cx="16" cy="16" r="1" fill="currentColor"/></svg>',
     check:  '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 11 12 14 22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>',
     headset:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 14v-3a9 9 0 0 1 18 0v3"/><path d="M21 15a2 2 0 0 1-2 2h-1v-6h1a2 2 0 0 1 2 2z"/><path d="M3 15a2 2 0 0 0 2 2h1v-6H5a2 2 0 0 0-2 2z"/><path d="M18 17v1a3 3 0 0 1-3 3h-3"/></svg>',
+    kanban: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="9" y1="3" x2="9" y2="21"/><line x1="15" y1="3" x2="15" y2="21"/></svg>',
+    trend:  '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg>',
     caret:  '<svg class="sb-caret" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>'
   };
 
@@ -726,6 +875,14 @@ if (!window._bmPerfilSheetLoaded && !window._bmPerfilSheetInjected) {
         // Cotações) e os atalhos (Salesforce, Metas & Pipeline). As páginas
         // continuam nos arquivos; para voltar, é recolocar aqui, nos cartões
         // de pages/comercial.html e no MSB_VISIVEIS do portal-catalogo.js.
+        // 04/11/26: entrou o CRM (só a Venda Recorrente), logo abaixo.
+        // CRM (04/11/26, pedido do dono): trazido do portal da BIO com UM
+        // submódulo, a Venda Recorrente (a Gestão de Cotações da MSB — funil,
+        // analítico, gestão, quadro, histórico e a nova oportunidade). Ver o
+        // bloco BMCRM no topo deste arquivo. BIO.ID e Venda Consultiva não vieram.
+        {id:'comercial-crm',      label:'CRM',                   href:'comercial-crm.html',         icon:I.kanban, children:[
+          {id:'comercial-cot-funil', label:'Venda Recorrente', href:'comercial-cot-funil.html?sub=recorrente', also:['comercial-cot-analitico','comercial-cot-casos','comercial-cot-nova'], icon:I.trend},
+        ]},
         {id:'comercial-tabela-precos', label:'Tabela de Preços', href:'comercial-tabela-precos.html', icon:I.dollar},
       ],
       auto:[],

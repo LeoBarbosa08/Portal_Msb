@@ -236,8 +236,26 @@
     try { el.setSelectionRange(p, p); } catch (e) {}
     return novo;
   }
-  var PALETA = ['#2C7288', '#5A3BC4', '#2B6CC4', '#138A4B', '#D97706', '#CF3434', '#C026D3', '#49565C', '#4F46E5', '#0F766E'];
-  function corDe(s) { var h = 0; s = String(s || ''); for (var i = 0; i < s.length; i++) h = (h * 31 + s.charCodeAt(i)) >>> 0; return PALETA[h % PALETA.length]; }
+  var PALETA = ['#2C7288', '#5A3BC4', '#2B6CC4', '#138A4B', '#D97706', '#CF3434', '#C026D3', '#49565C', '#4F46E5', '#0F766E',
+    '#DB2777', '#4D7C0F', '#92400E', '#204453'];
+  // 23/10/2026 (pedido do usuário): cada responsável com a SUA cor — o hash
+  // sozinho repetia (Jonas e Luana saíam os dois laranja). As pessoas da tela
+  // (coresDistintas, com os donos das cotações) ficam com cores diferentes: na
+  // ordem do e-mail, cada uma pega a do hash se estiver livre, senão a próxima
+  // livre. Fora da lista (ou com mais gente que cores), vale o hash.
+  var _cores = {};
+  function chaveCor(s) { return String(s || '').trim().toLowerCase(); }
+  function hashCor(s) { var h = 0; for (var i = 0; i < s.length; i++) h = (h * 31 + s.charCodeAt(i)) >>> 0; return h % PALETA.length; }
+  function coresDistintas(lista) {
+    var vistos = {}, usadas = {};
+    _cores = {};
+    (lista || []).map(chaveCor).filter(function (k) { if (!k || vistos[k]) return false; vistos[k] = 1; return true; }).sort().forEach(function (k) {
+      var i = hashCor(k), n = 0;
+      while (usadas[i] && n < PALETA.length) { i = (i + 1) % PALETA.length; n++; }
+      usadas[i] = 1; _cores[k] = PALETA[i];
+    });
+  }
+  function corDe(s) { var k = chaveCor(s); return _cores[k] || PALETA[hashCor(k)]; }
   function iniciais(nome, email) {
     var n = String(nome || '').trim() || String(email || '').split('@')[0].replace(/[._-]+/g, ' ');
     var p = n.split(/\s+/).filter(Boolean);
@@ -298,73 +316,125 @@
     chevR: svg('<polyline points="9 18 15 12 9 6"/>'),
     trash: svg('<polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/>'),
     edit: svg('<path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4z"/>'),
-    lock: svg('<rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/>')
+    lock: svg('<rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/>'),
+    // a tramitação (as notas) e a amostra — 23/10/2026
+    chat: svg('<path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/><line x1="8" y1="9" x2="16" y2="9"/><line x1="8" y1="13" x2="13" y2="13"/>'),
+    amostra: svg('<path d="M9 3h6"/><path d="M10 3v6.5L4.6 18.6A1.6 1.6 0 0 0 6 21h12a1.6 1.6 0 0 0 1.4-2.4L14 9.5V3"/><line x1="7.2" y1="15" x2="16.8" y2="15"/>'),
+    chevD: svg('<polyline points="6 9 12 15 18 9"/>')
   };
 
   /* ── fases ──────────────────────────────────────────────────── */
   // a mesma ordem e os mesmos nomes do api/shared/cot-motor.js (a API manda
-  // cfg.fases — esta cópia só vale até ela chegar)
-  // A cotação nasce SEMPRE Cotada (09/10/26: "Em cotação" saiu — caso antigo
-  // nessa fase é lido como Cotada). Vencida é automática: a validade passou.
+  // cfg.fases — esta cópia só vale até ela chegar). 21/10/2026 (pedido do
+  // usuário): SÓ TRÊS FASES — Cotada, Perdida e Ganha (virou pedido). As
+  // antigas são lidas assim: Em cotação / Em negociação = Cotada; Vencida /
+  // Cancelada = Perdida (o motivo da perda diz "Proposta vencida", "Cancelada…")
+  // 26/10/2026 (pedido do usuário): + A FATURAR, depois de Cotada — à mão,
+  // "ainda nada aconteceu" (sem pedido nem OV); fecha como Ganha com a OV
   var FASES = [
     { id: 'cotada', nome: 'Cotada', curto: 'Cotada', cor: '#2C7288', aberta: true, desc: 'proposta enviada no portal, aguardando o resultado' },
-    { id: 'negociacao', nome: 'Em negociação', curto: 'Negociação', cor: '#5A3BC4', aberta: true, desc: 'contraproposta, ajuste de preço ou análise do comprador' },
-    { id: 'pedido', nome: 'Virou pedido', curto: 'Virou pedido', cor: '#138A4B', ganha: true, desc: 'o portal gerou o pedido — o PDF dele está no caso' },
-    { id: 'perdida', nome: 'Perdida', curto: 'Perdida', cor: '#CF3434', perdida: true, desc: 'o comprador fechou com outro fornecedor' },
-    { id: 'vencida', nome: 'Vencida', curto: 'Vencida', cor: '#B45309', perdida: true, desc: 'a data de vencimento passou sem resultado — sai sozinha do funil' },
-    { id: 'cancelada', nome: 'Cancelada', curto: 'Cancelada', cor: '#85949C', perdida: true, desc: 'cancelada pelo comprador ou deserta' }
+    { id: 'faturar', nome: 'A faturar', curto: 'A faturar', cor: '#D97706', aberta: true, faturar: true, desc: 'aguardando o faturamento — o pedido ainda não chegou; fecha como Ganha com a Ordem de Venda' },
+    { id: 'perdida', nome: 'Perdida', curto: 'Perdida', cor: '#CF3434', perdida: true, desc: 'não virou pedido — o motivo diz por quê (preço, prazo, vencida, cancelada…)' },
+    { id: 'pedido', nome: 'Ganha (virou pedido)', curto: 'Ganha', cor: '#138A4B', ganha: true, desc: 'virou pedido — o pedido (PDF, à mão ou a OV) está no caso' }
   ];
-  function faseAtual(id) { return id === 'em_cotacao' ? 'cotada' : id; }
-  function fase(id) { id = faseAtual(id); return FASES.filter(function (f) { return f.id === id; })[0] || { id: id, nome: id, curto: id, cor: '#95A4AB' }; }
+  // 26/10/2026 (pedido do usuário): as fases da AMOSTRA — Envio de amostra,
+  // Ganha e Perdida. Ganha ou perdida, ela fica na Amostra (fora das Ganhas e
+  // das Perdidas), só com a cor verde ou vermelha
+  var FASES_AMOSTRA = [
+    { id: 'amostra', nome: 'Envio de amostra', curto: 'Envio de amostra', cor: '#7C3AED', aberta: true, amostra: true, desc: 'a amostra foi para o cliente, aguardando o resultado' },
+    { id: 'amostra_ganha', nome: 'Ganha', curto: 'Ganha', cor: '#138A4B', ganha: true, amostra: true, desc: 'o cliente aprovou a amostra — fica na Amostra, fora das Ganhas' },
+    { id: 'amostra_perdida', nome: 'Perdida', curto: 'Perdida', cor: '#CF3434', perdida: true, amostra: true, desc: 'o cliente não aprovou a amostra — fica na Amostra, fora das Perdidas' }
+  ];
+  var FASE_ANTIGA = { em_cotacao: 'cotada', negociacao: 'cotada', vencida: 'perdida', cancelada: 'perdida' };
+  function faseAtual(id) { return FASE_ANTIGA[id] || id; }
+  function fase(id) { id = faseAtual(id); return FASES.concat(FASES_AMOSTRA).filter(function (f) { return f.id === id; })[0] || { id: id, nome: id, curto: id, cor: '#95A4AB' }; }
+  // a fase como vale hoje (a mesma regra do servidor — faseDe): a amostra
+  // Cotada (as de antes das fases dela) é Envio de amostra. c = o caso ou o
+  // resumo da lista
+  function faseDe(c) {
+    if (!c) return '';
+    var id = faseAtual(c.fase);
+    return c.amostra && id === 'cotada' ? 'amostra' : id;
+  }
   function aberta(id) { return !!fase(id).aberta; }
   function chipFase(id) { id = faseAtual(id); return '<span class="cs-chip f-' + esc(id) + '"><span class="bol"></span>' + esc(fase(id).curto) + '</span>'; }
 
   // o prazo da cotação aberta = a DATA DE VENCIMENTO (o "Vencimento" do PDF
   // ou a data da cotação + os dias de validade). O dado é c.validade
   // (datas.validade no caso) — o nome ficou do começo do módulo.
-  // nivel: 0 ok · 1 vence em breve (avisoDias) · 2 vencido (o servidor a
-  // passa para Vencida na próxima leitura)
+  // nivel: 0 ok · 1 vence em breve (avisoDias) · 2 a data já passou (só o
+  // aviso: a cotação segue aberta — 20/10/26; o chip diz "Prazo vencido",
+  // a data fica na dica — 21/10/26)
   function prazoDe(c, avisoDias) {
-    if (!c || !aberta(c.fase) || c.descartado) return null;
+    // (A faturar: o vencimento da proposta não conta mais — não perde pelo prazo)
+    if (!c || !aberta(c.fase) || c.descartado || fase(c.fase).faturar) return null;
     var aviso = (avisoDias == null ? 2 : avisoDias) * 86400e3, agora = Date.now();
     var venc = dataPortal(c.validade);
     if (!venc) return { nivel: 0, txt: 'Sem data de vencimento', curto: 'sem vencimento', cls: 'prazo-ok', semData: true };
     var t = venc.getTime(), v = t < agora ? 2 : (t - agora <= aviso ? 1 : 0), dv = diaBR(c.validade, true);
     var CLS = ['prazo-ok', 'prazo-alerta', 'prazo-vencido'];
     // txt = a frase inteira (o caso); curto = o chip da lista
-    return { nivel: v, quando: venc, cls: CLS[v], txt: (v === 2 ? 'Venceu em ' : 'Vence em ') + dv, curto: (v === 2 ? 'Vencida ' : 'Vence ') + dv };
+    return { nivel: v, quando: venc, cls: CLS[v], txt: (v === 2 ? 'Prazo vencido em ' : 'Vence em ') + dv, curto: v === 2 ? 'Prazo vencido' : 'Vence ' + dv };
   }
   function chipPrazo(c, avisoDias) {
     var p = prazoDe(c, avisoDias);
     return p && !p.semData ? '<span class="cs-chip ' + p.cls + '" title="' + esc(p.txt) + '">' + IC.alarm + esc(p.curto) + '</span>' : '';
   }
   function chipPi(c) {
-    if (c.fase !== 'pedido') return '';
+    // 22/10/2026: o pedido registrado (PDF ou à mão) deixa a cotação aberta até a OV
+    if (c.fase !== 'pedido') return (c.temPedido || c.pedido) && !c.descartado ? '<span class="cs-chip pi-aguarda-ov" title="O pedido está registrado — a oportunidade fecha como Ganha com a Ordem de Venda (do fluxo do PI ou informada no cartão)">' + IC.tag + 'Pedido · aguardando OV</span>' : '';
     // fechou com a Ordem de Venda: o número dela (e quantas mais)
     var ovs = c.ovs || [];
     if (ovs.length) return '<span class="cs-chip pi-lancado" title="' + esc(ovs.join(', ')) + '">' + IC.checkc + esc(ovs[0]) + (ovs.length > 1 ? ' +' + (ovs.length - 1) : '') + '</span>';
-    return c.pi === 'enviado' ? '<span class="cs-chip pi-aguarda-ov" title="O pedido está no Dynamics — falta informar a Ordem de Venda">' + IC.tag + 'Aguardando OV</span>' : '<span class="cs-chip pi-aguarda">' + IC.cart + 'Aguardando PI</span>';
+    // 21/10/2026 (pedido do usuário): "Aguardando PI" não existe mais — a
+    // cotação que virou pedido é Ganha (o chip da fase já diz)
+    return c.pi === 'enviado' ? '<span class="cs-chip pi-aguarda-ov" title="O pedido está no Dynamics — falta informar a Ordem de Venda">' + IC.tag + 'Aguardando OV</span>' : '';
   }
   // o número da Ordem de Venda como o Dynamics grava (a mesma regra do
-  // api/shared/cot-ov.js): "ovbio 144950" -> "OVBIO144950"; só os números
-  // -> "OVBIO" + números (a cotação é sempre da BIO). '' = não é OV.
+  // api/shared/cot-ov.js): "ovmsb 144950" -> "OVMSB144950"; só os números
+  // -> "OVMSB" + números (RECORTE MSB: a cotação é sempre da MSB; aceita
+  // OV + letras + números, como o servidor). '' = não é OV.
   function numeroOv(v) {
     var s = String(v == null ? '' : v).toUpperCase().replace(/\s+/g, '');
-    if (/^\d{4,10}$/.test(s)) s = 'OVBIO' + s;
-    return /^OVBIO\d{4,10}$/.test(s) ? s : '';
+    if (/^\d{4,10}$/.test(s)) s = 'OVMSB' + s;
+    return /^OV[A-Z]{2,6}\d{4,10}$/.test(s) ? s : '';
   }
   function tituloCaso(c) {
     var p = [c.portal, c.cotacaoId ? 'nº ' + c.cotacaoId : ''].filter(Boolean).join(' ');
-    return p || 'Cotação';
+    return p || 'Oportunidade';
   }
 
   /* ── API do portal ──────────────────────────────────────────── */
+  // O token DELEGADO do Power BI vai junto (x-pbi-token): o RLS dele diz ao
+  // servidor as UNIDADES DE NEGÓCIO da pessoa — a cotação é da unidade de
+  // quem registra e cada um vê só as das suas. Pedido em silêncio, pelo login
+  // do portal (sem popup fora de clique); sem ele o servidor não confirma a
+  // unidade e a pessoa não vê nenhuma cotação.
+  var PBI_SCOPES = ['https://analysis.windows.net/powerbi/api/Dataset.Read.All', 'https://analysis.windows.net/powerbi/api/Report.Read.All'];
+  var _pbiTok = '', _pbiTokAte = 0;
+  function tokenPbi() {
+    var m = W._msalAuth;
+    if (_pbiTok && Date.now() < _pbiTokAte) return Promise.resolve(_pbiTok);
+    if (!m || !m.getAllAccounts) return Promise.resolve('');
+    var conta = (m.getActiveAccount && m.getActiveAccount()) || (m.getAllAccounts() || [])[0];
+    if (!conta) return Promise.resolve('');
+    return Promise.resolve(m.acquireTokenSilent({ scopes: PBI_SCOPES, account: conta })).then(function (r) {
+      var t = (r && r.accessToken) || '';
+      if (t) { _pbiTok = t; _pbiTokAte = Date.now() + 5 * 60e3; }
+      return t;
+    }).catch(function () { return ''; });
+  }
+  function esquecerTokenPbi() { _pbiTok = ''; _pbiTokAte = 0; }
   function api(caminho, corpo, metodo) {
-    return fetch('/api/' + caminho, {
-      method: metodo || (corpo ? 'POST' : 'GET'),
-      headers: corpo ? { 'Content-Type': 'application/json' } : {},
-      body: corpo ? JSON.stringify(corpo) : undefined,
-      cache: 'no-store'
+    return tokenPbi().then(function (pbi) {
+      var h = corpo ? { 'Content-Type': 'application/json' } : {};
+      if (pbi) h['x-pbi-token'] = pbi;
+      return fetch('/api/' + caminho, {
+        method: metodo || (corpo ? 'POST' : 'GET'),
+        headers: h,
+        body: corpo ? JSON.stringify(corpo) : undefined,
+        cache: 'no-store'
+      });
     }).then(function (r) {
       return r.json().catch(function () { return null; }).then(function (j) {
         if (!r.ok) {
@@ -399,14 +469,20 @@
     function sair() { t.classList.add('sai'); setTimeout(function () { if (t.parentNode) t.parentNode.removeChild(t); }, 320); }
     setTimeout(sair, tipo === 'erro' ? 9000 : 5200);
   }
-  function dialogo(html, aoAbrir) {
+  // cls: uma classe a mais no <dialog> só desta vez (ex.: o "Virou pedido", mais largo)
+  // o fechar espera um quadro (requestAnimationFrame): um diálogo aberto logo
+  // em seguida (ex.: a confirmação da OV que volta rápido) cancela esse fechar
+  var fechando = 0;
+  function dialogo(html, aoAbrir, cls) {
     var dlg = $('cs-dlg'); if (!dlg) return null;
+    if (fechando) { cancelAnimationFrame(fechando); fechando = 0; }
+    dlg.className = 'cs-dlg' + (cls ? ' ' + cls : '');
     dlg.innerHTML = '<form method="dialog">' + html + '</form>';
     if (!dlg.open) { try { dlg.showModal(); } catch (e) { dlg.setAttribute('open', ''); } }
     if (aoAbrir) aoAbrir(dlg);
     return dlg;
   }
-  function fecharDialogo() { var dlg = $('cs-dlg'); if (dlg) requestAnimationFrame(function () { if (dlg.open) dlg.close(); else dlg.removeAttribute('open'); }); }
+  function fecharDialogo() { var dlg = $('cs-dlg'); if (dlg) fechando = requestAnimationFrame(function () { fechando = 0; if (dlg.open) dlg.close(); else dlg.removeAttribute('open'); }); }
 
   /* ── arquivos ───────────────────────────────────────────────── */
   function bytesParaB64(buf) {
@@ -467,6 +543,29 @@
     return api('pedido-extrair', { texto: texto, filename: nome || '', perfil: perfil || undefined, codigosBiomedical: codigos && codigos.length ? codigos : undefined });
   }
 
+  // o NÚMERO DA COTAÇÃO pelo rótulo do PDF — quase sempre o ID /
+  // Identificador dela ("ID: 668804034", "Nº da cotação", "Cotação nº",
+  // "Cotação:"). A mesma busca de api/shared/cot-id.js (lá ela confere o que
+  // a IA leu); aqui vale quando a IA não respondeu. '' se não achar.
+  var ROT_ID = [
+    [3, '(?:Identificador|Identifica[cç][aã]o|ID|N[º°o]\\.?|N[uú]mero|C[oó]digo)[ \\t]*(?:d[aeo][ \\t]+)?(?:pedido[ \\t]+de[ \\t]+)?cota[cç][aã]o'],
+    [3, '(?:pedido[ \\t]+de[ \\t]+)?cota[cç][aã]o[ \\t]*(?:n[º°o]\\.?|n[uú]mero|ID|#)'],
+    [2, '(?:Identificador|Identifica[cç][aã]o|ID)'],
+    [2, '(?:pedido[ \\t]+de[ \\t]+)?cota[cç][aã]o']
+  ];
+  function idDaCotacao(texto) {
+    var s = String(texto || '').slice(0, 200000), melhor = null;
+    ROT_ID.forEach(function (r) {
+      var re = new RegExp('(?:^|[^A-Za-zÀ-ÿ])(' + r[1] + ')[ \\t:#=\\-–]*([A-Z]{0,5}[-/]?\\d[\\d./-]*\\d|\\d)', 'gim'), m;
+      while ((m = re.exec(s))) {
+        var v = m[2].replace(/[-/.]+$/, ''), d = v.replace(/\D/g, '');
+        if (d.length < 3 || d.length > 20 || /^\d{1,2}[/.-]\d{1,2}[/.-]\d{2,4}$/.test(v) || /^\d{2}\.?\d{3}\.?\d{3}\/?\d{4}-?\d{2}$/.test(v) || /^\d{5}-\d{3}$/.test(v)) continue;
+        if (!melhor || r[0] > melhor.f || (r[0] === melhor.f && m.index < melhor.pos)) melhor = { f: r[0], pos: m.index, v: v.replace(/[.\s]/g, '') };
+      }
+    });
+    return melhor ? melhor.v : '';
+  }
+
   // a leitura da IA (perfil cotacao) no formato do caso
   function dataDoTexto(s) {
     var m = /(\d{1,2})[/.-](\d{1,2})[/.-](\d{2,4})(?:\D+(\d{1,2})[:h](\d{2}))?/.exec(String(s || ''));
@@ -500,6 +599,49 @@
     var val = validadeDe(d.validadeProposta, dataCot);
     return { data: val.data, origem: val.data ? (val.calculada ? 'calc' : 'pdf') : '', dias: val.calculada ? val.dias : 0 };
   }
+  /* ── frete e o contato do setor na proposta (22/10/2026) ──────── */
+  // Pedido do usuário: o frete é CIF ou FOB (o que o PDF disser, se disser)
+  function freteCifFob(v) { var s = norm(v); return /\bcif\b/.test(s) ? 'CIF' : /\bfob\b/.test(s) ? 'FOB' : ''; }
+  // e a proposta sai com o e-mail e o telefone do SETOR (a unidade de negócio
+  // da cotação), não os de quem está logado — o e-mail também sai pela caixa
+  // dele. As unidades fora desta lista seguem com os da pessoa, como antes
+  // RECORTE MSB: o e-mail e o telefone de setor acima são os da BIO (Venda
+  // Recorrente e BIO.ID) — na MSB a proposta sai com os de quem está logado.
+  // Para a MSB ter o contato do setor: vendarecorrente: { setor, email, telefone }
+  var CONTATO_SETOR = {};
+  function contatoDoSetor(unidade) { return CONTATO_SETOR[chave(unidade)] || null; }
+  // os OUTROS ARQUIVOS que vão junto com a proposta (22/10/2026, pedido do
+  // usuário: "anexar outros PDFs e anexos no geral"): os escolhidos no
+  // computador (lista: {nome, tamanho, base64}) e, no caso, os que já estão
+  // nele para marcar (doCaso: {id, nome, tamanho, on}). O envio confere o total
+  function htmlExtras(lista, doCaso) {
+    lista = lista || []; doCaso = doCaso || [];
+    var tot = lista.reduce(function (s, a) { return s + (Number(a.tamanho) || 0); }, 0) +
+      doCaso.reduce(function (s, a) { return s + (a.on ? Number(a.tamanho) || 0 : 0); }, 0);
+    var n = lista.length + doCaso.filter(function (a) { return a.on; }).length;
+    return '<div class="cot-extras">' +
+      (doCaso.length ? '<div class="cot-extras-caso"><small>Da oportunidade:</small>' + doCaso.map(function (a) {
+        return '<label class="cot-extra' + (a.on ? ' on' : '') + '"><input type="checkbox" data-extra-caso="' + esc(a.id) + '"' + (a.on ? ' checked' : '') + '>' + IC.clip + '<b title="' + esc(a.nome) + '">' + esc(a.nome) + '</b>' + (a.tamanho ? '<small>' + bytes(a.tamanho) + '</small>' : '') + '</label>';
+      }).join('') + '</div>' : '') +
+      '<div class="cot-extras-l">' + lista.map(function (a, i) {
+        return '<span class="cot-extra on">' + IC.clip + '<b title="' + esc(a.nome) + '">' + esc(a.nome) + '</b><small>' + bytes(a.tamanho) + '</small><button type="button" data-tirar-extra="' + i + '" title="Tirar" aria-label="Tirar ' + esc(a.nome) + '">' + IC.x + '</button></span>';
+      }).join('') +
+      '<label class="cs-btn cs-btn-xs cot-extra-add">' + IC.plus + 'Anexar arquivos<input type="file" data-extras multiple hidden></label></div>' +
+      '<small class="cot-extra-tot">' + (n ? n + ' arquivo(s) junto com a proposta · ' + bytes(tot) : 'outros PDFs, catálogo, registro… vão no mesmo e-mail') + ' (até ~2,5 MB no total)</small></div>';
+  }
+  // como a proposta saiu (o retorno do COTPROP.enviar): pela caixa do setor ou
+  // pela da pessoa, com as respostas indo para o setor
+  function comoSaiu(r) {
+    if (!r || !r.setor) return '';
+    return r.pelo === 'setor' ? 'Saiu pela caixa ' + r.setor.email + '.'
+      : 'Saiu pelo seu e-mail (você não tem o "Enviar como" na caixa ' + r.setor.email + ') — as respostas do comprador vão para ela.';
+  }
+  // os arquivos escolhidos -> [{nome, tipo, tamanho, base64}]
+  function lerExtras(files) {
+    return Promise.all(Array.prototype.slice.call(files || []).map(function (f) {
+      return lerArquivo(f).then(function (a) { return { nome: a.nome, tipo: a.tipo || 'application/octet-stream', tamanho: a.tamanho, base64: a.base64 }; });
+    }));
+  }
   function dadosDaLeitura(d) {
     d = d || {};
     var dataCot = dataDoTexto(d.dataCotacao);
@@ -511,7 +653,7 @@
       contato: { nome: d.contatoNome || '', email: /@biomedical\.com\.br$/i.test(d.email || '') ? '' : formatar('email', d.email), telefone: formatar('fone', d.telefone) },
       datas: { cotacao: dataCot.slice(0, 10), validade: val.data },
       validadeCalculada: val.dias, vencimentoOrigem: val.origem,
-      condicoes: { pagamento: d.condicaoPagamento || '', entrega: d.prazoEntrega || '', frete: d.frete || '', validade: d.validadeProposta || '', medico: '', observacao: d.observacao || '' },
+      condicoes: { pagamento: d.condicaoPagamento || '', entrega: d.prazoEntrega || '', frete: freteCifFob(d.frete), validade: d.validadeProposta || '', medico: '', observacao: d.observacao || '' },
       itens: (d.produtos || []).map(function (p) {
         return { codigo: p.codigo || '', codigoCliente: p.codigoCliente || '', descricao: p.descricao || '', marca: p.marca || '', registro: String(p.registroAnvisa || '').replace(/\D/g, ''),
           unidade: p.unidade || '', quantidade: Number(p.quantidade) || 0, valorUnitario: Number(p.valorUnitario) || 0 };
@@ -544,8 +686,157 @@
       return p.then(function () { return W.VOZPBI.query(dax("UPPER('Produtos'[Cód. produto])", l)); }).then(anotar).then(function () {
         var falta = l.filter(function (c) { return !_cods[c]; });
         if (falta.length) return W.VOZPBI.query(dax("UPPER(TRIM(SUBSTITUTE('Produtos'[Cód. produto], UNICHAR(160), \" \")))", falta)).then(anotar);
+      }).then(function () {
+        // RECORTE MSB (como no PI · Pedido): o pbi-throttle.js embrulha a consulta
+        // em CALCULATETABLE(…, 'Empresas'[…] IN {"MSB"}) e, pelas relações do
+        // modelo, isso some com produto do cadastro — o código existe e voltava
+        // "não é produto". O que sobrou é procurado de novo com
+        // REMOVEFILTERS('Empresas') POR DENTRO: só código e nome, nenhum número.
+        var falta2 = l.filter(function (c) { return !_cods[c]; });
+        if (falta2.length) return W.VOZPBI.query('EVALUATE CALCULATETABLE(' + dax("UPPER(TRIM(SUBSTITUTE('Produtos'[Cód. produto], UNICHAR(160), \" \")))", falta2).replace(/^EVALUATE /, '') + ", REMOVEFILTERS('Empresas'))")
+          .then(anotar, function (e) { if (W.console) console.warn('[cotacoes] código sem o recorte MSB:', e); });
       });
     }, Promise.resolve()).then(function () { cods.forEach(function (c) { if (!_cods[c]) _cods[c] = false; }); });
+  }
+  /* ── o preço de referência: a MÉDIA DE FATURAMENTO do item no cliente ──
+     23/10/2026 (pedido do usuário): na hora de digitar o preço da cotação, o
+     histórico de faturamento daquele item naquele cliente — a média dos
+     últimos 6 meses (faturamento ÷ quantidade). A tabela 'Faturamentos' do
+     modelo do Comercial no Power BI (a mesma do Dossiê de Visita, com os
+     mesmos filtros-base: sem intercompany, só o que gera fatura a receber,
+     sem a NF 667708), com o token da pessoa (o RLS dela vale). Cache por
+     cliente|código na página. Devolve { COD: { fat, qtd, notas, ult, media } |
+     false (sem faturamento no período) }. */
+  var _fat = {};   // 'CLI|COD' -> { fat, qtd, notas, ult, media } | false
+  var MESES_FAT = 6;
+  function codCliente(s) { return String(s == null ? '' : s).trim().toUpperCase().replace(/\s+/g, ''); }
+  function inicioFaturamento() { var h = new Date(); return new Date(h.getFullYear(), h.getMonth() - MESES_FAT, h.getDate()); }
+  function faturamentoDoCliente(cliente, codigos) {
+    var cli = codCliente(cliente), r = {};
+    var cods = (codigos || []).map(normCod).filter(function (c, i, l) { return c && l.indexOf(c) === i; });
+    if (!cli || !cods.length) return Promise.resolve(r);
+    var falta = cods.filter(function (c) { return !((cli + '|' + c) in _fat); });
+    var junta = function () { cods.forEach(function (c) { r[c] = _fat[cli + '|' + c]; }); return r; };
+    if (!falta.length) return Promise.resolve(junta());
+    if (!W.VOZPBI) return Promise.reject(new Error('a consulta ao Power BI (voz-pbi.js) não carregou — recarregue a página'));
+    var q = function (c) { return '"' + String(c).replace(/"/g, '""') + '"'; };
+    var ini = inicioFaturamento(), dia = 'DATE(' + ini.getFullYear() + ', ' + (ini.getMonth() + 1) + ', ' + ini.getDate() + ')';
+    var dax = function (l) {
+      return "EVALUATE SELECTCOLUMNS(CALCULATETABLE(ADDCOLUMNS(SUMMARIZE('Faturamentos', 'Produtos'[Cód. produto]), " +
+        "\"fat\", CALCULATE(SUM('Faturamentos'[Faturamento])), \"qtd\", [Faturamento (quantidade)], " +
+        "\"notas\", CALCULATE(DISTINCTCOUNT('Faturamentos'[Número da fatura])), " +
+        "\"ult\", CALCULATE(MAXX(SUMMARIZE('Faturamentos', 'Calendário'[Data]), 'Calendário'[Data]))), " +
+        // o código do cliente pode ser número no modelo: compara como texto
+        "FILTER(ALL('Clientes'[Cód. Cliente]), UPPER(TRIM('Clientes'[Cód. Cliente] & \"\")) = " + q(cli) + "), " +
+        "FILTER(ALL('Produtos'[Cód. produto]), UPPER(TRIM(SUBSTITUTE('Produtos'[Cód. produto], UNICHAR(160), \" \"))) IN {" + l.map(q).join(', ') + "}), " +
+        "'DIM_UNIDADE_DE_NEGOCIO_V2'[UNIDADE_DE_NEGOCIO] <> \"INTERCOMPANY\", 'Operações'[Gera Fatura a receber?] = \"SIM\", " +
+        "FILTER(ALL('Faturamentos'[Número da fatura]), NOT(('Faturamentos'[Número da fatura] & \"\") IN {\"667708\"})), " +
+        "'Calendário'[Data] >= " + dia + "), " +
+        "\"cod\", 'Produtos'[Cód. produto], \"fat\", [fat], \"qtd\", [qtd], \"notas\", [notas], \"ult\", [ult])";
+    };
+    var lotes = []; for (var i = 0; i < falta.length; i += 100) lotes.push(falta.slice(i, i + 100));
+    return lotes.reduce(function (p, l) {
+      return p.then(function () { return W.VOZPBI.query(dax(l)); }).then(function (rows) {
+        var acc = {};
+        (rows || []).forEach(function (x) {
+          var c = normCod(x['[cod]']); if (!c) return;
+          // o mesmo código com grafias diferentes no cadastro: soma
+          var o = acc[c] || (acc[c] = { fat: 0, qtd: 0, notas: 0, ult: '' }), u = String(x['[ult]'] || '').slice(0, 10);
+          o.fat += Number(x['[fat]']) || 0; o.qtd += Number(x['[qtd]']) || 0; o.notas += Number(x['[notas]']) || 0;
+          if (u > o.ult) o.ult = u;
+        });
+        l.forEach(function (c) {
+          var o = acc[c];
+          if (o) o.media = o.qtd > 0 ? Math.round(o.fat / o.qtd * 100) / 100 : 0;
+          _fat[cli + '|' + c] = o && o.qtd > 0 ? o : false;
+        });
+      });
+    }, Promise.resolve()).then(junta);
+  }
+  /* ── a TABELA DE PREÇOS do item (23/10/2026) ──────────────────
+     Pedido do usuário: além da média, o preço da Tabela de Preços — Venda
+     Direta (VD) e Venda Futura (VF) —, a mesma da página Tabela de Preços do
+     portal: 'Tabela de preços (Salesforce)' do modelo do Comercial no Power BI,
+     com o preço lista e os mínimos (supervisor, gerente) de cada canal. Não
+     depende do cliente. Cache por código. Devolve
+     { COD: { vd: { lista, sup, ger }, vf: { … } } | false (fora da tabela) }. */
+  var _tab = {};
+  var T_TAB = "'Tabela de preços (Salesforce)'";
+  function tabelaDePrecos(codigos) {
+    var cods = (codigos || []).map(normCod).filter(function (c, i, l) { return c && l.indexOf(c) === i; }), r = {};
+    var junta = function () { cods.forEach(function (c) { r[c] = _tab[c]; }); return r; };
+    var falta = cods.filter(function (c) { return !(c in _tab); });
+    if (!falta.length) return Promise.resolve(junta());
+    if (!W.VOZPBI) return Promise.reject(new Error('a consulta ao Power BI (voz-pbi.js) não carregou — recarregue a página'));
+    var q = function (c) { return '"' + String(c).replace(/"/g, '""') + '"'; };
+    var col = function (c) { return T_TAB + '[' + c + ']'; };
+    var dax = function (l) {
+      return 'EVALUATE SELECTCOLUMNS(FILTER(' + T_TAB + ', UPPER(TRIM(SUBSTITUTE(' + col('Código do produto') + ' & "", UNICHAR(160), " "))) IN {' + l.map(q).join(', ') + '}), ' +
+        '"cod", ' + col('Código do produto') + ', "vdl", ' + col('VD - Preço lista') + ', "vds", ' + col('VD - Mínimo supervisor') + ', "vdg", ' + col('VD - Mínimo gerente') + ', ' +
+        '"vfl", ' + col('VF - Preço lista') + ', "vfs", ' + col('VF - Mínimo supervisor') + ', "vfg", ' + col('VF - Mínimo gerente') + ')';
+    };
+    var n = function (v) { return v == null || v === '' || isNaN(Number(v)) || !(Number(v) > 0) ? 0 : Math.round(Number(v) * 100) / 100; };
+    var lotes = []; for (var i = 0; i < falta.length; i += 100) lotes.push(falta.slice(i, i + 100));
+    return lotes.reduce(function (p, l) {
+      return p.then(function () { return W.VOZPBI.query(dax(l)); }).then(function (rows) {
+        var acc = {};
+        (rows || []).forEach(function (x) {
+          var c = normCod(x['[cod]']); if (!c) return;
+          // mais de uma linha do mesmo código: fica o primeiro valor de cada preço
+          var o = acc[c] || (acc[c] = { vd: { lista: 0, sup: 0, ger: 0 }, vf: { lista: 0, sup: 0, ger: 0 } });
+          [['vd', 'vdl', 'vds', 'vdg'], ['vf', 'vfl', 'vfs', 'vfg']].forEach(function (k) {
+            o[k[0]].lista = o[k[0]].lista || n(x['[' + k[1] + ']']); o[k[0]].sup = o[k[0]].sup || n(x['[' + k[2] + ']']); o[k[0]].ger = o[k[0]].ger || n(x['[' + k[3] + ']']);
+          });
+        });
+        l.forEach(function (c) { var o = acc[c]; _tab[c] = o && (o.vd.lista || o.vf.lista || o.vd.sup || o.vf.sup || o.vd.ger || o.vf.ger) ? o : false; });
+      });
+    }, Promise.resolve()).then(junta);
+  }
+  // o preço do item ACIMA das referências (23/10/2026): a média dos 6 meses de
+  // faturamento e o preço lista da tabela (VD e VF) — [{ k, nome, ref, pct }]
+  function acimaDasReferencias(it) {
+    var p = Number(it && it.valorUnitario) || 0, r = [];
+    if (!(p > 0)) return r;
+    var add = function (k, nome, ref) { if (ref > 0 && p > ref + 0.005) r.push({ k: k, nome: nome, ref: ref, pct: p / ref - 1 }); };
+    var f = it._fat && it._fat.st === 'ok' && it._fat.v; if (f) add('media', 'da média dos 6 meses', f.media);
+    var t = it._tab && it._tab.st === 'ok' && it._tab.v;
+    if (t) { add('vd', 'da tabela Venda Direta', t.vd && t.vd.lista); add('vf', 'da tabela Venda Futura', t.vf && t.vf.lista); }
+    return r;
+  }
+  function pctAcima(x) { return '+' + pct(x, x < 0.1 ? 1 : 0); }
+  function juntarE(l) { return l.length < 2 ? l.join('') : l.slice(0, -1).join(', ') + ' e ' + l[l.length - 1]; }
+  function textoAcima(l) { return juntarE(l.map(function (a) { return a.nome + ' (' + pctAcima(a.pct) + ')'; })); }
+  // as referências de preço do item, embaixo da linha (o agente marca it._fat e
+  // it._tab: { st: 'buscando'|'ok'|'nada'|'erro', v?, erro?, auto? }); cli = o
+  // código do cliente da tela (sem ele, não há média)
+  function refsPreco(it, i, cli) {
+    if (!it || !it.codigo) return '';
+    var f = it._fat, t = it._tab, p = Number(it.valorUnitario) || 0;
+    var usar = function (k, v) { return Math.abs(p - v) < 0.005 ? '' : ' <button type="button" class="cot-ref-usar" data-usar-ref="' + i + '|' + k + '" title="Usar ' + esc(brl(v)) + ' como o preço do item">usar</button>'; };
+    var mut = function (t0, tit) { return '<span class="cot-ref-v mut"' + (tit ? ' title="' + esc(tit) + '"' : '') + '>' + esc(t0) + '</span>'; };
+    var m;
+    if (!cli) m = mut('informe o código do cliente');
+    else if (!f || f.st === 'buscando') m = mut('buscando…');
+    else if (f.st === 'erro') m = mut('indisponível agora', f.erro);
+    else if (f.st === 'nada' || !f.v || !f.v.media) m = mut('sem faturamento deste item no cliente');
+    else {
+      var v = f.v, tit = qtd(v.qtd) + ' un faturadas, ' + brl(v.fat) + ' em ' + v.notas + ' nota(s)' + (v.ult ? ' · última em ' + diaBR(v.ult) : '');
+      m = '<b class="cot-ref-v" title="' + esc(tit) + '">' + brl(v.media) + '</b>' + (f.auto && Math.abs(p - v.media) < 0.005 ? ' <span class="cot-ref-tag">usada</span>' : usar('media', v.media));
+    }
+    var canal = function (nome, c, k) {
+      if (!c || !(c.lista > 0)) return nome + ': ' + mut('—');
+      var tit = 'Preço lista ' + brl(c.lista) + (c.sup ? ' · mínimo supervisor ' + brl(c.sup) : '') + (c.ger ? ' · mínimo gerente ' + brl(c.ger) : '');
+      return nome + ': <b class="cot-ref-v" title="' + esc(tit) + '">' + brl(c.lista) + '</b>' + usar(k, c.lista);
+    };
+    var tb;
+    if (!t || t.st === 'buscando') tb = mut('buscando…');
+    else if (t.st === 'erro') tb = mut('indisponível agora', t.erro);
+    else if (t.st === 'nada') tb = mut('o item não está na tabela de preços');
+    else tb = canal('Venda Direta', t.v.vd, 'vd') + '<span class="cot-ref-sep">·</span>' + canal('Venda Futura', t.v.vf, 'vf');
+    var acima = acimaDasReferencias(it);
+    return '<span class="cot-ref-i">' + IC.hist + '<span class="cot-ref-k">Média dos 6 meses de faturamento:</span>' + m + '</span>' +
+      '<span class="cot-ref-i">' + IC.tag + '<span class="cot-ref-k">Tabela de preço —</span>' + tb + '</span>' +
+      (acima.length ? '<span class="cot-ref-alerta">' + IC.alert + '<span><b>' + esc(brl(p)) + ' está acima ' + esc(textoAcima(acima)) + '.</b> Você está passando da referência — confira.</span></span>' : '');
   }
   // o código Biomedical escrito na DESCRIÇÃO ("AM0302 - MANIFOLD 3 PORTAS…",
   // "CATETER GUIA (7024S11PDH)") — a IA às vezes deixa o nosso código ali e
@@ -667,16 +958,111 @@
     return '';
   }
 
+  /* ── o produto no Salesforce (21/10/2026) ──────────────────────
+     A descrição, o fabricante e o RMS do CADASTRO (Product2) pelo Cód.
+     Biomedical — é o que vai na PROPOSTA (cotacoes-proposta.js), não só o
+     que a IA leu do PDF. /api/cot-casos?produtos=… (com cache no servidor);
+     aqui, cache da página: código já consultado não volta ao servidor. */
+  var _sf = {};   // COD -> produto | false (não está no Salesforce)
+  function produtosSf(lista) {
+    var cods = (lista || []).map(normCod).filter(function (c, i, l) { return c && c.length <= 60 && l.indexOf(c) === i; });
+    var falta = cods.filter(function (c) { return !(c in _sf); }), lotes = [];
+    for (var i = 0; i < falta.length; i += 80) lotes.push(falta.slice(i, i + 80));
+    return Promise.all(lotes.map(function (l) {
+      return api('cot-casos?produtos=' + encodeURIComponent(l.join(','))).then(function (j) {
+        var ps = (j && j.produtos) || {};
+        // resposta pela metade (Salesforce fora do ar ou sem configurar): só guarda o que veio
+        var inteira = !!(j && j.produtos && j.configurado !== false && !j.erro);
+        l.forEach(function (c) { if (ps[c]) _sf[c] = ps[c]; else if (inteira) _sf[c] = false; });
+      });
+    })).then(function () { var out = {}; cods.forEach(function (c) { if (_sf[c]) out[c] = _sf[c]; }); return out; });
+  }
+  // o texto do produto na proposta: a descrição do cadastro e o complemento
+  // (o campo do Salesforce "para ser impresso na proposta em PDF")
+  function descricaoSf(p) { return p ? [p.descricao, p.complemento].filter(Boolean).join(' — ') : ''; }
+  // os itens com produto no Salesforce: it._sf = o produto (a dica "Na
+  // proposta") e, sem soDica, o fabricante e o RMS do cadastro entram no
+  // item no lugar do que a IA leu. Devolve quantos itens mudaram.
+  function completarDoSf(itens, soDica) {
+    var com = (itens || []).filter(function (it) { return it.codigo || it._sf; });
+    if (!com.length) return Promise.resolve(0);
+    return produtosSf(com.map(function (it) { return it.codigo; })).then(function (ps) {
+      var n = 0;
+      com.forEach(function (it) {
+        var p = (it.codigo && ps[normCod(it.codigo)]) || null;
+        var antes = [it.marca, it.registro, it._sf ? it._sf.id : ''].join('|');
+        it._sf = p;
+        if (p && !soDica) { if (p.fabricante) it.marca = p.fabricante.slice(0, 80); if (p.rms) it.registro = p.rms; }
+        if ([it.marca, it.registro, p ? p.id : ''].join('|') !== antes) n++;
+      });
+      return n;
+    });
+  }
+  // a dica embaixo da descrição do item: o que vai na proposta
+  function dicaSf(it) {
+    var p = it && it._sf; if (!p) return '';
+    var t = descricaoSf(p);
+    var tudo = t + (p.fabricante ? ' · ' + p.fabricante : '') + (p.rms ? ' · RMS ' + p.rms : p.isento ? ' · isento de RMS' : '');
+    return '<small class="cot-sf" title="' + esc('Do cadastro do Salesforce — vai assim na proposta: ' + tudo) + '"><b>Na proposta</b>' + esc(t) + '</small>';
+  }
+
   /* ── cotação × pedido ───────────────────────────────────────── */
   // casa cada item do pedido com um item da cotação: 1º pelo código
   // (Biomedical ou do comprador), 2º pela descrição (palavras em comum).
   // st: ok (mesma qtd e preço) · dif (preço ou qtd diferente) · fora (cotado,
-  // não pedido) · extra (pedido sem estar na cotação)
+  // não pedido) · extra (pedido sem estar na cotação). 22/10/2026: o preço é
+  // igual até 1 centavo (era 0,5%) — virar pedido pelo PDF barra a diferença;
+  // a mesma regra do confrontar do servidor (api/shared/cot-motor.js)
   function palavras(s) { return norm(s).replace(/[^a-z0-9.]+/g, ' ').split(' ').filter(function (w) { return w.length > 1; }); }
   function parecido(a, b) {
+    if (chave(a) && chave(a) === chave(b)) return 1;   // a mesma descrição (até a curtinha)
     var A = palavras(a), B = palavras(b); if (!A.length || !B.length) return 0;
     var comum = A.filter(function (w) { return B.indexOf(w) >= 0; }).length;
     return comum / Math.max(A.length, B.length);
+  }
+  // 22/10/2026 (pedido do usuário: "não comparou o código do pedido com o
+  // código da cotação e sim o nome — esses dois são a mesma coisa"): o item
+  // do PEDIDO sem o código Biomedical (só o nome, ou o código do comprador)
+  // ganha o código do item da COTAÇÃO que é o mesmo produto: o código aparece
+  // na linha do pedido, ou o nome do pedido bate com o do CADASTRO do código
+  // (o Salesforce; sem ele, o nome do BI) ou com o da cotação. O código do
+  // pedido que já casa fica. Devolve os produtos do pedido (cópias) com o
+  // código — o que o pedido trazia vai em codigoPedido. O servidor confere
+  // pelo código, então tela e servidor seguem iguais.
+  function casarCodigos(cotados, pedidos, nomesDe) {
+    var mesmo = function (a, b) { var x = chave(a); return !!x && x === chave(b); };
+    var doItem = function (p, it) { return mesmo(p.codigo, it.codigo) || mesmo(p.codigo, it.codigoCliente); };
+    // o código na linha do pedido: um "pedaço" igual a ele (TR03, (AM0301)…) ou, o
+    // código comprido, dentro do texto
+    var naLinha = function (p, cod) {
+      var k = chave(cod); if (k.length < 4) return false;
+      var txt = String(p.descricao || '') + ' ' + String(p.codigo || '');
+      return txt.split(/[\s(),;:\/\[\]]+/).some(function (t) { return chave(t) === k; }) || (k.length >= 8 && chave(txt).indexOf(k) >= 0);
+    };
+    var usados = {}, out = (pedidos || []).map(function (p) { return Object.assign({}, p); });
+    out.forEach(function (p) { (cotados || []).forEach(function (it, i) { if (doItem(p, it)) usados[i] = 1; }); });
+    out.forEach(function (p) {
+      if ((cotados || []).some(function (it) { return doItem(p, it); })) return;
+      var alvo = -1, melhor = 0;
+      (cotados || []).forEach(function (it, i) {
+        if (usados[i] || !it.codigo) return;
+        var sc = naLinha(p, it.codigo) ? 2 : Math.max.apply(null, [0].concat((nomesDe ? nomesDe(it) : [it.descricao]).map(function (nm) { return parecido(nm, p.descricao); })));
+        if (sc > melhor && sc >= 0.5) { melhor = sc; alvo = i; }
+      });
+      if (alvo >= 0) { usados[alvo] = 1; if (p.codigo) p.codigoPedido = p.codigo; p.codigo = cotados[alvo].codigo; }
+    });
+    return out;
+  }
+  // o mesmo, buscando o nome do cadastro de cada código da cotação no Salesforce
+  // (a consulta do servidor, sem o Power BI) — fora do ar, segue com o que tiver
+  function codigosDoPedido(cotados, pedidos) {
+    var cods = (cotados || []).map(function (it) { return it.codigo; }).filter(Boolean);
+    return (cods.length ? produtosSf(cods).catch(function () { return {}; }) : Promise.resolve({})).then(function (sf) {
+      return casarCodigos(cotados, pedidos, function (it) {
+        var p = sf[normCod(it.codigo)] || it._sf, n = produtoDoCodigo(it.codigo);
+        return [it.descricao, p ? descricaoSf(p) : '', p ? p.descricao : '', n && n.nome ? n.nome : ''].filter(Boolean);
+      });
+    });
   }
   function comparar(cotados, pedidos) {
     var usados = {}, linhas = [];
@@ -691,7 +1077,7 @@
       usados[alvo] = 1;
       var c = cotados[alvo];
       var mesmaQtd = Math.abs((Number(c.quantidade) || 0) - (Number(p.quantidade) || 0)) < 1e-6;
-      var mesmoPreco = Math.abs((Number(c.valorUnitario) || 0) - (Number(p.valorUnitario) || 0)) <= 0.005 * Math.max(1, Number(c.valorUnitario) || 0);
+      var mesmoPreco = Math.abs((Number(c.valorUnitario) || 0) - (Number(p.valorUnitario) || 0)) <= 0.010001;
       linhas.push({ st: mesmaQtd && mesmoPreco ? 'ok' : 'dif', cot: c, ped: p, mesmaQtd: mesmaQtd, mesmoPreco: mesmoPreco });
     });
     (cotados || []).forEach(function (c, i) { if (!usados[i]) linhas.push({ st: 'fora', cot: c }); });
@@ -699,10 +1085,53 @@
     return { linhas: linhas, ok: conta('ok'), dif: conta('dif'), fora: conta('fora'), extra: conta('extra') };
   }
 
+  // 29/10/2026: os LOTES que o PDF do cliente traz (a relação de materiais da
+  // cirurgia, lida pelo perfil 'consignado'), por item da cotação — o mesmo
+  // casamento do comparar (o código, senão a descrição parecida); o mesmo
+  // produto em mais de uma linha (lotes diferentes) junta: [[lotes do item 0], …]
+  function lotesDoPdf(cotados, produtos) {
+    var out = (cotados || []).map(function () { return []; });
+    (produtos || []).forEach(function (p) {
+      var lote = String(p.lote || '').trim().toUpperCase(); if (!lote) return;
+      var cp = chave(p.codigo), alvo = -1;
+      if (cp) (cotados || []).some(function (c, i) { if (chave(c.codigo) === cp || chave(c.codigoCliente) === cp) { alvo = i; return true; } return false; });
+      if (alvo < 0) { var melhor = 0; (cotados || []).forEach(function (c, i) { var s = parecido(c.descricao, p.descricao); if (s > melhor && s >= 0.5) { melhor = s; alvo = i; } }); }
+      if (alvo >= 0 && out[alvo].indexOf(lote) < 0) out[alvo].push(lote);
+    });
+    return out;
+  }
+
+  /* ── o IPI dos itens (29/10/2026) ────────────────────────────────── */
+  // Pedido do usuário: "um checkbox ao lado de total, falando TEM IPI? — a
+  // pessoa clica e insere o IPI do produto; essa informação sai no PDF da
+  // proposta quando houver". it.ipi = a alíquota em % (0 a 100); o total
+  // cotado segue SEM o IPI (o funil, os valores) — o IPI soma por fora
+  function ipiDe(it) { var p = Number(it && it.ipi) || 0; return p > 0 && p <= 100 ? p : 0; }
+  function temIpi(itens) { return (itens || []).some(function (it) { return ipiDe(it) > 0; }); }
+  function valorIpi(it) { return (Number(it && it.quantidade) || 0) * (Number(it && it.valorUnitario) || 0) * ipiDe(it) / 100; }
+  function totalIpi(itens) { return (itens || []).reduce(function (s, it) { return s + valorIpi(it); }, 0); }
+  function pctIpi(p) { return (Number(p) || 0).toLocaleString('pt-BR', { maximumFractionDigits: 2 }) + '%'; }
+
+  /* ── o resultado de cada item (20/10/2026) ──────────────────────── */
+  // ganho ou perdido, marcado item a item (acao 'resultado'). Sem a marca,
+  // vale o da cotação (implicito) — a régua do Funil de Vendas da Licitação:
+  // Virou pedido -> ganho; Perdida, Vencida ou Cancelada (não virou) ->
+  // perdido; em aberto, o item segue sem resultado (em andamento).
+  // r: 'ganho' | 'perdido' | ''
+  var RESULTADOS = { ganho: 'Ganho', perdido: 'Perdido' };
+  function resultadoItem(marca, faseCaso) {
+    if (marca === 'ganho' || marca === 'perdido') return { r: marca, implicito: false };
+    var f = fase(faseCaso);
+    if (f && f.ganha) return { r: 'ganho', implicito: true };
+    if (f && f.perdida) return { r: 'perdido', implicito: true };
+    return { r: '', implicito: false };
+  }
+
   /* ── ponte com o PI · Pedido ─────────────────────────────────── */
   // mesmo caminho do Customer Service: o PDF (e a leitura, se já houver)
   // vai por IndexedDB (customer-service-pi.js) e o PI abre com ?cot=COT-…
-  var AREA_PI = { 'venda recorrente': 'PEDIDOINTELIGENTE (VENDA RECORRENTE)', 'venda consultiva': 'PEDIDOINTELIGENTE (VENDA CONSULTIVA)', 'bio.id': 'PEDIDOINTELIGENTE (BIO.ID)', 'bioid': 'PEDIDOINTELIGENTE (BIO.ID)' };
+  // RECORTE MSB: o PI da MSB tem a área demandante fixa PEDIDOINTELIGENTE (MSB)
+  var AREA_PI = { 'venda recorrente': 'PEDIDOINTELIGENTE (MSB)', 'venda consultiva': 'PEDIDOINTELIGENTE (MSB)', 'bio.id': 'PEDIDOINTELIGENTE (MSB)', 'bioid': 'PEDIDOINTELIGENTE (MSB)' };
   // a área do caso é a da equipe ("Comercial"); a área demandante do PI sai
   // do nome do grupo quando ele diz ("Equipe Comercial - Gerente Venda Recorrente")
   function areaPI(c) {
@@ -713,18 +1142,37 @@
   function abrirNoPI(c, extracao) {
     if (!W.CSPI) { toast('A ponte com o PI não carregou', 'Recarregue a página.', 'erro'); return Promise.resolve(false); }
     if (!c.pedido) { toast('Sem o PDF do pedido', 'Anexe o pedido do portal primeiro.', 'erro'); return Promise.resolve(false); }
+    // o pedido à mão (21/10/2026): sem PDF — o PI chega com o comprador e os
+    // itens GANHOS da cotação no lugar da leitura do PDF
+    var manual = !!c.pedido.manual;
     var janela = W.open('', '_blank');
-    if (janela) { try { janela.opener = null; janela.document.title = 'Abrindo o PI…'; janela.document.body.innerHTML = '<p style="font:15px system-ui;padding:40px;color:#0F2831">Preparando o pedido da cotação ' + esc(c.numero) + '…</p>'; } catch (e) {} }
+    if (janela) { try { janela.opener = null; janela.document.title = 'Abrindo o PI…'; janela.document.body.innerHTML = '<p style="font:15px system-ui;padding:40px;color:#0F2831">Preparando o pedido da oportunidade ' + esc(c.numero) + '…</p>'; } catch (e) {} }
     var destino = new URL('pedido-inteligente.html?cot=' + encodeURIComponent(c.numero), location.href).href;
-    return baixarAnexo(c.numero, c.pedido.anexoId).then(function (arq) {
+    return (manual ? Promise.resolve(null) : baixarAnexo(c.numero, c.pedido.anexoId)).then(function (arq) {
+      var ganhos = (c.itens || []).filter(function (it) { return it.resultado === 'ganho'; });
+      // 22/10/2026 (pedido do usuário: "no pedido à mão, aproveitar as informações
+      // da cotação — itens, quantidade, valor, CNPJ… tudo o que o PI usa"): o
+      // endereço de entrega, o e-mail, a condição de pagamento, o frete e a
+      // observação da cotação também vão; o PI preenche só o que estiver vazio
+      var cli = c.cliente || {}, co = c.condicoes || {};
+      var endereco = [cli.endereco, [cli.cidade, cli.uf].filter(Boolean).join('/'), cli.cep ? 'CEP ' + formatar('cep', cli.cep) : ''].filter(Boolean).join(' - ');
+      var obs = ['Cotação ' + c.numero + (c.cotacaoId ? ' · ' + (c.portal || '') + ' nº ' + c.cotacaoId : ''), String(co.observacao || '').trim()].filter(Boolean).join(' · ');
+      var lidaAMao = manual ? { dados: {
+        cnpj: cli.cnpj || '', nomeCliente: cli.nome || '', ordemDeCompra: c.pedido.oc || '',
+        enderecoEntrega: endereco, email: (c.contato && c.contato.email) || '', observacao: obs, condicaoPagamento: co.pagamento || '',
+        produtos: ganhos.map(function (it) { return { codigo: it.codigo || '', descricao: it.descricao || '', quantidade: it.quantidade || 0, valorUnitario: it.valorUnitario || 0 }; })
+      }, avisos: [] } : null;
       return W.CSPI.guardar({
-        numero: c.numero, origem: 'cotacao', arquivo: arq.nome, tipo: arq.tipo || 'application/pdf', base64: arq.base64,
+        numero: c.numero, origem: 'cotacao', manual: manual,
+        arquivo: arq ? arq.nome : '', tipo: arq ? (arq.tipo || 'application/pdf') : '', base64: arq ? arq.base64 : '',
         contato: { nome: (c.contato && c.contato.nome) || '', email: (c.contato && c.contato.email) || '' },
         assunto: 'Cotação ' + tituloCaso(c) + (c.cliente && c.cliente.nome ? ' · ' + c.cliente.nome : ''),
         conta: c.cliente ? { nome: c.cliente.nome || '', cnpj: c.cliente.cnpj || '', codigo: c.cliente.codigo || '', uf: c.cliente.uf || '' } : null,
-        portal: c.portal || '', empresa: c.empresa || 'BIO', areaPI: areaPI(c),
+        portal: c.portal || '', empresa: c.empresa || 'MSB', areaPI: areaPI(c),
         oc: (c.pedido && c.pedido.oc) || '',
-        extracao: extracao && extracao.dados ? { dados: extracao.dados, avisos: extracao.avisos || [] } : null
+        // o que a cotação sabe do pedido (o PI completa os campos vazios)
+        cotacao: { endereco: endereco, email: (c.contato && c.contato.email) || '', observacao: obs, pagamento: co.pagamento || '', frete: freteCifFob(co.frete) || co.frete || '', entrega: co.entrega || '' },
+        extracao: lidaAMao || (extracao && extracao.dados ? { dados: extracao.dados, avisos: extracao.avisos || [] } : null)
       });
     }).then(function () {
       if (janela && !janela.closed) janela.location.href = destino; else W.location.href = destino;
@@ -736,20 +1184,65 @@
     });
   }
 
+  /* ── o SUBMÓDULO do CRM (04/11/2026) ─────────────────────────── */
+  // As telas das oportunidades (estas páginas) são as do CRM do Comercial:
+  // Venda Recorrente e BIO.ID usam as MESMAS páginas, cada uma presa à sua
+  // unidade de negócio pelo ?sub= (window.BMCRM, nav-sidebar.js — guardado
+  // na aba). Aqui: o filtro da lista (sem submódulo, tudo o que a pessoa vê,
+  // como antes), o nome do submódulo no cabeçalho e os links entre as
+  // páginas levando o ?sub=. Quem decide o que a pessoa vê segue sendo o
+  // servidor (a unidade do RLS).
+  function crm() { return W.BMCRM || null; }
+  function subAtual() { var M = crm(), id = M ? M.atual() : ''; return id ? M.porId(id) : null; }
+  function doSubmodulo(casos) { var M = crm(); return M ? M.filtrar(casos || []) : (casos || []); }
+  // a pessoa não é da unidade do submódulo (o servidor não manda nada dela):
+  // a faixa diz, em vez de a tela parecer vazia por defeito
+  function foraDoSubmodulo(eu) {
+    var M = crm(), s = subAtual();
+    if (!M || !s || !eu || eu.admin || eu.full || !eu.unidadeConfirmada) return '';
+    return M.temSub(eu, s.id) ? '' : 'Você não é da unidade <b>' + esc(s.rotulo) + '</b> no Power BI — aqui só aparecem as oportunidades dela. <a href="comercial-crm.html">Voltar ao CRM</a>';
+  }
+  function guardarPessoa(eu) { var M = crm(); if (M && eu && eu.email) { M.guardarPessoa(eu.email, eu); if (typeof W.bmPodarCrm === 'function') W.bmPodarCrm(eu.email); } }
+  function comSub(href) { var M = crm(); return M ? M.comSub(href) : href; }
+  function marcarSubmodulo() {
+    var s = subAtual();
+    Array.prototype.forEach.call(D.querySelectorAll('[data-crm-rotulo]'), function (el) {
+      if (s) el.textContent = s.rotulo;
+    });
+    if (s && D.title.indexOf(s.rotulo) < 0) D.title = D.title.replace(/ · MSB$/, '') + ' · ' + s.rotulo + ' · MSB';
+    if (s) D.body.setAttribute('data-crm-sub', s.id);
+    // os links entre as páginas das oportunidades levam o submódulo (abrir em
+    // outra aba também): os do HTML agora, os desenhados depois no mousedown
+    Array.prototype.forEach.call(D.querySelectorAll('a[href*="comercial-cot-"]'), function (a) {
+      if (!a.closest('.area-sidebar')) a.setAttribute('href', comSub(a.getAttribute('href')));
+    });
+  }
+  if (W.BMCRM) {
+    D.addEventListener('mousedown', function (ev) {
+      var a = ev.target.closest && ev.target.closest('a[href*="comercial-cot-"]');
+      if (a && !a.closest('.area-sidebar')) a.setAttribute('href', comSub(a.getAttribute('href')));
+    }, true);
+    if (D.readyState === 'loading') D.addEventListener('DOMContentLoaded', marcarSubmodulo); else marcarSubmodulo();
+  }
+
   W.COT = {
+    subAtual: subAtual, doSubmodulo: doSubmodulo, foraDoSubmodulo: foraDoSubmodulo, guardarPessoa: guardarPessoa, comSub: comSub,
     $: $, esc: esc, norm: norm, chave: chave, ms: ms, pad: pad, dataBR: dataBR, dataPortal: dataPortal, diaBR: diaBR, paraInput: paraInput,
     quando: quando, chegada: chegada, num: num, brl: brl, brlCurto: brlCurto, int: int, pct: pct, qtd: qtd, bytes: bytes, cnpjMask: cnpjMask,
     UFS: UFS, digitos: digitos, cnpjValido: cnpjValido, cpfValido: cpfValido, emailValido: emailValido, foneDigitos: foneDigitos, ufDoCep: ufDoCep,
     formatar: formatar, validar: validar, avisoCepUf: avisoCepUf, mascarar: mascarar,
-    corDe: corDe, avatar: avatar, primeiroNome: primeiroNome, nomeDoEmail: nomeDoEmail, debounce: debounce, lerLocal: lerLocal, gravarLocal: gravarLocal, quieto: quieto,
-    IC: IC, svg: svg, FASES: FASES, faseAtual: faseAtual, fase: fase, aberta: aberta, chipFase: chipFase, prazoDe: prazoDe, chipPrazo: chipPrazo, chipPi: chipPi, numeroOv: numeroOv, tituloCaso: tituloCaso,
+    corDe: corDe, coresDistintas: coresDistintas, avatar: avatar, primeiroNome: primeiroNome, nomeDoEmail: nomeDoEmail, debounce: debounce, lerLocal: lerLocal, gravarLocal: gravarLocal, quieto: quieto,
+    lotesDoPdf: lotesDoPdf, ipiDe: ipiDe, temIpi: temIpi, valorIpi: valorIpi, totalIpi: totalIpi, pctIpi: pctIpi,
+    IC: IC, svg: svg, FASES: FASES, FASES_AMOSTRA: FASES_AMOSTRA, faseAtual: faseAtual, faseDe: faseDe, fase: fase, aberta: aberta, chipFase: chipFase, prazoDe: prazoDe, chipPrazo: chipPrazo, chipPi: chipPi, numeroOv: numeroOv, tituloCaso: tituloCaso, tokenPbi: tokenPbi, esquecerTokenPbi: esquecerTokenPbi,
     api: api, aguardarLogin: aguardarLogin, toast: toast, dialogo: dialogo, fecharDialogo: fecharDialogo,
     lerArquivo: lerArquivo, ehPdf: ehPdf, bytesParaB64: bytesParaB64, b64ParaBytes: b64ParaBytes, baixarAnexo: baixarAnexo, urlDoArquivo: urlDoArquivo, abrirAnexo: abrirAnexo,
-    leitorPronto: leitorPronto, textoDoPdf: textoDoPdf, lerComIA: lerComIA, dadosDaLeitura: dadosDaLeitura, dataDoTexto: dataDoTexto, validadeDe: validadeDe,
+    leitorPronto: leitorPronto, textoDoPdf: textoDoPdf, lerComIA: lerComIA, dadosDaLeitura: dadosDaLeitura, freteCifFob: freteCifFob, contatoDoSetor: contatoDoSetor, htmlExtras: htmlExtras, lerExtras: lerExtras, comoSaiu: comoSaiu, idDaCotacao: idDaCotacao, dataDoTexto: dataDoTexto, validadeDe: validadeDe,
     hojeIso: hojeIso, venceu: venceu,
     normCod: normCod, validarCodigos: validarCodigos, produtoDoCodigo: produtoDoCodigo, codigosNaDescricao: codigosNaDescricao,
+    faturamentoDoCliente: faturamentoDoCliente, tabelaDePrecos: tabelaDePrecos, acimaDasReferencias: acimaDasReferencias, textoAcima: textoAcima, refsPreco: refsPreco, MESES_FAT: MESES_FAT,
     conferirItens: conferirItens, itensComCodigoRuim: itensComCodigoRuim, statusCodigo: statusCodigo,
+    produtosSf: produtosSf, descricaoSf: descricaoSf, completarDoSf: completarDoSf, dicaSf: dicaSf,
     codigosDoTexto: codigosDoTexto, codigosNossosNoTexto: codigosNossosNoTexto, casarPeloTexto: casarPeloTexto,
-    comparar: comparar, abrirNoPI: abrirNoPI
+    comparar: comparar, parecido: parecido, casarCodigos: casarCodigos, codigosDoPedido: codigosDoPedido, RESULTADOS: RESULTADOS, resultadoItem: resultadoItem, abrirNoPI: abrirNoPI
   };
 })();

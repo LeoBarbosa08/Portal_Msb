@@ -22,8 +22,11 @@
 // mesma linha, sem ambiguidade). Em qualquer dúvida, não mexe: apenas
 // devolve um aviso para a tela pedir conferência humana.
 //
+// Antes disso, tira do campo CÓDIGO o RMS (registro ANVISA) que a IA
+// tenha posto lá — ver conferirCodigos(), mais abaixo (04/11/2026).
+//
 //   const { revisar } = require('../shared/pedido-revisar');
-//   const r = revisar(dados.produtos, textoDoPdf);
+//   const r = revisar(dados.produtos, textoDoPdf, { codigosConhecidos });
 //   // r.produtos (corrigidos) · r.avisos [{ item, tipo, texto }]
 // ================================================================
 'use strict';
@@ -164,14 +167,257 @@ function acharValor(nums, valor, colEsperada) {
 }
 
 // ================================================================
-// revisar(produtos, texto) -> { produtos, avisos }
+// O RMS NO LUGAR DO CÓDIGO (conserto de 04/11/2026)
+//
+// A proposta da própria Biomedical — a que o portal (Cotações) e o
+// Salesforce geram e o cliente devolve como pedido — traz, na mesma
+// linha do item, o CÓDIGO DO PRODUTO e o RMS, o registro do produto na
+// ANVISA (11 dígitos). Do jeito que o pi-pdf-texto.js entrega:
+//
+//    Código do                                             Valor de
+//              Produto.      Fabricante  RMS          Quantidade      Subtotal
+//    produto                                               Venda
+//              FIO GUIA T MSB 0.035"X150CM, J3MM,                        R$
+//    51200                   MSB         80454419010     50  R$ 30,00
+//              TEFLONADO                                            1.500,00
+//
+// e a IA devolvia codigo "80454419010". RMS nunca é código: ele se
+// REPETE em produtos diferentes (o 80454419011 vale para três fios-guia
+// na proposta do HOSP. BOM JESUS) e não existe na base de produtos.
+//
+// O conserto é pela POSIÇÃO, como o da quantidade: o cabeçalho diz onde
+// ficam as colunas de código e de RMS; a linha do item é a que tem
+// aquele RMS na coluna do RMS (quando ele se repete, a que tem também a
+// quantidade e o preço daquele item); o código é o que está debaixo de
+// "Código" nessa linha. Sem coluna de código, ou na dúvida, o código
+// fica VAZIO e a tela pede — o RMS no campo do código nunca é melhor do
+// que o campo vazio. O número vai para `registroAnvisa`.
+//
+// Só age com evidência de que o "código" é um RMS: 11 dígitos começando
+// por 1 ou 8 (o formato do registro de produto para saúde) que aparecem
+// num documento que fala em RMS / ANVISA / Registro MS — ou a própria
+// IA ter posto o mesmo número em registroAnvisa. Código de 11 dígitos
+// num documento sem nada disso fica como está.
 // ================================================================
-function revisar(produtos, texto) {
+
+// "RMS", "R.M.S.", "ANVISA", "Reg. MS", "Registro M.S.", "Registro no Ministério da Saúde"
+var RE_ROT_RMS = /\bR\.?M\.?S\.?(?![A-Za-z0-9])|\bANVISA\b|\bREG(?:ISTRO)?\.?\s*(?:N[º°O]?\.?\s*)?(?:NO\s+|DO\s+)?M\.?\s?S\.?(?![A-Za-z0-9])|MINIST[ÉE]RIO\s+DA\s+SA[ÚU]DE/i;
+// "Código", "Cód.", "Cod", "Ref.", "Referência"
+var RE_ROT_COD = /\bC[ÓO]D(?:IGO|\.)?(?![A-Za-z])|\bREF(?:ER[ÊE]NCIA|\.)?(?![A-Za-z])/gi;
+// código de OUTRO cadastro (do cliente, de barras, fiscal…): não é o da Biomedical
+var RE_COD_ALHEIO = /CLI|HOSP|COMPRAD|INTEGR|PACIENT|BARRA|EAN|NCM|TUSS|SIMPRO|BRAS[IÍ]NDICE/;
+// as outras colunas de uma tabela de itens — é o que diz que a linha do
+// rótulo "RMS" é um CABEÇALHO, e não um "RMS" solto num texto
+var RE_ROT_TABELA = [
+  /\b(?:QTD|QTDE|QTE|QUANT|QUANTIDADE|QT)\b/i,
+  /\b(?:VL|VLR|VALOR|PRE[ÇC]O|UNIT[ÁA]RIO|TOTAL|SUBTOTAL)\b/i,
+  /\b(?:PRODUTO|DESCRI[ÇC][ÃA]O|MATERIAL|ITEM)\b/i,
+  /\b(?:FABRICANTE|MARCA)\b/i
+];
+
+function soDigitos(s) { return String(s == null ? '' : s).replace(/\D+/g, ''); }
+
+/* O registro que está em `codigo`, se `codigo` for um RMS ("80454419010",
+   "8045441-9010", "RMS 80454419010") — senão ''. */
+function rmsDoCodigo(codigo) {
+  var s = String(codigo == null ? '' : codigo).trim()
+    .replace(/^(?:R\.?M\.?S\.?|ANVISA|REG(?:ISTRO)?\.?\s*(?:ANVISA|M\.?\s?S\.?)?)\s*[:#\-]?\s*/i, '');
+  if (!s || !/^[\d.\-\/ ]+$/.test(s)) return '';
+  var d = soDigitos(s);
+  return /^[18]\d{10}$/.test(d) ? d : '';
+}
+
+// as palavras de uma linha com onde cada uma começa e termina
+function pedacos(L) {
+  var out = [], m, re = /\S+/g;
+  while ((m = re.exec(L)) !== null) out.push({ txt: m[0], ini: m.index, fim: m.index + m[0].length });
+  return out;
+}
+function sobrepoe(a, b, folga) {
+  folga = folga || 0;
+  return a.ini < b.fim + folga && b.ini < a.fim + folga;
+}
+// o rótulo vai até o primeiro vão de 2+ espaços ("Código do   Produto.")
+function vaoDoRotulo(L, ini) {
+  var g = /^\S+(?: \S+)*/.exec(L.slice(ini));
+  return { ini: ini, fim: ini + Math.min(g ? g[0].length : 1, 18) };
+}
+
+/* Cara de código de produto: letras/números/traço/ponto/barra, com pelo
+   menos um dígito — e não é dinheiro ("30,00"), nem outro RMS. */
+function caraDeCodigo(t) {
+  var s = String(t || '');
+  if (s.length < 2 || s.length > 40) return '';
+  if (!/^[A-Za-z0-9][A-Za-z0-9.\-\/_]*$/.test(s) || !/\d/.test(s)) return '';
+  if (/^\d{1,3}(?:\.\d{3})*,\d+$|^\d+,\d+$/.test(s)) return '';
+  if (rmsDoCodigo(s)) return '';
+  return s;
+}
+
+/* As linhas de CABEÇALHO que têm a coluna do RMS, com a posição dela e a
+   da coluna do código: [{ linha, rms: {ini,fim}, cod: {ini,fim}|null }].
+   O rótulo do código pode estar QUEBRADO em duas linhas ("Código do" em
+   cima, "produto" embaixo, os outros rótulos no meio) — por isso ele é
+   procurado também nas duas linhas de cima e de baixo, pela posição: o
+   pi-pdf-texto.js mantém a coluna de uma linha para a outra. */
+function cabecalhosDoRms(linhas) {
+  var out = [];
+  for (var i = 0; i < linhas.length; i++) {
+    var L = linhas[i];
+    var m = RE_ROT_RMS.exec(L);
+    if (!m) continue;
+    if (/\d{6,}/.test(L)) continue;               // com registro/CNPJ na linha, não é cabeçalho
+    var bloco = [linhas[i - 1] || '', L, linhas[i + 1] || ''].join('   ');
+    if (RE_ROT_TABELA.filter(function (re) { return re.test(bloco); }).length < 2) continue;
+
+    var cod = null, prioridade = 9;
+    for (var k = Math.max(0, i - 2); k <= Math.min(linhas.length - 1, i + 2); k++) {
+      var Lk = linhas[k], mc;
+      RE_ROT_COD.lastIndex = 0;
+      while ((mc = RE_ROT_COD.exec(Lk)) !== null) {
+        var rot = Lk.slice(mc.index, mc.index + 28).toUpperCase();
+        if (RE_COD_ALHEIO.test(rot)) continue;
+        // "Cód. Fornecedor" é o código da Biomedical (a fornecedora); "Ref." só na falta de outro
+        var p = /FORN/.test(rot) ? 0 : /^REF/.test(rot) ? 2 : 1;
+        if (p < prioridade) { prioridade = p; cod = vaoDoRotulo(Lk, mc.index); }
+      }
+    }
+    out.push({ linha: i, rms: vaoDoRotulo(L, m.index), cod: cod });
+  }
+  return out;
+}
+
+/* Acha o código do item cujo "codigo" a IA leu do RMS -> { codigo, linha }
+   ou null. `usadas` = linhas de item já dadas a itens anteriores (o mesmo
+   RMS em vários itens: cada linha serve um item só). */
+function codigoPeloRms(linhas, cabs, prod, rms, usadas) {
+  function cabDe(i) {                             // o cabeçalho que vale para a linha: o último acima dela
+    var c = null;
+    for (var k = 0; k < cabs.length; k++) if (cabs[k].linha < i) c = cabs[k];
+    return c;
+  }
+  function rmsNaColuna(L, cab) {                  // as palavras da linha que estão na coluna do RMS
+    return pedacos(L).filter(function (p) {
+      return /^[\d.\-\/]+$/.test(p.txt) && rmsDoCodigo(p.txt) && sobrepoe(p, cab.rms, 2);
+    });
+  }
+
+  var cands = [];
+  for (var i = 0; i < linhas.length; i++) {
+    var cab = cabDe(i);
+    if (!cab || !cab.cod) continue;
+    var noRms = rmsNaColuna(linhas[i], cab).filter(function (p) { return soDigitos(p.txt) === rms; });
+    if (noRms.length) cands.push({ i: i, cab: cab, rmsPos: noRms[0] });
+  }
+  if (!cands.length) return null;
+
+  // RMS repetido: ganha a linha com a quantidade, o preço e as palavras do item
+  var q = Number(prod.quantidade), v = Number(prod.valorUnitario);
+  var palavras = normaliza(prod.descricao).split(' ')
+    .filter(function (p, k, a) { return p.length >= 2 && a.indexOf(p) === k; });
+  function temPalavras(L) {
+    var n = ' ' + normaliza(L) + ' ';
+    return palavras.filter(function (p) { return n.indexOf(' ' + p + ' ') >= 0; }).length;
+  }
+  cands.forEach(function (cd) {
+    var nums = numerosDaLinha(linhas[cd.i]).filter(function (x) {
+      return !(x.pos >= cd.rmsPos.ini && x.pos < cd.rmsPos.fim);
+    });
+    var pts = 0;
+    if (q > 0 && nums.some(function (x) { return mesmoNumero(x.valor, q); })) pts += 3;
+    if (v > 0 && nums.some(function (x) { return mesmoNumero(x.valor, v); })) pts += 3;
+    pts += 2 * temPalavras(linhas[cd.i]);
+    pts += temPalavras(linhas[cd.i - 1] || '') + temPalavras(linhas[cd.i + 1] || '');
+    cd.pts = pts;
+  });
+  // empate: a linha ainda livre, e depois a ordem do documento
+  cands.sort(function (a, b) {
+    return (b.pts - a.pts) || ((usadas[a.i] ? 1 : 0) - (usadas[b.i] ? 1 : 0)) || (a.i - b.i);
+  });
+  var melhor = cands[0];
+
+  function codigoNaLinha(k) {
+    var ps = pedacos(linhas[k] || '').filter(function (p) { return sobrepoe(p, melhor.cab.cod, 1); });
+    return ps.length ? caraDeCodigo(ps[0].txt) : '';
+  }
+  var cod = codigoNaLinha(melhor.i);
+  // a célula do código quebrou: tenta as linhas vizinhas, se não forem de outro item
+  [melhor.i - 1, melhor.i + 1].forEach(function (k) {
+    if (cod || k < 0 || k >= linhas.length) return;
+    if (rmsNaColuna(linhas[k], melhor.cab).length) return;
+    cod = codigoNaLinha(k);
+  });
+  if (!cod || soDigitos(cod) === rms) return null;
+  return { codigo: cod, linha: melhor.i };
+}
+
+/* conferirCodigos(produtos, linhas, texto, opts) -> { produtos, avisos }
+   O RMS que a IA pôs em `codigo` sai de lá: vira o código da coluna de
+   código daquela linha (corrigido, com aviso) ou fica vazio (aviso pedindo
+   o código). opts.codigosConhecidos (perfil cotação: os códigos do PDF que
+   existem no cadastro) — quando vem, o código achado tem de estar nela. */
+function conferirCodigos(lista, linhas, texto, opts) {
+  var avisos = [];
+  var doc = String(texto || '');
+  var falaDeRms = RE_ROT_RMS.test(doc);
+  var conhecidos = (opts && Array.isArray(opts.codigosConhecidos) ? opts.codigosConhecidos : [])
+    .map(function (c) { return normaliza(c); }).filter(Boolean);
+  var cabs = null;                                // só monta se algum item precisar
+  var usadas = {};
+
+  var out = lista.map(function (p, idx) {
+    var prod = Object.assign({}, p);
+    var rms = rmsDoCodigo(prod.codigo);
+    if (!rms) return prod;
+    var daIa = soDigitos(prod.registroAnvisa) === rms;
+    var noTexto = new RegExp('(?:^|\\D)' + rms + '(?!\\d)').test(doc);
+    if (!(daIa || (falaDeRms && noTexto))) return prod;    // sem evidência: não mexe
+
+    if (cabs === null) cabs = cabecalhosDoRms(linhas);
+    var achado = cabs.length ? codigoPeloRms(linhas, cabs, prod, rms, usadas) : null;
+    if (achado) {
+      var n = normaliza(achado.codigo);
+      if (prod.codigoCliente && normaliza(prod.codigoCliente) === n) achado = null;   // é o do comprador
+      else if (conhecidos.length && conhecidos.indexOf(n) < 0) achado = null;         // fora do cadastro
+    }
+
+    prod.registroAnvisa = rms;
+    if (achado) {
+      usadas[achado.linha] = true;
+      prod.codigo = achado.codigo;
+      avisos.push({ item: idx, tipo: 'rms-codigo', corrigido: true,
+        texto: achado.codigo + ': o código tinha vindo como ' + rms + ', que é o RMS (registro ANVISA) — ' +
+               'corrigi para o código do produto que está no PDF. Confira.' });
+    } else {
+      var d = String(prod.descricao || '').trim();
+      var quem = d ? (d.length > 45 ? d.slice(0, 44) + '…' : d) : 'item ' + (idx + 1);
+      prod.codigo = '';
+      avisos.push({ item: idx, tipo: 'rms-codigo', corrigido: false,
+        texto: quem + ': ' + rms + ' é o RMS (registro ANVISA), não o código do produto — informe o código Biomedical.' });
+    }
+    return prod;
+  });
+  return { produtos: out, avisos: avisos };
+}
+
+// ================================================================
+// revisar(produtos, texto, opts) -> { produtos, avisos }
+// ================================================================
+function revisar(produtos, texto, opts) {
   var lista = Array.isArray(produtos) ? produtos : [];
   var avisos = [];
   if (!lista.length) return { produtos: lista, avisos: avisos };
 
   var linhas = String(texto || '').split(/\r?\n/);
+
+  // ── 0. o RMS (registro ANVISA) que a IA pôs no lugar do código ──
+  // (antes de tudo: as conferências abaixo acham a linha do item pelo código)
+  try {
+    var cc = conferirCodigos(lista, linhas, texto, opts);
+    lista = cc.produtos;
+    avisos = cc.avisos;
+  } catch (e) { /* conferir nunca derruba a leitura */ }
+
   var cab = cabecalhoDaTabela(texto);
 
   // soma dos itens como a IA os leu — serve para reconhecer o total DO
@@ -254,5 +500,8 @@ module.exports = {
   paraNumero: paraNumero,
   numerosDaLinha: numerosDaLinha,
   cabecalhoDaTabela: cabecalhoDaTabela,
-  linhaDoItem: linhaDoItem
+  linhaDoItem: linhaDoItem,
+  rmsDoCodigo: rmsDoCodigo,
+  cabecalhosDoRms: cabecalhosDoRms,
+  conferirCodigos: conferirCodigos
 };

@@ -3,10 +3,11 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Gestão de Cotações · Cotações · MSB</title>
+  <title>Gestão de Oportunidades · CRM · MSB</title>
   <link rel="stylesheet" href="../styles.css?v=14">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300..900&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="../dash-v2.css?v=3">
   <!-- Login BLOQUEANTE: a tela chama /api/cot-* no boot e o token tem de
        existir na primeira chamada (o nav-sidebar.js injeta o auth.js de forma
@@ -15,7 +16,6 @@
   <script src="../auth.js?v=8"></script>
   <script>window._portalAuthLoaded = true;</script>
   <!-- Layout v3 (Claude Design · animado): fonte + camada visual + motor de animações -->
-  <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300..900&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="../portal-v3.css?v=2">
   <script src="../portal-motion.js?v=3" defer></script>
   <!-- Tema claro/escuro (menu do avatar): marca o <html> antes de pintar + camada escura -->
@@ -26,8 +26,8 @@
   <link rel="stylesheet" href="../portal-mobile.css?v=1" media="(max-width: 767.98px)">
   <script src="../portal-mobile.js?v=1" defer></script>
   <!-- Cotações: família do Customer Service (botões, chips, cartões, caso, diálogo) -->
-  <link rel="stylesheet" href="../customer-service.css?v=3">
-  <link rel="stylesheet" href="../cotacoes.css?v=7">
+  <link rel="stylesheet" href="../customer-service.css?v=4">
+  <link rel="stylesheet" href="../cotacoes.css?v=32">
 </head>
 <body class="dept cs-page cot-page" data-cot-pagina="casos">
 
@@ -61,7 +61,7 @@
             <nav>
               <div class="sb-section">Navegação</div>
               <a href="comercial.html">Visão geral</a>
-              <a href="comercial-cot-funil.html" class="active">Cotações</a>
+              <a href="comercial-crm.html" class="active">CRM</a>
             </nav>
           </div>
           <a href="../index.html" class="sb-back"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></svg>Voltar ao Portal</a>
@@ -71,17 +71,22 @@
 
           <div class="fx-head">
             <div>
-              <div class="fx-bc"><span>Comercial</span><span>›</span><a href="comercial-cot-funil.html">Cotações</a><span>›</span><span>Gestão de Cotações</span></div>
-              <h1 class="fx-title" data-recente="Cotações · Gestão de Cotações">Gestão de Cotações</h1>
+              <div class="fx-bc"><a href="comercial.html">Comercial</a><span>›</span><a href="comercial-crm.html">CRM</a><span>›</span><a href="comercial-cot-funil.html" data-crm-rotulo>Funil de Oportunidade</a><span>›</span><span>Gestão de Oportunidades</span></div>
+              <h1 class="fx-title" data-recente="CRM · Gestão de Oportunidades">Gestão de Oportunidades</h1>
             </div>
             <div class="fx-head-right">
               <span class="cs-live" id="cot-live"><i></i><span>Conectando…</span></span>
-              <a class="cs-btn cs-btn-sm cs-btn-p" href="comercial-cot-nova.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>Nova cotação</a>
+              <a class="cs-btn cs-btn-sm cs-btn-p" href="comercial-cot-nova.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>Nova oportunidade</a>
+              <!-- 21/10/2026 (pedido do usuário): o caminho de volta ao Funil,
+                   à esquerda, na linha das abas (o par do "Gestão de Cotações" do Funil) -->
+              <a class="cs-btn cot-atalho" href="comercial-cot-funil.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/></svg>Funil de Oportunidades</a>
               <div class="fx-tabs" id="cot-abas">
-                <a href="comercial-cot-funil.html">Funil</a>
-                <a href="#lista" data-aba="lista" class="active">Cotações</a>
+                <a href="#lista" data-aba="lista" class="active">Oportunidades</a>
                 <a href="#quadro" data-aba="quadro">Quadro</a>
-                <a href="#config" data-aba="config">Configurações</a>
+                <a href="#historico" data-aba="historico">Histórico</a>
+                <!-- 23/10/2026 (pedido do usuário): a aba Configurações saiu da barra;
+                     o dono ainda abre pelo endereço comercial-cot-casos.html#config -->
+                <a href="#config" data-aba="config" hidden>Configurações</a>
               </div>
             </div>
           </div>
@@ -94,10 +99,14 @@
               <div class="tk" id="tk">
                 <div id="cot-lista">
                   <div class="cot-quadro-l">
-                    <div class="tk-barra"><div class="tk-visoes" id="cot-visoes" role="group" aria-label="Situação da cotação"></div></div>
+                    <div class="tk-barra"><div class="tk-visoes" id="cot-visoes" role="group" aria-label="Situação da oportunidade"></div></div>
                     <div class="cot-portais" id="cot-portais" role="group" aria-label="Portais"></div>
+                    <div class="cot-portais" id="cot-unidades" role="group" aria-label="Unidades de negócio"></div>
+                    <!-- 23/10/2026 (pedido do usuário): o nome de cada responsável e o "Possui tramitação" -->
+                    <div class="cot-portais" id="cot-donos" role="group" aria-label="Responsáveis"></div>
                     <div class="tk-ferr">
-                      <label class="cs-busca"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg><input id="cot-busca" type="search" placeholder="Nº, cliente, nº da cotação, CNPJ, produto, OC…" autocomplete="off" aria-label="Buscar cotações"></label>
+                      <label class="cs-busca"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg><input id="cot-busca" type="search" placeholder="Nº, cliente, código do cliente, nº da cotação, CNPJ, produto, OC…" autocomplete="off" aria-label="Buscar oportunidades"></label>
+                      <span class="cot-tram-slot" id="cot-tram"></span>
                       <select class="cs-sel" id="cot-ordem" aria-label="Ordenar">
                         <option value="prazo">Prazo (vence antes)</option>
                         <option value="recentes">Mais recentes primeiro</option>
@@ -107,13 +116,37 @@
                       </select>
                     </div>
                     <div class="tk-cab" id="cot-cab"></div>
-                    <div class="cot-tabela" id="cot-tabela" role="table" aria-label="Cotações"></div>
+                    <div class="cot-tabela" id="cot-tabela" role="table" aria-label="Oportunidades"></div>
                   </div>
                 </div>
                 <div class="tk-caso" id="cot-caso" hidden></div>
               </div>
             </section>
-            <section data-painel="quadro" hidden><div class="cot-kanban" id="cot-kanban"></div></section>
+            <section data-painel="quadro" hidden>
+              <div class="cot-quadro-l cot-quadro-f">
+                <div class="cot-portais" id="cot-portais-q" role="group" aria-label="Portais"></div>
+                <div class="cot-portais" id="cot-unidades-q" role="group" aria-label="Unidades de negócio"></div>
+                <div class="cot-portais" id="cot-donos-q" role="group" aria-label="Responsáveis"></div>
+                <div class="tk-ferr">
+                  <label class="cs-busca"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg><input id="cot-busca-q" type="search" placeholder="Código do cliente, cliente, nº, nº da cotação, CNPJ, produto, OC…" autocomplete="off" aria-label="Buscar no quadro"></label>
+                  <span class="cot-tram-slot" id="cot-tram-q"></span>
+                </div>
+                <div class="tk-cab" id="cot-cab-q"></div>
+              </div>
+              <div class="cot-kanban" id="cot-kanban"></div>
+            </section>
+            <!-- 23/10/2026 (pedido do usuário): o HISTÓRICO do cliente — o código
+                 e todas as cotações dele, com o preço cotado de cada item -->
+            <section data-painel="historico" hidden>
+              <div class="cot-hist" id="cot-hist">
+                <div class="cs-card cot-hist-busca">
+                  <div class="cot-hist-t"><h3>Histórico do cliente</h3><p>Digite o <b>código do cliente</b> (Dynamics) — ou o <b>CNPJ</b>, no cliente novo — e veja todas as oportunidades dele — em andamento, ganhas e perdidas — com os valores e o preço cotado de cada item.</p></div>
+                  <label class="cs-busca"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg><input id="cot-hist-cod" type="search" list="cot-hist-dl" placeholder="Código do cliente (ex.: C004512) ou CNPJ" autocomplete="off" spellcheck="false" aria-label="Código do cliente ou CNPJ"></label>
+                  <datalist id="cot-hist-dl"></datalist>
+                </div>
+                <div id="cot-hist-res"></div>
+              </div>
+            </section>
             <section data-painel="config" hidden><div class="cot-cfg" id="cot-cfg"></div></section>
           </div>
 
@@ -127,7 +160,7 @@
     <div class="container">
       <div class="bm-footer-bottom">
         <span>© <span id="year"></span> MSB · Medical System do Brasil · Portal interno</span>
-        <span class="bm-footer-meta">Comercial · Cotações</span>
+        <span class="bm-footer-meta">Comercial · Oportunidades</span>
       </div>
     </div>
   </footer>
@@ -136,7 +169,7 @@
   <div class="cs-toasts" id="cs-toasts" aria-live="polite"></div>
 
   <script src="../script.js?v=8"></script>
-  <script src="../nav-sidebar.js?v=78"></script>
+  <script src="../nav-sidebar.js?v=79"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
   <script>
     if (window.pdfjsLib) {
@@ -145,12 +178,12 @@
     }
   </script>
   <script src="../pi-pdf-texto.js?v=1"></script>
-  <script src="../customer-service-pi.js?v=1"></script>
+  <script src="../customer-service-pi.js?v=2"></script>
   <script src="../pbi-throttle.js?v=5" data-bi-trava="off"></script>
   <script src="../voz-pbi.js?v=3"></script>
-  <script src="../cotacoes-base.js?v=6"></script>
+  <script src="../cotacoes-base.js?v=24"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-  <script src="../cotacoes-proposta.js?v=2"></script>
-  <script src="../cotacoes.js?v=8"></script>
+  <script src="../cotacoes-proposta.js?v=7"></script>
+  <script src="../cotacoes.js?v=35"></script>
 </body>
 </html>

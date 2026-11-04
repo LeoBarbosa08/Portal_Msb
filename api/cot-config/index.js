@@ -6,9 +6,9 @@
 //                                   cancelamento, empresas, áreas e o aviso de
 //                                   prazo (dias)
 //
-// O módulo é SÓ do dono do portal (cot-motor.exigirEquipe): não há equipe.
+// Lê quem tem a área Comercial (cot-motor.exigirEquipe); SALVAR é só do dono.
 //
-// diagnostico: se o armazenamento (o container próprio, COT_BLOB_URL) e a
+// diagnostico: se o armazenamento (o container próprio — na MSB, COT_MSB_BLOB_URL) e a
 // IA estão configurados e o tamanho máximo de anexo.
 // ================================================================
 

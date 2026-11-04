@@ -101,6 +101,15 @@ window.PORTAL_CATALOGO = (function () {
     ['comercial', 'Comportamento de Clientes', 'Sales Report', 'comercial-comportamento-clientes.html', 'sub',   'comportamento cliente curva abc pareto segmento fiel recorrente em risco dormente recencia recompra ticket medio'],
     ['comercial', 'Negociações',               '',             'comercial-funil.html',                  'brief', 'negociacoes oportunidades pipeline salesforce funil etapa fase conversao oportunidade'],
     ['comercial', 'Analítico',                 'Negociações',  'comercial-funil-analitico.html',        'sub',   'analitico negociacoes funil oportunidades sku produto item itens por fase familia estrategia curva abc mix'],
+    // CRM (04/11/2026, trazido do portal da BIO): na MSB só a Venda Recorrente
+    // (a Gestão de Cotações da MSB). BIO.ID e Venda Consultiva não vieram.
+    ['comercial', 'CRM',                       '',             'comercial-crm.html',                    'filter','crm funil de oportunidade oportunidades submodulo submodulos venda recorrente cotacoes cotacao pipeline'],
+    ['comercial', 'Venda Recorrente',          'CRM',          'comercial-cot-funil.html?sub=recorrente','sub',  'venda recorrente recorrente funil de oportunidade oportunidades cotacoes cotacao portal de compras bionexo proposta funil de conversao cotada virou pedido perdida pedido'],
+    ['comercial', 'Analítico das Oportunidades','CRM',         'comercial-cot-analitico.html',          'sub',   'analitico oportunidades cotacoes itens ganhos perdidos em andamento familia sku produto por que perdi motivo da perda preco do concorrente resultado do item venda recorrente'],
+    ['comercial', 'Gestão de Oportunidades',   'CRM',          'comercial-cot-casos.html',              'sub',   'gestao de oportunidades oportunidades gestao cotacoes casos lista proposta ordem de venda ov pi venda recorrente'],
+    ['comercial', 'Quadro de Oportunidades',   'CRM',          'comercial-cot-casos.html#quadro',       'sub',   'quadro kanban oportunidades cotacoes fases arrastar cotada em andamento virou pedido'],
+    ['comercial', 'Histórico do Cliente',      'CRM',          'comercial-cot-casos.html#historico',    'sub',   'historico cliente codigo oportunidades cotacoes precos cotados ganhas perdidas amostras'],
+    ['comercial', 'Nova oportunidade',         'CRM',          'comercial-cot-nova.html',               'sub',   'nova oportunidade agente de oportunidades agente de cotacoes registrar cotacao pdf portal de compras bionexo leitura ia proposta caso'],
     ['comercial', 'FCA',                       '',             'comercial-fca.html',                    'file',  'fca ficha atividade comercial visita relato'],
     ['comercial', 'Sales Playbook',            '',             'comercial-salesbooking.html',           'book',  'sales playbook salesbooking roteiro abordagem argumento treinamento'],
     ['comercial', 'Materiais e Recursos',      '',             'comercial-materiais.html',              'brief', 'materiais recursos apoio catalogo folder'],
@@ -283,8 +292,8 @@ window.PORTAL_CATALOGO = (function () {
   AGENTES    = AGENTES.filter(daqui);
 
   /* ── RECORTE MSB (20/10/26) ───────────────────────────────────── */
-  // No portal da MSB o Comercial mostra só o Sales Report (com as abas) e a
-  // Tabela de Preços: os outros módulos e os agentes do Comercial saem da
+  // No portal da MSB o Comercial mostra só o Sales Report (com as abas), o CRM
+  // (só a Venda Recorrente, desde 04/11/26) e a Tabela de Preços: os outros módulos e os agentes do Comercial saem da
   // busca — mesmo recorte do NAV.comercial de nav-sidebar.js e dos cartões
   // de pages/comercial.html. O Estoque fica inteiro (voltou no mesmo dia).
   // O Contábil (22/10/26) tem só a Gestão de Custos SG&A — mesmo recorte do
@@ -293,9 +302,13 @@ window.PORTAL_CATALOGO = (function () {
     'comercial-sales-report.html', 'comercial-performance-vendas.html', 'comercial-vendas.html',
     'comercial-clientes.html', 'comercial-base-notas-fiscais.html',
     'comercial-comportamento-clientes.html', 'comercial-tabela-precos.html',
+    // 04/11/26: o CRM, só com a Venda Recorrente (o mesmo do NAV.comercial)
+    'comercial-crm.html', 'comercial-cot-funil.html?sub=recorrente', 'comercial-cot-analitico.html',
+    'comercial-cot-casos.html', 'comercial-cot-casos.html#quadro', 'comercial-cot-casos.html#historico',
+    'comercial-cot-nova.html',
     'contabil-custos-sgna.html'
   ];
-  var AREAS_RECORTADAS = { comercial: 'Sales Report e Tabela de Preços.', contabil: 'Gestão de custos SG&A da MSB.' };
+  var AREAS_RECORTADAS = { comercial: 'Sales Report, CRM (Venda Recorrente) e Tabela de Preços.', contabil: 'Gestão de custos SG&A da MSB.' };
   function msbVisivel(area, arquivo) { return !AREAS_RECORTADAS[area] || MSB_VISIVEIS.indexOf(arquivo) >= 0; }
   AREAS      = AREAS.map(function (a) {
     return !AREAS_RECORTADAS[a[0]] ? a : [a[0], a[1], AREAS_RECORTADAS[a[0]], a[3], a[4], a[5]];

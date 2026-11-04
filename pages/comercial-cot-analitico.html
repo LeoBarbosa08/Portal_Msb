@@ -1,0 +1,286 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Analítico · Funil de Oportunidade · CRM · MSB</title>
+  <link rel="stylesheet" href="../styles.css?v=14">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300..900&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../dash-v2.css?v=3">
+  <!-- o mesmo desenho do Funil de Vendas da Licitação (.fv-*) -->
+  <link rel="stylesheet" href="../licitacao-funil-vendas.css?v=19">
+  <!-- a tabela por pessoa (.gd-tb) — a da Gestão de Desempenho / Funil de Vendas -->
+  <link rel="stylesheet" href="../licitacao-desempenho.css?v=1">
+  <!-- Login BLOQUEANTE: a tela chama /api/cot-casos no boot -->
+  <script src="https://unpkg.com/@azure/msal-browser@2.38.3/lib/msal-browser.min.js"></script>
+  <script src="../auth.js?v=8"></script>
+  <script>window._portalAuthLoaded = true;</script>
+  <!-- Layout v3 (Claude Design · animado): fonte + camada visual + motor de animações -->
+  <link rel="stylesheet" href="../portal-v3.css?v=2">
+  <script src="../portal-motion.js?v=3" defer></script>
+  <!-- Tema claro/escuro (menu do avatar): marca o <html> antes de pintar + camada escura -->
+  <script>try{if(localStorage.getItem('bm-tema')==='escuro')document.documentElement.setAttribute('data-tema','escuro')}catch(e){}</script>
+  <link rel="stylesheet" href="../portal-tema.css?v=1">
+  <script src="../portal-tema.js?v=1" defer></script>
+  <!-- Celular (varredura 15/10/26): só vale em tela < 768px; no computador não se aplica -->
+  <link rel="stylesheet" href="../portal-mobile.css?v=1" media="(max-width: 767.98px)">
+  <script src="../portal-mobile.js?v=1" defer></script>
+  <link rel="stylesheet" href="../customer-service.css?v=4">
+  <link rel="stylesheet" href="../cotacoes.css?v=32">
+</head>
+<body class="dept cs-page cot-page" data-cot-pagina="analitico">
+
+  <!-- HEADER GLOBAL -->
+  <header class="site-header">
+    <div class="container">
+      <a href="../index.html" class="brand" aria-label="Portal MSB — página inicial">
+        <img class="brand-logo" src="/icons/logo-msb.png" alt="MSB · Medical System do Brasil" onerror="this.dataset.failed='true'">
+        <span class="brand-fallback">MSB</span>
+      </a>
+      <nav class="header-nav">
+        <a href="../index.html">Início</a>
+        <a href="../index.html#areas">Áreas</a>
+        <a href="../index.html#sistemas">Sistemas</a>
+        <a href="../index.html#avisos">Avisos</a>
+        <a href="../index.html#contato">Contato</a>
+      </nav>
+    </div>
+  </header>
+
+  <div class="area-body">
+    <div class="container">
+      <div class="area-grid">
+
+        <aside class="area-sidebar">
+          <div class="sb-card">
+            <div class="sb-head">
+              <span class="sb-ic"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="8.5" cy="7" r="4"/><path d="M20 8v6"/><path d="M23 11h-6"/></svg></span>
+              <div><div class="sb-tt">Comercial</div><div class="sb-st">Departamento</div></div>
+            </div>
+            <nav>
+              <div class="sb-section">Navegação</div>
+              <a href="comercial.html">Visão geral</a>
+              <a href="comercial-crm.html" class="active">CRM</a>
+            </nav>
+          </div>
+          <a href="../index.html" class="sb-back"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></svg>Voltar ao Portal</a>
+        </aside>
+
+        <div class="area-main">
+
+          <div class="fx-head">
+            <div>
+              <div class="fx-bc"><a href="comercial.html">Comercial</a><span>›</span><a href="comercial-crm.html">CRM</a><span>›</span><span data-crm-rotulo>Funil de Oportunidade</span><span>›</span><a href="comercial-cot-funil.html">Funil</a><span>›</span><span>Analítico</span></div>
+              <h1 class="fx-title" data-recente="CRM · Oportunidades · Analítico">Oportunidades · Analítico</h1>
+            </div>
+            <div class="fx-head-right">
+              <span class="cs-live" id="cot-live"><i></i><span>Conectando…</span></span>
+              <a class="cs-btn cs-btn-sm cs-btn-p" href="comercial-cot-nova.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>Nova oportunidade</a>
+              <!-- 21/10/2026 (pedido do usuário): a Gestão de Cotações com botão
+                   escrito, à esquerda, na linha das abas -->
+              <a class="cs-btn cot-gestao" href="comercial-cot-casos.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><rect x="8" y="2" width="8" height="4" rx="1"/><line x1="9" y1="12" x2="15" y2="12"/><line x1="9" y1="16" x2="15" y2="16"/></svg>Gestão de Oportunidades</a>
+              <div class="fx-tabs">
+                <a href="comercial-cot-funil.html">Funil</a>
+                <span class="active">Analítico</span>
+                <!-- 23/10/2026 (pedido do usuário): o Histórico do cliente (na Gestão) -->
+                <a href="comercial-cot-casos.html#historico">Histórico</a>
+              </div>
+            </div>
+          </div>
+
+          <!-- 20/10/2026 (pedido do usuário): o Analítico do Funil de Vendas da
+               Licitação para as cotações — as MESMAS cotações do Funil (a semana
+               avaliada e os filtros passam de uma aba à outra) e os ITENS delas:
+               ganhos, perdidos e em andamento por família e SKU, por que perdi,
+               o preço do concorrente e o resultado de cada item. Motor:
+               cotacoes-semana.js; a página: cotacoes-analitico.js -->
+          <div class="fv-wrap cot-wrap" id="cot-app">
+            <div id="cot-faixa"></div>
+            <div class="cot-filtros" id="cot-filtros"></div>
+
+            <!-- ═══ Semana avaliada (a mesma do Funil) ═══ -->
+            <div class="fs-nav" id="fs-nav">
+              <button type="button" class="fs-nav-b" id="fs-prev" aria-label="Semana anterior" title="Semana anterior"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg></button>
+              <div class="fs-nav-t"><span class="k">Semana avaliada</span><span class="t" id="fs-tt">—</span></div>
+              <button type="button" class="fs-nav-b" id="fs-next" aria-label="Semana seguinte" title="Semana seguinte"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg></button>
+              <div class="fs-nav-i" id="fs-nav-i">—</div>
+            </div>
+
+            <!-- ═══ HERO: em cima as cotações (os números do Funil); embaixo os
+                 ITENS delas — ganhei, perdi, em andamento e perdi por preço (27/10/2026,
+                 pedido do usuário: saiu o quadro da distância do concorrente — ela
+                 segue em "O preço do concorrente") ═══ -->
+            <div class="fv-navy fs-mov" id="ha">
+              <div class="fs-mov-h">
+                <div class="fv-navy-k" id="ha-k">Cotadas na semana · as mesmas oportunidades do Funil</div>
+                <div class="fs-mov-tx" id="ha-ng-tx"></div>
+              </div>
+              <div class="fa-ng" id="ha-ng"></div>
+              <div class="fs-mov-h fa-it-h">
+                <div class="fv-navy-k" id="ha-ik">Os itens delas</div>
+                <div class="fs-mov-tx" id="ha-tx"></div>
+              </div>
+              <div class="fs-mov-g fa-g5">
+                <div class="fs-mv gan" data-ca-lista="gan" role="button" tabindex="0" title="Itens ganhos — clique para ver na lista">
+                  <span class="k"><i></i>Ganhei<small>ganho ou pedido</small></span>
+                  <span class="v" id="ha-gan-v">—</span><span class="c" id="ha-gan-c">—</span><span class="d" id="ha-gan-d"></span>
+                </div>
+                <div class="fs-mv per" data-ca-lista="per" role="button" tabindex="0" title="Itens perdidos — clique para ver na lista">
+                  <span class="k"><i></i>Perdi<small>sem ganho</small></span>
+                  <span class="v" id="ha-per-v">—</span><span class="c" id="ha-per-c">—</span><span class="d" id="ha-per-d"></span>
+                </div>
+                <div class="fs-mv and" data-ca-lista="and" role="button" tabindex="0" title="Itens ainda sem resultado — clique para ver na lista">
+                  <span class="k"><i></i>Em andamento<small>sem resultado</small></span>
+                  <span class="v" id="ha-and-v">—</span><span class="c" id="ha-and-c">—</span><span class="d" id="ha-and-d"></span>
+                </div>
+                <div class="fs-mv pre" data-ca-grp="preco" role="button" tabindex="0" title="Itens perdidos por preço — clique para filtrar a página">
+                  <span class="k"><i></i>Perdi por preço<small>motivo</small></span>
+                  <span class="v" id="ha-pre-v">—</span><span class="c" id="ha-pre-c">—</span><span class="d" id="ha-pre-d"></span>
+                </div>
+              </div>
+            </div>
+
+            <!-- ═══ Ganhos | em andamento (por família → SKU) ═══ -->
+            <div class="fv-row2">
+              <div class="fv-card fill fa-sf gan">
+                <div class="fv-card-h">
+                  <div>
+                    <h3><i class="fa-sf-i"></i>Itens ganhos</h3>
+                    <p class="fv-sub" id="sf-gan-sub">por família · clique numa família para ver os SKUs</p>
+                  </div>
+                  <div class="fv-seg">
+                    <button type="button" data-cots-met="v">Valor</button>
+                    <button type="button" data-cots-met="n">Itens</button>
+                  </div>
+                </div>
+                <div id="sf-gan-host"><div class="fv-empty">Carregando…</div></div>
+              </div>
+              <div class="fv-card fill fa-sf and">
+                <div class="fv-card-h">
+                  <div>
+                    <h3><i class="fa-sf-i"></i>Itens em andamento</h3>
+                    <p class="fv-sub" id="sf-and-sub">ainda sem resultado · por família · clique numa família para ver os SKUs</p>
+                  </div>
+                  <div class="fv-seg">
+                    <button type="button" data-cots-met="v">Valor</button>
+                    <button type="button" data-cots-met="n">Itens</button>
+                  </div>
+                </div>
+                <div id="sf-and-host"><div class="fv-empty">Carregando…</div></div>
+              </div>
+            </div>
+
+            <!-- ═══ Perdidos | por que perdi ═══ -->
+            <div class="fv-row2">
+              <div class="fv-card fill fa-sf per">
+                <div class="fv-card-h">
+                  <div>
+                    <h3><i class="fa-sf-i"></i>Itens perdidos</h3>
+                    <p class="fv-sub" id="sf-per-sub">por família · clique numa família para ver os SKUs · passe o mouse para ver os motivos</p>
+                  </div>
+                  <div class="fv-seg">
+                    <button type="button" data-cots-met="v">Valor</button>
+                    <button type="button" data-cots-met="n">Itens</button>
+                  </div>
+                </div>
+                <div id="sf-per-host"><div class="fv-empty">Carregando…</div></div>
+              </div>
+              <div class="fv-card fill">
+                <div class="fv-card-h">
+                  <div>
+                    <h3>Por que perdi</h3>
+                    <p class="fv-sub" id="mo-sub">o motivo da perda de cada item perdido · clique para filtrar a página</p>
+                  </div>
+                  <div class="fv-seg">
+                    <button type="button" data-cots-met="v">Valor</button>
+                    <button type="button" data-cots-met="n">Itens</button>
+                  </div>
+                </div>
+                <div id="mo-host"><div class="fv-empty">Carregando…</div></div>
+              </div>
+            </div>
+
+            <!-- ═══ O preço do concorrente | o resultado dos itens ═══ -->
+            <div class="fv-row2">
+              <div class="fv-card fill">
+                <div class="fv-card-h">
+                  <div>
+                    <h3>O preço do concorrente</h3>
+                    <p class="fv-sub" id="pr-sub">oportunidades perdidas com o preço de quem levou · nosso valor cotado × o dele</p>
+                  </div>
+                </div>
+                <div id="pr-host"><div class="fv-empty">Carregando…</div></div>
+              </div>
+              <div class="fv-card fill">
+                <div class="fv-card-h">
+                  <div>
+                    <h3>Resultado dos itens</h3>
+                    <p class="fv-sub">o “Resultado do item” de cada um — marcado no caso ou o da oportunidade · clique para filtrar</p>
+                  </div>
+                </div>
+                <div id="re-host"><div class="fv-empty">Carregando…</div></div>
+                <div class="fv-foot" id="re-nota"></div>
+              </div>
+            </div>
+
+            <!-- ═══ As cotações e os itens ═══ -->
+            <div class="fv-card" id="ls-card">
+              <div class="fv-card-h">
+                <div>
+                  <h3 id="ls-tt">Oportunidades da semana</h3>
+                  <p class="fv-sub" id="ls-sub">—</p>
+                </div>
+              </div>
+              <div class="fv-tsub">
+                <div class="fv-seg" id="ls-grao" role="group" aria-label="Ver por">
+                  <button type="button" data-grao="cot">Por oportunidade</button>
+                  <button type="button" data-grao="item">Por item</button>
+                </div>
+                <div class="fv-seg" id="ls-sit" role="group" aria-label="Lista">
+                  <button type="button" data-sit="tudo">Todas</button>
+                  <button type="button" data-sit="and">Em aberto</button>
+                  <button type="button" data-sit="gan">Ganhas</button>
+                  <button type="button" data-sit="per">Perdidas</button>
+                </div>
+                <div class="fa-sel" id="ls-sel"></div>
+                <label class="fv-busca"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg><input type="search" id="ls-busca" placeholder="Buscar oportunidade, cliente, produto, família, motivo…" autocomplete="off" aria-label="Buscar nas oportunidades e itens"></label>
+                <span class="fv-tinfo" id="ls-info">—</span>
+              </div>
+              <div class="fv-tw fv-ng-tw tbl-wrap"><table class="fv-tb fv-ng fa-tb cot-ng"><thead id="ls-head"></thead><tbody id="ls-body"><tr><td class="dim">Carregando…</td></tr></tbody><tfoot id="ls-foot"></tfoot></table></div>
+              <button type="button" class="fv-mais" id="ls-mais" hidden></button>
+            </div>
+
+            <div class="fv-rodape">
+              <span>Fonte: as oportunidades do módulo (só as da sua unidade de negócio) — as mesmas do Funil — e os itens de cada uma · resultado do item = a marca no caso (Itens cotados); sem ela, o da oportunidade · família = a do Power BI do Comercial · valor do item = quantidade × preço cotado · <span id="cots-atualizado">—</span></span>
+              <button type="button" class="fv-act" data-cots="recarregar">Atualizar agora</button>
+            </div>
+          </div>
+
+        </div><!-- /area-main -->
+      </div><!-- /area-grid -->
+    </div><!-- /container -->
+  </div><!-- /area-body -->
+
+  <!-- FOOTER -->
+  <footer class="site-footer">
+    <div class="container">
+      <div class="bm-footer-bottom">
+        <span>© <span id="year"></span> MSB · Medical System do Brasil · Portal interno</span>
+        <span class="bm-footer-meta">Comercial · Oportunidades</span>
+      </div>
+    </div>
+  </footer>
+
+  <dialog class="cs-dlg" id="cs-dlg"></dialog>
+  <div class="cs-toasts" id="cs-toasts" aria-live="polite"></div>
+
+  <script src="../script.js?v=8"></script>
+  <script src="../nav-sidebar.js?v=79"></script>
+  <script src="../cotacoes-base.js?v=24"></script>
+  <script src="../cotacoes-ficha.js?v=13"></script>
+  <script src="../cotacoes-semana.js?v=8"></script>
+  <script src="../cotacoes-analitico.js?v=6"></script>
+</body>
+</html>

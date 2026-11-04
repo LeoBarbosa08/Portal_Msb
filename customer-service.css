@@ -699,6 +699,41 @@ html[data-tema="escuro"] .cs-ia-anx li em { color: #F5C26B; }
 .tk-vazio { font-size: 12px; color: var(--cs-mut); }
 .tk-tabela .cs-vazio { padding: 40px 24px; }
 
+/* ── a empresa inteira (01/11/26): área da empresa, público, colaborador ── */
+.tk-pub { display: inline-flex; align-items: center; flex: none; height: 18px; padding: 0 7px; border-radius: 6px; font-size: 10px; font-weight: 800; letter-spacing: .04em; text-transform: uppercase; }
+.tk-pub.externo { background: var(--bm3-blue-50, #EEF5F9); color: var(--bm3-blue-700, #225E72); }
+.tk-pub.interno { background: #F1ECFE; color: #5B21B6; }
+.tk-hero-l1 .tk-pub, .tk-hero-l1 .tk-area-tag { height: 24px; }
+.tk-grupo { display: inline-flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+.tk-ests-sep { width: 1px; height: 22px; margin: 0 6px; background: var(--cs-line); }
+.tk-est.zero { opacity: .55; }
+.tk-ia-mini { display: inline-flex; align-items: center; gap: 6px; color: var(--cs-blue) !important; }
+.tk-ia-mini i { width: 7px; height: 7px; border-radius: 50%; background: currentColor; animation: cs-pulso 1.6s ease-in-out infinite; }
+.tk-tabela.sol .tk-th, .tk-tabela.sol .tk-row { grid-template-columns: 150px minmax(240px, 1fr) 170px 160px 150px 130px; }
+.tk-sol-quem { margin: 0 0 4px; font-size: 13px; color: var(--cs-ink2); }
+.tk-path-sol span { position: relative; flex: 1; min-width: 0; height: 34px; display: grid; place-items: center; padding: 0 18px 0 22px;
+  background: var(--cs-soft); color: var(--cs-mut); font: 700 12px/1 var(--bm3-font-text, Roboto, sans-serif);
+  clip-path: polygon(0 0, calc(100% - 12px) 0, 100% 50%, calc(100% - 12px) 100%, 0 100%, 12px 50%); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.tk-path-sol span:first-child { clip-path: polygon(0 0, calc(100% - 12px) 0, 100% 50%, calc(100% - 12px) 100%, 0 100%); border-radius: 10px 0 0 10px; padding-left: 14px; }
+.tk-path-sol span:last-child { clip-path: polygon(0 0, 100% 0, 100% 100%, 0 100%, 12px 50%); border-radius: 0 10px 10px 0; }
+.tk-path-sol span.feito { background: var(--bm3-navy-800, #143742); color: #fff; }
+.tk-path-sol span.atual { background: var(--cs-blue); color: #fff; }
+.tk-path-sol span.atual.fim { background: var(--bm3-green-600, #138A4B); }
+.tk-path-sol span svg { width: 12px; height: 12px; margin-right: 4px; vertical-align: -2px; }
+.cs-faixa.info { background: color-mix(in srgb, var(--cs-blue) 8%, var(--bm3-surface, #fff)); color: var(--cs-ink); border: 1px solid color-mix(in srgb, var(--cs-blue) 22%, transparent); align-items: center; }
+.cs-faixa.info svg { color: var(--cs-blue); }
+.cs-deps { display: flex; flex-direction: column; gap: 8px; margin-top: 4px; }
+/* o colaborador (solicitante) não vê a maquinaria da equipe */
+body.cs-solicitante #cs-sync, body.cs-solicitante #cs-live, body.cs-solicitante #tk-som,
+body.cs-solicitante [data-ir-aba="caixa"], body.cs-solicitante #cs-kpis, body.cs-solicitante #cs-abas { display: none !important; }
+@media (max-width: 640px) {
+  .cs-faixa.info { flex-wrap: wrap; }
+  .cs-faixa.info > div { flex: 1 1 200px; }
+  .cs-faixa.info .cs-btn { margin-left: 32px; }
+}
+html[data-tema="escuro"] .tk-pub.externo { background: rgba(44,114,136,.22); color: #BDDAE7; }
+html[data-tema="escuro"] .tk-pub.interno { background: rgba(124,58,237,.25); color: #DDD0FD; }
+
 /* o ticket aberto */
 .tk-caso { display: flex; flex-direction: column; gap: 14px; }
 .tk-carregando { display: flex; align-items: center; gap: 10px; padding: 22px; font-size: 13.5px; color: var(--cs-mut); }
@@ -822,6 +857,8 @@ details.tk-hist[open] summary h5::after { transform: rotate(180deg); }
   .tk-th, .tk-row { grid-template-columns: 128px minmax(220px, 1fr) 112px 150px 156px 112px; }
   .tk-th span:nth-child(7) { display: none; }
   .tk-c-prazo { display: none; }
+  .tk-tabela.sol .tk-th, .tk-tabela.sol .tk-row { grid-template-columns: 128px minmax(220px, 1fr) 150px 150px 140px; }
+  .tk-tabela.sol .tk-th span:nth-child(6) { display: none; }
 }
 @container tk (max-width: 1020px) {
   .tk-grid { grid-template-columns: minmax(0, 1fr); }
@@ -838,6 +875,9 @@ details.tk-hist[open] summary h5::after { transform: rotate(180deg); }
   .tk-c-area { grid-area: area; flex-direction: row; align-items: center; gap: 6px; }
   .tk-c-st { grid-area: st; justify-content: flex-end; }
   .tk-c-dono { grid-area: dono; justify-content: flex-end; }
+  .tk-tabela.sol .tk-row { grid-template-columns: minmax(0, 1fr) auto; grid-template-areas: "ass num" "area st" "dono dono"; }
+  .tk-ests-sep { display: none; }
+  .tk-grupo { width: 100%; }
   .tk-ia-tiles { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .tk-comp-campos { grid-template-columns: minmax(0, 1fr); }
   .tk-hero-cli { grid-template-columns: auto minmax(0, 1fr); }

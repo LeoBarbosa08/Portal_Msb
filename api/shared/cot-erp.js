@@ -8,24 +8,32 @@
 //
 // SÓ LEITURA, app-only (D365_TENANT_ID/CLIENT_ID/CLIENT_SECRET — o mesmo
 // acesso do /api/pedido-lotes). O OData do F&O só filtra TEXTO com eq (não
-// há startswith/contains): o CNPJ vai como está gravado — tenta só dígitos
-// e com máscara. Entidades: CustomersV3 (BrazilianCNPJOrCPF) e, sem ela,
+// há startswith/contains): o CNPJ vai como está gravado — tenta só dígitos,
+// dígitos com o hífen do DV (009613150001-03: o Hospital do Câncer de Muriaé
+// está gravado assim — achado em 20/10/26) e com máscara.
+// Entidades: CustomersV3 (BrazilianCNPJOrCPF) e, sem ela,
 // CustTables (CNPJCPFNum_BR) — as mesmas que a carteira (shared/clientes.js)
 // e a Cobrança já usam em produção. COT_ERP_ENTIDADE + COT_ERP_CAMPO_CNPJ
 // fixam outra. Sem $select: a linha vem inteira (são 1-3 linhas) e cada
 // campo é lido por vários nomes (o que a entidade não tiver fica vazio).
 // Cache por CNPJ: 6 h achado, 30 min não achado.
+//
+// PELO CÓDIGO DO CLIENTE (20/10/26): o Agente de Cotações também busca pelo
+// código do ERP (CustomerAccount / AccountNum, eq — "c004512" vira
+// "C004512"); o retrato traz o CNPJ do cadastro para preencher o formulário.
+// COT_ERP_CAMPO_CODIGO fixa outro campo na entidade de COT_ERP_ENTIDADE.
 // ================================================================
 
 const D = require('./d365');
 
 const ALVOS = [];
-if (process.env.COT_ERP_ENTIDADE) ALVOS.push({ entity: process.env.COT_ERP_ENTIDADE, campo: process.env.COT_ERP_CAMPO_CNPJ || 'BrazilianCNPJOrCPF' });
-ALVOS.push({ entity: 'CustomersV3', campo: 'BrazilianCNPJOrCPF' }, { entity: 'CustTables', campo: 'CNPJCPFNum_BR' });
+if (process.env.COT_ERP_ENTIDADE) ALVOS.push({ entity: process.env.COT_ERP_ENTIDADE, campo: process.env.COT_ERP_CAMPO_CNPJ || 'BrazilianCNPJOrCPF', campoCodigo: process.env.COT_ERP_CAMPO_CODIGO || 'CustomerAccount' });
+ALVOS.push({ entity: 'CustomersV3', campo: 'BrazilianCNPJOrCPF', campoCodigo: 'CustomerAccount' }, { entity: 'CustTables', campo: 'CNPJCPFNum_BR', campoCodigo: 'AccountNum' });
 
 // cada informação, pelos nomes que ela tem nas entidades do F&O
 const COL = {
   codigo: ['CustomerAccount', 'AccountNum'],
+  cnpj: ['BrazilianCNPJOrCPF', 'CNPJCPFNum_BR'],
   nome: ['OrganizationName', 'Name'],
   fantasia: ['NameAlias', 'OrganizationAliasName', 'SearchName'],
   empresa: ['dataAreaId'],
@@ -47,12 +55,16 @@ const COL = {
   limiteCredito: ['CreditLimit'],
   ie: ['StateInscription_BR', 'BrazilianStateInscription', 'StateInscription']
 };
-const EMPRESA_PREFERIDA = 'bio';   // a cotação é sempre da BIO
+// RECORTE MSB: a cotação é sempre da MSB — o cadastro da empresa msb vem
+// primeiro (a mesma ESTOQUE_MSB_EMPRESA do /api/pedido-lotes)
+const EMPRESA_PREFERIDA = String(process.env.ESTOQUE_MSB_EMPRESA || 'msb').trim().toLowerCase();
 const TTL_ACHOU = 6 * 3600e3, TTL_NAO = 30 * 60e3;
 const _cache = new Map();
 let _alvo = null;                   // a entidade que respondeu (as próximas vão direto nela)
 
 function digitos(s) { return String(s == null ? '' : s).replace(/\D/g, ''); }
+// 009613150001-03 / 123456789-09: dígitos + hífen antes do DV, sem ponto nem barra
+function hifenDv(d) { return (d.length === 14 || d.length === 11) ? d.slice(0, -2) + '-' + d.slice(-2) : d; }
 function mascara(d) {
   if (d.length === 14) return d.slice(0, 2) + '.' + d.slice(2, 5) + '.' + d.slice(5, 8) + '/' + d.slice(8, 12) + '-' + d.slice(12);
   if (d.length === 11) return d.slice(0, 3) + '.' + d.slice(3, 6) + '.' + d.slice(6, 9) + '-' + d.slice(9);
@@ -70,6 +82,8 @@ function retrato(linhas, fonte) {
   return {
     achou: true, fonte: fonte,
     codigo: txt(ler(r, 'codigo'), 30), nome: txt(ler(r, 'nome'), 160), fantasia: txt(ler(r, 'fantasia'), 120),
+    // o CNPJ/CPF do cadastro, só os dígitos (a busca pelo código preenche o formulário com ele)
+    cnpj: digitos(ler(r, 'cnpj')).slice(0, 14),
     empresa: txt(ler(r, 'empresa'), 10).toUpperCase(),
     empresas: linhas.map(function (x) { return txt(ler(x, 'empresa'), 10).toUpperCase(); }).filter(function (e, i, l) { return e && l.indexOf(e) === i; }),
     grupo: txt(ler(r, 'grupo'), 30), pagamento: txt(ler(r, 'pagamento'), 60), formaPagamento: txt(ler(r, 'formaPagamento'), 40),
@@ -85,7 +99,7 @@ function retrato(linhas, fonte) {
 
 async function procurar(d) {
   const token = await D.getToken();
-  const valores = [d, mascara(d)].filter(function (v, i, l) { return l.indexOf(v) === i; });
+  const valores = [d, hifenDv(d), mascara(d)].filter(function (v, i, l) { return l.indexOf(v) === i; });
   const alvos = _alvo ? [_alvo] : ALVOS;
   let ultimo = null;
   for (const a of alvos) {
@@ -114,4 +128,33 @@ async function clientePorCnpj(cnpj, opts) {
   return v;
 }
 
-module.exports = { clientePorCnpj, CONFIGURADO: D.CONFIGURED, _zerar: function () { _cache.clear(); _alvo = null; } };
+// o código do cliente como o ERP grava: maiúsculas, sem espaço ('' = não é código)
+function codigoDe(v) { const c = String(v == null ? '' : v).trim().toUpperCase().replace(/\s+/g, ''); return /^[A-Z0-9][A-Z0-9._-]{1,29}$/.test(c) ? c : ''; }
+async function procurarCodigo(cod) {
+  const token = await D.getToken();
+  const alvos = _alvo ? [_alvo] : ALVOS;
+  let ultimo = null;
+  for (const a of alvos) {
+    try {
+      const rows = await D.odataGet(a.entity, { filter: (a.campoCodigo || 'CustomerAccount') + " eq '" + D.odataStr(cod) + "'", crossCompany: true, top: 10 }, token);
+      _alvo = a;
+      return rows.length ? retrato(rows, a.entity) : { achou: false, fonte: a.entity };
+    } catch (e) { ultimo = e; }
+  }
+  throw ultimo || new Error('nenhuma entidade de clientes respondeu no Dynamics');
+}
+// { configurado:false } | { achou:false } | { achou:true, codigo, cnpj, … } — erro lança
+async function clientePorCodigo(codigo, opts) {
+  const cod = codigoDe(codigo);
+  if (!cod) return { achou: false, motivo: 'código inválido' };
+  if (!D.CONFIGURED) return { configurado: false, achou: false };
+  const k = 'cod:' + cod;
+  const c = _cache.get(k);
+  if (c && Date.now() - c.em < (c.v.achou ? TTL_ACHOU : TTL_NAO)) return c.v;
+  const limite = (opts && opts.timeoutMs) || 15000;
+  const v = await Promise.race([procurarCodigo(cod), new Promise(function (_, falha) { setTimeout(function () { falha(new Error('o Dynamics demorou mais de ' + Math.round(limite / 1000) + ' s')); }, limite); })]);
+  _cache.set(k, { em: Date.now(), v: v });
+  return v;
+}
+
+module.exports = { clientePorCnpj, clientePorCodigo, codigoDe, CONFIGURADO: D.CONFIGURED, _zerar: function () { _cache.clear(); _alvo = null; } };

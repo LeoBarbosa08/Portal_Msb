@@ -9,23 +9,25 @@ completo não foi alterado.
 Usa as **mesmas fontes de dados** do portal completo: o mesmo login do Entra
 (App Registration `129978ce…`), o mesmo Power BI, Dynamics 365, Salesforce,
 Azure OpenAI, os mesmos fluxos do Power Automate e os **mesmos blobs** — o
-que alguém faz aqui (FCA, Cotações, avisos do mural) aparece
-no portal completo e vice-versa.
+que alguém faz aqui (FCA, avisos do mural) aparece
+no portal completo e vice-versa. **Exceção: o CRM › Venda Recorrente**
+(as cotações) tem container próprio da MSB desde 04/11/2026 — ver "CRM ›
+Venda Recorrente".
 
 ## O que tem
 
 | Área | Páginas |
 |---|---|
-| Comercial | Visão geral · Sales Report (6 abas) · Negociações + Analítico · Cotações (reservado ao dono, como no completo) · FCA · Sales Playbook · Materiais · Tabela de Preços |
-| Comercial · agentes | Dossiê de Visita · PI · Pedido (no menu, só para o dono — ver "PI · Pedido de volta") · PI · Consignação · PI · Consignação (INCOMPLETO, em testes) · Agente de Cotações · Agente Comercial |
+| Comercial | Visão geral · Sales Report (6 abas) · CRM › Venda Recorrente (Funil, Analítico, Gestão, Quadro, Histórico, Nova oportunidade) · Negociações + Analítico · FCA · Sales Playbook · Materiais · Tabela de Preços |
+| Comercial · agentes | Dossiê de Visita · PI · Pedido (no menu, só para o dono — ver "PI · Pedido de volta") · PI · Consignação · PI · Consignação (INCOMPLETO, em testes) · Agente Comercial (o Agente de Cotações virou o "Nova oportunidade" do CRM) |
 | Estoque | Visão geral · Gestão de Estoque (Saldo, Ruptura, Validade Curta, Movimentações) · Gestão de Consignação (Saldo Consignado, Saldo por Nota, Devoluções, Rastreabilidade, GMROI) · Perdas · Consignado |
 | Estoque · agentes | Agente de Estoque |
 | Contábil | Visão geral · Gestão de Custos SG&A (só a MSB) |
 | Comum | Home, busca (Ctrl+K), Central de Avisos, tema escuro, celular, PWA |
 
-20 Functions em `api/`: `my-areas`, `alertas`, `avisos`, `pbi-query`,
+21 Functions em `api/`: `my-areas`, `alertas`, `avisos`, `pbi-query`,
 `directline-token`, `chat`, `transcrever`, `comercial-funil`, `cot-casos`,
-`cot-config`, `fca`, `pedido-extrair`, `pedido-enviar`, `pedido-lotes`,
+`cot-config`, `cot-ov-retorno`, `fca`, `pedido-extrair`, `pedido-enviar`, `pedido-lotes`,
 `consig-lote`, `consig-faturar`, `consig-processo`, `dossie-cliente`,
 `dossie-ganchos`, `dossie-agenda`.
 
@@ -248,6 +250,78 @@ Pedido do dono: trazer o PI · Pedido do portal completo (`LeoBarbosa08/Claude.r
   alçada de aprovação de remessa): no completo ele está oculto para todos.
 - `nav-sidebar.js?v=78` em todas as páginas; `sw.js` — cache `bm-comest-v7`.
 
+### CRM › Venda Recorrente (04/11/2026)
+
+Pedido do dono: trazer do portal da BIO (`LeoBarbosa08/Claude.rep` `ab9b478`,
+de 04/11) o **módulo CRM** da área Comercial e **tudo** o que existe no
+submódulo **Venda Recorrente** — **sem as cotações que já existem lá**. BIO.ID
+e Venda Consultiva (os outros dois submódulos do CRM de lá) não vieram.
+
+- **O que veio** (a Gestão de Cotações da BIO de hoje, que lá virou o
+  submódulo): a casa do CRM (`pages/comercial-crm.html`), o Funil de
+  Oportunidade (`comercial-cot-funil.html`, com semana a semana), o Analítico
+  (`comercial-cot-analitico.html`, novo), a Gestão de Oportunidades com Quadro
+  e Histórico do cliente (`comercial-cot-casos.html`) e a Nova oportunidade
+  (`comercial-cot-nova.html` — o Agente de Oportunidades: lê o PDF do portal
+  por IA, confere códigos/CNPJ/preço de referência, proposta por e-mail).
+  Tudo o que a BIO ganhou desde 20/10: fase A faturar (com o lote conferido no
+  Dynamics), Amostra, resultado item a item, Ordem de Venda conferida no F&O
+  (várias por cotação, "Já tenho a OV" com a lista do cliente), retorno da OV
+  pelo flow, Perdida automática no vencimento, tramitação, histórico do
+  cliente, produto do Salesforce (descrição/fabricante/RMS) na proposta.
+  Scripts e estilos: `cotacoes*.js` (com `cotacoes-semana.js` e
+  `cotacoes-analitico.js`, novos), `cotacoes.css`, `customer-service.css`,
+  `licitacao-funil-vendas.css`, `licitacao-desempenho.css` (novo) — todos
+  convertidos para a marca (`scripts/msb-cores.js`, Roboto, logo, "· MSB").
+  Servidor: `api/cot-casos`, `api/cot-config`, `api/cot-ov-retorno` (nova) e
+  `api/shared/cot-motor.js`, `cot-erp.js`, `cot-ov.js`, `cot-lotes.js`
+  (novo), `cot-produtos.js` (novo), `pbi-unidades.js` (novo, só para a
+  família do Analítico). `api/pedido-extrair` + `api/shared/pedido-revisar.js`
+  ganharam a regra do RMS do completo (o registro ANVISA deixa de virar o
+  código), mantendo o ajuste do endpoint da IA da MSB.
+- **Cotações próprias da MSB** — `api/shared/cot-store.js` lê e grava **só**
+  em `COT_MSB_BLOB_URL` (container novo, SAS de container `sr=c` com Read +
+  Create + Write). De propósito **não** cai no `COT_BLOB_URL` da BIO: sem a
+  variável nova a tela avisa "armazenamento não configurado" e nada é gravado.
+  Começa vazio; nada daqui aparece no portal da BIO e vice-versa.
+- **Número próprio** `COT-MSB-AAAA-NNNNNN` (`NUM_PREFIXO` no motor). O flow
+  do PI · Pedido é o mesmo da BIO: o portal da BIO ignora o `COT-MSB-…` (nunca
+  fecha a cotação dele de mesmo número). Para a OV voltar sozinha às
+  cotações da MSB, o flow precisa chamar o `/api/cot-ov-retorno` **deste**
+  portal quando o Caso começar com `COT-MSB-` (com a `COT_OV_CHAVE` desta
+  Static Web App); até lá a OV entra à mão no cartão.
+- **Empresa MSB** em tudo (a da BIO era fixa BIO): o cliente (`cot-erp`), a OV
+  (`cot-ov`, prefixo `OVMSB` — `COT_OV_PREFIXO` troca; aceita OV + letras +
+  números) e o lote (`cot-lotes`) são procurados na empresa `msb` do Dynamics
+  (`ESTOQUE_MSB_EMPRESA`, a mesma do `/api/pedido-lotes`). O CNPJ da MSB, para
+  a IA nunca o ler como cliente, vai em `COT_CNPJS_PROPRIOS` (opcional).
+- **Unidade fixa VENDA RECORRENTE** (`comEscopo` no motor): no completo cada um
+  vê só as cotações da sua unidade no RLS do Power BI, mas o RLS põe a gente da
+  MSB na unidade "MSB", que o `pbi-unidades` esconde. Aqui quem tem a área
+  Comercial (o mesmo porteiro do completo, `exigirEquipe`) vê todas as
+  cotações da MSB. Configurações: só o dono, as duas contas (`DONOS`).
+- **Proposta**: continua no modelo/timbrado da Biomedical (ver "Identidade
+  visual MSB"). O contato de setor da Venda Recorrente da BIO
+  (`CONTATO_SETOR` em `cotacoes-base.js`) saiu: a proposta sai com o e-mail e o
+  telefone de quem está logado. A área do PI vai como `PEDIDOINTELIGENTE (MSB)`.
+- **Códigos no Power BI**: como no PI, o código que some com o recorte MSB do
+  `pbi-throttle.js` é procurado de novo com `REMOVEFILTERS('Empresas')` (só
+  código e nome) — `validarCodigos` em `cotacoes-base.js`.
+- **Menu e acesso** (`nav-sidebar.js`): o bloco `BMCRM` do completo com um
+  submódulo só (`SUBS` = Venda Recorrente; sem `?sub=` a aba fica nele);
+  `NAV.comercial` ganhou CRM › Venda Recorrente; as `comercial-cot-*` saíram do
+  gate do dono (`restrito()`) e abrem para o Comercial. Cartão na visão geral
+  (`pages/comercial.html`), na busca (`MSB_VISIVEIS` do `portal-catalogo.js`),
+  no guia (`script.js`) e na home (`index.html`).
+- O botão de mandar o pedido ao **PI · Pedido** leva a uma página que, na MSB,
+  ainda é só do dono (ver "PI · Pedido de volta"): para a equipe, abrir o PI.
+- `nav-sidebar.js?v=79`, `customer-service.css?v=4`,
+  `licitacao-funil-vendas.css?v=19` em todas as páginas; `sw.js` — cache
+  `bm-comest-v8`.
+- Teste local: o `cot-teste-server.js` do completo, copiado para `.claude/`
+  com `COT_MSB_BLOB_URL` e os exemplos em `COT-MSB-…`:
+  `node .claude/cot-teste-server.js 4260` (ou `--vazio`, `--sem-blob`).
+
 ### Identidade visual MSB (20/10/2026)
 
 O portal usa a marca da **MSB · Medical System do Brasil** (msbbrasil.com), não
@@ -339,6 +413,10 @@ marketing e o texto do Sales Playbook.
   `GRUPO_AREAS`.
 
 ## Trazer novidades do portal completo
+
+**CRM › Venda Recorrente:** os `cotacoes*.js`, as `comercial-cot-*` e o
+`api/shared/cot-*` têm ajustes `RECORTE MSB` (empresa, número, OV, unidade,
+armazenamento) — não copie por cima; traga só o que mudou e reaplique.
 
 Os arquivos são os mesmos do completo. Para atualizar um módulo, copie o
 arquivo de lá e, se for um dos arquivos da lista "O que mudou", reaplique o

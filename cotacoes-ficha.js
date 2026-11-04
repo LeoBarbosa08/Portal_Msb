@@ -54,7 +54,7 @@
     if (!c) return r || {};
     var ped = c.pedido, pv = ped && ped.previa;
     return {
-      numero: c.numero, fase: C.faseAtual(c.fase), portal: c.portal || '', cotacaoId: c.cotacaoId || '', cliente: c.cliente || {}, dono: c.dono || null,
+      numero: c.numero, fase: C.faseDe(c), portal: c.portal || '', cotacaoId: c.cotacaoId || '', cliente: c.cliente || {}, dono: c.dono || null,
       total: c.total || 0, nItens: (c.itens || []).length, totalPedido: ped ? ((pv && pv.total) || ped.total || 0) : 0, oc: ped ? (ped.oc || (pv && pv.oc) || '') : '',
       validade: (c.datas && c.datas.validade) || '', criadoEm: c.criadoEm, faseEm: c.faseEm || c.criadoEm, fechadoEm: c.fechadoEm || null,
       pi: c.pi ? c.pi.estado || '' : '', perda: c.perda ? c.perda.motivo || '' : '', proposta: c.proposta, descartado: !!c.descartado, descartadoEm: c.descartado ? c.descartado.em : '', atualizadoEm: c.atualizadoEm
@@ -77,8 +77,8 @@
       +   '<div class="fv-dw-hl"><div class="fv-dw-k" id="cot-dw-k"></div><h2 class="fv-dw-tt" id="cot-dw-tt"></h2>'
       +   '<div class="fv-dw-sub" id="cot-dw-sub"></div><div class="fv-dw-tags" id="cot-dw-tags"></div></div>'
       +   '<div class="cot-dw-nav">'
-      +     '<button type="button" class="cot-dw-pn" data-cot-dw="ant" aria-label="Cotação anterior da lista" title="Anterior da lista (←)">' + IC.chevL + '</button>'
-      +     '<button type="button" class="cot-dw-pn" data-cot-dw="prox" aria-label="Próxima cotação da lista" title="Próxima da lista (→)">' + IC.chevR + '</button>'
+      +     '<button type="button" class="cot-dw-pn" data-cot-dw="ant" aria-label="Oportunidade anterior da lista" title="Anterior da lista (←)">' + IC.chevL + '</button>'
+      +     '<button type="button" class="cot-dw-pn" data-cot-dw="prox" aria-label="Próxima oportunidade da lista" title="Próxima da lista (→)">' + IC.chevR + '</button>'
       +     '<button type="button" class="fv-dw-x" data-cot-dw="fechar" aria-label="Fechar a ficha" title="Fechar (Esc)">' + IC_X + '</button>'
       +   '</div>'
       + '</div>'
@@ -192,7 +192,7 @@
     var r = resumo(), st = F.casos[F.num] || {}, c = st.caso || null, t = topo(r, c);
     var cli = t.cliente || {}, f = C.fase(t.fase);
     var local = [cli.cidade, cli.uf].filter(Boolean).join('/');
-    $('cot-dw-k').textContent = 'Cotação · ' + F.num;
+    $('cot-dw-k').textContent = 'Oportunidade · ' + F.num;
     $('cot-dw-tt').textContent = cli.nome || 'Cliente não informado';
     $('cot-dw-sub').innerHTML = esc([C.tituloCaso(t), local].filter(Boolean).join(' · ')) + (cli.cnpj ? ' · <span class="cs-mono">' + esc(C.cnpjMask(cli.cnpj)) + '</span>' : '');
     $('cot-dw-tags').innerHTML = (t.descartado ? '<span class="cs-chip descartada">Descartada</span>' : C.chipFase(t.fase) + C.chipPi(t) + C.chipPrazo(t, aviso())) +
@@ -227,13 +227,13 @@
       var pc = t.total && t.totalPedido ? C.pct(t.totalPedido / t.total, 0) + ' do cotado' : '';
       h += kp('Pedido', esc(t.totalPedido ? C.brl(t.totalPedido) : 'Sem valor'), esc([t.oc ? 'OC ' + t.oc : '', pc].filter(Boolean).join(' · ') || 'o PI ainda não leu o pedido'), 'pos');
     } else {
-      h += kp('Pedido', 'Sem pedido', esc(aberta ? 'ainda não virou pedido' : t.descartado ? 'cotação descartada' : 'não virou pedido'), 'mut');
+      h += kp('Pedido', 'Sem pedido', esc(aberta ? 'ainda não virou pedido' : t.descartado ? 'oportunidade descartada' : 'não virou pedido'), 'mut');
     }
     if (t.descartado) {
       return '<div class="fv-dw-kpis">' + h + kp('Descartada', esc(t.descartadoEm ? C.dataBR(t.descartadoEm) : '—'), esc(t.descartadoEm ? C.quando(t.descartadoEm) : 'fora das filas e do funil')) +
         kp('Fase ao descartar', esc(C.fase(t.fase).nome), esc('desde ' + C.dataBR(t.faseEm))) + '</div>';
     }
-    if (aberta && pr && !pr.semData) h += kp('Vencimento', esc(C.diaBR(t.validade)), esc(pr.quando ? (pr.nivel === 2 ? 'venceu ' : 'vence ') + C.quando(pr.quando.toISOString()) : pr.txt), pr.nivel >= 1 ? 'warn' : '');
+    if (aberta && pr && !pr.semData) h += kp('Vencimento', esc(C.diaBR(t.validade)), esc(pr.quando ? (pr.nivel === 2 ? 'prazo vencido ' : 'vence ') + C.quando(pr.quando.toISOString()) : pr.txt), pr.nivel >= 1 ? 'warn' : '');
     else if (aberta) h += kp('Vencimento', 'Sem data', 'informe no caso completo', 'mut');
     else h += kp(t.fase === 'pedido' ? 'Virou pedido' : 'Encerrada', esc(t.fechadoEm ? C.dataBR(t.fechadoEm) : '—'), esc(t.fechadoEm ? C.quando(t.fechadoEm) : ''));
     if (aberta) {
@@ -248,45 +248,52 @@
 
   // a frase do momento: onde a cotação está e o que falta
   function htmlSituacao(t, c, f) {
-    var tom = t.descartado ? 'neutro' : f.ganha ? 'gan' : f.perdida ? (t.fase === 'vencida' ? 'venc' : t.fase === 'cancelada' ? 'neutro' : 'per') : 'and';
+    var tom = t.descartado ? 'neutro' : f.ganha ? 'gan' : f.perdida ? 'per' : 'and';
     var tit = '', tx = '';
     var pr = C.prazoDe(t, aviso());
     if (t.descartado) {
       var d = (c && c.descartado) || {};
-      tit = 'Cotação descartada';
+      tit = 'Oportunidade descartada';
       tx = (d.motivo || 'registrada por engano') + (d.por ? ' · ' + quem(d.por) : '') + (d.em ? ' · ' + C.dataBR(d.em, true) : '') + '. Fica fora das filas e do funil.';
     } else if (t.fase === 'pedido') {
       var pi = c && c.pi || { estado: t.pi };
       tit = 'Virou pedido' + (t.totalPedido ? ' · ' + C.brl(t.totalPedido) : '') + (t.oc ? ' · OC ' + t.oc : '');
       var ovs = (c && c.ovs) || [];
       tx = ovs.length ? 'Fechada com a' + (ovs.length > 1 ? 's Ordens de Venda ' : ' Ordem de Venda ') + ovs.map(function (o) { return o.numero; }).join(', ') + (ovs[0].em ? ' em ' + C.dataBR(ovs[0].em, true) + (ovs[0].por ? ' por ' + quem(ovs[0].por) : '') : '') + '. A venda aconteceu.'
-        : pi.estado === 'enviado' ? 'O pedido já foi lançado no Dynamics pelo PI' + (pi.enviado && pi.enviado.em ? ' em ' + C.dataBR(pi.enviado.em, true) + (pi.enviado.por ? ' por ' + quem(pi.enviado.por) : '') : '') + ' — falta fechar a cotação com a Ordem de Venda.'
+        : pi.estado === 'enviado' ? 'O pedido já foi lançado no Dynamics pelo PI' + (pi.enviado && pi.enviado.em ? ' em ' + C.dataBR(pi.enviado.em, true) + (pi.enviado.por ? ' por ' + quem(pi.enviado.por) : '') : '') + ' — falta fechar a oportunidade com a Ordem de Venda.'
         : pi.estado === 'em_andamento' ? 'O pedido está aberto no PI · Pedido' + (pi.abertoPor ? ' (' + quem(pi.abertoPor) + ', ' + C.quando(pi.abertoEm) + ')' : '') + ' — falta lançar no Dynamics.'
         : pi.estado === 'erro' ? 'O PDF do pedido está no caso, mas a leitura falhou' + (pi.erro ? ' (' + pi.erro + ')' : '') + ' — falta lançar no Dynamics pelo PI.'
         : 'O PDF do pedido está no caso — falta lançar no Dynamics pelo PI · Pedido.';
+    } else if (f.faturar) {
+      // 26/10/2026: aguardando o faturamento — fecha como Ganha com a OV
+      var pf = c && c.pi || { estado: t.pi };
+      tit = 'A faturar' + (t.totalPedido ? ' · pedido ' + C.brl(t.totalPedido) : '') + (t.oc ? ' · OC ' + t.oc : '');
+      tx = pf.estado === 'enviado' ? 'O pedido já foi lançado no Dynamics pelo PI — falta a Ordem de Venda para fechar como Ganha.'
+        : t.totalPedido || (c && c.pedido) ? 'O pedido está registrado — falta lançar no Dynamics pelo PI · Pedido e a Ordem de Venda para fechar como Ganha.'
+        : 'Aguardando o faturamento — a oportunidade fecha como Ganha quando o pedido vira Ordem de Venda.';
     } else if (f.perdida) {
       var p = (c && c.perda) || { motivo: t.perda };
       tit = f.nome + (p.motivo ? ' · ' + p.motivo : '');
-      tx = t.fase === 'vencida'
-        ? 'A data de vencimento' + (t.validade ? ' (' + C.diaBR(t.validade) + ')' : '') + ' passou com a cotação aberta e ela saiu sozinha do funil.'
-        : 'Não virou pedido' + (p.concorrente ? ' — quem levou: ' + p.concorrente + (p.valorConcorrente ? ' (' + C.brl(p.valorConcorrente) + ')' : '') : '') + (p.por && p.por.nome ? '. Marcada por ' + quem(p.por) : '') + (p.em ? ' em ' + C.dataBR(p.em, true) : '') + '.';
+      // 21/10/2026: a Vencida e a Cancelada viraram motivos da Perdida
+      tx = 'Não virou pedido' + (p.concorrente ? ' — quem levou: ' + p.concorrente + (p.valorConcorrente ? ' (' + C.brl(p.valorConcorrente) + ')' : '') : '') + (p.por && p.por.nome ? '. Marcada por ' + quem(p.por) : '') + (p.em ? ' em ' + C.dataBR(p.em, true) : '') + '.';
     } else {
       var prop = c ? (c.propostas || []).length : (t.proposta ? 1 : 0);
       tit = f.nome + ' · aguardando o resultado';
       var pEm = (c && c.proposta && c.proposta.em) || (t.proposta && t.proposta.em) || '';
       tx = (prop ? 'Proposta enviada ao comprador' + (pEm ? ' em ' + C.dataBR(pEm) + ' (' + C.quando(pEm) + ')' : '') + '. ' : 'A proposta no modelo da Biomedical ainda não foi enviada ao comprador. ') +
-        (pr && !pr.semData ? (pr.nivel === 2 ? 'O prazo venceu em ' + C.diaBR(t.validade) + '.' : 'Vence em ' + C.diaBR(t.validade) + ' (' + C.quando(pr.quando.toISOString()) + ').') : 'Sem data de vencimento.') +
-        ' Quando o portal gerar o pedido, o PDF entra no caso e a cotação vira pedido.';
+        (pr && !pr.semData ? (pr.nivel === 2 ? 'Prazo vencido em ' + C.diaBR(t.validade) + '.' : 'Vence em ' + C.diaBR(t.validade) + ' (' + C.quando(pr.quando.toISOString()) + ').') : 'Sem data de vencimento.') +
+        ' Quando o portal gerar o pedido, o PDF entra no caso e a oportunidade vira pedido.';
     }
-    var ic = t.descartado ? IC.ban : f.ganha ? IC.trophy : f.perdida ? (t.fase === 'vencida' ? IC.alarm : IC.xc) : IC.hist;
+    var ic = t.descartado ? IC.ban : f.ganha ? IC.trophy : f.perdida ? IC.xc : IC.hist;
     return '<div class="cot-dw-sit ' + tom + '">' + ic + '<div><b>' + esc(tit) + '</b>' + esc(tx) + '</div></div>';
   }
 
-  // o caminho das fases: Cotada → Em negociação → Virou pedido (+ a saída)
+  // o caminho das fases: Cotada → Ganha (virou pedido) (+ a saída, Perdida) — 21/10/2026: só três fases
+  // 26/10/2026: Cotada → A faturar → Ganha
   function htmlCaminho(t, fs) {
-    var ORD = ['cotada', 'negociacao', 'pedido'];
+    var ORD = ['cotada', 'faturar', 'pedido'];
     var ultima = {}; fs.forEach(function (x) { ultima[x.fase] = x; });
-    var atual = C.faseAtual(t.fase), f = C.fase(atual), idx = ORD.indexOf(atual);
+    var atual = C.faseDe(t), f = C.fase(atual), idx = ORD.indexOf(atual);
     // até onde chegou dentro do funil: a fase atual, ou — fora do funil — a
     // mais adiantada por onde passou antes de sair
     var ate = idx;
@@ -299,7 +306,7 @@
     }).join('');
     if (f.perdida) {
       var xs = ultima[atual];
-      nos += '<div class="p sai ' + atual + '" title="' + esc(f.nome + (xs ? ' · ' + xs.dia + (xs.por ? ' · ' + quem(xs.por) : '') : '')) + '"><i>' + (atual === 'vencida' ? IC.alarm : IC.x) + '</i><b>' + esc(f.curto) + '</b><small>' + esc(xs ? xs.dia : '—') + '</small></div>';
+      nos += '<div class="p sai ' + atual + '" title="' + esc(f.nome + (xs ? ' · ' + xs.dia + (xs.por ? ' · ' + quem(xs.por) : '') : '')) + '"><i>' + IC.x + '</i><b>' + esc(f.curto) + '</b><small>' + esc(xs ? xs.dia : '—') + '</small></div>';
     }
     var trilha = fs.length > 1 ? '<div class="cot-dw-trilha">' + fs.slice(-8).map(function (x) { return '<span>' + esc(C.fase(x.fase).curto) + ' <i>' + esc(x.dia) + '</i></span>'; }).join('<em>→</em>') + '</div>' : '';
     return card('Caminho das fases', null, '<div class="cot-dw-path">' + nos + '</div>' + trilha);
@@ -311,7 +318,7 @@
     var f = C.fase(c.fase), perdeu = f.perdida && !c.descartado;
     var l = c.leitura;
     var passos = [];
-    passos.push(['ok', 'Cotação registrada', C.dataBR(c.criadoEm, true) + (c.criadoPor ? ' · ' + quem(c.criadoPor) : '') +
+    passos.push(['ok', 'Oportunidade registrada', C.dataBR(c.criadoEm, true) + (c.criadoPor ? ' · ' + quem(c.criadoPor) : '') +
       (l && l.arquivo ? ' · a partir do PDF ' + l.arquivo + (l.ia ? ' (lido pela IA)' : '') : ' · preenchida à mão')]);
     if (ult) passos.push(['ok', 'Proposta enviada ao comprador', 'para ' + (ult.para || []).join(', ') + ' · ' + C.dataBR(ult.em, true) + (ult.por ? ' · ' + quem(ult.por) : '') + (props.length > 1 ? ' · ' + props.length + ' envios' : '')]);
     else passos.push([perdeu || c.fase === 'pedido' || c.descartado ? 'na' : 'agora', 'Proposta ao comprador', 'a proposta no modelo da Biomedical não foi enviada por e-mail']);
@@ -326,14 +333,14 @@
         passos.push(['ok', 'Lançado no Dynamics', C.dataBR(e.em, true) + (e.por ? ' · ' + quem(e.por) : '') + (e.oc ? ' · OC ' + e.oc : '') + (e.total ? ' · ' + C.brl(e.total) : '')]);
       } else if (pi.estado === 'em_andamento') passos.push(['agora', 'Lançamento no Dynamics', 'aberto no PI · Pedido' + (pi.abertoPor ? ' por ' + quem(pi.abertoPor) : '') + (pi.abertoEm ? ' ' + C.quando(pi.abertoEm) : '') + ' — falta lançar']);
       else if ((c.ovs || []).length) passos.push(['ok', 'Lançamento no Dynamics', 'lançado fora do PI · Pedido']);
-      else passos.push(['agora', 'Lançamento no Dynamics', 'aguardando o PI · Pedido']);
+      else passos.push(['ok', 'Ganha', 'virou pedido — o lançamento no Dynamics é pelo PI · Pedido']);
       var ovs2 = c.ovs || [];
       if (ovs2.length) ovs2.forEach(function (o) {
         var v = o.dynamics;
-        passos.push(['ok', 'Ordem de Venda ' + o.numero, C.dataBR(o.em, true) + (o.por ? ' · ' + quem(o.por) : '') +
+        passos.push(['ok', 'Ordem de Venda ' + o.numero, C.dataBR(o.em, true) + (o.origem === 'flow' ? ' · devolvida pelo flow do PI' : o.por ? ' · ' + quem(o.por) : '') +
           (v && v.achou ? ' · conferida no Dynamics' + (v.total ? ' · ' + C.brl(v.total) : '') : ' · sem conferência no Dynamics')]);
       });
-      else passos.push([pi.estado === 'enviado' ? 'agora' : 'pend', 'Ordem de Venda', 'a cotação fecha com o número da OV do Dynamics']);
+      else passos.push([pi.estado === 'enviado' ? 'agora' : 'pend', 'Ordem de Venda', 'a oportunidade fecha com o número da OV do Dynamics']);
     } else {
       passos.push([perdeu || c.descartado ? 'na' : 'pend', 'Pedido do portal', perdeu ? 'não houve pedido' : 'sem pedido — quando o portal gerar, o PDF entra no caso']);
       passos.push(['na', 'Lançamento no Dynamics', 'depende do pedido']);
@@ -358,7 +365,7 @@
     if (!ped) {
       if (c.fase === 'pedido') return '';
       var f = C.fase(c.fase);
-      var tx = c.descartado ? 'A cotação foi descartada.' : f.perdida ? 'Esta cotação não virou pedido.' : 'Ainda não há pedido. Quando o portal gerar o pedido desta cotação, o PDF entra no caso e ela vai para Virou pedido.';
+      var tx = c.descartado ? 'A oportunidade foi descartada.' : f.perdida ? 'Esta oportunidade não virou pedido.' : 'Ainda não há pedido. Quando o portal gerar o pedido desta oportunidade, o PDF entra no caso e ela vai para Virou pedido.';
       return card('Pedido', null, '<div class="cot-dw-sem">' + IC.cart + '<span><b>Sem pedido</b>' + esc(tx) + '</span></div>');
     }
     var pv = ped.previa || {}, pi = c.pi || {}, e = pi.enviado || {};
@@ -372,7 +379,7 @@
       ped.data ? ['Data do pedido', esc(C.diaBR(ped.data))] : null,
       ['Anexado', esc(C.dataBR(ped.em, true) + (ped.por ? ' · ' + quem(ped.por) : ''))],
       ['No Dynamics', pi.estado === 'enviado' ? esc('Sim · ' + C.dataBR(e.em, true) + (e.por ? ' · ' + quem(e.por) : '')) + (e.codigoCliente ? ' · cliente <span class="cs-mono">' + esc(e.codigoCliente) + '</span>' : '')
-        : '<span class="cot-dw-warn">' + esc(pi.estado === 'em_andamento' ? 'aberto no PI, falta lançar' : 'aguardando o PI') + '</span>'],
+        : pi.estado === 'em_andamento' ? '<span class="cot-dw-warn">aberto no PI, falta lançar</span>' : esc('Ganha — ainda não lançado pelo PI')],
       ['PDF do pedido', '<button type="button" class="cot-dw-ver" data-cot-anexo="' + esc(ped.anexoId) + '">' + IC.eye + esc(ped.nome || 'Pedido.pdf') + '</button>', 'largo'],
       ped.obs ? ['Observação', '<span class="pre">' + esc(ped.obs) + '</span>', 'largo'] : null
     ]);
@@ -382,7 +389,7 @@
     var pv = c.pedido && c.pedido.previa;
     if (!pv || !(pv.produtos || []).length || !(c.itens || []).length) return '';
     var cmp = C.comparar(c.itens, pv.produtos);
-    var ST = { ok: ['ok', 'igual'], dif: ['dif', 'diferente'], fora: ['fora', 'não pedido'], extra: ['extra', 'fora da cotação'] };
+    var ST = { ok: ['ok', 'igual'], dif: ['dif', 'diferente'], fora: ['fora', 'não pedido'], extra: ['extra', 'fora da oportunidade'] };
     var linhas = cmp.linhas.slice(0, 20).map(function (l) {
       var nome = (l.cot && l.cot.descricao) || (l.ped && l.ped.descricao) || ((l.cot || l.ped || {}).codigo) || '';
       var obs = l.st === 'dif' ? [!l.mesmaQtd ? 'qtd' : '', !l.mesmoPreco ? 'preço' : ''].filter(Boolean).join(' e ') + ' mudou' : '';
@@ -391,23 +398,23 @@
         '<td class="n">' + (l.ped ? esc(C.qtd(l.ped.quantidade) + ' × ' + C.brl(l.ped.valorUnitario)) : '—') + '</td>' +
         '<td><span class="st ' + ST[l.st][0] + '">' + ST[l.st][1] + '</span></td></tr>';
     }).join('');
-    return '<div class="cot-dw-cmp"><div class="h">Cotação × pedido' +
+    return '<div class="cot-dw-cmp"><div class="h">Oportunidade × pedido' +
       (cmp.ok ? '<span class="tag ok">' + cmp.ok + ' igual(is)</span>' : '') + (cmp.dif ? '<span class="tag dif">' + cmp.dif + ' com diferença</span>' : '') +
-      (cmp.fora ? '<span class="tag fora">' + cmp.fora + ' não pedido(s)</span>' : '') + (cmp.extra ? '<span class="tag fora">' + cmp.extra + ' fora da cotação</span>' : '') + '</div>' +
+      (cmp.fora ? '<span class="tag fora">' + cmp.fora + ' não pedido(s)</span>' : '') + (cmp.extra ? '<span class="tag fora">' + cmp.extra + ' fora da oportunidade</span>' : '') + '</div>' +
       '<div class="w"><table><thead><tr><th>Item</th><th class="n">Cotado</th><th class="n">Pedido</th><th></th></tr></thead><tbody>' + linhas + '</tbody></table></div>' +
       (cmp.linhas.length > 20 ? '<div class="fv-dw-av">Mostrando 20 de ' + cmp.linhas.length + ' linhas — a comparação inteira está no caso completo.</div>' : '') + '</div>';
   }
 
-  // por que não virou (perdida, vencida, cancelada)
+  // por que não virou (a Perdida — o motivo inclui proposta vencida e cancelada)
   function htmlPerda(c) {
     var f = C.fase(c.fase);
     if (!f.perdida || c.descartado) return '';
     var p = c.perda || {};
-    return card(c.fase === 'perdida' ? 'Por que perdemos' : c.fase === 'vencida' ? 'Por que venceu' : 'Por que foi cancelada', null, dl([
+    return card('Por que perdemos', null, dl([
       ['Motivo', p.motivo ? '<b>' + esc(p.motivo) + '</b>' : vazio('sem motivo')],
       ['Marcada', p.automatica || !(p.por && p.por.email) ? esc('automaticamente pelo portal' + (p.em ? ' · ' + C.dataBR(p.em, true) : '')) : esc(quem(p.por) + (p.em ? ' · ' + C.dataBR(p.em, true) : ''))],
-      c.fase === 'perdida' ? ['Concorrente', p.concorrente ? esc(p.concorrente) : vazio('não informado')] : null,
-      c.fase === 'perdida' ? ['Preço do concorrente', p.valorConcorrente ? esc(C.brl(p.valorConcorrente)) + (c.total ? ' <span class="cot-dw-mut">· nosso: ' + esc(C.brl(c.total)) + '</span>' : '') : vazio('não informado')] : null,
+      ['Concorrente', p.concorrente ? esc(p.concorrente) : vazio('não informado')],
+      ['Preço do concorrente', p.valorConcorrente ? esc(C.brl(p.valorConcorrente)) + (c.total ? ' <span class="cot-dw-mut">· nosso: ' + esc(C.brl(c.total)) + '</span>' : '') : vazio('não informado')],
       p.obs ? ['Observação', '<span class="pre">' + esc(p.obs) + '</span>', 'largo'] : null
     ]), 'cot-dw-perda');
   }
@@ -418,21 +425,26 @@
     if (!l.length) return card('Itens cotados', 0, '<div class="fv-dw-nada">Nenhum item registrado.</div>');
     var LIM = 12, vis = F.itensTudo ? l : l.slice(0, LIM);
     var semPreco = l.filter(function (it) { return !Number(it.valorUnitario); }).length;
+    // o resultado de cada item (sem marca, o da fase: Virou pedido = ganho, Perdida = perdido)
+    var rs = l.map(function (it) { return C.resultadoItem(it.resultado, c.fase); });
+    var nRes = function (r) { return rs.filter(function (x) { return x.r === r; }).length; };
     return card('Itens cotados', l.length,
-      '<div class="fv-dw-its-r"><span>Total cotado <b>' + esc(C.brl(c.total)) + '</b></span>' + (semPreco ? '<span>' + C.int(semPreco) + ' sem preço (não cotado' + (semPreco > 1 ? 's' : '') + ')</span>' : '') + '</div>' +
+      '<div class="fv-dw-its-r"><span>Total cotado <b>' + esc(C.brl(c.total)) + '</b></span>' + (semPreco ? '<span>' + C.int(semPreco) + ' sem preço (não cotado' + (semPreco > 1 ? 's' : '') + ')</span>' : '') +
+        (nRes('ganho') || nRes('perdido') ? '<span>' + C.int(nRes('ganho')) + ' ganho(s) · ' + C.int(nRes('perdido')) + ' perdido(s)</span>' : '') + '</div>' +
       '<div class="fv-dw-its">' + vis.map(function (it, i) {
         var meta = [it.codigo, it.codigoCliente ? 'comprador ' + it.codigoCliente : '', it.marca, it.registro ? 'RMS ' + it.registro : '', it.unidade].filter(Boolean).join(' · ');
-        var tot = (Number(it.quantidade) || 0) * (Number(it.valorUnitario) || 0);
+        var tot = (Number(it.quantidade) || 0) * (Number(it.valorUnitario) || 0), rr = rs[i];
         return '<div class="fv-dw-it"><div class="n">' + (i + 1) + '</div>' +
           '<div class="c"><div class="t">' + esc(it.descricao || it.codigo || 'Item sem descrição') + '</div>' + (meta ? '<div class="s">' + esc(meta) + '</div>' : '') + '</div>' +
-          '<div class="v"><b>' + (tot ? esc(C.brl(tot)) : '<span class="cot-dw-mut">sem preço</span>') + '</b><span>' + esc(C.qtd(it.quantidade) + (it.valorUnitario ? ' × ' + C.brl(it.valorUnitario) : '')) + '</span></div></div>';
+          '<div class="v"><b>' + (tot ? esc(C.brl(tot)) : '<span class="cot-dw-mut">sem preço</span>') + '</b><span>' + esc(C.qtd(it.quantidade) + (it.valorUnitario ? ' × ' + C.brl(it.valorUnitario) : '')) + '</span>' +
+            (rr.r ? '<em class="cot-res-chip ' + rr.r + (rr.implicito ? ' imp' : '') + '" title="' + esc(rr.implicito ? 'pela fase da oportunidade' : 'resultado do item') + '">' + C.RESULTADOS[rr.r] + '</em>' : '') + '</div></div>';
       }).join('') + '</div>' + maisBtn('itens', F.itensTudo, l.length, LIM, 'os itens'));
   }
 
   // a tramitação: as notas do time
   function htmlNotas(c) {
     var l = (c.notas || []).slice().reverse();
-    if (!l.length) return card('Tramitação', 0, '<div class="fv-dw-nada">Nenhuma nota registrada nesta cotação.</div>');
+    if (!l.length) return card('Tramitação', 0, '<div class="fv-dw-nada">Nenhuma nota registrada nesta oportunidade.</div>');
     var LIM = 4, vis = F.notasTudo ? l : l.slice(0, LIM);
     return card('Tramitação', l.length, '<div class="cot-notas">' + vis.map(function (n) {
       return '<div class="cot-nota">' + C.avatar(n.por && n.por.nome, n.por && n.por.email, 'p') + '<div class="bx"><small><b>' + esc(quem(n.por)) + '</b> · ' + esc(C.dataBR(n.em, true)) + '</small>' + esc(n.texto) + '</div></div>';
@@ -469,8 +481,9 @@
       ['Entrega', co.entrega ? esc(co.entrega) : vazio()],
       co.frete ? ['Frete', esc(co.frete)] : null,
       co.validade ? ['Validade (PDF)', esc(co.validade)] : null,
-      ['Empresa', esc(c.empresa || 'BIO')],
-      ['Área', c.area ? esc(c.area) : vazio()],
+      ['Empresa', esc(c.empresa || 'MSB')],
+      ['Unidade de negócio', c.unidade ? esc(c.unidade) : vazio('sem unidade')],
+      ['Equipe', c.area ? esc(c.area) : vazio()],
       ['Responsável', c.dono ? esc(c.dono.nome) : '<span class="cot-dw-warn">sem responsável</span>'],
       ['Registrada', esc(C.dataBR(c.criadoEm, true) + (c.criadoPor ? ' · ' + quem(c.criadoPor) : ''))],
       co.observacao ? ['Observação', '<span class="pre">' + esc(co.observacao) + '</span>', 'largo'] : null

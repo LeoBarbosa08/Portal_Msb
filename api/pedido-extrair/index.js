@@ -20,7 +20,10 @@
 // O que a IA devolve NÃO vai cru para a tela: passa pelo
 // shared/pedido-revisar.js, que confere cada item contra o texto do PDF
 // e desfaz a troca de QUANTIDADE por VALOR UNITÁRIO (o erro mais comum:
-// 10 x R$ 720,00 chegava como 720 x R$ 10,00). Ver o comentário de lá.
+// 10 x R$ 720,00 chegava como 720 x R$ 10,00) e tira do campo código o
+// RMS (registro ANVISA) que a IA tenha posto lá (04/11/2026: a proposta
+// da Biomedical tem as colunas Código e RMS lado a lado — 51200 virava
+// 80454419010). Ver o comentário de lá e o bloco REGRAS_CODIGO abaixo.
 // ================================================================
 
 const AOAI_ENDPOINT   = process.env.AOAI_ENDPOINT;
@@ -82,11 +85,24 @@ const REGRAS_TABELA = `COMO LER A TABELA DE ITENS (leia com atenção — é aqu
 O texto preserva o LAYOUT do PDF: cada linha de item é uma linha de texto e as colunas estão alinhadas por espaços com o CABEÇALHO da tabela. Use isso.
 1. ACHE PRIMEIRO A LINHA DE CABEÇALHO (ex.: "Produto  Fabricante  Lote  Qt. Cons.  Unidade  Qtd Compr.  Vl.Unit.  Vl Desc.  %Des  Vl IMP  Vl Total") e memorize a POSIÇÃO de cada coluna.
 2. Para cada linha de item, pegue cada número pela coluna em que ele está — o número que está debaixo de "Qtd Compr." é a quantidade; o que está debaixo de "Vl.Unit." é o valor unitário. NUNCA decida pelo tamanho do número.
-3. Rótulos de QUANTIDADE: "Qtd", "Qtde", "Qt", "Quant", "Quantidade", "Qtd Compr.", "Qt. Cons.", "Qtd Solicitada", "Qtd Aut". Rótulos de VALOR UNITÁRIO: "Vl.Unit.", "Vl Unit", "Vlr Unitário", "Valor Unitário", "Preço Unitário", "Unitário", "Preço Unit". Rótulos de TOTAL DO ITEM: "Vl Total", "Valor Total", "Total do Item", "Total".
+3. Rótulos de QUANTIDADE: "Qtd", "Qtde", "Qt", "Quant", "Quantidade", "Qtd Compr.", "Qt. Cons.", "Qtd Solicitada", "Qtd Aut". Rótulos de VALOR UNITÁRIO: "Vl.Unit.", "Vl Unit", "Vlr Unitário", "Valor Unitário", "Preço Unitário", "Unitário", "Preço Unit", "Valor de Venda". Rótulos de TOTAL DO ITEM: "Vl Total", "Valor Total", "Total do Item", "Total", "Subtotal".
 4. Se houver DUAS colunas de quantidade (ex.: "Qt. Cons." e "Qtd Compr."), a quantidade do pedido é a de COMPRA/SOLICITADA.
 5. CONFIRA SEMPRE: quantidade x valorUnitario tem de dar o valorTotal daquela linha. Se não der, você trocou as colunas — releia a linha.
 6. Sinais de que quantidade e valor estão trocados: quantidade com casas decimais de dinheiro (ex.: 720,00) enquanto o "valor unitário" é um número redondo pequeno (ex.: 10); ou o "valor unitário" ser um número muito maior que o total dividido pela quantidade. Em material médico-hospitalar a quantidade é uma CONTAGEM DE PEÇAS (quase sempre inteira e pequena: 1, 2, 5, 10, 100) e o valor unitário é DINHEIRO (costuma ter centavos e ser maior).
 7. valorTotal: copie o total DAQUELA LINHA como está no PDF (não calcule). Se a linha não tiver coluna de total, mande 0.`;
+
+// ── O código do produto NÃO é o RMS (04/11/2026) ──────────────────
+// A proposta da própria Biomedical (portal ou Salesforce), que o cliente
+// devolve como pedido, tem a coluna RMS — o registro ANVISA, 11 dígitos —
+// ao lado da coluna do código, e a IA devolvia o RMS como código (51200
+// virava 80454419010, e o mesmo RMS em três produtos virava o mesmo
+// "código" três vezes). A conferência pela posição, que pega quando a IA
+// erra mesmo assim, fica no shared/pedido-revisar.js; aqui é a regra.
+const REGRAS_CODIGO = `O CÓDIGO DO PRODUTO NUNCA É O RMS (registro ANVISA):
+1. "RMS", "Registro ANVISA", "Reg. ANVISA", "Registro MS", "Reg. M.S." e "Notificação ANVISA" são o REGISTRO DO PRODUTO NA ANVISA (Ministério da Saúde): um número de 11 dígitos, sem letras (ex.: 80454419010, 10256400049), que costuma se REPETIR em produtos diferentes. Ele vai em registroAnvisa — NUNCA em codigo.
+2. Quando a linha do item tem um código e um RMS, o codigo sai de onde a regra do campo codigo manda (a coluna do código do produto ou os parênteses na descrição) — nunca da coluna RMS, mesmo que o código seja curto (ex.: "51200") e o RMS pareça mais "oficial".
+3. Rótulo de cabeçalho pode vir QUEBRADO em duas linhas ("Código do" em cima e "produto" embaixo; "Valor de" / "Venda"): é um rótulo só, na mesma posição de coluna.
+4. A PROPOSTA DA PRÓPRIA BIOMEDICAL que o cliente devolve como pedido (tem "Número de Proposta", "Preparado por" e a tabela "Código do produto | Produto. | Fabricante | RMS | Quantidade | Valor de Venda | Subtotal"): codigo = "Código do produto", registroAnvisa = "RMS", quantidade = "Quantidade", valorUnitario = "Valor de Venda", valorTotal = "Subtotal". Ex.: a linha «51200   FIO GUIA T MSB 0.035"X150CM, J3MM, TEFLONADO   MSB   80454419010   50   R$ 30,00   R$ 1.500,00» vira codigo "51200", registroAnvisa "80454419010", quantidade 50, valorUnitario 30, valorTotal 1500.`;
 
 const SYSTEM_PROMPT = `Você extrai dados de ORDENS DE COMPRA (pedidos) recebidas pela BIOMEDICAL PRODUTOS CIENTIFICOS MEDICOS HOSPITALARES (a FORNECEDORA). O texto foi extraído de um PDF preservando o layout (colunas alinhadas por espaços).
 
@@ -101,7 +117,8 @@ REGRAS DE EXTRAÇÃO:
 - freteSugerido: exatamente uma destas opções — "CIF - COM VALOR", "CIF - SEM VALOR", "FOB - DESTINATARIO" — a que melhor corresponde ao frete do PDF; "" se não der para saber. (CIF = frete por conta do fornecedor; FOB = por conta do destinatário/cliente. Se for CIF sem valor de frete destacado, use "CIF - SEM VALOR".)
 - observacao: observações/instruções do pedido ("" se não houver).
 - produtos: um item por linha de produto do pedido:
-    · codigo: o CÓDIGO DO PRODUTO BIOMEDICAL — muito comum vir ENTRE PARÊNTESES dentro da descrição (ex.: "PULSEIRA IDENTIFICACAO PACIENTES BRANCA (7024S11PDH)" -> codigo "7024S11PDH"). Se houver código do cliente E código Biomedical, prefira o que está na descrição entre parênteses. "" se não houver.
+    · codigo: o CÓDIGO DO PRODUTO BIOMEDICAL — muito comum vir ENTRE PARÊNTESES dentro da descrição (ex.: "PULSEIRA IDENTIFICACAO PACIENTES BRANCA (7024S11PDH)" -> codigo "7024S11PDH"). Se houver código do cliente E código Biomedical, prefira o que está na descrição entre parênteses. NUNCA o RMS / registro ANVISA (ver O CÓDIGO DO PRODUTO NUNCA É O RMS). "" se não houver.
+    · registroAnvisa: o RMS / registro ANVISA do produto, só os dígitos (ex.: "80454419010"). "" se não houver.
     · descricao: a descrição do produto SEM o código entre parênteses.
     · quantidade: numérico (converta formato brasileiro: "500,00" -> 500).
     · valorUnitario: numérico, o valor UNITÁRIO (não o total do item). Converta vírgula decimal: "1,9100" -> 1.91.
@@ -109,6 +126,8 @@ REGRAS DE EXTRAÇÃO:
 - NÃO invente valores: campo não encontrado = "" (produtos ausentes = lista vazia).
 
 ${REGRAS_TABELA}
+
+${REGRAS_CODIGO}
 
 LISTA DE CONDIÇÕES: ${CONDICOES_PAGAMENTO.join(' | ')}`;
 
@@ -133,9 +152,10 @@ const SCHEMA = {
       items: {
         type: 'object',
         additionalProperties: false,
-        required: ['codigo', 'descricao', 'quantidade', 'valorUnitario', 'valorTotal'],
+        required: ['codigo', 'registroAnvisa', 'descricao', 'quantidade', 'valorUnitario', 'valorTotal'],
         properties: {
           codigo:        { type: 'string' },
+          registroAnvisa: { type: 'string' },
           descricao:     { type: 'string' },
           quantidade:    { type: 'number' },
           valorUnitario: { type: 'number' },
@@ -162,11 +182,13 @@ REGRAS DE EXTRAÇÃO:
 - dataCirurgia e dataAtendimento: datas no formato DD/MM/AAAA ("" se não houver).
 - prontuario: número do prontuário. beneficiario: nome/código do beneficiário. senha: senha de autorização do convênio.
 - observacao: observações do documento ("" se não houver).
-- produtos: um item por material consumido: codigo (código Biomedical — muito comum entre parênteses na descrição), descricao (sem o código), lote (número do LOTE do material, "" se não houver), quantidade, valorUnitario e valorTotal numéricos (vírgula decimal brasileira: "1,91" -> 1.91).
+- produtos: um item por material consumido: codigo (código Biomedical — muito comum entre parênteses na descrição; NUNCA o RMS / registro ANVISA), registroAnvisa (o RMS / registro ANVISA, só os dígitos, "" se não houver), descricao (sem o código), lote (número do LOTE do material, "" se não houver), quantidade, valorUnitario e valorTotal numéricos (vírgula decimal brasileira: "1,91" -> 1.91).
 - ATENÇÃO ao LOTE: lote é um CÓDIGO de rastreio (letras+números, ex.: "L2291A", "23F0071"), não é quantidade nem valor. Não confunda a coluna de lote com as colunas numéricas.
 - NÃO invente: campo não encontrado = "" (produtos ausentes = []).
 
 ${REGRAS_TABELA}
+
+${REGRAS_CODIGO}
 
 LISTA DE CONDIÇÕES: ${CONDICOES_PAGAMENTO.join(' | ')}`;
 
@@ -191,9 +213,9 @@ const CONSIG_SCHEMA = {
       items: {
         type: 'object',
         additionalProperties: false,
-        required: ['codigo', 'descricao', 'lote', 'quantidade', 'valorUnitario', 'valorTotal'],
+        required: ['codigo', 'registroAnvisa', 'descricao', 'lote', 'quantidade', 'valorUnitario', 'valorTotal'],
         properties: {
-          codigo: { type: 'string' }, descricao: { type: 'string' }, lote: { type: 'string' },
+          codigo: { type: 'string' }, registroAnvisa: { type: 'string' }, descricao: { type: 'string' }, lote: { type: 'string' },
           quantidade: { type: 'number' }, valorUnitario: { type: 'number' },
           valorTotal: { type: 'number' }
         }
@@ -225,7 +247,7 @@ REGRAS DE EXTRAÇÃO:
 - prazoEntrega, frete: como estão no documento ("" se não houver). Prefira o que a Biomedical OFERTOU; se só houver o que o comprador pediu, use esse (vale também para a condicaoPagamento).
 - observacao: observações relevantes e curtas (exigências de marca, registro ANVISA, entrega fracionada…). "" se não houver.
 - produtos: um item por linha de produto da cotação:
-    · codigo: o código do produto BIOMEDICAL quando aparecer ("Cód. Fornecedor", "Ref. do fornecedor", "Código ofertado", ou entre parênteses na descrição). NUNCA o código do comprador/portal. No "Relatório de resposta da cotação" da Bionexo a linha "Item" é o pedido do comprador ("10105898-MANIFOLD 5 VIAS…": 10105898 é o codigoCliente) e a linha "Resposta" é o que a Biomedical OFERTOU ("AM0302 - MANIFOLD 3 PORTAS… - 1 - FABRICANTE": AM0302 é o codigo, a descrição é a da Resposta e o fabricante vai em marca). "" se não houver.
+    · codigo: o código do produto BIOMEDICAL quando aparecer ("Cód. Fornecedor", "Ref. do fornecedor", "Código ofertado", ou entre parênteses na descrição). NUNCA o código do comprador/portal, e NUNCA o RMS / registro ANVISA (vai em registroAnvisa — ver O CÓDIGO DO PRODUTO NUNCA É O RMS). No "Relatório de resposta da cotação" da Bionexo a linha "Item" é o pedido do comprador ("10105898-MANIFOLD 5 VIAS…": 10105898 é o codigoCliente) e a linha "Resposta" é o que a Biomedical OFERTOU ("AM0302 - MANIFOLD 3 PORTAS… - 1 - FABRICANTE": AM0302 é o codigo, a descrição é a da Resposta e o fabricante vai em marca). "" se não houver.
     · codigoCliente: o código do produto NO COMPRADOR / no portal ("Cód. Produto", "Código", "Cód. Hosp."). "" se não houver.
     · descricao: a descrição do produto OFERTADO pela Biomedical (a da resposta, quando houver), sem os códigos.
     · marca: a marca/fabricante OFERTADO pela Biomedical ("" se não houver).
@@ -241,6 +263,8 @@ REGRAS DE EXTRAÇÃO:
 - NÃO invente valores: campo não encontrado = "" (produtos ausentes = []).
 
 ${REGRAS_TABELA}
+
+${REGRAS_CODIGO}
 
 PORTAIS CONHECIDOS: ${PORTAIS_CONHECIDOS.join(' | ')}`;
 
@@ -397,12 +421,14 @@ const handler = async function (context, req) {
     }
 
     // ── conferência contra o texto do PDF ────────────────────────
-    // Desfaz a troca de quantidade x valor unitário e avisa o que ficou
-    // duvidoso. Se algo der errado aqui, a extração passa como veio —
-    // conferir nunca pode derrubar o pedido.
+    // Tira o RMS do campo código, desfaz a troca de quantidade x valor
+    // unitário e avisa o que ficou duvidoso. Se algo der errado aqui, a
+    // extração passa como veio — conferir nunca pode derrubar o pedido.
+    // (perfil cotação: o código achado no lugar do RMS tem de estar entre
+    //  os códigos do PDF que a tela já conferiu no cadastro)
     let avisos = [];
     try {
-      const r = revisar.revisar(dados && dados.produtos, texto);
+      const r = revisar.revisar(dados && dados.produtos, texto, { codigosConhecidos: codigosOk });
       if (dados) dados.produtos = r.produtos;
       avisos = r.avisos;
       // cotação SEM preço nenhum é o pedido de cotação do comprador (ainda

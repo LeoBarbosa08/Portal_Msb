@@ -18,11 +18,23 @@ body.cot-page { --cot-cotada: #2C7288; --cot-negoc: #5A3BC4; --cot-emcot: #2B6CC
 .cot-wrap *, .cot-wrap *::before, .cot-wrap *::after { box-sizing: border-box; }
 .cot-wrap [hidden] { display: none !important; }
 body.cot-page .fx-head-right > a.cs-btn { flex: none; align-self: flex-end; margin-bottom: 6px; text-decoration: none; }
+/* Funil e Analítico: a Gestão de Cotações na linha das abas, do lado
+   esquerdo (o espaço embaixo do título); o -14px é o mesmo das abas. Na
+   Gestão, no mesmo lugar, a volta ao Funil (.cot-atalho) */
+body.cot-page .fx-head-right > a.cot-gestao, body.cot-page .fx-head-right > a.cot-atalho { order: 5; align-self: center; margin: -14px 0 0; color: var(--cs-blue); }
+/* Gestão: 5 cartões no topo desde que saiu o "Aguardando o PI" (21/10/26);
+   6 com as Amostras (23/10/26); 7 com o A faturar (26/10/26) */
+@media (min-width: 1241px) { body.cot-page .cs-kpis { grid-template-columns: repeat(7, minmax(0, 1fr)); } }
 body.cot-page .area-main h2.cot-h, body.cot-page .area-main h3.cot-h { font-family: var(--bm3-font-display, Roboto, sans-serif); color: var(--cs-ink); }
 
 /* ── chips de fase ─────────────────────────────────────────────── */
 .cs-chip.f-em_cotacao { background: color-mix(in srgb, var(--cot-emcot) 13%, transparent); color: #0E7490; }
 .cs-chip.f-cotada { background: var(--bm3-blue-100, #E2EEF4); color: var(--bm3-blue-700, #225E72); }
+/* 26/10/26: A faturar (o pedido registrado, falta a OV) e as fases da amostra */
+.cs-chip.f-faturar { background: var(--bm3-amber-100, #FEF1DA); color: var(--bm3-amber-800, #8A4B00); }
+.cs-chip.f-amostra { background: #F1EAFE; color: #6D28D9; }
+.cs-chip.f-amostra_ganha { background: var(--bm3-green-100, #DDF5E7); color: var(--bm3-green-700, #0F7A43); }
+.cs-chip.f-amostra_perdida { background: var(--bm3-red-100, #FDE7E7); color: var(--bm3-red-700, #A82424); }
 .cs-chip.f-negociacao { background: var(--bm3-violet-100, #EEE8FD); color: var(--bm3-violet-600, #5A3BC4); }
 .cs-chip.f-pedido { background: var(--bm3-green-100, #DDF5E7); color: var(--bm3-green-700, #0F7A43); }
 .cs-chip.f-perdida { background: var(--bm3-red-100, #FDE7E7); color: var(--bm3-red-700, #A82424); }
@@ -195,9 +207,15 @@ body.cot-page .area-main .cot-pronto h3 { font-size: 22px; }
 .cot-c { min-width: 0; display: flex; flex-direction: column; gap: 4px; }
 .cot-c-num b { font-size: 12px; font-weight: 600; color: var(--cs-ink2); }
 .cot-c-num small { font-size: 11.5px; color: var(--cs-mut); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.cot-c-cli b { font-size: 14px; font-weight: 700; color: var(--cs-ink); line-height: 1.3; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+.cot-c-cli > b { font-size: 14px; font-weight: 700; color: var(--cs-ink); line-height: 1.3; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
 .cot-c-cli small { display: flex; align-items: center; gap: 6px; font-size: 12px; color: var(--cs-ink2); font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .cot-c-cli small i { font-style: normal; font-weight: 500; color: var(--cs-mut); overflow: hidden; text-overflow: ellipsis; }
+/* 29/10/26: o paciente da A faturar, numa linha só dele */
+.cot-pac { display: flex; align-items: flex-start; gap: 5px; margin-top: 3px; min-width: 0; font-size: 12.5px; line-height: 1.35; color: var(--bm3-amber-800, #8A4B00); font-weight: 600; }
+.cot-pac svg { width: 13px; height: 13px; flex: none; margin-top: 2px; }
+.cot-pac b { font-weight: 800; color: var(--cs-ink); min-width: 0; overflow-wrap: anywhere; }
+.cot-pac.ni b { color: var(--cs-mut); font-weight: 700; letter-spacing: .03em; }
+html[data-tema="escuro"] .cot-pac { color: #F5B95A; }
 .cot-c-val { align-items: flex-end; text-align: right; }
 .cot-c-val b { font: 700 14.5px/1.1 var(--bm3-font-display, Roboto, sans-serif); color: var(--cs-ink); font-variant-numeric: tabular-nums; white-space: nowrap; }
 .cot-c-val small { font-size: 11.5px; color: var(--cs-mut); white-space: nowrap; }
@@ -224,7 +242,8 @@ body.cot-page .area-main .cot-pronto h3 { font-size: 22px; }
 .cot-saidas button { height: 34px; padding: 0 12px; border-radius: 10px; border: 1px dashed var(--cs-line); background: transparent; cursor: pointer;
   font: 700 12px/1 var(--bm3-font-text, Roboto, sans-serif); color: var(--cs-mut); transition: background .15s, color .15s, border-color .15s; }
 .cot-saidas button:hover { border-style: solid; }
-.cot-saidas button[data-fase="perdida"]:hover, .cot-saidas button[data-fase="perdida"].on { background: var(--bm3-red-100, #FDE7E7); color: var(--bm3-red-700, #A82424); border-color: transparent; }
+.cot-saidas button[data-fase="perdida"]:hover, .cot-saidas button[data-fase="perdida"].on,
+.cot-saidas button[data-fase="amostra_perdida"]:hover, .cot-saidas button[data-fase="amostra_perdida"].on { background: var(--bm3-red-100, #FDE7E7); color: var(--bm3-red-700, #A82424); border-color: transparent; }
 .cot-saidas button[data-fase="cancelada"]:hover, .cot-saidas button[data-fase="cancelada"].on { background: rgba(15,29,35,.07); color: var(--cs-ink); border-color: transparent; }
 .cot-saidas button.on { border-style: solid; }
 .cot-faixa-fim { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; padding: 12px 14px; border-radius: 16px; font-size: 13px; line-height: 1.45; }
@@ -363,7 +382,10 @@ body.cot-page .area-main table.cot-itens tr.aviso td { background: color-mix(in 
 .cot-ia ul { margin: 0 0 8px; padding-left: 18px; font-size: 12px; line-height: 1.5; color: var(--bm3-amber-800, #8A4B00); }
 
 /* quadro (kanban por fase) */
-.cot-kanban { display: grid; grid-template-columns: repeat(6, minmax(230px, 1fr)); gap: 12px; overflow-x: auto; padding-bottom: 6px; }
+/* os filtros do quadro (23/10/2026): portal, unidade e a busca, os mesmos da lista */
+.cot-quadro-f { margin-bottom: 12px; }
+.cot-quadro-f .tk-cab { border-bottom: 0; }
+.cot-kanban { display: grid; grid-template-columns: repeat(5, minmax(220px, 1fr)); gap: 12px; overflow-x: auto; padding-bottom: 6px; }
 .cot-kanban .cs-col { min-height: 460px; }
 .cot-kanban .cs-col.fechada { background: color-mix(in srgb, var(--cs-soft) 70%, transparent); }
 .cot-kanban .cs-col-h .v { display: block; font-size: 11.5px; font-weight: 700; color: var(--cs-mut); margin-top: 3px; }
@@ -407,51 +429,6 @@ body.cot-page .area-main table.cot-itens tr.aviso td { background: color-mix(in 
 .cot-conv-p .b { height: 6px; border-radius: 99px; background: #E7ECEF; margin-top: 9px; overflow: hidden; }
 .cot-conv-p .b i { display: block; height: 100%; border-radius: 99px; background: var(--c, #2C7288); }
 .cot-conv-p + .cot-conv-p::before { content: "→"; position: absolute; left: -9px; top: 50%; transform: translate(-50%, -50%); font-weight: 800; color: #ABB7BC; font-size: 13px; }
-/* semana a semana: três barras por semana (entraram · viraram pedido · não viraram) */
-.cot-semg { margin-top: 14px; overflow-x: auto; -webkit-overflow-scrolling: touch; }
-.cot-semg-plot { display: flex; gap: 6px; align-items: stretch; min-width: 560px; height: 230px; }
-.cot-semg-col { flex: 1 1 0; min-width: 40px; display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 6px 2px 4px; border-radius: 8px; }
-.cot-semg-col.atual { background: #F2F6F9; }
-.cot-semg-col .bars { flex: 1; width: 100%; display: flex; align-items: flex-end; justify-content: center; gap: 3px; border-bottom: 1px solid #E5EAED; }
-.cot-semg-col .bars i { display: block; width: 26%; max-width: 16px; min-height: 2px; border-radius: 3px 3px 0 0; }
-.cot-semg-col .x { font-size: 10px; font-weight: 700; color: #5F727A; white-space: nowrap; }
-.cot-semg-col.atual .x { color: #287A8E; }
-.cot-semg-col .t { font-size: 9.5px; font-weight: 700; color: #22794C; min-height: 12px; font-variant-numeric: tabular-nums; }
-.cot-sem-tb { width: 100%; border-collapse: collapse; margin-top: 14px; font-size: 12px; }
-.cot-sem-tb th { text-align: left; padding: 8px 10px; font-size: 9.5px; font-weight: 800; letter-spacing: .07em; text-transform: uppercase; color: #81939B; border-bottom: 1px solid #E5EAED; white-space: nowrap; }
-.cot-sem-tb td { padding: 9px 10px; border-bottom: 1px solid #F1F5F7; color: #374951; font-variant-numeric: tabular-nums; white-space: nowrap; }
-.cot-sem-tb th.n, .cot-sem-tb td.n { text-align: right; }
-.cot-sem-tb tr:hover td { background: #F7FAFD; }
-.cot-sem-tb tfoot td { font-weight: 800; color: #10323E; background: #F5F8FC; border-bottom: 0; }
-.cot-sem-tb td b { color: #10323E; }
-.cot-sem-tb td.gan { color: #22794C; font-weight: 700; } .cot-sem-tb td.per { color: #B54545; font-weight: 700; }
-.cot-sem-tb .tx { display: inline-flex; align-items: center; gap: 8px; }
-.cot-sem-tb .tx i { display: block; width: 46px; height: 5px; border-radius: 99px; background: #E7ECEF; overflow: hidden; }
-.cot-sem-tb .tx i b { display: block; height: 100%; background: #2FBF71; }
-/* as tabelas do funil também ganham das regras globais de tabela do portal */
-body.cot-page .area-main .cot-sem-tb thead th, body.cot-page .area-main .cot-lista-tb thead th { background: #F5F8FC; color: #81939B; font-size: 9.5px; letter-spacing: .07em; border-top: 0; }
-body.cot-page .area-main .cot-sem-tb tbody td, body.cot-page .area-main .cot-lista-tb tbody td { color: #374951; border-bottom: 1px solid #F1F5F7; }
-body.cot-page .area-main .cot-sem-tb tbody td.gan { color: #22794C; font-weight: 700; }
-body.cot-page .area-main .cot-sem-tb tbody td.per { color: #B54545; font-weight: 700; }
-body.cot-page .area-main .cot-sem-tb tbody td b, body.cot-page .area-main .cot-lista-tb tbody td b { color: #10323E; }
-body.cot-page .area-main .cot-lista-tb tbody td.num { color: #5F727A; }
-.cot-tw { overflow-x: auto; }
-.cot-lista-tb { width: 100%; border-collapse: collapse; font-size: 12px; min-width: 860px; }
-.cot-lista-tb th { position: sticky; top: 0; z-index: 1; text-align: left; padding: 9px 10px; background: #F5F8FC; font-size: 9.5px; font-weight: 800; letter-spacing: .07em; text-transform: uppercase; color: #81939B; white-space: nowrap; border-bottom: 1px solid #E5EAED; }
-.cot-lista-tb td { padding: 10px; border-bottom: 1px solid #F1F5F7; color: #374951; vertical-align: middle; }
-.cot-lista-tb th.n, .cot-lista-tb td.n { text-align: right; white-space: nowrap; font-variant-numeric: tabular-nums; }
-.cot-lista-tb tr[data-num] { cursor: pointer; }
-.cot-lista-tb tr[data-num]:hover td { background: #F7FAFD; }
-.cot-lista-tb tr[data-num]:hover .nm b { color: #287A8E; }
-.cot-lista-tb .nm { max-width: 300px; }
-.cot-lista-tb .nm b { display: block; font-weight: 700; color: #10323E; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.cot-lista-tb .nm span { display: block; font-size: 10.5px; font-weight: 600; color: #97A8AE; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; margin-top: 1px; }
-.cot-lista-tb .num { font-family: var(--bm3-font-mono, 'JetBrains Mono', monospace); font-size: 11px; color: #5F727A; white-space: nowrap; }
-.cot-lista-scroll { max-height: 62vh; overflow: auto; margin-top: 12px; border: 1px solid #E5EAED; border-radius: 12px; }
-.cot-funil-vazio { display: flex; flex-direction: column; align-items: center; gap: 10px; padding: 40px 20px; text-align: center; color: #5F727A; font-size: 13.5px; line-height: 1.55; }
-.cot-funil-vazio .ic { width: 64px; height: 64px; border-radius: 22px; display: grid; place-items: center; background: #EEF5F9; color: #2C7288; }
-.cot-funil-vazio .ic svg { width: 30px; height: 30px; }
-.cot-funil-vazio b { font-size: 17px; color: #10323E; }
 
 /* =====================================================================
    4. CELULAR / TELAS MENORES
@@ -518,10 +495,6 @@ table.cot-itens:not(.ler) { min-width: 1040px; }
 .cot-calc { min-height: 38px; display: flex; align-items: center; padding: 0 11px; border-radius: 11px; border: 1px dashed var(--cs-line);
   font: 700 13.5px/1.3 var(--bm3-font-text, Roboto, sans-serif); color: var(--cs-ink); background: transparent; }
 .cot-calc.vencida { border-style: solid; border-color: transparent; background: var(--bm3-amber-100, #FEF1DA); color: var(--bm3-amber-800, #8A4B00); }
-.cot-vencida { display: flex; align-items: flex-start; gap: 12px; margin: 0 0 14px; padding: 12px 14px; border-radius: 16px;
-  background: var(--bm3-amber-100, #FEF1DA); color: var(--bm3-amber-800, #8A4B00); font-size: 13px; line-height: 1.5; }
-.cot-vencida > svg { width: 22px; height: 22px; flex: none; margin-top: 1px; }
-.cot-vencida b { display: block; font-size: 14px; }
 /* a proposta, no agente */
 .cot-prop { display: grid; grid-template-columns: minmax(0, 1.6fr) minmax(0, 1fr); gap: 16px; align-items: start; }
 .cot-prop-chk { display: flex; gap: 10px; align-items: flex-start; margin: 0 0 12px; cursor: pointer; }
@@ -533,6 +506,29 @@ table.cot-itens:not(.ler) { min-width: 1040px; }
 .cot-prop-r > b { font: 600 16px/1.25 var(--bm3-font-display, Roboto, sans-serif); color: var(--cs-ink); }
 .cot-prop-r > span { font-size: 12px; color: var(--cs-mut); overflow-wrap: anywhere; }
 .cot-prop-r .cs-campo { margin-bottom: 10px; }
+/* o contato do setor e os outros arquivos da proposta (22/10/2026) */
+.cot-prop-setor { display: flex; flex-direction: column; gap: 1px; margin: 10px 0; padding: 10px 12px; border-radius: 12px; background: var(--bm3-surface, #fff); border: 1px solid var(--cs-line); }
+.cot-prop-setor small { font-size: 10.5px; font-weight: 800; letter-spacing: .05em; text-transform: uppercase; color: var(--cs-mut); }
+.cot-prop-setor b { font-size: 13px; color: var(--cs-ink); overflow-wrap: anywhere; }
+.cot-prop-setor span { font-size: 12.5px; color: var(--cs-ink); }
+.cot-prop-setor em { font-size: 11.5px; font-style: normal; color: var(--cs-mut); }
+.cot-prop-setor-l { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; margin: 8px 0; font-size: 12.5px; color: var(--cs-mut); }
+.cot-prop-setor-l svg { width: 14px; height: 14px; flex: none; }
+.cot-prop-setor-l b { color: var(--cs-ink); }
+.cot-extras { display: flex; flex-direction: column; gap: 6px; margin: 6px 0 10px; }
+.cot-extras-caso, .cot-extras-l { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; }
+.cot-extras-caso > small { font-size: 11.5px; color: var(--cs-mut); margin-right: 2px; }
+.cot-extra { display: inline-flex; align-items: center; gap: 5px; max-width: 100%; min-height: 28px; padding: 3px 8px; border-radius: 10px; border: 1px solid var(--cs-line); background: var(--cs-soft); font-size: 12px; color: var(--cs-mut); cursor: default; }
+label.cot-extra { cursor: pointer; }
+.cot-extra.on { background: var(--bm3-blue-50, #F0F7FA); border-color: color-mix(in srgb, var(--bm3-blue-500, #287A8E) 35%, transparent); color: var(--cs-ink); }
+.cot-extra svg { width: 13px; height: 13px; flex: none; }
+.cot-extra b { font-weight: 700; max-width: 220px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.cot-extra small { color: var(--cs-mut); font-size: 11px; }
+.cot-extra input[type="checkbox"] { margin: 0; }
+.cot-extra button { display: inline-flex; padding: 2px; border: 0; background: transparent; color: var(--cs-mut); cursor: pointer; border-radius: 6px; }
+.cot-extra button:hover { color: var(--bm3-red-700, #A82424); background: var(--bm3-red-100, #FDE7E7); }
+.cot-extra-add { cursor: pointer; }
+.cot-extra-tot { font-size: 11.5px; color: var(--cs-mut); }
 .cot-prop-r .cs-btn { align-self: flex-start; }
 /* o envio, no fim do agente */
 .cot-envio { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; width: 100%; max-width: 640px; margin: 4px 0 2px; padding: 12px 14px; border-radius: 16px;
@@ -613,6 +609,19 @@ html[data-tema="escuro"] body.cot-page .cs-kpi.zero .cs-kpi-n { color: var(--cs-
 .cot-erp dt { color: var(--cs-mut); font-weight: 600; }
 .cot-erp dd { margin: 0; color: var(--cs-ink); font-weight: 700; overflow-wrap: anywhere; }
 .cot-erp small { display: block; margin-top: 6px; color: #0F766E; font-weight: 600; }
+/* o comprador: CNPJ, código do cliente ou à mão (o seletor e o "Buscar" no campo) */
+.cot-modo-cli { display: inline-flex; flex-wrap: wrap; gap: 4px; padding: 4px; margin: 0 0 6px; border-radius: 12px; background: var(--cs-soft); border: 1px solid var(--cs-line); }
+.cot-modo-cli button { border: 0; background: transparent; padding: 7px 12px; border-radius: 9px; font: 600 12.5px/1.2 inherit; color: var(--cs-mut); cursor: pointer; }
+.cot-modo-cli button:hover { color: var(--cs-ink); }
+.cot-modo-cli button.on { background: var(--bm3-surface, #fff); color: var(--cs-ink); box-shadow: 0 1px 3px rgba(15,40,49,.14); }
+.cot-modo-dica { margin: 0 0 12px; font-size: 12.5px; color: var(--cs-mut); }
+.cs-campo.cot-busca { display: grid; grid-template-columns: minmax(0, 1fr) auto; column-gap: 6px; align-items: center; }
+.cs-campo.cot-busca > label, .cs-campo.cot-busca > small { grid-column: 1 / -1; }
+.cs-campo.cot-busca .cs-btn { height: 36px; white-space: nowrap; }
+/* o código ao lado do CNPJ é estreito: sem a etiqueta "Dynamics" (o fundo verde já diz) e sem quebrar o rótulo */
+.cs-campo.cot-cod > label { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.cs-campo.cot-cod.erp > label::after { content: none; }
+html[data-tema="escuro"] .cot-modo-cli button.on { background: var(--bm3-surface-2, #1C252B); }
 .cs-campo.erp input { border-color: color-mix(in srgb, #0F766E 35%, var(--cs-line)); background: color-mix(in srgb, #0F766E 6%, var(--bm3-surface, #fff)); }
 .cs-campo.erp label::after { content: "Dynamics"; margin-left: 6px; font-size: 10px; font-weight: 800; color: #0F766E; letter-spacing: .04em; }
 
@@ -668,9 +677,6 @@ table.cot-itens .cod { width: 150px; }
 
 /* ── a FICHA DA COTAÇÃO (cotacoes-ficha.js): o painel .fv-dw-* do Funil de
    Vendas da Licitação, com o que é só da cotação ──────────────────── */
-.cot-lista-tb tr.is-aberta > td { background: #EFF5F8; }
-body.cot-page .area-main .cot-lista-tb tbody tr.is-aberta > td { background: #EFF5F8; }
-.cot-lista-tb tr.is-aberta > td:first-child { box-shadow: inset 3px 0 0 #287A8E; }
 .cot-dw .cs-chip { height: 22px; font-size: 11px; }
 .cot-dw .fv-dw-tag.cot-dw-semdono { background: #FFF1E6; color: #A8541F; }
 .cot-dw-nav { display: flex; align-items: center; gap: 6px; flex-shrink: 0; }
@@ -790,7 +796,7 @@ body.cot-page .area-main .cot-lista-tb tbody tr.is-aberta > td { background: #EF
   .cot-grade .s3 { grid-column: 1 / -1; }
   .cot-cfg { grid-template-columns: minmax(0, 1fr); }
   .cot-diag { grid-template-columns: minmax(0, 1fr); }
-  .cot-kanban { grid-template-columns: repeat(6, minmax(250px, 82vw)); }
+  .cot-kanban { grid-template-columns: repeat(4, minmax(250px, 82vw)); }
 }
 @media (max-width: 767px) {
   .cot-ag-body { padding: 18px 14px 20px; }
@@ -830,3 +836,452 @@ html[data-tema="escuro"] .cs-campo.invalido input, html[data-tema="escuro"] .cs-
 html[data-tema="escuro"] table.cot-itens tr.qtd-falta td.qtd input, html[data-tema="escuro"] .cs-edit.invalido input { border-color: #E06464 !important; background: color-mix(in srgb, #CF3434 18%, var(--bm3-surface, #131B1F)) !important; }
 html[data-tema="escuro"] .cs-campo small.cot-erro-campo, html[data-tema="escuro"] .cs-edit .cot-erro-campo { color: #F59A9A; }
 html[data-tema="escuro"] .cs-campo small.cot-aviso-campo { color: #F4C06A; }
+
+/* =====================================================================
+   O RESULTADO DE CADA ITEM (ganho / perdido) — 20/10/2026
+   No caso: a coluna "Resultado do item" (Ganho | Perdido). Sem a marca,
+   vale o da fase da cotação — o botão fica tracejado (clicar confirma).
+   No funil: os itens ganhos e perdidos, produto a produto.
+   ===================================================================== */
+table.cot-itens.ler th.res, table.cot-itens.ler td.res { width: 184px; text-align: right; }
+.cot-res { display: inline-flex; gap: 4px; padding: 3px; border-radius: 11px; background: var(--cs-soft); border: 1px solid var(--cs-line); }
+.cot-res button { display: inline-flex; align-items: center; gap: 4px; height: 26px; padding: 0 9px; border-radius: 8px; border: 1px solid transparent; background: transparent;
+  font: 700 11.5px/1 var(--bm3-font-text, Roboto, sans-serif); color: var(--cs-mut); cursor: pointer; white-space: nowrap; }
+.cot-res button svg { width: 12px; height: 12px; flex: none; }
+.cot-res button:hover { color: var(--cs-ink); background: var(--bm3-surface, #fff); }
+.cot-res button:focus-visible { outline: 2px solid var(--bm3-blue-300, #83C1D4); outline-offset: 1px; }
+.cot-res button.ganho.on { background: var(--bm3-green-100, #DDF5E7); color: var(--bm3-green-700, #0F7A43); }
+.cot-res button.perdido.on { background: var(--bm3-red-100, #FDE7E7); color: var(--bm3-red-700, #A82424); }
+.cot-res button.ganho.imp { border: 1px dashed color-mix(in srgb, var(--bm3-green-700, #0F7A43) 60%, transparent); color: var(--bm3-green-700, #0F7A43); }
+.cot-res button.perdido.imp { border: 1px dashed color-mix(in srgb, var(--bm3-red-700, #A82424) 60%, transparent); color: var(--bm3-red-700, #A82424); }
+.cot-res button.pend { opacity: .5; pointer-events: none; }
+table.cot-itens.ler td.res-tot { text-align: right; font-size: 11.5px; font-weight: 700; line-height: 1.5; white-space: nowrap; }
+table.cot-itens.ler td.res-tot span { display: block; }
+table.cot-itens.ler td.res-tot .g { color: var(--bm3-green-700, #0F7A43); }
+table.cot-itens.ler td.res-tot .p { color: var(--bm3-red-700, #A82424); }
+.cot-res-chip { display: inline-block; padding: 2px 8px; border-radius: 999px; border: 1px solid transparent; font: 800 10.5px/1.5 var(--bm3-font-text, Roboto, sans-serif); font-style: normal;
+  background: var(--cs-soft, #F7F9FC); color: var(--cs-mut, #81939B); white-space: nowrap; }
+.cot-res-chip.ganho { background: var(--bm3-green-100, #DDF5E7); color: var(--bm3-green-700, #0F7A43); }
+.cot-res-chip.perdido { background: var(--bm3-red-100, #FDE7E7); color: var(--bm3-red-700, #A82424); }
+.cot-res-chip.imp { background: transparent; border: 1px dashed currentColor; }
+/* virou pedido, mas parte do que foi cotado não veio no pedido */
+.cot-res-aviso { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin: 0 0 12px; padding: 10px 12px; border-radius: 14px;
+  background: var(--bm3-amber-100, #FEF1DA); color: var(--bm3-amber-800, #8A4B00); font-size: 12.5px; line-height: 1.45; }
+.cot-res-aviso > svg { width: 20px; height: 20px; flex: none; }
+.cot-res-aviso > div { flex: 1 1 260px; }
+.cot-res-aviso b { display: block; font-size: 13px; }
+/* a edição dos itens: o resultado no fim da linha */
+table.cot-itens:not(.ler) { min-width: 1160px; }
+table.cot-itens .res { width: 120px; }
+table.cot-itens select { width: 100%; height: 32px; padding: 0 6px; border-radius: 9px; border: 1px solid var(--cs-line); background: transparent;
+  font: 600 12.5px/1 var(--bm3-font-text, Roboto, sans-serif); color: var(--cs-ink); }
+table.cot-itens select:focus { outline: none; border-color: var(--bm3-blue-300, #83C1D4); box-shadow: 0 0 0 3px rgba(54,138,163,.12); }
+@container tk (max-width: 560px) {
+  /* no celular, o resultado vai para uma linha só dele, embaixo do item */
+  table.cot-itens.ler td.res { order: 5; flex: 1 0 100%; text-align: left; margin-top: 6px; }
+  table.cot-itens.ler tfoot td.res-tot { order: 5; flex: 1 0 100%; text-align: left; margin-top: 4px; }
+  table.cot-itens.ler td.res-tot span { display: inline; margin-right: 10px; }
+}
+
+/* =====================================================================
+   FUNIL e ANALÍTICO no desenho do Funil de Vendas da Licitação — 20/10/2026
+   (o CSS .fv-, .fs-, .fc- e .gd- vem de licitacao-funil-vendas.css e
+   licitacao-desempenho.css; aqui só o que é das cotações: a linha da
+   cotação abre a ficha — data-num, não data-fv-ficha —, a marca da linha
+   aberta, os números miúdos e o motivo da perda do item)
+   ===================================================================== */
+body.dept .area-main table.fv-tb tbody tr[data-num],
+body.dept .area-main table.gd-nt tbody tr[data-num] { cursor: pointer; }
+body.dept .area-main table.fv-tb tbody tr[data-num]:focus-visible td,
+body.dept .area-main table.gd-nt tbody tr[data-num]:focus-visible td { background: #F0F7FA; }
+body.dept .area-main table.fv-tb tbody tr[data-num]:focus-visible,
+body.dept .area-main table.gd-nt tbody tr[data-num]:focus-visible { outline: 2px solid #287A8E; outline-offset: -2px; }
+body.dept .area-main table.fv-tb tbody tr[data-num]:hover td.nm .t { color: #287A8E; }
+body.dept .area-main table.fv-tb tbody tr.is-aberta > td,
+body.dept .area-main table.gd-nt tbody tr.is-aberta > td { background: #EFF5F8; }
+body.dept .area-main table.fv-tb tbody tr.is-aberta > td:first-child { box-shadow: inset 3px 0 0 #287A8E; }
+body.dept .area-main table.fv-tb.cot-ng td.org { max-width: 230px; }
+body.dept .area-main table.fv-tb.cot-ng td.cod { font-family: var(--bm3-font-mono, 'JetBrains Mono', ui-monospace, monospace); font-weight: 600; }
+body.dept .area-main table.fv-tb.cot-ng td .fc-sub,
+body.dept .area-main table.fv-tb td .fc-sub b.g { font-weight: 700; }
+body.dept .area-main table.fv-tb td .fc-sub b.g { color: #22794C; }
+body.dept .area-main table.fv-tb td .fc-sub b.p { color: #B54545; }
+body.dept .area-main table.fv-tb td.pos { color: #22794C; font-weight: 700; }
+body.dept .area-main table.fv-tb td.neg { color: #B54545; font-weight: 700; }
+.cot-conv-p .v small { font-size: 13px; color: #81939B; font-weight: 800; }
+/* o motivo da perda do item marcado como perdido (Itens cotados, no caso) */
+.cot-res-mot { display: block; width: 100%; max-width: 184px; height: 28px; margin: 5px 0 0 auto; padding: 0 6px; border-radius: 8px;
+  border: 1px solid var(--cs-line); background: var(--bm3-surface, #fff); font: 600 11.5px/1 var(--bm3-font-text, Roboto, sans-serif); color: var(--cs-ink); }
+.cot-res-mot:focus { outline: none; border-color: var(--bm3-blue-300, #83C1D4); box-shadow: 0 0 0 3px rgba(54,138,163,.12); }
+@container tk (max-width: 560px) { .cot-res-mot { margin-left: 0; } }
+/* o filtro da janela e o resto da barra (cot-filtros) dividem a linha com o "Limpar" */
+.cot-filtros label.on select { color: #10323E; }
+
+/* =====================================================================
+   21/10/2026 — Virou pedido: o resultado de cada item (obrigatório) e os
+   três jeitos (PDF, à mão, a OV de um pedido feito antes); o código do
+   cliente na lista; o portal do Agente numa lista
+   ===================================================================== */
+.cs-dlg.cot-dlg-largo { width: min(760px, calc(100vw - 32px)); }
+.cot-ped-modos .cot-fase-ini b { display: inline-flex; align-items: center; gap: 6px; }
+.cot-ped-modos .cot-fase-ini b svg { width: 15px; height: 15px; flex: none; }
+.cot-dlg-nota { margin: 2px 0 12px; font-size: 12.5px; line-height: 1.5; color: var(--cs-mut); }
+.cot-dlg-itens { margin-top: 14px; border: 1px solid var(--cs-line); border-radius: 14px; overflow: hidden; }
+.cot-dlg-itens-h { display: flex; align-items: center; gap: 10px; padding: 9px 12px; background: var(--cs-soft); border-bottom: 1px solid var(--cs-line); font-size: 12.5px; }
+.cot-dlg-itens-h b { color: var(--cs-ink); }
+.cot-dlg-itens-h b i { color: var(--bm3-red-700, #A82424); font-style: normal; }
+.cot-dlg-itens-h span { color: var(--cs-mut); font-size: 11.5px; }
+.cot-dlg-itens-h .cs-btn { margin-left: auto; }
+.cot-dlg-tw { max-height: 300px; overflow: auto; }
+.cot-dlg-tw table { width: 100%; border-collapse: collapse; }
+.cot-dlg-tw td { padding: 8px 12px; border-top: 1px solid var(--cs-line); vertical-align: middle; }
+.cot-dlg-tw tr:first-child td { border-top: 0; }
+.cot-dlg-tw tr.sem td { background: color-mix(in srgb, #F2C14B 9%, transparent); }
+/* o PDF do pedido × a cotação (22/10/2026): a linha que não bate */
+.cot-dlg-tw tr.div td { background: color-mix(in srgb, var(--bm3-red-700, #A82424) 7%, transparent); }
+.cot-dlg-tw td.d small b { display: inline; font-size: inherit; color: var(--bm3-red-700, #A82424); }
+.cot-dlg-tw td.r .cot-res-chip svg { width: 11px; height: 11px; vertical-align: -1px; margin-right: 3px; }
+.cot-dlg-tw td.d b { display: block; font-size: 12.5px; color: var(--cs-ink); line-height: 1.35; }
+.cot-dlg-tw td.d small { display: block; margin-top: 2px; font-size: 11.5px; color: var(--cs-mut); }
+.cot-dlg-tw td.r { text-align: right; white-space: nowrap; }
+.cot-dlg-tw td.r .cot-res-mot { display: block; margin: 6px 0 0 auto; max-width: 220px; }
+.cot-dlg-falta { display: flex; align-items: center; gap: 7px; margin: 12px 0 0; font-size: 12.5px; font-weight: 700; color: var(--bm3-red-700, #A82424); }
+.cot-dlg-falta.lendo { color: var(--cs-mut); }
+.cot-dlg-falta .cs-btn { margin-left: auto; flex: none; }
+.cot-dlg-falta { flex-wrap: wrap; }
+.cot-dlg-falta > span:not(.cot-dlg-falta-bts) { flex: 1 1 260px; }
+.cot-dlg-falta-bts { display: inline-flex; gap: 6px; margin-left: auto; flex: none; }
+.cot-dlg-falta-bts .cs-btn { margin-left: 0; }
+.cot-dlg-tw td.r .cot-ajustar { color: var(--bm3-red-700, #A82424); border-color: color-mix(in srgb, var(--bm3-red-700, #A82424) 35%, transparent); background: var(--bm3-surface, #fff); }
+.cot-dlg-tw td.r .cot-ajustar:hover { background: var(--bm3-red-100, #FDE7E7); }
+.cot-dlg-tw td.r .cot-ajustar svg { width: 12px; height: 12px; }
+.cot-dlg-falta.ok { color: var(--bm3-green-700, #0F7A43); }
+.cot-dlg-falta svg { width: 15px; height: 15px; flex: none; }
+.cot-ped .cs-pi-arq .cot-ped-man { margin-left: auto; opacity: .8; white-space: nowrap; }
+.cot-cod-cli { font-family: var(--bm3-font-mono, 'JetBrains Mono', ui-monospace, monospace); font-weight: 600; }
+.cot-link { border: 0; background: none; padding: 0; font: inherit; font-size: 11.5px; color: var(--cs-blue); text-decoration: underline; cursor: pointer; }
+@media (max-width: 767px) {
+  .cot-dlg-tw td.r { white-space: normal; }
+  .cot-dlg-itens-h { flex-wrap: wrap; }
+}
+/* o cartão azul do Pedido: as duas alternativas ao PDF (21/10/2026) */
+.cot-ped .cot-ped-alt { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
+.cot-ped .cot-ped-alt .cs-btn { background: rgba(255,255,255,.12); border-color: rgba(255,255,255,.22); color: #fff; }
+.cot-ped .cot-ped-alt .cs-btn:hover { background: rgba(255,255,255,.2); border-color: rgba(255,255,255,.35); color: #fff; }
+/* o "Já tenho a Ordem de Venda": as OVs do cliente no Dynamics para escolher (21/10/2026) */
+.cot-ov-escolha { margin: -2px 0 10px; }
+.cot-ov-esc-h { font-size: 11.5px; color: var(--cs-mut); margin-bottom: 6px; }
+.cot-ov-esc-h b { color: var(--cs-ink); font-family: var(--bm3-font-mono, 'JetBrains Mono', ui-monospace, monospace); }
+.cot-ov-esc-l { display: flex; flex-direction: column; gap: 4px; max-height: 190px; overflow: auto; padding-right: 2px; }
+.cot-ov-opc { display: flex; align-items: center; gap: 10px; width: 100%; padding: 7px 10px; border-radius: 10px; border: 1px solid var(--cs-line); background: var(--bm3-surface, #fff);
+  font: 500 12px/1.3 var(--bm3-font-text, Roboto, sans-serif); color: var(--cs-mut); text-align: left; cursor: pointer; }
+.cot-ov-opc b { color: var(--cs-ink); font-size: 12.5px; flex: none; }
+.cot-ov-opc span { flex: 1 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.cot-ov-opc em { font-style: normal; font-size: 11px; font-weight: 700; color: var(--bm3-amber-800, #8A4B00); flex: none; }
+.cot-ov-opc svg { width: 15px; height: 15px; color: var(--cs-blue); flex: none; }
+.cot-ov-opc:hover { border-color: var(--bm3-blue-300, #83C1D4); background: var(--bm3-blue-50, #EEF5F9); }
+.cot-ov-opc.on { border-color: var(--cs-blue); background: var(--bm3-blue-50, #EEF5F9); box-shadow: 0 0 0 3px rgba(54,138,163,.12); }
+.cot-ov-opc.usada { opacity: .75; }
+.cot-ov-esc-msg { display: flex; align-items: center; gap: 6px; margin: 0; font-size: 12px; color: var(--cs-mut); }
+.cot-ov-esc-msg svg { width: 14px; height: 14px; flex: none; }
+/* "Já tenho a OV": do cliente ou TODAS (o pedido pode ter sido faturado para outro cliente — 21/10/2026) */
+.cot-ov-esc-h { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.cot-ov-esc-seg { display: inline-flex; gap: 2px; padding: 3px; border-radius: 10px; background: var(--cs-soft); border: 1px solid var(--cs-line); }
+.cot-ov-esc-seg button { height: 26px; padding: 0 10px; border-radius: 7px; border: 0; background: transparent; font: 700 11.5px/1 var(--bm3-font-text, Roboto, sans-serif); color: var(--cs-mut); cursor: pointer; }
+.cot-ov-esc-seg button b { font-family: var(--bm3-font-mono, 'JetBrains Mono', ui-monospace, monospace); color: inherit; }
+.cot-ov-esc-seg button.on { background: var(--bm3-surface, #fff); color: var(--cs-ink); box-shadow: 0 1px 3px rgba(15,29,35,.12); }
+.cot-ov-filtro { display: block; width: 100%; height: 32px; margin: 8px 0 6px; padding: 0 10px; border-radius: 9px; border: 1px solid var(--cs-line); background: var(--bm3-surface, #fff); font: 500 12.5px/1 var(--bm3-font-text, Roboto, sans-serif); color: var(--cs-ink); }
+.cot-ov-filtro:focus { outline: none; border-color: var(--bm3-blue-300, #83C1D4); box-shadow: 0 0 0 3px rgba(54,138,163,.12); }
+.cot-ov-esc-h + #dlg-ovs-l { margin-top: 6px; }
+.cot-ov-opc em.outro { color: var(--bm3-violet-600, #5A3BC4); }
+/* a Ganha que já fechou e vai virar Perdida: o aviso no diálogo (21/10/2026) */
+.cot-dlg-aviso { display: flex; gap: 10px; align-items: flex-start; margin: 0 0 14px; padding: 10px 12px; border-radius: 12px; background: var(--bm3-amber-100, #FEF1DA); color: var(--bm3-amber-800, #8A4B00); font-size: 12.5px; line-height: 1.45; }
+.cot-dlg-aviso svg { width: 16px; height: 16px; flex: none; margin-top: 1px; }
+.cot-dlg-aviso b { display: block; }
+
+/* =====================================================================
+   21/10/2026 — Funil e Analítico: o período pela data da cotação (como o
+   Funil de Participação da Licitação) — atalhos + De/Até num painel, e os
+   botões Semana −1 / 0 / +1 / Período todo (.fv-sem do funil de vendas)
+   ===================================================================== */
+.cot-fsel { display: contents; }
+.cot-per { position: relative; }
+.cot-per-b { display: inline-flex; align-items: center; gap: 7px; height: 36px; padding: 0 11px; border-radius: 10px; border: 1px solid #E5EAED; background: #fff;
+  font: 700 12px/1 var(--bm3-font-text, Roboto, sans-serif); color: #374951; cursor: pointer; white-space: nowrap; }
+.cot-per-b:hover { border-color: #287A8E; }
+.cot-per-b:focus-visible { outline: 2px solid #287A8E; outline-offset: 1px; }
+.cot-per-b svg { width: 14px; height: 14px; flex: none; color: #5F727A; }
+.cot-per-b .k { font-size: 11.5px; color: #97A8AE; }
+.cot-per-b .v { font-weight: 800; color: #10323E; }
+.cot-per-b .cot-per-seta { width: 12px; height: 12px; transition: transform .15s; }
+.cot-per.open .cot-per-seta { transform: rotate(180deg); }
+.cot-per-b.has { border-color: #BDDEEA; background: #F0F7FA; }
+.cot-per-p { position: absolute; z-index: 60; top: calc(100% + 6px); left: 0; display: none; flex-direction: column; padding: 12px;
+  background: #fff; border: 1px solid #E5EAED; border-radius: 12px; box-shadow: 0 10px 30px rgba(16,50,62,.14); }
+.cot-per.open .cot-per-p { display: flex; }
+.cot-per-p label { display: flex; align-items: center; justify-content: space-between; gap: 10px; height: auto; padding: 0; border: 0; background: none;
+  font-size: 11px; font-weight: 800; letter-spacing: .05em; text-transform: uppercase; color: #97A8AE; }
+.cot-per-p input[type="date"] { width: 160px; padding: 7px 9px; border: 1px solid #E5EAED; border-radius: 8px; background: #fff;
+  font: 600 12.5px/1.2 var(--bm3-font-text, Roboto, sans-serif); color: #374951; }
+.cot-per-p input[type="date"]:focus { outline: none; border-color: #287A8E; }
+.cot-per-h { margin-top: -4px; font-size: 10.5px; line-height: 1.4; color: #97A8AE; }
+.cot-per-h b { color: #5F727A; }
+.cot-per-f { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding-top: 8px; margin-top: 2px; border-top: 1px solid #E5EAED; }
+.cot-per-f button { font: 700 11.5px/1 var(--bm3-font-text, Roboto, sans-serif); color: #287A8E; background: none; border: 0; cursor: pointer; }
+.cot-per-f button:hover { text-decoration: underline; }
+.cot-sem button { height: 36px; box-sizing: border-box; align-items: center; }
+/* 29/10/2026 — janela estreita: os 4 botões passavam da borda do cartão
+   ("Período todo" cortado); agora descem para a linha de baixo */
+.cot-sem { flex-wrap: wrap; max-width: 100%; }
+@media (max-width: 767px) {
+  .cot-per { width: 100%; }
+  .cot-per-b { width: 100%; justify-content: flex-start; }
+  .cot-per-b .cot-per-seta { margin-left: auto; }
+  .cot-per-p { position: static; width: 100%; max-width: none; box-shadow: none; margin-top: 6px; box-sizing: border-box; }
+  .cot-per-p input[type="date"] { width: 100%; box-sizing: border-box; }
+  .cot-per-p label { flex-direction: column; align-items: stretch; gap: 4px; }
+  .cot-sem { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); width: 100%; }
+  .cot-sem button { height: auto; }
+}
+
+/* =====================================================================
+   21/10/2026 — o produto no Salesforce: embaixo da descrição do item, o
+   que vai na proposta (a descrição do cadastro); o título traz tudo
+   (fabricante e RMS)
+   ===================================================================== */
+table.cot-itens .cot-sf { display: block; max-width: 340px; margin: 2px 2px 0; font-size: 10.5px; line-height: 1.3; font-weight: 600; color: var(--bm3-blue-700, #215A6C);
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+table.cot-itens .cot-sf b { margin-right: 4px; padding: 0 5px; border-radius: 4px; background: var(--bm3-blue-50, #EAF3F7); font-size: 9.5px; font-weight: 800; letter-spacing: .03em; text-transform: uppercase; }
+table.cot-itens.ler td.desc small.cot-sf { color: var(--bm3-blue-700, #215A6C); font-size: 10.5px; font-weight: 600; margin-top: 3px; max-width: 520px; }
+table.cot-itens.ler td.desc small.cot-sf b { display: inline; color: inherit; }
+
+/* ── 23/10/2026 (pedidos do usuário) ───────────────────────────── */
+/* o responsável nos filtros, com a cor dele */
+.tk-est.cot-est-dono { padding-left: 6px; }
+.tk-est.cot-est-dono .cs-av.mini { width: 18px; height: 18px; border-radius: 6px; font-size: 8px; }
+/* "Possui tramitação" (o botão) e o chip da tramitação na linha/cartão */
+.cot-tram-slot { display: inline-flex; flex: none; }
+.cot-tram-slot:empty { display: none; }
+.tk-est.cot-tram-f { height: 36px; padding: 0 8px 0 11px; border-radius: 12px; font-weight: 700; }
+.tk-est.cot-tram-f svg { width: 15px; height: 15px; flex: none; }
+.cot-tram { display: inline-flex; align-items: center; gap: 3px; height: 20px; padding: 0 6px; border-radius: 999px; font: 800 10.5px/1 var(--bm3-font-text, Roboto, sans-serif);
+  color: var(--bm3-blue-700, #1F5A6B); background: var(--bm3-blue-50, #EEF5F9); border: 1px solid color-mix(in srgb, var(--bm3-blue-600, #2C7288) 22%, transparent); cursor: help; }
+.cot-tram svg { width: 11px; height: 11px; flex: none; }
+.cot-kanban .cs-kcard .q span.cot-tram { margin-left: auto; flex: none; overflow: visible; }
+/* o modalzinho da tramitação (passar o mouse) */
+.cot-tram-pop { position: fixed; z-index: 900; max-width: calc(100vw - 16px); padding: 12px 12px 10px; border-radius: 16px; background: var(--bm3-surface, #fff);
+  border: 1px solid var(--cs-line, #E4E9ED); box-shadow: 0 18px 44px rgba(15,29,35,.20), 0 2px 6px rgba(15,29,35,.08); pointer-events: none; font-size: 12.5px; color: var(--cs-ink2, #3D4B53);
+  animation: cot-tram-in .14s ease-out; }
+.cot-tram-pop[hidden] { display: none; }
+@keyframes cot-tram-in { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: none; } }
+.cot-tram-h { display: flex; align-items: center; gap: 7px; margin-bottom: 8px; color: var(--cs-ink, #0F1D23); }
+.cot-tram-h svg { width: 15px; height: 15px; color: var(--bm3-blue-600, #2C7288); }
+.cot-tram-h b { font: 700 14px/1 var(--bm3-font-display, Roboto, sans-serif); }
+.cot-tram-h span { margin-left: auto; font-size: 11px; color: var(--cs-mut, #58666D); }
+.cot-tram-n { display: flex; gap: 8px; padding: 8px 0; border-top: 1px solid var(--cs-line, #E4E9ED); line-height: 1.45; white-space: pre-wrap; word-break: break-word; }
+.cot-tram-n .cs-av { margin-top: 2px; }
+.cot-tram-n small { display: block; margin-bottom: 2px; font-size: 11px; color: var(--cs-mut, #58666D); white-space: normal; }
+.cot-tram-n small b { color: var(--cs-ink, #0F1D23); }
+.cot-tram-c, .cot-tram-e, .cot-tram-mais { margin: 0; padding: 8px 0 2px; border-top: 1px solid var(--cs-line, #E4E9ED); font-size: 11.5px; color: var(--cs-mut, #58666D); }
+.cot-tram-c { display: flex; align-items: center; gap: 8px; }
+.cot-tram-e { color: var(--bm3-red-700, #A82424); }
+/* a A faturar (29/10/26): importar o PDF do cliente e a conferência do lote no Dynamics */
+.cot-fat-imp { display: flex; align-items: center; gap: 12px; margin: 4px 0 14px; padding: 12px 14px; border-radius: 14px; border: 1.5px dashed var(--bm3-blue-300, #83C1D4); background: color-mix(in srgb, var(--bm3-blue-100, #E2EEF4) 45%, transparent); cursor: pointer; }
+.cot-fat-imp:hover, .cot-fat-imp.drag { border-style: solid; background: var(--bm3-blue-100, #E2EEF4); }
+.cot-fat-imp .ic { width: 38px; height: 38px; flex: none; border-radius: 12px; display: grid; place-items: center; background: var(--bm3-surface, #fff); color: var(--bm3-blue-600, #2C7288); }
+.cot-fat-imp .ic svg { width: 18px; height: 18px; }
+.cot-fat-imp .tx { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.cot-fat-imp .tx b { font-size: 13.5px; color: var(--cs-ink); }
+.cot-fat-imp .tx small { font-size: 12px; color: var(--cs-mut); line-height: 1.4; }
+.cot-fat-imp.ok { border-color: var(--bm3-green-500, #2FBF71); background: var(--bm3-green-100, #DDF5E7); }
+.cot-fat-imp.ok .tx small { color: var(--bm3-green-700, #0F7A43); }
+.cot-fat-imp.erro { border-color: var(--bm3-red-400, #EF8A8A); background: var(--bm3-red-100, #FDE7E7); }
+.cot-fat-imp.erro .tx small { color: var(--bm3-red-700, #A82424); }
+.cot-fat-imp .tx small svg, .cot-lote-st svg { width: 12px; height: 12px; vertical-align: -2px; margin-right: 3px; }
+.cot-fat-h small { font-weight: 500; font-size: 11.5px; color: var(--cs-mut); margin-left: 6px; }
+.cot-lote-st { display: block; margin-top: 4px; font-size: 11.5px; line-height: 1.35; color: var(--cs-mut); }
+.cot-lote-st:empty { display: none; }
+.cot-lote-st.ok { color: var(--bm3-green-700, #0F7A43); }
+.cot-lote-st.nao { color: var(--bm3-red-700, #A82424); }
+.cot-lote-st.sem { color: var(--bm3-amber-800, #8A4B00); }
+.cot-lote-st .cs-spin { width: 10px; height: 10px; vertical-align: -1px; }
+.cot-fat-tab .cot-lote-st { margin-top: 2px; }
+/* os obrigatórios do Agente (29/10/26): o asterisco */
+.cot-req { color: var(--bm3-red-600, #C93636); font-weight: 800; margin-left: 3px; }
+/* o "Tem IPI?" (29/10/26): ao lado do total; a coluna IPI % e o IPI somado */
+.cot-itens-pe .cot-tot-grp { margin-left: auto; display: inline-flex; align-items: center; justify-content: flex-end; gap: 6px 16px; flex-wrap: wrap; }
+.cot-itens-pe .cot-tot-grp .tot { margin-left: 0; }
+.cot-itens-pe .cot-ipi-chk { display: inline-flex; align-items: center; gap: 6px; font-size: 12.5px; font-weight: 700; color: var(--cs-ink2); cursor: pointer; user-select: none; }
+.cot-itens-pe .cot-ipi-chk input { width: 15px; height: 15px; margin: 0; accent-color: var(--bm3-blue-600, #2C7288); cursor: pointer; }
+.cot-itens-pe .cot-tot-ipi { display: inline-flex; align-items: center; gap: 14px; flex-wrap: wrap; }
+.cot-itens-pe .cot-tot-ipi:empty { display: none; }
+.cot-itens-pe .cot-tot-ipi .tot b { font-size: 15px; }
+table.cot-itens .ipi { width: 72px; }
+table.cot-itens td.ipi input { text-align: right; }
+table.cot-itens td.ipi input.invalido { border-color: var(--bm3-red-400, #EF8A8A); background: var(--bm3-red-100, #FDE7E7); }
+table.cot-itens.ler tfoot tr.cot-ipi-tr td { padding-top: 2px; padding-bottom: 2px; font-size: 12.5px; color: var(--cs-ink2); border-top: 0; }
+/* Funil (27/10/26): a faixa A faturar, parte das em aberto */
+.fv-fn-row.fat .fv-fn-lb .t::before { content: '↳ '; color: var(--fv-mut3, #8B9BA3); font-weight: 600; }
+.fs-fn .fv-fn-row.fat .fv-fn-lb .s .cv { color: #B45309; }
+/* Analítico (27/10/26): o preço médio cotado de cada SKU */
+.fa-sku-r .s .pm { color: var(--fv-body, #415159); }
+.fa-sku-r .s .pm b { color: var(--fv-ink, #0F1D23); font-weight: 800; }
+/* os dados da A faturar (26/10/26): o paciente e o lote do material */
+.cot-fat-card .cot-dlg-aviso { margin: 0 0 12px; }
+.cot-fat-dl { display: grid; grid-template-columns: max-content minmax(0, 1fr) max-content minmax(0, 1fr); gap: 6px 14px; margin: 0 0 12px; font-size: 13px; }
+.cot-fat-dl dt { color: var(--cs-mut); }
+.cot-fat-dl dd { margin: 0; font-weight: 700; color: var(--cs-ink); min-width: 0; overflow-wrap: anywhere; }
+.cot-fat-dl .vazio, .cot-fat-tab .vazio { color: var(--cs-mut); font-weight: 500; }
+.cot-fat-tab { width: 100%; border-collapse: collapse; font-size: 12.5px; }
+.cot-fat-tab th { text-align: left; font-size: 10.5px; letter-spacing: .06em; text-transform: uppercase; color: var(--cs-mut); padding: 6px 8px; border-bottom: 1px solid var(--cs-line); }
+.cot-fat-tab td { padding: 7px 8px; border-bottom: 1px solid var(--cs-line); vertical-align: top; color: var(--cs-ink2); }
+.cot-fat-tab td b { display: block; color: var(--cs-ink); font-weight: 700; }
+.cot-fat-tab td small { color: var(--cs-mut); }
+.cot-fat-tab .n { text-align: right; white-space: nowrap; }
+.cot-fat-por { margin: 8px 0 0; font-size: 11.5px; color: var(--cs-mut); }
+.cot-fat-h { margin: 14px 0 6px; font-size: 13px; color: var(--cs-ink); }
+.cot-fat-lotes { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0 12px; max-height: 300px; overflow: auto; padding-right: 2px; }
+.cot-fat-lote label b { display: block; font-weight: 700; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.cot-fat-lote label small { color: var(--cs-mut); font-weight: 500; }
+/* 29/10/26: o "Não informado" de cada dado do paciente (menos o lote) */
+.cot-ni-rot { display: flex; align-items: center; justify-content: space-between; gap: 8px; min-width: 0; }
+.cs-campo .cot-ni { display: inline-flex; align-items: center; gap: 5px; font-size: 11px; font-weight: 600; color: var(--cs-mut); cursor: pointer; white-space: nowrap; user-select: none; }
+.cs-campo .cot-ni input { width: 14px; height: 14px; padding: 0; margin: 0; border-radius: 4px; box-shadow: none; accent-color: var(--bm3-blue-600, #31788E); cursor: pointer; }
+.cs-campo.ni .cot-ni { color: var(--cs-ink2); }
+.cs-campo.ni input[readonly] { color: var(--cs-mut); font-weight: 700; letter-spacing: .03em; cursor: default; }
+.cot-fat-dl .ni { color: var(--cs-mut); font-weight: 700; letter-spacing: .03em; }
+@media (max-width: 720px) { .cot-fat-dl { grid-template-columns: max-content minmax(0, 1fr); } .cot-fat-lotes { grid-template-columns: minmax(0, 1fr); } }
+/* a amostra */
+.cs-chip.cot-chip-amostra { background: #F1EAFE; color: #6D28D9; }
+.cs-kcard.amostra { cursor: pointer; }
+.cot-kanban .cs-col.cot-col-amostra { background: color-mix(in srgb, #7C3AED 5%, var(--cs-soft)); }
+.cot-faixa-fim.amostra { background: #F1EAFE; color: #5B21B6; }
+/* 26/10/26: a amostra ganha fica verde e a perdida vermelha (sem sair da Amostra) */
+.cs-chip.cot-chip-amostra.am-ganha, .cot-faixa-fim.amostra.am-ganha { background: var(--bm3-green-100, #DDF5E7); color: var(--bm3-green-700, #0F7A43); }
+.cs-chip.cot-chip-amostra.am-perdida, .cot-faixa-fim.amostra.am-perdida { background: var(--bm3-red-100, #FDE7E7); color: var(--bm3-red-700, #A82424); }
+.cot-faixa-fim .cot-faixa-bts { display: flex; gap: 8px; flex-wrap: wrap; }
+.cot-faixa-fim .cot-am-links { display: block; margin-top: 4px; font-weight: 700; }
+.cot-faixa-fim .cot-am-links .cot-link { font-size: 12.5px; font-weight: 800; color: #6D28D9; }
+.cs-btn.cot-btn-amostra { color: #6D28D9; border-color: color-mix(in srgb, #7C3AED 35%, var(--cs-line)); }
+.cs-btn.cot-btn-amostra:hover { background: #F1EAFE; }
+.cs-dlg h3 svg { width: 18px; height: 18px; vertical-align: -3px; color: #7C3AED; }
+/* o quadro: os meses (a setinha abre e fecha) */
+.cot-mes { display: flex; flex-direction: column; gap: 9px; }
+.cot-mes-h { display: flex; align-items: center; gap: 7px; width: 100%; height: 34px; padding: 0 10px; border-radius: 11px; border: 1px solid var(--cs-line); background: var(--bm3-surface, #fff);
+  font: 700 12.5px/1 var(--bm3-font-text, Roboto, sans-serif); color: var(--cs-ink); cursor: pointer; text-align: left; position: sticky; top: 0; z-index: 1; }
+.cot-mes-h:hover { border-color: var(--bm3-blue-300, #83C1D4); }
+.cot-mes-h svg { width: 14px; height: 14px; flex: none; color: var(--cs-mut); transform: rotate(-90deg); transition: transform .15s; }
+.cot-mes.aberto > .cot-mes-h svg { transform: none; }
+.cot-mes-h .n { height: 18px; min-width: 20px; padding: 0 6px; border-radius: 999px; display: inline-grid; place-items: center; font-size: 10.5px; font-weight: 800; background: var(--cs-soft); color: var(--cs-mut); }
+.cot-mes-h .v { margin-left: auto; font-size: 11.5px; color: var(--cs-mut); }
+.cot-mes-b { display: flex; flex-direction: column; gap: 9px; }
+
+/* o histórico do cliente */
+.cot-hist { display: flex; flex-direction: column; gap: 14px; }
+/* 23/10/2026 (pedido do usuário): o cliente, os números e as tabelas separados (estavam grudados) */
+#cot-hist-res { display: flex; flex-direction: column; gap: 16px; }
+#cot-hist-res > .cot-hist-ks { margin: 2px 0; }
+.cot-hist-n { height: 20px; min-width: 22px; padding: 0 7px; border-radius: 999px; display: inline-grid; place-items: center; font: 800 11px/1 var(--bm3-font-text, Roboto, sans-serif); background: var(--cs-soft); color: var(--cs-mut); }
+.cot-hist-novo { display: inline-block; padding: 3px 8px; border-radius: 8px; background: #F1EAFE; color: #6D28D9; font: 800 10.5px/1.2 var(--bm3-font-text, Roboto, sans-serif); letter-spacing: .02em; }
+.cot-hist-cli .cot-hist-novo { padding: 2px 6px; font-size: 9.5px; text-transform: uppercase; }
+html[data-tema="escuro"] .cot-hist-novo { background: rgba(124,58,237,.22); color: #C4B5FD; }
+.cot-hist-busca { display: flex; align-items: center; gap: 18px; flex-wrap: wrap; padding: 16px 18px; }
+.cot-hist-t { flex: 1 1 320px; }
+.cot-hist-t h3 { margin: 0 0 4px; font: 700 18px/1.2 var(--bm3-font-display, Roboto, sans-serif); color: var(--cs-ink); }
+.cot-hist-t p { margin: 0; font-size: 12.5px; line-height: 1.45; color: var(--cs-mut); }
+.cot-hist-busca .cs-busca { flex: 1 1 320px; max-width: 460px; }
+.cot-hist-busca .cs-busca input { font-family: var(--bm3-font-mono, 'JetBrains Mono', ui-monospace, monospace); font-weight: 600; text-transform: uppercase; }
+.cot-hist-busca .cs-busca input::placeholder { font-family: var(--bm3-font-text, Roboto, sans-serif); font-weight: 500; text-transform: none; }
+.cot-hist-vazio h4, .cot-hist-tab h4 { display: flex; align-items: center; gap: 8px; margin: 0 0 6px; font: 700 15px/1.2 var(--bm3-font-display, Roboto, sans-serif); color: var(--cs-ink); }
+.cot-hist-vazio h4 svg, .cot-hist-tab h4 svg { width: 16px; height: 16px; color: var(--cs-mut); }
+.cot-hist-tab h4 span { height: 20px; min-width: 22px; padding: 0 7px; border-radius: 999px; display: inline-grid; place-items: center; font: 800 11px/1 var(--bm3-font-text, Roboto, sans-serif); background: var(--cs-soft); color: var(--cs-mut); }
+.cot-hist-vazio p { margin: 0 0 10px; font-size: 12.5px; color: var(--cs-mut); }
+.cot-hist-clis { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 8px; }
+.cot-hist-cli { display: grid; grid-template-columns: auto 1fr; gap: 2px 8px; align-items: baseline; padding: 9px 11px; border-radius: 12px; border: 1px solid var(--cs-line); background: var(--bm3-surface, #fff); text-align: left; cursor: pointer; color: var(--cs-ink); font-size: 12.5px; }
+.cot-hist-cli:hover { border-color: var(--bm3-blue-300, #83C1D4); background: var(--cs-soft); }
+.cot-hist-cli span { font-weight: 700; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.cot-hist-cli small { grid-column: 2; font-size: 11px; color: var(--cs-mut); }
+.cot-hist-cab { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; padding: 16px 18px; }
+.cot-hist-id { flex: 1 1 320px; min-width: 0; }
+.cot-hist-id > .cot-cod-cli { display: inline-block; padding: 3px 8px; border-radius: 8px; background: var(--bm3-blue-50, #EEF5F9); color: var(--bm3-blue-700, #1F5A6B); font-size: 12px; }
+.cot-hist-id h3 { margin: 6px 0 2px; font: 700 20px/1.2 var(--bm3-font-display, Roboto, sans-serif); color: var(--cs-ink); }
+.cot-hist-id p { margin: 0; font-size: 12.5px; color: var(--cs-mut); }
+.cot-hist-ks { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 10px; }
+.cot-hist-k { padding: 12px 14px; border-radius: 16px; background: linear-gradient(165deg, color-mix(in srgb, var(--k) 9%, var(--bm3-surface, #fff)) 0%, var(--bm3-surface, #fff) 75%); border: 1px solid var(--cs-line); }
+.cot-hist-k b { display: block; font: 700 24px/1.1 var(--bm3-font-display, Roboto, sans-serif); color: var(--k); }
+.cot-hist-k span { display: block; margin-top: 2px; font-size: 12.5px; font-weight: 700; color: var(--cs-ink); }
+.cot-hist-k small { display: block; font-size: 11.5px; color: var(--cs-mut); }
+.cot-hist-tab { padding: 14px 0 6px; overflow: hidden; }
+.cot-hist-tab > h4, .cot-hist-tab > .cot-hist-nota { padding: 0 16px; }
+.cot-hist-nota { margin: 0 0 8px; font-size: 11.5px; color: var(--cs-mut); }
+.cot-hth, .cot-hrow { display: grid; grid-template-columns: 30px 150px minmax(160px, 1fr) 150px 56px 130px 150px; gap: 10px; align-items: center; padding: 0 16px 0 12px; }
+.cot-hth { padding-top: 6px; padding-bottom: 8px; border-bottom: 1px solid var(--cs-line); font: 800 10.5px/1 var(--bm3-font-text, Roboto, sans-serif); letter-spacing: .07em; text-transform: uppercase; color: var(--cs-mut); }
+.cot-hth .n, .cot-hrow .n { text-align: right; }
+.cot-hrow { position: relative; min-height: 54px; padding-top: 7px; padding-bottom: 7px; border-bottom: 1px solid var(--cs-line); cursor: pointer; font-size: 12.5px; color: var(--cs-ink2); }
+.cot-hrow::before { content: ""; position: absolute; left: 0; top: 0; bottom: 0; width: 4px; background: var(--c, transparent); opacity: .85; }
+.cot-hrow:hover { background: var(--cs-soft); }
+.cot-hrow > span { min-width: 0; display: flex; flex-wrap: wrap; align-items: center; gap: 5px; }
+.cot-hrow > span:nth-child(2) { flex-direction: column; align-items: flex-start; gap: 2px; }
+.cot-hrow small { font-size: 11px; color: var(--cs-mut); }
+.cot-hrow .n { flex-direction: column; align-items: flex-end; gap: 1px; }
+.cot-hrow .n b { color: var(--cs-ink); }
+.cot-hrow-p { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; display: block !important; }
+.cot-hrow-d { gap: 7px !important; flex-wrap: nowrap !important; }
+.cot-hrow-x { width: 26px; height: 26px; display: grid; place-items: center; border-radius: 8px; border: 1px solid var(--cs-line); background: var(--bm3-surface, #fff); color: var(--cs-mut); cursor: pointer; padding: 0; }
+.cot-hrow-x:hover { border-color: var(--bm3-blue-300, #83C1D4); color: var(--cs-blue); }
+.cot-hrow-x svg { width: 14px; height: 14px; transform: rotate(-90deg); transition: transform .15s; }
+.cot-hrow.aberto .cot-hrow-x svg, .cot-hprod.aberto .cot-hrow-x svg { transform: none; }
+.cot-hrow-its { padding: 4px 16px 12px 52px; background: var(--cs-soft); border-bottom: 1px solid var(--cs-line); overflow-x: auto; }
+.cot-hist-its { width: 100%; border-collapse: collapse; font-size: 12px; color: var(--cs-ink2); }
+.cot-hist-its th { padding: 7px 8px; text-align: left; font: 800 10px/1 var(--bm3-font-text, Roboto, sans-serif); letter-spacing: .07em; text-transform: uppercase; color: var(--cs-mut); border-bottom: 1px solid var(--cs-line); white-space: nowrap; }
+.cot-hist-its td { padding: 7px 8px; border-bottom: 1px solid var(--cs-line); vertical-align: middle; }
+.cot-hist-its .n { text-align: right; white-space: nowrap; }
+.cot-hist-its td.n small { display: block; font-size: 10.5px; color: var(--cs-mut); }
+.cot-hist-its tbody tr:last-child td { border-bottom: 0; }
+.cot-hist-prods { overflow-x: auto; padding: 0 8px; }
+.cot-hprod-l td { background: var(--cs-soft); font-size: 11.5px; }
+.cot-hres { display: inline-flex; align-items: center; height: 20px; margin: 1px 4px 1px 0; padding: 0 7px; border-radius: 999px; font-size: 11px; font-weight: 700; white-space: nowrap; }
+.cot-hres.ganho { background: var(--bm3-green-100, #DDF5E7); color: var(--bm3-green-700, #0F7A43); }
+.cot-hres.perdido { background: var(--bm3-red-100, #FDE7E7); color: var(--bm3-red-700, #A82424); }
+@media (max-width: 1100px) {
+  .cot-hth { display: none; }
+  .cot-hrow { grid-template-columns: 30px minmax(0, 1fr) auto; grid-template-areas: "x num val" "x por por" "x fase dono"; row-gap: 4px; }
+  .cot-hrow > :nth-child(1) { grid-area: x; align-self: start; }
+  .cot-hrow > :nth-child(2) { grid-area: num; }
+  .cot-hrow > :nth-child(3) { grid-area: por; }
+  .cot-hrow > :nth-child(4) { grid-area: fase; }
+  .cot-hrow > :nth-child(5) { display: none; }
+  .cot-hrow > :nth-child(6) { grid-area: val; }
+  .cot-hrow > :nth-child(7) { grid-area: dono; justify-content: flex-end; }
+  .cot-hrow-its { padding-left: 16px; }
+}
+html[data-tema="escuro"] .cot-tram-pop { background: var(--bm3-surface, #131B1F); box-shadow: 0 18px 44px rgba(0,0,0,.5); }
+html[data-tema="escuro"] .cs-chip.cot-chip-amostra, html[data-tema="escuro"] .cot-faixa-fim.amostra, html[data-tema="escuro"] .cs-chip.f-amostra { background: rgba(124,58,237,.22); color: #C4B5FD; }
+html[data-tema="escuro"] .cs-chip.cot-chip-amostra.am-ganha, html[data-tema="escuro"] .cot-faixa-fim.amostra.am-ganha, html[data-tema="escuro"] .cs-chip.f-amostra_ganha { background: rgba(19,138,75,.24); color: #86E0AE; }
+html[data-tema="escuro"] .cs-chip.cot-chip-amostra.am-perdida, html[data-tema="escuro"] .cot-faixa-fim.amostra.am-perdida, html[data-tema="escuro"] .cs-chip.f-amostra_perdida { background: rgba(207,52,52,.24); color: #F5A3A3; }
+html[data-tema="escuro"] .cs-chip.f-faturar { background: rgba(217,119,6,.24); color: #FBC97A; }
+html[data-tema="escuro"] .cot-tram { background: rgba(44,114,136,.2); color: #95C8D8; }
+/* as referências de preço do item, na linha embaixo dele (23/10/2026): a
+   média dos 6 meses de faturamento no cliente, a tabela de preço (Venda
+   Direta e Venda Futura) e o alerta quando o preço passa delas */
+table.cot-itens tr[data-i]:has(+ tr.cot-ref-tr:not([hidden])) > td { border-bottom: 0; }
+table.cot-itens tr.cot-ref-tr > td { padding: 0 6px 8px; }
+.cot-ref-box { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 18px; padding: 6px 10px; border-radius: 10px; background: var(--cs-soft); font-size: 11.5px; color: var(--cs-ink2); }
+.cot-ref-box:empty { display: none; }
+.cot-ref-i { display: inline-flex; align-items: center; flex-wrap: wrap; gap: 5px; }
+.cot-ref-i > svg { width: 13px; height: 13px; flex: none; color: var(--cs-mut); }
+.cot-ref-k { font-weight: 700; color: var(--cs-mut); }
+.cot-ref-v { font-weight: 800; color: var(--cs-ink); font-variant-numeric: tabular-nums; }
+.cot-ref-v.mut { font-weight: 500; color: var(--cs-mut); }
+.cot-ref-sep { color: var(--cs-mut); margin: 0 2px; }
+.cot-ref-tag { padding: 0 6px; height: 16px; display: inline-grid; place-items: center; border-radius: 5px; background: #DDF5E7; color: #0F7A43; font-size: 9.5px; font-weight: 800; text-transform: uppercase; letter-spacing: .03em; }
+.cot-ref-usar { padding: 0 6px; height: 17px; border-radius: 5px; border: 1px solid color-mix(in srgb, #138A4B 40%, transparent); background: #DDF5E7; color: #0F7A43;
+  font: 800 9.5px/15px var(--bm3-font-text, Roboto, sans-serif); text-transform: uppercase; letter-spacing: .03em; cursor: pointer; }
+.cot-ref-usar:hover { background: #C6EED6; }
+.cot-ref-alerta { flex: 1 1 100%; display: flex; align-items: flex-start; gap: 7px; padding: 6px 9px; border-radius: 8px; background: var(--bm3-amber-100, #FEF1DA); color: var(--bm3-amber-800, #8A4B00); line-height: 1.4; }
+.cot-ref-alerta > svg { width: 15px; height: 15px; flex: none; margin-top: 1px; }
+table.cot-itens tr.preco-acima td.vu input { border-color: color-mix(in srgb, #D97706 55%, transparent); background: var(--bm3-amber-100, #FEF1DA); color: var(--bm3-amber-800, #8A4B00); }
+.cot-cod-faixa.cot-ref-faixa { background: var(--bm3-amber-100, #FEF1DA); color: var(--bm3-amber-800, #8A4B00); }
+.cot-itens-pe .cot-fat-dica { font-size: 11.5px; color: var(--cs-mut); }
+html[data-tema="escuro"] .cot-ref-usar, html[data-tema="escuro"] .cot-ref-tag { background: rgba(19,138,75,.22); color: #7BD9A4; }
+html[data-tema="escuro"] .cot-ref-alerta, html[data-tema="escuro"] .cot-cod-faixa.cot-ref-faixa, html[data-tema="escuro"] table.cot-itens tr.preco-acima td.vu input { background: rgba(217,119,6,.18); color: #FBBF77; }

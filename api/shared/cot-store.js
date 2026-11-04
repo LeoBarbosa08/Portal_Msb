@@ -3,10 +3,11 @@
 // em Azure Blob, por SAS de CONTAINER (sem SDK, sem npm). Mesmo molde do
 // cs-store.js do Customer Service.
 //
-//   COT_BLOB_URL = https://<conta>.blob.core.windows.net/cotacoes?<SAS>
+//   COT_MSB_BLOB_URL = https://<conta>.blob.core.windows.net/<container>?<SAS>
+//   (na MSB; no portal completo é COT_BLOB_URL — ver RECORTE MSB abaixo)
 //
 // Container PRÓPRIO, só das cotações: o módulo nunca grava no container de
-// outro módulo. Sem COT_BLOB_URL fica "sem armazenamento" (configurado:false):
+// outro módulo. Sem COT_MSB_BLOB_URL fica "sem armazenamento" (configurado:false):
 // a tela avisa, a lista vem vazia e nenhum caso é gravado.
 //
 // A SAS precisa ser de CONTAINER (sr=c) com Read + Create + Write: o módulo
@@ -29,7 +30,13 @@
 // tem Delete, então "remover anexo" só o esconde no caso.
 // ================================================================
 
-const BLOB_URL = process.env.COT_BLOB_URL || '';
+// RECORTE MSB (04/11/2026, pedido do dono): a Venda Recorrente da MSB tem as
+// cotações DELA, num container PRÓPRIO — COT_MSB_BLOB_URL. Nenhuma cotação
+// da BIO aparece aqui e nenhuma da MSB vai para o portal da BIO. De propósito
+// NÃO cai no COT_BLOB_URL (o container da BIO, que esta Static Web App também
+// tem): sem a COT_MSB_BLOB_URL o módulo fica "sem armazenamento" — a tela
+// avisa, a lista vem vazia e nada é gravado.
+const BLOB_URL = process.env.COT_MSB_BLOB_URL || '';
 
 const INDICE = 'indice.json';
 const CONFIG = 'config.json';
@@ -37,7 +44,7 @@ function arquivoDoCaso(numero) { return 'casos/' + String(numero || '').replace(
 
 function configurado() { return !!BLOB_URL; }
 // de onde vem o armazenamento (a tela de Configurações mostra)
-function origem() { return BLOB_URL ? 'COT_BLOB_URL' : ''; }
+function origem() { return BLOB_URL ? 'COT_MSB_BLOB_URL' : ''; }
 
 // Aceita a env com OU sem um arquivo no fim (…/cotacoes?SAS ou
 // …/cotacoes/indice.json?SAS): o nome pedido substitui o arquivo, ou é

@@ -1,0 +1,283 @@
+/* ================================================================
+   licitacao-desempenho.css — GESTÃO DE DESEMPENHO (Licitação).
+
+   Uma linha por pessoa da equipe de licitação (grupos só-Licitação do
+   Entra) em 4 blocos: negociações · itens · valor (captadas ·
+   participadas · ganhas · % ganho; o valor com o mínimo) e o tempo médio
+   (SLA). HTML/CSS puro, sem Chart.js. Complementa `licitacao-report.css`,
+   de onde vêm o cabeçalho (.fx-head), a barra de filtros (.fx-filters,
+   .fxdd, .ct-dt); a ficha à direita é o .fv-dw de
+   `licitacao-funil-vendas.css`.
+
+   Tudo aqui tem prefixo `.gd-`.
+   ================================================================ */
+
+.gd-wrap{
+  --gd-navy:#10323E;
+  --gd-ink:#10323E;
+  --gd-body:#374951;
+  --gd-mut:#5F727A;
+  --gd-mut2:#81939B;
+  --gd-mut3:#97A8AE;
+  --gd-bd:#E5EAED;
+  --gd-bd-soft:#F1F5F7;
+  --gd-track:#EFF2F4;
+  --gd-ana:#94C2CD;       /* captadas     */
+  --gd-par:#4894A7;       /* participadas */
+  --gd-gan:#2FBF71;       /* ganhas       */
+  padding:16px 0 38px;display:flex;flex-direction:column;gap:12px;
+}
+
+/* ── caixa branca ─────────────────────────────────────────────── */
+.gd-card{background:#fff;border:1px solid var(--gd-bd);border-radius:14px;padding:16px 18px;
+  box-shadow:0 1px 3px rgba(16,50,62,.05);min-width:0;display:flex;flex-direction:column;}
+.gd-card-h{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;flex-wrap:wrap;}
+.gd-card h3{margin:0;font-size:15px;font-weight:700;color:var(--gd-ink);letter-spacing:-.2px;}
+.gd-sub{margin:3px 0 0;font-size:11px;color:var(--gd-mut3);font-weight:600;line-height:1.45;}
+.gd-sub b{font-weight:700;color:var(--gd-mut);}
+.gd-empty{padding:26px 10px;text-align:center;color:var(--gd-mut3);font-size:12.5px;font-weight:600;line-height:1.5;}
+.gd-act{display:inline-flex;align-items:center;gap:5px;flex-shrink:0;background:none;border:none;padding:0;
+  font-family:inherit;font-size:11.5px;font-weight:700;color:#287A8E;cursor:pointer;white-space:nowrap;text-decoration:none;}
+.gd-act:hover{text-decoration:underline;}
+.gd-act[hidden]{display:none;}
+.gd-leg{display:flex;align-items:center;gap:14px;flex-wrap:wrap;}
+.gd-leg span{display:inline-flex;align-items:center;gap:6px;font-size:11px;font-weight:600;color:var(--gd-mut);}
+.gd-leg i{width:8px;height:8px;border-radius:3px;flex-shrink:0;}
+.gd-leg .gd-act{margin-left:4px;padding-left:14px;border-left:1px solid var(--gd-bd);}
+
+/* ── faixas de apoio (estado · escopo · avisos) ───────────────── */
+.gd-banner{display:flex;align-items:center;gap:10px;padding:11px 15px;border-radius:12px;font-size:12.5px;font-weight:600;line-height:1.45;
+  background:#F0F7FA;border:1px solid #BDDEEA;color:#235063;}
+.gd-banner.warn{background:#FFFBEB;border-color:#FDE68A;color:#854D0E;}
+.gd-banner.erro{background:#FEF2F2;border-color:#FECACA;color:#991B1B;}
+.gd-banner[hidden]{display:none;}
+.gd-banner code{font-size:11px;background:rgba(255,255,255,.6);padding:1px 5px;border-radius:5px;}
+.gd-spin{width:14px;height:14px;border-radius:999px;border:2px solid #BDDEEA;border-top-color:#287A8E;flex-shrink:0;animation:gd-gira .8s linear infinite;}
+@keyframes gd-gira{to{transform:rotate(360deg);}}
+
+.gd-nota{margin:0;padding:9px 14px;border-radius:10px;font-size:11.5px;line-height:1.55;
+  background:#F6F9FB;border:1px solid var(--gd-bd);color:var(--gd-mut);display:flex;align-items:center;gap:6px 10px;flex-wrap:wrap;}
+.gd-nota b{color:var(--gd-ink);font-weight:700;}
+.gd-nota.warn{background:#FFFBEB;border-color:#FDE68A;color:#854D0E;}
+.gd-nota.warn b{color:#7C4A03;}
+.gd-nota[hidden]{display:none;}
+.gd-nota .k{font-size:9.5px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:var(--gd-mut3);}
+.gd-gchip{display:inline-flex;align-items:center;gap:6px;padding:3px 10px;border-radius:999px;background:#fff;border:1px solid var(--gd-bd);
+  font-size:11px;font-weight:700;color:var(--gd-ink);white-space:nowrap;}
+.gd-gchip span{color:var(--gd-mut2);font-weight:600;}
+.gd-gchip.erro{border-color:#FECACA;color:#991B1B;background:#FEF2F2;}
+
+/* pill "Salesforce · lido às" no cabeçalho */
+.gd-live{display:inline-flex;align-items:center;gap:8px;padding:6px 12px;border-radius:999px;background:#ECF3F7;border:1px solid #D3E3E9;
+  font-size:11.5px;font-weight:700;color:#286473;white-space:nowrap;}
+.gd-live i{width:7px;height:7px;border-radius:999px;background:#4894A7;display:inline-block;}
+.gd-live.ok{background:#EAF8F0;border-color:#CFEEDD;color:#22794C;}
+.gd-live.ok i{background:#2FBF71;}
+.gd-live.erro{background:#FEF2F2;border-color:#FECACA;color:#991B1B;}
+.gd-live.erro i{background:#E4574C;}
+
+/* dropdown do período (mesmo desenho do Funil de Vendas) */
+.gd-per{width:300px;max-width:calc(100vw - 48px);gap:10px;}
+.gd-per .gd-per-k{font-size:10px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--gd-mut3,#97A8AE);}
+.gd-seg{display:inline-flex;align-items:center;background:#F1F4F6;border-radius:9px;padding:3px;gap:2px;flex-shrink:0;}
+.gd-seg button{border:none;background:transparent;padding:6px 11px;border-radius:7px;font-family:inherit;
+  font-size:11.5px;font-weight:600;color:#5F727A;cursor:pointer;white-space:nowrap;}
+.gd-seg button.on{background:#fff;color:#10323E;font-weight:700;box-shadow:0 1px 2px rgba(16,50,62,.12);}
+.gd-per .gd-seg{width:100%;box-sizing:border-box;display:flex;}
+.gd-per .gd-seg button{flex:1;padding:6px 6px;font-size:11px;}
+.gd-per .gd-pre{display:flex;flex-wrap:wrap;gap:5px;}
+.gd-per .gd-pre button{border:1px solid #E5EAED;background:#fff;border-radius:8px;padding:5px 9px;font-family:inherit;
+  font-size:11.5px;font-weight:600;color:#374951;cursor:pointer;}
+.gd-per .gd-pre button:hover{border-color:#287A8E;}
+.gd-per .gd-pre button.on{background:#10323E;border-color:#10323E;color:#fff;}
+
+/* ══════════════════════════════════════════════════════════════
+   1. CARTÕES — um por bloco da tabela, só números: uma linha por
+      etapa (e por SLA), as duas taxas de ganho no pé.
+      Linhas internas em FLEX: o collapseWideGridsMobile() do
+      nav-sidebar.js empilha no celular todo GRID de 3+ colunas.
+   ══════════════════════════════════════════════════════════════ */
+.gd-kpis{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;align-items:stretch;}
+.gd-kpi{padding:15px 18px 13px;}
+.gd-kpi .gd-kpi-t{font-size:10px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:var(--gd-mut2);}
+.gd-kpi .gd-kpi-z{margin:auto 0;padding:18px 0 8px;font-size:12px;font-weight:600;color:var(--gd-mut3);}
+/* uma linha por etapa (e por SLA): rótulo à esquerda, número à direita */
+.gd-kpi-r{display:flex;flex-direction:column;margin:8px 0 12px;}
+.gd-kpi-r > div{display:flex;align-items:center;gap:8px;padding:6px 0;border-top:1px solid var(--gd-bd-soft);min-height:24px;}
+.gd-kpi-r > div:first-child{border-top:none;}
+.gd-kpi-r .l{display:inline-flex;align-items:center;gap:7px;font-size:12px;font-weight:700;color:var(--gd-body);min-width:0;white-space:nowrap;}
+.gd-kpi-r .l i{width:8px;height:8px;border-radius:3px;flex-shrink:0;}
+.gd-kpi-r .p{font-size:10.5px;font-weight:600;color:var(--gd-mut3);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0;}
+.gd-kpi-r b{margin-left:auto;font-size:19px;font-weight:800;line-height:1.1;letter-spacing:-.4px;color:var(--gd-ink);
+  font-variant-numeric:tabular-nums;white-space:nowrap;}
+.gd-kpi-r b.z{color:#C6D2D7;}
+.gd-kpi-r .mn{margin-top:4px;padding:6px 9px;border-top:none;border-radius:9px;background:#F7FAFD;}
+.gd-kpi-r .mn .l i{background:#CCD5D9;}
+.gd-kpi-r .mn b{font-size:15px;}
+/* SLA: o rótulo leva o "quanto maior/menor, melhor" embaixo */
+.gd-kpi-sla .gd-kpi-r .l{flex-direction:column;align-items:flex-start;gap:1px;}
+.gd-kpi-sla .gd-kpi-r .l small{font-size:10px;font-weight:600;color:var(--gd-mut3);}
+/* pé: as duas taxas de ganho lado a lado */
+.gd-kpi-x{display:flex;gap:10px;margin-top:auto;padding-top:11px;border-top:1px solid var(--gd-bd-soft);}
+.gd-kpi-x > div{flex:1 1 0;min-width:0;display:flex;flex-direction:column;gap:2px;}
+.gd-kpi-x span{font-size:10.5px;font-weight:600;color:var(--gd-mut2);line-height:1.3;}
+.gd-kpi-x b{font-size:17px;font-weight:800;color:#1B7A4A;font-variant-numeric:tabular-nums;line-height:1.15;}
+.gd-kpi-x.gd-kpi-xs span{color:var(--gd-mut3);}
+
+/* ══════════════════════════════════════════════════════════════
+   2. TABELA POR PESSOA — cabeçalho em 3 níveis:
+      bloco › etapa / % Ganho / Valor mínimo / SLA › s/ captadas · s/ part.
+   ══════════════════════════════════════════════════════════════ */
+.gd-tw{overflow:auto;-webkit-overflow-scrolling:touch;margin-top:12px;border:1px solid var(--gd-bd);border-radius:11px;}
+body.dept .area-main table.gd-tb{width:100%;border-collapse:separate;border-spacing:0;font-size:12px;}
+body.dept .area-main table.gd-tb th,body.dept .area-main table.gd-tb td{padding:7px 8px;border-bottom:1px solid var(--gd-bd-soft);
+  white-space:nowrap;font-variant-numeric:tabular-nums;}
+body.dept .area-main table.gd-tb thead th{background:#F7FAFD;color:var(--gd-mut2);font-size:9.5px;
+  font-weight:700;letter-spacing:.06em;text-transform:uppercase;text-align:right;border-top:none;border-bottom:1px solid var(--gd-bd);}
+body.dept .area-main table.gd-tb thead tr.g th{text-align:center;color:var(--gd-ink);font-size:10px;border-bottom:1px solid var(--gd-bd-soft);vertical-align:middle;}
+body.dept .area-main table.gd-tb thead tr.g th.sla{background:#F4F7F8;}
+/* .gd-v2 = a tabela desta página (22 colunas). O .gd-tb também desenha a
+   tabela por pessoa do Funil Semanal e da Captação: o que muda aqui fica
+   preso a esta classe */
+body.dept .area-main table.gd-tb.gd-v2 > thead > tr > th{vertical-align:bottom;}
+body.dept .area-main table.gd-tb.gd-v2 > thead > tr.g > th,body.dept .area-main table.gd-tb.gd-v2 > thead > tr > th.pe,
+body.dept .area-main table.gd-tb.gd-v2 > thead > tr > th.rk{vertical-align:middle;}
+body.dept .area-main table.gd-tb.gd-v2 > thead > tr > th:not(.rk),body.dept .area-main table.gd-tb.gd-v2 > tbody > tr.lin > td:not(.rk),
+body.dept .area-main table.gd-tb.gd-v2 > tfoot > tr > td:not(.rk){padding-left:5px;padding-right:5px;}
+/* sub-cabeçalho em caixa normal: em CAIXA ALTA espaçada a tabela não cabe */
+body.dept .area-main table.gd-tb thead tr.s th,body.dept .area-main table.gd-tb thead tr.t th{font-size:10.5px;letter-spacing:0;text-transform:none;font-weight:700;
+  box-shadow:inset 0 -2px 0 var(--c,transparent);}
+body.dept .area-main table.gd-tb thead tr.s th.txg{text-align:center;color:#2D7A52;border-bottom:1px solid var(--gd-bd-soft);vertical-align:middle;padding-bottom:4px;}
+body.dept .area-main table.gd-tb thead tr.t th{font-size:10px;font-weight:600;padding-top:4px;color:#4E8A69;--c:#BFE8D2;}
+body.dept .area-main table.gd-tb thead th small{display:block;font-size:9.5px;font-weight:600;color:var(--gd-mut3);margin-top:2px;}
+/* 22 colunas: % ganho, valor mínimo e SLA quebram o rótulo em 2 linhas
+   para a tabela caber na largura da área sem rolar de lado */
+body.dept .area-main table.gd-tb thead tr.t th,body.dept .area-main table.gd-tb thead th.sla,
+body.dept .area-main table.gd-tb thead th.mn{white-space:normal;line-height:1.25;}
+body.dept .area-main table.gd-tb thead tr.t th{min-width:46px;max-width:66px;}
+body.dept .area-main table.gd-tb thead th.mn{min-width:62px;max-width:72px;}
+body.dept .area-main table.gd-tb thead tr.s th.sla{min-width:64px;max-width:84px;}
+body.dept .area-main table.gd-tb thead th.sla{background:#F4F7F8;}
+body.dept .area-main table.gd-tb th.grp,body.dept .area-main table.gd-tb td.grp{border-left:1px solid var(--gd-bd);}
+body.dept .area-main table.gd-tb thead th.ord{cursor:pointer;user-select:none;}
+body.dept .area-main table.gd-tb thead th.ord:hover{color:var(--gd-ink);}
+body.dept .area-main table.gd-tb thead th.on{color:#287A8E;}
+body.dept .area-main table.gd-tb thead th .seta{font-size:9px;margin-left:3px;}
+/* pessoa: coluna presa à esquerda na rolagem horizontal */
+body.dept .area-main table.gd-tb th.pe,body.dept .area-main table.gd-tb td.pe{position:sticky;left:0;z-index:1;background:#fff;text-align:left;
+  min-width:160px;max-width:230px;border-right:1px solid var(--gd-bd);}
+body.dept .area-main table.gd-tb thead th.pe{z-index:3;background:#F7FAFD;vertical-align:middle;}
+body.dept .area-main table.gd-tb th.rk,body.dept .area-main table.gd-tb td.rk{text-align:center;width:22px;padding-left:6px;padding-right:2px;color:var(--gd-mut3);font-weight:700;}
+body.dept .area-main table.gd-tb thead th.rk{vertical-align:middle;}
+body.dept .area-main table.gd-tb td{text-align:right;color:var(--gd-body);font-weight:600;
+  background:rgba(40,122,142,calc(var(--h,0) * .13));}
+body.dept .area-main table.gd-tb td .pct{display:block;font-size:10px;font-weight:600;color:var(--gd-mut3);margin-top:2px;}
+body.dept .area-main table.gd-tb td.z{color:#CCD5D9;font-weight:500;}
+/* % ganho: o calor é verde; valor mínimo e SLA sem calor */
+body.dept .area-main table.gd-tb td.rt{background:rgba(47,191,113,calc(var(--h,0) * .17));color:var(--gd-ink);font-weight:700;}
+body.dept .area-main table.gd-tb td.rt.z{color:#CCD5D9;font-weight:500;}
+body.dept .area-main table.gd-tb td.mn{background:#FCFCFE;color:var(--gd-ink);}
+body.dept .area-main table.gd-tb td.sla{background:#FAFBFD;color:var(--gd-ink);}
+body.dept .area-main table.gd-tb td.mn.z,body.dept .area-main table.gd-tb td.sla.z{color:#CCD5D9;}
+body.dept .area-main table.gd-tb td.pe .nm{display:block;font-weight:700;color:var(--gd-ink);overflow:hidden;text-overflow:ellipsis;}
+body.dept .area-main table.gd-tb td.pe .cg{display:block;font-size:10.5px;font-weight:600;color:var(--gd-mut2);margin-top:2px;overflow:hidden;text-overflow:ellipsis;}
+body.dept .area-main table.gd-tb td.pe .car{display:inline-block;width:12px;color:var(--gd-mut3);font-size:10px;transition:transform .15s ease;}
+body.dept .area-main table.gd-tb tr.lin{cursor:pointer;}
+body.dept .area-main table.gd-tb tr.lin:hover td{box-shadow:inset 0 0 0 999px rgba(40,122,142,.035);}
+body.dept .area-main table.gd-tb tr.lin:hover td.pe,body.dept .area-main table.gd-tb tr.lin.aberta td.pe{background:#F7FAFD;}
+body.dept .area-main table.gd-tb tr.lin.aberta td.pe .car{transform:rotate(90deg);}
+body.dept .area-main table.gd-tb tr.lin.vazia td:not(.pe){color:#CCD5D9;}
+body.dept .area-main table.gd-tb td.nota{color:var(--gd-mut3);font-weight:600;}
+body.dept .area-main table.gd-tb tfoot td{position:sticky;bottom:0;background:#F0F3F6;color:var(--gd-ink);font-weight:700;border-top:1px solid var(--gd-bd);}
+body.dept .area-main table.gd-tb tfoot td.pe{background:#F0F3F6;}
+body.dept .area-main table.gd-tb tfoot td .pct{color:var(--gd-mut2);}
+
+/* ── detalhe da pessoa (linha que abre embaixo) ────────────────── */
+body.dept .area-main table.gd-tb tr.det > td{padding:0;background:#FBFCFE;text-align:left;white-space:normal;}
+.gd-det{padding:14px 16px 16px;display:flex;flex-direction:column;gap:12px;
+  position:sticky;left:0;max-width:var(--gd-vis,calc(100vw - 64px));box-sizing:border-box;}
+.gd-det-h{display:flex;align-items:center;gap:8px 16px;flex-wrap:wrap;font-size:11.5px;color:var(--gd-mut);font-weight:600;}
+.gd-det-h b{color:var(--gd-ink);font-weight:700;}
+.gd-det-dica{font-size:11px;font-weight:600;color:var(--gd-mut3);margin-bottom:-4px;}
+.gd-det-dica span{display:inline-grid;place-items:center;width:16px;height:16px;border-radius:5px;background:#ECF3F7;color:#287A8E;font-size:9px;margin-right:2px;}
+.gd-tx{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;}
+.gd-tx > div{background:#fff;border:1px solid var(--gd-bd);border-radius:10px;padding:9px 11px;min-width:0;}
+.gd-tx .k{font-size:9px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:var(--gd-mut3);line-height:1.35;}
+.gd-tx .v{font-size:17px;font-weight:700;color:var(--gd-ink);margin-top:5px;line-height:1.1;font-variant-numeric:tabular-nums;}
+.gd-tx .s{font-size:10.5px;font-weight:600;color:var(--gd-mut2);margin-top:3px;line-height:1.35;}
+.gd-ntw{overflow:auto;border:1px solid var(--gd-bd);border-radius:10px;background:#fff;max-height:420px;}
+/* nesta página a lista desce até os itens: mais alta */
+#gd-tw .gd-ntw{max-height:min(72vh,640px);}
+body.dept .area-main table.gd-nt{width:100%;border-collapse:separate;border-spacing:0;font-size:11.5px;}
+body.dept .area-main table.gd-nt th,body.dept .area-main table.gd-nt td{padding:7px 9px;border-bottom:1px solid var(--gd-bd-soft);white-space:nowrap;
+  text-align:right;font-variant-numeric:tabular-nums;background:#fff;}
+body.dept .area-main table.gd-nt thead th{position:sticky;top:0;z-index:2;background:#F7FAFD;color:var(--gd-mut2);font-size:9px;font-weight:700;
+  letter-spacing:.06em;text-transform:uppercase;}
+body.dept .area-main table.gd-nt th.tx,body.dept .area-main table.gd-nt td.tx{text-align:left;}
+body.dept .area-main table.gd-nt td.nm{max-width:340px;overflow:hidden;text-overflow:ellipsis;font-weight:700;color:var(--gd-ink);}
+body.dept .area-main table.gd-nt td.nm a{color:var(--gd-ink);text-decoration:none;}
+body.dept .area-main table.gd-nt td.nm a:hover{color:#287A8E;text-decoration:underline;}
+body.dept .area-main table.gd-nt td.dim{color:var(--gd-mut3);font-weight:500;}
+/* linha da negociação: clique = ficha à direita */
+body.dept .area-main table.gd-nt tr.gd-neg{cursor:pointer;}
+body.dept .area-main table.gd-nt tr.gd-neg:hover > td{background:#F6F9FB;}
+body.dept .area-main table.gd-nt tr.gd-neg:hover td.nm{color:#287A8E;}
+body.dept .area-main table.gd-nt tr.gd-neg:focus-visible{outline:2px solid #287A8E;outline-offset:-2px;}
+body.dept .area-main table.gd-nt tr.gd-neg.aberto > td{background:#F4F7FA;border-bottom-color:transparent;}
+/* a seta que desce o grão para os itens */
+body.dept .area-main table.gd-nt th.dr,body.dept .area-main table.gd-nt td.dr{width:24px;padding:4px 2px 4px 8px;text-align:center;}
+.gd-dr{width:22px;height:22px;display:inline-grid;place-items:center;padding:0;border:1px solid var(--gd-bd);border-radius:6px;background:#fff;
+  color:#287A8E;font-size:10px;line-height:1;cursor:pointer;font-family:inherit;transition:transform .15s ease,background .15s ease;}
+.gd-dr:hover{background:#ECF3F7;border-color:#C4D3DA;}
+.gd-dr:focus-visible{outline:2px solid #287A8E;outline-offset:1px;}
+.gd-dr.on{transform:rotate(90deg);background:#287A8E;border-color:#287A8E;color:#fff;}
+.gd-dr.off{border-color:transparent;background:none;color:#CCD5D9;cursor:default;}
+/* o grão de baixo: itens da proposta */
+body.dept .area-main table.gd-nt tr.gd-its > td{padding:0 0 0 30px;background:#F4F7FA;text-align:left;white-space:normal;}
+.gd-its-w{margin:0 10px 10px 0;border:1px solid #DBE5EA;border-left:3px solid #4894A7;border-radius:9px;background:#fff;overflow:hidden;}
+.gd-its-h{display:flex;justify-content:space-between;gap:6px 16px;flex-wrap:wrap;padding:8px 12px;font-size:11px;font-weight:600;color:var(--gd-mut2);
+  background:#F8FBFE;border-bottom:1px solid var(--gd-bd-soft);}
+.gd-its-h b{color:var(--gd-ink);font-weight:800;font-variant-numeric:tabular-nums;}
+.gd-its-load,.gd-its-err,.gd-its-nada{display:flex;align-items:center;gap:9px;padding:12px 14px;font-size:11.5px;font-weight:600;color:var(--gd-mut2);}
+.gd-its-err{color:#854D0E;background:#FFFBEB;}
+.gd-its-err b{color:#7C4A03;}
+body.dept .area-main table.gd-nt table.gd-it{width:100%;border-collapse:separate;border-spacing:0;font-size:11px;}
+body.dept .area-main table.gd-nt table.gd-it th,body.dept .area-main table.gd-nt table.gd-it td{padding:6px 10px;border-bottom:1px solid var(--gd-bd-soft);
+  background:#fff;white-space:nowrap;text-align:right;}
+body.dept .area-main table.gd-nt table.gd-it thead th{position:static;background:#fff;font-size:9px;color:var(--gd-mut3);}
+body.dept .area-main table.gd-nt table.gd-it th.tx,body.dept .area-main table.gd-nt table.gd-it td.tx{text-align:left;}
+body.dept .area-main table.gd-nt table.gd-it td.pr{max-width:300px;overflow:hidden;text-overflow:ellipsis;font-weight:700;color:var(--gd-ink);}
+body.dept .area-main table.gd-nt table.gd-it td b{font-weight:800;color:var(--gd-ink);}
+body.dept .area-main table.gd-nt table.gd-it tr:last-child td{border-bottom:none;}
+body.dept .area-main table.gd-nt table.gd-it .dim{color:var(--gd-mut3);font-weight:500;}
+.gd-etq{display:inline-flex;align-items:center;gap:5px;padding:2px 8px;border-radius:999px;font-size:10.5px;font-weight:700;white-space:nowrap;
+  background:#F1F4F6;color:var(--gd-mut);}
+.gd-etq.par{background:#ECF3F7;color:#286473;}
+.gd-etq.gan{background:#EAF8F0;color:#22794C;}
+.gd-etq.per{background:#FEF0EE;color:#B54545;}
+.gd-fase{font-size:11px;font-weight:600;color:var(--gd-body);}
+.gd-mais{display:block;width:100%;padding:9px;border:1px dashed var(--gd-bd);border-radius:10px;background:#F7FAFD;
+  color:#287A8E;font-size:12px;font-weight:700;cursor:pointer;font-family:inherit;}
+.gd-mais:hover{background:#F0F7FA;}
+.gd-mais[hidden]{display:none;}
+
+/* ── ficha à direita: o resto vem do .fv-dw (licitacao-funil-vendas.css) */
+.gd-dw .fv-dw-it .v .gd-dw-min{color:#8A6A1F;}
+.gd-dw .fv-dw-load .gd-spin{margin-right:2px;}
+
+/* ══════════════════════════════════════════════════════════════
+   3. RESPONSIVO
+   ══════════════════════════════════════════════════════════════ */
+@media(max-width:1279.98px){
+  .gd-kpis{grid-template-columns:repeat(2,minmax(0,1fr));}
+}
+@media(max-width:767.98px){
+  .gd-wrap{padding:14px 0 34px;}
+  .gd-card{padding:15px;}
+  .gd-kpis{grid-template-columns:1fr;}
+  .gd-tx{grid-template-columns:repeat(2,minmax(0,1fr));}
+  body.dept .area-main table.gd-tb th.pe,body.dept .area-main table.gd-tb td.pe{min-width:150px;max-width:170px;}
+  body.dept .area-main table.gd-tb th.rk,body.dept .area-main table.gd-tb td.rk{display:none;}
+  .gd-det{max-width:var(--gd-vis,calc(100vw - 40px));}
+  .gd-leg .gd-act{border-left:none;padding-left:0;margin-left:0;}
+}

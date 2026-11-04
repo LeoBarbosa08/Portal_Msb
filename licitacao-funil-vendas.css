@@ -173,6 +173,7 @@
 .fv-pc-m span{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
 .fv-pc-m b{flex:0 0 auto;font-weight:700;color:var(--fv-body);font-variant-numeric:tabular-nums;white-space:nowrap;}
 .fv-pc-m b .warn{color:#A8541F;}
+.fv-pc-m b .pos{color:#22794C;}
 .fv-pc-m.um{margin-top:0;}
 .fv-pc-m.um span{color:var(--fv-mut);font-weight:600;}
 .fv-pc-m.um b{font-size:12.5px;color:var(--fv-ink);}
@@ -215,6 +216,8 @@ body.dept .area-main table.fv-tb.fv-ng td.nm .t{display:block;font-weight:700;co
 body.dept .area-main table.fv-tb.fv-ng td.nm .s{display:block;font-size:10px;font-weight:600;color:var(--fv-mut3);margin-top:1px;overflow:hidden;text-overflow:ellipsis;}
 body.dept .area-main table.fv-tb.fv-ng tbody tr:hover td.nm .t{color:#287A8E;}
 body.dept .area-main table.fv-tb.fv-ng td.forte{color:var(--fv-ink);font-weight:700;}
+/* a ganha que perdeu item: o valor ganho (soma dos itens ganhos) embaixo do valor */
+.fv-vg{display:block;font-size:10px;font-weight:700;color:#22794C;margin-top:1px;white-space:nowrap;}
 body.dept .area-main table.fv-tb.fv-ng td.ng-vz{text-align:center;padding:26px 12px;white-space:normal;max-width:none;}
 body.dept .area-main table.fv-tb.fv-ng thead th .seta.ag{font-size:9px;font-weight:700;letter-spacing:0;text-transform:none;color:#287A8E;opacity:.8;margin-left:5px;}
 /* faixas da agenda dentro da lista (de hoje em diante · já aconteceram · sem data) */
@@ -621,6 +624,7 @@ html.fv-dw-on,html.fv-dw-on body{overflow:hidden;}
 .fv-dw-kp .v.warn,.fv-dw-kp .s.warn{color:#A8541F;}
 .fv-dw-kp .s{font-size:10.5px;font-weight:600;color:var(--fv-mut2);margin-top:4px;line-height:1.35;}
 .fv-dw-kp .s.hoje{color:#287A8E;font-weight:700;}
+.fv-dw-kp .s.gan{color:#22794C;font-weight:700;}
 
 /* cartões de seção */
 .fv-dw-card{background:#fff;border:1px solid var(--fv-bd);border-radius:12px;padding:13px 15px;}
@@ -655,6 +659,42 @@ html.fv-dw-on,html.fv-dw-on body{overflow:hidden;}
 .fv-dw-err .fv-act{margin-left:auto;}
 .fv-dw-av{font-size:11px;font-weight:600;color:var(--fv-mut3);line-height:1.55;text-align:center;}
 .fv-dw-nada{font-size:12px;font-weight:600;color:var(--fv-mut3);}
+/* ARQUIVOS da negociação (a lista "Arquivos" do Salesforce, 04/11/2026):
+   ícone do tipo · nome (abre) · data · tamanho · tipo · Abrir/Baixar */
+.fv-dw-arqs{display:flex;flex-direction:column;}
+.fv-dw-arq{display:grid;grid-template-columns:34px minmax(0,1fr) auto;gap:11px;align-items:center;padding:9px 0;border-top:1px solid var(--fv-bd-soft);}
+.fv-dw-arq:first-child{border-top:none;padding-top:0;}
+.fv-dw-arq:last-child{padding-bottom:0;}
+.fv-dw-arq .ic{width:30px;height:36px;border-radius:5px;display:grid;place-items:end center;padding-bottom:6px;box-sizing:border-box;
+  font-size:8.5px;font-weight:800;letter-spacing:.04em;color:#fff;background:#8C9CA3;text-transform:uppercase;
+  clip-path:polygon(0 0,70% 0,100% 22%,100% 100%,0 100%);justify-self:center;}
+.fv-dw-arq .ic.pdf{background:#D2453B;} .fv-dw-arq .ic.doc{background:#377587;} .fv-dw-arq .ic.xls{background:#1F8A4C;}
+.fv-dw-arq .ic.ppt{background:#D2692A;} .fv-dw-arq .ic.img{background:#7A55C7;} .fv-dw-arq .ic.zip{background:#6E7A81;}
+.fv-dw-arq .c{min-width:0;}
+.fv-dw-arq .t{display:block;max-width:100%;background:none;border:none;padding:0;margin:0;font-family:inherit;font-size:12.5px;font-weight:700;
+  color:#287A8E;text-align:left;cursor:pointer;line-height:1.35;overflow-wrap:anywhere;}
+.fv-dw-arq .t:hover{text-decoration:underline;}
+.fv-dw-arq .s{font-size:10.5px;font-weight:600;color:var(--fv-mut2);margin-top:2px;}
+.fv-dw-arq .st{font-size:10.5px;font-weight:700;color:#287A8E;margin-top:3px;display:flex;align-items:center;gap:6px;}
+.fv-dw-arq .st:empty{display:none;}
+.fv-dw-arq .st.erro{color:#B54545;}
+.fv-dw-arq .st .fv-spin{width:11px;height:11px;}
+.fv-dw-arq .bt{display:flex;flex-direction:column;align-items:flex-end;gap:5px;}
+.fv-dw-arq .bt button{padding:5px 11px;border-radius:8px;border:1px solid var(--fv-bd);background:#fff;font-family:inherit;font-size:11.5px;font-weight:700;
+  color:var(--fv-ink);cursor:pointer;white-space:nowrap;}
+.fv-dw-arq .bt button:hover{border-color:#C4D3DA;background:#F7FAFD;}
+.fv-dw-arq .bt button:disabled{opacity:.55;cursor:default;}
+.fv-dw-arq .bt a{font-size:10.5px;font-weight:600;color:var(--fv-mut2);text-decoration:none;white-space:nowrap;}
+.fv-dw-arq .bt a:hover{color:#287A8E;text-decoration:underline;}
+@media(max-width:767.98px){
+  .fv-dw-arq{grid-template-columns:30px minmax(0,1fr);}
+  .fv-dw-arq .bt{grid-column:2;flex-direction:row;align-items:center;gap:12px;}
+}
+/* a ficha do Salesforce embutida noutro painel (licitacao-ficha-sf.js — o
+   painel da Sentinela): a linha que separa o que é do painel do que é do SF */
+.fsf-sep{display:flex;align-items:center;gap:10px;margin:6px 0 -2px;font-size:9.5px;font-weight:800;letter-spacing:.1em;
+  text-transform:uppercase;color:#97A8AE;}
+.fsf-sep::before,.fsf-sep::after{content:'';flex:1 1 auto;height:1px;background:#DFE5E9;}
 
 /* propostas */
 .fv-dw-props{display:flex;flex-direction:column;}
@@ -1069,6 +1109,14 @@ body.dept .area-main table.fv-tb.fa-tb td.its b.a{color:#367D8E;}
 .fa-sku-r .tr .cmp i{display:block;height:100%;min-width:0;}
 .fa-sku-r .s{grid-column:1 / -1;font-size:10.5px;font-weight:600;color:var(--fv-mut3);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
 .fa-sku-r .s .mo{color:var(--fv-body);}
+/* 23/10/2026: semana a semana | mês a mês embaixo do banner — o gráfico da
+   Visão Geral (.fs-wk4) e o botão do Excel */
+.fa-xls{display:inline-flex;align-items:center;gap:6px;border:1px solid var(--fv-bd);background:#fff;border-radius:9px;padding:7px 11px;
+  font-family:inherit;font-size:11.5px;font-weight:700;color:#287A8E;cursor:pointer;white-space:nowrap;}
+.fa-xls:hover:not(:disabled){border-color:#287A8E;background:#F5F9FC;}
+.fa-xls:disabled{opacity:.45;cursor:default;}
+.fa-xls:focus-visible{outline:2px solid #287A8E;outline-offset:1px;}
+.fa-xls svg{flex-shrink:0;}
 
 @media(max-width:767.98px){
   .fa-kpis{grid-template-columns:1fr;}

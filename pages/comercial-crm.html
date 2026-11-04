@@ -1,0 +1,294 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>CRM · Comercial · MSB</title>
+  <link rel="stylesheet" href="../styles.css?v=14">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300..900&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../dash-v2.css?v=3">
+  <!-- Login BLOQUEANTE: a casa do CRM pergunta ao /api/cot-casos?eu=1 quem é a pessoa -->
+  <script src="https://unpkg.com/@azure/msal-browser@2.38.3/lib/msal-browser.min.js"></script>
+  <script src="../auth.js?v=8"></script>
+  <script>window._portalAuthLoaded = true;</script>
+  <!-- Layout v3 (Claude Design · animado): fonte + camada visual + motor de animações -->
+  <link rel="stylesheet" href="../portal-v3.css?v=2">
+  <script src="../portal-motion.js?v=3" defer></script>
+  <!-- Tema claro/escuro (menu do avatar): marca o <html> antes de pintar + camada escura -->
+  <script>try{if(localStorage.getItem('bm-tema')==='escuro')document.documentElement.setAttribute('data-tema','escuro')}catch(e){}</script>
+  <link rel="stylesheet" href="../portal-tema.css?v=1">
+  <script src="../portal-tema.js?v=1" defer></script>
+  <!-- Celular (varredura 15/10/26): só vale em tela < 768px; no computador não se aplica -->
+  <link rel="stylesheet" href="../portal-mobile.css?v=1" media="(max-width: 767.98px)">
+  <script src="../portal-mobile.js?v=1" defer></script>
+  <!-- CRM do Comercial — trazido do portal da BIO em 04/11/2026 (pedido do dono).
+       RECORTE MSB: na MSB o CRM tem UM submódulo, a Venda Recorrente (a Gestão
+       de Cotações, com as cotações da MSB — container próprio). BIO.ID e Venda
+       Consultiva não vieram. Quem é do Comercial cai direto nele; o acesso full
+       vê o cartão. A regra mora em window.BMCRM (nav-sidebar.js). -->
+  <style>
+    .crm-estado{display:flex;align-items:center;gap:12px;padding:16px 18px;margin:0 0 18px;border-radius:14px;background:#F2F5F8;color:#10323E;font-size:14px;line-height:1.5}
+    .crm-estado[hidden]{display:none}
+    .crm-estado.aviso{background:#FFF7E6;color:#7A4B00;border:1px solid #F6D7A0}
+    .crm-estado b{font-weight:700}
+    .crm-spin{width:18px;height:18px;border-radius:50%;border:2.5px solid #CBD9E0;border-top-color:#19596B;animation:crm-gira .8s linear infinite;flex:none}
+    @keyframes crm-gira{to{transform:rotate(360deg)}}
+    .crm-subs .modulo-card .mc-funil{display:inline-flex;align-items:center;gap:6px;align-self:flex-start;margin:-2px 0 8px;padding:3px 10px;border-radius:999px;background:#EDF5F9;color:#19596B;font-size:11.5px;font-weight:700;letter-spacing:.2px;text-transform:uppercase}
+    .crm-subs .modulo-card .mc-funil svg{width:12px;height:12px}
+    .crm-subs[hidden]{display:none}
+    /* celular: o cartão vira linha (portal-mobile.css) — o selo fica de fora */
+    @media (max-width: 767.98px){ .crm-subs .modulo-card .mc-funil{display:none} }
+    html[data-tema="escuro"] .crm-estado{background:#18242B;color:#DDE7EC}
+    html[data-tema="escuro"] .crm-estado.aviso{background:#3A2C10;color:#F6DDB0;border-color:#6B4E16}
+    html[data-tema="escuro"] .crm-subs .modulo-card .mc-funil{background:#1D303A;color:#8BC9DE}
+  </style>
+</head>
+<body class="dept crm-com">
+
+  <!-- HEADER GLOBAL -->
+  <header class="site-header">
+    <div class="container">
+      <a href="../index.html" class="brand" aria-label="Portal MSB — página inicial">
+        <img class="brand-logo" src="/icons/logo-msb.png" alt="MSB · Medical System do Brasil" onerror="this.dataset.failed='true'">
+        <span class="brand-fallback">MSB</span>
+      </a>
+      <nav class="header-nav">
+        <a href="../index.html">Início</a>
+        <a href="../index.html#areas">Áreas</a>
+        <a href="../index.html#sistemas">Sistemas</a>
+        <a href="../index.html#avisos">Avisos</a>
+        <a href="../index.html#contato">Contato</a>
+      </nav>
+    </div>
+  </header>
+
+  <!-- CABEÇALHO DO MÓDULO -->
+  <section class="area-header">
+    <div class="container">
+      <div class="breadcrumb">
+        <a href="../index.html">Portal</a>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18l6-6-6-6"/></svg>
+        <a href="comercial.html">Comercial</a>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18l6-6-6-6"/></svg>
+        <span>CRM</span>
+      </div>
+      <div class="area-header-top">
+        <div>
+          <h1 data-recente="Comercial · CRM">CRM</h1>
+          <p>Funil de Oportunidade — Venda Recorrente.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <div class="area-body">
+    <div class="container">
+      <div class="area-grid">
+
+        <aside class="area-sidebar">
+          <div class="sb-card">
+            <div class="sb-head">
+              <span class="sb-ic"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="8.5" cy="7" r="4"/><path d="M20 8v6"/><path d="M23 11h-6"/></svg></span>
+              <div><div class="sb-tt">Comercial</div><div class="sb-st">Departamento</div></div>
+            </div>
+            <nav>
+              <div class="sb-section">Navegação</div>
+              <a href="comercial.html">Visão geral</a>
+              <a href="comercial-crm.html" class="active">CRM</a>
+            </nav>
+          </div>
+          <a href="../index.html" class="sb-back"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></svg>Voltar ao Portal</a>
+        </aside>
+
+        <div class="area-main">
+          <section class="modulos-section" id="overview">
+            <div class="container">
+              <div class="fin-subhead">
+                <h2>Submódulos</h2>
+                <span class="sub" id="crm-sub">Cada submódulo é um Funil de Oportunidade</span>
+              </div>
+
+              <div class="crm-estado" id="crm-estado" role="status" aria-live="polite">
+                <span class="crm-spin" aria-hidden="true"></span>
+                <span>Abrindo o seu submódulo do CRM…</span>
+              </div>
+
+              <!-- os cartões saem do window.BMCRM.SUBS (nav-sidebar.js): só os da pessoa -->
+              <div class="modulos-grid crm-subs" id="crm-subs" hidden></div>
+            </div>
+          </section>
+        </div><!-- /area-main -->
+      </div><!-- /area-grid -->
+    </div><!-- /container -->
+  </div><!-- /area-body -->
+
+  <!-- FOOTER -->
+  <footer class="site-footer">
+    <div class="container">
+      <div class="bm-footer-grid">
+
+        <div class="bm-footer-col">
+          <img class="footer-logo" src="/icons/logo-msb.png" alt="MSB · Medical System do Brasil">
+          <p class="bm-footer-sobre">Fabricante brasileira de dispositivos médicos em Endourologia, Endovascular, Cardiologia e Cirurgia Cardíaca/Torácica.</p>
+          <div class="bm-social">
+            <a href="https://www.instagram.com/msb.brasil/" target="_blank" rel="noopener" aria-label="Instagram da MSB"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="2" y="2" width="20" height="20" rx="5"/><path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"/><path d="M17.5 6.5h.01"/></svg></a>
+            <a href="https://www.linkedin.com/company/msb-medical-system-do-brasil" target="_blank" rel="noopener" aria-label="LinkedIn da MSB"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M16 8a6 6 0 0 1 6 6v7h-4v-7a2 2 0 0 0-4 0v7h-4v-7a6 6 0 0 1 6-6z"/><rect x="2" y="9" width="4" height="12"/><circle cx="4" cy="4" r="2"/></svg></a>
+          </div>
+          <a href="https://msbbrasil.com/contato/" target="_blank" rel="noopener" class="bm-whatsapp bm-contato">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"/></svg>
+            Entre em contato!
+          </a>
+        </div>
+
+        <div class="bm-footer-col">
+          <h5>A MSB</h5>
+          <ul>
+            <li><a href="https://msbbrasil.com/quem-somos/" target="_blank" rel="noopener">Sobre a MSB</a></li>
+            <li><a href="https://msbbrasil.com/noticias/" target="_blank" rel="noopener">Notícias</a></li>
+            <li><a href="https://msbbrasil.com/conteudos/" target="_blank" rel="noopener">Conteúdos</a></li>
+            <li><a href="https://msbbrasil.com/certificacao-anvisa/" target="_blank" rel="noopener">Anvisa / ISO</a></li>
+            <li><a href="https://vemprabiomedical.gupy.io/" target="_blank" rel="noopener">Vagas · MSBio Group</a></li>
+          </ul>
+        </div>
+
+        <div class="bm-footer-col">
+          <h5>Contato</h5>
+          <ul>
+            <li><a href="https://msbbrasil.com/contato/" target="_blank" rel="noopener">Fale com a MSB</a></li>
+            <li><a href="https://msbbrasil.com/contato/" target="_blank" rel="noopener">Quero comprar</a></li>
+            <li><a href="https://msbbrasil.com/instrucao-de-uso/" target="_blank" rel="noopener">Instruções de Uso</a></li>
+            <li><a href="https://msbbrasil.com/" target="_blank" rel="noopener">Site oficial</a></li>
+          </ul>
+        </div>
+
+        <div class="bm-footer-col">
+          <h5>Produtos</h5>
+          <ul>
+            <li><a href="https://msbbrasil.com/produtos/" target="_blank" rel="noopener">Endourologia</a></li>
+            <li><a href="https://msbbrasil.com/produtos/" target="_blank" rel="noopener">Endovascular</a></li>
+            <li><a href="https://msbbrasil.com/produtos/" target="_blank" rel="noopener">Cardiologia</a></li>
+            <li><a href="https://msbbrasil.com/produtos/" target="_blank" rel="noopener">Cirurgia Cardíaca/Torácica</a></li>
+            <li><a href="https://msbbrasil.com/produtos/" target="_blank" rel="noopener">Todos os produtos</a></li>
+          </ul>
+        </div>
+
+      </div>
+
+      <div class="bm-footer-bottom">
+        <span>© <span id="year"></span> MSB · Medical System do Brasil · Portal interno</span>
+        <span class="bm-footer-meta">Endourologia · Endovascular · Cardiologia · Cirurgia Cardíaca/Torácica</span>
+      </div>
+    </div>
+  </footer>
+
+  <script src="../script.js?v=8"></script>
+  <script src="../nav-sidebar.js?v=79"></script>
+  <script>
+  /* A casa do CRM: quem é de um submódulo só vai direto para ele; o acesso
+     full (e quem tem mais de um) escolhe. A pergunta é o /api/cot-casos?eu=1
+     (as unidades do RLS do Power BI — por isso o token do Power BI vai junto,
+     como na Gestão de Oportunidades) e a regra é a do window.BMCRM. */
+  (function () {
+    'use strict';
+    var D = document, W = window, M = W.BMCRM;
+    if (!M) return;
+    var TONS = { recorrente: 'receber', bioid: 'conciliacao', consultiva: 'dre' };
+    var ICONES = {
+      recorrente: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>',
+      bioid: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="16" rx="2"/><circle cx="9" cy="10" r="2.5"/><path d="M5.5 16.5c.8-1.8 2-2.6 3.5-2.6s2.7.8 3.5 2.6"/><line x1="15" y1="9" x2="18" y2="9"/><line x1="15" y1="13" x2="18" y2="13"/></svg>',
+      consultiva: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 7V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v2"/></svg>'
+    };
+    var FUNIL = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/></svg>';
+    var SETA = '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>';
+    function esc(s) { return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); }
+
+    function estado(html, aviso) {
+      var e = D.getElementById('crm-estado');
+      if (!e) return;
+      if (!html) { e.hidden = true; return; }
+      e.hidden = false;
+      e.className = 'crm-estado' + (aviso ? ' aviso' : '');
+      e.innerHTML = html;
+    }
+    function cartoes(ids) {
+      var box = D.getElementById('crm-subs');
+      if (!box) return;
+      box.innerHTML = ids.map(function (id) {
+        var s = M.porId(id);
+        return '<a href="' + esc(s.href) + '" class="modulo-card" data-tone="' + TONS[id] + '" data-crm-sub="' + id + '">' +
+          '<div class="mc-top"><span class="mc-icon">' + ICONES[id] + '</span></div>' +
+          '<span class="mc-name">' + esc(s.rotulo) + '</span>' +
+          '<span class="mc-funil">' + FUNIL + 'Funil de Oportunidade</span>' +
+          '<span class="mc-desc">' + esc(s.desc) + '</span>' +
+          '<span class="mc-open">Abrir submódulo ' + SETA + '</span></a>';
+      }).join('');
+      box.hidden = false;
+      // o submódulo escolhido vale para a aba (os links internos das cotações)
+      box.addEventListener('click', function (ev) {
+        var a = ev.target.closest && ev.target.closest('a[data-crm-sub]');
+        if (a) M.fixar(a.getAttribute('data-crm-sub'));
+      });
+    }
+
+    // o token DELEGADO do Power BI (as unidades do RLS), em silêncio — o
+    // mesmo pedido da Gestão de Oportunidades (cotacoes-base.js)
+    var PBI_SCOPES = ['https://analysis.windows.net/powerbi/api/Dataset.Read.All', 'https://analysis.windows.net/powerbi/api/Report.Read.All'];
+    function tokenPbi() {
+      var m = W._msalAuth;
+      if (!m || !m.getAllAccounts) return Promise.resolve('');
+      var conta = (m.getActiveAccount && m.getActiveAccount()) || (m.getAllAccounts() || [])[0];
+      if (!conta) return Promise.resolve('');
+      return Promise.resolve(m.acquireTokenSilent({ scopes: PBI_SCOPES, account: conta }))
+        .then(function (r) { return (r && r.accessToken) || ''; }, function () { return ''; });
+    }
+    function aguardarLogin() {
+      return new Promise(function (ok) {
+        var n = 0;
+        (function espera() {
+          if (W._portalAuthReady) { W._portalAuthReady.then(function () { ok(); }, function () { ok(); }); return; }
+          if (++n > 200) { ok(); return; }
+          setTimeout(espera, 50);
+        })();
+      });
+    }
+    function quemSou() {
+      return aguardarLogin().then(tokenPbi).then(function (pbi) {
+        var h = {}; if (pbi) h['x-pbi-token'] = pbi;
+        return fetch('/api/cot-casos?eu=1', { headers: h, cache: 'no-store' });
+      }).then(function (r) {
+        return r.json().catch(function () { return null; }).then(function (j) { return { status: r.status, j: j }; });
+      });
+    }
+
+    function decidir(eu, falha) {
+      var d = M.destino(eu);
+      if (eu) M.guardarPessoa(eu.email, eu);
+      if (typeof W.bmPodarCrm === 'function' && eu) W.bmPodarCrm(eu.email);
+      // um submódulo só: abre direto, sem passar pela escolha
+      if (d.ir) {
+        M.fixar(d.sub);
+        estado('<span class="crm-spin" aria-hidden="true"></span><span>Abrindo <b>' + esc(M.porId(d.sub).rotulo) + '</b> · Funil de Oportunidade…</span>');
+        location.replace(d.ir);
+        return;
+      }
+      var sub = D.getElementById('crm-sub');
+      if (d.full) { estado(''); if (sub) sub.textContent = 'Você tem acesso a todos — escolha o submódulo'; }
+      else if (d.aviso === 'sem-unidade') estado('<span><b>Não consegui confirmar a sua unidade de negócio no Power BI</b>' + (d.motivo ? ': ' + esc(d.motivo) : '') + '. Escolha o submódulo — dentro dele você vê só as oportunidades da sua unidade.</span>', true);
+      else if (d.aviso === 'sem-eu') estado('<span><b>Não consegui confirmar o seu acesso</b>' + (falha ? ' (' + esc(falha) + ')' : '') + '. Escolha o submódulo.</span>', true);
+      else { estado(''); if (sub) sub.textContent = 'Os submódulos da sua unidade de negócio — escolha um'; }
+      cartoes(d.escolher);
+    }
+
+    function iniciar() {
+      quemSou().then(function (r) {
+        if (r.status === 200 && r.j && r.j.eu) return decidir(r.j.eu);
+        decidir(null, (r.j && r.j.error) || ('HTTP ' + r.status));
+      }).catch(function (e) { decidir(null, (e && e.message) || 'sem resposta'); });
+    }
+    if (D.readyState === 'loading') D.addEventListener('DOMContentLoaded', iniciar); else iniciar();
+  })();
+  </script>
+</body>
+</html>

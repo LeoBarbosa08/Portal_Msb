@@ -3,10 +3,11 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Agente de Cotações · Cotações · MSB</title>
+  <title>Nova oportunidade · CRM · MSB</title>
   <link rel="stylesheet" href="../styles.css?v=14">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300..900&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="../dash-v2.css?v=3">
   <!-- Login BLOQUEANTE: a tela chama /api/cot-* no boot e o token tem de
        existir na primeira chamada (o nav-sidebar.js injeta o auth.js de forma
@@ -15,7 +16,6 @@
   <script src="../auth.js?v=8"></script>
   <script>window._portalAuthLoaded = true;</script>
   <!-- Layout v3 (Claude Design · animado): fonte + camada visual + motor de animações -->
-  <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300..900&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="../portal-v3.css?v=2">
   <script src="../portal-motion.js?v=3" defer></script>
   <!-- Tema claro/escuro (menu do avatar): marca o <html> antes de pintar + camada escura -->
@@ -26,8 +26,8 @@
   <link rel="stylesheet" href="../portal-mobile.css?v=1" media="(max-width: 767.98px)">
   <script src="../portal-mobile.js?v=1" defer></script>
   <!-- Cotações: família do Customer Service (botões, chips, cartões, diálogo) -->
-  <link rel="stylesheet" href="../customer-service.css?v=3">
-  <link rel="stylesheet" href="../cotacoes.css?v=7">
+  <link rel="stylesheet" href="../customer-service.css?v=4">
+  <link rel="stylesheet" href="../cotacoes.css?v=32">
 </head>
 <body class="dept cs-page cot-page" data-cot-pagina="nova">
 
@@ -56,14 +56,16 @@
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18l6-6-6-6"/></svg>
         <a href="comercial.html">Comercial</a>
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18l6-6-6-6"/></svg>
-        <a href="comercial-cot-funil.html">Cotações</a>
+        <a href="comercial-crm.html">CRM</a>
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18l6-6-6-6"/></svg>
-        <span>Agente de Cotações</span>
+        <a href="comercial-cot-funil.html" data-crm-rotulo>Funil de Oportunidade</a>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18l6-6-6-6"/></svg>
+        <span>Nova oportunidade</span>
       </div>
       <div class="area-header-top">
         <div>
-          <h1>Agente de Cotações</h1>
-          <p>Anexe o PDF da cotação que você respondeu no portal — a IA lê portal, número, cliente, prazos e itens, você confere e a cotação vira um caso para acompanhar até virar pedido.</p>
+          <h1 data-recente="CRM · Nova oportunidade">Nova oportunidade</h1>
+          <p>Anexe o PDF da cotação que você respondeu no portal — a IA lê portal, número, cliente, prazos e itens, você confere e a oportunidade vira um caso para acompanhar até virar pedido.</p>
         </div>
       </div>
     </div>
@@ -82,7 +84,7 @@
             <nav>
               <div class="sb-section">Navegação</div>
               <a href="comercial.html">Visão geral</a>
-              <a href="comercial-cot-funil.html" class="active">Cotações</a>
+              <a href="comercial-crm.html" class="active">CRM</a>
             </nav>
           </div>
           <a href="../index.html" class="sb-back"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></svg>Voltar ao Portal</a>
@@ -95,8 +97,8 @@
               <div class="cot-ag-card">
                 <div class="cot-ag-head">
                   <span class="cot-ag-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l1.9 5.6L19.5 10l-5.6 1.9L12 17.5l-1.9-5.6L4.5 10l5.6-1.4z"/><path d="M19 15l.8 2.2L22 18l-2.2.8L19 21l-.8-2.2L16 18l2.2-.8z"/></svg></span>
-                  <div><div class="cot-ag-tt">Agente de Cotações</div><div class="cot-ag-st">Leitura do PDF por IA · conferência · caso para acompanhar até virar pedido</div></div>
-                  <a class="cs-btn cs-btn-sm" href="comercial-cot-casos.html">Gestão de Cotações</a>
+                  <div><div class="cot-ag-tt">Agente de Oportunidades</div><div class="cot-ag-st">Leitura do PDF por IA · conferência · caso para acompanhar até virar pedido</div></div>
+                  <a class="cs-btn cs-btn-sm" href="comercial-cot-casos.html">Gestão de Oportunidades</a>
                 </div>
                 <div class="cot-passos" id="cot-passos"></div>
                 <div class="cot-ag-body" id="cot-corpo"><div class="cs-esqueleto"></div></div>
@@ -113,7 +115,7 @@
     <div class="container">
       <div class="bm-footer-bottom">
         <span>© <span id="year"></span> MSB · Medical System do Brasil · Portal interno</span>
-        <span class="bm-footer-meta">Comercial · Cotações</span>
+        <span class="bm-footer-meta">Comercial · Oportunidades</span>
       </div>
     </div>
   </footer>
@@ -122,7 +124,7 @@
   <div class="cs-toasts" id="cs-toasts" aria-live="polite"></div>
 
   <script src="../script.js?v=8"></script>
-  <script src="../nav-sidebar.js?v=78"></script>
+  <script src="../nav-sidebar.js?v=79"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
   <script>
     if (window.pdfjsLib) {
@@ -133,9 +135,9 @@
   <script src="../pi-pdf-texto.js?v=1"></script>
   <script src="../pbi-throttle.js?v=5" data-bi-trava="off"></script>
   <script src="../voz-pbi.js?v=3"></script>
-  <script src="../cotacoes-base.js?v=6"></script>
+  <script src="../cotacoes-base.js?v=24"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-  <script src="../cotacoes-proposta.js?v=2"></script>
-  <script src="../cotacoes-agente.js?v=6"></script>
+  <script src="../cotacoes-proposta.js?v=7"></script>
+  <script src="../cotacoes-agente.js?v=20"></script>
 </body>
 </html>
