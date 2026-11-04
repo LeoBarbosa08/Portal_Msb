@@ -234,6 +234,12 @@ Pedido do dono: trazer o PI · Pedido do portal completo (`LeoBarbosa08/Claude.r
   conexão é a mesma da BIO (`D365_*`). Se a consulta falhar (ou a
   `BioInventSums` não trouxer a localização), a etapa Produtos avisa uma vez
   com o motivo e o 2º clique segue sem estoque.
+- **Códigos do PI na MSB** (04/11): o recorte MSB do `pbi-throttle.js` sumia
+  com produto do cadastro (`'Produtos'[Cód. produto]`, modelo Comercial) — o
+  51200 existe na MSB e voltava "não encontrado". O que sobra da conferência é
+  procurado de novo com `REMOVEFILTERS('Empresas')` por dentro (só código e
+  nome, nenhum número de venda); sem achar nem assim, a mensagem mostra
+  códigos parecidos do cadastro.
 - Não veio o PI · Pedido (TESTE) (`pi-pedido-teste` + `api/pi-aprovacao`, a
   alçada de aprovação de remessa): no completo ele está oculto para todos.
 - `nav-sidebar.js?v=78` em todas as páginas; `sw.js` — cache `bm-comest-v7`.

@@ -630,10 +630,62 @@
           }
         } catch (eFb) { console.warn('[pedido] fallback validação de produto:', eFb); }
       }
+
+      // RECORTE MSB (04/11/2026): o pbi-throttle.js embrulha TODA consulta em
+      // CALCULATETABLE(…, 'Empresas'[…] IN {"MSB"}) e, conforme as relações do
+      // modelo, isso some com o produto do cadastro (ou deixa a linha da MSB
+      // sem nome) — o 51200 existe na MSB e voltava "não encontrado". Os que
+      // sobraram são procurados de novo com REMOVEFILTERS('Empresas') POR
+      // DENTRO, que passa por cima do recorte. Só CÓDIGO e NOME do cadastro,
+      // nenhum número de venda; o pedido vai para a empresa MSB no Dynamics
+      // (que recusa item que não existe lá) e o estoque é o do ALMOX-PA.
+      // Sem achar nem assim, a mensagem diz isso e mostra códigos parecidos.
+      var parecidos = [], buscouParecidos = false;
+      if (invalidos) {
+        var semRecorte = function (inner) { return 'EVALUATE CALCULATETABLE(' + inner + ', REMOVEFILTERS(\'Empresas\'))'; };
+        var codBI3 = 'UPPER(TRIM(SUBSTITUTE(\'Produtos\'[Cód. produto], UNICHAR(160), " ")))';
+        try {
+          var c3 = S.produtos.filter(function (p) { return p.produto === null; }).map(function (p) { return normCod(p.codigo); })
+            .filter(function (c, i, a) { return c && a.indexOf(c) === i; });
+          if (c3.length) {
+            var lista3 = c3.map(function (c) { return '"' + c.replace(/"/g, '""') + '"'; }).join(', ');
+            var dax3 = function (comFamilia) {
+              return semRecorte('FILTER(SELECTCOLUMNS(\'Produtos\', "cod", ' + codBI3 + ', "nome", \'Produtos\'[Produto]'
+                + (comFamilia ? ', "familia", RELATED(\'Famílias\'[Família])' : '') + '), [cod] IN {' + lista3 + '})');
+            };
+            var rows3;
+            try { rows3 = await VOZPBI.query(dax3(true)); }
+            catch (e3) { rows3 = await VOZPBI.query(dax3(false)); }
+            var ach3 = {};
+            (rows3 || []).forEach(function (r) {
+              var k = normCod(r['[cod]']), n = String(r['[nome]'] || ''), f = String(r['[familia]'] == null ? '' : r['[familia]']);
+              if (!ach3[k] || (!ach3[k].nome && n)) ach3[k] = { nome: n, familia: f };   // a linha com nome ganha
+            });
+            S.produtos.forEach(function (p) {
+              if (p.produto !== null) return;
+              var a3 = ach3[normCod(p.codigo)];
+              if (!a3) return;
+              p.ok = true; p.produto = a3.nome || p.descricaoPdf || p.codigo; p.familia = a3.familia;
+              p.stent = isStentFam(a3.familia) || isStentFam(p.produto); invalidos--;
+              console.info('[pedido] ' + p.codigo + ': achado no cadastro do BI só sem o recorte MSB');
+            });
+          }
+          // ainda faltando: códigos PARECIDOS no cadastro (traço, zero, sufixo…)
+          var pend4 = S.produtos.filter(function (p) { return p.produto === null; }).slice(0, 3);
+          if (pend4.length) {
+            var conds = pend4.map(function (p) { return 'CONTAINSSTRING([cod], "' + normCod(p.codigo).replace(/"/g, '""') + '")'; }).join(' || ');
+            var rows4 = await VOZPBI.query(semRecorte('TOPN(6, FILTER(SELECTCOLUMNS(\'Produtos\', "cod", ' + codBI3 + ', "nome", \'Produtos\'[Produto]), ' + conds + '), [cod], ASC)'));
+            (rows4 || []).forEach(function (r) { var c = String(r['[cod]'] || ''); if (c && parecidos.indexOf(c) < 0) parecidos.push(c); });
+            buscouParecidos = true;
+          }
+        } catch (e4) { console.warn('[pedido] busca sem o recorte MSB:', e4); }
+      }
       renderProdutos();
 
       if (invalidos) {
-        msg('prod', '<strong>' + invalidos + ' código(s) não encontrado(s)</strong> na base de produtos (linhas em vermelho). Corrija e valide de novo.', 'err');
+        msg('prod', '<strong>' + invalidos + ' código(s) não encontrado(s)</strong> no cadastro de produtos do Power BI (linhas em vermelho) — procurei com e sem o filtro da MSB.' +
+          (parecidos.length ? '<br>Parecidos no cadastro: <strong>' + esc(parecidos.join(', ')) + '</strong>.' : buscouParecidos ? '<br>Nenhum código parecido no cadastro do modelo Comercial.' : '') +
+          ' Corrija e valide de novo.', 'err');
         return;
       }
 
