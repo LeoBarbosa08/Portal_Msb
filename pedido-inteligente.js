@@ -666,6 +666,17 @@
           return;
         }
       }
+      // RECORTE MSB (04/11/2026): a consulta do estoque da MSB não veio (Dynamics
+      // sem as variáveis, recusou, ou a tabela sem Localização): avisa UMA vez
+      // com o motivo — o 2º clique segue sem estoque, como no "insuficiente"
+      var falhaEst = (!est || !est.configured) ? ((est && est.erro) || 'o Dynamics não está configurado neste portal (variáveis D365_*)') : (est.aviso || '');
+      if (falhaEst && !S.estoqueAvisado) {
+        S.estoqueAvisado = true;
+        renderProdutos();
+        msg('prod', '<strong>Não consegui consultar o estoque</strong> (' + esc((est && est.deposito) || 'ALMOX-PA') + ', localizações ' + esc((est && est.localizacao) || 'PA.*') + '): ' +
+          esc(falhaEst) + '<br>Clique novamente para seguir sem a consulta de estoque.', 'err');
+        return;
+      }
 
       msg('prod', '');
       // produtos sem lote rastreado (ex.: disponível 0) → quantidade total lançada
@@ -713,9 +724,9 @@
         body: JSON.stringify({ codigos: codes })
       });
       var j = await r.json().catch(function () { return {}; });
-      if (!r.ok) { console.warn('[pedido] lotes:', j.error); return { configured: false }; }
+      if (!r.ok) { console.warn('[pedido] lotes:', j.error); return { configured: false, erro: j.error || ('HTTP ' + r.status) }; }
       return j;
-    } catch (e) { console.warn('[pedido] lotes falhou:', e); return { configured: false }; }
+    } catch (e) { console.warn('[pedido] lotes falhou:', e); return { configured: false, erro: (e && e.message) || 'falha de rede' }; }
   }
 
   // DOUBLE-CHECK no envio: re-consulta o estoque AGORA e confere se cada lote

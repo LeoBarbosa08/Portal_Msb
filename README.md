@@ -226,6 +226,14 @@ Pedido do dono: trazer o PI · Pedido do portal completo (`LeoBarbosa08/Claude.r
 - **IA da MSB**: implantação própria (`gpt-5-mini`) nas variáveis `AOAI_*` da
   Static Web App da MSB. O `/api/pedido-extrair` aceita o `AOAI_ENDPOINT` em
   qualquer formato do Foundry e a tela mostra o motivo do erro do Azure.
+- **Estoque do PI na MSB** (04/11): `/api/pedido-lotes` olha a empresa `msb`, o
+  depósito `ALMOX-PA` e só as localizações que começam com `PA.` (o mesmo
+  campo de sempre, Quantidade física disponível = `AvailPhysical`, somado por
+  lote, com a validade). Envs próprias, para não herdar as da BIO:
+  `ESTOQUE_MSB_EMPRESA`, `ESTOQUE_MSB_DEPOSITO`, `ESTOQUE_MSB_LOCALIZACAO`. A
+  conexão é a mesma da BIO (`D365_*`). Se a consulta falhar (ou a
+  `BioInventSums` não trouxer a localização), a etapa Produtos avisa uma vez
+  com o motivo e o 2º clique segue sem estoque.
 - Não veio o PI · Pedido (TESTE) (`pi-pedido-teste` + `api/pi-aprovacao`, a
   alçada de aprovação de remessa): no completo ele está oculto para todos.
 - `nav-sidebar.js?v=78` em todas as páginas; `sw.js` — cache `bm-comest-v7`.

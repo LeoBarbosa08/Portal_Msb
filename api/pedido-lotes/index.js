@@ -14,16 +14,24 @@
 //   -> { configured:false }   (sem credenciais D365)
 //
 // Env vars: as do shared/d365.js (D365_TENANT_ID/CLIENT_ID/CLIENT_SECRET,
-//   D365_RESOURCE_URL) + ESTOQUE_LOCATION (BCD), ESTOQUE_EMPRESA (bio),
-//   D365_ENTITY (BioInventSums), D365_BATCH_ENTITY (BioInventItemBatchV3).
+//   D365_RESOURCE_URL) + D365_ENTITY (BioInventSums), D365_BATCH_ENTITY
+//   (BioInventItemBatchV3). Na MSB: ESTOQUE_MSB_EMPRESA (msb),
+//   ESTOQUE_MSB_DEPOSITO (ALMOX-PA), ESTOQUE_MSB_LOCALIZACAO (PA.) — ver abaixo.
 // ================================================================
 
 const D = require('../shared/d365');
 const auth = require('../shared/auth');
 const http = require('../shared/http');
 
-const LOCATION   = process.env.ESTOQUE_LOCATION || 'BCD';
-const EMPRESA    = (process.env.ESTOQUE_EMPRESA !== undefined ? process.env.ESTOQUE_EMPRESA : 'bio');
+// RECORTE MSB (04/11/2026, pedido do dono): o estoque do PI da MSB é o da
+// empresa MSB, depósito ALMOX-PA, SÓ nas localizações que começam com "PA."
+// — o mesmo campo de sempre (Quantidade física disponível = AvailPhysical),
+// somado por lote. As envs são PRÓPRIAS (ESTOQUE_MSB_*) de propósito: se
+// alguém copiar do portal da BIO o ESTOQUE_EMPRESA (bio) ou o
+// ESTOQUE_LOCATION (BCD), o estoque da MSB não muda.
+const EMPRESA    = String(process.env.ESTOQUE_MSB_EMPRESA || 'msb').trim();
+const LOCATION   = String(process.env.ESTOQUE_MSB_DEPOSITO || 'ALMOX-PA').trim();
+const PREFIXO_LOC = String(process.env.ESTOQUE_MSB_LOCALIZACAO || 'PA.').trim().toUpperCase();
 const ENT_SUM    = process.env.D365_ENTITY || 'BioInventSums';
 const ENT_BATCH  = process.env.D365_BATCH_ENTITY || 'BioInventItemBatchV3';
 
@@ -41,6 +49,16 @@ function categoriza(d) {
   return 'muito_boa';                    // > 2 anos
 }
 
+// o campo da Localização (InventDim.wMSLocationId) na linha da entidade — o
+// nome muda conforme a entidade (wMSLocationId, WMSLocationId,
+// WarehouseLocationId…), então é descoberto na própria linha
+function campoLocalizacao(row) {
+  const ks = Object.keys(row || {});
+  return ks.find(function (k) { return /^w?msLocationId$/i.test(k); }) ||
+         ks.find(function (k) { return /^(warehouse)?locationid$/i.test(k); }) ||
+         ks.find(function (k) { return /wms.*location/i.test(k) && !/^inventlocation/i.test(k); }) || null;
+}
+
 async function itemDados(codigo, location, token) {
   // 1) saldos por lote. Filtro AvailPhysical NE 0 (traz linhas positivas E
   //    negativas — ex.: baixa de lote gera linha negativa). O saldo real é a
@@ -51,6 +69,17 @@ async function itemDados(codigo, location, token) {
   fSum.push("ItemId eq '" + D.odataStr(codigo) + "'");
   fSum.push('AvailPhysical ne 0');
   var sums = await D.odataGet(ENT_SUM, { filter: fSum.join(' and '), crossCompany: true }, token);
+
+  // RECORTE MSB: só as localizações que começam com PREFIXO_LOC ("PA.")
+  if (PREFIXO_LOC && sums.length) {
+    var campo = campoLocalizacao(sums[0]);
+    if (!campo) {
+      var e = new Error('a tabela ' + ENT_SUM + ' do Dynamics não traz a Localização (wMSLocationId), então não dá para ficar só com "' + PREFIXO_LOC + '"');
+      e.semLocalizacao = true;
+      throw e;
+    }
+    sums = sums.filter(function (r) { return String(r[campo] == null ? '' : r[campo]).trim().toUpperCase().indexOf(PREFIXO_LOC) === 0; });
+  }
 
   // total = soma de TODAS as linhas (positivas + negativas) = saldo líquido
   var disponivelTotal = sums.reduce(function (s, r) { var n = Number(D.pick(r, ['AvailPhysical'])); return s + (isNaN(n) ? 0 : n); }, 0);
@@ -130,9 +159,12 @@ module.exports = async function (context, req) {
     }));
     const itens = {};
     codigos.forEach(function (c, i) { itens[c] = arr[i]; });
+    // o 1º erro vira aviso para a tela (o PI avisa uma vez e deixa seguir)
+    const comErro = arr.filter(function (x) { return x && x.erro; });
+    const aviso = comErro.length ? (comErro.length + ' de ' + arr.length + ' produto(s) sem consulta: ' + comErro[0].erro) : '';
 
     context.res = { status: 200, headers: Object.assign({ 'Content-Type': 'application/json' }, cors),
-      body: { configured: true, location: location, empresa: EMPRESA, itens: itens } };
+      body: { configured: true, location: location, deposito: location, localizacao: PREFIXO_LOC ? PREFIXO_LOC + '*' : '', empresa: EMPRESA, aviso: aviso, itens: itens } };
   } catch (err) {
     http.sendError(context, req, 'pedido-lotes', err);
   }
