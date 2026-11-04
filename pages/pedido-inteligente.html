@@ -149,6 +149,14 @@
     /* dica lida do PDF, embaixo do próprio campo (ex.: condição de pagamento) */
     .pi-dica { margin: 2px 0 0; padding: 7px 10px; border-radius: 8px; font-size: 12.5px; line-height: 1.45; background: #eff4f7; border: 1px solid #c9dbe4; color: var(--bm-blue-900, #195663); }
     .pi-field textarea { resize: vertical; min-height: 64px; }
+    /* RECORTE MSB: obrigatório que faltou ao clicar em Continuar */
+    .pi-field.pi-falta > label, .pi-field.pi-falta .pi-lbl-row > label:first-child { color: #dc2626; }
+    .pi-field.pi-falta > input, .pi-field.pi-falta > select, .pi-field.pi-falta > textarea {
+      border-color: #dc2626; box-shadow: 0 0 0 3px rgba(220,38,38,.14); background-color: rgba(220,38,38,.05);
+    }
+    html[data-tema="escuro"] .pi-field.pi-falta > label, html[data-tema="escuro"] .pi-field.pi-falta .pi-lbl-row > label:first-child { color: #f87171; }
+    html[data-tema="escuro"] .pi-field.pi-falta > input, html[data-tema="escuro"] .pi-field.pi-falta > select { border-color: #f87171; }
+    .pi-field select:disabled { opacity: 1; cursor: not-allowed; background-color: var(--surface-2, #f1f5f7); color: var(--text-1); }
 
     /* botões */
     .pi-actions { display: flex; gap: 10px; margin-top: 22px; flex-wrap: wrap; }
@@ -411,8 +419,9 @@
                     <div class="pi-field"><label for="cab-tipovenda">Tipo de Venda <span class="req">*</span></label><select id="cab-tipovenda"></select></div>
                     <div class="pi-field"><label for="cab-area">Área Demandante <span class="req">*</span></label><select id="cab-area"></select></div>
                     <div class="pi-field" id="cab-vendedor-wrap" style="display:none;"><label for="cab-vendedor">Vendedor <span class="req">*</span></label><select id="cab-vendedor"></select></div>
-                    <div class="pi-field"><label for="cab-caso">Caso</label><input id="cab-caso"></div>
-                    <div class="pi-field"><label for="cab-portal">Portal <span class="req">*</span></label><select id="cab-portal"></select></div>
+                    <!-- RECORTE MSB (04/11/2026): Caso e Portal fora da tela; os campos ficam escondidos porque a ponte da cotação ainda os preenche e o flow recebe os dois -->
+                    <div class="pi-field" style="display:none;"><label for="cab-caso">Caso</label><input id="cab-caso"></div>
+                    <div class="pi-field" style="display:none;"><label for="cab-portal">Portal</label><select id="cab-portal"></select></div>
                     <div class="pi-field"><label for="cab-operador">Operador <span class="req">*</span></label><input id="cab-operador" placeholder="Preenchido pelo seu login"></div>
                     <div class="pi-field full"><label for="cab-obs">Observação</label><textarea id="cab-obs"></textarea></div>
                     <div class="pi-field full"><label for="cab-obsnota">Observação no Rodapé da Nota</label><textarea id="cab-obsnota" placeholder="Opcional — deixe em branco se não houver observação na nota"></textarea></div>
@@ -527,6 +536,6 @@
   <script src="../voz-pbi.js?v=3"></script>
   <script src="../pi-pdf-texto.js?v=1"></script>
   <script src="../customer-service-pi.js?v=2"></script>
-  <script src="../pedido-inteligente.js?v=30"></script>
+  <script src="../pedido-inteligente.js?v=31"></script>
 </body>
 </html>

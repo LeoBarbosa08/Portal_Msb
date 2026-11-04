@@ -25,7 +25,6 @@
   var FRETES       = ['CIF - COM VALOR', 'CIF - SEM VALOR', 'FOB - DESTINATARIO'];
   var COND_ENTREGA = ['PADRÃO', 'URGENTE'];
   var TIPOS_VENDA  = ['VENDA DIRETA', 'REMESSA EM CONSIGNAÇÃO - PERMANENTE', 'REMESSA EM CONSIGNAÇÃO - TEMPORÁRIA'];
-  var AREAS        = ['PEDIDOINTELIGENTE (BIO.ID)', 'PEDIDOINTELIGENTE (VENDA RECORRENTE)', 'PEDIDOINTELIGENTE (VENDA CONSULTIVA)'];
   var PORTAIS      = ['APOIO COTACOES', 'BIONEXO', 'GTPLAN', 'NAO INFORMADO', 'SINTESE',
                       'SMART COMPRAS', 'UNIUBE', 'VSSUPPLY -STA CATARINA', 'VSSUPPLY -STA CATARINA/MSB'];
   var VENDEDORES = [
@@ -42,7 +41,14 @@
     { t: 'SEM COMISSIONAMENTO',                  v: 'VENDSEMCOM' }
   ];
   // Empresa emissora do pedido (grupo Biomedical): escolhida pelo operador.
-  var EMPRESAS = ['BIO', 'MSB', 'BIO.ID'];
+  // RECORTE MSB (04/11/2026, pedido do dono): no portal da MSB o pedido sai
+  // SEMPRE pela empresa MSB e com a área demandante PEDIDOINTELIGENTE (MSB) —
+  // os dois campos ficam fixos na tela. Caso e Portal saíram da tela e seguem
+  // no JSON do flow (Caso = N/D ou o nº que veio da cotação; Portal = o da
+  // cotação ou NAO INFORMADO).
+  var EMPRESA_FIXA = 'MSB';
+  var AREA_FIXA    = 'PEDIDOINTELIGENTE (MSB)';
+  var EMPRESAS = [EMPRESA_FIXA];
 
   // ── Estado ──────────────────────────────────────────────────────
   var S = {
@@ -372,28 +378,44 @@
       }).join('');
   }
 
+  // RECORTE MSB (04/11/2026): campo obrigatório que faltou fica em vermelho
+  // (rótulo e caixa) e a tela vai até o primeiro; preencher tira a marca
+  // (o ouvinte no init). ids = os campos que faltam (os outros perdem a marca).
+  function marcarFaltando(ids) {
+    Array.prototype.forEach.call(document.querySelectorAll('.pi-field.pi-falta'), function (f) { f.classList.remove('pi-falta'); });
+    ids.forEach(function (id) { var el = $(id), f = el && el.closest('.pi-field'); if (f) f.classList.add('pi-falta'); });
+    var primeiro = ids.length && $(ids[0]);
+    if (primeiro) {
+      try { primeiro.scrollIntoView({ behavior: 'smooth', block: 'center' }); } catch (e) { primeiro.scrollIntoView(); }
+      try { primeiro.focus({ preventScroll: true }); } catch (e) {}
+    }
+  }
+
   function confirmarCabecalho() {
     // flag "Data de Vencimento do Pagamento": ligada, o operador informa a DATA e
     // não escolhe condição de pagamento (que vai VAZIA no JSON do flow).
     var usaVenc = $('cab-venc-flag').checked;
+    // RECORTE MSB: Empresa e Área Demandante são fixas e Portal saiu da tela —
+    // não entram na conferência
     var obrig = [
-      ['cab-empresa',   'Empresa'],
       ['cab-condpag',   'Condição de Pagamento'],
       ['cab-frete',     'Frete'],
       ['cab-condent',   'Condição de Entrega'],
       ['cab-tipovenda', 'Tipo de Venda'],
-      ['cab-area',      'Área Demandante'],
-      ['cab-portal',    'Portal'],
       ['cab-operador',  'Operador']
     ];
-    if (usaVenc) obrig[1] = ['cab-venc', 'Data de Vencimento do Pagamento'];
-    var faltando = obrig.filter(function (f) { return !$(f[0]).value.trim(); }).map(function (f) { return f[1]; });
+    if (usaVenc) obrig[0] = ['cab-venc', 'Data de Vencimento do Pagamento'];
     var consultiva = $('cab-area').value === 'PEDIDOINTELIGENTE (VENDA CONSULTIVA)';
-    if (consultiva && !$('cab-vendedor').value) faltando.push('Vendedor');
-    if (faltando.length) { msg('cab', 'Preencha: <strong>' + esc(faltando.join(', ')) + '</strong>.', 'err'); return; }
+    if (consultiva) obrig.push(['cab-vendedor', 'Vendedor']);
+    var faltam = obrig.filter(function (f) { return !String($(f[0]).value || '').trim(); });
+    marcarFaltando(faltam.map(function (f) { return f[0]; }));
+    if (faltam.length) {
+      msg('cab', 'Preencha os campos em vermelho: <strong>' + esc(faltam.map(function (f) { return f[1]; }).join(', ')) + '</strong>.', 'err');
+      return;
+    }
 
     S.cab = {
-      empresa:         $('cab-empresa').value,
+      empresa:         EMPRESA_FIXA,
       cnpj:            S.cliente.cnpj,
       codCliente:      S.cliente.codigo,
       nomeCliente:     S.cliente.nome,
@@ -407,10 +429,10 @@
       frete:           $('cab-frete').value,
       condicaoEntrega: $('cab-condent').value,
       tipoVenda:       $('cab-tipovenda').value,
-      areaDemandante:  $('cab-area').value,
+      areaDemandante:  AREA_FIXA,
       vendedor:        consultiva ? $('cab-vendedor').value : 'NAO INFORMADO',
       caso:            $('cab-caso').value.trim() || 'N/D',
-      portal:          $('cab-portal').value,
+      portal:          $('cab-portal').value || 'NAO INFORMADO',
       observacao:      $('cab-obs').value.trim(),
       observacaoNota:  $('cab-obsnota').value.trim(), // vazia = o flow não cria a nota
       operador:        $('cab-operador').value.trim()
@@ -932,7 +954,7 @@
       ['Pagamento Antecipado', c.pagamentoAntecipado ? 'Sim' : 'Não'],
       ['Frete', c.frete], ['Condição de Entrega', c.condicaoEntrega],
       ['Tipo de Venda', c.tipoVenda], ['Área Demandante', c.areaDemandante],
-      ['Vendedor', c.vendedor], ['Caso', c.caso], ['Portal', c.portal],
+      ['Vendedor', c.vendedor],
       ['Observação', c.observacao || '—'], ['Observação na Nota', c.observacaoNota || '—'],
       ['Operador', c.operador],
       ['PDF anexado', S.pdf ? S.pdf.filename : '(sem PDF — pedido manual)']
@@ -1267,11 +1289,24 @@
     popularSelect('cab-frete',     FRETES,         'Escolha o frete');
     popularSelect('cab-condent',   COND_ENTREGA,   'Escolha a condição de entrega');
     popularSelect('cab-tipovenda', TIPOS_VENDA,    'Escolha o tipo de venda');
-    popularSelect('cab-area',      AREAS,          'Escolha a área demandante');
+    popularSelect('cab-area',      [AREA_FIXA],    'Escolha a área demandante');
     popularSelect('cab-portal',    PORTAIS,        'Escolha o portal');
     popularSelect('cab-vendedor',  VENDEDORES,     'Escolha o vendedor');
     $('cab-caso').value = 'N/D';
     $('cab-obsnota').value = '';
+    // RECORTE MSB: empresa e área fixas (aparecem, mas não se escolhe) e o
+    // portal, fora da tela, começa em NAO INFORMADO (a cotação pode trocar)
+    $('cab-empresa').value = EMPRESA_FIXA; $('cab-empresa').disabled = true;
+    $('cab-area').value = AREA_FIXA;       $('cab-area').disabled = true;
+    $('cab-portal').value = 'NAO INFORMADO';
+    // preencheu um campo marcado em vermelho: a marca sai
+    ['input', 'change'].forEach(function (ev) {
+      document.addEventListener(ev, function (e) {
+        var f = e.target && e.target.closest && e.target.closest('.pi-field.pi-falta');
+        if (!f) return;
+        if (e.target.type === 'checkbox' || String(e.target.value || '').trim()) f.classList.remove('pi-falta');
+      });
+    });
 
     // operador = usuário logado no portal (preenche quando o auth resolver)
     var tent = 0, timer = setInterval(function () {
