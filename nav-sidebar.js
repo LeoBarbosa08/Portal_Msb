@@ -189,6 +189,21 @@ if (!window._bmPerfilSheetLoaded && !window._bmPerfilSheetInjected) {
     if (typeof window.bmRecontarPill === 'function') window.bmRecontarPill();
   }
   window.bmPodarRestritos = podarRestritos;
+  // 04/11/26: link para módulo restrito que a tela monta DEPOIS de carregar
+  // (o Sales Playbook monta os atalhos dele, com o PI · Pedido) também sai:
+  // qualquer âncora nova passa pela mesma poda (agrupada, no máximo 1x/150 ms)
+  if (window.MutationObserver) {
+    var tmPoda = null;
+    new MutationObserver(function (muts) {
+      if (tmPoda || !email()) return;
+      var temLink = muts.some(function (m) {
+        return Array.prototype.some.call(m.addedNodes || [], function (n) {
+          return n.nodeType === 1 && (n.tagName === 'A' || (n.querySelector && n.querySelector('a[href]')));
+        });
+      });
+      if (temLink) tmPoda = setTimeout(function () { tmPoda = null; podarRestritos(); }, 150);
+    }).observe(document.documentElement, { childList: true, subtree: true });
+  }
   window.bmRestritoPorEmail = function(id){ id = String(id||'').toLowerCase(); return restrito(id) && !!email() && !allowed(id); };
   // porta do login (auth.js): roda com o e-mail conhecido e ANTES de a tela aparecer
   (window.__bmGates = window.__bmGates || []).push(function(){ podarRestritos(); return Promise.resolve(); });

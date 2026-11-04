@@ -315,7 +315,7 @@ e Venda Consultiva (os outros dois submódulos do CRM de lá) não vieram.
   no guia (`script.js`) e na home (`index.html`).
 - O botão de mandar o pedido ao **PI · Pedido** leva a uma página que, na MSB,
   ainda é só do dono (ver "PI · Pedido de volta"): para a equipe, abrir o PI.
-- `nav-sidebar.js?v=79`, `customer-service.css?v=4`,
+- `nav-sidebar.js?v=80` (a `v=79` foi a da poda do PI, da master), `customer-service.css?v=4`,
   `licitacao-funil-vendas.css?v=19` em todas as páginas; `sw.js` — cache
   `bm-comest-v8`.
 - Teste local: o `cot-teste-server.js` do completo, copiado para `.claude/`
