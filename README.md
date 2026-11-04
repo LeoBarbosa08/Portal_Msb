@@ -17,7 +17,7 @@ no portal completo e vice-versa.
 | Área | Páginas |
 |---|---|
 | Comercial | Visão geral · Sales Report (6 abas) · Negociações + Analítico · Cotações (reservado ao dono, como no completo) · FCA · Sales Playbook · Materiais · Tabela de Preços |
-| Comercial · agentes | Dossiê de Visita · PI · Pedido · PI · Consignação · PI · Consignação (INCOMPLETO, em testes) · Agente de Cotações · Agente Comercial |
+| Comercial · agentes | Dossiê de Visita · PI · Pedido (no menu, só para o dono — ver "PI · Pedido de volta") · PI · Consignação · PI · Consignação (INCOMPLETO, em testes) · Agente de Cotações · Agente Comercial |
 | Estoque | Visão geral · Gestão de Estoque (Saldo, Ruptura, Validade Curta, Movimentações) · Gestão de Consignação (Saldo Consignado, Saldo por Nota, Devoluções, Rastreabilidade, GMROI) · Perdas · Consignado |
 | Estoque · agentes | Agente de Estoque |
 | Contábil | Visão geral · Gestão de Custos SG&A (só a MSB) |
@@ -190,6 +190,37 @@ DRE, Margem de Contribuição e o Agente Contábil do completo **não vieram**.
   (a regra pura ficou, como as do completo). A fila no blob é do portal
   completo e continua lá, intacta. `PAGINAS_FORA` ganhou `estoque-vigia`.
 - `sw.js` — cache `bm-comest-v6`.
+
+### PI · Pedido de volta, só do dono (04/11/2026)
+
+Pedido do dono: trazer o PI · Pedido do portal completo (`LeoBarbosa08/Claude.rep`
+`6eab8f9`, de 04/11) para o Comercial da MSB, visível **só para ele**.
+
+- **Atualizado com o completo** (cores e nomes da MSB mantidos):
+  `pedido-inteligente.js` (pedido registrado à mão na cotação, sem PDF, de
+  21/10; endereço, e-mail, observação, condição de pagamento e frete da
+  cotação nos campos vazios, de 22/10), `customer-service-pi.js` (aceita a
+  entrega sem PDF), `api/pedido-extrair` + `api/shared/cot-id.js` (número da
+  cotação pelo rótulo ID / Identificador do PDF) e `voz-pbi.js` (o token do
+  Power BI renova sozinho — antes dava 403 depois de ~1 h na página).
+  `docs/pedido-inteligente.md` veio junto, como referência.
+- **No menu do Comercial**, seção Agentes, e no cartão "Agentes de IA" da
+  visão geral (`nav-sidebar.js`, `agen`).
+- **Só do dono** — as duas contas dele (`leonardo.barbosa@` e `ia@`):
+  - `nav-sidebar.js` — `pedido-inteligente` entrou no gate por e-mail, com
+    lista própria (`SO_DONO`/`DONO_PI`). Para os outros somem o link, a seção
+    AGENTES vazia, o cartão e a contagem "1 agente IA"; abrir a página pelo
+    endereço dá "Módulo indisponível".
+  - `api/pedido-enviar` — `exigirDono`: só lança no Dynamics com id token
+    validado de uma das duas contas (401/403 para o resto). `pedido-extrair` e
+    `pedido-lotes` seguem por área, porque Cotações e PI · Consignação usam.
+  - Fica **fora da busca** (`MSB_VISIVEIS` do `portal-catalogo.js`): a busca da
+    home não conhece o gate por e-mail e mostraria o nome para todo mundo.
+- Para abrir para a equipe: tirar `pedido-inteligente` do gate e do `SO_DONO`
+  no `nav-sidebar.js` e o `exigirDono` do `api/pedido-enviar`.
+- Não veio o PI · Pedido (TESTE) (`pi-pedido-teste` + `api/pi-aprovacao`, a
+  alçada de aprovação de remessa): no completo ele está oculto para todos.
+- `nav-sidebar.js?v=78` em todas as páginas; `sw.js` — cache `bm-comest-v7`.
 
 ### Identidade visual MSB (20/10/2026)
 

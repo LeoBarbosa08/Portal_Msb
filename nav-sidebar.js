@@ -130,30 +130,61 @@ if (!window._bmPerfilSheetLoaded && !window._bmPerfilSheetInjected) {
     //   um redirecionamento, não casa). É SÓ do dono, a pedido dele: o
     //   /api/cot-* também só aceita o e-mail dele (DONO em
     //   api/shared/cot-motor.js) — não há equipe, variável nem admin que abra.
+    //
+    // 04/11/26 — RECORTE MSB: PI · Pedido volta ao menu do Comercial (agentes)
+    //   atualizado com o do portal completo, SÓ PARA O DONO (pedido dele:
+    //   "deixe visível somente para mim"). Vale para as DUAS contas dele
+    //   (DONO_PI abaixo, as mesmas de AREAS_RESERVADAS no api/shared/auth.js).
+    //   O lançamento no Dynamics (/api/pedido-enviar) também só aceita essas
+    //   contas. Para abrir para a equipe: tirar daqui, de SO_DONO e do
+    //   DONOS_PI do api/pedido-enviar/index.js.
+    'pedido-inteligente',
   ].forEach(function (id) { RESTRICTED[id] = 1; });
+  // módulo restrito com lista própria de contas (o resto usa só o ALLOWED)
+  var DONO_PI = ['leonardo.barbosa@biomedical.com.br', 'ia@biomedical.com.br'];
+  var SO_DONO = { 'pedido-inteligente': DONO_PI };
 
   function fileOf(href){ return String(href||'').split('/').pop().split('#')[0].split('?')[0].replace(/\.html$/i,'').toLowerCase(); }
   function email(){ return ((window._portalUser && window._portalUser.email) || '').trim().toLowerCase(); }
-  function allowed(){ return email() === ALLOWED; }
+  // o e-mail logado pode abrir ESTE módulo restrito?
+  function allowed(id){ var em = email(), lista = SO_DONO[id]; return lista ? lista.indexOf(em) >= 0 : em === ALLOWED; }
   function restrito(id){ return !!RESTRICTED[id] || /^comercial-cot-/.test(id); }
 
   // 0) quem NÃO é o autorizado nem vê o link: some do menu lateral, dos cards
   //    do departamento e de onde mais houver âncora. Só poda com o e-mail JÁ
   //    conhecido — antes do login nada sai (senão o próprio dono perdia o link).
   function podarRestritos(){
-    if (!email() || allowed() || !document.querySelectorAll) return;
+    if (!email() || !document.querySelectorAll) return;
     var tirou = false;
     Array.prototype.slice.call(document.querySelectorAll('a[href]')).forEach(function(a){
-      if (restrito(fileOf(a.getAttribute('href')))) { a.remove(); tirou = true; }
+      var id = fileOf(a.getAttribute('href'));
+      if (restrito(id) && !allowed(id)) { a.remove(); tirou = true; }
     });
     if (!tirou) return;
     Array.prototype.slice.call(document.querySelectorAll('.area-sidebar nav .sb-group')).forEach(function(g){
       if (!g.querySelector('.sb-children a[href]')) g.remove();
     });
+    // seção do menu (AGENTES…) que ficou sem nenhum link: sai o título e o divisor
+    Array.prototype.slice.call(document.querySelectorAll('.area-sidebar nav .sb-section')).forEach(function(s){
+      var el = s.nextElementSibling, tem = false;
+      while (el && !el.classList.contains('sb-section') && !el.classList.contains('sb-divider')) {
+        if (el.tagName === 'A' || (el.querySelector && el.querySelector('a[href]'))) { tem = true; break; }
+        el = el.nextElementSibling;
+      }
+      if (tem) return;
+      var antes = s.previousElementSibling;
+      if (antes && antes.classList.contains('sb-divider')) antes.remove();
+      s.remove();
+    });
+    // bloco "Agentes de IA" da visão geral do dept (portal-motion.js) que ficou vazio
+    ['bm3-agentes', 'bm3-automacoes'].forEach(function(bid){
+      var b = document.getElementById(bid);
+      if (b && !b.querySelector('.modulo-card')) b.remove();
+    });
     if (typeof window.bmRecontarPill === 'function') window.bmRecontarPill();
   }
   window.bmPodarRestritos = podarRestritos;
-  window.bmRestritoPorEmail = function(id){ return restrito(String(id||'').toLowerCase()) && !!email() && !allowed(); };
+  window.bmRestritoPorEmail = function(id){ id = String(id||'').toLowerCase(); return restrito(id) && !!email() && !allowed(id); };
   // porta do login (auth.js): roda com o e-mail conhecido e ANTES de a tela aparecer
   (window.__bmGates = window.__bmGates || []).push(function(){ podarRestritos(); return Promise.resolve(); });
   document.addEventListener('DOMContentLoaded', function(){ setTimeout(podarRestritos, 0); });
@@ -182,16 +213,18 @@ if (!window._bmPerfilSheetLoaded && !window._bmPerfilSheetInjected) {
   // 1) clique em link para módulo restrito (sidebar, cards, etc.) quando não autorizado
   document.addEventListener('click', function(e){
     var a = e.target.closest && e.target.closest('a[href]'); if (!a) return;
-    if (restrito(fileOf(a.getAttribute('href'))) && !allowed()) { e.preventDefault(); e.stopPropagation(); show(false); }
+    var id = fileOf(a.getAttribute('href'));
+    if (restrito(id) && !allowed(id)) { e.preventDefault(); e.stopPropagation(); show(false); }
   }, true);
 
   // 2) abrir direto uma página restrita: espera o e-mail (auth.js) e bloqueia se não for o autorizado.
   //    Como PORTA do login, o bloqueio entra antes de a tela aparecer (e cobre a página);
   //    o laço abaixo continua como rede para quando a porta não for chamada.
-  if (restrito(fileOf(location.pathname))) {
+  var aqui = fileOf(location.pathname);
+  if (restrito(aqui)) {
     (window.__bmGates = window.__bmGates || []).push(function(){
       var em = email();
-      if (em && em !== ALLOWED) {
+      if (em && !allowed(aqui)) {
         var st = document.createElement('style');
         st.textContent = 'body > *:not(#bm-ind-overlay):not(#portal-auth-screen):not(script):not(style){visibility:hidden !important}';
         (document.head || document.documentElement).appendChild(st);
@@ -200,11 +233,11 @@ if (!window._bmPerfilSheetLoaded && !window._bmPerfilSheetInjected) {
       return Promise.resolve();
     });
   }
-  if (restrito(fileOf(location.pathname))) {
+  if (restrito(aqui)) {
     var n = 0, iv = setInterval(function(){
       n++;
       var em = email();
-      if (em) { clearInterval(iv); if (em !== ALLOWED) show(true); }
+      if (em) { clearInterval(iv); if (!allowed(aqui)) show(true); }
       else if (n > 600) { clearInterval(iv); }   // ~120s aguardando o login concluir
     }, 200);
   }
@@ -696,7 +729,12 @@ if (!window._bmPerfilSheetLoaded && !window._bmPerfilSheetInjected) {
         {id:'comercial-tabela-precos', label:'Tabela de Preços', href:'comercial-tabela-precos.html', icon:I.dollar},
       ],
       auto:[],
-      agen:[],
+      // 04/11/26: PI · Pedido voltou, SÓ PARA O DONO (gate SO_DONO no topo
+      // deste arquivo): para os outros o link, o cartão de agente da visão
+      // geral do Comercial e a seção AGENTES somem. Fica FORA da busca
+      // (MSB_VISIVEIS do portal-catalogo.js) — a busca da home não conhece o
+      // gate por e-mail e mostraria o nome para todo mundo.
+      agen:[{l:'PI · Pedido',h:'pedido-inteligente.html'}],
       atal:[]
     },
 

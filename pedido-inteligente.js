@@ -1165,9 +1165,20 @@
     var c = e.contato || {};
     bannerCS('<span style="font-size:18px;line-height:1.2">' + O.icone + '</span><div><strong>Pedido ' + O.rotulo + ' ' + esc(e.numero) + '</strong> · ' + O.modulo + '<br>' +
       esc(c.nome || c.email || (e.conta && e.conta.nome) || 'cliente') + (c.nome && c.email ? ' &lt;' + esc(c.email) + '&gt;' : '') + (e.assunto ? ' · ' + esc(e.assunto) : '') +
-      '<br><span style="opacity:.8">Anexo: ' + esc(e.arquivo || '') + (e.extracao ? ' · já lido ' + (tipo === 'cot' ? 'na Gestão de Cotações' : 'no Customer Service') : '') + '</span></div>', 'info');
-    var file = new File([CSPI.b64ParaBytes(e.base64)], e.arquivo || 'pedido.pdf', { type: e.tipo || 'application/pdf' });
-    if (e.extracao && e.extracao.dados) {
+      '<br><span style="opacity:.8">' + (e.manual && !e.base64 ? 'Sem PDF — pedido registrado à mão na cotação: o comprador e os itens ganhos já vêm preenchidos'
+        : 'Anexo: ' + esc(e.arquivo || '') + (e.extracao ? ' · já lido ' + (tipo === 'cot' ? 'na Gestão de Cotações' : 'no Customer Service') : '')) + '</span></div>', 'info');
+    if (e.manual && !e.base64) {
+      // 21/10/2026: o pedido à mão da cotação — como o "Preencher manualmente",
+      // mas já com o CNPJ, a OC e os itens ganhos (o PI valida tudo no BI)
+      S.pdf = null;
+      S.ext = (e.extracao && e.extracao.dados) || {};
+      S.avisos = [];
+      msg('up', '');
+      aplicarExtracao();
+      goStep('cli');
+      if (S.cliente.cnpj) validarCNPJ();
+    } else if (e.extracao && e.extracao.dados) {
+      var file = new File([CSPI.b64ParaBytes(e.base64)], e.arquivo || 'pedido.pdf', { type: e.tipo || 'application/pdf' });
       // a leitura já foi feita no caso (mesmo leitor de PDF + mesma IA): não paga de novo
       S.pdf = { filename: file.name, base64: e.base64 };
       S.ext = e.extracao.dados;
@@ -1177,7 +1188,7 @@
       goStep('cli');
       if (S.cliente.cnpj) validarCNPJ();
     } else {
-      await handleFile(file);
+      await handleFile(new File([CSPI.b64ParaBytes(e.base64)], e.arquivo || 'pedido.pdf', { type: e.tipo || 'application/pdf' }));
     }
     var em = $('cab-email');
     if (c.email && em && (!em.value || em.value === 'NAO INFORMADO')) em.value = c.email;
@@ -1201,6 +1212,25 @@
     escolherOpcao('cab-empresa', e.empresa);
     var oc = $('cab-oc');
     if (e.oc && oc && !oc.value) oc.value = e.oc;
+    // 22/10/2026 (pedido do usuário): o resto do que a cotação sabe — endereço,
+    // e-mail, observação, condição de pagamento e frete — entra nos campos
+    // VAZIOS (o que o PDF trouxe fica). A condição e o frete só quando batem
+    // com uma opção do PI (FOB = "FOB - DESTINATARIO"); senão, ficam de dica
+    var q = e.cotacao || {};
+    var vazio = function (el) { return el && (!el.value || el.value === 'NAO INFORMADO'); };
+    [['cab-endereco', q.endereco], ['cab-email', q.email], ['cab-obs', q.observacao]].forEach(function (x) { var el = $(x[0]); if (x[1] && vazio(el)) el.value = x[1]; });
+    var cp = $('cab-condpag');
+    if (q.pagamento && cp && !cp.value) { escolherOpcao('cab-condpag', q.pagamento); if (!cp.value) dicaCondPag(q.pagamento); }
+    var fr = $('cab-frete');
+    if (q.frete && fr && !fr.value) {
+      if (/\bfob\b/i.test(q.frete)) escolherOpcao('cab-frete', 'FOB - DESTINATARIO');
+      if (!fr.value) {
+        var d = $('cab-frete-dica');
+        if (!d) { d = document.createElement('div'); d.className = 'pi-dica'; d.id = 'cab-frete-dica'; fr.insertAdjacentElement('afterend', d); }
+        d.innerHTML = 'Frete na cotação: <strong>' + esc(q.frete) + '</strong>' + (/\bcif\b/i.test(q.frete) ? ' — escolha CIF com ou sem valor.' : ' — selecione a opção correspondente.');
+        d.hidden = false;
+      }
+    }
   }
 
   // pedido enviado: o caso fica sabendo (e a aba do Customer Service ou da

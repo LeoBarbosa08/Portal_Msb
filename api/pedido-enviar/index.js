@@ -27,6 +27,21 @@
 const auth = require('../shared/auth');
 const http = require('../shared/http');
 
+// RECORTE MSB (04/11/26): no portal da MSB o PI · Pedido é SÓ do dono (pedido
+// dele: "deixe visível somente para mim"). O nav-sidebar.js esconde o menu e
+// bloqueia a página para os outros (SO_DONO); aqui fecha o lançamento no
+// Dynamics. Fail-closed como o /api/cot-*: só passa id token VALIDADO de uma
+// das duas contas dele (as mesmas de AREAS_RESERVADAS em shared/auth.js) —
+// com o AUTH_ENFORCE desligado a identidade legada vem de header, e header
+// qualquer um escreve. Abrir para a equipe = tirar este bloco e o SO_DONO.
+const DONOS_PI = ['leonardo.barbosa@biomedical.com.br', 'ia@biomedical.com.br'];
+async function exigirDono(req) {
+  const r = await auth.requireUser(req);
+  const email = String((r.user && r.user.email) || '').trim().toLowerCase();
+  if (!r.validated || !email) { const e = new Error('Entre com a sua conta Microsoft para usar o PI · Pedido.'); e.status = 401; throw e; }
+  if (DONOS_PI.indexOf(email) < 0) { const e = new Error('O PI · Pedido é de acesso restrito.'); e.status = 403; throw e; }
+}
+
 // A URL do gatilho contém a assinatura (sig) — é SEGREDO. Vem só da env var.
 const FLOW_URL = process.env.PEDIDO_FLOW_URL || '';
 
@@ -130,6 +145,7 @@ module.exports = async function (context, req) {
 
   try {
     await auth.requireArea(req, ['comercial', 'estoque']); // 401/403 quando AUTH_ENFORCE ligado
+    await exigirDono(req);
 
     if (!FLOW_URL) { const e = new Error('PEDIDO_FLOW_URL ausente'); e.status = 500; throw e; }
 

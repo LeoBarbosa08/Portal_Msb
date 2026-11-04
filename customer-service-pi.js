@@ -63,7 +63,8 @@
   window.CSPI = {
     guardar: function (entrega) {
       var e = Object.assign({}, entrega, { criadoEm: Date.now() });
-      if (!e.numero || !e.base64) return Promise.reject(new Error('entrega sem número ou sem arquivo'));
+      // manual: o pedido à mão da cotação (21/10/2026) — vai sem PDF, só a leitura pronta
+      if (!e.numero || (!e.base64 && !(e.manual && e.extracao))) return Promise.reject(new Error('entrega sem número ou sem arquivo'));
       return limpar().then(function () { return tx('readwrite', function (s) { s.put(e); }); });
     },
     ler: function (numero) {

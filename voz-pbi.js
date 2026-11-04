@@ -36,14 +36,30 @@
     if (rr.ok) { var j = await rr.json(); if (j && j.datasetId) { _dsId = j.datasetId; return _dsId; } }
     throw new Error('Não consegui resolver o dataset do Comercial.');
   }
+  // o token sempre válido: o MSAL devolve o do cache e renova sozinho perto de
+  // vencer (forcar = renova já). 22/10/2026: o token ficava guardado para
+  // sempre — depois de ~1 h na página o Power BI respondia 403 sem corpo até o
+  // F5 (a conferência dos códigos das Cotações). Sem popup: a consulta roda
+  // fora do clique; sem renovar em silêncio, segue com o que tem
+  async function renovar(forcar) {
+    var conta = (_pbi.getActiveAccount && _pbi.getActiveAccount()) || _pbi.getAllAccounts()[0];
+    if (!conta) return _token;
+    try { var r = await _pbi.acquireTokenSilent({ scopes: PBI.scopes, account: conta, forceRefresh: !!forcar }); _token = r.accessToken; }
+    catch (e) { /* o erro do Power BI diz o que fazer */ }
+    return _token;
+  }
   async function query(dax) {
-    if (!_token) await connect();
+    if (!_token || !_pbi) await connect(); else await renovar(false);
     if (!_dsId) await resolveDataset();
     var body = JSON.stringify({ queries: [{ query: dax }], serializerSettings: { includeNulls: true } });
-    var headers = { Authorization: 'Bearer ' + _token, 'Content-Type': 'application/json' };
-    var r = await fetch('https://api.powerbi.com/v1.0/myorg/groups/' + PBI.workspaceId + '/datasets/' + _dsId + '/executeQueries', { method: 'POST', headers: headers, body: body });
+    var url = 'https://api.powerbi.com/v1.0/myorg/groups/' + PBI.workspaceId + '/datasets/' + _dsId + '/executeQueries';
+    var post = function () { return fetch(url, { method: 'POST', headers: { Authorization: 'Bearer ' + _token, 'Content-Type': 'application/json' }, body: body }); };
+    var r = await post();
+    // 401/403: o token venceu (o Power BI responde sem corpo) — renova e tenta de novo, uma vez
+    if (r.status === 401 || r.status === 403) { await renovar(true); r = await post(); }
     var txt = await r.text();
-    if (!r.ok) throw new Error('Power BI ' + r.status + ': ' + txt.substring(0, 200));
+    if (!r.ok) throw new Error('Power BI ' + r.status + ': ' + (txt.trim() ? txt.substring(0, 200)
+      : r.status === 401 || r.status === 403 ? 'o acesso ao Power BI venceu e não renovou sozinho — recarregue a página (F5)' : 'sem detalhe'));
     var d = JSON.parse(txt);
     if (d.error) throw new Error('Power BI: ' + (d.error.message || 'erro'));
     return d.results[0].tables[0].rows;

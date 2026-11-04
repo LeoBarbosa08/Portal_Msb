@@ -196,7 +196,7 @@ const COTACAO_PROMPT = `Você extrai dados de COTAÇÕES de PORTAIS DE COMPRAS h
 
 REGRAS DE EXTRAÇÃO:
 - portal: o nome do portal de compras que gerou o documento — pelo logotipo escrito, cabeçalho, rodapé, URL ou e-mail (ex.: "bionexo.com" -> "Bionexo"). Use o nome como na lista de PORTAIS CONHECIDOS quando for um deles. "" se não der para saber.
-- numeroCotacao: o número/ID da cotação NO PORTAL ("Cotação nº", "ID da cotação", "Nº do pedido de cotação", "Processo"). Só o número principal, sem pontos de milhar. "" se não houver.
+- numeroCotacao: o NÚMERO DA COTAÇÃO no portal — quase sempre é o ID / IDENTIFICADOR da cotação. Procure, nesta ordem: "ID da cotação", "Identificador da cotação", "Nº / Número / Código da cotação", "Cotação nº", "Pedido de cotação nº", "ID" ou "Identificador" sozinhos no cabeçalho (ex.: "ID: 668804034" no relatório da Bionexo), "Cotação:"; só sem nenhum desses, "Processo". Só o número (sem o rótulo e sem pontos de milhar). NÃO é CNPJ, CEP, telefone, data, ordem de compra, nº do item nem código de produto. Se a mensagem trouxer "ID DA COTAÇÃO — rótulos achados no texto", use um daqueles (o primeiro, salvo se o documento mostrar que é outro). "" se não houver.
 - cnpj / nomeCliente: do COMPRADOR (hospital, clínica, operadora, órgão — quem pediu a cotação). NUNCA os da Biomedical (19.848.316/0001-66), que aparece como fornecedora/participante.
 - cidade, uf: do comprador (uf com 2 letras). "" se não houver.
 - endereco, cep: o endereço do comprador (logradouro, número, bairro — sem a cidade/UF) e o CEP ("" se não houver).
@@ -258,6 +258,8 @@ const COTACAO_SCHEMA = {
 };
 
 const auth    = require('../shared/auth');
+// o número da cotação pelo rótulo ID / Identificador / Nº da cotação (21/10/26)
+const cotId   = require('../shared/cot-id');
 const http    = require('../shared/http');
 const revisar = require('../shared/pedido-revisar');
 
@@ -322,7 +324,7 @@ const handler = async function (context, req) {
     const codigosOk = cotacao && req.body && Array.isArray(req.body.codigosBiomedical)
       ? req.body.codigosBiomedical.map(function (c) { return String(c || '').replace(/[^A-Za-z0-9.\-\/ ]/g, '').trim().slice(0, 40); }).filter(Boolean).slice(0, 300) : [];
     const dica = codigosOk.length ? 'CÓDIGOS BIOMEDICAL CONFIRMADOS (aparecem neste PDF e existem no cadastro de produtos da Biomedical): ' + codigosOk.join(', ') + '\n\n' : '';
-    const userMsg = (filename ? 'NOME DO ARQUIVO: ' + filename + '\n\n' : '') + dica +
+    const userMsg = (filename ? 'NOME DO ARQUIVO: ' + filename + '\n\n' : '') + dica + (cotacao ? cotId.dica(texto) : '') +
                     (cotacao ? 'TEXTO DA COTAÇÃO DO PORTAL:\n' : consig ? 'TEXTO DO DOCUMENTO DE CONSIGNADO:\n' : 'TEXTO DA ORDEM DE COMPRA:\n') + texto.substring(0, MAXCHARS);
 
     const url = AOAI_ENDPOINT.replace(/\/$/, '') +
@@ -388,6 +390,13 @@ const handler = async function (context, req) {
         avisos = avisos.filter(function (a) { return a.tipo !== 'sem-valor'; });
         avisos.unshift({ item: -1, tipo: 'sem-precos', corrigido: false,
           texto: 'O PDF não traz preço em nenhum item — parece o pedido de cotação do comprador, ainda sem a resposta da Biomedical.' });
+      }
+      // o número da cotação: o ID / Identificador rotulado no PDF ganha do
+      // que a IA leu quando ela não achou ou leu outro número (com aviso)
+      if (cotacao && dados) {
+        const id = cotId.escolher(dados.numeroCotacao, texto);
+        dados.numeroCotacao = id.numero;
+        if (id.aviso) avisos.unshift({ item: -1, tipo: 'id-cotacao', corrigido: true, texto: id.aviso });
       }
       if (cortado) {
         // o corte era silencioso: item sumia do pedido sem ninguém saber por quê
