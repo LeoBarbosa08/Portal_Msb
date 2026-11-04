@@ -24,9 +24,26 @@
 // ================================================================
 
 const AOAI_ENDPOINT   = process.env.AOAI_ENDPOINT;
-const AOAI_KEY        = process.env.AOAI_KEY;
-const AOAI_DEPLOYMENT = process.env.AOAI_DEPLOYMENT || 'gpt-4o-mini';
-const AOAI_APIVER     = process.env.AOAI_APIVER || '2025-01-01-preview';
+// 04/11/2026 (MSB): o endereço do recurso vale venha como vier do Foundry — a
+// "URI de destino" inteira (/openai/deployments/...), o endpoint v1
+// (/openai/v1/) ou o do PROJETO (.services.ai.azure.com/api/projects/...):
+// fica só https://<recurso>.<domínio>; o do projeto vira o .openai.azure.com
+// do mesmo recurso (o caminho /openai/deployments/... é desse domínio)
+function baseAOAI(ep) {
+  const s = String(ep || '').trim();
+  const m = /^(https?:\/\/[^\/?#\s]+)/i.exec(s);
+  return (m ? m[1] : s.replace(/\/+$/, '')).replace(/\.services\.ai\.azure\.com$/i, '.openai.azure.com');
+}
+// o motivo que o Azure devolve no corpo do erro ({ error: { code, message } })
+function motivoAzure(texto) {
+  try {
+    const e = (JSON.parse(texto) || {}).error || {};
+    return [e.code, e.message].filter(Boolean).join(': ').substring(0, 220);
+  } catch (x) { return String(texto || '').trim().substring(0, 220); }
+}
+const AOAI_KEY        = String(process.env.AOAI_KEY || '').trim();
+const AOAI_DEPLOYMENT = String(process.env.AOAI_DEPLOYMENT || 'gpt-4o-mini').trim();
+const AOAI_APIVER     = String(process.env.AOAI_APIVER || '2025-01-01-preview').trim();
 // max_completion_tokens inclui os tokens de RACIOCÍNIO — por isso ele é maior
 // que a resposta em si. Mas CUIDADO: o Azure usa esse número para ESTIMAR o
 // custo do request contra a cota TPM do deployment, então um teto folgado
@@ -327,8 +344,8 @@ const handler = async function (context, req) {
     const userMsg = (filename ? 'NOME DO ARQUIVO: ' + filename + '\n\n' : '') + dica + (cotacao ? cotId.dica(texto) : '') +
                     (cotacao ? 'TEXTO DA COTAÇÃO DO PORTAL:\n' : consig ? 'TEXTO DO DOCUMENTO DE CONSIGNADO:\n' : 'TEXTO DA ORDEM DE COMPRA:\n') + texto.substring(0, MAXCHARS);
 
-    const url = AOAI_ENDPOINT.replace(/\/$/, '') +
-      '/openai/deployments/' + AOAI_DEPLOYMENT + '/chat/completions?api-version=' + AOAI_APIVER;
+    const url = baseAOAI(AOAI_ENDPOINT) +
+      '/openai/deployments/' + encodeURIComponent(AOAI_DEPLOYMENT) + '/chat/completions?api-version=' + encodeURIComponent(AOAI_APIVER);
 
     const payload = {
       messages: [
@@ -357,7 +374,11 @@ const handler = async function (context, req) {
           retryAfter: seg, details: text.substring(0, 200) } };
         return;
       }
-      context.res = { status: r.status, headers: cors, body: { error: 'Azure OpenAI ' + r.status, details: text.substring(0, 400) } };
+      // a tela mostra o "error": vai com o motivo do Azure e, no 404 (não achou
+      // a implantação ou o endereço), com o que o portal procurou — nada de chave
+      const motivo = motivoAzure(text);
+      const onde = r.status === 404 ? ' [procurei a implantação "' + AOAI_DEPLOYMENT + '" em ' + baseAOAI(AOAI_ENDPOINT) + ', api-version ' + AOAI_APIVER + ']' : '';
+      context.res = { status: r.status, headers: cors, body: { error: 'Azure OpenAI ' + r.status + (motivo ? ' — ' + motivo : '') + onde, details: text.substring(0, 400) } };
       return;
     }
     const j = JSON.parse(text);
