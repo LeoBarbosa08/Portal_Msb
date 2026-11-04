@@ -240,6 +240,10 @@ Pedido do dono: trazer o PI · Pedido do portal completo (`LeoBarbosa08/Claude.r
   procurado de novo com `REMOVEFILTERS('Empresas')` por dentro (só código e
   nome, nenhum número de venda); sem achar nem assim, a mensagem mostra
   códigos parecidos do cadastro.
+- **PDF ao lado** (04/11): como no Agente de Oportunidades do portal da BIO, o
+  PDF anexado fica à direita (pdf.js, uma página por canvas, zoom −/+, abrir em
+  nova aba, ocultar/mostrar), do PDF à Revisão. Abaixo de 1180px vai para baixo
+  do formulário. Pedido manual, sem PDF, não mostra nada.
 - Não veio o PI · Pedido (TESTE) (`pi-pedido-teste` + `api/pi-aprovacao`, a
   alçada de aprovação de remessa): no completo ele está oculto para todos.
 - `nav-sidebar.js?v=78` em todas as páginas; `sw.js` — cache `bm-comest-v7`.

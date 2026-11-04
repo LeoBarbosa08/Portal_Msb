@@ -188,7 +188,100 @@
       el.classList.toggle('atual', el.getAttribute('data-st') === id);
       el.classList.toggle('feito', i >= 0 && i < idx);
     });
+    PV.passo = id;
+    painelPdf();
     window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+
+  // ── PDF ao lado (RECORTE MSB, 04/11/2026, pedido do dono) ──────────
+  // Como no Agente de Oportunidades do portal da BIO: o PDF anexado fica à
+  // direita, para conferência, enquanto a pessoa preenche (do PDF à
+  // Revisão). Usa o pdf.js que a página já carrega para a leitura: cada
+  // página vira um canvas na largura do painel, com zoom −/+ (clicar no %
+  // volta a ajustar à largura). Sem pdf.js, abre num <iframe>. Pedido
+  // manual (sem PDF) não mostra nada.
+  var PV = { de: null, doc: null, carga: null, url: null, zoom: 0, escala: 1, vez: 0, larg: null, oculto: false, passo: 'up' };
+  function b64Bytes(b64) {
+    var bin = atob(String(b64 || '')), n = bin.length, u = new Uint8Array(n);
+    for (var i = 0; i < n; i++) u[i] = bin.charCodeAt(i);
+    return u;
+  }
+  function tamanhoPdf(b64) {
+    var kb = Math.max(1, Math.round(String(b64 || '').length * 3 / 4 / 1024));
+    return kb >= 1024 ? (kb / 1024).toFixed(1).replace('.', ',') + ' MB' : kb + ' KB';
+  }
+  function painelPdf() {
+    var lado = $('pi-pdf'), split = $('pi-split'), tg = $('pi-pdf-toggle');
+    if (!lado || !split) return;
+    var tem = !!(S.pdf && S.pdf.base64) && PV.passo !== 'ok';
+    if (tg) {
+      tg.hidden = !tem;
+      tg.textContent = PV.oculto ? 'Mostrar PDF' : 'Ocultar PDF';
+      tg.setAttribute('aria-expanded', PV.oculto ? 'false' : 'true');
+    }
+    var mostra = tem && !PV.oculto;
+    lado.hidden = !mostra;
+    split.classList.toggle('com-pdf', mostra);
+    if (!mostra) return;
+    var nm = $('pi-pdf-nome');
+    nm.textContent = S.pdf.filename + ' · ' + tamanhoPdf(S.pdf.base64);
+    nm.title = S.pdf.filename;
+    if (PV.de !== S.pdf) {          // PDF novo: abre de novo
+      if (PV.doc) { try { PV.doc.destroy(); } catch (e) {} }
+      if (PV.url) { try { URL.revokeObjectURL(PV.url); } catch (e) {} }
+      PV.de = S.pdf; PV.doc = null; PV.zoom = 0; PV.larg = null;
+      var bytes;
+      try { bytes = b64Bytes(S.pdf.base64); } catch (e) { $('pi-pdf-pags').innerHTML = '<div class="pi-pdf-car">Não consegui abrir o PDF.</div>'; return; }
+      PV.url = URL.createObjectURL(new Blob([bytes], { type: 'application/pdf' }));
+      $('pi-pdf-pags').innerHTML = '<div class="pi-pdf-car"><span class="pi-spin"></span> Abrindo o PDF…</div>';
+      PV.carga = window.pdfjsLib
+        ? window.pdfjsLib.getDocument({ data: bytes }).promise.then(function (d) { PV.doc = d; return d; })
+        : Promise.reject(new Error('pdf.js não carregou'));
+      var deste = PV.de;
+      PV.carga.then(function () { if (PV.de === deste) desenharPdfLado(true); })
+        .catch(function (e) { console.warn('[pedido] visor do PDF:', e); if (PV.de === deste) pdfIframe(); });
+    } else if (PV.doc) {
+      desenharPdfLado(false);       // só redesenha se a largura mudou
+    }
+  }
+  function pdfIframe() {
+    var p = $('pi-pdf-pags');
+    if (p && PV.url) p.innerHTML = '<iframe src="' + PV.url + '#navpanes=0&view=FitH" title="PDF anexado"></iframe>';
+  }
+  function desenharPdfLado(forcar) {
+    var box = $('pi-pdf-pags'), doc = PV.doc, lado = $('pi-pdf');
+    if (!box || !doc || !lado || lado.hidden) return;
+    var larg = Math.max(220, box.clientWidth - 28);
+    if (!forcar && !PV.zoom && PV.larg === larg) return;
+    PV.larg = PV.zoom ? null : larg;
+    var vez = ++PV.vez, dpr = Math.min(window.devicePixelRatio || 1, 2.5), limpou = false, cadeia = Promise.resolve();
+    for (var i = 1; i <= doc.numPages; i++) {
+      (function (n) {
+        cadeia = cadeia.then(function () { return vez === PV.vez ? doc.getPage(n) : null; }).then(function (pg) {
+          if (!pg || vez !== PV.vez) return;
+          var e1 = PV.zoom || (larg / pg.getViewport({ scale: 1 }).width);
+          if (n === 1) { PV.escala = e1; var pc = $('pi-pdf-pct'); if (pc) pc.textContent = Math.round(e1 * 100) + '%'; }
+          var vp = pg.getViewport({ scale: e1 * dpr });
+          var cv = document.createElement('canvas');
+          cv.width = Math.floor(vp.width); cv.height = Math.floor(vp.height);
+          cv.style.width = Math.floor(vp.width / dpr) + 'px'; cv.style.height = Math.floor(vp.height / dpr) + 'px';
+          cv.setAttribute('aria-label', 'Página ' + n + ' de ' + doc.numPages);
+          if (!limpou) { box.innerHTML = ''; limpou = true; }
+          box.appendChild(cv);
+          return pg.render({ canvasContext: cv.getContext('2d'), viewport: vp }).promise;
+        });
+      })(i);
+    }
+    return cadeia.catch(function (e) { console.warn('[pedido] visor do PDF:', e); });
+  }
+  function acaoPdfLado(id) {
+    if (id === 'mais' || id === 'menos') {
+      PV.zoom = Math.max(0.4, Math.min(4, Math.round(((PV.zoom || PV.escala) + (id === 'mais' ? 0.25 : -0.25)) * 4) / 4));
+      desenharPdfLado(true); return;
+    }
+    if (id === 'ajustar') { PV.zoom = 0; desenharPdfLado(true); return; }
+    if (id === 'abrir') { if (PV.url) window.open(PV.url, '_blank'); return; }
+    if (id === 'ocultar') { PV.oculto = true; painelPdf(); }
   }
 
   // ── Etapa 1 · PDF ───────────────────────────────────────────────
@@ -208,6 +301,7 @@
       msg('up', 'Lendo o PDF…', 'busy');
       var buf = await file.arrayBuffer();
       S.pdf = { filename: file.name, base64: bufToB64(buf) };
+      painelPdf();   // RECORTE MSB: o PDF já aparece à direita enquanto a IA lê
 
       var texto = '';
       try { texto = await pdfParaTexto(buf.slice(0)); } catch (e) { console.warn('[pedido] pdf.js:', e); }
@@ -1446,6 +1540,19 @@
     $('rev-voltar').addEventListener('click', function () { goStep(S.produtos.some(function (p) { return p.lotes && p.lotes.length; }) ? 'lotes' : 'prod'); });
     $('rev-enviar').addEventListener('click', enviarPedido);
     $('ok-novo').addEventListener('click', function () { window.location.reload(); });
+
+    // RECORTE MSB: o PDF ao lado — zoom, abrir em nova aba, ocultar/mostrar
+    document.addEventListener('click', function (e) {
+      var b = e.target && e.target.closest && e.target.closest('[data-pipdf]');
+      if (b) acaoPdfLado(b.getAttribute('data-pipdf'));
+    });
+    var tgPdf = $('pi-pdf-toggle');
+    if (tgPdf) tgPdf.addEventListener('click', function () { PV.oculto = !PV.oculto; painelPdf(); });
+    var tmPdf = null;
+    window.addEventListener('resize', function () {
+      clearTimeout(tmPdf);
+      tmPdf = setTimeout(function () { if (!PV.zoom) desenharPdfLado(false); }, 200);
+    });
 
     goStep('up');
     iniciarDoCS().catch(function (e) { console.warn('[pedido] Customer Service:', e); });
