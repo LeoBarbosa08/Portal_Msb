@@ -228,14 +228,15 @@ Pedido do dono: trazer o PI · Pedido do portal completo (`LeoBarbosa08/Claude.r
 - **IA da MSB**: implantação própria (`gpt-5-mini`) nas variáveis `AOAI_*` da
   Static Web App da MSB. O `/api/pedido-extrair` aceita o `AOAI_ENDPOINT` em
   qualquer formato do Foundry e a tela mostra o motivo do erro do Azure.
-- **Estoque do PI na MSB** (04/11): `/api/pedido-lotes` olha a empresa `msb`, o
-  depósito `ALMOX-PA` e só as localizações que começam com `PA.` (o mesmo
-  campo de sempre, Quantidade física disponível = `AvailPhysical`, somado por
-  lote, com a validade). Envs próprias, para não herdar as da BIO:
-  `ESTOQUE_MSB_EMPRESA`, `ESTOQUE_MSB_DEPOSITO`, `ESTOQUE_MSB_LOCALIZACAO`. A
-  conexão é a mesma da BIO (`D365_*`). Se a consulta falhar (ou a
-  `BioInventSums` não trouxer a localização), a etapa Produtos avisa uma vez
-  com o motivo e o 2º clique segue sem estoque.
+- **Estoque do PI na MSB** (04/11): `/api/pedido-lotes` olha a empresa `msb` e
+  o depósito `ALMOX-PA` **inteiro** (o mesmo campo de sempre, Quantidade física
+  disponível = `AvailPhysical`, somado por lote, com a validade). 05/11: saiu o
+  filtro de localização `PA.` — a reserva entra numa linha do depósito SEM
+  localização (−1 disponível) e ficava de fora, mostrando saldo a mais.
+  Envs próprias, para não herdar as da BIO: `ESTOQUE_MSB_EMPRESA`,
+  `ESTOQUE_MSB_DEPOSITO`, `ESTOQUE_MSB_LOCALIZACAO` (vazia = sem filtro). A
+  conexão é a mesma da BIO (`D365_*`). Se a consulta falhar, a etapa Produtos
+  avisa uma vez com o motivo e o 2º clique segue sem estoque.
 - **Códigos do PI na MSB** (04/11): o recorte MSB do `pbi-throttle.js` sumia
   com produto do cadastro (`'Produtos'[Cód. produto]`, modelo Comercial) — o
   51200 existe na MSB e voltava "não encontrado". O que sobra da conferência é
@@ -336,7 +337,7 @@ e Venda Consultiva (os outros dois submódulos do CRM de lá) não vieram.
   quantidade) dos itens, o painel "Estoque da venda" embaixo dos Itens cotados,
   na Nova oportunidade e na oportunidade em andamento (lendo e editando): o
   **mesmo estoque do PI · Pedido da MSB** (`/api/pedido-lotes` — Dynamics,
-  empresa `msb`, depósito ALMOX-PA, localizações `PA.*`, a Quantidade física
+  empresa `msb`, depósito ALMOX-PA inteiro, a Quantidade física
   disponível). Agrupa pelo código: Pedido × Temos × Falta e a Situação
   (completo, parcial, sem estoque, sem consulta); verde quando tem tudo,
   âmbar quando falta. `estoqueDe`/`htmlEstoque`/`pintarEstoque` em

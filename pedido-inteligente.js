@@ -819,7 +819,7 @@
       if (falhaEst && !S.estoqueAvisado) {
         S.estoqueAvisado = true;
         renderProdutos();
-        msg('prod', '<strong>Não consegui consultar o estoque</strong> (' + esc((est && est.deposito) || 'ALMOX-PA') + ', localizações ' + esc((est && est.localizacao) || 'PA.*') + '): ' +
+        msg('prod', '<strong>Não consegui consultar o estoque</strong> (depósito ' + esc((est && est.deposito) || 'ALMOX-PA') + ((est && est.localizacao) ? ', localizações ' + esc(est.localizacao) : '') + '): ' +
           esc(falhaEst) + '<br>Clique novamente para seguir sem a consulta de estoque.', 'err');
         return;
       }
