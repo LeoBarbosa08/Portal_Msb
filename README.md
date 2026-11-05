@@ -220,9 +220,9 @@ Pedido do dono: trazer o PI · Pedido do portal completo (`LeoBarbosa08/Claude.r
     home não conhece o gate por e-mail e mostraria o nome para todo mundo.
 - Para abrir para a equipe: tirar `pedido-inteligente` do gate e do `SO_DONO`
   no `nav-sidebar.js` e o `exigirDono` do `api/pedido-enviar`.
-- **Cabeçalho do PI na MSB** (04/11, pedido do dono): Empresa fixa em `MSB` e
-  Área Demandante fixa em `PEDIDOINTELIGENTE (MSB)` (aparecem, não se
-  escolhe); Caso e Portal saíram da tela (seguem no JSON do flow: Caso `N/D`
+- **Cabeçalho do PI na MSB** (04/11, pedido do dono): Empresa fixa em `MSB`,
+  Área Demandante fixa em `PEDIDOINTELIGENTE (MSB)` e (05/11) Tipo de Venda
+  fixo em `VENDA DIRETA` (aparecem, não se escolhe); Caso e Portal saíram da tela (seguem no JSON do flow: Caso `N/D`
   ou o nº da cotação, Portal `NAO INFORMADO` ou o da cotação). No Continuar, o
   obrigatório que falta fica em vermelho e a tela vai até ele.
 - **IA da MSB**: implantação própria (`gpt-5-mini`) nas variáveis `AOAI_*` da

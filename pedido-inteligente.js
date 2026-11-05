@@ -24,7 +24,6 @@
   ];
   var FRETES       = ['CIF - COM VALOR', 'CIF - SEM VALOR', 'FOB - DESTINATARIO'];
   var COND_ENTREGA = ['PADRÃO', 'URGENTE'];
-  var TIPOS_VENDA  = ['VENDA DIRETA', 'REMESSA EM CONSIGNAÇÃO - PERMANENTE', 'REMESSA EM CONSIGNAÇÃO - TEMPORÁRIA'];
   var PORTAIS      = ['APOIO COTACOES', 'BIONEXO', 'GTPLAN', 'NAO INFORMADO', 'SINTESE',
                       'SMART COMPRAS', 'UNIUBE', 'VSSUPPLY -STA CATARINA', 'VSSUPPLY -STA CATARINA/MSB'];
   var VENDEDORES = [
@@ -46,8 +45,10 @@
   // os dois campos ficam fixos na tela. Caso e Portal saíram da tela e seguem
   // no JSON do flow (Caso = N/D ou o nº que veio da cotação; Portal = o da
   // cotação ou NAO INFORMADO).
+  // 05/11/2026: o Tipo de Venda também — na MSB é SÓ VENDA DIRETA.
   var EMPRESA_FIXA = 'MSB';
   var AREA_FIXA    = 'PEDIDOINTELIGENTE (MSB)';
+  var TIPO_FIXO    = 'VENDA DIRETA';
   var EMPRESAS = [EMPRESA_FIXA];
 
   // ── Estado ──────────────────────────────────────────────────────
@@ -489,13 +490,12 @@
     // flag "Data de Vencimento do Pagamento": ligada, o operador informa a DATA e
     // não escolhe condição de pagamento (que vai VAZIA no JSON do flow).
     var usaVenc = $('cab-venc-flag').checked;
-    // RECORTE MSB: Empresa e Área Demandante são fixas e Portal saiu da tela —
-    // não entram na conferência
+    // RECORTE MSB: Empresa, Área Demandante e Tipo de Venda são fixos e
+    // Portal saiu da tela — não entram na conferência
     var obrig = [
       ['cab-condpag',   'Condição de Pagamento'],
       ['cab-frete',     'Frete'],
       ['cab-condent',   'Condição de Entrega'],
-      ['cab-tipovenda', 'Tipo de Venda'],
       ['cab-operador',  'Operador']
     ];
     if (usaVenc) obrig[0] = ['cab-venc', 'Data de Vencimento do Pagamento'];
@@ -522,7 +522,7 @@
       pagamentoAntecipado: $('cab-pagant').checked,
       frete:           $('cab-frete').value,
       condicaoEntrega: $('cab-condent').value,
-      tipoVenda:       $('cab-tipovenda').value,
+      tipoVenda:       TIPO_FIXO,
       areaDemandante:  AREA_FIXA,
       vendedor:        consultiva ? $('cab-vendedor').value : 'NAO INFORMADO',
       caso:            $('cab-caso').value.trim() || 'N/D',
@@ -1445,7 +1445,7 @@
     popularSelect('cab-condpag',   COND_PAGAMENTO, 'Escolha a condição de pagamento');
     popularSelect('cab-frete',     FRETES,         'Escolha o frete');
     popularSelect('cab-condent',   COND_ENTREGA,   'Escolha a condição de entrega');
-    popularSelect('cab-tipovenda', TIPOS_VENDA,    'Escolha o tipo de venda');
+    popularSelect('cab-tipovenda', [TIPO_FIXO],    'Escolha o tipo de venda');
     popularSelect('cab-area',      [AREA_FIXA],    'Escolha a área demandante');
     popularSelect('cab-portal',    PORTAIS,        'Escolha o portal');
     popularSelect('cab-vendedor',  VENDEDORES,     'Escolha o vendedor');
@@ -1455,6 +1455,7 @@
     // portal, fora da tela, começa em NAO INFORMADO (a cotação pode trocar)
     $('cab-empresa').value = EMPRESA_FIXA; $('cab-empresa').disabled = true;
     $('cab-area').value = AREA_FIXA;       $('cab-area').disabled = true;
+    $('cab-tipovenda').value = TIPO_FIXO;  $('cab-tipovenda').disabled = true;
     $('cab-portal').value = 'NAO INFORMADO';
     // preencheu um campo marcado em vermelho: a marca sai
     ['input', 'change'].forEach(function (ev) {
