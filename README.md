@@ -333,6 +333,23 @@ e Venda Consultiva (os outros dois submódulos do CRM de lá) não vieram.
   Venda Recorrente da BIO (`CONTATO_SETOR` em `cotacoes-base.js`) saiu: a
   proposta sai com o e-mail e o telefone de quem está logado. A área do PI vai
   como `PEDIDOINTELIGENTE (MSB)`.
+- **Nome, Fabricante e RMS do item (05/11/2026, pedido do dono)** — o
+  Fabricante, o RMS e a descrição da proposta vêm do Salesforce (Product2 pelo
+  código — `api/shared/cot-produtos.js`). Ajustes: (1) o `/api/cot-casos`
+  responde as consultas de cadastro (`?produtos=`, `?cliente=`,
+  `?codigoCliente=`) ANTES de olhar o armazenamento — sem o
+  `COT_MSB_BLOB_URL` elas voltavam vazias; (2) o código conferido com a
+  descrição vazia ganha o nome do cadastro do Power BI (`conferirItens`), na
+  Nova oportunidade e na edição da Gestão; (3) se o Salesforce não responder,
+  embaixo do item aparece o motivo ("Fabricante e RMS não vieram: …" —
+  `COT.sfMotivo`); (4) o PDF nunca sai sem o nome: descrição do Salesforce →
+  a do item → o nome do Power BI. Sem `SF_CLIENT_ID`/`SF_CLIENT_SECRET` na
+  Static Web App da MSB, o Fabricante e o RMS não vêm — copie as do portal da
+  BIO.
+- **"Código do produto" (05/11/2026, pedido do dono)** — no CRM o "Cód.
+  Biomedical" virou "Código do produto": cabeçalho dos itens (Nova
+  oportunidade e edição na Gestão), o exemplo do campo ("Código") e as
+  mensagens (código que não é produto nosso, lote sem código).
 - **Sem a fase A faturar (05/11/2026, pedido do dono)** — na MSB as fases são
   Cotada → Ganha / Perdida (e as da Amostra). Saíram a fase (`FASES` do
   `cot-motor.js` e do `cotacoes-base.js`), o cartão de KPI, o filtro, a coluna
@@ -363,7 +380,7 @@ e Venda Consultiva (os outros dois submódulos do CRM de lá) não vieram.
   ainda é só do dono (ver "PI · Pedido de volta"): para a equipe, abrir o PI.
 - `nav-sidebar.js?v=82` (a `v=79` foi a da poda do PI, da master), `customer-service.css?v=4`,
   `licitacao-funil-vendas.css?v=19` em todas as páginas; `sw.js` — cache
-  `bm-comest-v12`.
+  `bm-comest-v14`.
 - Teste local: o `cot-teste-server.js` do completo, copiado para `.claude/`
   com `COT_MSB_BLOB_URL` e os exemplos em `COT-MSB-…`:
   `node .claude/cot-teste-server.js 4260` (ou `--vazio`, `--sem-blob`).
@@ -398,7 +415,7 @@ a da Biomedical:
 - `sw.js` — cache `bm-comest-v3`, para o navegador não servir o visual antigo.
 
 **Continua Biomedical, de propósito:** o
-"Cód. Biomedical" dos produtos, os atalhos de sistemas compartilhados (Salesforce,
+"Cód. Biomedical" dos produtos (fora do CRM, que diz "Código do produto"), os atalhos de sistemas compartilhados (Salesforce,
 SharePoint BioPortal, Zendesk, e-mails @biomedical), as pastas de materiais de
 marketing e o texto do Sales Playbook.
 

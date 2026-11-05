@@ -58,7 +58,7 @@ async function conferir(pares, opts) {
   let token = null, erroToken = '';
   const out = [];
   for (const x of lista) {
-    if (!x.codigo) { out.push(Object.assign({}, x, { existe: null, validade: '', erro: 'o item não tem o Cód. Biomedical' })); continue; }
+    if (!x.codigo) { out.push(Object.assign({}, x, { existe: null, validade: '', erro: 'o item não tem o Código do produto' })); continue; }
     const k = chave(x.codigo, x.lote), h = _cache.get(k);
     if (h && Date.now() - h.em < h.ttl) { out.push(Object.assign({}, x, h.v)); continue; }
     try {

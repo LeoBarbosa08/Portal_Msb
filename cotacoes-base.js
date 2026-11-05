@@ -864,6 +864,9 @@
       var corrigidos = 0;
       (itens || []).forEach(function (it) {
         var p = it.codigo ? produtoDoCodigo(it.codigo) : null;
+        // 05/11/2026 (RECORTE MSB): o código digitado com a descrição vazia
+        // ganha o nome do cadastro (o do Power BI) — o item nunca fica sem nome
+        if (p && !String(it.descricao || '').trim() && p.nome) it.descricao = p.nome;
         if (p) { it._cod = { st: 'ok', nome: p.nome, de: it._cod && it._cod.de }; return; }
         if (corrigir) {
           var cand = codigosNaDescricao(it.descricao).filter(function (c) { return produtoDoCodigo(c); })[0];
@@ -954,7 +957,7 @@
     if (!s) return '';
     if (s.st === 'checando') return '<small class="cod-st chk">conferindo…</small>';
     if (s.st === 'ok') return '<small class="cod-st ok" title="' + esc(s.nome) + '">' + (s.de ? 'corrigido (era ' + esc(s.de) + ') · ' : '✓ ') + esc(s.nome) + '</small>';
-    if (s.st === 'nao') return '<small class="cod-st nao">não é produto Biomedical</small>';
+    if (s.st === 'nao') return '<small class="cod-st nao">não é produto nosso</small>';
     if (s.st === 'vazio') return Number(it.valorUnitario) > 0 ? '<small class="cod-st nao">informe o código</small>' : '';
     return '';
   }
@@ -965,6 +968,10 @@
      que a IA leu do PDF. /api/cot-casos?produtos=… (com cache no servidor);
      aqui, cache da página: código já consultado não volta ao servidor. */
   var _sf = {};   // COD -> produto | false (não está no Salesforce)
+  // 05/11/2026 (RECORTE MSB): por que o Salesforce não trouxe o produto — a
+  // tela mostra embaixo do item (o Fabricante e o RMS vêm dele): '' = respondeu
+  var _sfMotivo = '';
+  function sfMotivo() { return _sfMotivo; }
   function produtosSf(lista) {
     var cods = (lista || []).map(normCod).filter(function (c, i, l) { return c && c.length <= 60 && l.indexOf(c) === i; });
     var falta = cods.filter(function (c) { return !(c in _sf); }), lotes = [];
@@ -974,8 +981,10 @@
         var ps = (j && j.produtos) || {};
         // resposta pela metade (Salesforce fora do ar ou sem configurar): só guarda o que veio
         var inteira = !!(j && j.produtos && j.configurado !== false && !j.erro);
+        _sfMotivo = inteira ? '' : !j || !j.produtos ? 'o portal não respondeu a consulta ao Salesforce'
+          : j.configurado === false ? 'o Salesforce não está configurado no portal (SF_CLIENT_ID e SF_CLIENT_SECRET)' : String(j.erro || 'o Salesforce não respondeu');
         l.forEach(function (c) { if (ps[c]) _sf[c] = ps[c]; else if (inteira) _sf[c] = false; });
-      });
+      }, function (e) { _sfMotivo = 'a consulta ao Salesforce falhou: ' + ((e && e.message) || e); });
     })).then(function () { var out = {}; cods.forEach(function (c) { if (_sf[c]) out[c] = _sf[c]; }); return out; });
   }
   // o texto do produto na proposta: a descrição do cadastro e o complemento
@@ -1001,7 +1010,10 @@
   }
   // a dica embaixo da descrição do item: o que vai na proposta
   function dicaSf(it) {
-    var p = it && it._sf; if (!p) return '';
+    var p = it && it._sf;
+    // RECORTE MSB: o código é nosso, mas o Salesforce não respondeu — diz por quê
+    if (!p) return it && it.codigo && it._cod && it._cod.st === 'ok' && _sfMotivo && !(normCod(it.codigo) in _sf)
+      ? '<small class="cot-sf cot-sf-falha" title="O Fabricante e o RMS vêm do cadastro do Salesforce">Fabricante e RMS não vieram: ' + esc(_sfMotivo) + '</small>' : '';
     var t = descricaoSf(p);
     var tudo = t + (p.fabricante ? ' · ' + p.fabricante : '') + (p.rms ? ' · RMS ' + p.rms : p.isento ? ' · isento de RMS' : '');
     return '<small class="cot-sf" title="' + esc('Do cadastro do Salesforce — vai assim na proposta: ' + tudo) + '"><b>Na proposta</b>' + esc(t) + '</small>';
@@ -1326,7 +1338,7 @@
     normCod: normCod, validarCodigos: validarCodigos, produtoDoCodigo: produtoDoCodigo, codigosNaDescricao: codigosNaDescricao,
     faturamentoDoCliente: faturamentoDoCliente, tabelaDePrecos: tabelaDePrecos, acimaDasReferencias: acimaDasReferencias, textoAcima: textoAcima, refsPreco: refsPreco, MESES_FAT: MESES_FAT,
     conferirItens: conferirItens, itensComCodigoRuim: itensComCodigoRuim, statusCodigo: statusCodigo,
-    produtosSf: produtosSf, descricaoSf: descricaoSf, completarDoSf: completarDoSf, dicaSf: dicaSf,
+    produtosSf: produtosSf, descricaoSf: descricaoSf, sfMotivo: sfMotivo, completarDoSf: completarDoSf, dicaSf: dicaSf,
     codigosDoTexto: codigosDoTexto, codigosNossosNoTexto: codigosNossosNoTexto, casarPeloTexto: casarPeloTexto,
     estoqueDe: estoqueDe, htmlEstoque: htmlEstoque, pintarEstoque: pintarEstoque,
     comparar: comparar, parecido: parecido, casarCodigos: casarCodigos, codigosDoPedido: codigosDoPedido, RESULTADOS: RESULTADOS, resultadoItem: resultadoItem, abrirNoPI: abrirNoPI

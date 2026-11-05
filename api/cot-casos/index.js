@@ -102,10 +102,10 @@ module.exports = async function (context, req) {
       return H.ok(context, req, { ok: true, eu: eu });
     }
 
-    if (!store.configurado()) {
-      return H.ok(context, req, { ok: true, configurado: false, eu: await comPerfil(), rev: 0, casos: [], cfg: cfgParaTela(quem.cfg) });
-    }
-
+    // 05/11/2026 (RECORTE MSB): as consultas de CADASTRO — o comprador no
+    // Dynamics e o produto no Salesforce (a descrição, o fabricante e o RMS) —
+    // não dependem do armazenamento das cotações: respondem mesmo sem ele
+    // (antes, sem o container, o Fabricante e o RMS não vinham)
     if (req.method === 'GET') {
       const q = req.query || {};
       // o comprador no Dynamics, pelo CNPJ (o agente consulta ao ler o PDF)
@@ -122,6 +122,18 @@ module.exports = async function (context, req) {
         catch (e) { return H.ok(context, req, { ok: true, erp: { achou: false, erro: e.publicMessage || e.message } }); }
         return H.ok(context, req, { ok: true, erp: v || { achou: false, desligado: true } });
       }
+      // o produto no Salesforce (a descrição, o fabricante e o RMS da proposta)
+      if (q.produtos) {
+        return H.ok(context, req, Object.assign({ ok: true }, await motor.produtosSf(String(q.produtos).split(','))));
+      }
+    }
+
+    if (!store.configurado()) {
+      return H.ok(context, req, { ok: true, configurado: false, eu: await comPerfil(), rev: 0, casos: [], cfg: cfgParaTela(quem.cfg) });
+    }
+
+    if (req.method === 'GET') {
+      const q = req.query || {};
       // a FAMÍLIA dos produtos das cotações que a pessoa vê (o Analítico),
       // no Power BI com o token dela
       if (q.familias) {
@@ -135,10 +147,6 @@ module.exports = async function (context, req) {
       // as Ordens de Venda do cliente da cotação no Dynamics (o "Já tenho a OV" — 21/10/26)
       if (q.ovsDe) {
         return H.ok(context, req, Object.assign({ ok: true }, await motor.ovsDaCotacao(String(q.ovsDe), quem, q.todas === '1' || q.todas === 'true')));
-      }
-      // o produto no Salesforce (a descrição, o fabricante e o RMS da proposta)
-      if (q.produtos) {
-        return H.ok(context, req, Object.assign({ ok: true }, await motor.produtosSf(String(q.produtos).split(','))));
       }
       if (q.duplicado) {
         return H.ok(context, req, { ok: true, caso: await motor.duplicado(String(q.portal || ''), String(q.cotacao || ''), quem.cfg, quem) });

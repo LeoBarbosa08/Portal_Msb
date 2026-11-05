@@ -975,7 +975,7 @@ function aplicarFaturamento(c, b, eu, ctx) {
   lotes.concat(reconf).forEach(function (l) {
     if (!l.para) { l.conf = null; return; }
     // (sem o Dynamics ligado no portal não há o que conferir: entra marcado)
-    if (!l.it.codigo && ctx && ctx.lotesConfigurado) throw erro(400, 'O item ' + (l.i + 1) + ' (' + (l.it.descricao || 'sem descrição').slice(0, 60) + ') não tem o Cód. Biomedical — corrija o item (Itens cotados › Editar) para conferir o lote.');
+    if (!l.it.codigo && ctx && ctx.lotesConfigurado) throw erro(400, 'O item ' + (l.i + 1) + ' (' + (l.it.descricao || 'sem descrição').slice(0, 60) + ') não tem o Código do produto — corrija o item (Itens cotados › Editar) para conferir o lote.');
     const rs = lotesD365.separar(l.para).map(function (x) {
       return (conf && conf[String(l.it.codigo).toUpperCase() + '|' + x]) || { existe: null, validade: '', erro: 'sem a conferência' };
     });

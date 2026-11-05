@@ -676,7 +676,7 @@
     if (S.editandoItens) {
       var its = S.itensRascunho || [], comIpi = S.ipiEdicao || C.temIpi(its);
       return '<div class="cs-card"><h5>' + IC.list + 'Itens cotados · editando</h5>' +
-        '<div class="cot-itens-w"><table class="cot-itens"><thead><tr><th class="cod">Cód. Biomedical</th><th class="codc">Cód. comprador</th><th>Descrição</th><th class="marca">Fabricante</th><th class="rms">RMS</th><th class="un">Un</th><th class="qtd n">Qtd</th><th class="vu n">Preço unit.</th>' +
+        '<div class="cot-itens-w"><table class="cot-itens"><thead><tr><th class="cod">Código do produto</th><th class="codc">Cód. comprador</th><th>Descrição</th><th class="marca">Fabricante</th><th class="rms">RMS</th><th class="un">Un</th><th class="qtd n">Qtd</th><th class="vu n">Preço unit.</th>' +
         (comIpi ? '<th class="ipi n" title="O IPI de cada item, em % — sai na proposta">IPI %</th>' : '') + '<th class="vt n">Total</th><th class="res">Resultado do item</th><th class="x"></th></tr></thead><tbody>' +
         its.map(function (it, i) {
           var ruim = it._cod && (it._cod.st === 'nao' || (it._cod.st === 'vazio' && Number(it.valorUnitario) > 0));
@@ -1672,7 +1672,7 @@
     };
     var lotes = its.map(function (it, i) {
       if (!zera && it.resultado === 'perdido') return '';
-      return '<div class="cs-campo cot-fat-lote"><label for="dlg-lote-' + i + '"><b>' + esc(it.descricao || it.codigo || 'Item ' + (i + 1)) + '</b><small>' + esc([it.codigo || 'sem Cód. Biomedical', it.quantidade ? C.qtd(it.quantidade) + ' ' + (it.unidade || 'un') : ''].filter(Boolean).join(' · ')) + '</small></label>' +
+      return '<div class="cs-campo cot-fat-lote"><label for="dlg-lote-' + i + '"><b>' + esc(it.descricao || it.codigo || 'Item ' + (i + 1)) + '</b><small>' + esc([it.codigo || 'sem código do produto', it.quantidade ? C.qtd(it.quantidade) + ' ' + (it.unidade || 'un') : ''].filter(Boolean).join(' · ')) + '</small></label>' +
         '<input id="dlg-lote-' + i + '" data-lote-i="' + i + '" value="' + esc(it.lote || '') + '" placeholder="Lote (mais de um: separe com vírgula)" maxlength="60" autocomplete="off" spellcheck="false">' +
         '<small class="cot-lote-st" id="dlg-lote-st-' + i + '"></small></div>';
     }).join('');
@@ -1699,7 +1699,7 @@
           return C.api('cot-casos', { acao: 'lotes', itens: ls.map(function (l) { return { codigo: it.codigo || '', lote: l }; }) }).then(function (j) {
             if (conf[i] !== marca) return;
             var rs = (j && j.lotes) || [], nao = rs.filter(function (r) { return r.existe === false; });
-            if (!it.codigo && j.configurado) { marca.st = 'nao'; stLote(i, 'nao', IC.x + 'o item não tem o Cód. Biomedical — corrija o item (Itens cotados › Editar) para conferir o lote'); return; }
+            if (!it.codigo && j.configurado) { marca.st = 'nao'; stLote(i, 'nao', IC.x + 'o item não tem o Código do produto — corrija o item (Itens cotados › Editar) para conferir o lote'); return; }
             if (nao.length) { marca.st = 'nao'; stLote(i, 'nao', IC.x + 'não existe no Dynamics para o produto ' + esc(it.codigo) + ': <b>' + esc(nao.map(function (r) { return r.lote; }).join(', ')) + '</b>'); return; }
             if (rs.length && rs.every(function (r) { return r.existe === true; })) {
               var vs = rs.map(function (r) { return r.validade ? C.diaBR(r.validade) : ''; }).filter(Boolean);
@@ -2386,7 +2386,7 @@
         b.disabled = true; b.innerHTML = '<span class="cs-spin"></span> Conferindo os códigos…';
         C.conferirItens(S.itensRascunho, false).then(function () {
           var ruins = C.itensComCodigoRuim(its);
-          if (ruins.length) { renderCaso(); C.toast(ruins.length + ' item(ns) sem código de produto Biomedical', 'Corrija o Cód. Biomedical das linhas em vermelho.', 'erro'); return; }
+          if (ruins.length) { renderCaso(); C.toast(ruins.length + ' item(ns) sem código do produto', 'Corrija o Código do produto das linhas em vermelho.', 'erro'); return; }
           salvar();
         }).catch(function (e) {
           renderCaso();
@@ -2521,11 +2521,18 @@
     Array.prototype.forEach.call(app.querySelectorAll('table.cot-itens:not(.ler) tr[data-i]'), function (tr) {
       var it = its[Number(tr.getAttribute('data-i'))]; if (!it) return;
       ['marca', 'registro'].forEach(function (f) { var el = tr.querySelector('[data-f="' + f + '"]'); if (el && el !== D.activeElement && el.value !== (it[f] || '')) el.value = it[f] || ''; });
+      // RECORTE MSB: a descrição vazia ganha o nome do cadastro (conferirItens)
+      var de = tr.querySelector('[data-f="descricao"]'); if (de && de !== D.activeElement && !de.value && it.descricao) de.value = it.descricao;
+      var st = tr.querySelector('.cod-st-box'); if (st && it._cod) st.innerHTML = C.statusCodigo(it);
       var b = tr.querySelector('.cot-sf-box'); if (b) b.innerHTML = C.dicaSf(it);
     });
   }
   var sfRascunho = C.debounce(function (it) {
-    C.completarDoSf([it]).then(function (n) { if (n && S.itensRascunho && S.itensRascunho.indexOf(it) >= 0) pintarSfRascunho(); }, function () {});
+    // 05/11/2026 (RECORTE MSB): na edição também — o código digitado é conferido
+    // (o nome entra na descrição vazia) e o Salesforce traz o fabricante e o RMS
+    var vivo = function () { return S.itensRascunho && S.itensRascunho.indexOf(it) >= 0; };
+    C.conferirItens([it], false).then(function () { if (vivo()) pintarSfRascunho(); }, function () {});
+    C.completarDoSf([it]).then(function () { if (vivo()) pintarSfRascunho(); }, function () { if (vivo()) pintarSfRascunho(); });
   }, 600);
   function novoItem() { return { codigo: '', codigoCliente: '', descricao: '', marca: '', registro: '', unidade: '', quantidade: 0, valorUnitario: 0 }; }
   function enviarNota(c) {

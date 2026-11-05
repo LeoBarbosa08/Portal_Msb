@@ -264,7 +264,9 @@
         var vu = Number(it.valorUnitario) || 0, q = Number(it.quantidade) || 0;
         // o produto do cadastro (Salesforce) ganha do que veio no PDF
         var p = sfDe(it);
-        var desc = (p && W.COT.descricaoSf(p)) || it.descricao || '';
+        // 05/11/2026: sem o Salesforce e sem descrição, o nome do cadastro do Power BI
+        var bi = W.COT && W.COT.produtoDoCodigo && it.codigo ? W.COT.produtoDoCodigo(it.codigo) : null;
+        var desc = (p && W.COT.descricaoSf(p)) || String(it.descricao || '').trim() || (bi && bi.nome) || '';
         var fab = (p && p.fabricante) || it.marca || '';
         var rms = (p && p.rms) || it.registro || (p && p.isento ? 'Isento' : '');
         var un = String(it.unidade || '').trim().toUpperCase() || 'UN';

@@ -201,7 +201,7 @@
       var pelaLinha = corrigir && S.texto ? C.casarPeloTexto(d.itens, S.texto) : 0;
       pintarItens();
       var n = ((r && r.corrigidos) || 0) + pelaLinha;
-      if (n) C.toast('Código Biomedical corrigido', n + ' item(ns): o código lido não era nosso — usei o nosso que está no PDF.', '');
+      if (n) C.toast('Código do produto corrigido', n + ' item(ns): o código lido não era nosso — usei o nosso que está no PDF.', '');
       completarSf(d.itens);
     }).catch(function (e) {
       S.codErro = e.message || String(e);
@@ -317,7 +317,7 @@
       var b = tr.querySelector('.cot-sf-box'); if (b) b.innerHTML = C.dicaSf(it);
     });
   }
-  function completarSf(itens) { return C.completarDoSf(itens).then(function (n) { if (n) pintarSf(); }, function () {}); }
+  function completarSf(itens) { return C.completarDoSf(itens).then(function () { pintarSf(); }, function () { pintarSf(); }); }
   // um código digitado: confere só ele (sem redesenhar a tabela — o foco fica)
   var conferirLinha = C.debounce(function (i) {
     var it = S.dados && S.dados.itens[i]; if (!it) return;
@@ -326,6 +326,9 @@
       tr.classList.toggle('cod-nao', !!(it._cod && (it._cod.st === 'nao' || (it._cod.st === 'vazio' && Number(it.valorUnitario) > 0))));
       tr.classList.toggle('cod-ok', !!(it._cod && it._cod.st === 'ok'));
       var st = tr.querySelector('.cod-st-box'); if (st) st.innerHTML = C.statusCodigo(it);
+      // RECORTE MSB: a descrição vazia ganhou o nome do cadastro na conferência
+      var de = tr.querySelector('[data-f="descricao"]'); if (de && de !== D.activeElement && !de.value && it.descricao) de.value = it.descricao;
+      pintarSf();
     };
     if (!it.codigo) { it._cod = { st: 'vazio' }; it._sf = null; it._fat = null; it._tab = null; linha(); pintarSf(); pintarRefs(); return; }
     it._cod = { st: 'checando' }; linha();
@@ -512,7 +515,7 @@
       var semQtd = Number(it.valorUnitario) > 0 && !(Number(it.quantidade) > 0);
       var cls = [avisoDe[i] ? 'aviso' : '', ruim ? 'cod-nao' : '', it._cod && it._cod.st === 'ok' ? 'cod-ok' : '', semQtd ? 'qtd-falta' : '', C.acimaDasReferencias(it).length ? 'preco-acima' : ''].filter(Boolean).join(' ');
       return '<tr' + (cls ? ' class="' + cls + '"' : '') + (avisoDe[i] ? ' title="' + esc(avisoDe[i]) + '"' : '') + ' data-i="' + i + '">' +
-        '<td class="cod"><input data-f="codigo" value="' + esc(it.codigo) + '" placeholder="Biomedical" autocomplete="off"><span class="cod-st-box">' + C.statusCodigo(it) + '</span></td>' +
+        '<td class="cod"><input data-f="codigo" value="' + esc(it.codigo) + '" placeholder="Código" autocomplete="off"><span class="cod-st-box">' + C.statusCodigo(it) + '</span></td>' +
         '<td class="codc"><input data-f="codigoCliente" value="' + esc(it.codigoCliente) + '" placeholder="Comprador"></td>' +
         '<td><input data-f="descricao" value="' + esc(it.descricao) + '" placeholder="Descrição do produto"><span class="cot-sf-box">' + C.dicaSf(it) + '</span></td>' +
         '<td class="marca"><input data-f="marca" value="' + esc(it.marca) + '" placeholder="Fabricante"></td>' +
@@ -528,8 +531,8 @@
     }).join('');
     var ruins = C.itensComCodigoRuim(d.itens).filter(function (it) { return it._cod && it._cod.st !== 'checando'; }).length;
     var topo = S.codErro ? '<div class="cot-cod-faixa erro">' + IC.alert + '<div><b>Não consegui conferir os códigos no BI</b>' + esc(S.codErro) + '</div><button type="button" class="cs-btn cs-btn-xs" id="cot-cod-reconferir">' + IC.refresh + 'Conferir de novo</button></div>'
-      : ruins ? '<div class="cot-cod-faixa">' + IC.alert + '<div><b>' + ruins + ' item(ns) sem código de produto Biomedical</b>O Cód. Biomedical tem de ser um produto nosso (o cadastro do BI do Comercial). Corrija as linhas em vermelho.</div></div>' : '';
-    return topo + '<div id="cot-ref-faixa"></div><div class="cot-itens-w"><table class="cot-itens"><thead><tr><th class="cod">Cód. Biomedical</th><th class="codc">Cód. comprador</th><th>Descrição</th><th class="marca">Fabricante</th><th class="rms">RMS</th><th class="un">Un</th><th class="qtd n">Qtd</th><th class="vu n" title="Embaixo de cada item: a média dos ' + C.MESES_FAT + ' meses de faturamento no cliente e a tabela de preço (Venda Direta e Venda Futura)">Preço unit.</th>' + (comIpi ? '<th class="ipi n" title="O IPI de cada item, em % — sai na proposta">IPI %</th>' : '') + '<th class="vt n">Total</th><th class="x"></th></tr></thead>' +
+      : ruins ? '<div class="cot-cod-faixa">' + IC.alert + '<div><b>' + ruins + ' item(ns) sem código do produto</b>O Código do produto tem de ser um produto nosso (o cadastro do BI do Comercial). Corrija as linhas em vermelho.</div></div>' : '';
+    return topo + '<div id="cot-ref-faixa"></div><div class="cot-itens-w"><table class="cot-itens"><thead><tr><th class="cod">Código do produto</th><th class="codc">Cód. comprador</th><th>Descrição</th><th class="marca">Fabricante</th><th class="rms">RMS</th><th class="un">Un</th><th class="qtd n">Qtd</th><th class="vu n" title="Embaixo de cada item: a média dos ' + C.MESES_FAT + ' meses de faturamento no cliente e a tabela de preço (Venda Direta e Venda Futura)">Preço unit.</th>' + (comIpi ? '<th class="ipi n" title="O IPI de cada item, em % — sai na proposta">IPI %</th>' : '') + '<th class="vt n">Total</th><th class="x"></th></tr></thead>' +
       '<tbody>' + (linhas || '<tr><td colspan="' + nCol + '" style="padding:16px;text-align:center;color:var(--cs-mut)">Nenhum item — adicione abaixo.</td></tr>') + '</tbody></table></div>' +
       '<div class="cot-itens-pe"><button type="button" class="cs-btn cs-btn-sm" id="cot-add-item">' + IC.plus + 'Item</button>' +
       '<span>' + d.itens.length + ' item(ns)' + (d.totalPdf ? ' · total no PDF ' + C.brl(d.totalPdf) : '') + '</span>' +
@@ -1032,7 +1035,7 @@
         if (bc) { bc.disabled = false; bc.innerHTML = rotuloCriar(); }
         pintarItens();
         if (ruins.length) {
-          msg('<b>' + ruins.length + ' item(ns) sem código de produto Biomedical</b>: ' + ruins.slice(0, 5).map(function (it) { return esc(it.codigo || '(sem código)') + ' — ' + esc((it.descricao || '').slice(0, 40)); }).join('; ') + '. Corrija o Cód. Biomedical (linhas em vermelho).', 'erro');
+          msg('<b>' + ruins.length + ' item(ns) sem código do produto</b>: ' + ruins.slice(0, 5).map(function (it) { return esc(it.codigo || '(sem código)') + ' — ' + esc((it.descricao || '').slice(0, 40)); }).join('; ') + '. Corrija o Código do produto (linhas em vermelho).', 'erro');
           var tb = $('cot-itens'); if (tb) tb.scrollIntoView({ behavior: 'smooth', block: 'center' });
           return;
         }

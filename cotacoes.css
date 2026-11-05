@@ -1335,3 +1335,5 @@ html[data-tema="escuro"] .cot-est-top b { color: #7BDDB0; }
 html[data-tema="escuro"] .cot-est.alerta .cot-est-top b { color: #F6C77A; }
 html[data-tema="escuro"] .cot-est-chip { background: transparent; }
 html[data-tema="escuro"] .cot-est-t tbody tr:nth-child(even) td { background: rgba(255, 255, 255, .03); }
+/* 05/11/2026 (RECORTE MSB): o Salesforce não respondeu — o motivo embaixo do item */
+table.cot-itens .cot-sf.cot-sf-falha { color: #9A5B07; font-weight: 500; white-space: normal; }
