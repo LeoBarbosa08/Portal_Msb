@@ -103,8 +103,8 @@ window.PORTAL_CATALOGO = (function () {
     ['comercial', 'Analítico',                 'Negociações',  'comercial-funil-analitico.html',        'sub',   'analitico negociacoes funil oportunidades sku produto item itens por fase familia estrategia curva abc mix'],
     // CRM (04/11/2026, trazido do portal da BIO): na MSB só a Venda Recorrente
     // (a Gestão de Cotações da MSB). BIO.ID e Venda Consultiva não vieram.
-    ['comercial', 'CRM',                       '',             'comercial-crm.html',                    'filter','crm funil de oportunidade oportunidades submodulo submodulos venda recorrente cotacoes cotacao pipeline'],
-    ['comercial', 'Venda Recorrente',          'CRM',          'comercial-cot-funil.html?sub=recorrente','sub',  'venda recorrente recorrente funil de oportunidade oportunidades cotacoes cotacao portal de compras bionexo proposta funil de conversao cotada virou pedido perdida pedido'],
+    // 05/11/26: sem submódulo — o CRM abre direto o Funil.
+    ['comercial', 'CRM',                       '',             'comercial-cot-funil.html',              'filter','crm funil de oportunidade oportunidades venda recorrente cotacoes cotacao portal de compras bionexo proposta funil de conversao cotada virou pedido perdida pipeline'],
     ['comercial', 'Analítico das Oportunidades','CRM',         'comercial-cot-analitico.html',          'sub',   'analitico oportunidades cotacoes itens ganhos perdidos em andamento familia sku produto por que perdi motivo da perda preco do concorrente resultado do item venda recorrente'],
     ['comercial', 'Gestão de Oportunidades',   'CRM',          'comercial-cot-casos.html',              'sub',   'gestao de oportunidades oportunidades gestao cotacoes casos lista proposta ordem de venda ov pi venda recorrente'],
     ['comercial', 'Quadro de Oportunidades',   'CRM',          'comercial-cot-casos.html#quadro',       'sub',   'quadro kanban oportunidades cotacoes fases arrastar cotada em andamento virou pedido'],
@@ -303,7 +303,7 @@ window.PORTAL_CATALOGO = (function () {
     'comercial-clientes.html', 'comercial-base-notas-fiscais.html',
     'comercial-comportamento-clientes.html', 'comercial-tabela-precos.html',
     // 04/11/26: o CRM, só com a Venda Recorrente (o mesmo do NAV.comercial)
-    'comercial-crm.html', 'comercial-cot-funil.html?sub=recorrente', 'comercial-cot-analitico.html',
+    'comercial-cot-funil.html', 'comercial-cot-analitico.html',
     'comercial-cot-casos.html', 'comercial-cot-casos.html#quadro', 'comercial-cot-casos.html#historico',
     'comercial-cot-nova.html',
     'contabil-custos-sgna.html'

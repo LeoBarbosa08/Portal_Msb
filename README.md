@@ -279,6 +279,13 @@ e Venda Consultiva (os outros dois submódulos do CRM de lá) não vieram.
   família do Analítico). `api/pedido-extrair` + `api/shared/pedido-revisar.js`
   ganharam a regra do RMS do completo (o registro ANVISA deixa de virar o
   código), mantendo o ajuste do endpoint da IA da MSB.
+- **Sem submódulo (05/11/2026, pedido do dono)**: o CRM abre **direto** o
+  Funil de Oportunidade. No menu é um item só ("CRM", aceso em todas as
+  páginas dele); o cartão da visão geral, a busca e o guia levam ao Funil; o
+  caminho do topo é Comercial › CRM › Funil de Oportunidade (sem "Venda
+  Recorrente"); `pages/comercial-crm.html` (a casa com os cartões) virou só um
+  redirecionamento para os links antigos. Por dentro a unidade continua
+  VENDA RECORRENTE e o `BMCRM` segue com ela como único submódulo.
 - **Cotações próprias da MSB** — `api/shared/cot-store.js` lê e grava **só**
   em `COT_MSB_BLOB_URL` (container novo, SAS de container `sr=c` com Read +
   Create + Write). De propósito **não** cai no `COT_BLOB_URL` da BIO: sem a
@@ -315,9 +322,9 @@ e Venda Consultiva (os outros dois submódulos do CRM de lá) não vieram.
   no guia (`script.js`) e na home (`index.html`).
 - O botão de mandar o pedido ao **PI · Pedido** leva a uma página que, na MSB,
   ainda é só do dono (ver "PI · Pedido de volta"): para a equipe, abrir o PI.
-- `nav-sidebar.js?v=80` (a `v=79` foi a da poda do PI, da master), `customer-service.css?v=4`,
+- `nav-sidebar.js?v=81` (a `v=79` foi a da poda do PI, da master), `customer-service.css?v=4`,
   `licitacao-funil-vendas.css?v=19` em todas as páginas; `sw.js` — cache
-  `bm-comest-v8`.
+  `bm-comest-v9`.
 - Teste local: o `cot-teste-server.js` do completo, copiado para `.claude/`
   com `COT_MSB_BLOB_URL` e os exemplos em `COT-MSB-…`:
   `node .claude/cot-teste-server.js 4260` (ou `--vazio`, `--sem-blob`).

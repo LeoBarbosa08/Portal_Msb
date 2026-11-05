@@ -5,7 +5,7 @@
    - Assets estáticos: cache-first com atualização em background
    - Ignora outras origens (MSAL/Power BI/CDN) e rotas /api e /.auth
    ================================================================ */
-const VERSION = 'bm-comest-v8';   // portal Comercial + Estoque (cache próprio) · v2 = recorte MSB · v3 = identidade visual MSB · v4 = recorte de empresa MSB (20/10/26) · v5 = Regional nas abas do Sales Report, sem Calendário/Novos Negócios/Clientes Perdidos (22/10/26) · v6 = sem o InventarIA e o Vigia de Consignação (30/10/26) · v7 = PI · Pedido de volta, só do dono (04/11/26) · v8 = CRM › Venda Recorrente (04/11/26)
+const VERSION = 'bm-comest-v9';   // portal Comercial + Estoque (cache próprio) · v2 = recorte MSB · v3 = identidade visual MSB · v4 = recorte de empresa MSB (20/10/26) · v5 = Regional nas abas do Sales Report, sem Calendário/Novos Negócios/Clientes Perdidos (22/10/26) · v6 = sem o InventarIA e o Vigia de Consignação (30/10/26) · v7 = PI · Pedido de volta, só do dono (04/11/26) · v8 = CRM › Venda Recorrente (04/11/26) · v9 = CRM sem submódulo (05/11/26)
 const STATIC_CACHE  = VERSION + '-static';
 const RUNTIME_CACHE = VERSION + '-runtime';
 

@@ -280,6 +280,8 @@ if (!window._bmPerfilSheetLoaded && !window._bmPerfilSheetInjected) {
 //   . BIO.ID           — a Gestão de Cotações SÓ da unidade BIO.ID
 //   . Venda Consultiva — as Negociações (o funil do Salesforce)
 //
+// (05/11/26, pedido do dono: na MSB não há escolha — o CRM abre direto o
+// Funil e pages/comercial-crm.html só redireciona para ele.)
 // Quem cai onde (a home do CRM, pages/comercial-crm.html, decide):
 //   . ACESSO FULL (o dono, admin, grupo sem restrição) -> escolhe;
 //   . quem é da Venda Recorrente / BIO.ID (a unidade do RLS do Power BI —
@@ -842,7 +844,6 @@ if (!window._bmPerfilSheetLoaded && !window._bmPerfilSheetInjected) {
     check:  '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 11 12 14 22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>',
     headset:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 14v-3a9 9 0 0 1 18 0v3"/><path d="M21 15a2 2 0 0 1-2 2h-1v-6h1a2 2 0 0 1 2 2z"/><path d="M3 15a2 2 0 0 0 2 2h1v-6H5a2 2 0 0 0-2 2z"/><path d="M18 17v1a3 3 0 0 1-3 3h-3"/></svg>',
     kanban: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="9" y1="3" x2="9" y2="21"/><line x1="15" y1="3" x2="15" y2="21"/></svg>',
-    trend:  '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg>',
     caret:  '<svg class="sb-caret" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>'
   };
 
@@ -895,9 +896,9 @@ if (!window._bmPerfilSheetLoaded && !window._bmPerfilSheetInjected) {
         // submódulo, a Venda Recorrente (a Gestão de Cotações da MSB — funil,
         // analítico, gestão, quadro, histórico e a nova oportunidade). Ver o
         // bloco BMCRM no topo deste arquivo. BIO.ID e Venda Consultiva não vieram.
-        {id:'comercial-crm',      label:'CRM',                   href:'comercial-crm.html',         icon:I.kanban, children:[
-          {id:'comercial-cot-funil', label:'Venda Recorrente', href:'comercial-cot-funil.html?sub=recorrente', also:['comercial-cot-analitico','comercial-cot-casos','comercial-cot-nova'], icon:I.trend},
-        ]},
+        // 05/11/26 (pedido do dono): SEM submódulo — o CRM é um item só e abre
+        // direto o Funil de Oportunidade (aceso em todas as páginas dele).
+        {id:'comercial-cot-funil', label:'CRM',                  href:'comercial-cot-funil.html',   icon:I.kanban, also:['comercial-crm','comercial-cot-analitico','comercial-cot-casos','comercial-cot-nova']},
         {id:'comercial-tabela-precos', label:'Tabela de Preços', href:'comercial-tabela-precos.html', icon:I.dollar},
       ],
       auto:[],

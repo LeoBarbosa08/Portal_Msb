@@ -1200,16 +1200,16 @@
   function foraDoSubmodulo(eu) {
     var M = crm(), s = subAtual();
     if (!M || !s || !eu || eu.admin || eu.full || !eu.unidadeConfirmada) return '';
-    return M.temSub(eu, s.id) ? '' : 'Você não é da unidade <b>' + esc(s.rotulo) + '</b> no Power BI — aqui só aparecem as oportunidades dela. <a href="comercial-crm.html">Voltar ao CRM</a>';
+    return M.temSub(eu, s.id) ? '' : 'Você não é da unidade <b>' + esc(s.rotulo) + '</b> no Power BI — aqui só aparecem as oportunidades dela. <a href="comercial-cot-funil.html">Voltar ao CRM</a>';
   }
   function guardarPessoa(eu) { var M = crm(); if (M && eu && eu.email) { M.guardarPessoa(eu.email, eu); if (typeof W.bmPodarCrm === 'function') W.bmPodarCrm(eu.email); } }
   function comSub(href) { var M = crm(); return M ? M.comSub(href) : href; }
   function marcarSubmodulo() {
     var s = subAtual();
-    Array.prototype.forEach.call(D.querySelectorAll('[data-crm-rotulo]'), function (el) {
-      if (s) el.textContent = s.rotulo;
-    });
-    if (s && D.title.indexOf(s.rotulo) < 0) D.title = D.title.replace(/ · MSB$/, '') + ' · ' + s.rotulo + ' · MSB';
+    // RECORTE MSB (05/11/2026, pedido do dono): o CRM da MSB não tem submódulo
+    // — abre direto no Funil. O nome "Venda Recorrente" não entra no caminho
+    // nem no título (fica o "Funil de Oportunidade" do HTML); por dentro, a
+    // unidade da cotação continua VENDA RECORRENTE.
     if (s) D.body.setAttribute('data-crm-sub', s.id);
     // os links entre as páginas das oportunidades levam o submódulo (abrir em
     // outra aba também): os do HTML agora, os desenhados depois no mousedown

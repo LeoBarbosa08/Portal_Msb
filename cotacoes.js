@@ -2163,7 +2163,7 @@
       bloco('cfg-portais', 'Portais de cotação', 'A lista do campo Portal (um por linha). A leitura da IA é encaixada nestes nomes — o funil agrupa por eles.', c.portais, 8) +
       bloco('cfg-perda', 'Motivos de perda', 'Obrigatório ao marcar "Perdida". Alimenta o funil: por que perdemos.', c.motivosPerda, 8) +
       bloco('cfg-cancel', 'Motivos de cancelamento', 'Também aparecem como motivo da Perdida (desde 21/10/2026 a Cancelada é uma Perdida; "Proposta vencida" entra sempre).', c.motivosCancelamento, 8) +
-      '<div class="cs-card"><h3>Empresa e unidade de negócio</h3><p>A oportunidade é sempre da <b>MSB</b> e da <b>Venda Recorrente</b> — o único submódulo do CRM da MSB. ' +
+      '<div class="cs-card"><h3>Empresa e unidade de negócio</h3><p>A oportunidade é sempre da <b>MSB</b>, na unidade <b>Venda Recorrente</b> (o CRM da MSB não tem submódulos). ' +
         'Quem tem a área Comercial do portal vê todas as oportunidades da MSB; as da BIO ficam no portal da BIO.' +
         (S.eu && S.eu.area ? ' A equipe do Entra (<b>' + esc(S.eu.area) + '</b>) segue no caso como informação.' : '') + '</p></div>' +
       '<div class="cs-card"><h3>Aviso de vencimento</h3><p>Quantos dias antes da data de vencimento a oportunidade entra em "Prazo vencendo". Passou da data sem resultado, o portal passa a oportunidade para Perdida sozinho, com o motivo "Comprador não informou o motivo" — dá para reabrir (ela não é marcada de novo) ou virar pedido.</p><div class="cs-campo"><input id="cfg-aviso" type="number" min="0" max="30" value="' + (c.avisoDias != null ? c.avisoDias : 2) + '"' + dis + '></div></div>' +

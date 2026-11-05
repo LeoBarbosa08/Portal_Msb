@@ -257,7 +257,7 @@ document.addEventListener('DOMContentLoaded', () => {
     ['Comportamento de Clientes','comercial-comportamento-clientes.html','Comercial','comportamento cliente clientes curva abc pareto ciclo de vida fiel fieis recorrente em risco dormente perdido recencia carteira matriz familia mes recompra ticket medio'],
     ['Base de Notas Fiscais','comercial-base-notas-fiscais.html','Comercial','base notas fiscais nf faturamento item nota detalhado exportar excel'],
     ['Análise de Clientes','comercial-clientes.html','Comercial','analise clientes carteira'],
-    ['CRM · Venda Recorrente','comercial-crm.html','Comercial','crm venda recorrente funil de oportunidade oportunidades cotacao cotacoes portal de compras bionexo proposta gestao quadro historico'],
+    ['CRM','comercial-cot-funil.html','Comercial','crm venda recorrente funil de oportunidade oportunidades cotacao cotacoes portal de compras bionexo proposta gestao quadro historico'],
     ['Funil de Oportunidades','comercial-funil.html','Comercial','funil pipeline etapas negociacao negociacoes oportunidade oportunidades'],
     ['FCA','comercial-fca.html','Comercial','fca ficha atividade comercial visita'],
     ['Materiais e Recursos','comercial-materiais.html','Comercial','materiais recursos apoio'],
