@@ -346,6 +346,10 @@ e Venda Consultiva (os outros dois submódulos do CRM de lá) não vieram.
   a do item → o nome do Power BI. Sem `SF_CLIENT_ID`/`SF_CLIENT_SECRET` na
   Static Web App da MSB, o Fabricante e o RMS não vêm — copie as do portal da
   BIO.
+- **Sem a coluna Un (05/11/2026, pedido do dono)** — saiu a coluna da unidade
+  das tabelas de itens (Nova oportunidade, edição e leitura na Gestão). A
+  unidade que a leitura do PDF trouxer fica no item e sai na proposta ao lado
+  da quantidade ("30 UN", como no modelo; sem unidade, "UN").
 - **"Código do produto" (05/11/2026, pedido do dono)** — no CRM o "Cód.
   Biomedical" virou "Código do produto": cabeçalho dos itens (Nova
   oportunidade e edição na Gestão), o exemplo do campo ("Código") e as
@@ -380,7 +384,7 @@ e Venda Consultiva (os outros dois submódulos do CRM de lá) não vieram.
   ainda é só do dono (ver "PI · Pedido de volta"): para a equipe, abrir o PI.
 - `nav-sidebar.js?v=82` (a `v=79` foi a da poda do PI, da master), `customer-service.css?v=4`,
   `licitacao-funil-vendas.css?v=19` em todas as páginas; `sw.js` — cache
-  `bm-comest-v14`.
+  `bm-comest-v15`.
 - Teste local: o `cot-teste-server.js` do completo, copiado para `.claude/`
   com `COT_MSB_BLOB_URL` e os exemplos em `COT-MSB-…`:
   `node .claude/cot-teste-server.js 4260` (ou `--vazio`, `--sem-blob`).

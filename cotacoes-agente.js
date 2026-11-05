@@ -508,7 +508,7 @@
     return false;
   }
   function htmlItens() {
-    var d = S.dados, avisoDe = {}, comIpi = S.ipi || C.temIpi(d.itens), nCol = comIpi ? 11 : 10;
+    var d = S.dados, avisoDe = {}, comIpi = S.ipi || C.temIpi(d.itens), nCol = comIpi ? 10 : 9;   // 05/11/2026 (RECORTE MSB): sem a coluna Un
     ((S.leitura && S.leitura.avisos) || []).forEach(function (a) { if (a.item >= 0) avisoDe[a.item] = a.texto; });
     var linhas = d.itens.map(function (it, i) {
       var ruim = it._cod && (it._cod.st === 'nao' || (it._cod.st === 'vazio' && Number(it.valorUnitario) > 0));
@@ -520,7 +520,6 @@
         '<td><input data-f="descricao" value="' + esc(it.descricao) + '" placeholder="Descrição do produto"><span class="cot-sf-box">' + C.dicaSf(it) + '</span></td>' +
         '<td class="marca"><input data-f="marca" value="' + esc(it.marca) + '" placeholder="Fabricante"></td>' +
         '<td class="rms"><input data-f="registro" data-mask="digitos" value="' + esc(it.registro) + '" placeholder="ANVISA" inputmode="numeric" maxlength="15"></td>' +
-        '<td class="un"><input data-f="unidade" value="' + esc(it.unidade) + '"></td>' +
         '<td class="qtd n"><input data-f="quantidade" data-mask="num" inputmode="decimal" value="' + esc(it.quantidade ? C.qtd(it.quantidade) : '') + '"></td>' +
         '<td class="vu n"><input data-f="valorUnitario" data-mask="num" inputmode="decimal" value="' + esc(it.valorUnitario ? it.valorUnitario.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 4 }) : '') + '"></td>' +
         (comIpi ? '<td class="ipi n"><input data-f="ipi" data-mask="num" inputmode="decimal" value="' + esc(it.ipi ? String(it.ipi).replace('.', ',') : '') + '" placeholder="%" title="O IPI do item, em %"></td>' : '') +
@@ -532,7 +531,7 @@
     var ruins = C.itensComCodigoRuim(d.itens).filter(function (it) { return it._cod && it._cod.st !== 'checando'; }).length;
     var topo = S.codErro ? '<div class="cot-cod-faixa erro">' + IC.alert + '<div><b>Não consegui conferir os códigos no BI</b>' + esc(S.codErro) + '</div><button type="button" class="cs-btn cs-btn-xs" id="cot-cod-reconferir">' + IC.refresh + 'Conferir de novo</button></div>'
       : ruins ? '<div class="cot-cod-faixa">' + IC.alert + '<div><b>' + ruins + ' item(ns) sem código do produto</b>O Código do produto tem de ser um produto nosso (o cadastro do BI do Comercial). Corrija as linhas em vermelho.</div></div>' : '';
-    return topo + '<div id="cot-ref-faixa"></div><div class="cot-itens-w"><table class="cot-itens"><thead><tr><th class="cod">Código do produto</th><th class="codc">Cód. comprador</th><th>Descrição</th><th class="marca">Fabricante</th><th class="rms">RMS</th><th class="un">Un</th><th class="qtd n">Qtd</th><th class="vu n" title="Embaixo de cada item: a média dos ' + C.MESES_FAT + ' meses de faturamento no cliente e a tabela de preço (Venda Direta e Venda Futura)">Preço unit.</th>' + (comIpi ? '<th class="ipi n" title="O IPI de cada item, em % — sai na proposta">IPI %</th>' : '') + '<th class="vt n">Total</th><th class="x"></th></tr></thead>' +
+    return topo + '<div id="cot-ref-faixa"></div><div class="cot-itens-w"><table class="cot-itens"><thead><tr><th class="cod">Código do produto</th><th class="codc">Cód. comprador</th><th>Descrição</th><th class="marca">Fabricante</th><th class="rms">RMS</th><th class="qtd n">Qtd</th><th class="vu n" title="Embaixo de cada item: a média dos ' + C.MESES_FAT + ' meses de faturamento no cliente e a tabela de preço (Venda Direta e Venda Futura)">Preço unit.</th>' + (comIpi ? '<th class="ipi n" title="O IPI de cada item, em % — sai na proposta">IPI %</th>' : '') + '<th class="vt n">Total</th><th class="x"></th></tr></thead>' +
       '<tbody>' + (linhas || '<tr><td colspan="' + nCol + '" style="padding:16px;text-align:center;color:var(--cs-mut)">Nenhum item — adicione abaixo.</td></tr>') + '</tbody></table></div>' +
       '<div class="cot-itens-pe"><button type="button" class="cs-btn cs-btn-sm" id="cot-add-item">' + IC.plus + 'Item</button>' +
       '<span>' + d.itens.length + ' item(ns)' + (d.totalPdf ? ' · total no PDF ' + C.brl(d.totalPdf) : '') + '</span>' +

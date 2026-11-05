@@ -676,12 +676,12 @@
     if (S.editandoItens) {
       var its = S.itensRascunho || [], comIpi = S.ipiEdicao || C.temIpi(its);
       return '<div class="cs-card"><h5>' + IC.list + 'Itens cotados · editando</h5>' +
-        '<div class="cot-itens-w"><table class="cot-itens"><thead><tr><th class="cod">Código do produto</th><th class="codc">Cód. comprador</th><th>Descrição</th><th class="marca">Fabricante</th><th class="rms">RMS</th><th class="un">Un</th><th class="qtd n">Qtd</th><th class="vu n">Preço unit.</th>' +
+        '<div class="cot-itens-w"><table class="cot-itens"><thead><tr><th class="cod">Código do produto</th><th class="codc">Cód. comprador</th><th>Descrição</th><th class="marca">Fabricante</th><th class="rms">RMS</th><th class="qtd n">Qtd</th><th class="vu n">Preço unit.</th>' +
         (comIpi ? '<th class="ipi n" title="O IPI de cada item, em % — sai na proposta">IPI %</th>' : '') + '<th class="vt n">Total</th><th class="res">Resultado do item</th><th class="x"></th></tr></thead><tbody>' +
         its.map(function (it, i) {
           var ruim = it._cod && (it._cod.st === 'nao' || (it._cod.st === 'vazio' && Number(it.valorUnitario) > 0));
           return '<tr data-i="' + i + '"' + (ruim ? ' class="cod-nao"' : it._cod && it._cod.st === 'ok' ? ' class="cod-ok"' : '') + '><td class="cod"><input data-f="codigo" value="' + esc(it.codigo) + '" autocomplete="off"><span class="cod-st-box">' + C.statusCodigo(it) + '</span></td><td class="codc"><input data-f="codigoCliente" value="' + esc(it.codigoCliente) + '"></td>' +
-            '<td><input data-f="descricao" value="' + esc(it.descricao) + '"><span class="cot-sf-box">' + C.dicaSf(it) + '</span></td><td class="marca"><input data-f="marca" value="' + esc(it.marca) + '" placeholder="Fabricante"></td><td class="rms"><input data-f="registro" value="' + esc(it.registro || '') + '" placeholder="ANVISA" inputmode="numeric"></td><td class="un"><input data-f="unidade" value="' + esc(it.unidade) + '"></td>' +
+            '<td><input data-f="descricao" value="' + esc(it.descricao) + '"><span class="cot-sf-box">' + C.dicaSf(it) + '</span></td><td class="marca"><input data-f="marca" value="' + esc(it.marca) + '" placeholder="Fabricante"></td><td class="rms"><input data-f="registro" value="' + esc(it.registro || '') + '" placeholder="ANVISA" inputmode="numeric"></td>' +
             '<td class="qtd n"><input data-f="quantidade" inputmode="decimal" value="' + esc(it.quantidade ? C.qtd(it.quantidade) : '') + '"></td>' +
             '<td class="vu n"><input data-f="valorUnitario" inputmode="decimal" value="' + esc(it.valorUnitario ? it.valorUnitario.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 4 }) : '') + '"></td>' +
             (comIpi ? '<td class="ipi n"><input data-f="ipi" inputmode="decimal" value="' + esc(it.ipi ? String(it.ipi).replace('.', ',') : '') + '" placeholder="%" title="O IPI do item, em %"></td>' : '') +
@@ -704,16 +704,16 @@
       (nRes('perdido') ? '<span class="p">' + C.int(nRes('perdido')) + ' perdido(s) · ' + C.brl(vRes.perdido) + '</span>' : '');
     return '<div class="cs-card"><h5>' + IC.list + 'Itens cotados · ' + l.length + (c.descartado ? '' : '<button type="button" class="cs-btn cs-btn-xs" data-act="itens-editar">' + IC.edit + 'Editar</button>') + '</h5>' +
       htmlNaoPedidos(c) +
-      (l.length ? '<div class="cot-itens-w"><table class="cot-itens ler"><thead><tr><th>Produto</th><th>Un</th><th class="n">Qtd</th><th class="n">Preço unit.</th>' + (lIpi ? '<th class="n">IPI</th>' : '') + '<th class="n">Total</th><th class="res">Resultado do item</th></tr></thead><tbody>' +
+      (l.length ? '<div class="cot-itens-w"><table class="cot-itens ler"><thead><tr><th>Produto</th><th class="n">Qtd</th><th class="n">Preço unit.</th>' + (lIpi ? '<th class="n">IPI</th>' : '') + '<th class="n">Total</th><th class="res">Resultado do item</th></tr></thead><tbody>' +
         l.map(function (it, i) {
           var cods = metaItem(it);
-          return '<tr><td class="desc"><b>' + esc(it.descricao || it.codigo || '—') + '</b><small class="cot-it-meta" data-i="' + i + '"' + (cods ? '' : ' hidden') + '>' + esc(cods) + '</small><span class="cot-sf-box" data-sf-i="' + i + '">' + C.dicaSf(it) + '</span></td><td class="un">' + esc(it.unidade || '') + '</td>' +
+          return '<tr><td class="desc"><b>' + esc(it.descricao || it.codigo || '—') + '</b><small class="cot-it-meta" data-i="' + i + '"' + (cods ? '' : ' hidden') + '>' + esc(cods) + '</small><span class="cot-sf-box" data-sf-i="' + i + '">' + C.dicaSf(it) + '</span></td>' +
             '<td class="n qtd">' + C.qtd(it.quantidade) + '</td><td class="n vu">' + (it.valorUnitario ? C.brl(it.valorUnitario) : '<span style="color:var(--cs-mut)">sem preço</span>') + '</td>' +
             (lIpi ? '<td class="n ipi">' + (C.ipiDe(it) ? C.pctIpi(C.ipiDe(it)) : '—') + '</td>' : '') +
             '<td class="n tot">' + (it.quantidade && it.valorUnitario ? C.brl(it.quantidade * it.valorUnitario) : '—') + '</td><td class="res">' + htmlResultado(c, i, rs[i]) + '</td></tr>';
-        }).join('') + '</tbody><tfoot><tr><td colspan="' + (lIpi ? 5 : 4) + '" class="rot">Total cotado' + (lIpi ? ' (sem IPI)' : '') + '</td><td class="n tot">' + C.brl(c.total) + '</td><td class="res-tot">' + totRes + '</td></tr>' +
-          (lIpi ? '<tr class="cot-ipi-tr"><td colspan="5" class="rot">IPI</td><td class="n tot">' + C.brl(C.totalIpi(l)) + '</td><td></td></tr>' +
-            '<tr class="cot-ipi-tr"><td colspan="5" class="rot">Total com IPI</td><td class="n tot">' + C.brl((c.total || 0) + C.totalIpi(l)) + '</td><td></td></tr>' : '') + '</tfoot></table></div>'
+        }).join('') + '</tbody><tfoot><tr><td colspan="' + (lIpi ? 4 : 3) + '" class="rot">Total cotado' + (lIpi ? ' (sem IPI)' : '') + '</td><td class="n tot">' + C.brl(c.total) + '</td><td class="res-tot">' + totRes + '</td></tr>' +
+          (lIpi ? '<tr class="cot-ipi-tr"><td colspan="4" class="rot">IPI</td><td class="n tot">' + C.brl(C.totalIpi(l)) + '</td><td></td></tr>' +
+            '<tr class="cot-ipi-tr"><td colspan="4" class="rot">Total com IPI</td><td class="n tot">' + C.brl((c.total || 0) + C.totalIpi(l)) + '</td><td></td></tr>' : '') + '</tfoot></table></div>'
         : '<p style="margin:0;font-size:13px;color:var(--cs-mut)">Nenhum item registrado. Clique em Editar para incluir.</p>') + '</div>';
   }
   // o IPI somado e o total com o IPI, ao lado do total (29/10/2026)
