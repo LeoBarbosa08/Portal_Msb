@@ -243,6 +243,12 @@ Pedido do dono: trazer o PI · Pedido do portal completo (`LeoBarbosa08/Claude.r
   procurado de novo com `REMOVEFILTERS('Empresas')` por dentro (só código e
   nome, nenhum número de venda); sem achar nem assim, a mensagem mostra
   códigos parecidos do cadastro.
+- **Condições de pagamento da MSB** (05/11, pedido do dono): a lista da tela
+  (`COND_PAGAMENTO` no `pedido-inteligente.js`) e a do prompt da IA
+  (`CONDICOES_PAGAMENTO` no `api/pedido-extrair`) passam a ser as 75 da MSB, na
+  ordem que ele mandou (5 linhas repetidas idênticas saíram). A política de
+  crédito (`POLITICA`) ainda é a da BIO: condição que não está nela aparece
+  como "não mapeada na política".
 - **PDF ao lado** (04/11): como no Agente de Oportunidades do portal da BIO, o
   PDF anexado fica à direita (pdf.js, uma página por canvas, zoom −/+, abrir em
   nova aba, ocultar/mostrar), do PDF à Revisão. Abaixo de 1180px vai para baixo
