@@ -595,9 +595,9 @@
         '<td class="pi-td-st">' + status + '</td>' +
         '<td><input class="pi-in" data-i="' + i + '" data-f="codigo" value="' + esc(p.codigo) + '" placeholder="Código"></td>' +
         '<td class="pi-td-nome">' + nomeCell + '</td>' +
-        '<td><input class="pi-in pi-in-num" data-i="' + i + '" data-f="quantidade" value="' + esc(fmtQtd(p.quantidade)) + '"></td>' +
+        '<td><input inputmode="decimal" autocomplete="off" class="pi-in pi-in-num" data-i="' + i + '" data-f="quantidade" value="' + esc(fmtQtd(p.quantidade)) + '"></td>' +
         '<td class="pi-td-disp">' + dispCell + '</td>' +
-        '<td><input class="pi-in pi-in-num" data-i="' + i + '" data-f="valorUnitario" value="' + esc((Number(p.valorUnitario) || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 4 })) + '"></td>' +
+        '<td><input inputmode="decimal" autocomplete="off" class="pi-in pi-in-num" data-i="' + i + '" data-f="valorUnitario" value="' + esc((Number(p.valorUnitario) || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 4 })) + '"></td>' +
         '<td class="pi-td-tot">' + fmtMoney((Number(p.quantidade) || 0) * (Number(p.valorUnitario) || 0)) + '</td>' +
         '<td class="pi-td-x"><button class="pi-x" data-del="' + i + '" title="Remover produto">×</button></td>' +
         '</tr>';
@@ -997,16 +997,16 @@
             '<div class="pi-lote-val">' + val + ' <span class="pi-lote-dim">' + dias + '</span></div></td>' +
           '<td>' + esc(l.batch) + '</td>' +
           '<td class="pi-td-disp">' + fmtQtd(l.disponivel) + '</td>' +
-          '<td><input class="pi-in pi-in-num pi-lote-q" data-pi="' + pi + '" data-li="' + li + '" value="' + esc(fmtQtd(l.sel || 0)) + '"></td>' +
-          '<td><input class="pi-in pi-in-num pi-lote-p" data-pi="' + pi + '" data-li="' + li + '" value="' + esc((Number(l.preco) || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 4 })) + '"></td>' +
+          '<td><input inputmode="decimal" autocomplete="off" class="pi-in pi-in-num pi-lote-q" data-pi="' + pi + '" data-li="' + li + '" value="' + esc(fmtQtd(l.sel || 0)) + '"></td>' +
+          '<td><input inputmode="decimal" autocomplete="off" class="pi-in pi-in-num pi-lote-p" data-pi="' + pi + '" data-li="' + li + '" value="' + esc((Number(l.preco) || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 4 })) + '"></td>' +
           '</tr>';
       });
       // linha "Sem lote" — parte da quantidade sem rastreio de lote
       html += '<tr class="pi-semlote-row">' +
         '<td colspan="2"><strong>Sem lote</strong> <span class="pi-lote-dim">(quantidade sem rastreio)</span></td>' +
         '<td class="pi-td-disp pi-lote-dim">—</td>' +
-        '<td><input class="pi-in pi-in-num pi-semlote-q" data-pi="' + pi + '" value="' + esc(fmtQtd(p.semLoteQtd || 0)) + '"></td>' +
-        '<td><input class="pi-in pi-in-num pi-semlote-p" data-pi="' + pi + '" value="' + esc((Number(p.semLotePreco) || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 4 })) + '"></td>' +
+        '<td><input inputmode="decimal" autocomplete="off" class="pi-in pi-in-num pi-semlote-q" data-pi="' + pi + '" value="' + esc(fmtQtd(p.semLoteQtd || 0)) + '"></td>' +
+        '<td><input inputmode="decimal" autocomplete="off" class="pi-in pi-in-num pi-semlote-p" data-pi="' + pi + '" value="' + esc((Number(p.semLotePreco) || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 4 })) + '"></td>' +
         '</tr>';
       html += '</tbody></table></div></div>';
     });
@@ -1541,6 +1541,27 @@
     $('rev-voltar').addEventListener('click', function () { goStep(S.produtos.some(function (p) { return p.lotes && p.lotes.length; }) ? 'lotes' : 'prod'); });
     $('rev-enviar').addEventListener('click', enviarPedido);
     $('ok-novo').addEventListener('click', function () { window.location.reload(); });
+
+    // RECORTE MSB (05/11/2026, pedido do dono): quantidade e valor (Produtos e
+    // Lotes, inclusive a linha "sem rastreio") só aceitam NÚMERO — letra,
+    // espaço e símbolo somem na hora, digitados ou colados. Ficam dígitos e o
+    // separador (vírgula decimal; ponto de milhar), lidos pelo parseNum; uma
+    // vírgula só. Roda na fase de CAPTURA, antes do ouvinte do próprio campo,
+    // que já recebe o valor limpo. O cursor fica onde estava.
+    document.addEventListener('input', function (e) {
+      var el = e.target;
+      if (!el || !el.classList || !el.classList.contains('pi-in-num')) return;
+      var so = function (t) {
+        t = String(t || '').replace(/[^\d.,]/g, '');
+        var i = t.indexOf(',');
+        return i < 0 ? t : t.slice(0, i + 1) + t.slice(i + 1).replace(/,/g, '');
+      };
+      var v = el.value, limpo = so(v);
+      if (limpo === v) return;
+      var pos = el.selectionStart, cursor = so(v.slice(0, pos == null ? v.length : pos)).length;
+      el.value = limpo;
+      try { el.setSelectionRange(cursor, cursor); } catch (x) {}
+    }, true);
 
     // RECORTE MSB: o PDF ao lado — zoom, abrir em nova aba, ocultar/mostrar
     document.addEventListener('click', function (e) {
