@@ -13,7 +13,7 @@
                       registrada aparece ANTES de criar (portal + nº)
      4 · Caso         /api/cot-casos {acao:'novo'} guarda o PDF e abre o caso
                       (COT-AAAA-NNNNNN) na Gestão de Cotações — e a PROPOSTA
-                      no modelo da Biomedical (cotacoes-proposta.js) sai por
+                      no modelo da MSB (cotacoes-proposta.js) sai por
                       e-mail para o comprador, se a pessoa deixou marcado
 
    Regras de 09/10/2026: a cotação nasce SEMPRE Cotada; empresa sempre BIO;
@@ -209,7 +209,10 @@
       pintarItens();
     });
   }
-  function pintarItens() { var b = $('cot-itens'); if (b && S.passo === 'conf') { b.innerHTML = htmlItens(); referencias(); } }
+  function pintarItens() { var b = $('cot-itens'); if (b && S.passo === 'conf') { b.innerHTML = htmlItens(); referencias(); estoqueDepois(); } }
+  // o ESTOQUE DA VENDA (05/11/2026, RECORTE MSB — pedido do dono): ao digitar o
+  // código (ou a quantidade), o estoque do PI · Pedido da MSB embaixo dos itens
+  var estoqueDepois = C.debounce(function () { if (S.passo === 'conf' && S.dados) C.pintarEstoque($('cot-estoque'), S.dados.itens); }, 450);
 
   /* ── as referências de preço do item (23/10/2026) ───────────── */
   // Pedidos do usuário: na hora de digitar o preço, (1) a MÉDIA dos últimos 6
@@ -598,7 +601,7 @@
     return '<div class="cot-prop">' +
       '<div class="cot-prop-l">' +
         '<label class="cot-prop-chk"><input type="checkbox" id="cot-prop-enviar"' + (S.prop.enviar ? ' checked' : '') + '> ' +
-          '<span><b>Enviar a proposta por e-mail ao criar o caso</b><small>O PDF no modelo da Biomedical, com os dados desta oportunidade e os seus — a descrição, o fabricante e o RMS de cada item vêm do cadastro do Salesforce —, ' +
+          '<span><b>Enviar a proposta por e-mail ao criar o caso</b><small>O PDF no modelo da MSB, com os dados desta oportunidade e os seus — a descrição, o fabricante e o RMS de cada item vêm do cadastro do Salesforce —, ' +
             (setor ? 'sai pela caixa ' + esc(setor.email) + ' (sem a permissão nela, pelo seu Outlook, com as respostas indo para ela).' : 'sai pelo seu Outlook (fica nos seus Itens Enviados).') + '</small></span></label>' +
         '<div class="cot-grade">' +
           // 29/10/2026 (pedido do usuário): o nome do comprador — o mesmo "Contato" do
@@ -898,7 +901,9 @@
         ? htmlVisor()
         :'<div class="cs-vazio"><div class="ic">' + C.svg('<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/>', 30) + '</div><h3>Sem PDF</h3>Oportunidade registrada à mão. Se tiver o PDF, anexe no caso depois.</div>') +
       '</div></div>' +
-      '<div class="cot-sec cot-sec-larga"><h5>' + IC.list + 'Itens cotados' + (S.lidos.itens ? ' <span class="cs-chip" style="height:18px;font-size:10px;color:#5A3BC4">IA</span>' : '') + '</h5><div id="cot-itens">' + htmlItens() + '</div></div>' +
+      '<div class="cot-sec cot-sec-larga"><h5>' + IC.list + 'Itens cotados' + (S.lidos.itens ? ' <span class="cs-chip" style="height:18px;font-size:10px;color:#5A3BC4">IA</span>' : '') + '</h5><div id="cot-itens">' + htmlItens() + '</div>' +
+        // o estoque da venda (05/11/2026, RECORTE MSB): o mesmo do PI · Pedido da MSB
+        '<div id="cot-estoque" class="cot-est-box"></div></div>' +
       '<div class="cot-sec cot-sec-larga"><h5>' + IC.pdf + 'Proposta para o comprador</h5><div id="cot-prop-box">' + htmlProposta() + '</div></div>' +
       '<div class="cot-sec cot-sec-larga"><h5>' + IC.note + 'Nota para o time (opcional)</h5>' +
         campo('', 'nota', { area: true, linhas: 3, ph: 'O que você combinou, o que está pendente, quem acompanha…' }) + '</div>' +
@@ -911,12 +916,12 @@
   function htmlEnvio() {
     var e = S.envio;
     if (!P) return '';
-    if (e && e.estado === 'enviando') return '<div class="cot-envio">' + '<span class="cs-spin"></span><div><b>Enviando a proposta para ' + esc(e.para) + '…</b>Gerando o PDF no modelo da Biomedical e mandando pelo seu Outlook.</div></div>';
+    if (e && e.estado === 'enviando') return '<div class="cot-envio">' + '<span class="cs-spin"></span><div><b>Enviando a proposta para ' + esc(e.para) + '…</b>Gerando o PDF no modelo da MSB e mandando pelo seu Outlook.</div></div>';
     if (e && e.estado === 'ok') return '<div class="cot-envio ok">' + IC.checkc + '<div><b>Proposta enviada para ' + esc(e.para) + '</b>' + esc(e.msg || 'O PDF ficou no caso e o envio está no histórico.') + '</div>' +
       '<button type="button" class="cs-btn cs-btn-sm" id="cot-prop-ver2">' + IC.eye + 'Ver a proposta</button></div>';
     var erro = e && e.estado === 'erro';
     return '<div class="cot-envio' + (erro ? ' erro' : '') + '">' + (erro ? IC.alert : IC.pdf) + '<div><b>' + (erro ? 'A proposta não foi enviada' : 'A proposta está pronta') + '</b>' +
-      (erro ? esc(e.msg) : 'No modelo da Biomedical, com os dados da oportunidade e os seus. Confira e mande para o comprador.') + '</div>' +
+      (erro ? esc(e.msg) : 'No modelo da MSB, com os dados da oportunidade e os seus. Confira e mande para o comprador.') + '</div>' +
       '<div class="cot-envio-bts"><input id="cot-prop-para2" value="' + esc(S.prop.para) + '" placeholder="e-mail do comprador" autocomplete="off">' +
       '<button type="button" class="cs-btn cs-btn-sm" id="cot-prop-ver2">' + IC.eye + 'Ver</button>' +
       '<button type="button" class="cs-btn cs-btn-sm cs-btn-p" id="cot-prop-mandar">' + IC.arrow + (erro ? 'Tentar de novo' : 'Enviar proposta') + '</button></div></div>';
@@ -983,7 +988,7 @@
     if (S.erroBoot) { el.innerHTML = '<div class="cs-vazio"><div class="ic">' + C.svg('<rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/>', 30) + '</div><h3>Sem acesso</h3>' + esc(S.erroBoot) + '</div>'; return; }
     el.innerHTML = S.passo === 'pdf' ? htmlPdf() : S.passo === 'lendo' ? htmlLendo() : S.passo === 'conf' ? htmlConf() : htmlPronto();
     C.quieto(el);
-    if (S.passo === 'conf') { montarVisor(); marcarInvalidos(); referencias(); }
+    if (S.passo === 'conf') { montarVisor(); marcarInvalidos(); referencias(); estoqueDepois(); }
   }
   function msg(html, tipo) {
     var m = $('cot-msg'); if (!m) return;
@@ -1198,6 +1203,7 @@
         var it = S.dados.itens[i]; if (!it) return;
         it[f] = (f === 'quantidade' || f === 'valorUnitario' || f === 'ipi') ? C.num(t.value) : t.value;
         if (f === 'codigo') { it._cod = null; conferirLinha(i); }
+        if (f === 'codigo' || f === 'quantidade') estoqueDepois();
         if (f === 'valorUnitario') { if (it._fat) it._fat.auto = false; S.criarAcima = false; pintarRefs(); }
         if (f === 'ipi') { t.classList.toggle('invalido', Number(it.ipi) > 100); atualizarTotal(); }
         if (f === 'quantidade' || f === 'valorUnitario') {
@@ -1265,7 +1271,7 @@
       if (t.hasAttribute('data-tirar')) {
         S.dados.itens.splice(Number(t.getAttribute('data-tirar')), 1);
         if (S.leitura) S.leitura.avisos = (S.leitura.avisos || []).filter(function (a) { return a.item < 0; });
-        $('cot-itens').innerHTML = htmlItens();
+        $('cot-itens').innerHTML = htmlItens(); estoqueDepois();
         return;
       }
       if (t.id === 'cot-reler') {
