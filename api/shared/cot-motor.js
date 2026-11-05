@@ -93,8 +93,8 @@
 //   . número próprio COT-MSB-AAAA-NNNNNN (NUM_PREFIXO): o flow do PI · Pedido
 //     é o mesmo da BIO e devolve a OV ao portal completo, que ignora o que não
 //     é COT-AAAA-NNNNNN — nunca fecha a cotação da BIO de mesmo número;
-//   . UNIDADE fixa VENDA RECORRENTE (o único submódulo do CRM da MSB): não
-//     depende do RLS do Power BI, que esconde a unidade MSB (comEscopo);
+//   . UNIDADE fixa MSB (05/11/26; até então VENDA RECORRENTE): não depende
+//     do RLS do Power BI, que esconde a unidade MSB (comEscopo);
 //   . o dono são as DUAS contas (DONOS), como no resto do portal da MSB;
 //   . a Ordem de Venda da MSB (OVMSB…, api/shared/cot-ov.js) e o cliente, o
 //     lote e a OV procurados na empresa msb do Dynamics.
@@ -187,8 +187,10 @@ const EMPRESAS_PADRAO = ['MSB'];
 const EMPRESA_FIXA = 'MSB';
 // RECORTE MSB: o CRM da MSB tem só a Venda Recorrente
 const AREAS_PADRAO = ['Venda Recorrente'];
-// a unidade de negócio de toda cotação da MSB (ver comEscopo)
-const UNIDADE_MSB = 'VENDA RECORRENTE';
+// a unidade de negócio de toda cotação da MSB (ver comEscopo) — 05/11/26,
+// pedido do dono: "a unidade de negócio é MSB" (antes era VENDA RECORRENTE;
+// a que tiver ficado assim é lida como MSB: listar/obterBruto)
+const UNIDADE_MSB = 'MSB';
 // o grupo aparece no PDF como FORNECEDOR — nunca é o cliente (a Biomedical;
 // o CNPJ da MSB entra em COT_CNPJS_PROPRIOS, separados por vírgula)
 const CNPJS_PROPRIOS = ['19848316000166'].concat(String(process.env.COT_CNPJS_PROPRIOS || '').split(/[,;\s]+/)
@@ -433,10 +435,10 @@ function pessoa(quem) { return { email: quem.email, nome: quem.nome || quem.emai
 // em cache por 1 h (um pedido que vier sem o token — o PI, por exemplo —
 // ainda acha as unidades confirmadas pela tela).
 const ESCOPO_TTL_MS = 60 * 60e3;
-// RECORTE MSB: o CRM da MSB tem um submódulo só (Venda Recorrente) e o RLS do
-// Power BI põe a gente da MSB na unidade "MSB", que o pbi-unidades esconde —
-// então a unidade é FIXA: toda cotação da MSB é da VENDA RECORRENTE e quem
-// passou pelo exigirEquipe (área Comercial confirmada) vê todas. O token do
+// RECORTE MSB: o CRM da MSB não tem submódulo e o RLS do Power BI põe a gente
+// da MSB na unidade "MSB", que o pbi-unidades esconde — então a unidade é
+// FIXA: toda cotação daqui é da unidade MSB e quem passou pelo exigirEquipe
+// (área Comercial confirmada) vê todas (veCaso). O token do
 // Power BI continua servindo à FAMÍLIA dos produtos do Analítico (familias).
 async function comEscopo(req, quem) {
   quem.escopo = { conhecido: true, gerencial: false, unidades: [UNIDADE_MSB], fonte: 'msb' };
@@ -449,6 +451,8 @@ function veCaso(quem, c) {
   if (!c) return false;
   if (!quem || quem.admin || quem.sistema) return true;
   const esc = quem.escopo || {};
+  // RECORTE MSB: o container só tem cotações da MSB — quem tem o Comercial vê todas
+  if (esc.fonte === 'msb') return true;
   return !!(c.unidade && esc.conhecido && pbiU.unidadeDoEscopo(c.unidade, esc));
 }
 // a unidade da cotação nova: a única da pessoa, ou a que ela escolheu entre as dela
@@ -697,6 +701,7 @@ function casoPublico(c) {
 async function listar() {
   const ix = (await store.ler(store.INDICE, INDICE_VAZIO)).dados;
   (ix.casos || []).forEach(function (r) {
+    if (r.unidade) r.unidade = UNIDADE_MSB;   // RECORTE MSB: toda cotação daqui é da unidade MSB
     r.fase = faseDe(r.fase, !!r.amostra);
     if (Array.isArray(r.fases)) r.fases = r.fases.map(function (f) { return [faseDe(f[0], !!r.amostra), f[1]]; });
   });
@@ -707,6 +712,7 @@ async function obterBruto(numero) {
   if (!numeroOk(numero)) throw erro(400, 'Número de cotação inválido.');
   const c = (await store.ler(store.arquivoDoCaso(numero), null)).dados;
   if (c) c.fase = faseDoCaso(c);
+  if (c && c.unidade) c.unidade = UNIDADE_MSB;   // RECORTE MSB: a próxima gravação já sai com MSB
   return c;
 }
 async function obter(numero, quem) {

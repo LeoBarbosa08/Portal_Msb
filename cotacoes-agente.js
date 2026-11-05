@@ -75,7 +75,7 @@
     if (!eu) return caixa('…', 'confirmando no Power BI');
     if (!eu.unidadeConfirmada) return caixa('não confirmada', esc(eu.unidadeMotivo || 'o Power BI não respondeu') + ' — sem ela a oportunidade não é registrada · <a href="#" id="cot-pbi-conectar">conectar ao Power BI</a>', true);
     if (!us.length) return caixa('nenhuma', 'o Power BI não mostra unidade de negócio para você no Comercial — sem ela a oportunidade não é registrada', true);
-    if (us.length === 1) return caixa(esc(us[0]), 'a sua unidade no Power BI');
+    if (us.length === 1) return caixa(esc(us[0]), 'sempre MSB');   // RECORTE MSB: unidade fixa (o servidor manda)
     return campo('Unidade de negócio', 'unidade', { cls: 's2', lista: us, obrig: true, id: 'cot-unid', dica: 'você tem ' + us.length + ' unidades no Power BI — escolha a desta oportunidade' });
   }
   // o acesso ao Power BI pedido no clique (o popup pode abrir) e as unidades de novo

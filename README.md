@@ -284,8 +284,8 @@ e Venda Consultiva (os outros dois submódulos do CRM de lá) não vieram.
   páginas dele); o cartão da visão geral, a busca e o guia levam ao Funil; o
   caminho do topo é Comercial › CRM › Funil de Oportunidade (sem "Venda
   Recorrente"); `pages/comercial-crm.html` (a casa com os cartões) virou só um
-  redirecionamento para os links antigos. Por dentro a unidade continua
-  VENDA RECORRENTE e o `BMCRM` segue com ela como único submódulo.
+  redirecionamento para os links antigos. O `BMCRM` segue com um único
+  submódulo por dentro (o da unidade MSB).
 - **Cotações próprias da MSB** — `api/shared/cot-store.js` lê e grava **só**
   em `COT_MSB_BLOB_URL` (container novo, SAS de container `sr=c` com Read +
   Create + Write). De propósito **não** cai no `COT_BLOB_URL` da BIO: sem a
@@ -302,11 +302,14 @@ e Venda Consultiva (os outros dois submódulos do CRM de lá) não vieram.
   números) e o lote (`cot-lotes`) são procurados na empresa `msb` do Dynamics
   (`ESTOQUE_MSB_EMPRESA`, a mesma do `/api/pedido-lotes`). O CNPJ da MSB, para
   a IA nunca o ler como cliente, vai em `COT_CNPJS_PROPRIOS` (opcional).
-- **Unidade fixa VENDA RECORRENTE** (`comEscopo` no motor): no completo cada um
-  vê só as cotações da sua unidade no RLS do Power BI, mas o RLS põe a gente da
-  MSB na unidade "MSB", que o `pbi-unidades` esconde. Aqui quem tem a área
-  Comercial (o mesmo porteiro do completo, `exigirEquipe`) vê todas as
-  cotações da MSB. Configurações: só o dono, as duas contas (`DONOS`).
+- **Unidade de negócio fixa MSB** (`UNIDADE_MSB`/`comEscopo` no motor; até
+  05/11/2026 era VENDA RECORRENTE — a cotação que ficou assim é lida como MSB e
+  regravada como MSB na próxima ação): no completo cada um vê só as cotações da
+  sua unidade no RLS do Power BI, mas o RLS põe a gente da MSB na unidade
+  "MSB", que o `pbi-unidades` esconde. Aqui quem tem a área Comercial (o mesmo
+  porteiro do completo, `exigirEquipe`) vê todas as cotações da MSB
+  (`veCaso`). No `BMCRM` a unidade MSB é a do único submódulo. Configurações:
+  só o dono, as duas contas (`DONOS`).
 - **Proposta**: continua no modelo/timbrado da Biomedical (ver "Identidade
   visual MSB"). O contato de setor da Venda Recorrente da BIO
   (`CONTATO_SETOR` em `cotacoes-base.js`) saiu: a proposta sai com o e-mail e o
@@ -322,9 +325,9 @@ e Venda Consultiva (os outros dois submódulos do CRM de lá) não vieram.
   no guia (`script.js`) e na home (`index.html`).
 - O botão de mandar o pedido ao **PI · Pedido** leva a uma página que, na MSB,
   ainda é só do dono (ver "PI · Pedido de volta"): para a equipe, abrir o PI.
-- `nav-sidebar.js?v=81` (a `v=79` foi a da poda do PI, da master), `customer-service.css?v=4`,
+- `nav-sidebar.js?v=82` (a `v=79` foi a da poda do PI, da master), `customer-service.css?v=4`,
   `licitacao-funil-vendas.css?v=19` em todas as páginas; `sw.js` — cache
-  `bm-comest-v9`.
+  `bm-comest-v10`.
 - Teste local: o `cot-teste-server.js` do completo, copiado para `.claude/`
   com `COT_MSB_BLOB_URL` e os exemplos em `COT-MSB-…`:
   `node .claude/cot-teste-server.js 4260` (ou `--vazio`, `--sem-blob`).

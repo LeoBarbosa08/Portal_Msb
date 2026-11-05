@@ -304,7 +304,8 @@ if (!window._bmPerfilSheetLoaded && !window._bmPerfilSheetInjected) {
   'use strict';
   if (window.BMCRM) return;
   var SUBS = [
-    { id: 'recorrente', rotulo: 'Venda Recorrente', unidade: 'VENDA RECORRENTE', tipo: 'cot',
+    // RECORTE MSB (05/11/26): a unidade de negócio da MSB é MSB (o servidor fixa)
+    { id: 'recorrente', rotulo: 'Venda Recorrente', unidade: 'MSB', tipo: 'cot',
       href: 'comercial-cot-funil.html?sub=recorrente',
       desc: 'As oportunidades da unidade Venda Recorrente: o funil, a gestão, o quadro e o histórico do cliente.' },
     // RECORTE MSB: BIO.ID e Venda Consultiva (as Negociações) não vieram
@@ -321,7 +322,8 @@ if (!window._bmPerfilSheetLoaded && !window._bmPerfilSheetInjected) {
   function daUnidade(u) {
     var k = chave(u);
     if (!k) return null;
-    if (k.indexOf('recorrente') >= 0) return porId('recorrente');
+    // RECORTE MSB: a unidade MSB (e a VENDA RECORRENTE de antes de 05/11/26) é o CRM da MSB
+    if (k === 'msb' || k.indexOf('recorrente') >= 0) return porId('recorrente');
     if (k.indexOf('bioid') === 0) return porId('bioid');
     return null;
   }
