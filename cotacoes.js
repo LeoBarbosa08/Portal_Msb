@@ -66,7 +66,6 @@
     { id: 'andamento', nome: 'Em andamento', ic: IC.inbox },
     { id: 'vencendo', nome: 'Prazo vencendo', ic: IC.alarm, quente: true },
     // 26/10/2026 (pedido do usuário): a fase A faturar — o pedido registrado, falta a OV
-    { id: 'faturar', nome: 'A faturar', ic: IC.cart },
     { id: 'pedido', nome: 'Ganhas', ic: IC.trophy },
     // 23/10/2026 (pedido do usuário): as AMOSTRAS, ao lado das Ganhas — a cópia
     // da perdida para a gestão; não contam em nenhuma outra visão nem valor
@@ -193,7 +192,6 @@
     var K = [
       ['todas', IC.layers, C.int(vivos.length), 'Cotadas', 'todas as oportunidades · ' + C.brlCurto(soma(vivos)), '#324C57', '#ECF0F3'],
       ['andamento', IC.inbox, C.int(n.andamento), 'Em andamento', (aguarda ? aguarda + ' com pedido, aguardando a OV · ' : '') + C.brlCurto(soma(and)) + ' cotados', '#2C7288', '#EEF5F9'],
-      ['faturar', IC.cart, C.int(n.faturar), 'A faturar', fat.length ? C.brlCurto(soma(fat, true)) + ' a faturar' : 'aguardando o faturamento', '#D97706', '#FEF1DA'],
       ['perdidas', IC.xc, C.int(n.perdidas), 'Perdidas', (venc ? venc + ' com o prazo vencido · ' : '') + C.brlCurto(soma(per)), '#CF3434', '#FDE7E7'],
       ['pedido', IC.trophy, C.int(n.pedido), 'Ganhas', C.brlCurto(soma(gan, true)) + ' em pedidos', '#138A4B', '#DDF5E7'],
       ['amostras', IC.amostra, C.int(n.amostras), 'Amostras', !n.amostras ? 'a perdida pode virar amostra' : amG || amP ? [amG ? amG + ' ganha' + (amG > 1 ? 's' : '') : '', amP ? amP + ' perdida' + (amP > 1 ? 's' : '') : ''].filter(Boolean).join(' · ') + ' · fora das contas' : 'cópias das perdidas · fora das contas', '#7C3AED', '#F1EAFE'],
@@ -409,7 +407,8 @@
     var f = C.fase(c.fase), r = resumoLocal(c), pr = C.prazoDe(r, aviso());
     // 21/10/2026: só três fases (a Perdida é a saída); 26/10/2026: + A faturar,
     // depois de Cotada — e a amostra com as dela: Envio de amostra → Ganha (ou Perdida)
-    var ordem = c.amostra ? ['amostra', 'amostra_ganha'] : ['cotada', 'faturar', 'pedido'], fim = ordem[ordem.length - 1], saida = c.amostra ? 'amostra_perdida' : 'perdida';
+    // RECORTE MSB (05/11/2026): sem a A faturar — Cotada → Ganha
+    var ordem = c.amostra ? ['amostra', 'amostra_ganha'] : ['cotada', 'pedido'], fim = ordem[ordem.length - 1], saida = c.amostra ? 'amostra_perdida' : 'perdida';
     var idx = ordem.indexOf(c.fase), perdeu = f.perdida;
     var path = ordem.map(function (id, i) {
       var cls = perdeu ? '' : i < idx ? 'feito' : i === idx ? 'atual' + (id === fim ? ' fim' : '') : '';
@@ -1810,8 +1809,12 @@
         });
       }, 'cot-dlg-largo');
   }
+  var MSB_SEM_FATURAR = true;
   // o cartão dos dados da A faturar: na A faturar (com Editar) e, depois, na Ganha (só leitura)
   function htmlFaturamento(c) {
+    // RECORTE MSB (05/11/2026, pedido do dono): sem a fase A faturar, sem o cartão
+    // do paciente e do lote (o que uma cotação antiga tenha guardado fica no caso)
+    if (MSB_SEM_FATURAR) return '';
     if (c.amostra || c.descartado) return '';
     var naFase = c.fase === 'faturar', fa = c.faturamento;
     if (!naFase && !(fa && c.fase === 'pedido')) return '';
@@ -1905,7 +1908,6 @@
   // na Amostra, a ganha fica verde e a perdida vermelha (sem sair dela)
   var COLUNAS = [
     { id: 'cotada', visao: 'andamento', nome: 'Em andamento' },
-    { id: 'faturar', visao: 'faturar' },
     { id: 'perdida', visao: 'perdidas' },
     { id: 'pedido', visao: 'pedido' },
     { id: 'amostra', visao: 'amostras', nome: 'Amostra', cor: COR_AMOSTRA, aberta: true, desc: 'Nenhuma amostra. Solte aqui uma oportunidade Perdida (ou abra a perdida) para criar a amostra — ela não conta nas cotadas nem nos valores.' }

@@ -333,7 +333,6 @@
   // "ainda nada aconteceu" (sem pedido nem OV); fecha como Ganha com a OV
   var FASES = [
     { id: 'cotada', nome: 'Cotada', curto: 'Cotada', cor: '#2C7288', aberta: true, desc: 'proposta enviada no portal, aguardando o resultado' },
-    { id: 'faturar', nome: 'A faturar', curto: 'A faturar', cor: '#D97706', aberta: true, faturar: true, desc: 'aguardando o faturamento — o pedido ainda não chegou; fecha como Ganha com a Ordem de Venda' },
     { id: 'perdida', nome: 'Perdida', curto: 'Perdida', cor: '#CF3434', perdida: true, desc: 'não virou pedido — o motivo diz por quê (preço, prazo, vencida, cancelada…)' },
     { id: 'pedido', nome: 'Ganha (virou pedido)', curto: 'Ganha', cor: '#138A4B', ganha: true, desc: 'virou pedido — o pedido (PDF, à mão ou a OV) está no caso' }
   ];
@@ -345,7 +344,9 @@
     { id: 'amostra_ganha', nome: 'Ganha', curto: 'Ganha', cor: '#138A4B', ganha: true, amostra: true, desc: 'o cliente aprovou a amostra — fica na Amostra, fora das Ganhas' },
     { id: 'amostra_perdida', nome: 'Perdida', curto: 'Perdida', cor: '#CF3434', perdida: true, amostra: true, desc: 'o cliente não aprovou a amostra — fica na Amostra, fora das Perdidas' }
   ];
-  var FASE_ANTIGA = { em_cotacao: 'cotada', negociacao: 'cotada', vencida: 'perdida', cancelada: 'perdida' };
+  // RECORTE MSB (05/11/2026, pedido do dono): sem a fase A faturar na MSB — a que
+  // estava nela é lida como Cotada (como no servidor, api/shared/cot-motor.js)
+  var FASE_ANTIGA = { em_cotacao: 'cotada', negociacao: 'cotada', vencida: 'perdida', cancelada: 'perdida', faturar: 'cotada' };
   function faseAtual(id) { return FASE_ANTIGA[id] || id; }
   function fase(id) { id = faseAtual(id); return FASES.concat(FASES_AMOSTRA).filter(function (f) { return f.id === id; })[0] || { id: id, nome: id, curto: id, cor: '#95A4AB' }; }
   // a fase como vale hoje (a mesma regra do servidor — faseDe): a amostra

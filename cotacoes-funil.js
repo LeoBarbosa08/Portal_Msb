@@ -81,7 +81,7 @@
     setT('hr-cnt', F.int(T.ag.n) + ' ' + cotTxt(T.ag.n));
     var per = f.length === 1 ? 'de ' + dm(f[0]) + ' a ' + dm(addDias(f[0], 6)) : f.length ? 'em ' + f.length + ' semanas' : WK.length ? 'de ' + dm(WK[0]) + ' a ' + dm(addDias(WK[WK.length - 1], 6)) : '';
     var nFat = c.ls.filter(function (o) { return o.fase === 'faturar'; }).length;
-    setH('hr-tot', 'Data da cotação ' + esc(per) + ' · <b>' + F.int(T.and.n) + '</b> ainda em aberto' + (nFat ? ' (<b>' + F.int(nFat) + '</b> a faturar)' : ''));
+    setH('hr-tot', 'Data da cotação ' + esc(per) + ' · <b>' + F.int(T.and.n) + '</b> ainda em aberto');
     var tot = val(c, T.ag) || 1, barra = $('hr-split');
     barra.innerHTML = ['and', 'gan', 'per'].map(function (k) {
       var x = val(c, T[k]); if (!x) return '';
@@ -143,7 +143,8 @@
         '<div class="fv-fn-lb"><div class="t">' + NOMEx[k] + '</div><div class="s">' + sub + '</div></div>' +
         '<div class="fv-fn-w"><div class="fv-fn-bar' + (vaz ? ' vazia' : '') + '" style="' + est + '"><span>' + dentro + '</span></div></div></div>';
     };
-    host.innerHTML = faixa('ag') + '<div class="fv-fn-sep"><span class="k">Das cotadas, hoje</span><hr></div>' + faixa('and') + faixa('fat') + faixa('gan') + faixa('per');
+    // RECORTE MSB (05/11/2026, pedido do dono): sem a fase A faturar — sem a faixa dela
+    host.innerHTML = faixa('ag') + '<div class="fv-fn-sep"><span class="k">Das cotadas, hoje</span><hr></div>' + faixa('and') + faixa('gan') + faixa('per');
 
     // embaixo: as fases das em aberto e das perdidas, e a etapa do pedido das ganhas
     var porF = { and: {}, per: {} }, porE = {};

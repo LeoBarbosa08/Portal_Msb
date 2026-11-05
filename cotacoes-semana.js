@@ -39,7 +39,7 @@
   var UM = { ag: ['cotada', 'cotadas'], and: ['em aberto', 'em aberto'], gan: ['ganha', 'ganhas'], per: ['perdida', 'perdidas'] };
   var DICA = {
     ag: 'oportunidades com a data da cotação no período',
-    and: 'ainda sem resultado — Cotada ou A faturar',
+    and: 'ainda sem resultado — Cotada',
     gan: 'viraram pedido',
     per: 'não viraram pedido — Perdida (inclui proposta vencida e cancelada)'
   };

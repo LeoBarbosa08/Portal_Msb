@@ -291,7 +291,7 @@
   // o caminho das fases: Cotada → Ganha (virou pedido) (+ a saída, Perdida) — 21/10/2026: só três fases
   // 26/10/2026: Cotada → A faturar → Ganha
   function htmlCaminho(t, fs) {
-    var ORD = ['cotada', 'faturar', 'pedido'];
+    var ORD = ['cotada', 'pedido'];   // RECORTE MSB (05/11/2026): sem a A faturar
     var ultima = {}; fs.forEach(function (x) { ultima[x.fase] = x; });
     var atual = C.faseDe(t), f = C.fase(atual), idx = ORD.indexOf(atual);
     // até onde chegou dentro do funil: a fase atual, ou — fora do funil — a

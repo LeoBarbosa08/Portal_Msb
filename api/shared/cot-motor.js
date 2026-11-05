@@ -121,7 +121,6 @@ const lotesD365 = require('./cot-lotes');
 // vencida, cancelada pelo comprador…). 26/10/26: + A faturar, depois de Cotada
 const FASES = [
   { id: 'cotada', nome: 'Cotada', aberta: true, desc: 'proposta enviada no portal, aguardando o resultado' },
-  { id: 'faturar', nome: 'A faturar', aberta: true, faturar: true, desc: 'aguardando o faturamento — o pedido ainda não chegou; fecha como Ganha com a Ordem de Venda' },
   { id: 'perdida', nome: 'Perdida', perdida: true, desc: 'não virou pedido — o motivo diz por quê (preço, prazo, vencida, cancelada…)' },
   { id: 'pedido', nome: 'Ganha (virou pedido)', ganha: true, desc: 'virou pedido — o pedido (PDF, à mão ou a OV) está no caso' }
 ];
@@ -137,7 +136,11 @@ const FASES_INICIAIS = ['cotada'];
 // as fases que existiram: "Em cotação" (até 09/10/26) e "Em negociação" são
 // Cotada; "Vencida" e "Cancelada" são Perdida (até 21/10/26). O caso antigo é
 // lido assim, sem migrar; a primeira ação nele grava a fase nova.
-const FASE_ANTIGA = { em_cotacao: 'cotada', negociacao: 'cotada', vencida: 'perdida', cancelada: 'perdida' };
+// RECORTE MSB (05/11/2026, pedido do dono: "tire a fase A FATURAR"): na MSB a
+// fase não existe — Cotada -> Ganha / Perdida. A cotação que estava em A
+// faturar é lida como Cotada (FASE_ANTIGA); os dados de paciente/lote que ela
+// tenha guardado ficam no caso, sem tela.
+const FASE_ANTIGA = { em_cotacao: 'cotada', negociacao: 'cotada', vencida: 'perdida', cancelada: 'perdida', faturar: 'cotada' };
 function faseAtual(id) { return FASE_ANTIGA[id] || id; }
 // a fase como vale hoje (26/10/26): a amostra Cotada (as de antes das fases
 // dela) é Envio de amostra
@@ -1346,7 +1349,7 @@ function aplicar(c, tipo, b, quem, cfg, ctx) {
       const nova = String(b.fase || '');
       // 26/10/26: a amostra tem as fases dela (Envio de amostra, Ganha, Perdida)
       const f = (c.amostra ? FASES_AMOSTRA : FASES).filter(function (x) { return x.id === nova; })[0];
-      if (!f) throw erro(400, c.amostra ? 'Fase inválida — na amostra, as fases são Envio de amostra, Ganha e Perdida.' : 'Fase inválida — as fases são Cotada, A faturar, Perdida e Ganha (virou pedido).');
+      if (!f) throw erro(400, c.amostra ? 'Fase inválida — na amostra, as fases são Envio de amostra, Ganha e Perdida.' : 'Fase inválida — as fases são Cotada, Perdida e Ganha (virou pedido).');
       // a fase aberta de agora (Cotada / A faturar) COM o pedido registrado =
       // desfazer o pedido (22/10/26)
       const desfazer = !c.amostra && nova === c.fase && f.aberta && !!c.pedido;

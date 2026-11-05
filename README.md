@@ -333,6 +333,13 @@ e Venda Consultiva (os outros dois submódulos do CRM de lá) não vieram.
   Venda Recorrente da BIO (`CONTATO_SETOR` em `cotacoes-base.js`) saiu: a
   proposta sai com o e-mail e o telefone de quem está logado. A área do PI vai
   como `PEDIDOINTELIGENTE (MSB)`.
+- **Sem a fase A faturar (05/11/2026, pedido do dono)** — na MSB as fases são
+  Cotada → Ganha / Perdida (e as da Amostra). Saíram a fase (`FASES` do
+  `cot-motor.js` e do `cotacoes-base.js`), o cartão de KPI, o filtro, a coluna
+  do Quadro, a faixa do Funil, o passo no caminho da oportunidade e o cartão
+  "paciente e lote". A cotação que estava em A faturar é lida como Cotada
+  (`FASE_ANTIGA`, nos dois lados); os dados de paciente/lote que ela tenha
+  ficam guardados no caso, sem tela, e ainda saem na proposta.
 - **Estoque da venda (05/11/2026, pedido do dono)** — ao digitar o código (ou a
   quantidade) dos itens, o painel "Estoque da venda" embaixo dos Itens cotados,
   na Nova oportunidade e na oportunidade em andamento (lendo e editando): o
@@ -356,7 +363,7 @@ e Venda Consultiva (os outros dois submódulos do CRM de lá) não vieram.
   ainda é só do dono (ver "PI · Pedido de volta"): para a equipe, abrir o PI.
 - `nav-sidebar.js?v=82` (a `v=79` foi a da poda do PI, da master), `customer-service.css?v=4`,
   `licitacao-funil-vendas.css?v=19` em todas as páginas; `sw.js` — cache
-  `bm-comest-v11`.
+  `bm-comest-v12`.
 - Teste local: o `cot-teste-server.js` do completo, copiado para `.claude/`
   com `COT_MSB_BLOB_URL` e os exemplos em `COT-MSB-…`:
   `node .claude/cot-teste-server.js 4260` (ou `--vazio`, `--sem-blob`).
