@@ -1400,30 +1400,42 @@ if (!window._bmPerfilSheetLoaded && !window._bmPerfilSheetInjected) {
     if (typeof window.bmPodarNavegacao === 'function') window.bmPodarNavegacao();
 
     /* ── Recolher/expandir a sidebar (248px ↔ 64px) ───────────────
-       Estado persistido em localStorage. Em telas estreitas (<1100px)
-       inicia recolhida por padrão. Só vale no desktop (>980px); em
-       tablet/mobile a sidebar tem comportamento próprio. */
+       Estado persistido em localStorage, um para cada largura:
+       · janela larga (>=1100px): KEY — começa aberta;
+       · janela estreita (<1100px — tela dividida, notebook pequeno):
+         KEY_ESTREITA — começa RECOLHIDA, para o conteúdo ter espaço.
+       05/11/2026: ao dividir a tela (Windows + seta) a página já aberta
+       não mudava — ficava com a sidebar aberta de 284px e o conteúdo
+       espremido. Agora a troca de largura reaplica o estado daquela
+       largura na hora, e quem abrir/fechar na estreita não mexe na larga.
+       Abaixo de 768px a sidebar vira drawer e a classe não tem efeito. */
     (function () {
       var KEY = 'bm-sidebar-expanded-v1';
-      function isDesktop() { return window.matchMedia('(min-width: 981px)').matches; }
+      var KEY_ESTREITA = 'bm-sidebar-expanded-estreita-v1';
+      var larga = window.matchMedia('(min-width: 1100px)');
+      function chave() { return larga.matches ? KEY : KEY_ESTREITA; }
+      function lido() {
+        var saved = null;
+        try { saved = localStorage.getItem(chave()); } catch (e) {}
+        return saved !== null ? (saved === '1') : larga.matches;   // padrão: larga aberta, estreita recolhida
+      }
       function apply(expanded) {
         document.body.classList.toggle('sb-collapsed', !expanded);
         var t = document.getElementById('sb-toggle');
         if (t) t.title = expanded ? 'Recolher menu' : 'Expandir menu';
       }
-      var saved = null;
-      try { saved = localStorage.getItem(KEY); } catch (e) {}
-      var expanded;
-      if (saved !== null) expanded = (saved === '1');
-      else expanded = window.matchMedia('(min-width: 1100px)').matches; // notebooks estreitos iniciam recolhidos
+      var expanded = lido();
       apply(expanded);
 
       var toggle = document.getElementById('sb-toggle');
       if (toggle) toggle.addEventListener('click', function () {
         expanded = !expanded;
         apply(expanded);
-        try { localStorage.setItem(KEY, expanded ? '1' : '0'); } catch (e) {}
+        try { localStorage.setItem(chave(), expanded ? '1' : '0'); } catch (e) {}
       });
+      function trocouLargura() { expanded = lido(); apply(expanded); }
+      if (larga.addEventListener) larga.addEventListener('change', trocouLargura);
+      else if (larga.addListener) larga.addListener(trocouLargura);
     })();
 
     /* ── App shell (Claude Design): sidebar full-height à esquerda +

@@ -2268,14 +2268,22 @@ body.sb-drawer-open .sb-overlay { opacity: 1; pointer-events: auto; }
        o visual do drawer no mobile) ---- */
 body.dshell .area-sidebar { position: static; margin: 0; height: auto; top: auto; }
 body.dshell .area-sidebar > .sb-back { display: none; }
+/* 05/11/2026 · TELA DIVIDIDA (641–980px): a regra da "barra horizontal de
+   tablet" (lá em cima, .area-sidebar .sb-card { flex-wrap: wrap } e
+   .sb-head { flex: 1 1 100% }) vazava para a sidebar em coluna do shell —
+   o cabeçalho "Comercial · Departamento" tomava a altura toda e a navegação
+   quebrava para uma 2ª coluna, cortada atrás do conteúdo (e o mesmo dentro
+   do drawer entre 641 e 767px). Aqui o shell desfaz o wrap, o centro e o
+   gap do cartão e o flex do cabeçalho. */
 body.dshell .area-sidebar .sb-card {
   background: #fff; border: none; border-right: 1px solid #E5EAED;
   border-radius: 0; box-shadow: none; padding: 0;
   display: flex; flex-direction: column; flex: 1 1 auto; min-height: 0;
+  flex-wrap: nowrap; align-items: stretch; gap: 0;
   overflow: hidden; height: 100%;
 }
 body.dshell .area-sidebar .sb-head {
-  flex-shrink: 0; padding: 16px 14px 14px; margin: 0; gap: 11px;
+  flex: 0 0 auto; padding: 16px 14px 14px; margin: 0; gap: 11px;
   display: flex; align-items: center; border-bottom: 1px solid #EEF2F5;
 }
 body.dshell .area-sidebar .sb-head .sb-ic {
@@ -2344,7 +2352,7 @@ body.dshell .area-sidebar .sb-parent .sb-caret {
 body.dshell .area-sidebar .sb-group.open .sb-parent { color: #10323E; }
 body.dshell .area-sidebar .sb-group.open .sb-parent .sb-caret { transform: rotate(90deg); color: #287A8E; }
 body.dshell .area-sidebar .sb-children {
-  display: none; flex-direction: column; margin: 2px 0 4px 26px; padding-left: 10px;
+  display: none; flex-direction: column; flex-wrap: nowrap; margin: 2px 0 4px 26px; padding-left: 10px;
   border-left: 1px solid #EEF2F5; gap: 1px;
 }
 body.dshell .area-sidebar .sb-group.open .sb-children { display: flex; }
@@ -2545,6 +2553,10 @@ body.dshell .area-grid { grid-template-columns: minmax(0, 1fr) !important; }
   /* ---- DRAWER (substitui a sidebar) ---- */
   body.dept.dshell .area-sidebar {
     position: fixed; top: 0; bottom: 0; left: 0; z-index: 999;
+    /* align-self: o "start" da sidebar do desktop fazia o drawer (fixed,
+       dentro do flex do shell) encolher até o conteúdo em vez de ir de
+       cima a baixo — o rodapé (Voltar ao portal + pessoa) ficava no meio */
+    align-self: stretch;
     width: 300px; max-width: 85vw; height: auto; margin: 0;
     background: #fff; border-radius: 0 20px 20px 0; overflow: hidden;
     box-shadow: 12px 0 40px rgba(12,32,41,0.25);

@@ -437,6 +437,29 @@ a da Biomedical:
 SharePoint BioPortal, Zendesk, e-mails @biomedical), as pastas de materiais de
 marketing e o texto do Sales Playbook.
 
+### Tela dividida (05/11/2026)
+
+Pedido do dono: "quando eu divido a tela tá com problema na responsividade".
+Com a janela entre 641 e 980px (meia tela num monitor Full HD) o menu lateral
+quebrava: o cartão "Comercial · Departamento" ocupava a altura toda e a
+navegação ia para uma segunda coluna, cortada atrás do conteúdo.
+
+- **Causa** (`styles.css`): a regra antiga da "barra horizontal de tablet"
+  (`@media (641px–980px)`: `.sb-card { flex-wrap: wrap }`,
+  `.sb-head { flex: 1 1 100% }`) continuava valendo dentro do shell novo, em
+  que a sidebar é uma coluna de altura inteira. O bloco `body.dshell` agora
+  desfaz o wrap, o centro e o gap do cartão e o flex do cabeçalho.
+- **Recolhe sozinho** (`nav-sidebar.js`): abaixo de 1100px a sidebar começa
+  recolhida (84px, só ícones) e o conteúdo ganha o espaço; ao dividir/juntar a
+  tela com a página aberta ela se ajusta na hora. Cada largura guarda a sua
+  escolha (`bm-sidebar-expanded-v1` na larga, `bm-sidebar-expanded-estreita-v1`
+  na estreita): abrir o menu na meia tela não muda a tela cheia.
+- **Drawer do celular** (< 768px): ia só até o fim dos itens (o
+  `align-self: start` da sidebar do desktop encolhia o `position: fixed`);
+  agora vai de cima a baixo, com "Voltar ao portal" e a pessoa no rodapé.
+- `styles.css?v=15` e `nav-sidebar.js?v=83` em todas as páginas; `sw.js` —
+  cache `bm-comest-v17`.
+
 ## Como colocar no ar
 
 1. **Repositório no GitHub** — crie um repositório **privado e vazio** (sem
