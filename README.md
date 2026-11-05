@@ -310,10 +310,38 @@ e Venda Consultiva (os outros dois submódulos do CRM de lá) não vieram.
   porteiro do completo, `exigirEquipe`) vê todas as cotações da MSB
   (`veCaso`). No `BMCRM` a unidade MSB é a do único submódulo. Configurações:
   só o dono, as duas contas (`DONOS`).
-- **Proposta**: continua no modelo/timbrado da Biomedical (ver "Identidade
-  visual MSB"). O contato de setor da Venda Recorrente da BIO
-  (`CONTATO_SETOR` em `cotacoes-base.js`) saiu: a proposta sai com o e-mail e o
-  telefone de quem está logado. A área do PI vai como `PEDIDOINTELIGENTE (MSB)`.
+- **Proposta no modelo da MSB (05/11/2026, pedido do dono)** —
+  `cotacoes-proposta.js` refeito no layout do PDF "ACE-MSB · Gestão Comercial"
+  que o dono mandou: A4, o logo da MSB (`assets/proposta-msb-logo.png`, tirado
+  do próprio PDF) com "MEDICAL SYSTEM DO BRASIL", Data de criação / Número de
+  Proposta / Data de Validade à direita (+ a cotação do portal), "PROPOSTA
+  COMERCIAL", os rótulos em caixa alta (Preparado por · Nome completo /
+  E-mail · Razão social / CNPJ · Endereço principal), a tabela Código
+  (monoespaçado) · Produto · Fabricante · Qtd. · Vlr. Venda · Subtotal sem
+  fundo e com linhas finas, Subtotal / Valor Total à direita, condição e prazo
+  à esquerda e "Esta proposta é válida até … · MSB Medical System do Brasil ·
+  www.msbbrasil.com" no rodapé. Com tudo o que a proposta do portal já levava:
+  telefones (de quem prepara e do contato), cidade/UF/CEP, dados do
+  faturamento (A faturar), RMS e lote embaixo do produto, a unidade na
+  quantidade, a coluna de IPI com o IPI somado e o total com IPI, frete e
+  observação; várias páginas repetem o cabeçalho da tabela e numeram as
+  páginas. A Helvetica do jsPDF é mais larga que a Segoe UI do modelo: a
+  tabela usa 8,5 pt (`TB`) para quebrar as descrições nas mesmas linhas. O
+  e-mail da proposta fala em MSB. As imagens do timbrado da Biomedical
+  (`assets/proposta-topo.jpg`/`-rodape.jpg`) saíram. O contato de setor da
+  Venda Recorrente da BIO (`CONTATO_SETOR` em `cotacoes-base.js`) saiu: a
+  proposta sai com o e-mail e o telefone de quem está logado. A área do PI vai
+  como `PEDIDOINTELIGENTE (MSB)`.
+- **Estoque da venda (05/11/2026, pedido do dono)** — ao digitar o código (ou a
+  quantidade) dos itens, o painel "Estoque da venda" embaixo dos Itens cotados,
+  na Nova oportunidade e na oportunidade em andamento (lendo e editando): o
+  **mesmo estoque do PI · Pedido da MSB** (`/api/pedido-lotes` — Dynamics,
+  empresa `msb`, depósito ALMOX-PA, localizações `PA.*`, a Quantidade física
+  disponível). Agrupa pelo código: Pedido × Temos × Falta e a Situação
+  (completo, parcial, sem estoque, sem consulta); verde quando tem tudo,
+  âmbar quando falta. `estoqueDe`/`htmlEstoque`/`pintarEstoque` em
+  `cotacoes-base.js` (cache de 2 min por código), estilos `.cot-est*` no
+  `cotacoes.css`. Nada é gravado: é consulta na hora.
 - **Códigos no Power BI**: como no PI, o código que some com o recorte MSB do
   `pbi-throttle.js` é procurado de novo com `REMOVEFILTERS('Empresas')` (só
   código e nome) — `validarCodigos` em `cotacoes-base.js`.
@@ -327,7 +355,7 @@ e Venda Consultiva (os outros dois submódulos do CRM de lá) não vieram.
   ainda é só do dono (ver "PI · Pedido de volta"): para a equipe, abrir o PI.
 - `nav-sidebar.js?v=82` (a `v=79` foi a da poda do PI, da master), `customer-service.css?v=4`,
   `licitacao-funil-vendas.css?v=19` em todas as páginas; `sw.js` — cache
-  `bm-comest-v10`.
+  `bm-comest-v11`.
 - Teste local: o `cot-teste-server.js` do completo, copiado para `.claude/`
   com `COT_MSB_BLOB_URL` e os exemplos em `COT-MSB-…`:
   `node .claude/cot-teste-server.js 4260` (ou `--vazio`, `--sem-blob`).
@@ -361,8 +389,7 @@ a da Biomedical:
   Instagram, LinkedIn). O site não publica telefones, então não há "Unidades".
 - `sw.js` — cache `bm-comest-v3`, para o navegador não servir o visual antigo.
 
-**Continua Biomedical, de propósito:** a proposta comercial em PDF
-(`cotacoes-proposta.js` + `assets/proposta-*.jpg`, timbrado e razão social), o
+**Continua Biomedical, de propósito:** o
 "Cód. Biomedical" dos produtos, os atalhos de sistemas compartilhados (Salesforce,
 SharePoint BioPortal, Zendesk, e-mails @biomedical), as pastas de materiais de
 marketing e o texto do Sales Playbook.

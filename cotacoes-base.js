@@ -1184,6 +1184,90 @@
     });
   }
 
+  /* ── o ESTOQUE DA VENDA (05/11/2026, RECORTE MSB — pedido do dono) ── */
+  // "Na hora de digitar o código na oportunidade, ele trazer o estoque — o
+  // mesmo que o PI · Pedido do portal da MSB usa": o /api/pedido-lotes (o
+  // Dynamics, empresa msb, depósito ALMOX-PA, só as localizações PA.*, a
+  // Quantidade física disponível somada). O painel agrupa os itens pelo
+  // código: PEDIDO (a soma das quantidades) × TEMOS (o disponível) × FALTA e a
+  // SITUAÇÃO (completo, parcial, sem estoque). Cache por código: 2 min.
+  var _est = {}, _estMeta = null, EST_TTL = 2 * 60e3;
+  function codsDe(itens) {
+    var l = [];
+    (itens || []).forEach(function (it) { var k = normCod(it && it.codigo); if (k && l.indexOf(k) < 0) l.push(k); });
+    return l;
+  }
+  function estoqueFresco(k) { return !!(_est[k] && Date.now() - _est[k].t < EST_TTL); }
+  // { configurado, deposito, localizacao, aviso, em, itens: { COD: { disponivel: Number|null, erro } } }
+  function estoqueDe(codigos) {
+    var cods = codsDe((codigos || []).map(function (c) { return { codigo: c }; }));
+    var falta = cods.filter(function (k) { return !estoqueFresco(k); });
+    var p = !falta.length ? Promise.resolve() : api('pedido-lotes', { codigos: falta }).then(function (j) {
+      if (!j || j.configured === false) { _estMeta = { configurado: false }; return; }
+      _estMeta = { configurado: true, deposito: j.deposito || j.location || '', localizacao: j.localizacao || '', aviso: j.aviso || '', em: Date.now() };
+      var it = j.itens || {};
+      falta.forEach(function (k) {
+        var x = it[k];
+        _est[k] = { t: Date.now(), disponivel: x && x.disponivel != null ? Number(x.disponivel) : null, erro: (x && x.erro) || (x ? '' : 'sem resposta do Dynamics') };
+      });
+    });
+    return p.then(function () {
+      var out = {};
+      cods.forEach(function (k) { out[k] = _est[k] || { disponivel: null, erro: 'sem resposta' }; });
+      return Object.assign({ itens: out }, _estMeta || { configurado: true });
+    });
+  }
+  var IC_EST = svg('<path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><polyline points="3.27 6.96 12 12.01 20.73 6.96"/><line x1="12" y1="22.08" x2="12" y2="12"/>');
+  var SIT_EST = { ok: 'completo', parcial: 'parcial', zero: 'sem estoque', livre: 'disponível', nd: 'sem consulta' };
+  // est = null: consultando; erro = a consulta falhou
+  function htmlEstoque(itens, est, erro) {
+    var linhas = [], por = {};
+    (itens || []).forEach(function (it) {
+      var k = normCod(it && it.codigo); if (!k) return;
+      if (!por[k]) { por[k] = { cod: k, desc: '', pedido: 0 }; linhas.push(por[k]); }
+      por[k].pedido += Number(it.quantidade) || 0;
+      if (!por[k].desc) por[k].desc = String(it.descricao || (produtoDoCodigo(k) || {}).nome || '').trim();
+    });
+    var h = '<h5 class="cot-est-h">' + IC_EST + 'Estoque da venda</h5>';
+    if (!linhas.length) return h + '<div class="cot-est neutro"><p class="cot-est-msg">Digite o código do produto nos itens para ver o estoque.</p></div>';
+    if (erro) return h + '<div class="cot-est alerta"><p class="cot-est-msg">' + IC.alert + 'Não consegui consultar o estoque: ' + esc(erro) + '</p></div>';
+    if (!est) return h + '<div class="cot-est neutro"><p class="cot-est-msg"><span class="cs-spin"></span> Consultando o estoque no Dynamics…</p></div>';
+    if (est.configurado === false) return h + '<div class="cot-est neutro"><p class="cot-est-msg">' + IC.info + 'A consulta ao estoque (Dynamics) não está ligada no portal.</p></div>';
+    var n = { ok: 0, ruim: 0, nd: 0 };
+    var corpo = linhas.map(function (l) {
+      var e = est.itens[l.cod] || {}, temos = e.disponivel, sit;
+      if (temos == null) sit = 'nd';
+      else if (!(l.pedido > 0)) sit = temos > 0 ? 'livre' : 'zero';
+      else sit = temos >= l.pedido ? 'ok' : temos > 0 ? 'parcial' : 'zero';
+      if (sit === 'ok' || sit === 'livre') n.ok++; else if (sit === 'nd') n.nd++; else n.ruim++;
+      var falta = temos == null || !(l.pedido > 0) ? 0 : Math.max(0, l.pedido - temos);
+      return '<tr class="s-' + sit + '"><td class="it"><b>' + esc(l.cod) + '</b>' + (l.desc ? '<small title="' + esc(l.desc) + '">' + esc(l.desc) + '</small>' : '') + '</td>' +
+        '<td class="n">' + (l.pedido > 0 ? qtd(l.pedido) : '—') + '</td>' +
+        '<td class="n temos">' + (temos == null ? '<span title="' + esc(e.erro || '') + '">—</span>' : qtd(temos)) + '</td>' +
+        '<td class="n falta">' + (falta > 0 ? qtd(falta) : '—') + '</td>' +
+        '<td class="sit"><span class="cot-est-chip s-' + sit + '">' + SIT_EST[sit] + '</span></td></tr>';
+    }).join('');
+    var cls = n.ruim ? 'alerta' : n.nd ? 'neutro' : 'ok';
+    var tit = n.ruim ? 'Estoque insuficiente para ' + n.ruim + ' de ' + linhas.length + ' item(ns)'
+      : n.nd ? (n.ok ? 'Estoque suficiente para ' + n.ok + ' item(ns) — ' : '') + 'sem consulta para ' + n.nd + ' item(ns)'
+      : 'Estoque suficiente para toda a venda';
+    var onde = ['Dynamics · empresa MSB', est.deposito ? 'depósito ' + est.deposito : '', est.localizacao ? 'localizações ' + est.localizacao : ''].filter(Boolean).join(' · ');
+    return h + '<div class="cot-est ' + cls + '"><div class="cot-est-top"><b>' + IC_EST + esc(tit) + '</b><span title="' + esc(onde) + '">estoque de ' + esc(dataBR(new Date().toISOString())) + '</span></div>' +
+      '<table class="cot-est-t"><thead><tr><th>Item</th><th class="n">Pedido</th><th class="n">Temos</th><th class="n">Falta</th><th>Situação</th></tr></thead><tbody>' + corpo + '</tbody></table>' +
+      (est.aviso ? '<p class="cot-est-aviso">' + esc(est.aviso) + '</p>' : '') + '</div>';
+  }
+  // pinta o painel em `el` com o estoque dos `itens` (a última chamada ganha)
+  function pintarEstoque(el, itens) {
+    if (!el) return Promise.resolve();
+    var seq = (el._estSeq || 0) + 1; el._estSeq = seq;
+    var cods = codsDe(itens);
+    if (!cods.length) { el.innerHTML = htmlEstoque(itens); return Promise.resolve(); }
+    // o que ainda não está no cache mostra "consultando" (sem piscar o que já está na tela)
+    if (!cods.every(estoqueFresco) && !el.querySelector('.cot-est-t')) el.innerHTML = htmlEstoque(itens, null);
+    return estoqueDe(cods).then(function (est) { if (el._estSeq === seq) el.innerHTML = htmlEstoque(itens, est); },
+      function (e) { if (el._estSeq === seq) el.innerHTML = htmlEstoque(itens, null, (e && e.message) || String(e)); });
+  }
+
   /* ── o SUBMÓDULO do CRM (04/11/2026) ─────────────────────────── */
   // As telas das oportunidades (estas páginas) são as do CRM do Comercial:
   // Venda Recorrente e BIO.ID usam as MESMAS páginas, cada uma presa à sua
@@ -1243,6 +1327,7 @@
     conferirItens: conferirItens, itensComCodigoRuim: itensComCodigoRuim, statusCodigo: statusCodigo,
     produtosSf: produtosSf, descricaoSf: descricaoSf, completarDoSf: completarDoSf, dicaSf: dicaSf,
     codigosDoTexto: codigosDoTexto, codigosNossosNoTexto: codigosNossosNoTexto, casarPeloTexto: casarPeloTexto,
+    estoqueDe: estoqueDe, htmlEstoque: htmlEstoque, pintarEstoque: pintarEstoque,
     comparar: comparar, parecido: parecido, casarCodigos: casarCodigos, codigosDoPedido: codigosDoPedido, RESULTADOS: RESULTADOS, resultadoItem: resultadoItem, abrirNoPI: abrirNoPI
   };
 })();

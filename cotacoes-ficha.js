@@ -280,7 +280,7 @@
       var prop = c ? (c.propostas || []).length : (t.proposta ? 1 : 0);
       tit = f.nome + ' · aguardando o resultado';
       var pEm = (c && c.proposta && c.proposta.em) || (t.proposta && t.proposta.em) || '';
-      tx = (prop ? 'Proposta enviada ao comprador' + (pEm ? ' em ' + C.dataBR(pEm) + ' (' + C.quando(pEm) + ')' : '') + '. ' : 'A proposta no modelo da Biomedical ainda não foi enviada ao comprador. ') +
+      tx = (prop ? 'Proposta enviada ao comprador' + (pEm ? ' em ' + C.dataBR(pEm) + ' (' + C.quando(pEm) + ')' : '') + '. ' : 'A proposta no modelo da MSB ainda não foi enviada ao comprador. ') +
         (pr && !pr.semData ? (pr.nivel === 2 ? 'Prazo vencido em ' + C.diaBR(t.validade) + '.' : 'Vence em ' + C.diaBR(t.validade) + ' (' + C.quando(pr.quando.toISOString()) + ').') : 'Sem data de vencimento.') +
         ' Quando o portal gerar o pedido, o PDF entra no caso e a oportunidade vira pedido.';
     }
@@ -321,7 +321,7 @@
     passos.push(['ok', 'Oportunidade registrada', C.dataBR(c.criadoEm, true) + (c.criadoPor ? ' · ' + quem(c.criadoPor) : '') +
       (l && l.arquivo ? ' · a partir do PDF ' + l.arquivo + (l.ia ? ' (lido pela IA)' : '') : ' · preenchida à mão')]);
     if (ult) passos.push(['ok', 'Proposta enviada ao comprador', 'para ' + (ult.para || []).join(', ') + ' · ' + C.dataBR(ult.em, true) + (ult.por ? ' · ' + quem(ult.por) : '') + (props.length > 1 ? ' · ' + props.length + ' envios' : '')]);
-    else passos.push([perdeu || c.fase === 'pedido' || c.descartado ? 'na' : 'agora', 'Proposta ao comprador', 'a proposta no modelo da Biomedical não foi enviada por e-mail']);
+    else passos.push([perdeu || c.fase === 'pedido' || c.descartado ? 'na' : 'agora', 'Proposta ao comprador', 'a proposta no modelo da MSB não foi enviada por e-mail']);
     if (ped) {
       passos.push(['ok', 'Pedido do portal', (ped.nome || 'PDF do pedido') + (ped.oc ? ' · OC ' + ped.oc : '') + ' · ' + C.dataBR(ped.em, true) + (ped.por ? ' · ' + quem(ped.por) : '')]);
       var pv = ped.previa;

@@ -10,7 +10,7 @@
                Clicar abre o CASO: o caminho das fases (21/10/2026: só três —
                Cotada → Ganha (virou pedido), e a saída Perdida, com o motivo:
                preço, prazo, proposta vencida, cancelada…; passou da data de
-               vencimento, o portal marca Perdida sozinho — 22/10/2026), a PROPOSTA no modelo da Biomedical
+               vencimento, o portal marca Perdida sozinho — 22/10/2026), a PROPOSTA no modelo da MSB
                (ver, enviar e reenviar ao comprador pelo Outlook),
                o cartão do PEDIDO (soltar o PDF do pedido do portal = a
                cotação vira pedido; o portal lê o pedido, compara com o que
@@ -588,7 +588,7 @@
       '<table><thead><tr><th>Item</th><th style="text-align:right">Cotado</th><th style="text-align:right">Pedido</th><th></th></tr></thead><tbody>' + linhas + '</tbody></table></div>';
   }
 
-  // o cartão da PROPOSTA: o PDF no modelo da Biomedical (cotacoes-proposta.js)
+  // o cartão da PROPOSTA: o PDF no modelo da MSB (cotacoes-proposta.js)
   // com os dados do caso e de quem está logado; sai pelo Outlook da pessoa
   function htmlProposta(c) {
     // 26/10/2026 (pedido do usuário): a amostra não gera a proposta (PDF)
@@ -603,7 +603,7 @@
         (envios.length > 1 ? ' · ' + envios.length + ' envios' : '') + '</div>' +
         (ult.anexoId ? '<button type="button" class="cs-btn cs-btn-xs" data-ver-anexo="' + esc(ult.anexoId) + '">' + IC.eye + 'PDF enviado</button>' : '') + '</div>';
     } else {
-      h += '<p>A proposta no modelo da Biomedical — dados desta oportunidade e os seus no "Preparado por" — pronta para o comprador. A descrição, o fabricante e o RMS de cada item saem do cadastro do Salesforce.' + (fechada ? ' A oportunidade está ' + esc(C.fase(c.fase).nome.toLowerCase()) + '.' : '') + '</p>';
+      h += '<p>A proposta no modelo da MSB — dados desta oportunidade e os seus no "Preparado por" — pronta para o comprador. A descrição, o fabricante e o RMS de cada item saem do cadastro do Salesforce.' + (fechada ? ' A oportunidade está ' + esc(C.fase(c.fase).nome.toLowerCase()) + '.' : '') + '</p>';
     }
     if (est.estado === 'enviando') return h + '<p><span class="cs-spin"></span>&nbsp; Gerando o PDF e enviando pelo seu Outlook…</p></div>';
     if (est.estado === 'erro') h += '<div class="cot-envio erro" style="margin:8px 0">' + IC.alert + '<div><b>A proposta não foi enviada</b>' + esc(est.msg) + '</div></div>';
@@ -917,12 +917,23 @@
         '</div>' +
       '</div>' +
       htmlHero(c) + htmlFim(c) +
-      '<div class="tk-grid"><div class="tk-main">' + htmlFaturamento(c) + (c.fase === 'pedido' || c.pedido ? htmlPedido(c) + htmlProposta(c) : htmlProposta(c) + htmlPedido(c)) + htmlItens(c) + htmlNotas(c) + '</div>' +
+      '<div class="tk-grid"><div class="tk-main">' + htmlFaturamento(c) + (c.fase === 'pedido' || c.pedido ? htmlPedido(c) + htmlProposta(c) : htmlProposta(c) + htmlPedido(c)) + htmlItens(c) + htmlEstoqueCaso(c) + htmlNotas(c) + '</div>' +
       '<aside class="tk-lado">' + htmlLado(c) + '</aside></div>';
     C.quieto(box);
+    pintarEstoqueCaso();
     // o que vai na proposta de cada item (o cadastro do Salesforce), sem redesenhar o caso
     if (!S.editandoItens && (c.itens || []).length) C.completarDoSf(c.itens, true).then(function (n) { if (n && S.caso === c) pintarSfCaso(c); }, function () {});
   }
+  // o ESTOQUE DA VENDA (05/11/2026, RECORTE MSB — pedido do dono): o mesmo do
+  // PI · Pedido da MSB, embaixo dos itens — na oportunidade em andamento e
+  // enquanto os itens são editados (atualiza ao digitar o código/quantidade)
+  function mostraEstoque(c) { return !!(c && !c.descartado && (S.editandoItens || C.aberta(C.faseDe(c)))); }
+  function htmlEstoqueCaso(c) { return mostraEstoque(c) ? '<div class="cs-card cot-est-box" id="cot-estoque-caso"></div>' : ''; }
+  function pintarEstoqueCaso() {
+    var c = S.caso; if (!mostraEstoque(c)) return;
+    C.pintarEstoque($('cot-estoque-caso'), S.editandoItens ? S.itensRascunho : c.itens);
+  }
+  var estoqueCasoDepois = C.debounce(pintarEstoqueCaso, 450);
   // a linha do item (só leitura): código, comprador, fabricante e RMS — os do
   // Salesforce quando o produto está lá (é o que vai na proposta)
   function metaItem(it) {
@@ -2413,6 +2424,7 @@
         if (f === 'ipi') { t.classList.toggle('invalido', Number(it.ipi) > 100); var ti = $('cot-tot-ipi'); if (ti) ti.outerHTML = htmlTotIpi(S.itensRascunho, true); }
         if (f === 'codigo' && it._cod) { it._cod = null; tr.classList.remove('cod-nao', 'cod-ok'); var st = tr.querySelector('.cod-st-box'); if (st) st.innerHTML = ''; }
         if (f === 'codigo') sfRascunho(it);
+        if (f === 'codigo' || f === 'quantidade') estoqueCasoDepois();
         if (f === 'quantidade' || f === 'valorUnitario') {
           var cel = app.querySelector('[data-tot="' + i + '"]'); if (cel) cel.textContent = it.quantidade && it.valorUnitario ? C.brl(it.quantidade * it.valorUnitario) : '—';
           var tt = $('cot-itens-total'); if (tt) tt.textContent = C.brl(totalDe(S.itensRascunho));

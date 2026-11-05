@@ -1285,3 +1285,53 @@ table.cot-itens tr.preco-acima td.vu input { border-color: color-mix(in srgb, #D
 .cot-itens-pe .cot-fat-dica { font-size: 11.5px; color: var(--cs-mut); }
 html[data-tema="escuro"] .cot-ref-usar, html[data-tema="escuro"] .cot-ref-tag { background: rgba(19,138,75,.22); color: #7BD9A4; }
 html[data-tema="escuro"] .cot-ref-alerta, html[data-tema="escuro"] .cot-cod-faixa.cot-ref-faixa, html[data-tema="escuro"] table.cot-itens tr.preco-acima td.vu input { background: rgba(217,119,6,.18); color: #FBBF77; }
+
+/* ── Estoque da venda (05/11/2026, RECORTE MSB — pedido do dono) ──────────
+   Embaixo dos "Itens cotados" (Nova oportunidade e oportunidade aberta): o
+   estoque do PI · Pedido da MSB (cotacoes-base.js › htmlEstoque). */
+.cot-est-box { margin-top: 14px; }
+.cs-card.cot-est-box { margin-top: 0; }
+.cot-est-h { display: flex; align-items: center; gap: 8px; margin: 0 0 10px; font: 700 15px/1.2 var(--bm3-font-text, Roboto, sans-serif); color: var(--cs-ink); }
+.cot-est-h svg { width: 17px; height: 17px; color: var(--cs-mut); }
+.cot-est { border-radius: 12px; border: 1px solid #BFEBD7; background: #EEFBF4; padding: 12px 14px 6px; }
+.cot-est.alerta { border-color: #F6D9A1; background: #FFF8EB; }
+.cot-est.neutro { border-color: var(--cs-line); background: var(--cs-soft); }
+.cot-est-top { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 8px; }
+.cot-est-top b { display: inline-flex; align-items: center; gap: 8px; font: 700 14.5px/1.3 var(--bm3-font-text, Roboto, sans-serif); color: #0F6B4B; }
+.cot-est-top b svg { width: 17px; height: 17px; }
+.cot-est.alerta .cot-est-top b { color: #9A5B07; }
+.cot-est.neutro .cot-est-top b { color: var(--cs-ink2); }
+.cot-est-top span { flex: none; font-size: 12px; color: var(--cs-mut); }
+.cot-est-msg { display: flex; align-items: center; gap: 8px; margin: 0 0 8px; font-size: 13px; color: var(--cs-ink2); }
+.cot-est-msg svg { width: 16px; height: 16px; flex: none; }
+.cot-est-t { width: 100%; border-collapse: collapse; }
+.cot-est-t th { padding: 8px 6px; text-align: left; font: 700 11px/1 var(--bm3-font-text, Roboto, sans-serif); letter-spacing: .06em; text-transform: uppercase; color: #8A979E; }
+.cot-est-t td { padding: 9px 6px; border-top: 1px solid rgba(15, 107, 75, .08); vertical-align: middle; font-size: 14px; color: var(--cs-ink); }
+.cot-est-t tbody tr:nth-child(even) td { background: rgba(255, 255, 255, .45); }
+.cot-est-t .n { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; width: 76px; }
+.cot-est-t th:last-child, .cot-est-t td.sit { width: 120px; padding-left: 18px; }
+.cot-est-t td.it b { display: block; font-weight: 600; font-size: 14.5px; color: var(--cs-ink); }
+.cot-est-t td.it small { display: block; max-width: 360px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 11.5px; text-transform: uppercase; color: #8A979E; margin-top: 2px; }
+.cot-est-t td.temos { font-weight: 700; }
+.cot-est-t tr.s-ok td.temos, .cot-est-t tr.s-livre td.temos { color: #138A4B; }
+.cot-est-t tr.s-parcial td.temos { color: #B45309; }
+.cot-est-t tr.s-zero td.temos { color: #CF3434; }
+.cot-est-t td.falta { color: var(--cs-mut); }
+.cot-est-t tr.s-parcial td.falta, .cot-est-t tr.s-zero td.falta { color: #CF3434; font-weight: 700; }
+.cot-est-chip { display: inline-block; padding: 2px 8px; border-radius: 6px; border: 1px solid #A7E3C6; background: #fff; font-size: 12px; line-height: 1.4; color: #157F57; white-space: nowrap; }
+.cot-est-chip.s-parcial { border-color: #F3C77E; color: #9A5B07; }
+.cot-est-chip.s-zero { border-color: #F2B1B1; color: #B42323; }
+.cot-est-chip.s-nd { border-color: var(--cs-line); color: var(--cs-mut); }
+.cot-est-aviso { margin: 6px 0 6px; font-size: 12px; color: #9A5B07; }
+@media (max-width: 767.98px) {
+  .cot-est-t th:nth-child(4), .cot-est-t td.falta { display: none; }
+  .cot-est-t td.it small { max-width: 160px; }
+  .cot-est-t th:last-child, .cot-est-t td.sit { width: auto; padding-left: 8px; }
+}
+html[data-tema="escuro"] .cot-est { border-color: #1F5A45; background: #10291F; }
+html[data-tema="escuro"] .cot-est.alerta { border-color: #6B4E16; background: #2C220F; }
+html[data-tema="escuro"] .cot-est.neutro { border-color: var(--cs-line); background: var(--cs-soft); }
+html[data-tema="escuro"] .cot-est-top b { color: #7BDDB0; }
+html[data-tema="escuro"] .cot-est.alerta .cot-est-top b { color: #F6C77A; }
+html[data-tema="escuro"] .cot-est-chip { background: transparent; }
+html[data-tema="escuro"] .cot-est-t tbody tr:nth-child(even) td { background: rgba(255, 255, 255, .03); }
