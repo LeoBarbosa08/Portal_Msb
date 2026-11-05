@@ -352,6 +352,14 @@ e Venda Consultiva (os outros dois submódulos do CRM de lá) não vieram.
   a do item → o nome do Power BI. Sem `SF_CLIENT_ID`/`SF_CLIENT_SECRET` na
   Static Web App da MSB, o Fabricante e o RMS não vêm — copie as do portal da
   BIO.
+- **"Abrir Pedido no PI", na mesma aba (05/11/2026, pedido do dono)** — o botão
+  do cartão Pedido se chama "Abrir Pedido no PI" (antes "Abrir no PI · Pedido"
+  / "Abrir no PI de novo") e o PI · Pedido abre NESTA aba, sem guia nova
+  (`abrirNoPI` em `cotacoes-base.js`: marca a oportunidade "aberta no PI" e só
+  então troca a página). Anexar o PDF do pedido — no cartão ("Anexar o PDF do
+  pedido"/"Trocar o PDF") ou no "Virou pedido" com PDF — também leva ao PI
+  depois de registrar (com a leitura pronta; se a leitura falhar, o PI lê o
+  PDF). O PI da MSB segue só do dono (ver "PI · Pedido de volta").
 - **Sem a coluna Un (05/11/2026, pedido do dono)** — saiu a coluna da unidade
   das tabelas de itens (Nova oportunidade, edição e leitura na Gestão). A
   unidade que a leitura do PDF trouxer fica no item e sai na proposta ao lado
@@ -390,7 +398,7 @@ e Venda Consultiva (os outros dois submódulos do CRM de lá) não vieram.
   ainda é só do dono (ver "PI · Pedido de volta"): para a equipe, abrir o PI.
 - `nav-sidebar.js?v=82` (a `v=79` foi a da poda do PI, da master), `customer-service.css?v=4`,
   `licitacao-funil-vendas.css?v=19` em todas as páginas; `sw.js` — cache
-  `bm-comest-v15`.
+  `bm-comest-v16`.
 - Teste local: o `cot-teste-server.js` do completo, copiado para `.claude/`
   com `COT_MSB_BLOB_URL` e os exemplos em `COT-MSB-…`:
   `node .claude/cot-teste-server.js 4260` (ou `--vazio`, `--sem-blob`).

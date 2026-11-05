@@ -510,10 +510,10 @@
     if (S.lendoPedido[c.numero]) return h + arq + '<p><span class="cs-spin"></span>&nbsp; Lendo o pedido com o leitor do PI…</p></div>';
     var erro = pi.estado === 'erro' ? '<p>Não consegui ler o PDF do pedido: ' + esc(pi.erro || '') + '</p>' : '';
     var andamento = pi.estado === 'em_andamento' ? '<p>Aberto no PI por ' + esc((pi.abertoPor && pi.abertoPor.nome) || '') + ' · ' + esc(C.quando(pi.abertoEm)) + '. Quando o pedido for lançado, este cartão muda sozinho.</p>' : '';
-    var texto = ped.manual ? '<p>Sem o PDF: os itens ganhos da oportunidade são o pedido. <b>Abrir no PI · Pedido</b> leva o comprador e esses itens prontos para conferir e lançar no Dynamics.</p>'
+    var texto = ped.manual ? '<p>Sem o PDF: os itens ganhos da oportunidade são o pedido. <b>Abrir Pedido no PI</b> leva o comprador e esses itens prontos para conferir e lançar no Dynamics.</p>'
       : (erro || '<p>PDF do pedido anexado. O portal lê e entrega pronto para o PI conferir e lançar no Dynamics.</p>');
     return h + arq + (pv ? prev : texto) + andamento +
-      '<div class="cot-ped-bts"><button type="button" class="cs-btn cs-btn-pi" data-act="abrir-pi">' + IC.cart + (pi.estado === 'em_andamento' ? 'Abrir no PI de novo' : 'Abrir no PI · Pedido') + '</button>' +
+      '<div class="cot-ped-bts"><button type="button" class="cs-btn cs-btn-pi" data-act="abrir-pi">' + IC.cart + 'Abrir Pedido no PI</button>' +
       (!pv && !ped.manual ? '<button type="button" class="cs-btn cs-btn-sm cs-btn-ghost" data-act="ler-pedido">' + IC.refresh + 'Ler o pedido agora</button>' : '') +
       '<label class="cs-btn cs-btn-sm cs-btn-ghost" style="cursor:pointer">' + IC.upload + (ped.manual ? 'Anexar o PDF do pedido' : 'Trocar o PDF') + '<input type="file" id="cot-arq-ped" accept="application/pdf,.pdf" hidden></label></div>' + htmlOv(c) + '</div>';
   }
@@ -957,7 +957,13 @@
       return C.api('cot-casos', Object.assign({ acao: 'pedido', numero: numero, anexo: { nome: arq.nome, tipo: 'application/pdf', base64: arq.base64 } }, extra || {})).then(function (j) {
         mesclar(j.caso); if (S.caso && S.caso.numero === numero) S.caso = j.caso;
         C.toast('Oportunidade virou pedido', j.caso.numero + ' · lendo o pedido…', 'ok');
-        return lerPedido(j.caso, arq);
+        // RECORTE MSB (05/11/2026, pedido do dono): anexou o PDF do pedido, vai
+        // para o PI · Pedido (nesta aba) — com a leitura pronta ou, se ela
+        // falhar, para o PI ler o PDF
+        return lerPedido(j.caso, arq).then(function () {
+          var atual = (S.caso && S.caso.numero === numero) ? S.caso : j.caso;
+          return abrirPI(atual);
+        });
       });
     }).catch(function (e) {
       S.lendoPedido[numero] = false; renderTudo();
@@ -987,6 +993,8 @@
       mesclar(j.caso); if (S.caso && S.caso.numero === numero) S.caso = j.caso;
       renderTudo();
       C.toast('Pedido registrado', j.caso.numero + ' · conferido com o PDF — a oportunidade fecha como Ganha com a Ordem de Venda', 'ok');
+      // RECORTE MSB (05/11/2026, pedido do dono): anexou o pedido, vai para o PI · Pedido (nesta aba)
+      return abrirPI(j.caso);
     }).catch(function (e) {
       S.lendoPedido[numero] = false; renderTudo();
       C.toast('A oportunidade não virou pedido', e.message, 'erro');
@@ -1072,9 +1080,14 @@
         });
       });
   }
+  // RECORTE MSB (05/11/2026): o PI abre nesta aba (cotacoes-base.js › abrirNoPI);
+  // o botão fica travado enquanto prepara, para não abrir duas vezes
   function abrirPI(c) {
-    C.abrirNoPI(c, S.leiturasPedido[c.numero]).then(function (j) {
-      if (j && j.caso) { mesclar(j.caso); renderTudo(); }
+    var b = D.querySelector('#cot-caso [data-act="abrir-pi"]');
+    if (b) { b.disabled = true; b.innerHTML = '<span class="cs-spin"></span> Abrindo o PI…'; }
+    return C.abrirNoPI(c, S.leiturasPedido[c.numero]).then(function (j) {
+      if (j === false) { renderTudo(); return; }
+      if (j && j.caso) mesclar(j.caso);
     });
   }
 
@@ -1149,7 +1162,7 @@
               '<div class="cs-campo" style="margin-top:12px"><label>Nº da ordem de compra (opcional — o portal lê do PDF)</label><input id="dlg-oc" value="' + esc(oc) + '" autocomplete="off"></div>';
           } else if (modo === 'manual') {
             h = '<div class="cs-campo"><label>Nº da ordem de compra (opcional)</label><input id="dlg-oc" value="' + esc(oc) + '" autocomplete="off"></div>' +
-              '<p class="cot-dlg-nota">Sem o PDF: os itens marcados como <b>Ganho</b> são o pedido. Depois, <b>Abrir no PI · Pedido</b> leva o comprador e os itens prontos para lançar no Dynamics.</p>';
+              '<p class="cot-dlg-nota">Sem o PDF: os itens marcados como <b>Ganho</b> são o pedido. Depois, <b>Abrir Pedido no PI</b> leva o comprador e os itens prontos para lançar no Dynamics.</p>';
           } else {
             h = '<div class="cs-campo"><label>Número da Ordem de Venda *</label><input id="dlg-ov" value="' + esc(ovTxt) + '" placeholder="OVMSB144950 — ou escolha abaixo" autocomplete="off" spellcheck="false" maxlength="24"></div>' +
               '<div class="cot-ov-escolha" id="dlg-ovs"></div>' +

@@ -1158,8 +1158,9 @@
     // o pedido à mão (21/10/2026): sem PDF — o PI chega com o comprador e os
     // itens GANHOS da cotação no lugar da leitura do PDF
     var manual = !!c.pedido.manual;
-    var janela = W.open('', '_blank');
-    if (janela) { try { janela.opener = null; janela.document.title = 'Abrindo o PI…'; janela.document.body.innerHTML = '<p style="font:15px system-ui;padding:40px;color:#0F2831">Preparando o pedido da oportunidade ' + esc(c.numero) + '…</p>'; } catch (e) {} }
+    // RECORTE MSB (05/11/2026, pedido do dono): o PI · Pedido abre NESTA aba —
+    // sem guia nova; a oportunidade é marcada "aberta no PI" antes de sair
+    toast('Abrindo o PI · Pedido', 'Preparando o pedido da oportunidade ' + c.numero + '…', '');
     var destino = new URL('pedido-inteligente.html?cot=' + encodeURIComponent(c.numero), location.href).href;
     return (manual ? Promise.resolve(null) : baixarAnexo(c.numero, c.pedido.anexoId)).then(function (arq) {
       var ganhos = (c.itens || []).filter(function (it) { return it.resultado === 'ganho'; });
@@ -1188,10 +1189,11 @@
         extracao: lidaAMao || (extracao && extracao.dados ? { dados: extracao.dados, avisos: extracao.avisos || [] } : null)
       });
     }).then(function () {
-      if (janela && !janela.closed) janela.location.href = destino; else W.location.href = destino;
       return api('cot-casos', { acao: 'pi', numero: c.numero, estado: 'em_andamento' }).catch(function () { return null; });
+    }).then(function (j) {
+      W.location.href = destino;
+      return j;
     }).catch(function (e) {
-      if (janela && !janela.closed) janela.close();
       toast('Não consegui preparar o pedido', e.message, 'erro');
       return false;
     });
