@@ -1187,7 +1187,7 @@
   /* ── o ESTOQUE DA VENDA (05/11/2026, RECORTE MSB — pedido do dono) ── */
   // "Na hora de digitar o código na oportunidade, ele trazer o estoque — o
   // mesmo que o PI · Pedido do portal da MSB usa": o /api/pedido-lotes (o
-  // Dynamics, empresa msb, depósito ALMOX-PA, só as localizações PA.*, a
+  // Dynamics, empresa msb, depósito ALMOX-PA inteiro (05/11: sem filtro de localização), a
   // Quantidade física disponível somada). O painel agrupa os itens pelo
   // código: PEDIDO (a soma das quantidades) × TEMOS (o disponível) × FALTA e a
   // SITUAÇÃO (completo, parcial, sem estoque). Cache por código: 2 min.

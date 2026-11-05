@@ -16,7 +16,7 @@
 // Env vars: as do shared/d365.js (D365_TENANT_ID/CLIENT_ID/CLIENT_SECRET,
 //   D365_RESOURCE_URL) + D365_ENTITY (BioInventSums), D365_BATCH_ENTITY
 //   (BioInventItemBatchV3). Na MSB: ESTOQUE_MSB_EMPRESA (msb),
-//   ESTOQUE_MSB_DEPOSITO (ALMOX-PA), ESTOQUE_MSB_LOCALIZACAO (PA.) — ver abaixo.
+//   ESTOQUE_MSB_DEPOSITO (ALMOX-PA), ESTOQUE_MSB_LOCALIZACAO (vazia) — ver abaixo.
 // ================================================================
 
 const D = require('../shared/d365');
@@ -31,7 +31,13 @@ const http = require('../shared/http');
 // ESTOQUE_LOCATION (BCD), o estoque da MSB não muda.
 const EMPRESA    = String(process.env.ESTOQUE_MSB_EMPRESA || 'msb').trim();
 const LOCATION   = String(process.env.ESTOQUE_MSB_DEPOSITO || 'ALMOX-PA').trim();
-const PREFIXO_LOC = String(process.env.ESTOQUE_MSB_LOCALIZACAO || 'PA.').trim().toUpperCase();
+// 05/11/2026 (pedido do dono): SEM filtro de localização por padrão. A
+// RESERVA no Dynamics entra numa linha do depósito SEM localização (Qtd.
+// física disponível -1, Reserva física 1) — com o filtro "PA." ela ficava de
+// fora e o saldo mostrava 1 onde o certo é 0. O depósito ALMOX-PA inteiro,
+// somado por lote, dá o saldo líquido certo. ESTOQUE_MSB_LOCALIZACAO volta o
+// filtro, se um dia precisar.
+const PREFIXO_LOC = String(process.env.ESTOQUE_MSB_LOCALIZACAO || '').trim().toUpperCase();
 const ENT_SUM    = process.env.D365_ENTITY || 'BioInventSums';
 const ENT_BATCH  = process.env.D365_BATCH_ENTITY || 'BioInventItemBatchV3';
 
@@ -70,7 +76,7 @@ async function itemDados(codigo, location, token) {
   fSum.push('AvailPhysical ne 0');
   var sums = await D.odataGet(ENT_SUM, { filter: fSum.join(' and '), crossCompany: true }, token);
 
-  // RECORTE MSB: só as localizações que começam com PREFIXO_LOC ("PA.")
+  // RECORTE MSB: só as localizações que começam com PREFIXO_LOC (desligado por padrão)
   if (PREFIXO_LOC && sums.length) {
     var campo = campoLocalizacao(sums[0]);
     if (!campo) {
