@@ -665,6 +665,22 @@ como Venda, Devolução ou fica Fora (inclusive "(sem tipo de operação)"). Vem
 `porOperacao` na resposta; `foraNotas` passou a trazer o valor de cada nota fora
 da soma. `sw.js` — cache `bm-comest-v27`.
 
+### Faturamento do Dia · de volta sem os tipos de operação (07/11/2026)
+
+Com a regra das operações o Faturamento do Dia zerou, e o print do dono mostrou
+o porquê: "Última nota da MSB na FiscalDocuments: 05/12/2023" — a
+FiscalDocuments (OData) segue sem nota da MSB desde 2023 (o mesmo que o
+portal completo achou em 15/10/2026), então os valores vêm do **diário de
+faturas** (`SalesInvoiceHeadersV2`), que não tem OperationDescription; com a
+regra estrita todas as notas ficavam fora. Pedido do dono: "volta como estava
+antes, ignora aqueles tipos de operação". `api/shared/faturamento-dia.js`,
+`pages/comercial-faturamento-hoje.html` e `scripts/test-faturamento-dia.js`
+voltaram à versão de `5f1ca37` (venda/devolução pela direção na fiscal e pelo
+sinal do valor no diário). As seções acima sobre as operações ("só as
+operações de faturamento", "regra estrita", "por tipo de operação") ficam
+como histórico — nada daquilo está mais no código. `sw.js` — cache
+`bm-comest-v28`.
+
 ## Como colocar no ar
 
 1. **Repositório no GitHub** — crie um repositório **privado e vazio** (sem
