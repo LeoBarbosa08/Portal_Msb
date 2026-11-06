@@ -1,0 +1,448 @@
+﻿<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Faturamento do Dia · Comercial · MSB</title>
+  <link rel="stylesheet" href="../styles.css?v=15">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="../dash-v2.css?v=3">
+  <script src="https://unpkg.com/@azure/msal-browser@2.38.3/lib/msal-browser.min.js"></script>
+  <!-- Layout v3 (Claude Design · animado): fonte + camada visual + motor de animações -->
+  <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300..900&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../portal-v3.css?v=2">
+  <script src="../portal-motion.js?v=3" defer></script>
+  <!-- Tema claro/escuro (menu do avatar): marca o <html> antes de pintar + camada escura -->
+  <script>try{if(localStorage.getItem('bm-tema')==='escuro')document.documentElement.setAttribute('data-tema','escuro')}catch(e){}</script>
+  <link rel="stylesheet" href="../portal-tema.css?v=1">
+  <script src="../portal-tema.js?v=1" defer></script>
+  <!-- Celular (varredura 15/10/26): só vale em tela < 768px; no computador não se aplica -->
+  <link rel="stylesheet" href="../portal-mobile.css?v=1" media="(max-width: 767.98px)">
+  <script src="../portal-mobile.js?v=1" defer></script>
+</head>
+<body class="dept">
+
+  <header class="site-header">
+    <div class="container">
+      <a href="../index.html" class="brand" aria-label="Portal MSB — página inicial">
+        <img class="brand-logo" src="/icons/logo-msb.png" alt="MSB · Medical System do Brasil" onerror="this.dataset.failed='true'">
+        <span class="brand-fallback">MSB</span>
+      </a>
+      <nav class="header-nav">
+        <a href="../index.html">Início</a>
+        <a href="../index.html#areas">Áreas</a>
+        <a href="../index.html#sistemas">Sistemas</a>
+        <a href="../index.html#avisos">Avisos</a>
+        <a href="../index.html#contato">Contato</a>
+      </nav>
+    </div>
+  </header>
+
+  <!-- cabeçalho movido para .fx-head (abas de submódulo, Claude Design) -->
+
+  <div class="area-body">
+    <div class="container">
+      <div class="area-grid">
+
+        <aside class="area-sidebar">
+          <div class="sb-card">
+            <div class="sb-head">
+              <span class="sb-ic"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="8.5" cy="7" r="4"/><path d="M20 8v6"/><path d="M23 11h-6"/></svg></span>
+              <div><div class="sb-tt">Comercial</div><div class="sb-st">Departamento</div></div>
+            </div>
+            <nav></nav>
+          </div>
+          <a href="../index.html" class="sb-back"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></svg>Voltar ao Portal</a>
+        </aside>
+
+        <div class="area-main">
+
+          <!-- ═══ Cabeçalho + abas de submódulo (Claude Design) ═══ -->
+          <style>
+            .fx-head{display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap;padding:22px 0 4px;}
+            .fx-bc{display:flex;align-items:center;gap:6px;font-size:12px;color:#81939B;}
+            .fx-title{margin:4px 0 0;font-size:23px;font-weight:800;letter-spacing:-0.5px;color:#10323E;}
+            .fx-head-right{display:flex;align-items:center;gap:12px;flex-wrap:wrap;}
+            .fx-tabs{display:flex;align-items:center;background:#FFFFFF;border:1px solid #E5EAED;border-radius:11px;padding:3px;flex-wrap:wrap;}
+            .fx-tabs a,.fx-tabs span{padding:8px 14px;border-radius:8px;font-size:12.5px;font-weight:600;color:#5F727A;text-decoration:none;white-space:nowrap;}
+            .fx-tabs a:hover{color:#10323E;}
+            .fx-tabs .active{background:#10323E;font-weight:700;color:#fff;}
+            .fx-filters{display:flex;align-items:center;gap:10px;flex-wrap:wrap;padding:12px 14px;background:#fff;border:1px solid #E5EAED;border-radius:12px;}
+            .fx-fdiv{width:1px;height:24px;background:#E5EAED;}
+            .fx-fbtn{display:inline-flex;align-items:center;gap:8px;padding:8px 12px;border-radius:9px;border:1px solid #E5EAED;background:#fff;font-size:12.5px;font-weight:600;color:#374951;cursor:pointer;font-family:inherit;white-space:nowrap;}
+            .fx-fbtn:hover{border-color:#287A8E;}
+            .fx-fbtn .fx-fk{font-weight:700;color:#97A8AE;}
+            .fx-fbtn svg{flex-shrink:0;}
+            .fx-flimpar{margin-left:auto;display:inline-flex;align-items:center;gap:6px;padding:8px 12px;border-radius:9px;border:none;background:transparent;font-size:12.5px;font-weight:600;color:#5F727A;cursor:pointer;font-family:inherit;white-space:nowrap;}
+            .fx-flimpar:hover{color:#B54545;}
+            .fxdd{position:relative;display:inline-block;}
+            .fxdd-panel{position:absolute;z-index:50;top:calc(100% + 6px);left:0;display:none;flex-direction:column;background:#fff;border:1px solid #E5EAED;border-radius:12px;box-shadow:0 10px 30px rgba(16,50,62,0.14);padding:12px;}
+            .fxdd.open .fxdd-panel{display:flex;}
+            .fxdd-sec{font-size:10.5px;font-weight:800;letter-spacing:0.8px;text-transform:uppercase;color:#97A8AE;margin:2px 2px 8px;}
+            .fxdd-sec.mt{margin-top:12px;}
+            .fxdd-hint{font-size:11px;color:#97A8AE;margin-top:10px;}
+            /* Periodo: painel largo e horizontal (mes em cima; ano/semestre/trimestre embaixo) */
+            .fxdd-panel{min-width:210px;}
+            #fx-periodo .fxdd-panel{width:720px;max-width:calc(100vw - 48px);}
+            #fx-periodo .fxdd-panel .sr-row,#fx-periodo .fxdd-panel .av-row,#fx-periodo .fxdd-panel .pv-row{max-width:none !important;gap:6px !important;row-gap:8px !important;}
+            #fx-periodo .fxdd-panel .sr-btn,#fx-periodo .fxdd-panel .av-btn,#fx-periodo .fxdd-panel .pv-btn{padding:5px 9px;}
+            #fx-periodo .fxdd-panel .sr-divider:first-of-type,#fx-periodo .fxdd-panel .av-divider:first-of-type,#fx-periodo .fxdd-panel .pv-divider:first-of-type{flex-basis:100%;width:100%;height:0 !important;border:0 !important;background:transparent !important;margin:2px 0 0 !important;}
+            @media(max-width:1100px){#fx-periodo .fxdd-panel{width:560px;}}
+            @media(max-width:767.98px){
+              .fx-head{align-items:flex-start;padding-top:14px;}
+              .fx-title{font-size:17px;}
+              .fx-head-right{width:100%;}
+              .fx-tabs{width:100%;flex-wrap:nowrap;overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none;background:#F1F4F6;border:none;}
+              .fx-tabs::-webkit-scrollbar{display:none;}
+              .fx-tabs a,.fx-tabs span{flex:0 0 auto;}
+              /* ── FILTROS mobile: controles empilhados em largura total; cada
+                    painel abre como accordion (sem recorte por overflow-x, sem
+                    rolagem horizontal escondendo filtros). O layout novo (.fx-filters)
+                    tem dropdown próprio — o nav-sidebar.js não o converte em <select>. ── */
+              .fx-filters{flex-direction:column;align-items:stretch;flex-wrap:nowrap;overflow:visible;gap:8px;}
+              .fx-filters .fx-fdiv{display:none;}
+              .fx-filters .fxdd{width:100%;position:static;display:block;}
+              .fx-filters .fx-fbtn,.fx-filters .av-dd-btn{width:100%;min-width:0;box-sizing:border-box;justify-content:space-between;}
+              .fx-filters .fx-fbtn{padding:11px 14px;font-size:13.5px;}
+              .fx-fbtn svg{transition:transform .18s;}
+              .fxdd.open .fx-fbtn svg{transform:rotate(180deg);}
+              .fx-filters .av-sel{flex:1 1 auto;min-width:0;box-sizing:border-box;}
+              /* dropdowns de valor (.av-dd) empilhados em largura total, igual aos .fxdd */
+              .fx-filters .av-row{width:100%;}
+              .fx-filters .av-dd{width:100%;position:relative;display:block;}
+              .fx-filters .av-dd-panel{width:100%;min-width:0;max-width:none;}
+              /* painel accordion: flui abaixo do botão, largura total, sem sombra flutuante */
+              .fx-filters .fxdd-panel{position:static;width:100%;min-width:0;max-width:none;box-shadow:none;margin-top:2px;box-sizing:border-box;}
+              #fx-periodo .fxdd-panel{width:100%;}
+              /* vence a regra global mobile (.sr-row{flex-wrap:nowrap} do styles.css)
+                 para os botões QUEBRAREM em grade dentro do painel, em vez de rolar */
+              .fxdd-panel .sr-row,.fxdd-panel .av-row,.fxdd-panel .pv-row{flex-wrap:wrap !important;overflow:visible !important;padding-bottom:0 !important;max-width:none !important;gap:6px !important;row-gap:8px !important;}
+              /* rótulos (Mês/Ano/Empresa…) ocupam a linha inteira — viram títulos de grupo */
+              .fxdd-panel .sr-label,.fxdd-panel .av-label,.fxdd-panel .pv-label{flex:0 0 100%;margin:4px 0 0;}
+              /* divisores viram quebra de linha, separando os grupos */
+              .fxdd-panel .sr-divider,.fxdd-panel .av-divider,.fxdd-panel .pv-divider{flex:0 0 100%;width:100% !important;height:0 !important;border:0 !important;background:transparent !important;margin:0 !important;}
+              /* botões preenchem a largura numa grade uniforme (sobrepõe flex-shrink:0 global) */
+              .fxdd-panel .sr-btn,.fxdd-panel .av-btn,.fxdd-panel .pv-btn{flex:1 1 auto !important;min-width:52px;text-align:center;padding:8px 6px;}
+              .fx-filters .fx-flimpar{width:100%;justify-content:center;margin:2px 0 0;padding:11px;border:1px solid #E5EAED;border-radius:9px;}
+            }
+          </style>
+
+          <div class="fx-head">
+            <div>
+              <div class="fx-bc"><span>Comercial</span><span>›</span><span>Sales Report</span></div>
+              <h1 class="fx-title">Faturamento do Dia</h1>
+            </div>
+            <div class="fx-head-right">
+              <div class="fx-tabs">
+                <a href="comercial-sales-report.html">Visão Geral</a>
+                <a href="comercial-performance-vendas.html">Performance de Vendas</a>
+                <a href="comercial-vendas.html">Análise de Vendas</a>
+                <a href="comercial-clientes.html">Análise de Pedidos</a>
+                <a href="comercial-base-notas-fiscais.html">Base de Notas Fiscais</a>
+                <a href="comercial-comportamento-clientes.html">Comportamento de Clientes</a>
+                <span class="active">Faturamento do Dia</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- ═══════════ FATURAMENTO DO DIA ═══════════
+               Notas da MSB faturadas no dia (venda e devolução), AO VIVO do
+               Dynamics F&O pela entidade de documento fiscal (FiscalDocuments).
+               Só do dono: link podado do menu/abas para os outros (SO_DONO do
+               nav-sidebar.js) e o /api/faturamento-hoje recusa outro e-mail.
+               Motor: api/shared/faturamento-dia.js. -->
+          <style>
+            .fd-wrap{padding:6px 0 48px;display:flex;flex-direction:column;gap:14px;}
+            .fd-bar{display:flex;align-items:center;gap:10px;flex-wrap:wrap;padding:12px 14px;background:var(--surface);border:1px solid var(--border);border-radius:12px;}
+            .fd-bar label{font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--text-3);}
+            .fd-bar input[type=date]{padding:7px 10px;border-radius:9px;border:1px solid var(--border);background:var(--surface);color:var(--text);font:inherit;font-size:13px;}
+            .fd-btn{display:inline-flex;align-items:center;gap:6px;padding:8px 12px;border-radius:9px;border:1px solid var(--border);background:var(--surface);font:inherit;font-size:12.5px;font-weight:600;color:var(--text-2);cursor:pointer;white-space:nowrap;}
+            .fd-btn:hover{border-color:#287A8E;color:var(--text);}
+            .fd-btn:disabled{opacity:.55;cursor:default;}
+            .fd-live{margin-left:auto;display:inline-flex;align-items:center;gap:8px;font-size:12px;color:var(--text-3);}
+            .fd-dot{width:8px;height:8px;border-radius:50%;background:#27D045;box-shadow:0 0 0 0 rgba(39,208,69,.5);animation:fdPulse 2s infinite;}
+            .fd-dot.off{background:#95A4AB;animation:none;}
+            @keyframes fdPulse{0%{box-shadow:0 0 0 0 rgba(39,208,69,.45)}70%{box-shadow:0 0 0 8px rgba(39,208,69,0)}100%{box-shadow:0 0 0 0 rgba(39,208,69,0)}}
+            @media (prefers-reduced-motion: reduce){.fd-dot{animation:none;}}
+
+            .fd-kpis{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;}
+            .fd-kpi{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:14px 16px;border-left:4px solid var(--fd-c,#287A8E);min-width:0;}
+            .fd-kpi .l{font-size:11px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--text-3);}
+            .fd-kpi .v{margin-top:6px;font-size:22px;font-weight:800;color:var(--text);font-variant-numeric:tabular-nums;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+            .fd-kpi .s{margin-top:2px;font-size:12px;color:var(--text-3);}
+            .fd-kpi.venda{--fd-c:#27A845;} .fd-kpi.dev{--fd-c:#D9822B;} .fd-kpi.liq{--fd-c:#0E333C;} .fd-kpi.qtd{--fd-c:#5B6CC4;}
+
+            .fd-msg{padding:11px 14px;border-radius:10px;font-size:13px;line-height:1.5;border:1px solid;}
+            .fd-msg.aviso{background:#FFFBEB;border-color:#FDE68A;color:#78350F;}
+            .fd-msg.erro{background:#FEF2F2;border-color:#FECACA;color:#7F1D1D;}
+            .fd-msg.info{background:var(--surface);border-color:var(--border);color:var(--text-2);}
+            html[data-tema="escuro"] .fd-msg.aviso{background:#3A3220;border-color:#6B5A2A;color:#F5DFA8;}
+            html[data-tema="escuro"] .fd-msg.erro{background:#3B2426;border-color:#6E3A3E;color:#F6C7CB;}
+
+            .fd-tbl-wrap{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden;}
+            .fd-tbl-head{display:flex;align-items:center;gap:10px;flex-wrap:wrap;padding:12px 14px;border-bottom:1px solid var(--border);}
+            .fd-tbl-head h4{margin:0;font-size:14px;font-weight:700;color:var(--text);}
+            .fd-seg{display:inline-flex;background:var(--surface-2);border-radius:9px;padding:3px;}
+            .fd-seg button{border:none;background:transparent;padding:6px 11px;border-radius:7px;font:inherit;font-size:12px;font-weight:600;color:var(--text-3);cursor:pointer;}
+            .fd-seg button.on{background:var(--surface);color:var(--text);box-shadow:0 1px 2px rgba(0,0,0,.08);}
+            .fd-busca{margin-left:auto;padding:7px 10px;border-radius:9px;border:1px solid var(--border);background:var(--surface);color:var(--text);font:inherit;font-size:12.5px;min-width:220px;}
+            .fd-scroll{overflow:auto;max-height:68vh;}
+            .fd-tbl{width:100%;border-collapse:collapse;font-size:12.5px;}
+            .fd-tbl th{position:sticky;top:0;z-index:1;background:var(--surface-2);text-align:left;font-size:10.5px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--text-3);padding:9px 12px;white-space:nowrap;}
+            .fd-tbl td{padding:9px 12px;border-top:1px solid var(--border);color:var(--text-2);vertical-align:top;}
+            .fd-tbl .num{text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap;}
+            .fd-tbl .nf{font-weight:700;color:var(--text);white-space:nowrap;}
+            .fd-tbl .cli{font-weight:600;color:var(--text);}
+            .fd-tbl .sub{font-size:11px;color:var(--text-3);}
+            .fd-tbl tr.cancel td{opacity:.5;text-decoration:line-through;}
+            .fd-tbl tr.cancel td .fd-tag{text-decoration:none;}
+            .fd-tag{display:inline-block;padding:2px 8px;border-radius:999px;font-size:11px;font-weight:700;white-space:nowrap;}
+            .fd-tag.venda{background:#E3F7E8;color:#16702C;}
+            .fd-tag.devolucao{background:#FDEBD8;color:#9A4F0E;}
+            .fd-tag.cancel{background:#FEE2E2;color:#991B1B;margin-left:4px;}
+            html[data-tema="escuro"] .fd-tag.venda{background:#1E3B27;color:#8FE0A3;}
+            html[data-tema="escuro"] .fd-tag.devolucao{background:#3F2E1C;color:#F2B77A;}
+            html[data-tema="escuro"] .fd-tag.cancel{background:#45262A;color:#F6A8AE;}
+            .fd-neg{color:#B4561A;}
+            .fd-vazio{text-align:center;color:var(--text-3);padding:26px 12px;}
+            .fd-foot td{font-weight:800;color:var(--text);background:var(--surface-2);}
+
+            .fd-diag{font-size:12px;color:var(--text-3);}
+            .fd-diag summary{cursor:pointer;font-weight:600;}
+            .fd-diag pre{margin:8px 0 0;padding:10px;max-height:300px;overflow:auto;background:var(--surface-2);border-radius:8px;font-size:11px;line-height:1.45;white-space:pre-wrap;word-break:break-word;}
+
+            @media(max-width:1000px){.fd-kpis{grid-template-columns:repeat(2,minmax(0,1fr));}}
+            @media(max-width:767.98px){
+              .fd-kpi .v{font-size:18px;}
+              .fd-live{margin-left:0;width:100%;}
+              .fd-busca{margin-left:0;min-width:0;width:100%;}
+              .fd-tbl .op,.fd-tbl .st{display:none;}
+            }
+          </style>
+
+          <div class="fd-wrap">
+            <div class="fd-bar">
+              <label for="fd-data">Dia</label>
+              <input type="date" id="fd-data">
+              <button type="button" class="fd-btn" id="fd-hoje">Hoje</button>
+              <button type="button" class="fd-btn" id="fd-atualizar">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>
+                Atualizar
+              </button>
+              <span class="fd-live"><span class="fd-dot off" id="fd-dot"></span><span id="fd-status">Conectando ao Dynamics…</span></span>
+            </div>
+
+            <div class="fd-kpis">
+              <div class="fd-kpi venda"><div class="l">Vendas</div><div class="v" id="fd-k-venda">—</div><div class="s" id="fd-k-venda-n">&nbsp;</div></div>
+              <div class="fd-kpi dev"><div class="l">Devoluções</div><div class="v" id="fd-k-dev">—</div><div class="s" id="fd-k-dev-n">&nbsp;</div></div>
+              <div class="fd-kpi liq"><div class="l">Faturamento líquido</div><div class="v" id="fd-k-liq">—</div><div class="s">vendas − devoluções</div></div>
+              <div class="fd-kpi qtd"><div class="l">Notas no dia</div><div class="v" id="fd-k-qtd">—</div><div class="s" id="fd-k-qtd-s">&nbsp;</div></div>
+            </div>
+
+            <div id="fd-msgs" style="display:flex;flex-direction:column;gap:8px;"></div>
+
+            <div class="fd-tbl-wrap">
+              <div class="fd-tbl-head">
+                <h4>Notas faturadas <span style="font-weight:500;color:var(--text-3);font-size:11px;" id="fd-sub">· MSB</span></h4>
+                <div class="fd-seg" role="group" aria-label="Tipo de nota">
+                  <button type="button" class="on" data-tipo="">Todas</button>
+                  <button type="button" data-tipo="venda">Vendas</button>
+                  <button type="button" data-tipo="devolucao">Devoluções</button>
+                </div>
+                <input type="search" class="fd-busca" id="fd-busca" placeholder="Buscar nota, cliente ou conta…">
+              </div>
+              <div class="fd-scroll">
+                <table class="fd-tbl">
+                  <thead id="fd-thead"></thead>
+                  <tbody id="fd-tbody"><tr><td class="fd-vazio">Carregando…</td></tr></tbody>
+                  <tfoot id="fd-tfoot"></tfoot>
+                </table>
+              </div>
+            </div>
+
+            <details class="fd-diag" id="fd-diag" style="display:none;">
+              <summary>Diagnóstico da leitura no Dynamics</summary>
+              <pre id="fd-diag-txt"></pre>
+            </details>
+          </div><!-- /fd-wrap -->
+
+        </div><!-- /area-main -->
+      </div><!-- /area-grid -->
+    </div><!-- /container -->
+  </div><!-- /area-body -->
+
+  <footer class="site-footer">
+    <div class="container">
+      <div class="bm-footer-bottom">
+        <span>© <span id="year"></span> MSB · Medical System do Brasil · Portal interno</span>
+        <span class="bm-footer-meta">Belo Horizonte · São Paulo · Rio de Janeiro · Curitiba · Recife · Porto Alegre</span>
+      </div>
+    </div>
+  </footer>
+
+  <script src="../script.js?v=8"></script>
+  <script src="../nav-sidebar.js?v=84"></script>
+  <script>
+  (function () {
+    'use strict';
+    var AUTO_MS = 5 * 60000;          // atualização automática do dia de hoje
+    var $ = function (id) { return document.getElementById(id); };
+    var esc = function (s) { return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); };
+    var fBRL = function (v) { return v == null ? '—' : 'R$ ' + Number(v).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }); };
+    var fDia = function (iso) { var m = /^(\d{4})-(\d{2})-(\d{2})/.exec(iso || ''); return m ? m[3] + '/' + m[2] + '/' + m[1] : (iso || ''); };
+    var fCnpj = function (s) { var d = String(s || '').replace(/\D/g, ''); if (d.length === 14) return d.replace(/^(\d{2})(\d{3})(\d{3})(\d{4})(\d{2})$/, '$1.$2.$3/$4-$5'); if (d.length === 11) return d.replace(/^(\d{3})(\d{3})(\d{3})(\d{2})$/, '$1.$2.$3-$4'); return s || ''; };
+
+    // status da nota como o Dynamics grava (enum em inglês) -> português
+    var STATUS = { approved: 'Autorizada', authorized: 'Autorizada', canceled: 'Cancelada', cancelled: 'Cancelada', denied: 'Denegada',
+      rejected: 'Rejeitada', pending: 'Pendente', created: 'Criada', posted: 'Lançada', voided: 'Inutilizada', discarded: 'Inutilizada', contingency: 'Contingência' };
+    var fStatus = function (s) { var k = String(s || '').trim().toLowerCase(); return STATUS[k] || s || ''; };
+
+    var estado = { r: null, tipo: '', busca: '', carregando: false, timer: null };
+
+    function hojeSP() {
+      try { return new Intl.DateTimeFormat('en-CA', { timeZone: 'America/Sao_Paulo', year: 'numeric', month: '2-digit', day: '2-digit' }).format(new Date()); }
+      catch (e) { return new Date().toISOString().slice(0, 10); }
+    }
+    function status(txt, vivo) { $('fd-status').textContent = txt; $('fd-dot').classList.toggle('off', !vivo); }
+    function msgs(lista) {
+      $('fd-msgs').innerHTML = lista.map(function (m) { return '<div class="fd-msg ' + m[0] + '">' + m[1] + '</div>'; }).join('');
+    }
+
+    function render() {
+      var r = estado.r; if (!r) return;
+      var rs = r.resumo || { venda: {}, devolucao: {} };
+      $('fd-k-venda').textContent = fBRL(rs.venda.valor);
+      $('fd-k-venda-n').textContent = (rs.venda.qtd || 0) + ' nota(s)';
+      $('fd-k-dev').textContent = fBRL(rs.devolucao.valor);
+      $('fd-k-dev-n').textContent = (rs.devolucao.qtd || 0) + ' nota(s)';
+      $('fd-k-liq').textContent = fBRL(rs.liquido);
+      $('fd-k-qtd').textContent = String((rs.venda.qtd || 0) + (rs.devolucao.qtd || 0));
+      $('fd-k-qtd-s').textContent = rs.canceladas ? rs.canceladas + ' cancelada(s) fora da soma' : 'sem cancelada';
+
+      var notas = (r.notas || []).filter(function (n) {
+        if (estado.tipo && n.tipo !== estado.tipo) return false;
+        if (!estado.busca) return true;
+        var q = estado.busca.toLowerCase();
+        return [n.numero, n.cliente, n.conta, n.cnpj, n.operacao, n.ordem].join(' ').toLowerCase().indexOf(q) >= 0;
+      });
+      var temOp = (r.notas || []).some(function (n) { return n.operacao; });
+      var temSt = (r.notas || []).some(function (n) { return n.status; });
+      var temOv = (r.notas || []).some(function (n) { return n.ordem; });
+      $('fd-thead').innerHTML = '<tr><th>Tipo</th><th>Nota</th><th>Cliente</th>' + (temOv ? '<th>OV</th>' : '') + (temOp ? '<th class="op">Operação</th>' : '') + (temSt ? '<th class="st">Status</th>' : '') + '<th class="num">Valor</th></tr>';
+      var ncol = 4 + (temOv ? 1 : 0) + (temOp ? 1 : 0) + (temSt ? 1 : 0);
+      if (!notas.length) {
+        var vazio = (r.notas || []).length ? 'Nenhuma nota com esse filtro.' : 'Nenhuma nota da MSB faturada em ' + fDia(r.data) + '.';
+        $('fd-tbody').innerHTML = '<tr><td class="fd-vazio" colspan="' + ncol + '">' + vazio + '</td></tr>';
+        $('fd-tfoot').innerHTML = '';
+      } else {
+        $('fd-tbody').innerHTML = notas.map(function (n) {
+          var dev = n.tipo === 'devolucao';
+          var sub = [n.conta, fCnpj(n.cnpj)].filter(Boolean).join(' · ');
+          return '<tr class="' + (n.cancelada ? 'cancel' : '') + '">'
+            + '<td><span class="fd-tag ' + n.tipo + '">' + (dev ? 'Devolução' : 'Venda') + '</span>' + (n.cancelada ? '<span class="fd-tag cancel">Cancelada</span>' : '') + '</td>'
+            + '<td class="nf">' + esc(n.numero) + (n.serie ? '<div class="sub">série ' + esc(n.serie) + '</div>' : '') + '</td>'
+            + '<td><div class="cli">' + (esc(n.cliente) || '<span class="sub">sem razão social</span>') + '</div>' + (sub ? '<div class="sub">' + esc(sub) + '</div>' : '') + '</td>'
+            + (temOv ? '<td>' + esc(n.ordem || '') + '</td>' : '')
+            + (temOp ? '<td class="op">' + esc(n.operacao || '') + '</td>' : '')
+            + (temSt ? '<td class="st">' + esc(fStatus(n.status)) + '</td>' : '')
+            + '<td class="num' + (dev ? ' fd-neg' : '') + '">' + (n.valor == null ? '—' : (dev ? '− ' : '') + fBRL(n.valor)) + '</td></tr>';
+        }).join('');
+        var soma = 0;
+        notas.forEach(function (n) { if (!n.cancelada && n.valor != null) soma += n.tipo === 'devolucao' ? -n.valor : n.valor; });
+        $('fd-tfoot').innerHTML = '<tr class="fd-foot"><td colspan="' + (ncol - 1) + '">Total líquido · ' + notas.filter(function (n) { return !n.cancelada; }).length + ' nota(s)</td><td class="num">' + fBRL(soma) + '</td></tr>';
+      }
+    }
+
+    function renderMeta(r) {
+      var lista = [];
+      (r.avisos || []).forEach(function (a) { lista.push(['aviso', esc(a)]); });
+      if (r.ultimaFiscal && !(r.notas || []).length) {
+        lista.push(['info', 'Última nota da MSB na ' + esc((r.fonte && r.fonte.entidade) || 'entidade fiscal') + ': <b>' + fDia(r.ultimaFiscal) + '</b>.']);
+      }
+      if (r.conferencia) {
+        var c = r.conferencia;
+        lista.push(['info', 'Conferência no diário de faturas de venda (' + esc(c.entidade) + '): ' + c.venda.qtd + ' venda(s) · ' + fBRL(c.venda.valor)
+          + ' · ' + c.devolucao.qtd + ' devolução(ões) · ' + fBRL(c.devolucao.valor) + '.']);
+      }
+      msgs(lista);
+      var f = r.fonte;
+      $('fd-sub').textContent = '· MSB · ' + fDia(r.data) + (f ? ' · fonte: ' + f.entidade + (f.papel === 'fiscal' ? ' (documento fiscal)' : ' (diário de faturas)') : '');
+      $('fd-diag').style.display = '';
+      $('fd-diag-txt').textContent = JSON.stringify({ fonte: r.fonte, foraDaConta: r.foraDaConta, diagnostico: r.diagnostico }, null, 1);
+    }
+
+    async function carregar(forcar) {
+      if (estado.carregando) return;
+      estado.carregando = true;
+      var dia = $('fd-data').value || hojeSP();
+      $('fd-atualizar').disabled = true;
+      status('Lendo o Dynamics…', true);
+      try {
+        var res = await fetch('/api/faturamento-hoje?data=' + encodeURIComponent(dia) + (forcar ? '&atualizar=1' : ''), { cache: 'no-store' });
+        var j = null; try { j = await res.json(); } catch (e) {}
+        if (res.status === 401) throw new Error('Entre com a sua conta Microsoft para ver o Faturamento do Dia.');
+        if (res.status === 403) throw new Error('O Faturamento do Dia é de acesso restrito.');
+        if (!res.ok || !j || j.ok === false) throw new Error((j && (j.detalhe || j.error)) || ('HTTP ' + res.status));
+        if (j.configured === false) {
+          estado.r = null;
+          msgs([['aviso', 'O Dynamics não está configurado neste ambiente (credenciais D365 nas configurações do site).']]);
+          $('fd-tbody').innerHTML = '<tr><td class="fd-vazio">Sem conexão com o Dynamics.</td></tr>';
+          status('Dynamics não configurado', false);
+          return;
+        }
+        estado.r = j;
+        renderMeta(j); render();
+        var hora = new Date(j.geradoEm || Date.now()).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+        var aoVivo = j.data === hojeSP();
+        status((aoVivo ? 'Ao vivo · ' : '') + 'atualizado às ' + hora + (j.cache ? ' (cache de 1 min)' : '') + (aoVivo ? ' · atualiza a cada 5 min' : ''), aoVivo);
+      } catch (e) {
+        msgs([['erro', 'Não foi possível ler as notas no Dynamics: ' + esc(e.message)]]);
+        if (!estado.r) $('fd-tbody').innerHTML = '<tr><td class="fd-vazio">—</td></tr>';
+        status('Falhou: tente Atualizar', false);
+      } finally {
+        estado.carregando = false;
+        $('fd-atualizar').disabled = false;
+        agendar();
+      }
+    }
+
+    // só o dia de hoje se atualiza sozinho, e só com a aba visível
+    function agendar() {
+      clearTimeout(estado.timer);
+      if ($('fd-data').value !== hojeSP()) return;
+      estado.timer = setTimeout(function () { if (document.visibilityState === 'visible') carregar(true); else agendar(); }, AUTO_MS);
+    }
+    document.addEventListener('visibilitychange', function () {
+      if (document.visibilityState === 'visible' && estado.r && $('fd-data').value === hojeSP()
+          && Date.now() - new Date(estado.r.geradoEm).getTime() > AUTO_MS) carregar(true);
+    });
+
+    $('fd-data').value = hojeSP();
+    $('fd-data').max = hojeSP();
+    $('fd-data').addEventListener('change', function () { estado.r = null; carregar(false); });
+    $('fd-hoje').addEventListener('click', function () { $('fd-data').value = hojeSP(); estado.r = null; carregar(false); });
+    $('fd-atualizar').addEventListener('click', function () { carregar(true); });
+    $('fd-busca').addEventListener('input', function (e) { estado.busca = e.target.value.trim(); render(); });
+    Array.prototype.forEach.call(document.querySelectorAll('.fd-seg button'), function (b) {
+      b.addEventListener('click', function () {
+        estado.tipo = b.getAttribute('data-tipo') || '';
+        Array.prototype.forEach.call(document.querySelectorAll('.fd-seg button'), function (x) { x.classList.toggle('on', x === b); });
+        render();
+      });
+    });
+
+    // abre já buscando: assim que o login (auth.js) estiver pronto
+    var foi = false;
+    function iniciar() {
+      if (foi) return; foi = true;
+      // quem não é o dono nem chega a chamar a API (o servidor recusaria com 403)
+      if (window.bmRestritoPorEmail && window.bmRestritoPorEmail('comercial-faturamento-hoje')) return;
+      carregar(false);
+    }
+    if (window._portalUser && window._portalUser.email) iniciar();
+    else document.addEventListener('portalauth:ready', iniciar);
+  })();
+  </script>
+</body>
+</html>

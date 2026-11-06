@@ -492,6 +492,48 @@ O filtro **Status da Liberação** da Análise de Pedidos dava
 - A Meta (Sales Vertical) não muda com o filtro — igual a Cliente ou Produto.
 - `sw.js` — cache `bm-comest-v20`.
 
+### Sales Report · Faturamento do Dia, só do dono (06/11/2026)
+
+Pedido do dono: "uma aba oculta para todo mundo menos para mim no Comercial,
+para visualizar o faturamento no momento em que abrir a tela" — as notas da
+**MSB** faturadas **hoje**, **venda e devolução**, ao vivo do Dynamics, pela
+entidade de documento fiscal, com a inteligência das Faturas em Aberto da
+Cobrança Automática do portal completo.
+
+- **Página** `pages/comercial-faturamento-hoje.html` — aba "Faturamento do Dia"
+  no fim das abas do Sales Report e no menu. Abre já lendo o dia de hoje
+  (Brasília): Vendas, Devoluções, Faturamento líquido e Notas no dia; tabela
+  das notas (tipo, número/série, cliente com conta e CNPJ, valor), filtro
+  Todas/Vendas/Devoluções e busca. Outro dia pelo seletor; o dia de hoje se
+  atualiza sozinho a cada 5 min (com a aba visível) e em "Atualizar".
+- **Só do dono**: as mesmas duas contas do PI · Pedido — `SO_DONO` no
+  `nav-sidebar.js` (para os outros a aba some do Sales Report e do menu, e
+  abrir o endereço dá "Módulo indisponível") e `DONOS` no
+  `api/faturamento-hoje/index.js` (token validado obrigatório; outro e-mail é
+  403). Fica fora da busca da home (não está no `MSB_VISIVEIS`).
+- **API** `GET /api/faturamento-hoje[?data=AAAA-MM-DD][&atualizar=1][&diag=1]`,
+  motor em `api/shared/faturamento-dia.js` (só leitura no Dynamics):
+  - fonte **FiscalDocuments** — o nome público (OData) da
+    FiscalDocumentHeaderEntity no F&O da Biomedical. Venda = documento de
+    saída para cliente; devolução = documento de entrada de cliente. Nota de
+    fornecedor (compra) fica fora; cancelada/denegada aparece riscada e fora
+    da soma. Só `dataAreaId eq 'msb'`.
+  - **a inteligência das Faturas em Aberto** (`cobranca-d365.js` do completo):
+    entidade e colunas descobertas na hora pela linha de amostra, aceitas só
+    se tiverem o que o papel exige; prazo em cada ida ao F&O; diagnóstico na
+    resposta (`?diag=1` traz as colunas). Tudo fixável por env
+    (`FATDIA_ENT_FISCAL`, `FATDIA_ENT_DIARIO`, `FATDIA_ENT_CLIENTES`,
+    `FATDIA_COL_DATA`, `FATDIA_COL_VALOR`, `FATDIA_COL_DIRECAO`,
+    `FATDIA_EMPRESA`).
+  - **conferência pelo diário** (`SalesInvoiceHeadersV2`, CustInvoiceJour),
+    lido junto. Em 15/10/2026 o portal completo achou a FiscalDocuments (OData)
+    sem nota da MSB depois de 05/12/2023: se ela vier vazia e o diário trouxer
+    notas, a tela mostra o diário e diz por quê, com a data da última nota da
+    MSB na FiscalDocuments. Valor negativo no diário = devolução.
+  - razão social/CNPJ pela `CustomersV3`; cache de 1 min por dia.
+- Testes com o Dynamics simulado: `node scripts/test-faturamento-dia.js`.
+- `nav-sidebar.js?v=84` em todas as páginas; `sw.js` — cache `bm-comest-v21`.
+
 ## Como colocar no ar
 
 1. **Repositório no GitHub** — crie um repositório **privado e vazio** (sem
