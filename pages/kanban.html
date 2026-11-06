@@ -61,9 +61,10 @@
           <!-- ═══════════ KANBAN · ORDENS DO DIA ═══════════
                As ordens de venda da MSB criadas no dia, AO VIVO do Dynamics
                (/api/kanban-ov: BIOSalesOrderHeaderV1 + SalesOrderHeadersV3/V2,
-               juntas pelo número da OV; valor pelas linhas). As colunas do quadro
-               são os valores CRUS da coluna de status escolhida em "Agrupar por"
-               — o significado de cada status ainda vai ser definido pelo dono.
+               juntas pelo número da OV; valor pelas linhas). 07/11/26: QUATRO
+               colunas fixas, na ordem do fluxo — Criada, Gerenciamento de Crédito,
+               Liberado, Faturado — pela regra do dono (SalesStatus, ReleaseStatus,
+               CredManInCreditControl), calculada no servidor (api/shared/kanban-ov.js).
                Área RESERVADA (AREAS_RESERVADAS em api/shared/auth.js). -->
           <style>
             .kb-head{display:flex;align-items:flex-end;justify-content:space-between;gap:16px;flex-wrap:wrap;padding:22px 0 10px;}
@@ -93,7 +94,8 @@
             html[data-tema="escuro"] .kb-msg.aviso{background:#3A3220;border-color:#6B5A2A;color:#F5DFA8;}
             html[data-tema="escuro"] .kb-msg.erro{background:#3B2426;border-color:#6E3A3E;color:#F6C7CB;}
 
-            .kb-board{display:grid;grid-template-columns:repeat(auto-fill,minmax(270px,1fr));gap:12px;align-items:start;}
+            .kb-board{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;align-items:start;}
+            @media(max-width:1200px){.kb-board{grid-template-columns:repeat(2,minmax(0,1fr));}}
             .kb-col{border-radius:12px;background:var(--kb-bg);border:1px solid var(--kb-bd);display:flex;flex-direction:column;min-height:180px;max-height:70vh;}
             .kb-col-h{padding:10px 12px 8px;display:flex;flex-direction:column;gap:2px;}
             .kb-col-t{display:flex;align-items:center;gap:8px;font-size:13.5px;font-weight:700;color:var(--kb-ink);}
@@ -145,7 +147,7 @@
               .kb-title{font-size:18px;}
               .kb-live{margin-left:0;width:100%;}
               .kb-busca{max-width:none;min-width:0;}
-              .kb-board{grid-template-columns:1fr;}
+              .kb-board{grid-template-columns:1fr !important;}
               .kb-col{max-height:none;}
             }
           </style>
@@ -168,8 +170,6 @@
 
           <div class="kb-bar">
             <input type="search" class="kb-in kb-busca" id="kb-busca" placeholder="Buscar OV, cliente ou OC…">
-            <label for="kb-agrupar">Agrupar por</label>
-            <select class="kb-in" id="kb-agrupar"><option value="">—</option></select>
             <div class="kb-seg" role="group" aria-label="Visualização">
               <button type="button" class="on" data-vis="kanban">Kanban</button>
               <button type="button" data-vis="lista">Lista</button>
@@ -214,7 +214,6 @@
   (function () {
     'use strict';
     var AUTO_MS = 30000;               // "tempo real": o dia de hoje relê o Dynamics a cada 30 s
-    var LS_AGRUPAR = 'bm-kanban-agrupar';
     var $ = function (id) { return document.getElementById(id); };
     var esc = function (s) { return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); };
     var fBRL = function (v) { return v == null ? '—' : 'R$ ' + Number(v).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }); };
@@ -232,8 +231,11 @@
     var TONS_ESC = [['#1F3149', '#2E4668', '#A9C8F5'], ['#3A3320', '#5A4E2A', '#F0D98A'], ['#2A3138', '#3C454E', '#C7D0D8'], ['#2F2742', '#46395F', '#CDB8F0'],
                     ['#3D2D1F', '#5C4330', '#F2C08F'], ['#1E3832', '#2D5249', '#8FE0C6'], ['#1F3A25', '#2E5636', '#9BE0A8'], ['#3D2129', '#5A303C', '#F2A9B9']];
     function tom(i) { var esc_ = document.documentElement.getAttribute('data-tema') === 'escuro'; var t = (esc_ ? TONS_ESC : TONS)[i % TONS.length]; return '--kb-bg:' + t[0] + ';--kb-bd:' + t[1] + ';--kb-ink:' + t[2]; }
+    // tom de cada etapa: Criada azul, Crédito amarelo, Liberado cinza, Faturado lilás
+    var TOM_ETAPA = { criada: 0, credito: 1, liberado: 2, faturado: 3 };
+    var NOME_ETAPA = { criada: 'Criada', credito: 'Gerenciamento de Crédito', liberado: 'Liberado', faturado: 'Faturado', cancelada: 'Cancelada' };
 
-    var estado = { r: null, vis: 'kanban', busca: '', agrupar: lsGet(LS_AGRUPAR) || '', carregando: false, timer: null, antes: null, mudou: {}, aberta: null };
+    var estado = { r: null, vis: 'kanban', busca: '', carregando: false, timer: null, antes: null, mudou: {}, aberta: null };
 
     function hojeSP() {
       try { return new Intl.DateTimeFormat('en-CA', { timeZone: 'America/Sao_Paulo', year: 'numeric', month: '2-digit', day: '2-digit' }).format(new Date()); }
@@ -248,7 +250,6 @@
       var q = estado.busca.toLowerCase();
       return (r.ovs || []).filter(function (o) { return !q || [o.numero, o.cliente, o.conta, o.oc].join(' ').toLowerCase().indexOf(q) >= 0; });
     }
-    function valorStatus(o) { var v = estado.agrupar ? o.status[estado.agrupar] : null; return v == null ? '(sem registro)' : v; }
 
     function cardHtml(o) {
       var novo = estado.mudou[o.numero] === 'nova';
@@ -266,47 +267,30 @@
       var r = estado.r; if (!r) return;
       var ovs = filtradas();
       if (estado.vis === 'lista') return renderLista(ovs);
-      // colunas: os valores crus da coluna escolhida (ordem alfabética, vazios no fim) — estável entre atualizações
-      var grupos = {};
-      ovs.forEach(function (o) { var k = valorStatus(o); (grupos[k] = grupos[k] || []).push(o); });
-      var cols = Object.keys(grupos);
-      var sc = (r.statusCols || []).find(function (s) { return s.chave === estado.agrupar; });
-      if (sc) Object.keys(sc.valores).forEach(function (v) { if (cols.indexOf(v) < 0 && !estado.busca) cols.push(v); });
-      cols.sort(function (a, b) { var va = /^\(/.test(a), vb = /^\(/.test(b); return va - vb || a.localeCompare(b, 'pt-BR'); });
-      if (!cols.length) { $('kb-quadro').innerHTML = '<div class="kb-vazio">' + ((r.ovs || []).length ? 'Nenhuma OV com essa busca.' : 'Nenhuma ordem de venda da MSB criada em ' + fDia(r.data) + '.') + '</div>'; return; }
-      $('kb-quadro').innerHTML = '<div class="kb-board">' + cols.map(function (c, i) {
-        var lista = grupos[c] || [];
+      // as 4 colunas fixas, na ordem do fluxo (a etapa vem calculada do servidor);
+      // cancelada não entra no quadro
+      var etapas = r.etapas || [];
+      $('kb-quadro').innerHTML = '<div class="kb-board">' + etapas.map(function (e) {
+        var lista = ovs.filter(function (o) { return o.etapa === e.id; });
         var soma = lista.reduce(function (s, o) { return s + (o.valor || 0); }, 0);
         var temValor = lista.some(function (o) { return o.valor != null; });
-        return '<section class="kb-col" style="' + tom(i) + '"><div class="kb-col-h"><div class="kb-col-t"><span class="nome" title="' + esc(c) + '">' + esc(c) + '</span><span class="kb-cnt">' + lista.length + '</span></div>'
-          + (temValor ? '<div class="kb-col-v">' + esc(fK(soma)) + '</div>' : '') + '</div>'
+        return '<section class="kb-col" style="' + tom(TOM_ETAPA[e.id] || 0) + '"><div class="kb-col-h"><div class="kb-col-t"><span class="nome">' + esc(e.nome) + '</span><span class="kb-cnt">' + lista.length + '</span></div>'
+          + '<div class="kb-col-v">' + (temValor ? esc(fK(soma)) : '&nbsp;') + '</div></div>'
           + '<div class="kb-cards">' + (lista.length ? lista.map(cardHtml).join('') : '<div class="kb-vazio">—</div>') + '</div></section>';
       }).join('') + '</div>';
     }
 
     function renderLista(ovs) {
       var r = estado.r;
-      var outros = (r.statusCols || []).filter(function (s) { return s.chave !== estado.agrupar; }).slice(0, 4);
-      var sc = (r.statusCols || []).find(function (s) { return s.chave === estado.agrupar; });
       if (!ovs.length) { $('kb-quadro').innerHTML = '<div class="kb-vazio">' + ((r.ovs || []).length ? 'Nenhuma OV com essa busca.' : 'Nenhuma ordem de venda da MSB criada em ' + fDia(r.data) + '.') + '</div>'; return; }
-      $('kb-quadro').innerHTML = '<div class="kb-lista"><table class="kb-tbl"><thead><tr><th>OV</th><th>Cliente</th><th>Criada</th><th>OC</th>'
-        + (sc ? '<th>' + esc(sc.coluna) + '</th>' : '') + outros.map(function (s) { return '<th title="' + esc(s.entidade) + '">' + esc(s.coluna) + '</th>'; }).join('')
-        + '<th class="num">Itens</th><th class="num">Valor</th></tr></thead><tbody>'
+      var g = function (o, k) { return (o.regra && o.regra[k]) || ''; };
+      $('kb-quadro').innerHTML = '<div class="kb-lista"><table class="kb-tbl"><thead><tr><th>OV</th><th>Cliente</th><th>Criada</th><th>OC</th><th>Etapa</th>'
+        + '<th>SalesStatus</th><th>ReleaseStatus</th><th>CredManInCreditControl</th><th class="num">Itens</th><th class="num">Valor</th></tr></thead><tbody>'
         + ovs.map(function (o) {
           return '<tr data-ov="' + esc(o.numero) + '"><td><b>' + esc(o.numero) + '</b></td><td>' + esc(o.cliente || o.conta) + '</td><td>' + esc(fHora(o.criadaEm)) + '</td><td>' + esc(o.oc) + '</td>'
-            + (sc ? '<td><b>' + esc(valorStatus(o)) + '</b></td>' : '') + outros.map(function (s) { return '<td>' + esc(o.status[s.chave] == null ? '' : o.status[s.chave]) + '</td>'; }).join('')
+            + '<td><b>' + esc(NOME_ETAPA[o.etapa] || o.etapa) + '</b></td><td>' + esc(g(o, 'salesStatus')) + '</td><td>' + esc(g(o, 'releaseStatus')) + '</td><td>' + esc(g(o, 'credito')) + '</td>'
             + '<td class="num">' + (o.itens == null ? '' : o.itens) + '</td><td class="num">' + esc(o.valor == null ? '—' : fBRL(o.valor)) + '</td></tr>';
         }).join('') + '</tbody></table></div>';
-    }
-
-    function preencherAgrupar() {
-      var r = estado.r, sel = $('kb-agrupar');
-      var cols = (r && r.statusCols) || [];
-      if (!estado.agrupar || !cols.some(function (s) { return s.chave === estado.agrupar; })) estado.agrupar = (r && r.statusPadrao) || (cols[0] && cols[0].chave) || '';
-      sel.innerHTML = cols.length ? cols.map(function (s) {
-        var n = Object.keys(s.valores).length;
-        return '<option value="' + esc(s.chave) + '"' + (s.chave === estado.agrupar ? ' selected' : '') + '>' + esc(rotuloCol(s)) + ' (' + n + ' valor' + (n === 1 ? '' : 'es') + ')</option>';
-      }).join('') : '<option value="">sem coluna de status</option>';
     }
 
     // painel da OV: todos os status + os campos crus de cada entidade (é o material para "triar" os status)
@@ -315,11 +299,17 @@
       estado.aberta = num;
       $('kb-dr-tt').textContent = o.numero;
       $('kb-dr-sub').textContent = [o.cliente, o.conta, 'criada ' + fDia(o.criadaEm) + ' ' + fHora(o.criadaEm)].filter(Boolean).join(' · ');
-      var h = '<h4>Resumo</h4><table class="kb-kv">'
+      var rg = o.regra || {};
+      var h = '<h4>Etapa no quadro</h4><table class="kb-kv">'
+        + '<tr class="st"><td>Etapa</td><td>' + esc(NOME_ETAPA[o.etapa] || o.etapa) + '</td></tr>'
+        + '<tr><td>' + esc(rg.salesStatusCol || 'SalesStatus') + '</td><td>' + esc(rg.salesStatus == null ? '(não veio)' : rg.salesStatus) + '</td></tr>'
+        + '<tr><td>' + esc(rg.releaseStatusCol || 'ReleaseStatus') + '</td><td>' + esc(rg.releaseStatus == null ? '(não veio)' : rg.releaseStatus) + '</td></tr>'
+        + '<tr><td>' + esc(rg.creditoCol || 'CredManInCreditControl') + '</td><td>' + esc(rg.credito == null ? '(não veio)' : rg.credito) + '</td></tr></table>';
+      h += '<h4>Resumo</h4><table class="kb-kv">'
         + [['OC do cliente', o.oc], ['Entrega solicitada', fDia(o.entrega)], ['Depósito', o.deposito], ['Pool', o.pool], ['Criada por', o.criadoPor], ['Itens', o.itens], ['Valor', o.valor == null ? '' : fBRL(o.valor)]]
           .filter(function (p) { return p[1] !== '' && p[1] != null; }).map(function (p) { return '<tr><td>' + esc(p[0]) + '</td><td>' + esc(p[1]) + '</td></tr>'; }).join('') + '</table>';
       h += '<h4>Status (valores crus do Dynamics)</h4><table class="kb-kv">' + (estado.r.statusCols || []).map(function (s) {
-        return '<tr class="' + (s.chave === estado.agrupar ? 'st' : '') + '"><td>' + esc(rotuloCol(s)) + '</td><td>' + esc(o.status[s.chave] == null ? '(sem registro)' : o.status[s.chave]) + '</td></tr>';
+        return '<tr><td>' + esc(rotuloCol(s)) + '</td><td>' + esc(o.status[s.chave] == null ? '(sem registro)' : o.status[s.chave]) + '</td></tr>';
       }).join('') + '</table>';
       Object.keys(o.campos || {}).forEach(function (ent) {
         var c = o.campos[ent];
@@ -338,10 +328,10 @@
       (novo.ovs || []).forEach(function (o) {
         var a = antes[o.numero];
         if (!a) estado.mudou[o.numero] = 'nova';
-        else if (JSON.stringify(a) !== JSON.stringify(o.status)) estado.mudou[o.numero] = 'status';
+        else if (a !== o.etapa) estado.mudou[o.numero] = 'status';
       });
     }
-    function lembrar(r) { estado.antes = {}; (r.ovs || []).forEach(function (o) { estado.antes[o.numero] = o.status; }); }
+    function lembrar(r) { estado.antes = {}; (r.ovs || []).forEach(function (o) { estado.antes[o.numero] = o.etapa; }); }
 
     async function carregar(forcar) {
       if (estado.carregando) return;
@@ -359,13 +349,15 @@
         if (estado.r && estado.r.data === j.data) marcarMudancas(j); else estado.mudou = {};
         lembrar(j);
         estado.r = j;
-        preencherAgrupar();
-        msgs((j.avisos || []).map(function (a) { return ['aviso', esc(a)]; }));
-        var total = (j.ovs || []).reduce(function (s, o) { return s + (o.valor || 0); }, 0);
+        var avs = (j.avisos || []).map(function (a) { return ['aviso', esc(a)]; });
+        if (j.canceladas) avs.push(['aviso', j.canceladas + ' OV(s) cancelada(s) no dia, fora do quadro.']);
+        msgs(avs);
+        var noQuadro = (j.ovs || []).filter(function (o) { return o.etapa !== 'cancelada'; });
+        var total = noQuadro.reduce(function (s, o) { return s + (o.valor || 0); }, 0);
         var fontes = (j.fontes || []).map(function (f) { return f.entidade; }).join(' + ');
-        $('kb-sub').textContent = 'MSB · ' + (j.ovs || []).length + ' ordem(ns) de venda criada(s) em ' + fDia(j.data) + ((j.ovs || []).some(function (o) { return o.valor != null; }) ? ' · ' + fBRL(total) : '') + (fontes ? ' · ' + fontes : '');
+        $('kb-sub').textContent = 'MSB · ' + noQuadro.length + ' ordem(ns) de venda criada(s) em ' + fDia(j.data) + (noQuadro.some(function (o) { return o.valor != null; }) ? ' · ' + fBRL(total) : '') + (fontes ? ' · ' + fontes : '');
         $('kb-diag').style.display = '';
-        $('kb-diag-txt').textContent = JSON.stringify({ fontes: j.fontes, statusPadrao: j.statusPadrao, diagnostico: j.diagnostico }, null, 1);
+        $('kb-diag-txt').textContent = JSON.stringify({ fontes: j.fontes, etapas: j.etapas, diagnostico: j.diagnostico }, null, 1);
         render();
         if (estado.aberta) abrir(estado.aberta);
         var hora = new Date(j.geradoEm || Date.now()).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
@@ -399,7 +391,6 @@
     $('kb-hoje').addEventListener('click', function () { $('kb-data').value = hojeSP(); estado.r = null; estado.antes = null; carregar(false); });
     $('kb-atualizar').addEventListener('click', function () { carregar(true); });
     $('kb-busca').addEventListener('input', function (e) { estado.busca = e.target.value.trim(); render(); });
-    $('kb-agrupar').addEventListener('change', function (e) { estado.agrupar = e.target.value; lsSet(LS_AGRUPAR, estado.agrupar); render(); });
     Array.prototype.forEach.call(document.querySelectorAll('.kb-seg button'), function (b) {
       b.addEventListener('click', function () {
         estado.vis = b.getAttribute('data-vis');

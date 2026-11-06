@@ -100,7 +100,37 @@ const bio = (n, st, lib) => ({ dataAreaId: 'msb', SalesOrderNumber: n, StatusPed
   r = await K.ordensDoDia({ data: DIA });
   t('aviso e quadro vazio', r.ovs.length === 0 && r.avisos.length === 1 && /Nenhuma entidade/.test(r.avisos[0]), r.avisos);
 
-  console.log('4) rota exige a área kanban');
+  console.log('4) as 4 etapas (regra do dono, 07/11/2026)');
+  K._limparCache(); chamadas.length = 0;
+  SERVICO = ['BIOSalesOrderHeaderV1', 'SalesOrderHeadersV2', 'SalesOrderLines'];
+  const b4 = (n, ss, rs, cr) => ({ dataAreaId: 'msb', SalesOrderNumber: n, SalesStatus: ss, ReleaseStatus: rs, CredManInCreditControl: cr });
+  CEN = {
+    SalesOrderHeadersV2: { linhas: ['OV017518', 'OV017519', 'OV017520', 'OV017517', 'OV017516', 'OV017515', 'OV017514'].map((n, i) => v2(n, DIA + 'T1' + i + ':00:00Z', 'Backorder')) },
+    BIOSalesOrderHeaderV1: { linhas: [
+      b4('OV017518', 'Backorder', 'Open', 'No'),          // ordem em aberto, não liberada -> Criada
+      b4('OV017519', 'Backorder', 'Open', 'Yes'),         // crédito marcado -> Gerenciamento de Crédito
+      b4('OV017520', 'Backorder', 'Released', 'No'),      // liberada -> Liberado
+      b4('OV017517', 'Invoiced', 'Released', 'No'),       // faturada E liberada (o print) -> Faturado
+      b4('OV017516', 'Delivered', 'Released', 'No'),      // entregue -> Faturado ("o restante")
+      b4('OV017515', 'Canceled', 'Open', 'No'),           // cancelada -> fora do quadro
+      b4('OV017514', 'Ordem em aberto', 'Liberado', 'Não') // rótulos em português -> Liberado
+    ] },
+    SalesOrderLines: { linhas: [{ dataAreaId: 'msb', SalesOrderNumber: 'OV017517', LineAmount: 1000 }, { dataAreaId: 'msb', SalesOrderNumber: 'OV017519', LineAmount: 50 }] }
+  };
+  r = await K.ordensDoDia({ data: DIA });
+  const et = {}; r.ovs.forEach(o => { et[o.numero] = o.etapa; });
+  t('Criada', et.OV017518 === 'criada', et);
+  t('Gerenciamento de Crédito', et.OV017519 === 'credito', et);
+  t('Liberado', et.OV017520 === 'liberado' && et.OV017514 === 'liberado', et);
+  t('faturada + liberada = Faturado (OV017517)', et.OV017517 === 'faturado', et);
+  t('entregue = Faturado', et.OV017516 === 'faturado', et);
+  t('cancelada fora do quadro', et.OV017515 === 'cancelada' && r.canceladas === 1, et);
+  t('4 colunas na ordem do fluxo', r.etapas.map(e => e.id).join(',') === 'criada,credito,liberado,faturado', r.etapas);
+  t('contagem e valor por coluna', r.etapas.find(e => e.id === 'faturado').qtd === 2 && r.etapas.find(e => e.id === 'faturado').valor === 1000 && r.etapas.find(e => e.id === 'credito').valor === 50, r.etapas);
+  t('regra vem com os campos e a origem', r.ovs.find(o => o.numero === 'OV017517').regra.salesStatusCol === 'BIOSalesOrderHeaderV1.SalesStatus', r.ovs.find(o => o.numero === 'OV017517').regra);
+  t('sem aviso de campo faltando', !r.avisos.some(a => /Não achei/.test(a)), r.avisos);
+
+  console.log('5) rota exige a área kanban');
   K._limparCache();
   const auth = require('../api/shared/auth');
   const fn = require('../api/kanban-ov/index.js');

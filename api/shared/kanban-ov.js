@@ -77,6 +77,52 @@ const RE_STATUS = /status|situa|stage|etapa|fase|workflow|libera|release|hold|bl
 const RE_NAO_STATUS = /date|time|data|hora|reason|motivo|user|usuario|by$|limit|amount|valor|id$|number|card|cartao/i;
 const VAZIOS = /^(|0|1900-01-01T00:00:00Z|00000000-0000-0000-0000-000000000000|None|NoYes'No'|No)$/;
 
+// ── AS 4 ETAPAS DO QUADRO (07/11/2026, definidas pelo dono) ──────
+// "Quando a ordem entra no sistema ela entra como Criada, depois vai para
+// Gerenciamento de Crédito, Liberado e Faturado." Pelos campos da OV:
+//   SalesStatus            "Ordem em aberto" (Backorder) | Faturado | Entregue | Cancelado
+//   ReleaseStatus          "Liberado" (Released) | "Abrir" (Open)
+//   CredManInCreditControl marcado = em gerenciamento de crédito
+// Ordem de prioridade (a da fala do dono, ajustada num ponto: OV FATURADA
+// também está liberada — a OV017517 tem Faturado + Liberado —, então o
+// "Liberado" só vale para a ordem ainda em aberto):
+//   1) SalesStatus que não é "Ordem em aberto" -> Faturado ("o restante")
+//      (cancelada não é faturamento: fica FORA do quadro, contada à parte)
+//   2) CredManInCreditControl marcado          -> Gerenciamento de Crédito
+//   3) ReleaseStatus = Liberado                -> Liberado
+//   4) senão                                   -> Criada
+// Aceita o valor do OData (nome do enum: Backorder, Released, Yes) e o rótulo
+// em português da tela do F&O. Colunas trocáveis por env: KANBAN_COL_SALESSTATUS,
+// KANBAN_COL_RELEASE, KANBAN_COL_CREDITO.
+const ETAPAS = [
+  { id: 'criada',   nome: 'Criada' },
+  { id: 'credito',  nome: 'Gerenciamento de Crédito' },
+  { id: 'liberado', nome: 'Liberado' },
+  { id: 'faturado', nome: 'Faturado' }
+];
+const COL_SALES   = envLista('KANBAN_COL_SALESSTATUS', ['SalesStatus', 'SalesOrderStatus']);
+const COL_RELEASE = envLista('KANBAN_COL_RELEASE', ['ReleaseStatus', 'SalesOrderReleaseStatus']);
+const COL_CREDITO = envLista('KANBAN_COL_CREDITO', ['CredManInCreditControl', 'CreditManagementInCreditControl', 'InCreditControl']);
+const normV = (v) => String(v == null ? '' : v).normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().replace(/[^a-z0-9]+/g, ' ').trim();
+// enum SalesStatus do F&O: None 0, Backorder 1, Delivered 2, Invoiced 3, Canceled 4
+function situacaoOv(v) {
+  const n = normV(v);
+  if (!n) return null;
+  if (/^(backorder|ordem em aberto|em aberto|aberta|aberto|1)$/.test(n)) return 'aberta';
+  if (/^(canceled|cancelled|cancelado|cancelada|4)$/.test(n)) return 'cancelada';
+  return 'outra';
+}
+const liberadoV = (v) => /^(released|liberado|liberada)$/.test(normV(v));
+const marcadoV = (v) => v === true || /^(yes|sim|true|1|noyes yes)$/.test(normV(v));
+function etapaDe(sales, release, credito) {
+  const sit = situacaoOv(sales);
+  if (sit === 'cancelada') return 'cancelada';
+  if (sit === 'outra') return 'faturado';
+  if (marcadoV(credito)) return 'credito';
+  if (liberadoV(release)) return 'liberado';
+  return 'criada';
+}
+
 // ── util ─────────────────────────────────────────────────────────
 const txt = (v) => String(v == null ? '' : v).trim();
 function num(v) { if (v == null || v === '') return null; const n = Number(v); return isNaN(n) ? null : n; }
@@ -251,14 +297,14 @@ async function ordensDoDia(opts) {
   const ents = await entidades(token, ate, diag, !!opts.diag);
   const base = { ok: true, configured: true, empresa: EMPRESA, data: dia, hoje: hojeSP(), geradoEm: new Date().toISOString() };
   if (!ents.length) {
-    return Object.assign(base, { fontes: [], statusCols: [], statusPadrao: null, ovs: [],
+    return Object.assign(base, { fontes: [], etapas: ETAPAS.map(e => Object.assign({ qtd: 0, valor: 0 }, e)), canceladas: 0, statusCols: [], statusPadrao: null, ovs: [],
       avisos: ['Nenhuma entidade de ordem de venda respondeu no Dynamics (testadas: ' + CANDIDATAS.join(', ') + '). Veja o diagnóstico.'], diagnostico: diag });
   }
 
   const principal = ents.find(e => e.criadaEm && e.temEmpresa) || ents.find(e => e.criadaEm);
   if (principal && !principal.temEmpresa) avisos.push('A ' + principal.entidade + ' não tem a coluna de empresa (dataAreaId): não deu para garantir que só venham OVs da MSB.');
   if (!principal) {
-    return Object.assign(base, { fontes: ents.map(e => ({ entidade: e.entidade, papel: 'sem data' })), statusCols: [], statusPadrao: null, ovs: [],
+    return Object.assign(base, { fontes: ents.map(e => ({ entidade: e.entidade, papel: 'sem data' })), etapas: ETAPAS.map(e => Object.assign({ qtd: 0, valor: 0 }, e)), canceladas: 0, statusCols: [], statusPadrao: null, ovs: [],
       avisos: ['As entidades de ordem de venda responderam, mas nenhuma tem coluna de data de criação para separar as OVs do dia (' + ents.map(e => e.entidade).join(', ') + '). Fixe a coluna em KANBAN_COL_CRIADA.'], diagnostico: diag });
   }
 
@@ -318,7 +364,22 @@ async function ordensDoDia(opts) {
     for (const ent of Object.keys(reg[k])) { const col = achaCol(colunasDe(reg[k][ent]), COLS[campo]); if (col && txt(reg[k][ent][col]) && !VAZIOS.test(txt(reg[k][ent][col]))) return txt(reg[k][ent][col]); }
     return '';
   };
+  // valor cru de um campo da regra: o 1º NOME da lista que existir em qualquer
+  // entidade (o nome que o dono deu — SalesStatus — ganha do equivalente)
+  const cru = (k, nomes) => {
+    for (const nome of nomes) {
+      for (const ent of Object.keys(reg[k])) {
+        const col = achaCol(colunasDe(reg[k][ent]), [nome]);
+        if (col && reg[k][ent][col] != null && txt(reg[k][ent][col]) !== '') return { valor: reg[k][ent][col], coluna: ent + '.' + col };
+      }
+    }
+    return null;
+  };
+  const achou = { sales: 0, release: 0, credito: 0 };
   const ovs = Object.keys(reg).map(k => {
+    const sa = cru(k, COL_SALES), re = cru(k, COL_RELEASE), cr = cru(k, COL_CREDITO);
+    if (sa) achou.sales++; if (re) achou.release++; if (cr) achou.credito++;
+    const etapa = etapaDe(sa && sa.valor, re && re.valor, cr && cr.valor);
     const status = {};
     statusCols.forEach(s => { const r = reg[k][s.entidade]; status[s.chave] = r ? (txt(r[s.coluna]) || '(vazio)') : null; });
     const campos = {};
@@ -330,16 +391,36 @@ async function ordensDoDia(opts) {
       criadaEm: txt(reg[k][principal.entidade][principal.criadaEm]),
       entrega: pega(k, 'entrega'), deposito: pega(k, 'deposito'), pool: pega(k, 'pool'), criadoPor: pega(k, 'criadoPor'),
       valor: l ? l.valor : null, itens: l ? l.itens : null,
+      etapa,
+      // os três campos que decidiram a etapa (valor cru + de onde veio)
+      regra: {
+        salesStatus: sa ? txt(sa.valor) : null, salesStatusCol: sa ? sa.coluna : null,
+        releaseStatus: re ? txt(re.valor) : null, releaseStatusCol: re ? re.coluna : null,
+        credito: cr ? txt(cr.valor) : null, creditoCol: cr ? cr.coluna : null
+      },
       status, campos
     };
   }).sort((a, b) => b.criadaEm.localeCompare(a.criadaEm) || b.numero.localeCompare(a.numero));
 
-  if (!statusCols.length && ovs.length) avisos.push('Nenhuma coluna de status foi encontrada nas entidades lidas. Veja os campos de cada OV no painel.');
-  const r = Object.assign(base, { fontes, statusCols, statusPadrao, ovs, avisos, diagnostico: diag });
+  // as 4 colunas, na ordem do fluxo, com contagem e valor
+  const etapas = ETAPAS.map(e => {
+    const lista = ovs.filter(o => o.etapa === e.id);
+    return { id: e.id, nome: e.nome, qtd: lista.length, valor: Math.round(lista.reduce((s2, o) => s2 + (o.valor || 0), 0) * 100) / 100 };
+  });
+  const canceladas = ovs.filter(o => o.etapa === 'cancelada').length;
+  if (ovs.length) {
+    const falta = [];
+    if (!achou.sales) falta.push(COL_SALES[0]);
+    if (!achou.release) falta.push(COL_RELEASE[0]);
+    if (!achou.credito) falta.push(COL_CREDITO[0]);
+    if (falta.length) avisos.push('Não achei ' + falta.join(', ') + ' nas entidades lidas (' + fontes.map(f => f.entidade).join(', ') + '): as etapas dependem desses campos. Veja os campos de cada OV no painel.');
+    else if (achou.sales < ovs.length) avisos.push((ovs.length - achou.sales) + ' OV(s) sem SalesStatus: ficaram em Criada, Gerenciamento de Crédito ou Liberado pelos outros campos.');
+  }
+  const r = Object.assign(base, { fontes, etapas, canceladas, statusCols, statusPadrao, ovs, avisos, diagnostico: diag });
   if (!opts.diag) _cache.set(dia, { ts: Date.now(), r });
   return r;
 }
 
 function _limparCache() { _cache.clear(); _ents = null; _entsTs = 0; _servico = null; _servicoTs = 0; _entLinhas = null; }
 
-module.exports = { ordensDoDia, hojeSP, EMPRESA, CONFIGURED: D.CONFIGURED, _limparCache, _interno: { diaDe, RE_STATUS, RE_NAO_STATUS } };
+module.exports = { ordensDoDia, hojeSP, EMPRESA, CONFIGURED: D.CONFIGURED, ETAPAS, _limparCache, _interno: { diaDe, RE_STATUS, RE_NAO_STATUS, etapaDe } };

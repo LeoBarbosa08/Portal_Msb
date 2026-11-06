@@ -624,6 +624,38 @@ as duas contas do dono**:
 - `nav-sidebar.js?v=86`, `portal-catalogo.js?v=22`; `sw.js` — cache
   `bm-comest-v25`.
 
+### Kanban em 4 colunas + faturamento líquido no banner (07/11/2026)
+
+**Kanban** — pedido do dono: "quando a ordem entra no sistema ela entra como
+Criada, depois vai para Gerenciamento de Crédito, Liberado e Faturado; deixa
+esses 4 quadrados apenas". O "Agrupar por" saiu; a etapa é calculada no
+servidor (`etapaDe` em `api/shared/kanban-ov.js`) pelos campos da OV:
+
+| Ordem | Regra | Coluna |
+|---|---|---|
+| 1 | `SalesStatus` diferente de "Ordem em aberto" (faturado, entregue…) | Faturado |
+| 2 | `CredManInCreditControl` marcado | Gerenciamento de Crédito |
+| 3 | `ReleaseStatus` = Liberado | Liberado |
+| 4 | o resto | Criada |
+
+- Ajuste na ordem que o dono falou: OV faturada também está liberada (a
+  OV017517: Faturado + Liberado), então "Liberado" só vale para a ordem ainda
+  em aberto — senão nada chegaria em Faturado.
+- Cancelada não é faturamento: fica fora do quadro, com aviso da quantidade.
+- Aceita o valor do OData (Backorder, Released, Yes) e o rótulo em português
+  (Ordem em aberto, Liberado, Sim). Colunas trocáveis: `KANBAN_COL_SALESSTATUS`,
+  `KANBAN_COL_RELEASE`, `KANBAN_COL_CREDITO`. A Lista e o painel da OV mostram
+  os três campos e de qual entidade vieram.
+
+**Banner do Comercial** — pedido do dono: "coloque aqui o valor do
+faturamento diário, líquido, somente para mim". `pages/comercial.html` ganhou
+o selo "Faturamento hoje · R$ … líquido" (vendas − devoluções, só as
+operações de faturamento; o mesmo número do Faturamento do Dia, que o selo
+abre), relido a cada 5 min. Só as contas do dono: o gate é o `SO_DONO` do
+`nav-sidebar.js` — para os outros o selo não nasce e a API nem é chamada.
+
+- `sw.js` — cache `bm-comest-v26`.
+
 ## Como colocar no ar
 
 1. **Repositório no GitHub** — crie um repositório **privado e vazio** (sem

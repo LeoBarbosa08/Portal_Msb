@@ -212,5 +212,77 @@
 
   <script src="../script.js?v=8"></script>
   <script src="../nav-sidebar.js?v=86"></script>
+  <!-- ═══ FATURAMENTO LÍQUIDO DO DIA no banner — SÓ DO DONO (07/11/2026) ═══
+       Pedido do dono: "coloque aqui o valor do faturamento diário, líquido,
+       somente para mim". Selo no banner do Comercial com o líquido do dia
+       (vendas − devoluções, só as operações de faturamento) do
+       /api/faturamento-hoje — o mesmo número da página Faturamento do Dia, que o
+       selo abre. Quem não é o dono nem chama a API: o gate é o mesmo SO_DONO do
+       nav-sidebar.js (window.bmRestritoPorEmail), e a API recusa outro e-mail.
+       Classe própria (fd-hero-pill): a recontagem dos selos do nav-sidebar.js
+       reescreve o texto de todo .dv-hero-pill. -->
+  <style>
+    body.dept .fd-hero-pill{display:inline-flex;align-items:center;gap:8px;height:34px;padding:0 14px;border-radius:999px;
+      background:rgba(47,191,113,.16);border:1px solid rgba(61,220,132,.45);color:#fff;font-size:13px;font-weight:700;
+      white-space:nowrap;text-decoration:none;-webkit-backdrop-filter:blur(8px);backdrop-filter:blur(8px);}
+    body.dept .fd-hero-pill:hover{background:rgba(47,191,113,.26);}
+    body.dept .fd-hero-pill .l{font-weight:600;color:rgba(255,255,255,.78);}
+    body.dept .fd-hero-pill svg{width:15px;height:15px;color:#3DDC84;flex-shrink:0;}
+    @media (max-width:767.98px){ body.dept .dv-hero-pills.fd-so{display:flex;} }
+  </style>
+  <script>
+  (function () {
+    'use strict';
+    var ID = 'comercial-faturamento-hoje', AUTO_MS = 5 * 60000, timer = null, foi = false;
+    var fBRL = function (v) { return v == null ? '—' : 'R$ ' + Number(v).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }); };
+    var ICO = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>';
+    function email() { return ((window._portalUser && window._portalUser.email) || '').trim().toLowerCase(); }
+    function dono() { return !!email() && typeof window.bmRestritoPorEmail === 'function' && !window.bmRestritoPorEmail(ID); }
+    function selo() {
+      var el = document.getElementById('fd-hero-pill');
+      if (el) return el;
+      var top = document.querySelector('.area-header .area-header-top');
+      if (!top) return null;
+      var pills = top.querySelector('.dv-hero-pills');
+      if (!pills) { pills = document.createElement('div'); pills.className = 'dv-hero-pills fd-so'; top.appendChild(pills); }
+      el = document.createElement('a');
+      el.id = 'fd-hero-pill'; el.className = 'fd-hero-pill'; el.href = 'comercial-faturamento-hoje.html';
+      el.innerHTML = ICO + '<span class="l">Faturamento hoje</span><span class="v">…</span>';
+      pills.insertBefore(el, pills.firstChild);
+      return el;
+    }
+    async function atualizar() {
+      clearTimeout(timer);
+      if (!dono()) return;
+      var el = selo(); if (!el) return;
+      try {
+        var res = await fetch('/api/faturamento-hoje', { cache: 'no-store' });
+        var j = await res.json();
+        if (!res.ok || !j || j.ok === false) throw new Error((j && (j.detalhe || j.error)) || ('HTTP ' + res.status));
+        if (j.configured === false) { el.remove(); return; }
+        var rs = j.resumo || { venda: {}, devolucao: {} };
+        el.querySelector('.v').textContent = fBRL(rs.liquido) + ' líquido';
+        el.title = 'Vendas ' + fBRL(rs.venda.valor) + ' (' + (rs.venda.qtd || 0) + ') − Devoluções ' + fBRL(rs.devolucao.valor) + ' (' + (rs.devolucao.qtd || 0) + ')'
+          + ' · atualizado às ' + new Date(j.geradoEm || Date.now()).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })
+          + ' · só você vê · clique para abrir as notas';
+      } catch (e) {
+        el.querySelector('.v').textContent = '—';
+        el.title = 'Não foi possível ler o Dynamics agora: ' + e.message;
+      } finally {
+        timer = setTimeout(function () { if (document.visibilityState === 'visible') atualizar(); else timer = setTimeout(atualizar, AUTO_MS); }, AUTO_MS);
+      }
+    }
+    function iniciar() {
+      if (foi || !email()) return;
+      foi = true;
+      // os selos do banner nascem no DOMContentLoaded (nav-sidebar.js): espera eles
+      if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', function () { setTimeout(atualizar, 0); });
+      else setTimeout(atualizar, 0);
+    }
+    if (window._portalUser && window._portalUser.email) iniciar();
+    document.addEventListener('portalauth:ready', iniciar);
+    document.addEventListener('visibilitychange', function () { if (document.visibilityState === 'visible' && foi && dono()) atualizar(); });
+  })();
+  </script>
 </body>
 </html>
