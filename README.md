@@ -591,13 +591,19 @@ Pedido do dono: no Faturamento do Dia contam **só** estes tipos de operação
 - A operação decide venda/devolução (antes era a direção da nota). Qualquer
   outra (remessa em consignação, bonificação, compra…) fica **fora da soma** e
   a tela mostra quantas e quais (`foraPorOperacao` na resposta).
-- Comparação sem maiúsculas/acentos e aceitando a descrição cortada pelo
-  Dynamics ("…destinada a não contri"). Lista trocável sem deploy:
-  `FATDIA_OP_VENDA` / `FATDIA_OP_DEVOLUCAO` (separadas por `;`); a coluna, por
-  `FATDIA_COL_OPERACAO`.
-- Nota sem OperationDescription cai na regra antiga (direção da nota), com
-  aviso; o mesmo vale para o diário de faturas quando ele trouxer a coluna.
+- Lista trocável sem deploy: `FATDIA_OP_VENDA` / `FATDIA_OP_DEVOLUCAO`
+  (separadas por `;`); a coluna, por `FATDIA_COL_OPERACAO`.
 - `sw.js` — cache `bm-comest-v23`.
+- **07/11/2026 — regra ESTRITA** (a nota 000021466 entrou sem ser de nenhuma
+  das operações): a descrição tem que ser **igual** a um item da lista (só
+  maiúsculas, acentos, pontuação e espaços são ignorados) — a 1ª versão
+  aceitava "começa com", e "Venda de produção do estabelecimento" engolia
+  outras operações que começam igual. Nota **sem** OperationDescription não
+  conta mais (antes caía na regra da direção da nota): fica fora como
+  "(sem tipo de operação)". Notas do diário de faturas recebem a operação da
+  FiscalDocuments pelo número da nota; sem ela, ficam fora. O diagnóstico da
+  tela lista cada nota que ficou fora da soma e a operação dela
+  (`foraNotas`). `sw.js` — cache `bm-comest-v24`.
 
 ## Como colocar no ar
 

@@ -377,7 +377,7 @@
       var f = r.fonte;
       $('fd-sub').textContent = '· MSB · ' + fDia(r.data) + (f ? ' · fonte: ' + f.entidade + (f.papel === 'fiscal' ? ' (documento fiscal)' : ' (diário de faturas)') : '');
       $('fd-diag').style.display = '';
-      $('fd-diag-txt').textContent = JSON.stringify({ fonte: r.fonte, foraDaConta: r.foraDaConta, diagnostico: r.diagnostico }, null, 1);
+      $('fd-diag-txt').textContent = JSON.stringify({ fonte: r.fonte, foraDaSoma: r.foraNotas, diagnostico: r.diagnostico }, null, 1);
     }
 
     async function carregar(forcar) {
