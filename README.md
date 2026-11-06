@@ -656,6 +656,15 @@ abre), relido a cada 5 min. Só as contas do dono: o gate é o `SO_DONO` do
 
 - `sw.js` — cache `bm-comest-v26`.
 
+### Faturamento do Dia · todas as notas por tipo de operação (07/11/2026)
+
+Pedido do dono, para conferir o líquido (e porque, depois da regra estrita,
+"não veio nada"): a página ganhou o quadro **"Todas as notas do dia por tipo de
+operação"** — cada OperationDescription do dia com quantidade, valor e se conta
+como Venda, Devolução ou fica Fora (inclusive "(sem tipo de operação)"). Vem em
+`porOperacao` na resposta; `foraNotas` passou a trazer o valor de cada nota fora
+da soma. `sw.js` — cache `bm-comest-v27`.
+
 ## Como colocar no ar
 
 1. **Repositório no GitHub** — crie um repositório **privado e vazio** (sem

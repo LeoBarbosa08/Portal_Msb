@@ -90,6 +90,11 @@ const CLIENTES = { porConta: true, amostra: { dataAreaId: 'msb', CustomerAccount
   t('nome pelo cadastro quando a nota não traz', (r.notas.find(n => n.numero === '000021461') || {}).cliente === 'CLINICA DOIS', r.notas);
   t('toda leitura filtra a MSB', chamadas.filter(c => c.q.filter && !/^\(/.test(c.q.filter)).every(c => /dataAreaId eq 'msb'/.test(c.q.filter)), chamadas.map(c => c.q.filter));
   t('OperationDescription no $select', chamadas.some(c => c.ent === 'FiscalDocuments' && /OperationDescription/.test(c.q.select || '')));
+  const po = {}; (r.porOperacao || []).forEach(o => { po[o.operacao] = o; });
+  t('por operação: as que contam, com valor', po[OPV] && po[OPV].conta === 'venda' && po[OPV].qtd === 1 && po[OPV].valor === 1000 && po[OPV].canceladas === 1 && po[OPDEV].conta === 'devolucao' && po[OPDEV].valor === 150, r.porOperacao);
+  t('por operação: as de fora, com valor', po['Remessa em consignação mercantil'].conta === 'fora' && po['Remessa em consignação mercantil'].qtd === 2 && po['Remessa em consignação mercantil'].valor === 10000 && po['(sem tipo de operação)'].valor === 70, r.porOperacao);
+  t('por operação: a 000021466 aparece com a operação dela', (r.porOperacao || []).some(o => /sujeito ao regime de ST/.test(o.operacao) && o.conta === 'fora' && o.valor === 5000));
+  t('fora da soma traz o valor de cada nota', r.foraNotas.some(n => n.numero === '000021466' && n.valor === 5000), r.foraNotas);
   t('conferência: o diário com a operação da fiscal', r.conferencia && r.conferencia.venda.qtd === 1 && r.conferencia.venda.valor === 1000, r.conferencia);
 
   console.log('2) fiscal vazia no dia: diário, com a operação buscada na fiscal pelo número');

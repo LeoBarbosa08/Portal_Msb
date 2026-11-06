@@ -261,6 +261,12 @@
               </div>
             </div>
 
+            <!-- 07/11/26: TODAS as notas do dia por tipo de operação (as que contam e as que ficaram fora), para conferir o líquido -->
+            <div class="fd-tbl-wrap" id="fd-ops" style="display:none;">
+              <div class="fd-tbl-head"><h4>Todas as notas do dia por tipo de operação <span style="font-weight:500;color:var(--text-3);font-size:11px;">· as que contam e as que ficaram fora da soma</span></h4></div>
+              <div class="fd-scroll" style="max-height:none;"><table class="fd-tbl"><thead><tr><th>Tipo de operação (OperationDescription)</th><th>No faturamento</th><th class="num">Notas</th><th class="num">Valor</th></tr></thead><tbody id="fd-ops-body"></tbody><tfoot id="fd-ops-foot"></tfoot></table></div>
+            </div>
+
             <details class="fd-diag" id="fd-diag" style="display:none;">
               <summary>Diagnóstico da leitura no Dynamics</summary>
               <pre id="fd-diag-txt"></pre>
@@ -378,6 +384,18 @@
       $('fd-sub').textContent = '· MSB · ' + fDia(r.data) + (f ? ' · fonte: ' + f.entidade + (f.papel === 'fiscal' ? ' (documento fiscal)' : ' (diário de faturas)') : '');
       $('fd-diag').style.display = '';
       $('fd-diag-txt').textContent = JSON.stringify({ fonte: r.fonte, foraDaSoma: r.foraNotas, diagnostico: r.diagnostico }, null, 1);
+      // quadro de todas as notas por tipo de operação
+      var ops = r.porOperacao || [];
+      $('fd-ops').style.display = ops.length ? '' : 'none';
+      var ROT = { venda: '<span class="fd-tag venda">Venda</span>', devolucao: '<span class="fd-tag devolucao">Devolução</span>', fora: '<span class="fd-tag cancel">Fora</span>' };
+      $('fd-ops-body').innerHTML = ops.map(function (o) {
+        return '<tr' + (o.conta === 'fora' ? ' style="opacity:.75"' : '') + '><td>' + esc(o.operacao) + '</td><td>' + (ROT[o.conta] || '') + '</td>'
+          + '<td class="num">' + o.qtd + (o.canceladas ? ' <span class="sub">+' + o.canceladas + ' cancelada(s)</span>' : '') + '</td>'
+          + '<td class="num' + (o.conta === 'devolucao' ? ' fd-neg' : '') + '">' + (o.conta === 'devolucao' ? '− ' : '') + fBRL(o.valor) + '</td></tr>';
+      }).join('');
+      var tq = ops.reduce(function (s, o) { return s + o.qtd; }, 0);
+      var tf = ops.filter(function (o) { return o.conta === 'fora'; }).reduce(function (s, o) { return s + o.valor; }, 0);
+      $('fd-ops-foot').innerHTML = '<tr class="fd-foot"><td colspan="2">' + tq + ' nota(s) no dia · líquido do faturamento ' + fBRL((r.resumo || {}).liquido) + ' · fora da soma ' + fBRL(tf) + '</td><td class="num">' + tq + '</td><td class="num"></td></tr>';
     }
 
     async function carregar(forcar) {

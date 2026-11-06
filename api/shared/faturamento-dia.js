@@ -331,10 +331,12 @@ function tipoContaDe(v) {
 }
 
 // fora da soma: conta por operação e guarda a nota (o diagnóstico lista)
-function poeFora(fora, numero, op) {
+function poeFora(fora, numero, op, valor) {
   const k = op || SEM_OP;
   fora.operacoes[k] = (fora.operacoes[k] || 0) + 1;
-  if (fora.notas.length < 200) fora.notas.push({ numero, operacao: k });
+  fora.valores = fora.valores || {};
+  if (valor != null) fora.valores[k] = Math.round(((fora.valores[k] || 0) + valor) * 100) / 100;
+  if (fora.notas.length < 500) fora.notas.push({ numero, operacao: k, valor: valor == null ? null : valor });
 }
 
 // Só a OPERAÇÃO decide (a direção da nota e o tipo da conta não entram mais:
@@ -345,7 +347,7 @@ function notasFiscal(rows, E, cli) {
     const conta = C.conta ? txt(r[C.conta]) : '';
     const op = C.natureza ? txt(r[C.natureza]) : '';
     const porOp = tipoPorOperacao(op);
-    if (porOp !== 'venda' && porOp !== 'devolucao') { poeFora(fora, txt(r[C.numero]), op); return; }
+    if (porOp !== 'venda' && porOp !== 'devolucao') { poeFora(fora, txt(r[C.numero]), op, C.valor ? num(r[C.valor]) : null); return; }
     const status = C.status ? txt(r[C.status]) : '';
     const c = cli[conta] || {};
     out.push({
@@ -387,7 +389,7 @@ function notasDiario(rows, E, cli, fora, mapaOp) {
     const numero = txt(r[C.numero]);
     const op = (C.natureza && txt(r[C.natureza])) || opDoMapa(mapaOp || {}, numero, conta);
     const porOp = tipoPorOperacao(op);
-    if (porOp !== 'venda' && porOp !== 'devolucao') { if (fora) poeFora(fora, numero, op); return null; }
+    if (porOp !== 'venda' && porOp !== 'devolucao') { if (fora) poeFora(fora, numero, op, v == null ? null : Math.abs(v)); return null; }
     return {
       tipo: porOp,
       numero, serie: '', chave: '',
@@ -411,6 +413,25 @@ function resumo(notas) {
   r.devolucao.valor = Math.round(r.devolucao.valor * 100) / 100;
   r.liquido = Math.round((r.venda.valor - r.devolucao.valor) * 100) / 100;
   return r;
+}
+
+// todas as notas do dia agrupadas pelo OperationDescription:
+// { operacao, conta: 'venda'|'devolucao'|'fora', qtd, valor, canceladas }
+function porOperacao(notas, fora) {
+  const g = {};
+  const linha = (k, conta) => g[k] || (g[k] = { operacao: k, conta, qtd: 0, valor: 0, canceladas: 0 });
+  (notas || []).forEach(n => {
+    const x = linha(n.operacao || SEM_OP, n.tipo);
+    if (n.cancelada) { x.canceladas++; return; }
+    x.qtd++; x.valor += n.valor || 0;
+  });
+  if (fora) Object.keys(fora.operacoes || {}).forEach(k => {
+    const x = linha(k, 'fora');
+    x.qtd += fora.operacoes[k];
+    x.valor += (fora.valores || {})[k] || 0;
+  });
+  return Object.values(g).map(x => Object.assign(x, { valor: Math.round(x.valor * 100) / 100 }))
+    .sort((a, b) => b.valor - a.valor || b.qtd - a.qtd);
 }
 
 function ordenar(notas) {
@@ -533,6 +554,9 @@ async function notasDoDia(opts) {
     foraPorOperacao: foraAqui ? foraAqui.operacoes : {},
     // e quais notas (o diagnóstico da tela lista: número + operação)
     foraNotas: foraAqui ? foraAqui.notas : [],
+    // 07/11/26 (pedido do dono, para conferir o líquido): TODAS as notas do dia
+    // por tipo de operação — as que contam e as que ficaram fora — com valor
+    porOperacao: porOperacao(notas, foraAqui),
     ultimaFiscal,
     // a outra fonte, para conferir os totais
     conferencia: fonte && fonte.papel === 'fiscal' && J.E && !J.erro
