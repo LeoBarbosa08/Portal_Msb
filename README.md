@@ -605,6 +605,25 @@ Pedido do dono: no Faturamento do Dia contam **só** estes tipos de operação
   tela lista cada nota que ficou fora da soma e a operação dela
   (`foraNotas`). `sw.js` — cache `bm-comest-v24`.
 
+### Kanban e Faturamento do Dia ocultos (07/11/2026)
+
+Pedido do dono: "oculte o kanban e o faturamento diário". Nada foi apagado —
+as duas páginas e as APIs continuam, **só pelo endereço direto** e **só para
+as duas contas do dono**:
+
+- **Faturamento do Dia** (`pages/comercial-faturamento-hoje.html`): saiu das
+  abas das 6 páginas do Sales Report e do `NAV.comercial`. O gate `SO_DONO` e o
+  `DONOS` da API continuam.
+- **Kanban** (`pages/kanban.html`): saiu o cartão da home e a linha da busca
+  (`portal-catalogo.js`). A área entrou na `RESERVA_ESTRITA` (como Compras):
+  nem quem tem acesso full entra — só as contas do dono. O `NAV.kanban` fica (é
+  o menu lateral dentro da página).
+- Para mostrar de novo: recolocar a aba/o item do menu (Faturamento) e o
+  cartão/a linha da busca (Kanban); para abrir o Kanban ao acesso full, tirar
+  `kanban` da `RESERVA_ESTRITA`.
+- `nav-sidebar.js?v=86`, `portal-catalogo.js?v=22`; `sw.js` — cache
+  `bm-comest-v25`.
+
 ## Como colocar no ar
 
 1. **Repositório no GitHub** — crie um repositório **privado e vazio** (sem

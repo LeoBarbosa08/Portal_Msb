@@ -76,9 +76,8 @@ window.PORTAL_CATALOGO = (function () {
     // api/shared/auth.js). SEM módulos por enquanto — a busca leva à visão geral.
     ['compras',        'Compras',        'Fornecedores, requisições, pedidos de compra, importação e recebimento.', 'compras.html', 'cart', 'compras compra comprador suprimentos fornecedor fornecedores requisicao requisicoes pedido de compra oc ordem de compra cotacao importacao follow-up embarque recebimento reposicao lead time'],
     ['contabil',       'Contábil',       'Contabilidade, fechamentos, obrigações fiscais e demonstrativos.',     'contabil.html',       'file',    'contabil contabilidade custos sgna margem contribuicao fiscal demonstrativo'],
-    // Kanban (06/11/26): RESERVADO às contas do dono (api/shared/auth.js) — a
-    // busca filtra pela área (bmHrefPermitido), então para os outros não aparece
-    ['kanban',         'Kanban',         'Ordens de venda do dia, ao vivo do Dynamics, por status.',             'kanban.html',         'grid',    'kanban quadro ordens de venda ov ovs pedido pedidos status dia hoje dynamics d365 tempo real expedicao'],
+    // Kanban (06/11/26): OCULTO desde 07/11/26 a pedido do dono — fora da busca
+    // (abre só pelo endereço pages/kanban.html, só para as contas dele).
     ['licitacao',      'Licitação',      'Editais, propostas públicas, pregões e contratos com órgãos.',         'licitacao.html',      'file',    'licitacao edital pregao contrato empenho orgao publico pncp ata lici'],
     ['administrativo', 'Administrativo', 'Requisições de compra, lançamento de faturas no Dynamics e pagamento de comissão dos vendedores PJ.', 'administrativo.html', 'brief', 'administrativo requisicao compra ordem comissao pj comissionado fatura lancamento diario'],
     ['produtos',       'Produtos',       'Linhas, estratégias e famílias de produtos, e cadastro de novos SKUs.','produtos.html',       'tag',     'produtos produto familia familias estrategia sku cadastro portfolio ncm anvisa'],

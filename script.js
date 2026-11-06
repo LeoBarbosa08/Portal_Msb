@@ -9,7 +9,7 @@
 if (!window.PORTAL_CATALOGO && !window._bmCatalogoPronto) {
   window._bmCatalogoPronto = new Promise(function (pronto) {
     var s = document.createElement('script');
-    s.src = (location.pathname.indexOf('/pages/') >= 0 ? '../' : '') + 'portal-catalogo.js?v=21';
+    s.src = (location.pathname.indexOf('/pages/') >= 0 ? '../' : '') + 'portal-catalogo.js?v=22';
     s.onload = pronto; s.onerror = pronto;
     (document.head || document.documentElement).appendChild(s);
   });

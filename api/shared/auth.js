@@ -117,7 +117,9 @@ const AREAS_RESERVADAS = {
 // lista em AREAS_RESERVADAS. Quem tem acesso full passa a receber a resposta
 // RESTRITA (todas as outras áreas) — é o que tira o cartão e o menu da tela
 // dele, como já acontece com os dois fail-open.
-const RESERVA_ESTRITA = ['compras'];
+// 07/11/26: + kanban (pedido do dono: "oculte o kanban") — só as duas contas
+// dele, nem o acesso full.
+const RESERVA_ESTRITA = ['compras', 'kanban'];
 
 // ── ACESSO FULL ──────────────────────────────────────────────────
 // 03/09/2026, pedido do dono do portal: "a área Diretoria é somente para as

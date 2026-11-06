@@ -148,6 +148,10 @@ if (!window._bmPerfilSheetLoaded && !window._bmPerfilSheetInjected) {
     //   e do menu; o /api/faturamento-hoje também só aceita essas contas
     //   (DONOS em api/faturamento-hoje/index.js). Para abrir para a equipe:
     //   tirar daqui, de SO_DONO e de lá.
+    //   07/11/26 (pedido do dono: "oculte o kanban e o faturamento diário"):
+    //   saiu das abas do Sales Report e do menu — a página fica só pelo
+    //   endereço direto (pages/comercial-faturamento-hoje.html), e o gate
+    //   continua. Para mostrar de novo: recolocar a aba e o item no NAV.comercial.
     'comercial-faturamento-hoje',
   ].forEach(function (id) { RESTRICTED[id] = 1; });
   // módulo restrito com lista própria de contas (o resto usa só o ALLOWED)
@@ -892,8 +896,6 @@ if (!window._bmPerfilSheetLoaded && !window._bmPerfilSheetInjected) {
           {id:'comercial-clientes',        label:'Análise de Pedidos',href:'comercial-clientes.html'},
           {id:'comercial-base-notas-fiscais', label:'Base de Notas Fiscais', href:'comercial-base-notas-fiscais.html'},
           {id:'comercial-comportamento-clientes', label:'Comportamento de Clientes', href:'comercial-comportamento-clientes.html'},
-          // 06/11/26: só o dono vê (SO_DONO no topo deste arquivo)
-          {id:'comercial-faturamento-hoje', label:'Faturamento do Dia', href:'comercial-faturamento-hoje.html'},
         ]},
         // RECORTE MSB (20/10/26): no portal da MSB o Comercial mostra SÓ o
         // Sales Report e a Tabela de Preços. Saíram do menu (e, por tabela,
@@ -1050,6 +1052,10 @@ if (!window._bmPerfilSheetLoaded && !window._bmPerfilSheetInjected) {
       atal:[]
     },
 
+    // 07/11/26 (pedido do dono): OCULTO — sem cartão na home e fora da busca;
+    // abre só pelo endereço (pages/kanban.html) e só para as contas do dono
+    // (RESERVA_ESTRITA no api/shared/auth.js). Este bloco fica: é o menu
+    // lateral DENTRO da página.
     // KANBAN (06/11/26, pedido do dono): o quadro das ordens de venda do dia,
     // ao vivo do Dynamics (/api/kanban-ov). Área RESERVADA às contas do dono
     // (AREAS_RESERVADAS em api/shared/auth.js) enquanto ele define o que cada
