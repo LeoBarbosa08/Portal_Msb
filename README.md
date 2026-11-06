@@ -460,6 +460,13 @@ navegação ia para uma segunda coluna, cortada atrás do conteúdo.
 - `styles.css?v=15` e `nav-sidebar.js?v=83` em todas as páginas; `sw.js` —
   cache `bm-comest-v17`.
 
+### Análise de Pedidos · campo Operação (06/11/2026)
+
+- **➕ Campos** da "Tabela analítica de pedidos" (`pages/comercial-clientes.html`)
+  ganhou **Operação** — `'Operações'[Operação]`, logo depois de Unidade de
+  Negócio. Como os outros campos, entra também como filtro na barra.
+- `sw.js` — cache `bm-comest-v18`.
+
 ## Como colocar no ar
 
 1. **Repositório no GitHub** — crie um repositório **privado e vazio** (sem
