@@ -360,6 +360,14 @@
       if (r.ultimaFiscal && !(r.notas || []).length) {
         lista.push(['info', 'Última nota da MSB na ' + esc((r.fonte && r.fonte.entidade) || 'entidade fiscal') + ': <b>' + fDia(r.ultimaFiscal) + '</b>.']);
       }
+      // notas de operações que não são faturamento (remessa, bonificação…): fora da soma, mas à vista
+      var fora = r.foraPorOperacao || {};
+      var ops = Object.keys(fora);
+      if (ops.length) {
+        var nFora = ops.reduce(function (s, k) { return s + fora[k]; }, 0);
+        lista.push(['info', nFora + ' nota(s) de outras operações fora do faturamento: '
+          + ops.sort(function (x, y) { return fora[y] - fora[x]; }).map(function (k) { return esc(k || '(sem descrição)') + ' (' + fora[k] + ')'; }).join(' · ') + '.']);
+      }
       if (r.conferencia) {
         var c = r.conferencia;
         lista.push(['info', 'Conferência no diário de faturas de venda (' + esc(c.entidade) + '): ' + c.venda.qtd + ' venda(s) · ' + fBRL(c.venda.valor)

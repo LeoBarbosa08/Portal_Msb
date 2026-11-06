@@ -78,7 +78,8 @@ const PAPEIS = {
       valor:     envLista('FATDIA_COL_VALOR',   ['TotalAmount', 'FiscalDocumentTotalAmount', 'DocumentTotalAmount', 'InvoiceAmount', 'TotalInvoiceAmount', 'Amount']),
       status:    ['Status', 'FiscalDocumentStatus', 'DocumentStatus'],
       emissor:   ['FiscalDocumentIssuer', 'Issuer'],
-      natureza:  ['OperationNature', 'FiscalOperationNature', 'NatureOfOperation', 'OperationType', 'FiscalOperationType'],
+      // 06/11/26: o dono confirmou que o tipo de operação é o OperationDescription
+      natureza:  envLista('FATDIA_COL_OPERACAO', ['OperationDescription', 'OperationNature', 'FiscalOperationNature', 'NatureOfOperation', 'OperationType', 'FiscalOperationType']),
       modelo:    ['Model', 'FiscalDocumentModel', 'FiscalDocumentSpecie']
     },
     // reserva por padrão de nome, quando nenhuma candidata exata existe
@@ -99,7 +100,8 @@ const PAPEIS = {
       conta:  ['InvoiceCustomerAccountNumber', 'InvoiceAccount', 'OrderingCustomerAccountNumber', 'CustomerAccount'],
       valor:  ['TotalInvoiceAmount', 'InvoiceTotalAmount', 'InvoiceAmount'],
       ordem:  ['SalesOrderNumber', 'SalesId'],
-      moeda:  ['CurrencyCode']
+      moeda:  ['CurrencyCode'],
+      natureza: envLista('FATDIA_COL_OPERACAO', ['OperationDescription'])
     },
     re: {}
   },
@@ -115,6 +117,40 @@ const PAPEIS = {
     re: {}
   }
 };
+
+// ── AS OPERAÇÕES QUE CONTAM (06/11/2026, definidas pelo dono) ─────
+// O tipo de operação da nota (OperationDescription) é quem diz se ela é
+// faturamento. Só estas contam; o resto (remessa em consignação,
+// bonificação, transferência, compra…) fica FORA da soma e a tela mostra
+// quantas e quais. A comparação ignora maiúsculas/acentos e aceita a
+// descrição cortada pelo Dynamics ("…destinada a não contri"). Trocar a lista
+// sem deploy: FATDIA_OP_VENDA / FATDIA_OP_DEVOLUCAO, separadas por ";".
+// Nota sem OperationDescription (coluna ausente ou vazia) cai na regra antiga
+// (saída = venda, entrada de cliente = devolução), com aviso.
+function envListaPV(nome, padrao) {
+  const v = String(process.env[nome] || '').trim();
+  return v ? v.split(';').map(s => s.trim()).filter(Boolean) : padrao;
+}
+const OP_VENDA = envListaPV('FATDIA_OP_VENDA', [
+  'Venda de produção do estabelecimento',
+  'Venda de produção do estabelecimento, destinada a não contribuinte',
+  'Venda prod estab remet ant consignação mercantil'
+]);
+const OP_DEVOLUCAO = envListaPV('FATDIA_OP_DEVOLUCAO', [
+  'Dev venda merc adquirida ou receb terceiros'
+]);
+const normOp = (s) => String(s == null ? '' : s).normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().replace(/[^a-z0-9]+/g, ' ').trim();
+const OP_V = OP_VENDA.map(normOp), OP_D = OP_DEVOLUCAO.map(normOp);
+// a descrição é a da lista, ou começa por ela, ou é ela CORTADA (mín. 12 letras)
+function casaOp(n, p) { return n === p || n.indexOf(p) === 0 || (n.length >= 12 && p.indexOf(n) === 0); }
+// -> 'venda' | 'devolucao' | 'outra' | null (sem descrição)
+function tipoPorOperacao(desc) {
+  const n = normOp(desc);
+  if (!n) return null;
+  if (OP_D.some(p => casaOp(n, p))) return 'devolucao';
+  if (OP_V.some(p => casaOp(n, p))) return 'venda';
+  return 'outra';
+}
 
 // ── util ─────────────────────────────────────────────────────────
 const txt = (v) => String(v == null ? '' : v).trim();
@@ -288,21 +324,29 @@ function tipoContaDe(v) {
 }
 
 function notasFiscal(rows, E, cli) {
-  const C = E.col, out = [], fora = { fornecedor: 0, semDirecao: 0, entradaSemTipo: 0 };
+  const C = E.col, out = [], fora = { fornecedor: 0, semDirecao: 0, entradaSemTipo: 0, semOperacao: 0, operacoes: {} };
   rows.forEach(r => {
     const conta = C.conta ? txt(r[C.conta]) : '';
+    const op = C.natureza ? txt(r[C.natureza]) : '';
+    const porOp = tipoPorOperacao(op);
+    // operação fora da lista: não é faturamento (remessa, bonificação, compra…)
+    if (porOp === 'outra') { fora.operacoes[op] = (fora.operacoes[op] || 0) + 1; return; }
     const dir = C.direcao ? direcaoDe(r[C.direcao]) : null;
     let tc = C.tipoConta ? tipoContaDe(r[C.tipoConta]) : null;
     if (!tc && conta && cli[conta]) tc = cli[conta].existe ? 'cliente' : 'fornecedor';
     if (tc === 'fornecedor') { fora.fornecedor++; return; }
-    if (!dir) { fora.semDirecao++; return; }
-    // entrada sem saber se a conta é de cliente: pode ser COMPRA — não vira
-    // devolução no chute (a tela avisa quantas ficaram de fora)
-    if (dir === 'entrada' && !tc) { fora.entradaSemTipo++; return; }
+    if (!porOp) {
+      // sem OperationDescription: a regra antiga, pela direção
+      if (C.natureza) fora.semOperacao++;
+      if (!dir) { fora.semDirecao++; return; }
+      // entrada sem saber se a conta é de cliente: pode ser COMPRA — não vira
+      // devolução no chute (a tela avisa quantas ficaram de fora)
+      if (dir === 'entrada' && !tc) { fora.entradaSemTipo++; return; }
+    }
     const status = C.status ? txt(r[C.status]) : '';
     const c = cli[conta] || {};
     out.push({
-      tipo: dir === 'saida' ? 'venda' : 'devolucao',
+      tipo: porOp || (dir === 'saida' ? 'venda' : 'devolucao'),
       numero: txt(r[C.numero]),
       serie: C.serie ? txt(r[C.serie]) : '',
       chave: C.chave ? txt(r[C.chave]) : '',
@@ -313,29 +357,32 @@ function notasFiscal(rows, E, cli) {
       valor: C.valor ? num(r[C.valor]) : null,
       status,
       cancelada: !!(status && CANCELADA.test(status)),
-      operacao: C.natureza ? txt(r[C.natureza]) : '',
+      operacao: op,
       emissor: C.emissor ? txt(r[C.emissor]) : ''
     });
   });
   return { notas: out, fora };
 }
 
-function notasDiario(rows, E, cli) {
+function notasDiario(rows, E, cli, fora) {
   const C = E.col;
   return rows.map(r => {
     const conta = C.conta ? txt(r[C.conta]) : '';
     const v = num(r[C.valor]);
     const c = cli[conta] || {};
+    const op = C.natureza ? txt(r[C.natureza]) : '';
+    const porOp = tipoPorOperacao(op);
+    if (porOp === 'outra') { if (fora) fora.operacoes[op] = (fora.operacoes[op] || 0) + 1; return null; }
     return {
-      tipo: v != null && v < 0 ? 'devolucao' : 'venda',
+      tipo: porOp || (v != null && v < 0 ? 'devolucao' : 'venda'),
       numero: txt(r[C.numero]), serie: '', chave: '',
       emissao: isoData(r[C.data]),
       conta, cliente: c.nome || '', cnpj: c.cnpj || '',
       valor: v == null ? null : Math.abs(v),
-      status: '', cancelada: false, operacao: '',
+      status: '', cancelada: false, operacao: op,
       ordem: C.ordem ? txt(r[C.ordem]) : ''
     };
-  });
+  }).filter(Boolean);
 }
 
 function resumo(notas) {
@@ -387,7 +434,8 @@ async function notasDoDia(opts) {
   const cli = contas.length ? await clientes(contas, token, ate, diag) : {};
 
   const fiscal = F.E ? notasFiscal(F.rows, F.E, cli) : { notas: [], fora: {} };
-  const diario = J.E ? notasDiario(J.rows, J.E, cli) : [];
+  const foraDiario = { operacoes: {} };
+  const diario = J.E ? notasDiario(J.rows, J.E, cli, foraDiario) : [];
   const avisos = [];
 
   let fonte, notas, ultimaFiscal = null;
@@ -410,6 +458,9 @@ async function notasDoDia(opts) {
   if (J.erro && fonte && fonte.papel === 'diario') avisos.push('Diário de faturas: ' + J.erro.slice(0, 200));
   if (fonte && fonte.papel === 'fiscal' && !F.E.col.valor) avisos.push('A ' + F.E.entidade + ' não expõe o valor total da nota: a coluna Valor fica vazia.');
   if (fonte && fonte.papel === 'fiscal' && !F.E.col.direcao) avisos.push('A ' + F.E.entidade + ' não diz se a nota é de entrada ou saída: nenhuma pôde ser separada em venda/devolução.');
+  if (fonte && fonte.papel === 'fiscal' && !F.E.col.natureza) avisos.push('A ' + F.E.entidade + ' não traz o tipo de operação (OperationDescription): venda e devolução saem pela direção da nota, sem separar remessa/consignação.');
+  if (fonte && fonte.papel === 'diario' && !J.E.col.natureza) avisos.push('O diário de faturas (' + J.E.entidade + ') não traz o tipo de operação (OperationDescription): venda e devolução saem pelo sinal do valor.');
+  if (fonte && fonte.papel === 'fiscal' && fiscal.fora.semOperacao) avisos.push(fiscal.fora.semOperacao + ' nota(s) sem OperationDescription: classificadas pela direção (saída = venda, entrada de cliente = devolução).');
   if (fonte && fonte.papel === 'fiscal' && fiscal.fora.entradaSemTipo) avisos.push(fiscal.fora.entradaSemTipo + ' nota(s) de entrada ficaram de fora: não deu para saber se a conta é de cliente (devolução) ou de fornecedor (compra).');
 
   const r = {
@@ -419,6 +470,8 @@ async function notasDoDia(opts) {
     notas: ordenar(notas),
     resumo: resumo(notas),
     foraDaConta: fonte && fonte.papel === 'fiscal' ? fiscal.fora : {},
+    // notas de operações que não são faturamento: { "Remessa em consignação": 2, … }
+    foraPorOperacao: fonte ? (fonte.papel === 'fiscal' ? fiscal.fora.operacoes : foraDiario.operacoes) : {},
     ultimaFiscal,
     // a outra fonte, para conferir os totais
     conferencia: fonte && fonte.papel === 'fiscal' && J.E && !J.erro
@@ -432,4 +485,4 @@ async function notasDoDia(opts) {
 
 function _limparCache() { _cache.clear(); _cli.clear(); Object.keys(_ent).forEach(k => delete _ent[k]); }
 
-module.exports = { notasDoDia, hojeSP, EMPRESA, CONFIGURED: D.CONFIGURED, _limparCache, _interno: { mapaColunas, PAPEIS, direcaoDe, tipoContaDe } };
+module.exports = { notasDoDia, hojeSP, EMPRESA, CONFIGURED: D.CONFIGURED, _limparCache, _interno: { mapaColunas, PAPEIS, direcaoDe, tipoContaDe, tipoPorOperacao } };

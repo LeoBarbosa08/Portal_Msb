@@ -576,6 +576,29 @@ depois vou triar o que cada status significa; integração realtime".
 - `nav-sidebar.js?v=85` em todas as páginas; `area-access.js?v=21` e
   `portal-catalogo.js?v=21`; `sw.js` — cache `bm-comest-v22`.
 
+### Faturamento do Dia · só as operações de faturamento (06/11/2026)
+
+Pedido do dono: no Faturamento do Dia contam **só** estes tipos de operação
+(`OperationDescription` da nota); no Kanban continuam **todas** as ordens.
+
+| OperationDescription | Conta como |
+|---|---|
+| Venda de produção do estabelecimento | Venda |
+| Venda de produção do estabelecimento, destinada a não contribuinte | Venda |
+| Venda prod estab remet ant consignação mercantil | Venda |
+| Dev venda merc adquirida ou receb terceiros | Devolução |
+
+- A operação decide venda/devolução (antes era a direção da nota). Qualquer
+  outra (remessa em consignação, bonificação, compra…) fica **fora da soma** e
+  a tela mostra quantas e quais (`foraPorOperacao` na resposta).
+- Comparação sem maiúsculas/acentos e aceitando a descrição cortada pelo
+  Dynamics ("…destinada a não contri"). Lista trocável sem deploy:
+  `FATDIA_OP_VENDA` / `FATDIA_OP_DEVOLUCAO` (separadas por `;`); a coluna, por
+  `FATDIA_COL_OPERACAO`.
+- Nota sem OperationDescription cai na regra antiga (direção da nota), com
+  aviso; o mesmo vale para o diário de faturas quando ele trouxer a coluna.
+- `sw.js` — cache `bm-comest-v23`.
+
 ## Como colocar no ar
 
 1. **Repositório no GitHub** — crie um repositório **privado e vazio** (sem

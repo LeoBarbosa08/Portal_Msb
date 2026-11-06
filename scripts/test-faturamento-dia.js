@@ -114,7 +114,29 @@ const CLIENTES = { porConta: true, amostra: { dataAreaId: 'msb', CustomerAccount
   t('entrada de não-cliente = compra, fora', !r.notas.some(n => n.numero === '000000777') && r.foraDaConta.fornecedor === 1, r.foraDaConta);
   t('venda 120', r.resumo.venda.valor === 120, r.resumo);
 
-  console.log('5) rota: só o dono');
+  console.log('5) OperationDescription decide o que é faturamento (06/11/2026)');
+  FD._limparCache(); chamadas.length = 0;
+  const op = (n, dir, desc, v, extra) => fd(Object.assign({ FiscalDocumentNumber: n, Direction: dir, FiscalDocumentAccountType: 'Cust', FiscalDocumentAccountNum: 'C1', TotalAmount: v, OperationDescription: desc }, extra || {}));
+  CEN.FiscalDocuments = { amostra: op('000000001', 'Outgoing', 'Venda de produção do estabelecimento', 1), linhas: [
+    op('000020001', 'Outgoing', 'Venda de produção do estabelecimento', 1000),
+    op('000020002', 'Outgoing', 'Venda de produção do estabelecimento, destinada a não contri', 300),
+    op('000020003', 'Outgoing', 'VENDA PROD ESTAB REMET ANT CONSIGNAÇÃO MERCANTIL', 200),
+    op('000000501', 'Incoming', 'Dev venda merc adquirida ou receb terceiros', 150),
+    op('000020004', 'Outgoing', 'Remessa em consignação mercantil', 9000),
+    op('000020005', 'Outgoing', 'Remessa em consignação mercantil', 1000),
+    op('000020006', 'Outgoing', 'Remessa de bonificação, doação ou brinde', 50),
+    op('000020007', 'Outgoing', '', 70)
+  ] };
+  CEN.SalesInvoiceHeadersV2 = DIARIO([]);
+  r = await FD.notasDoDia({ data: DIA });
+  t('vendas da lista (3 operações + 1 sem descrição) = 1.570', r.resumo.venda.qtd === 4 && r.resumo.venda.valor === 1570, r.resumo.venda);
+  t('devolução pela operação = 150', r.resumo.devolucao.qtd === 1 && r.resumo.devolucao.valor === 150, r.resumo.devolucao);
+  t('remessa e bonificação fora da soma, contadas', r.foraPorOperacao['Remessa em consignação mercantil'] === 2 && r.foraPorOperacao['Remessa de bonificação, doação ou brinde'] === 1 && !r.notas.some(n => n.numero === '000020004'), r.foraPorOperacao);
+  t('sem descrição: pela direção, com aviso', r.notas.some(n => n.numero === '000020007' && n.tipo === 'venda') && r.avisos.some(a => /sem OperationDescription/.test(a)), r.avisos);
+  t('operação vai na nota', (r.notas.find(n => n.numero === '000020002') || {}).operacao === 'Venda de produção do estabelecimento, destinada a não contri');
+  t('OperationDescription no $select', chamadas.some(c => c.ent === 'FiscalDocuments' && /OperationDescription/.test(c.q.select || '')), chamadas.filter(c => c.ent === 'FiscalDocuments').map(c => c.q.select));
+
+  console.log('6) rota: só o dono');
   FD._limparCache();
   const auth = require('../api/shared/auth');
   const fn = require('../api/faturamento-hoje/index.js');
