@@ -55,7 +55,9 @@ const GUID = /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a
 // completo sem ajuste.
 // RECORTE MSB (22/10/26): entra o Contábil, só com a Gestão de Custos SG&A
 // (as páginas que não vieram estão em PAGINAS_FORA, mais abaixo).
-const ALL_AREAS = ['comercial', 'estoque', 'contabil'];
+// 06/11/26: entra o KANBAN (ordens de venda do dia, ao vivo do Dynamics),
+// RESERVADO em AREAS_RESERVADAS logo abaixo.
+const ALL_AREAS = ['comercial', 'estoque', 'contabil', 'kanban'];
 
 // Áreas ABERTAS a qualquer pessoa autenticada — entram no allowed mesmo de
 // quem cai numa regra de grupo restritiva.
@@ -101,7 +103,13 @@ const AREAS_RESERVADAS = {
   vendedor:    ['leonardo.barbosa@biomedical.com.br', 'ia@biomedical.com.br'],
   gerencial:   ['leonardo.barbosa@biomedical.com.br', 'ia@biomedical.com.br'],
   atendimento: ['leonardo.barbosa@biomedical.com.br'],
-  compras:     ['leonardo.barbosa@biomedical.com.br', 'ia@biomedical.com.br']
+  compras:     ['leonardo.barbosa@biomedical.com.br', 'ia@biomedical.com.br'],
+  // Kanban: área nova de 06/11/2026 (o quadro das ordens de venda do dia, ao
+  // vivo do Dynamics). EM CONSTRUÇÃO: o dono ainda vai definir o que cada
+  // status significa. Mesma regra do Vendedor/Gerencial — as duas contas
+  // dele e quem tem acesso full. Abrir para a equipe = tirar 'kanban' daqui
+  // e mapear os grupos em GRUPO_AREAS.
+  kanban:      ['leonardo.barbosa@biomedical.com.br', 'ia@biomedical.com.br']
 };
 
 // ── RESERVA ESTRITA ──────────────────────────────────────────────
@@ -340,7 +348,9 @@ const UNRESTRICTED_GROUPS = new Set([
 ]);
 
 // Liberação EXTRA por e-mail (minúsculo).
-const EMAIL_AREAS = { 'ia@biomedical.com.br': ['licitacao', 'administrativo', 'diretoria', 'vendedor', 'gerencial', 'compras'] };
+// 06/11/26: + kanban (área reservada às contas do dono — sem isto a ia@,
+// que cai em regra de grupo, não receberia a área)
+const EMAIL_AREAS = { 'ia@biomedical.com.br': ['licitacao', 'administrativo', 'diretoria', 'vendedor', 'gerencial', 'compras', 'kanban'] };
 
 // ── base64url ────────────────────────────────────────────────
 function b64urlToBuf(s) {

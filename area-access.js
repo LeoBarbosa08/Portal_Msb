@@ -38,7 +38,7 @@
   // AO CRIAR PAGINA NOVA sem prefixo de area, declare NOS DOIS arquivos.
   const AREAS_IDS = ['comercial', 'financeiro', 'logistica', 'marketing', 'estoque',
     'contabil', 'licitacao', 'administrativo', 'produtos', 'pessoas', 'qualidade', 'ti',
-    'diretoria', 'vendedor', 'gerencial', 'atendimento', 'compras'];
+    'diretoria', 'vendedor', 'gerencial', 'atendimento', 'compras', 'kanban'];
   const EXTRA = {
     'cobranca-automatica':       ['financeiro'],
     'cobranca-notas':            ['financeiro'],

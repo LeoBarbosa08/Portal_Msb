@@ -1,0 +1,423 @@
+﻿<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Kanban · Ordens do Dia · MSB</title>
+  <link rel="stylesheet" href="../styles.css?v=15">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="../dash-v2.css?v=3">
+  <script src="https://unpkg.com/@azure/msal-browser@2.38.3/lib/msal-browser.min.js"></script>
+  <!-- Layout v3 (Claude Design · animado): fonte + camada visual + motor de animações -->
+  <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300..900&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../portal-v3.css?v=2">
+  <script src="../portal-motion.js?v=3" defer></script>
+  <!-- Tema claro/escuro (menu do avatar): marca o <html> antes de pintar + camada escura -->
+  <script>try{if(localStorage.getItem('bm-tema')==='escuro')document.documentElement.setAttribute('data-tema','escuro')}catch(e){}</script>
+  <link rel="stylesheet" href="../portal-tema.css?v=1">
+  <script src="../portal-tema.js?v=1" defer></script>
+  <!-- Celular (varredura 15/10/26): só vale em tela < 768px; no computador não se aplica -->
+  <link rel="stylesheet" href="../portal-mobile.css?v=1" media="(max-width: 767.98px)">
+  <script src="../portal-mobile.js?v=1" defer></script>
+</head>
+<body class="dept">
+
+  <header class="site-header">
+    <div class="container">
+      <a href="../index.html" class="brand" aria-label="Portal MSB — página inicial">
+        <img class="brand-logo" src="/icons/logo-msb.png" alt="MSB · Medical System do Brasil" onerror="this.dataset.failed='true'">
+        <span class="brand-fallback">MSB</span>
+      </a>
+      <nav class="header-nav">
+        <a href="../index.html">Início</a>
+        <a href="../index.html#areas">Áreas</a>
+        <a href="../index.html#sistemas">Sistemas</a>
+        <a href="../index.html#avisos">Avisos</a>
+        <a href="../index.html#contato">Contato</a>
+      </nav>
+    </div>
+  </header>
+
+  <!-- cabeçalho movido para .fx-head (abas de submódulo, Claude Design) -->
+
+  <div class="area-body">
+    <div class="container">
+      <div class="area-grid">
+
+        <aside class="area-sidebar">
+          <div class="sb-card">
+            <div class="sb-head">
+              <span class="sb-ic"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="9" y1="3" x2="9" y2="21"/><line x1="15" y1="3" x2="15" y2="21"/></svg></span>
+              <div><div class="sb-tt">Kanban</div><div class="sb-st">Departamento</div></div>
+            </div>
+            <nav></nav>
+          </div>
+          <a href="../index.html" class="sb-back"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></svg>Voltar ao Portal</a>
+        </aside>
+
+        <div class="area-main">
+
+          <!-- ═══════════ KANBAN · ORDENS DO DIA ═══════════
+               As ordens de venda da MSB criadas no dia, AO VIVO do Dynamics
+               (/api/kanban-ov: BIOSalesOrderHeaderV1 + SalesOrderHeadersV3/V2,
+               juntas pelo número da OV; valor pelas linhas). As colunas do quadro
+               são os valores CRUS da coluna de status escolhida em "Agrupar por"
+               — o significado de cada status ainda vai ser definido pelo dono.
+               Área RESERVADA (AREAS_RESERVADAS em api/shared/auth.js). -->
+          <style>
+            .kb-head{display:flex;align-items:flex-end;justify-content:space-between;gap:16px;flex-wrap:wrap;padding:22px 0 10px;}
+            .kb-bc{font-size:12px;color:var(--text-3);}
+            .kb-title{margin:4px 0 0;font-size:23px;font-weight:800;letter-spacing:-.5px;color:var(--text);}
+            .kb-sub{margin-top:2px;font-size:13px;color:var(--text-3);}
+            .kb-acoes{display:flex;align-items:center;gap:8px;flex-wrap:wrap;}
+            .kb-btn{display:inline-flex;align-items:center;gap:6px;padding:8px 12px;border-radius:9px;border:1px solid var(--border);background:var(--surface);font:inherit;font-size:12.5px;font-weight:600;color:var(--text-2);cursor:pointer;white-space:nowrap;}
+            .kb-btn:hover{border-color:#287A8E;color:var(--text);}
+            .kb-btn:disabled{opacity:.55;cursor:default;}
+            .kb-in{padding:7px 10px;border-radius:9px;border:1px solid var(--border);background:var(--surface);color:var(--text);font:inherit;font-size:12.5px;}
+            .kb-bar{display:flex;align-items:center;gap:10px;flex-wrap:wrap;padding:10px 12px;background:var(--surface);border:1px solid var(--border);border-radius:12px;margin-bottom:12px;}
+            .kb-bar label{font-size:11px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--text-3);}
+            .kb-busca{min-width:240px;flex:1 1 240px;max-width:380px;}
+            .kb-seg{display:inline-flex;background:var(--surface-2);border-radius:9px;padding:3px;}
+            .kb-seg button{border:none;background:transparent;padding:6px 12px;border-radius:7px;font:inherit;font-size:12px;font-weight:600;color:var(--text-3);cursor:pointer;}
+            .kb-seg button.on{background:#1E5BD8;color:#fff;}
+            .kb-live{margin-left:auto;display:inline-flex;align-items:center;gap:8px;font-size:12px;color:var(--text-3);}
+            .kb-dot{width:8px;height:8px;border-radius:50%;background:#27D045;animation:kbPulse 2s infinite;flex-shrink:0;}
+            .kb-dot.off{background:#95A4AB;animation:none;}
+            @keyframes kbPulse{0%{box-shadow:0 0 0 0 rgba(39,208,69,.45)}70%{box-shadow:0 0 0 8px rgba(39,208,69,0)}100%{box-shadow:0 0 0 0 rgba(39,208,69,0)}}
+            @media (prefers-reduced-motion: reduce){.kb-dot{animation:none;}}
+
+            .kb-msg{padding:10px 14px;border-radius:10px;font-size:13px;line-height:1.5;border:1px solid;margin-bottom:10px;}
+            .kb-msg.aviso{background:#FFFBEB;border-color:#FDE68A;color:#78350F;}
+            .kb-msg.erro{background:#FEF2F2;border-color:#FECACA;color:#7F1D1D;}
+            html[data-tema="escuro"] .kb-msg.aviso{background:#3A3220;border-color:#6B5A2A;color:#F5DFA8;}
+            html[data-tema="escuro"] .kb-msg.erro{background:#3B2426;border-color:#6E3A3E;color:#F6C7CB;}
+
+            .kb-board{display:grid;grid-template-columns:repeat(auto-fill,minmax(270px,1fr));gap:12px;align-items:start;}
+            .kb-col{border-radius:12px;background:var(--kb-bg);border:1px solid var(--kb-bd);display:flex;flex-direction:column;min-height:180px;max-height:70vh;}
+            .kb-col-h{padding:10px 12px 8px;display:flex;flex-direction:column;gap:2px;}
+            .kb-col-t{display:flex;align-items:center;gap:8px;font-size:13.5px;font-weight:700;color:var(--kb-ink);}
+            .kb-col-t .nome{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+            .kb-cnt{min-width:24px;height:22px;padding:0 7px;border-radius:999px;background:var(--surface);color:var(--text);font-size:12px;font-weight:700;display:inline-flex;align-items:center;justify-content:center;}
+            .kb-col-v{font-size:12px;font-weight:600;color:var(--kb-ink);opacity:.85;}
+            .kb-cards{padding:4px 8px 10px;display:flex;flex-direction:column;gap:6px;overflow-y:auto;}
+            .kb-vazio{color:var(--text-4);text-align:center;padding:24px 0;font-size:13px;}
+            .kb-card{background:var(--surface);border:1px solid var(--border);border-radius:9px;padding:8px 10px;cursor:pointer;text-align:left;font:inherit;color:inherit;width:100%;}
+            .kb-card:hover{border-color:#287A8E;box-shadow:0 2px 8px rgba(16,50,62,.08);}
+            .kb-card:focus-visible{outline:2px solid #1E5BD8;outline-offset:1px;}
+            .kb-l1{display:flex;align-items:center;gap:8px;}
+            .kb-ov{font-size:13px;font-weight:800;color:var(--text);white-space:nowrap;}
+            .kb-cli{flex:1;min-width:0;font-size:11.5px;font-weight:600;color:var(--text-2);text-transform:uppercase;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+            .kb-l2{display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-top:4px;font-size:11px;color:var(--text-3);}
+            .kb-chip{display:inline-flex;align-items:center;padding:1px 6px;border-radius:5px;border:1px solid var(--border);font-size:10.5px;font-weight:600;color:var(--text-2);max-width:140px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+            .kb-val{margin-left:auto;font-weight:700;color:var(--text);white-space:nowrap;}
+            .kb-nova{background:#1E5BD8;color:#fff;border-color:#1E5BD8;}
+            .kb-card.mudou{animation:kbFlash 2.4s ease-out 1;}
+            @keyframes kbFlash{0%{box-shadow:0 0 0 3px rgba(30,91,216,.55)}100%{box-shadow:0 0 0 0 rgba(30,91,216,0)}}
+
+            .kb-lista{background:var(--surface);border:1px solid var(--border);border-radius:12px;overflow:auto;max-height:72vh;}
+            .kb-tbl{width:100%;border-collapse:collapse;font-size:12.5px;}
+            .kb-tbl th{position:sticky;top:0;background:var(--surface-2);text-align:left;font-size:10.5px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--text-3);padding:9px 12px;white-space:nowrap;}
+            .kb-tbl td{padding:8px 12px;border-top:1px solid var(--border);color:var(--text-2);white-space:nowrap;}
+            .kb-tbl tr{cursor:pointer;}
+            .kb-tbl tr:hover td{background:var(--surface-2);}
+            .kb-tbl .num{text-align:right;font-variant-numeric:tabular-nums;}
+
+            .kb-drawer-bg{position:fixed;inset:0;background:rgba(16,24,30,.35);z-index:9000;display:none;}
+            .kb-drawer{position:fixed;top:0;right:0;bottom:0;width:min(560px,100vw);background:var(--surface);z-index:9001;box-shadow:-20px 0 50px rgba(0,0,0,.18);display:none;flex-direction:column;}
+            .kb-drawer.on,.kb-drawer-bg.on{display:flex;}
+            .kb-dr-h{display:flex;align-items:flex-start;gap:10px;padding:16px 18px;border-bottom:1px solid var(--border);}
+            .kb-dr-h h3{margin:0;font-size:18px;font-weight:800;color:var(--text);}
+            .kb-dr-h .sub{font-size:12.5px;color:var(--text-3);margin-top:2px;}
+            .kb-x{margin-left:auto;border:none;background:transparent;font-size:22px;line-height:1;color:var(--text-3);cursor:pointer;padding:2px 6px;}
+            .kb-dr-b{padding:12px 18px 24px;overflow:auto;}
+            .kb-dr-b h4{margin:14px 0 6px;font-size:11px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:var(--text-3);}
+            .kb-kv{width:100%;border-collapse:collapse;font-size:12px;}
+            .kb-kv td{padding:5px 6px;border-top:1px solid var(--border);vertical-align:top;color:var(--text-2);word-break:break-word;}
+            .kb-kv td:first-child{width:46%;font-family:'JetBrains Mono',ui-monospace,monospace;font-size:11px;color:var(--text-3);}
+            .kb-kv tr.st td{background:rgba(30,91,216,.06);font-weight:600;color:var(--text);}
+
+            .kb-diag{font-size:12px;color:var(--text-3);margin-top:14px;}
+            .kb-diag summary{cursor:pointer;font-weight:600;}
+            .kb-diag pre{margin:8px 0 0;padding:10px;max-height:300px;overflow:auto;background:var(--surface-2);border-radius:8px;font-size:11px;white-space:pre-wrap;word-break:break-word;}
+
+            @media(max-width:767.98px){
+              .kb-title{font-size:18px;}
+              .kb-live{margin-left:0;width:100%;}
+              .kb-busca{max-width:none;min-width:0;}
+              .kb-board{grid-template-columns:1fr;}
+              .kb-col{max-height:none;}
+            }
+          </style>
+
+          <div class="kb-head">
+            <div>
+              <div class="kb-bc">Kanban</div>
+              <h1 class="kb-title">Ordens do Dia</h1>
+              <div class="kb-sub" id="kb-sub">MSB · ordens de venda criadas no dia, direto do Dynamics</div>
+            </div>
+            <div class="kb-acoes">
+              <input type="date" class="kb-in" id="kb-data" aria-label="Dia">
+              <button type="button" class="kb-btn" id="kb-hoje">Hoje</button>
+              <button type="button" class="kb-btn" id="kb-atualizar">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>
+                Atualizar
+              </button>
+            </div>
+          </div>
+
+          <div class="kb-bar">
+            <input type="search" class="kb-in kb-busca" id="kb-busca" placeholder="Buscar OV, cliente ou OC…">
+            <label for="kb-agrupar">Agrupar por</label>
+            <select class="kb-in" id="kb-agrupar"><option value="">—</option></select>
+            <div class="kb-seg" role="group" aria-label="Visualização">
+              <button type="button" class="on" data-vis="kanban">Kanban</button>
+              <button type="button" data-vis="lista">Lista</button>
+            </div>
+            <span class="kb-live"><span class="kb-dot off" id="kb-dot"></span><span id="kb-status">Conectando ao Dynamics…</span></span>
+          </div>
+
+          <div id="kb-msgs"></div>
+          <div id="kb-quadro"><div class="kb-vazio">Carregando…</div></div>
+
+          <details class="kb-diag" id="kb-diag" style="display:none;">
+            <summary>Diagnóstico da leitura no Dynamics</summary>
+            <pre id="kb-diag-txt"></pre>
+          </details>
+
+        </div><!-- /area-main -->
+      </div><!-- /area-grid -->
+    </div><!-- /container -->
+  </div><!-- /area-body -->
+
+  <div class="kb-drawer-bg" id="kb-drawer-bg"></div>
+  <aside class="kb-drawer" id="kb-drawer" role="dialog" aria-modal="true" aria-labelledby="kb-dr-tt">
+    <div class="kb-dr-h">
+      <div><h3 id="kb-dr-tt">—</h3><div class="sub" id="kb-dr-sub"></div></div>
+      <button type="button" class="kb-x" id="kb-dr-x" aria-label="Fechar">×</button>
+    </div>
+    <div class="kb-dr-b" id="kb-dr-b"></div>
+  </aside>
+
+  <footer class="site-footer">
+    <div class="container">
+      <div class="bm-footer-bottom">
+        <span>© <span id="year"></span> MSB · Medical System do Brasil · Portal interno</span>
+        <span class="bm-footer-meta">Belo Horizonte · São Paulo · Rio de Janeiro · Curitiba · Recife · Porto Alegre</span>
+      </div>
+    </div>
+  </footer>
+
+  <script src="../script.js?v=8"></script>
+  <script src="../nav-sidebar.js?v=85"></script>
+  <script>
+  (function () {
+    'use strict';
+    var AUTO_MS = 30000;               // "tempo real": o dia de hoje relê o Dynamics a cada 30 s
+    var LS_AGRUPAR = 'bm-kanban-agrupar';
+    var $ = function (id) { return document.getElementById(id); };
+    var esc = function (s) { return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); };
+    var fBRL = function (v) { return v == null ? '—' : 'R$ ' + Number(v).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }); };
+    var fK = function (v) { if (v == null) return ''; var a = Math.abs(v); return a >= 1e6 ? 'R$ ' + (v / 1e6).toLocaleString('pt-BR', { maximumFractionDigits: 1 }) + ' mi' : a >= 1e3 ? 'R$ ' + (v / 1e3).toLocaleString('pt-BR', { maximumFractionDigits: 1 }) + ' mil' : fBRL(v); };
+    var fDia = function (iso) { var m = /^(\d{4})-(\d{2})-(\d{2})/.exec(iso || ''); return m ? m[3] + '/' + m[2] + '/' + m[1] : ''; };
+    var fDM = function (iso) { var m = /^(\d{4})-(\d{2})-(\d{2})/.exec(iso || ''); return m ? m[3] + '/' + m[2] : ''; };
+    // hora de criação em Brasília (o D365 guarda em UTC)
+    var fHora = function (iso) { var t = Date.parse(iso); return isNaN(t) ? '' : new Date(t).toLocaleTimeString('pt-BR', { timeZone: 'America/Sao_Paulo', hour: '2-digit', minute: '2-digit' }); };
+    function lsGet(k) { try { return localStorage.getItem(k); } catch (e) { return null; } }
+    function lsSet(k, v) { try { localStorage.setItem(k, v); } catch (e) {} }
+
+    // cores das colunas (fundo, borda, texto), na ordem das colunas — claro e escuro
+    var TONS = [['#E6F0FD', '#C9DCF8', '#1C4E9C'], ['#FFF6D6', '#F3E2A3', '#7A5A06'], ['#ECEEF1', '#D6DADF', '#3D4852'], ['#F1E9FB', '#DCCDF2', '#5B3794'],
+                ['#FDEEE0', '#F5D6B8', '#8A4B12'], ['#DFF6EF', '#BCE8D9', '#126B52'], ['#E3F7E6', '#C2EBC9', '#1B6B2B'], ['#FCE8EC', '#F3C9D2', '#8E2440']];
+    var TONS_ESC = [['#1F3149', '#2E4668', '#A9C8F5'], ['#3A3320', '#5A4E2A', '#F0D98A'], ['#2A3138', '#3C454E', '#C7D0D8'], ['#2F2742', '#46395F', '#CDB8F0'],
+                    ['#3D2D1F', '#5C4330', '#F2C08F'], ['#1E3832', '#2D5249', '#8FE0C6'], ['#1F3A25', '#2E5636', '#9BE0A8'], ['#3D2129', '#5A303C', '#F2A9B9']];
+    function tom(i) { var esc_ = document.documentElement.getAttribute('data-tema') === 'escuro'; var t = (esc_ ? TONS_ESC : TONS)[i % TONS.length]; return '--kb-bg:' + t[0] + ';--kb-bd:' + t[1] + ';--kb-ink:' + t[2]; }
+
+    var estado = { r: null, vis: 'kanban', busca: '', agrupar: lsGet(LS_AGRUPAR) || '', carregando: false, timer: null, antes: null, mudou: {}, aberta: null };
+
+    function hojeSP() {
+      try { return new Intl.DateTimeFormat('en-CA', { timeZone: 'America/Sao_Paulo', year: 'numeric', month: '2-digit', day: '2-digit' }).format(new Date()); }
+      catch (e) { return new Date().toISOString().slice(0, 10); }
+    }
+    function status(txt, vivo) { $('kb-status').textContent = txt; $('kb-dot').classList.toggle('off', !vivo); }
+    function msgs(lista) { $('kb-msgs').innerHTML = lista.map(function (m) { return '<div class="kb-msg ' + m[0] + '">' + m[1] + '</div>'; }).join(''); }
+    function rotuloCol(s) { return s.coluna + ' · ' + s.entidade; }
+
+    function filtradas() {
+      var r = estado.r; if (!r) return [];
+      var q = estado.busca.toLowerCase();
+      return (r.ovs || []).filter(function (o) { return !q || [o.numero, o.cliente, o.conta, o.oc].join(' ').toLowerCase().indexOf(q) >= 0; });
+    }
+    function valorStatus(o) { var v = estado.agrupar ? o.status[estado.agrupar] : null; return v == null ? '(sem registro)' : v; }
+
+    function cardHtml(o) {
+      var novo = estado.mudou[o.numero] === 'nova';
+      return '<button type="button" class="kb-card' + (estado.mudou[o.numero] ? ' mudou' : '') + '" data-ov="' + esc(o.numero) + '">'
+        + '<div class="kb-l1"><span class="kb-ov">' + esc(o.numero) + '</span><span class="kb-cli" title="' + esc(o.cliente) + '">' + esc(o.cliente || o.conta) + '</span></div>'
+        + '<div class="kb-l2">' + (novo ? '<span class="kb-chip kb-nova">nova</span>' : '')
+        + (o.oc ? '<span class="kb-chip" title="OC do cliente">' + esc(o.oc) + '</span>' : '')
+        + (o.deposito ? '<span class="kb-chip">' + esc(o.deposito) + '</span>' : '')
+        + '<span>' + esc(fHora(o.criadaEm)) + '</span>'
+        + (o.itens != null ? '<span>· ' + o.itens + ' ite' + (o.itens === 1 ? 'm' : 'ns') + '</span>' : '')
+        + '<span class="kb-val">' + (o.valor != null ? esc(fBRL(o.valor)) : '') + '</span></div></button>';
+    }
+
+    function render() {
+      var r = estado.r; if (!r) return;
+      var ovs = filtradas();
+      if (estado.vis === 'lista') return renderLista(ovs);
+      // colunas: os valores crus da coluna escolhida (ordem alfabética, vazios no fim) — estável entre atualizações
+      var grupos = {};
+      ovs.forEach(function (o) { var k = valorStatus(o); (grupos[k] = grupos[k] || []).push(o); });
+      var cols = Object.keys(grupos);
+      var sc = (r.statusCols || []).find(function (s) { return s.chave === estado.agrupar; });
+      if (sc) Object.keys(sc.valores).forEach(function (v) { if (cols.indexOf(v) < 0 && !estado.busca) cols.push(v); });
+      cols.sort(function (a, b) { var va = /^\(/.test(a), vb = /^\(/.test(b); return va - vb || a.localeCompare(b, 'pt-BR'); });
+      if (!cols.length) { $('kb-quadro').innerHTML = '<div class="kb-vazio">' + ((r.ovs || []).length ? 'Nenhuma OV com essa busca.' : 'Nenhuma ordem de venda da MSB criada em ' + fDia(r.data) + '.') + '</div>'; return; }
+      $('kb-quadro').innerHTML = '<div class="kb-board">' + cols.map(function (c, i) {
+        var lista = grupos[c] || [];
+        var soma = lista.reduce(function (s, o) { return s + (o.valor || 0); }, 0);
+        var temValor = lista.some(function (o) { return o.valor != null; });
+        return '<section class="kb-col" style="' + tom(i) + '"><div class="kb-col-h"><div class="kb-col-t"><span class="nome" title="' + esc(c) + '">' + esc(c) + '</span><span class="kb-cnt">' + lista.length + '</span></div>'
+          + (temValor ? '<div class="kb-col-v">' + esc(fK(soma)) + '</div>' : '') + '</div>'
+          + '<div class="kb-cards">' + (lista.length ? lista.map(cardHtml).join('') : '<div class="kb-vazio">—</div>') + '</div></section>';
+      }).join('') + '</div>';
+    }
+
+    function renderLista(ovs) {
+      var r = estado.r;
+      var outros = (r.statusCols || []).filter(function (s) { return s.chave !== estado.agrupar; }).slice(0, 4);
+      var sc = (r.statusCols || []).find(function (s) { return s.chave === estado.agrupar; });
+      if (!ovs.length) { $('kb-quadro').innerHTML = '<div class="kb-vazio">' + ((r.ovs || []).length ? 'Nenhuma OV com essa busca.' : 'Nenhuma ordem de venda da MSB criada em ' + fDia(r.data) + '.') + '</div>'; return; }
+      $('kb-quadro').innerHTML = '<div class="kb-lista"><table class="kb-tbl"><thead><tr><th>OV</th><th>Cliente</th><th>Criada</th><th>OC</th>'
+        + (sc ? '<th>' + esc(sc.coluna) + '</th>' : '') + outros.map(function (s) { return '<th title="' + esc(s.entidade) + '">' + esc(s.coluna) + '</th>'; }).join('')
+        + '<th class="num">Itens</th><th class="num">Valor</th></tr></thead><tbody>'
+        + ovs.map(function (o) {
+          return '<tr data-ov="' + esc(o.numero) + '"><td><b>' + esc(o.numero) + '</b></td><td>' + esc(o.cliente || o.conta) + '</td><td>' + esc(fHora(o.criadaEm)) + '</td><td>' + esc(o.oc) + '</td>'
+            + (sc ? '<td><b>' + esc(valorStatus(o)) + '</b></td>' : '') + outros.map(function (s) { return '<td>' + esc(o.status[s.chave] == null ? '' : o.status[s.chave]) + '</td>'; }).join('')
+            + '<td class="num">' + (o.itens == null ? '' : o.itens) + '</td><td class="num">' + esc(o.valor == null ? '—' : fBRL(o.valor)) + '</td></tr>';
+        }).join('') + '</tbody></table></div>';
+    }
+
+    function preencherAgrupar() {
+      var r = estado.r, sel = $('kb-agrupar');
+      var cols = (r && r.statusCols) || [];
+      if (!estado.agrupar || !cols.some(function (s) { return s.chave === estado.agrupar; })) estado.agrupar = (r && r.statusPadrao) || (cols[0] && cols[0].chave) || '';
+      sel.innerHTML = cols.length ? cols.map(function (s) {
+        var n = Object.keys(s.valores).length;
+        return '<option value="' + esc(s.chave) + '"' + (s.chave === estado.agrupar ? ' selected' : '') + '>' + esc(rotuloCol(s)) + ' (' + n + ' valor' + (n === 1 ? '' : 'es') + ')</option>';
+      }).join('') : '<option value="">sem coluna de status</option>';
+    }
+
+    // painel da OV: todos os status + os campos crus de cada entidade (é o material para "triar" os status)
+    function abrir(num) {
+      var o = estado.r && (estado.r.ovs || []).find(function (x) { return x.numero === num; }); if (!o) return;
+      estado.aberta = num;
+      $('kb-dr-tt').textContent = o.numero;
+      $('kb-dr-sub').textContent = [o.cliente, o.conta, 'criada ' + fDia(o.criadaEm) + ' ' + fHora(o.criadaEm)].filter(Boolean).join(' · ');
+      var h = '<h4>Resumo</h4><table class="kb-kv">'
+        + [['OC do cliente', o.oc], ['Entrega solicitada', fDia(o.entrega)], ['Depósito', o.deposito], ['Pool', o.pool], ['Criada por', o.criadoPor], ['Itens', o.itens], ['Valor', o.valor == null ? '' : fBRL(o.valor)]]
+          .filter(function (p) { return p[1] !== '' && p[1] != null; }).map(function (p) { return '<tr><td>' + esc(p[0]) + '</td><td>' + esc(p[1]) + '</td></tr>'; }).join('') + '</table>';
+      h += '<h4>Status (valores crus do Dynamics)</h4><table class="kb-kv">' + (estado.r.statusCols || []).map(function (s) {
+        return '<tr class="' + (s.chave === estado.agrupar ? 'st' : '') + '"><td>' + esc(rotuloCol(s)) + '</td><td>' + esc(o.status[s.chave] == null ? '(sem registro)' : o.status[s.chave]) + '</td></tr>';
+      }).join('') + '</table>';
+      Object.keys(o.campos || {}).forEach(function (ent) {
+        var c = o.campos[ent];
+        h += '<h4>Todos os campos · ' + esc(ent) + '</h4><table class="kb-kv">' + Object.keys(c).sort().map(function (k) { return '<tr><td>' + esc(k) + '</td><td>' + esc(c[k]) + '</td></tr>'; }).join('') + '</table>';
+      });
+      $('kb-dr-b').innerHTML = h;
+      $('kb-drawer').classList.add('on'); $('kb-drawer-bg').classList.add('on');
+      $('kb-dr-x').focus();
+    }
+    function fechar() { estado.aberta = null; $('kb-drawer').classList.remove('on'); $('kb-drawer-bg').classList.remove('on'); }
+
+    // o que mudou desde a leitura anterior: OV nova ou status (da coluna escolhida) diferente
+    function marcarMudancas(novo) {
+      var antes = estado.antes; estado.mudou = {};
+      if (!antes) return;
+      (novo.ovs || []).forEach(function (o) {
+        var a = antes[o.numero];
+        if (!a) estado.mudou[o.numero] = 'nova';
+        else if (JSON.stringify(a) !== JSON.stringify(o.status)) estado.mudou[o.numero] = 'status';
+      });
+    }
+    function lembrar(r) { estado.antes = {}; (r.ovs || []).forEach(function (o) { estado.antes[o.numero] = o.status; }); }
+
+    async function carregar(forcar) {
+      if (estado.carregando) return;
+      estado.carregando = true;
+      var dia = $('kb-data').value || hojeSP();
+      $('kb-atualizar').disabled = true;
+      status('Lendo o Dynamics…', true);
+      try {
+        var res = await fetch('/api/kanban-ov?data=' + encodeURIComponent(dia) + (forcar ? '&atualizar=1' : ''), { cache: 'no-store' });
+        var j = null; try { j = await res.json(); } catch (e) {}
+        if (res.status === 401) throw new Error('Entre com a sua conta Microsoft para ver o Kanban.');
+        if (res.status === 403) throw new Error('A área Kanban é de acesso restrito.');
+        if (!res.ok || !j || j.ok === false) throw new Error((j && (j.detalhe || j.error)) || ('HTTP ' + res.status));
+        if (j.configured === false) { msgs([['aviso', 'O Dynamics não está configurado neste ambiente (credenciais D365 nas configurações do site).']]); $('kb-quadro').innerHTML = '<div class="kb-vazio">Sem conexão com o Dynamics.</div>'; status('Dynamics não configurado', false); return; }
+        if (estado.r && estado.r.data === j.data) marcarMudancas(j); else estado.mudou = {};
+        lembrar(j);
+        estado.r = j;
+        preencherAgrupar();
+        msgs((j.avisos || []).map(function (a) { return ['aviso', esc(a)]; }));
+        var total = (j.ovs || []).reduce(function (s, o) { return s + (o.valor || 0); }, 0);
+        var fontes = (j.fontes || []).map(function (f) { return f.entidade; }).join(' + ');
+        $('kb-sub').textContent = 'MSB · ' + (j.ovs || []).length + ' ordem(ns) de venda criada(s) em ' + fDia(j.data) + ((j.ovs || []).some(function (o) { return o.valor != null; }) ? ' · ' + fBRL(total) : '') + (fontes ? ' · ' + fontes : '');
+        $('kb-diag').style.display = '';
+        $('kb-diag-txt').textContent = JSON.stringify({ fontes: j.fontes, statusPadrao: j.statusPadrao, diagnostico: j.diagnostico }, null, 1);
+        render();
+        if (estado.aberta) abrir(estado.aberta);
+        var hora = new Date(j.geradoEm || Date.now()).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+        var aoVivo = j.data === hojeSP();
+        var n = Object.keys(estado.mudou).length;
+        status((aoVivo ? 'Ao vivo · ' : '') + 'atualizado às ' + hora + (aoVivo ? ' · a cada 30 s' : '') + (n ? ' · ' + n + ' mudança(s)' : ''), aoVivo);
+      } catch (e) {
+        msgs([['erro', 'Não foi possível ler as ordens de venda no Dynamics: ' + esc(e.message)]]);
+        if (!estado.r) $('kb-quadro').innerHTML = '<div class="kb-vazio">—</div>';
+        status('Falhou: tente Atualizar', false);
+      } finally {
+        estado.carregando = false;
+        $('kb-atualizar').disabled = false;
+        agendar();
+      }
+    }
+
+    // só o dia de hoje se atualiza sozinho, e só com a aba visível
+    function agendar() {
+      clearTimeout(estado.timer);
+      if ($('kb-data').value !== hojeSP()) return;
+      estado.timer = setTimeout(function () { if (document.visibilityState === 'visible') carregar(false); else agendar(); }, AUTO_MS);
+    }
+    document.addEventListener('visibilitychange', function () {
+      if (document.visibilityState === 'visible' && estado.r && $('kb-data').value === hojeSP()
+          && Date.now() - new Date(estado.r.geradoEm).getTime() > AUTO_MS) carregar(false);
+    });
+
+    $('kb-data').value = hojeSP(); $('kb-data').max = hojeSP();
+    $('kb-data').addEventListener('change', function () { estado.r = null; estado.antes = null; carregar(false); });
+    $('kb-hoje').addEventListener('click', function () { $('kb-data').value = hojeSP(); estado.r = null; estado.antes = null; carregar(false); });
+    $('kb-atualizar').addEventListener('click', function () { carregar(true); });
+    $('kb-busca').addEventListener('input', function (e) { estado.busca = e.target.value.trim(); render(); });
+    $('kb-agrupar').addEventListener('change', function (e) { estado.agrupar = e.target.value; lsSet(LS_AGRUPAR, estado.agrupar); render(); });
+    Array.prototype.forEach.call(document.querySelectorAll('.kb-seg button'), function (b) {
+      b.addEventListener('click', function () {
+        estado.vis = b.getAttribute('data-vis');
+        Array.prototype.forEach.call(document.querySelectorAll('.kb-seg button'), function (x) { x.classList.toggle('on', x === b); });
+        render();
+      });
+    });
+    $('kb-quadro').addEventListener('click', function (e) { var el = e.target.closest && e.target.closest('[data-ov]'); if (el) abrir(el.getAttribute('data-ov')); });
+    $('kb-dr-x').addEventListener('click', fechar);
+    $('kb-drawer-bg').addEventListener('click', fechar);
+    document.addEventListener('keydown', function (e) { if (e.key === 'Escape' && estado.aberta) fechar(); });
+
+    // abre já buscando: assim que o login (auth.js) estiver pronto
+    var foi = false;
+    function iniciar() { if (foi) return; foi = true; carregar(false); }
+    if (window._portalUser && window._portalUser.email) iniciar();
+    else document.addEventListener('portalauth:ready', iniciar);
+  })();
+  </script>
+</body>
+</html>

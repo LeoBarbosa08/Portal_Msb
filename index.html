@@ -30,13 +30,13 @@
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-title" content="Portal MSB">
   <script src="auth.js?v=8"></script>
-  <script src="area-access.js?v=20" defer></script>
+  <script src="area-access.js?v=21" defer></script>
   <script src="alertas.js?v=3" defer></script>
   <script src="perfil-sheet.js?v=1" defer></script>
   <script src="avisos-user.js?v=1"></script>
   <script src="avisos-data.js?v=2"></script>
   <script src="/pwa.js" defer></script>
-  <script src="portal-catalogo.js?v=20"></script>
+  <script src="portal-catalogo.js?v=21"></script>
   <!-- TRAVA DE ACESSO (fail-closed) — a grade de Áreas nasce ESCONDIDA e só
        aparece quando o /api/my-areas disser o que esta pessoa pode ver. NÃO existe
        mais "backstop" revelando a grade depois de N segundos: era exatamente essa
@@ -215,6 +215,19 @@
             </span>
           <h3>Contábil</h3>
           <p>Gestão de custos SG&amp;A da MSB.</p>
+          <span class="area-card-arrow">Acessar
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+          </span>
+        </a>
+
+        <!-- Kanban (06/11/26): área RESERVADA às contas do dono — o area-access.js
+             esconde o cartão de quem não tem a área -->
+        <a href="pages/kanban.html" class="area-card" data-area="kanban">
+          <span class="area-card-icon">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="9" y1="3" x2="9" y2="21"/><line x1="15" y1="3" x2="15" y2="21"/></svg>
+            </span>
+          <h3>Kanban</h3>
+          <p>Ordens de venda do dia, ao vivo do Dynamics, por status.</p>
           <span class="area-card-arrow">Acessar
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
           </span>
@@ -734,7 +747,7 @@
     // uma área que a pessoa não tem (guardado no localStorage antes de perder o
     // acesso, ou vindo dos `defaults`) vazaria o nome do departamento.
     const AREAS_IDS = ['comercial','financeiro','logistica','marketing','estoque','contabil',
-      'licitacao','administrativo','produtos','pessoas','qualidade','ti','diretoria','vendedor','gerencial','atendimento','compras'];
+      'licitacao','administrativo','produtos','pessoas','qualidade','ti','diretoria','vendedor','gerencial','atendimento','compras','kanban'];
     function areaDoHref(href) {
       const f = String(href || '').split('/').pop().split('#')[0].split('?')[0].replace(/\.html$/i, '').toLowerCase();
       for (let i = 0; i < AREAS_IDS.length; i++) {

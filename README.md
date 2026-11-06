@@ -534,6 +534,48 @@ Cobrança Automática do portal completo.
 - Testes com o Dynamics simulado: `node scripts/test-faturamento-dia.js`.
 - `nav-sidebar.js?v=84` em todas as páginas; `sw.js` — cache `bm-comest-v21`.
 
+### Área Kanban · Ordens do Dia (06/11/2026)
+
+Pedido do dono: "crie uma área chamada KANBAN e conecte as ordens de venda
+(BIOSalesOrderHeaderV1, SalesOrderHeaderV3…); traga as ordens de venda do dia;
+depois vou triar o que cada status significa; integração realtime".
+
+- **Área nova `kanban`**, RESERVADA às duas contas do dono (e a quem tem acesso
+  full), como o Vendedor/Gerencial em construção: `ALL_AREAS`,
+  `AREAS_RESERVADAS` e `EMAIL_AREAS` (ia@) em `api/shared/auth.js`; `NAV.kanban`,
+  `DEPT_ICON`, `AREAS` e o mapa de páginas no `nav-sidebar.js`; `AREAS_IDS` no
+  `area-access.js` e no `index.html`; cartão "Kanban" na home (o
+  `area-access.js` esconde de quem não tem a área); busca (`portal-catalogo.js`,
+  filtrada pela área). Abrir para a equipe = tirar `kanban` de
+  `AREAS_RESERVADAS` e mapear os grupos em `GRUPO_AREAS`.
+- **Página** `pages/kanban.html` (Ordens do Dia): as OVs da MSB **criadas no
+  dia** (Brasília), uma coluna por **valor cru** da coluna de status escolhida em
+  "Agrupar por" (todas as colunas com cara de status das entidades lidas; a
+  escolha fica no navegador). Cartão: OV, cliente, OC, depósito, hora de
+  criação, itens e valor; coluna com a soma. Visão Lista. Clicar na OV abre o
+  painel com **todos os status** e **todos os campos crus** de cada entidade —
+  o material para definir o significado de cada status.
+- **Tempo real**: o dia de hoje relê o Dynamics a cada **30 s** com a aba
+  visível (cache de 15 s no servidor; "Atualizar" ignora o cache). OV nova
+  ganha o selo "nova" e OV que mudou de status pisca.
+- **API** `GET /api/kanban-ov[?data=AAAA-MM-DD][&atualizar=1][&diag=1]`
+  (`requireArea('kanban')`), motor em `api/shared/kanban-ov.js`, só leitura:
+  - cabeçalho em DUAS fontes juntas pelo número da OV: a **principal** é a
+    candidata com número da OV, data de criação e `dataAreaId` (só `msb`); as
+    outras que respondem entram como **complemento**. Candidatas:
+    `KANBAN_ENT_OV` (env), `BIOSalesOrderHeaderV1` (e variações do nome
+    público), `SalesOrderHeadersV3`, `SalesOrderHeadersV2`, `SalesOrderHeaders`
+    e o que o service document publicar com "salesorderheader" no nome;
+  - valor e itens pelas linhas (`SalesOrderLines`, soma de `LineAmount`);
+  - mesma inteligência das Faturas em Aberto: entidade/coluna descobertas pela
+    amostra, prazo por ida ao F&O, diagnóstico na resposta (`?diag=1` traz as
+    colunas). Envs: `KANBAN_ENT_OV`, `KANBAN_ENT_LINHAS`, `KANBAN_COL_NUMERO`,
+    `KANBAN_COL_CRIADA`, `KANBAN_STATUS_PADRAO` (ex.:
+    `BIOSalesOrderHeaderV1.StatusPedido`), `KANBAN_EMPRESA`, `KANBAN_TTL_MS`.
+- Testes com o Dynamics simulado: `node scripts/test-kanban-ov.js`.
+- `nav-sidebar.js?v=85` em todas as páginas; `area-access.js?v=21` e
+  `portal-catalogo.js?v=21`; `sw.js` — cache `bm-comest-v22`.
+
 ## Como colocar no ar
 
 1. **Repositório no GitHub** — crie um repositório **privado e vazio** (sem

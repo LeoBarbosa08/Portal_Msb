@@ -446,7 +446,7 @@ if (!window._bmPerfilSheetLoaded && !window._bmPerfilSheetInjected) {
 
   var AREAS = ['comercial', 'financeiro', 'logistica', 'marketing', 'estoque',
     'contabil', 'licitacao', 'administrativo', 'produtos', 'pessoas', 'qualidade', 'ti',
-    'diretoria', 'vendedor', 'gerencial', 'atendimento', 'compras'];
+    'diretoria', 'vendedor', 'gerencial', 'atendimento', 'compras', 'kanban'];
 
   // Paginas cujo NOME DE ARQUIVO nao comeca pela area. Mais de uma area =
   // "qualquer uma serve" (mesmo any-of do requireArea do backend).
@@ -859,6 +859,7 @@ if (!window._bmPerfilSheetLoaded && !window._bmPerfilSheetInjected) {
 
   /* ── Dept icons ─────────────────────────────────────────────── */
   const DEPT_ICON = {
+    kanban:         '<svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="9" y1="3" x2="9" y2="21"/><line x1="15" y1="3" x2="15" y2="21"/></svg>',
     comercial:      '<svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="8.5" cy="7" r="4"/><path d="M20 8v6"/><path d="M23 11h-6"/></svg>',
     financeiro:     '<svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>',
     ti:             '<svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="20" height="14" rx="2" ry="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>',
@@ -1043,6 +1044,20 @@ if (!window._bmPerfilSheetLoaded && !window._bmPerfilSheetInjected) {
         // SG&A, recortada na empresa MSB. DRE e Margem de Contribuição do
         // portal completo não vieram (ver PAGINAS_FORA em api/shared/auth.js).
         {id:'contabil-custos-sgna',  label:'Gestão de Custos SG&A',href:'contabil-custos-sgna.html',  icon:I.dollar},
+      ],
+      auto:[],
+      agen:[],
+      atal:[]
+    },
+
+    // KANBAN (06/11/26, pedido do dono): o quadro das ordens de venda do dia,
+    // ao vivo do Dynamics (/api/kanban-ov). Área RESERVADA às contas do dono
+    // (AREAS_RESERVADAS em api/shared/auth.js) enquanto ele define o que cada
+    // status significa.
+    kanban: {
+      label:'Kanban',
+      nav:[
+        {id:'kanban', label:'Ordens do Dia', href:'kanban.html', icon:I.kanban},
       ],
       auto:[],
       agen:[],
@@ -1282,6 +1297,7 @@ if (!window._bmPerfilSheetLoaded && !window._bmPerfilSheetInjected) {
       [/^gerencial/,      'gerencial'],
       [/^atendimento/,    'atendimento'],
       [/^compras/,        'compras'],
+      [/^kanban/,         'kanban'],
       [/^agente-comercial/,      'comercial'],
       [/^agente-financeiro/,     'financeiro'],
       [/^agente-ti/,             'ti'],
