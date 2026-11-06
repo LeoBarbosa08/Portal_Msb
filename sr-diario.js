@@ -47,7 +47,7 @@
   var CAMPOS = {
     ped: [
       ['oc', 'Ordem de compra do cliente', 'Pedidos[ORDEM_DE_COMPRA_CLIENTE]'],
-      ['stlib', 'Status da liberação', 'Pedidos[Status da liberação]'],
+      ['stlib', 'Status da liberação', 'Pedidos[Status de liberação]'],
       ['stov', 'Status da ordem de venda', 'Pedidos[Status da ordem de venda]'],
       ['saida', 'Status de saída', 'Pedidos[Status de saída]'],
       ['cred', 'Em gerenciamento de crédito', 'Pedidos[EM_GERENCIAMENTO_DE_CREDITO]'],
@@ -77,7 +77,7 @@
   // linhas da OV: além do produto, o que separa uma linha da outra — o
   // modelo não tem nº de linha, então status, liberação e previsão
   var COLS_LINHA = ['Pedidos[Status do pedido]', 'Pedidos[Data de liberação para depósito (tratada)]', 'Pedidos[DATA_PREVISAO_ENTREGA]'];
-  var COL_STLIB = 'Pedidos[Status da liberação]';     // pode estar bloqueada (OLS): a consulta volta sem ela
+  var COL_STLIB = 'Pedidos[Status de liberação]';     // pode estar bloqueada (OLS): a consulta volta sem ela
   var FATO = { ped: 'Pedidos', nf: 'Faturamentos' };
   var NOME = { ped: ['pedido', 'pedidos'], nf: ['nota', 'notas'] };
 

@@ -467,6 +467,20 @@ navegação ia para uma segunda coluna, cortada atrás do conteúdo.
   Negócio. Como os outros campos, entra também como filtro na barra.
 - `sw.js` — cache `bm-comest-v18`.
 
+### Coluna Status de liberação (06/11/2026)
+
+O filtro **Status da Liberação** da Análise de Pedidos dava
+`HTTP 400 · DatasetExecuteQueriesError`: o portal pedia
+`Pedidos[Status da liberação]`, mas no modelo a coluna é
+**`'Pedidos'[Status de liberação]`**.
+
+- `pages/comercial-clientes.html` — campo/filtro com o nome certo (rótulo
+  "Status de Liberação").
+- `sr-diario.js` — a ficha do pedido (Visão Geral › Diário) usava o mesmo nome
+  errado; por isso o status da liberação nunca aparecia ali (a consulta voltava
+  sem a coluna). `sr-diario.js?v=4`.
+- `sw.js` — cache `bm-comest-v19`.
+
 ## Como colocar no ar
 
 1. **Repositório no GitHub** — crie um repositório **privado e vazio** (sem
