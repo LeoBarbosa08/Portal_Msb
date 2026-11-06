@@ -481,6 +481,17 @@ O filtro **Status da Liberação** da Análise de Pedidos dava
   sem a coluna). `sr-diario.js?v=4`.
 - `sw.js` — cache `bm-comest-v19`.
 
+### Análise de Vendas · filtro Operação (06/11/2026)
+
+- A barra de filtros da **Análise de Vendas** (`pages/comercial-vendas.html`)
+  ganhou **Operação** (`'Operações'[Operação]`), logo depois de Unidade de
+  Negócio. Vale para a página toda, como os outros.
+- A lista do filtro traz só as operações que **geram fatura a receber**: a
+  página já filtra `'Operações'[Gera Fatura a receber?] = "SIM"`, então escolher
+  outra zeraria tudo. (`valoresCom` na entrada de `FILTROS`.)
+- A Meta (Sales Vertical) não muda com o filtro — igual a Cliente ou Produto.
+- `sw.js` — cache `bm-comest-v20`.
+
 ## Como colocar no ar
 
 1. **Repositório no GitHub** — crie um repositório **privado e vazio** (sem

@@ -532,6 +532,9 @@
     { id:'regional',   label:'Regional',           regional:true },
     { id:'empresa',    label:'Empresa',            col:"'Empresas'[Código da empresa]" },
     { id:'unidade',    label:'Unidade de Negócio', col:"'DIM_UNIDADE_DE_NEGOCIO_V2'[UNIDADE_DE_NEGOCIO]" },
+    // lista só as operações que geram fatura a receber: as outras já saem pelo
+    // filtro fixo MEDIDAS.geraFatura e escolhê-las zeraria a página
+    { id:'operacao',   label:'Operação',           col:"'Operações'[Operação]", valoresCom:[MEDIDAS.geraFatura] },
     { id:'vertical',   label:'Sales Vertical',     col:"'Sales Vertical'[Sales Vertical]" },
     { id:'estado',     label:'Estado',             col:"'Estados'[Cód. do estado]" },
     { id:'tipo',       label:'Tipo de Cliente',    col:"'Clientes'[Tipo de cliente (Revisado)]" },
@@ -644,7 +647,8 @@
   async function avCarregarValores(ft){
     if (ft && ft.regional) return SRRegional.opcoes();
     const col = (ft && ft.col) ? ft.col : ft;
-    const rows = await pbiQuery(`EVALUATE CALCULATETABLE(VALUES(${col}), ${MEDIDAS.semIntercompany})`);
+    const filtros = [MEDIDAS.semIntercompany].concat((ft && ft.valoresCom) || []);
+    const rows = await pbiQuery(`EVALUATE CALCULATETABLE(VALUES(${col}), ${filtros.join(', ')})`);
     if (!rows || !rows.length) return [];
     const key = Object.keys(rows[0])[0];
     const brutos = rows.map(r => r[key]).filter(v => v != null && v !== '');
