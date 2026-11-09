@@ -41,10 +41,14 @@
         Build não vê NADA da tela de BI, só o aviso com o motivo.
      8. RECORTE MSB (PBIQ.recorte) — ver o bloco "RECORTE MSB" mais abaixo:
         TODA consulta sai filtrada na empresa MSB, em qualquer tela.
+     9. PORTA DO MODELO (PBIQ.porta) — ver o bloco "PORTA DO MODELO" mais
+        abaixo: 404 na URL com o workspace tenta a URL sem grupo, onde o
+        Build dado direto no modelo vale.
 
    F12:  PBIQ.stats()   → fila, cache, descartadas, 429, OLS, trava
          PBIQ.trava()   → estado da trava de acesso
          PBIQ.recorte() → coluna e filtro de empresa de cada modelo
+         PBIQ.porta()   → modelos que só respondem pela URL sem grupo
          PBIQ.limpar()  → esvazia o cache e a memória de OLS (força dados novos)
          PBIQ.solta()   → libera o freio de 429 na mão
    ================================================================ */
@@ -74,7 +78,7 @@
   } catch (e) {}
 
   var _fetch  = window.fetch.bind(window);
-  var K_HITS  = 'pbiq.hits', K_COOL = 'pbiq.cool', K_OLS = 'pbiq.ols', K_QUEM = 'pbiq.quem';
+  var K_HITS  = 'pbiq.hits', K_COOL = 'pbiq.cool', K_OLS = 'pbiq.ols', K_QUEM = 'pbiq.quem', K_PORTA = 'pbiq.semgrupo';
   var _fila   = [], _ativas = 0, _timer = null, _gen = 0, _segurando = false, _rodando = new Set();
   // Concorrência ADAPTATIVA: depois de um 429 volta a 1 e sobe de novo a cada
   // sucesso. Sem isso, no fim de cada espera o freio soltava as 6 de uma vez
@@ -249,16 +253,67 @@
   }
   function liberar() { _ativas = Math.max(0, _ativas - 1); bombear(); }
 
+  // ── PORTA DO MODELO (URL com ou sem o workspace) ───────────────
+  // 09/11/2026, Performance de Vendas e Sales Report: a pessoa ganhou Build
+  // no modelo e a tela seguia em "HTTP 404 · PowerBIEntityNotFound". As telas
+  // consultam pela URL COM o workspace do portal
+  //     /groups/<ws>/datasets/<id>/executeQueries
+  // e só tentam a URL SEM grupo (/datasets/<id>/executeQueries) em 401/403.
+  // Só que o Power BI responde 404, e não 401/403, quando a pessoa não é
+  // membro do workspace (o Build foi dado direto no modelo) ou quando o
+  // modelo mora noutro workspace (relatório "fino" no portal). A URL sem
+  // grupo acha o modelo onde ele morar, com o Build da pessoa — a mesma
+  // queda que o pbi-modelo.js já faz nas telas do Estoque.
+  // Aqui, por onde passa toda consulta: 404 na URL com o workspace → a mesma
+  // consulta pela URL sem grupo, na hora. Se o modelo atender por ela (200
+  // ou erro de DAX = o modelo foi alcançado), ele fica marcado e as próximas
+  // consultas já saem direto, sem gastar 2 requisições do teto de 100/min.
+  // A marca fica no navegador (as telas do Comercial usam o mesmo modelo); a
+  // URL sem grupo também serve a quem é membro do workspace, então uma marca
+  // velha não quebra nada. Se as duas falharem, a página recebe a resposta
+  // da URL sem grupo: o 404 do workspace só diz "não mora aqui", a outra diz
+  // o porquê (sem Build, RLS…) e é ela que a trava de acesso lê.
+  function urlSemGrupo(u) { return String(u).replace(/\/groups\/[^/]+(\/datasets\/)/i, '$1'); }
+  function semGrupoLer() {
+    var o; try { o = JSON.parse(lsGet(K_PORTA, '{}')); } catch (e) { o = null; }
+    return (o && typeof o === 'object') ? o : {};
+  }
+  var _semGrupo = semGrupoLer();
+  function porta(u) {
+    if (u.indexOf('/executeQueries') < 0 || !_semGrupo[dsDe(u)]) return u;
+    return urlSemGrupo(u);
+  }
+  function marcarSemGrupo(ds) {
+    if (_semGrupo[ds]) return;
+    _semGrupo = semGrupoLer(); _semGrupo[ds] = Date.now();
+    lsSet(K_PORTA, JSON.stringify(_semGrupo));
+    console.info('[PBIQ] modelo ' + ds + ': a URL com o workspace respondeu 404 — as consultas seguem pela URL sem grupo');
+  }
+
+  function lerResp(r) {
+    var ra = (r.headers && r.headers.get) ? r.headers.get('Retry-After') : null;
+    var ct = (r.headers && r.headers.get) ? r.headers.get('Content-Type') : null;
+    return r.text().then(function (txt) {
+      return { status: r.status, statusText: r.statusText, text: txt, ctype: ct, retry: ra };
+    });
+  }
+  function buscar(t) {
+    return _fetch(t.url, t.init).then(lerResp).then(function (o) {
+      var d = (o.status === 404 && t.url.indexOf('/executeQueries') > -1) ? urlSemGrupo(t.url) : t.url;
+      if (d === t.url) return o;
+      t.url = d;                                  // se tomar 429, a nova tentativa já sai pela sem grupo
+      _st.rede++; baterPonto();
+      return _fetch(d, t.init).then(lerResp).then(function (o2) {
+        if (o2.status === 200 || o2.status === 400) marcarSemGrupo(dsDe(d));
+        return o2;
+      });
+    });
+  }
+
   function rodar(t) {
     _st.rede++;
     _rodando.add(t);
-    _fetch(t.url, t.init).then(function (r) {
-      var ra = (r.headers && r.headers.get) ? r.headers.get('Retry-After') : null;
-      var ct = (r.headers && r.headers.get) ? r.headers.get('Content-Type') : null;
-      return r.text().then(function (txt) {
-        return { status: r.status, statusText: r.statusText, text: txt, ctype: ct, retry: ra };
-      });
-    }).then(function (o) {
+    buscar(t).then(function (o) {
       _rodando['delete'](t);
       if (o.status === 429) {
         _st.r429++; _conc = 1;
@@ -697,6 +752,8 @@
   // fixa: consulta do próprio freio (descoberta do recorte) — nenhuma rajada a descarta
   function enviar(u, init, dax, fixa) {
     _st.pedidos++;
+    u = porta(u);                                  // modelo que só responde pela URL sem grupo
+
     // tela trancada: o modelo negado responde a mesma recusa, sem ir à rede
     var negada = _tv.fechada && u.indexOf('/executeQueries') > -1 && _tv.negados[dsDe(u)];
     if (negada) return Promise.resolve(negada);
@@ -766,6 +823,7 @@
     },
     trava:  estadoTrava,
     recorte: function () { return JSON.parse(JSON.stringify(_rcVisto)); },
+    porta:  function () { return JSON.parse(JSON.stringify(_semGrupo)); },
     limpar: function () { _cache.clear(); _bytes = 0; lsSet(K_OLS, '{}'); return 'cache do BI e memória de OLS limpos'; },
     ols:    OLS,
     solta:  function () { lsSet(K_COOL, '0'); pintar(); return 'freio liberado'; },
