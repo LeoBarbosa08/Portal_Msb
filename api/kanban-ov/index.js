@@ -12,6 +12,10 @@
 //   GET /api/kanban-ov?diag=1          -> + colunas das entidades
 //   -> { ok, configured, empresa, data, fontes, statusCols, statusPadrao,
 //        ovs:[...], avisos, diagnostico }
+//   GET /api/kanban-ov?ov=OV017525     -> as linhas da OV (a ficha do painel)
+//   -> { ok, configured, numero, entidade, linhas:[{ linha, item, produto,
+//        qtd, un, preco, desconto, descPct, valor, status, entrega,
+//        confirmada, deposito }] }
 //
 // Acesso: a ÁREA kanban, que nasce RESERVADA (AREAS_RESERVADAS em
 // api/shared/auth.js — as duas contas do dono e quem tem acesso full),
@@ -32,6 +36,13 @@ module.exports = async function (context, req) {
     await auth.requireArea(req, 'kanban');
     if (!K.CONFIGURED) { json(200, { ok: true, configured: false }); return; }
     const q = req.query || {};
+    // ?ov=OV017525 -> as linhas da OV (a ficha do painel lê ao abrir)
+    const ov = String(q.ov || '').trim();
+    if (ov) {
+      if (!/^[A-Za-z0-9._-]{3,40}$/.test(ov)) throw http.badRequest('Número de OV inválido.');
+      json(200, await K.linhasDaOv(ov, { atualizar: q.atualizar === '1' }));
+      return;
+    }
     const data = String(q.data || '').trim();
     if (data && !/^\d{4}-\d{2}-\d{2}$/.test(data)) throw http.badRequest('Data inválida: use AAAA-MM-DD.');
     json(200, await K.ordensDoDia({ data, atualizar: q.atualizar === '1', diag: q.diag === '1' }));

@@ -125,19 +125,156 @@
             .kb-tbl tr:hover td{background:var(--surface-2);}
             .kb-tbl .num{text-align:right;font-variant-numeric:tabular-nums;}
 
-            .kb-drawer-bg{position:fixed;inset:0;background:rgba(16,24,30,.35);z-index:9000;display:none;}
-            .kb-drawer{position:fixed;top:0;right:0;bottom:0;width:min(560px,100vw);background:var(--surface);z-index:9001;box-shadow:-20px 0 50px rgba(0,0,0,.18);display:none;flex-direction:column;}
-            .kb-drawer.on,.kb-drawer-bg.on{display:flex;}
-            .kb-dr-h{display:flex;align-items:flex-start;gap:10px;padding:16px 18px;border-bottom:1px solid var(--border);}
-            .kb-dr-h h3{margin:0;font-size:18px;font-weight:800;color:var(--text);}
-            .kb-dr-h .sub{font-size:12.5px;color:var(--text-3);margin-top:2px;}
-            .kb-x{margin-left:auto;border:none;background:transparent;font-size:22px;line-height:1;color:var(--text-3);cursor:pointer;padding:2px 6px;}
-            .kb-dr-b{padding:12px 18px 24px;overflow:auto;}
-            .kb-dr-b h4{margin:14px 0 6px;font-size:11px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:var(--text-3);}
-            .kb-kv{width:100%;border-collapse:collapse;font-size:12px;}
-            .kb-kv td{padding:5px 6px;border-top:1px solid var(--border);vertical-align:top;color:var(--text-2);word-break:break-word;}
-            .kb-kv td:first-child{width:46%;font-family:'JetBrains Mono',ui-monospace,monospace;font-size:11px;color:var(--text-3);}
-            .kb-kv tr.st td{background:rgba(30,91,216,.06);font-weight:600;color:var(--text);}
+            .kb-card.is-aberta{border-color:#287A8E;box-shadow:0 0 0 2px rgba(40,122,142,.32);}
+            .kb-tbl tr.is-aberta td{background:#EEF6F9;}
+            .kb-tbl tr:focus-visible{outline:2px solid #1E5BD8;outline-offset:-2px;}
+
+            /* ── FICHA DA OV (painel à direita) — no molde da ficha do Sales Report
+                 › Pedidos em andamento (sr-diario.css .sd-dw): cabeçalho com selo,
+                 números-chave, "onde está o pedido", por que está na coluna,
+                 linhas da OV, dados do pedido e, recolhidos, os campos crus. ── */
+            html.kb-dw-on,html.kb-dw-on body{overflow:hidden;}
+            .kb-dw,.kb-dw-ov{--dw-ink:#10323E;--dw-body:#374951;--dw-mut:#5F727A;--dw-mut2:#81939B;--dw-mut3:#97A8AE;--dw-bd:#E5EAED;--dw-bd-soft:#F1F5F7;--dw-blue:#287A8E;--dw-warn:#A8541F;}
+            .kb-dw-ov{position:fixed;inset:0;background:rgba(14,32,41,.42);z-index:9200;opacity:0;visibility:hidden;transition:opacity .2s ease,visibility 0s linear .2s;}
+            .kb-dw-ov.open{opacity:1;visibility:visible;transition:opacity .2s ease;}
+            .kb-dw{position:fixed;top:0;right:0;bottom:0;width:min(620px,100%);z-index:9201;background:#F4F7FB;display:flex;flex-direction:column;
+              box-shadow:-24px 0 60px rgba(14,32,41,.22);transform:translateX(100%);visibility:hidden;
+              transition:transform .24s cubic-bezier(.2,.7,.2,1),visibility 0s linear .24s;font-family:'Roboto',system-ui,sans-serif;}
+            .kb-dw.open{transform:none;visibility:visible;transition:transform .24s cubic-bezier(.2,.7,.2,1);}
+            @media (prefers-reduced-motion: reduce){.kb-dw,.kb-dw.open,.kb-dw-ov,.kb-dw-ov.open{transition:none;}}
+            .kb-dw-head{background:#fff;padding:18px 22px 15px;border-bottom:1px solid var(--dw-bd);display:flex;align-items:flex-start;gap:14px;}
+            .kb-dw-hl{flex:1;min-width:0;}
+            .kb-dw-k{font-size:9.5px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--dw-mut3);}
+            .kb-dw-tt{margin:5px 0 0;font-size:18px;font-weight:800;line-height:1.25;color:var(--dw-ink);letter-spacing:-.2px;overflow-wrap:anywhere;}
+            .kb-dw-sub{font-size:11.5px;font-weight:600;color:var(--dw-mut2);margin-top:5px;line-height:1.45;}
+            .kb-dw-tags{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px;}
+            .kb-dw-tag{display:inline-flex;align-items:center;gap:6px;padding:3px 9px;border-radius:999px;font-size:10.5px;font-weight:700;
+              background:#F1F4F6;color:var(--dw-body);white-space:nowrap;max-width:100%;overflow:hidden;text-overflow:ellipsis;}
+            .kb-dw-tag i{width:7px;height:7px;border-radius:2px;flex-shrink:0;background:var(--c,#ADB8BE);}
+            .kb-dw-tag.az{background:#ECF3F7;color:#286473;}
+            .kb-dw-tag.nv{background:#1E5BD8;color:#fff;}
+            .kb-dw-tag.al{background:#FDF0E8;color:#A8541F;}
+            .kb-dw-nav{display:flex;align-items:center;gap:6px;flex-shrink:0;}
+            .kb-dw-x,.kb-dw-pn{flex-shrink:0;width:34px;height:34px;display:grid;place-items:center;border:1px solid var(--dw-bd);border-radius:9px;background:#fff;color:var(--dw-mut);cursor:pointer;padding:0;}
+            .kb-dw-x:hover,.kb-dw-pn:hover:not(:disabled){color:var(--dw-ink);border-color:#C4D3DA;background:#F7FAFD;}
+            .kb-dw-pn:disabled{opacity:.35;cursor:default;}
+            .kb-dw-x:focus-visible,.kb-dw-pn:focus-visible{outline:2px solid var(--dw-blue);outline-offset:1px;}
+            .kb-dw-body{flex:1;overflow-y:auto;padding:16px 22px 24px;display:flex;flex-direction:column;gap:12px;overscroll-behavior:contain;}
+            .kb-dw-foot{background:#fff;border-top:1px solid var(--dw-bd);padding:12px 22px;display:flex;align-items:center;gap:12px;}
+            .kb-dw-cp{display:inline-flex;align-items:center;gap:7px;padding:9px 14px;border-radius:9px;background:#10323E;color:#fff;border:none;font-family:inherit;font-size:12.5px;font-weight:700;cursor:pointer;white-space:nowrap;}
+            .kb-dw-cp:hover{background:#1A4856;}
+            .kb-dw-cp.ok{background:#22794C;}
+            .kb-dw-lido{flex:1;font-size:11px;font-weight:600;color:var(--dw-mut3);text-align:right;}
+            .kb-dw-btn{padding:9px 14px;border-radius:9px;border:1px solid var(--dw-bd);background:#fff;font-family:inherit;font-size:12.5px;font-weight:700;color:var(--dw-body);cursor:pointer;}
+            .kb-dw-btn:hover{border-color:#C4D3DA;background:#F7FAFD;}
+            /* números-chave */
+            .kb-dw-kpis{display:flex;flex-wrap:wrap;gap:10px;}
+            .kb-dw-kp{flex:1 1 124px;background:#fff;border:1px solid var(--dw-bd);border-radius:12px;padding:11px 13px;min-width:0;}
+            .kb-dw-kp .k{font-size:9px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:var(--dw-mut3);}
+            .kb-dw-kp .v{font-size:15px;font-weight:800;color:var(--dw-ink);margin-top:6px;line-height:1.15;overflow-wrap:anywhere;}
+            .kb-dw-kp .v.z{color:var(--dw-mut3);}
+            .kb-dw-kp .v.warn,.kb-dw-kp .s.warn{color:var(--dw-warn);}
+            .kb-dw-kp .s{font-size:10.5px;font-weight:600;color:var(--dw-mut2);margin-top:4px;line-height:1.35;}
+            .kb-dw-kp .s.hoje{color:var(--dw-blue);font-weight:700;}
+            .kb-dw-kp.destaque{background:linear-gradient(150deg,#0C2029,#1A5160);border-color:transparent;}
+            .kb-dw-kp.destaque .k{color:#ACC3CC;} .kb-dw-kp.destaque .v{color:#fff;} .kb-dw-kp.destaque .s{color:#C4D3DA;}
+            /* cartões de seção */
+            .kb-dw-card{background:#fff;border:1px solid var(--dw-bd);border-radius:12px;padding:13px 15px;}
+            .kb-dw-card h5{margin:0 0 10px;font-size:10px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:var(--dw-mut2);display:flex;align-items:center;gap:7px;}
+            .kb-dw-card h5 small{font-size:10px;font-weight:700;color:var(--dw-blue);background:#ECF3F7;border-radius:999px;padding:1px 7px;letter-spacing:0;}
+            .kb-dw-mais summary{list-style:none;cursor:pointer;}
+            .kb-dw-mais summary::-webkit-details-marker{display:none;}
+            .kb-dw-mais summary h5{margin:0;}
+            .kb-dw-mais summary h5::after{content:'mostrar';margin-left:auto;font-size:10px;font-weight:700;letter-spacing:0;text-transform:none;color:var(--dw-blue);}
+            .kb-dw-mais[open] summary h5{margin-bottom:10px;}
+            .kb-dw-mais[open] summary h5::after{content:'recolher';}
+            .kb-dw-mais summary:focus-visible{outline:2px solid var(--dw-blue);outline-offset:3px;border-radius:4px;}
+            .kb-dw-p{margin:0;font-size:12px;line-height:1.55;color:var(--dw-body);font-weight:500;}
+            .kb-dw-p+.kb-dw-p{margin-top:6px;}
+            .kb-dw-p b{color:var(--dw-ink);font-weight:700;}
+            .kb-dw-p code,.kb-dw-ol code{font-family:'JetBrains Mono',ui-monospace,monospace;font-size:10.5px;background:#F1F5F7;border-radius:4px;padding:0 4px;color:var(--dw-ink);}
+            .kb-dw-ol{margin:0;padding-left:18px;font-size:12px;line-height:1.6;color:var(--dw-body);}
+            .kb-dw-ol li.on{font-weight:700;color:var(--dw-ink);}
+            .kb-dw-dl{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px 16px;margin:0;}
+            .kb-dw-dl>div{min-width:0;}
+            .kb-dw-dl>div.largo{grid-column:1/-1;}
+            .kb-dw-dl dt{font-size:10px;font-weight:700;color:var(--dw-mut3);line-height:1.35;}
+            .kb-dw-dl dd{margin:2px 0 0;font-size:12.5px;font-weight:600;color:var(--dw-ink);line-height:1.45;overflow-wrap:anywhere;}
+            .kb-dw-dl dd small{font-family:'JetBrains Mono',ui-monospace,monospace;font-size:10px;font-weight:500;color:var(--dw-mut2);margin-left:4px;}
+            .kb-dw-load{display:flex;align-items:center;justify-content:center;gap:10px;padding:18px 12px;font-size:12px;font-weight:600;color:var(--dw-mut2);}
+            .kb-spin{width:15px;height:15px;border-radius:50%;border:2px solid #DAE3E8;border-top-color:var(--dw-blue);animation:kbGira .8s linear infinite;flex-shrink:0;}
+            @keyframes kbGira{to{transform:rotate(360deg);}}
+            .kb-dw-err{display:flex;align-items:center;gap:10px;flex-wrap:wrap;padding:10px 12px;border-radius:10px;background:#FFFBEB;border:1px solid #FDE68A;color:#854D0E;font-size:12px;font-weight:600;line-height:1.5;}
+            .kb-dw-err b{color:#7C4A03;}
+            .kb-dw-err button{margin-left:auto;background:none;border:none;padding:0;font-family:inherit;font-size:11.5px;font-weight:700;color:var(--dw-blue);cursor:pointer;}
+            .kb-dw-err button:hover{text-decoration:underline;}
+            .kb-dw-nada{font-size:12px;font-weight:600;color:var(--dw-mut3);}
+            /* onde está o pedido: a linha do tempo das etapas do quadro */
+            .kb-tl{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;}
+            .kb-tl li{position:relative;display:grid;grid-template-columns:22px minmax(0,1fr) auto;gap:2px 10px;padding:0 0 14px;}
+            .kb-tl li:last-child{padding-bottom:0;}
+            .kb-tl li::before{content:'';position:absolute;left:10px;top:18px;bottom:-2px;width:2px;background:#E5EAED;}
+            .kb-tl li:last-child::before{display:none;}
+            .kb-tl li.feito::before{background:#9DC5D2;}
+            .kb-tl .dot{width:22px;height:22px;border-radius:50%;display:grid;place-items:center;background:#fff;border:2px solid #D6DEE2;color:#fff;font-size:11px;font-weight:800;box-sizing:border-box;}
+            .kb-tl li.feito .dot{background:#3a8196;border-color:#3a8196;}
+            .kb-tl li.fim .dot{box-shadow:0 0 0 4px rgba(58,129,150,.18);}
+            .kb-tl li.agora .dot{background:#fff;border-color:var(--dw-blue);box-shadow:0 0 0 4px rgba(40,122,142,.14);}
+            .kb-tl li.agora .dot::after{content:'';width:8px;height:8px;border-radius:50%;background:var(--dw-blue);}
+            .kb-tl li.alerta .dot{border-color:var(--dw-warn);box-shadow:0 0 0 4px rgba(168,84,31,.14);}
+            .kb-tl li.alerta .dot::after{background:var(--dw-warn);}
+            .kb-tl .tt{font-size:12.5px;font-weight:700;color:var(--dw-ink);line-height:1.35;align-self:center;}
+            .kb-tl li.depois .tt{color:var(--dw-mut2);}
+            .kb-tl .dt{font-size:11.5px;font-weight:700;color:var(--dw-ink);white-space:nowrap;align-self:center;font-variant-numeric:tabular-nums;}
+            .kb-tl .dt.z{color:var(--dw-mut3);font-weight:600;}
+            .kb-tl .dt.warn{color:var(--dw-warn);}
+            .kb-tl .ds{grid-column:2/-1;font-size:11.5px;font-weight:500;color:var(--dw-mut);line-height:1.5;}
+            .kb-tl li.agora .ds,.kb-tl li.fim .ds{color:var(--dw-body);}
+            .kb-tl .ds code{font-family:'JetBrains Mono',ui-monospace,monospace;font-size:10.5px;color:var(--dw-ink);}
+            /* por que está nesta coluna: os 3 campos da regra */
+            .kb-rg{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;}
+            .kb-rg>div{border:1px solid var(--dw-bd);border-radius:10px;padding:9px 10px;min-width:0;background:#FAFCFD;}
+            .kb-rg>div.decide{border-color:#9DC5D2;background:#F0F7FA;box-shadow:inset 3px 0 0 var(--dw-blue);}
+            .kb-rg .k{font-size:9px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:var(--dw-mut3);}
+            .kb-rg .v{font-size:13px;font-weight:800;color:var(--dw-ink);margin-top:4px;line-height:1.25;}
+            .kb-rg .v.z{color:var(--dw-mut3);font-weight:700;}
+            .kb-rg code{display:block;margin-top:4px;font-family:'JetBrains Mono',ui-monospace,monospace;font-size:10px;color:var(--dw-mut2);overflow-wrap:anywhere;line-height:1.35;}
+            .kb-rg .dc{display:inline-block;margin-top:6px;font-size:9px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:var(--dw-blue);}
+            .kb-rg-p{margin:10px 0 0;font-size:12px;line-height:1.55;color:var(--dw-body);font-weight:500;}
+            .kb-rg-p b{color:var(--dw-ink);}
+            /* linhas da OV */
+            .kb-its-r{display:flex;justify-content:space-between;gap:6px 14px;flex-wrap:wrap;font-size:11px;font-weight:600;color:var(--dw-mut2);padding-bottom:9px;border-bottom:1px solid var(--dw-bd-soft);}
+            .kb-its-r b{color:var(--dw-ink);font-weight:800;font-variant-numeric:tabular-nums;}
+            .kb-its{display:flex;flex-direction:column;}
+            .kb-it{display:grid;grid-template-columns:30px minmax(0,1fr) auto;gap:10px;align-items:start;padding:10px 0;border-top:1px solid var(--dw-bd-soft);}
+            .kb-its .kb-it:first-child{border-top:none;}
+            .kb-it .n{height:26px;border-radius:7px;background:#F1F6F8;display:grid;place-items:center;font-size:11px;font-weight:800;color:var(--dw-ink);font-variant-numeric:tabular-nums;}
+            .kb-it .c{min-width:0;}
+            .kb-it .t{font-size:12px;font-weight:700;color:var(--dw-ink);line-height:1.35;overflow-wrap:anywhere;}
+            .kb-it .s{font-size:10.5px;font-weight:600;color:var(--dw-mut2);margin-top:2px;}
+            .kb-it .s.lg{color:var(--dw-mut);}
+            .kb-it .s .warn{color:var(--dw-warn);}
+            .kb-it .v{text-align:right;display:flex;flex-direction:column;align-items:flex-end;gap:3px;}
+            .kb-it .v b{font-size:12px;font-weight:800;color:var(--dw-ink);white-space:nowrap;font-variant-numeric:tabular-nums;}
+            .kb-it .v span{font-size:10.5px;font-weight:600;color:var(--dw-mut2);white-space:nowrap;font-variant-numeric:tabular-nums;}
+            .kb-lin-g{display:flex;align-items:center;flex-wrap:wrap;gap:4px 10px;margin-top:12px;padding:7px 0 5px;border-bottom:1px solid var(--dw-bd);font-size:11px;font-weight:600;color:var(--dw-mut2);}
+            .kb-lin-g b{color:var(--dw-ink);font-weight:800;font-variant-numeric:tabular-nums;}
+            .kb-lin-g+.kb-it{border-top:none;}
+            /* campos crus do Dynamics (o material para triar os status) */
+            .kb-dw-filtro{width:100%;box-sizing:border-box;padding:7px 10px;border-radius:8px;border:1px solid var(--dw-bd);background:#fff;color:var(--dw-ink);font:inherit;font-size:12px;margin-bottom:4px;}
+            .kb-kv-h{margin:12px 0 4px;font-size:10px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:var(--dw-mut2);}
+            .kb-kv{width:100%;border-collapse:collapse;font-size:11.5px;}
+            .kb-kv td{padding:5px 6px;border-top:1px solid var(--dw-bd-soft);vertical-align:top;color:var(--dw-body);word-break:break-word;}
+            .kb-kv td:first-child{width:46%;font-family:'JetBrains Mono',ui-monospace,monospace;font-size:10.5px;color:var(--dw-mut2);}
+            .kb-kv tr.st td{background:#F0F7FA;font-weight:600;color:var(--dw-ink);}
+            .kb-kv tr[hidden]{display:none;}
+            @media(max-width:640px){
+              .kb-dw-head{padding:14px 16px 12px;}
+              .kb-dw-body{padding:12px 14px 20px;}
+              .kb-dw-foot{padding:10px 14px;}
+              .kb-rg{grid-template-columns:1fr;}
+              .kb-dw-dl{grid-template-columns:1fr;}
+            }
 
             .kb-diag{font-size:12px;color:var(--text-3);margin-top:14px;}
             .kb-diag summary{cursor:pointer;font-weight:600;}
@@ -190,14 +327,7 @@
     </div><!-- /container -->
   </div><!-- /area-body -->
 
-  <div class="kb-drawer-bg" id="kb-drawer-bg"></div>
-  <aside class="kb-drawer" id="kb-drawer" role="dialog" aria-modal="true" aria-labelledby="kb-dr-tt">
-    <div class="kb-dr-h">
-      <div><h3 id="kb-dr-tt">—</h3><div class="sub" id="kb-dr-sub"></div></div>
-      <button type="button" class="kb-x" id="kb-dr-x" aria-label="Fechar">×</button>
-    </div>
-    <div class="kb-dr-b" id="kb-dr-b"></div>
-  </aside>
+  <!-- ficha da OV (painel à direita): montada pelo script na 1ª abertura -->
 
   <footer class="site-footer">
     <div class="container">
@@ -235,7 +365,7 @@
     var TOM_ETAPA = { criada: 0, credito: 1, liberado: 2, faturado: 3 };
     var NOME_ETAPA = { criada: 'Criada', credito: 'Gerenciamento de Crédito', liberado: 'Liberado', faturado: 'Faturado', cancelada: 'Cancelada' };
 
-    var estado = { r: null, vis: 'kanban', busca: '', carregando: false, timer: null, antes: null, mudou: {}, aberta: null };
+    var estado = { r: null, vis: 'kanban', busca: '', carregando: false, timer: null, antes: null, mudou: {}, aberta: null, filtroCampos: '' };
 
     function hojeSP() {
       try { return new Intl.DateTimeFormat('en-CA', { timeZone: 'America/Sao_Paulo', year: 'numeric', month: '2-digit', day: '2-digit' }).format(new Date()); }
@@ -253,7 +383,7 @@
 
     function cardHtml(o) {
       var novo = estado.mudou[o.numero] === 'nova';
-      return '<button type="button" class="kb-card' + (estado.mudou[o.numero] ? ' mudou' : '') + '" data-ov="' + esc(o.numero) + '">'
+      return '<button type="button" class="kb-card' + (estado.mudou[o.numero] ? ' mudou' : '') + (estado.aberta === o.numero ? ' is-aberta' : '') + '" data-ov="' + esc(o.numero) + '">'
         + '<div class="kb-l1"><span class="kb-ov">' + esc(o.numero) + '</span><span class="kb-cli" title="' + esc(o.cliente) + '">' + esc(o.cliente || o.conta) + '</span></div>'
         + '<div class="kb-l2">' + (novo ? '<span class="kb-chip kb-nova">nova</span>' : '')
         + (o.oc ? '<span class="kb-chip" title="OC do cliente">' + esc(o.oc) + '</span>' : '')
@@ -287,39 +417,507 @@
       $('kb-quadro').innerHTML = '<div class="kb-lista"><table class="kb-tbl"><thead><tr><th>OV</th><th>Cliente</th><th>Criada</th><th>OC</th><th>Etapa</th>'
         + '<th>SalesStatus</th><th>ReleaseStatus</th><th>CredManInCreditControl</th><th class="num">Itens</th><th class="num">Valor</th></tr></thead><tbody>'
         + ovs.map(function (o) {
-          return '<tr data-ov="' + esc(o.numero) + '"><td><b>' + esc(o.numero) + '</b></td><td>' + esc(o.cliente || o.conta) + '</td><td>' + esc(fHora(o.criadaEm)) + '</td><td>' + esc(o.oc) + '</td>'
+          return '<tr tabindex="0" data-ov="' + esc(o.numero) + '"' + (estado.aberta === o.numero ? ' class="is-aberta"' : '') + '><td><b>' + esc(o.numero) + '</b></td><td>' + esc(o.cliente || o.conta) + '</td><td>' + esc(fHora(o.criadaEm)) + '</td><td>' + esc(o.oc) + '</td>'
             + '<td><b>' + esc(NOME_ETAPA[o.etapa] || o.etapa) + '</b></td><td>' + esc(g(o, 'salesStatus')) + '</td><td>' + esc(g(o, 'releaseStatus')) + '</td><td>' + esc(g(o, 'credito')) + '</td>'
             + '<td class="num">' + (o.itens == null ? '' : o.itens) + '</td><td class="num">' + esc(o.valor == null ? '—' : fBRL(o.valor)) + '</td></tr>';
         }).join('') + '</tbody></table></div>';
     }
 
-    // painel da OV: todos os status + os campos crus de cada entidade (é o material para "triar" os status)
-    function abrir(num) {
-      var o = estado.r && (estado.r.ovs || []).find(function (x) { return x.numero === num; }); if (!o) return;
-      estado.aberta = num;
-      $('kb-dr-tt').textContent = o.numero;
-      $('kb-dr-sub').textContent = [o.cliente, o.conta, 'criada ' + fDia(o.criadaEm) + ' ' + fHora(o.criadaEm)].filter(Boolean).join(' · ');
-      var rg = o.regra || {};
-      var h = '<h4>Etapa no quadro</h4><table class="kb-kv">'
-        + '<tr class="st"><td>Etapa</td><td>' + esc(NOME_ETAPA[o.etapa] || o.etapa) + '</td></tr>'
-        + '<tr><td>' + esc(rg.salesStatusCol || 'SalesStatus') + '</td><td>' + esc(rg.salesStatus == null ? '(não veio)' : rg.salesStatus) + '</td></tr>'
-        + '<tr><td>' + esc(rg.releaseStatusCol || 'ReleaseStatus') + '</td><td>' + esc(rg.releaseStatus == null ? '(não veio)' : rg.releaseStatus) + '</td></tr>'
-        + '<tr><td>' + esc(rg.creditoCol || 'CredManInCreditControl') + '</td><td>' + esc(rg.credito == null ? '(não veio)' : rg.credito) + '</td></tr></table>';
-      h += '<h4>Resumo</h4><table class="kb-kv">'
-        + [['OC do cliente', o.oc], ['Entrega solicitada', fDia(o.entrega)], ['Depósito', o.deposito], ['Pool', o.pool], ['Criada por', o.criadoPor], ['Itens', o.itens], ['Valor', o.valor == null ? '' : fBRL(o.valor)]]
-          .filter(function (p) { return p[1] !== '' && p[1] != null; }).map(function (p) { return '<tr><td>' + esc(p[0]) + '</td><td>' + esc(p[1]) + '</td></tr>'; }).join('') + '</table>';
-      h += '<h4>Status (valores crus do Dynamics)</h4><table class="kb-kv">' + (estado.r.statusCols || []).map(function (s) {
-        return '<tr><td>' + esc(rotuloCol(s)) + '</td><td>' + esc(o.status[s.chave] == null ? '(sem registro)' : o.status[s.chave]) + '</td></tr>';
-      }).join('') + '</table>';
-      Object.keys(o.campos || {}).forEach(function (ent) {
-        var c = o.campos[ent];
-        h += '<h4>Todos os campos · ' + esc(ent) + '</h4><table class="kb-kv">' + Object.keys(c).sort().map(function (k) { return '<tr><td>' + esc(k) + '</td><td>' + esc(c[k]) + '</td></tr>'; }).join('') + '</table>';
-      });
-      $('kb-dr-b').innerHTML = h;
-      $('kb-drawer').classList.add('on'); $('kb-drawer-bg').classList.add('on');
-      $('kb-dr-x').focus();
+    // ══════════════════════════════════════════════════════════════
+    // FICHA DA OV — painel à direita, no molde da ficha do Sales Report
+    // (sr-diario.js · "Pedido de venda · em andamento"). 09/11/2026.
+    // Cabeçalho com a etapa; números-chave; onde está o pedido (as etapas do
+    // quadro como linha do tempo); por que está nesta coluna (os 3 campos da
+    // regra); as linhas da OV (lidas ao abrir: /api/kanban-ov?ov=); os dados
+    // do pedido com nome de gente; e, recolhidos, os campos crus do Dynamics
+    // (o material para "triar" os status). ‹ › andam pela ordem do quadro.
+    // ══════════════════════════════════════════════════════════════
+    var DW = { el: null, ov: null, volta: null };
+    var LINHAS = new Map();          // nº da OV -> { st, linhas, em, erro, ts }
+    var LINHAS_TTL = 60000;
+    var ORDEM_ETAPA = { criada: 0, credito: 1, liberado: 2, faturado: 3, cancelada: -1 };
+    var IC_X = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>';
+    var IC_ANT = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="15 18 9 12 15 6"/></svg>';
+    var IC_PROX = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="9 18 15 12 9 6"/></svg>';
+    var IC_CP = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>';
+
+    // ── datas e números da ficha ──
+    var DIAS_SEM = ['domingo', 'segunda', 'terça', 'quarta', 'quinta', 'sexta', 'sábado'];
+    // AAAA-MM-DD de um valor de data do F&O; 1900-01-01 (a "data vazia") = nada
+    function isoData(v) { var s = String(v == null ? '' : v); return /^\d{4}-\d{2}-\d{2}/.test(s) && !/^1900-01-01/.test(s) ? s.slice(0, 10) : null; }
+    // dia (Brasília) de uma data-hora UTC
+    function diaSP(iso) {
+      var t = Date.parse(iso); if (isNaN(t)) return isoData(iso);
+      try { return new Intl.DateTimeFormat('en-CA', { timeZone: 'America/Sao_Paulo', year: 'numeric', month: '2-digit', day: '2-digit' }).format(new Date(t)); }
+      catch (e) { return new Date(t - 3 * 3600000).toISOString().slice(0, 10); }
     }
-    function fechar() { estado.aberta = null; $('kb-drawer').classList.remove('on'); $('kb-drawer-bg').classList.remove('on'); }
+    function diasAte(iso) { return Math.round((Date.parse(iso + 'T12:00:00Z') - Date.parse(hojeSP() + 'T12:00:00Z')) / 864e5); }
+    function relDia(iso) { var d = diasAte(iso); return d === 0 ? 'hoje' : d === 1 ? 'amanhã' : d === -1 ? 'ontem' : d > 1 ? 'em ' + d + ' dias' : 'há ' + (-d) + ' dias'; }
+    function diaSem(iso) { return DIAS_SEM[new Date(iso + 'T12:00:00Z').getUTCDay()]; }
+    function haQuanto(iso) {
+      var t = Date.parse(iso); if (isNaN(t)) return '';
+      var m = Math.max(0, Math.round((Date.now() - t) / 60000));
+      if (m < 1) return 'agora há pouco';
+      if (m < 60) return 'há ' + m + ' min';
+      var h = Math.floor(m / 60); return 'há ' + h + ' h' + (m % 60 && h < 6 ? ' ' + (m % 60) + ' min' : '');
+    }
+    var fQtd = function (v) { return Number(v).toLocaleString('pt-BR', { maximumFractionDigits: 2 }); };
+    var fPct = function (v) { return (v * 100).toLocaleString('pt-BR', { maximumFractionDigits: v < 0.1 ? 1 : 0 }) + '%'; };
+    var plural = function (n, um, varios) { return fQtd(n) + ' ' + (n === 1 ? um : varios); };
+
+    // ── os status do Dynamics em português (o cru vai junto, em mono) ──
+    var chaveEnum = function (v) { return String(v == null ? '' : v).normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[^a-z0-9]/gi, '').toLowerCase(); };
+    var ROT = {
+      backorder: 'Ordem em aberto', ordememaberto: 'Ordem em aberto', delivered: 'Entregue', invoiced: 'Faturada', canceled: 'Cancelada', cancelled: 'Cancelada',
+      open: 'Em aberto', released: 'Liberada', partialreleased: 'Parcialmente liberada', partiallyreleased: 'Parcialmente liberada',
+      active: 'Ativa', confirmed: 'Confirmada', partiallydelivered: 'Parcialmente entregue', partiallyinvoiced: 'Parcialmente faturada',
+      yes: 'Sim', no: 'Não', noyesyes: 'Sim', noyesno: 'Não', 'true': 'Sim', 'false': 'Não', none: 'Nenhum'
+    };
+    function rot(v) { return v == null || v === '' ? '' : (ROT[chaveEnum(v)] || String(v)); }
+    // liberação: "Open" é "não liberada" (o F&O mostra "Abrir")
+    function rotLib(v) { var k = chaveEnum(v); return k === 'open' || k === 'abrir' ? 'Não liberada' : rot(v); }
+    function rotCred(v) { var k = chaveEnum(v); return /^(yes|sim|true|1|noyesyes)$/.test(k) ? 'Retida no crédito' : /^(no|nao|false|0|noyesno)$/.test(k) ? 'Sem retenção' : rot(v); }
+    function rotLinha(v) { var r = rot(v); return r === 'Ordem em aberto' ? 'em aberto' : r.toLowerCase(); }
+
+    // valor de um campo nos campos crus da OV (qualquer entidade), pelo 1º nome que existir
+    function campoOv(o, nomes) {
+      var c = o.campos || {}, ents = Object.keys(c);
+      for (var i = 0; i < nomes.length; i++) {
+        var alvo = nomes[i].toLowerCase();
+        for (var j = 0; j < ents.length; j++) {
+          var ks = Object.keys(c[ents[j]]);
+          for (var k = 0; k < ks.length; k++) {
+            if (ks[k].toLowerCase() !== alvo) continue;
+            var v = c[ents[j]][ks[k]];
+            if (v == null || String(v).trim() === '' || /^1900-01-01/.test(String(v))) continue;
+            return { v: v, col: ks[k], ent: ents[j] };
+          }
+        }
+      }
+      return null;
+    }
+    function vOv(o, nomes) { var x = campoOv(o, nomes); return x ? String(x.v).trim() : ''; }
+    var colCurta = function (c, padrao) { return String(c || padrao).split('.').pop(); };
+    function criadorOv(o) { return vOv(o, ['CreatedBy_SalesTable', 'CreatedBy', 'CREATEDBY']) || o.criadoPor || ''; }
+    function corEtapa(id) { var esc_ = document.documentElement.getAttribute('data-tema') === 'escuro'; return (esc_ ? TONS_ESC : TONS)[(TOM_ETAPA[id] != null ? TOM_ETAPA[id] : 2) % TONS.length]; }
+
+    // ── montar, abrir, fechar, andar ──
+    function montarFicha() {
+      if (DW.el) return;
+      DW.ov = document.createElement('div'); DW.ov.className = 'kb-dw-ov';
+      DW.el = document.createElement('aside'); DW.el.className = 'kb-dw';
+      DW.el.setAttribute('role', 'dialog'); DW.el.setAttribute('aria-modal', 'true'); DW.el.setAttribute('aria-labelledby', 'kb-dw-tt');
+      DW.el.innerHTML =
+          '<div class="kb-dw-head">'
+        +   '<div class="kb-dw-hl"><div class="kb-dw-k" id="kb-dw-k"></div><h2 class="kb-dw-tt" id="kb-dw-tt"></h2>'
+        +   '<div class="kb-dw-sub" id="kb-dw-sub"></div><div class="kb-dw-tags" id="kb-dw-tags"></div></div>'
+        +   '<div class="kb-dw-nav">'
+        +     '<button type="button" class="kb-dw-pn" data-kb-dw="ant" aria-label="OV anterior" title="OV anterior (←)">' + IC_ANT + '</button>'
+        +     '<button type="button" class="kb-dw-pn" data-kb-dw="prox" aria-label="Próxima OV" title="Próxima OV (→)">' + IC_PROX + '</button>'
+        +     '<button type="button" class="kb-dw-x" data-kb-dw="fechar" aria-label="Fechar a ficha" title="Fechar (Esc)">' + IC_X + '</button>'
+        +   '</div>'
+        + '</div>'
+        + '<div class="kb-dw-body" id="kb-dw-body"></div>'
+        + '<div class="kb-dw-foot"><button type="button" class="kb-dw-cp" data-kb-dw="copiar">' + IC_CP + '<span id="kb-dw-cpt">Copiar nº</span></button>'
+        +   '<span class="kb-dw-lido" id="kb-dw-lido"></span><button type="button" class="kb-dw-btn" data-kb-dw="fechar">Fechar</button></div>';
+      document.body.appendChild(DW.ov); document.body.appendChild(DW.el);
+      DW.ov.addEventListener('click', fechar);
+      DW.el.addEventListener('click', function (e) {
+        var b = e.target.closest ? e.target.closest('[data-kb-dw]') : null; if (!b) return;
+        var a = b.getAttribute('data-kb-dw');
+        if (a === 'fechar') fechar();
+        else if (a === 'ant') andar(-1);
+        else if (a === 'prox') andar(1);
+        else if (a === 'copiar') copiar();
+        else if (a === 'tentar' && estado.aberta) carregarLinhas(estado.aberta, true);
+      });
+      // filtro dos campos crus: esconde as linhas que não casam (campo ou valor)
+      DW.el.addEventListener('input', function (e) {
+        if (!e.target.matches || !e.target.matches('.kb-dw-filtro')) return;
+        estado.filtroCampos = e.target.value; filtrarCampos();
+      });
+      document.addEventListener('keydown', function (e) {
+        if (!DW.el.classList.contains('open')) return;
+        if (e.key === 'Escape') { e.preventDefault(); fechar(); return; }
+        if (e.key === 'Tab') { prender(e); return; }
+        var t = e.target, digitando = t && /^(INPUT|SELECT|TEXTAREA)$/.test(t.tagName);
+        if (!digitando && (e.key === 'ArrowLeft' || e.key === 'ArrowRight') && !e.altKey && !e.ctrlKey && !e.metaKey) { e.preventDefault(); andar(e.key === 'ArrowLeft' ? -1 : 1); }
+      });
+    }
+    // o foco não sai da ficha enquanto ela está aberta
+    function prender(e) {
+      var fs = Array.prototype.filter.call(DW.el.querySelectorAll('button, a[href], input, summary, [tabindex]:not([tabindex="-1"])'), function (x) { return !x.disabled && x.offsetParent !== null; });
+      if (!fs.length) return;
+      var a = fs[0], z = fs[fs.length - 1];
+      if (e.shiftKey && (document.activeElement === a || !DW.el.contains(document.activeElement))) { e.preventDefault(); z.focus(); }
+      else if (!e.shiftKey && (document.activeElement === z || !DW.el.contains(document.activeElement))) { e.preventDefault(); a.focus(); }
+    }
+    function acharOv(num) { return (estado.r && (estado.r.ovs || []).find(function (x) { return x.numero === num; })) || null; }
+    // a ordem em que a tela mostra as OVs: no quadro, coluna a coluna; na lista, a lista
+    function ordemVisivel() {
+      var ovs = filtradas();
+      if (estado.vis === 'lista') return ovs.map(function (o) { return o.numero; });
+      var out = [];
+      ((estado.r && estado.r.etapas) || []).forEach(function (e) { ovs.forEach(function (o) { if (o.etapa === e.id) out.push(o.numero); }); });
+      return out;
+    }
+    function noQuadro(num) {
+      var els = document.querySelectorAll('#kb-quadro [data-ov]');
+      for (var i = 0; i < els.length; i++) if (els[i].getAttribute('data-ov') === num) return els[i];
+      return null;
+    }
+    function marcarAberta() {
+      Array.prototype.forEach.call(document.querySelectorAll('#kb-quadro .is-aberta'), function (x) { x.classList.remove('is-aberta'); });
+      var el = estado.aberta ? noQuadro(estado.aberta) : null;
+      if (el) el.classList.add('is-aberta');
+      return el;
+    }
+    function abrir(num, origem) {
+      if (!acharOv(num)) return;
+      montarFicha();
+      estado.aberta = num; DW.volta = origem || document.activeElement;
+      estado.filtroCampos = '';
+      DW.ov.classList.add('open'); DW.el.classList.add('open');
+      document.documentElement.classList.add('kb-dw-on');
+      marcarAberta();
+      pintarFicha(true);
+      setTimeout(function () { try { DW.el.querySelector('.kb-dw-x').focus(); } catch (e) {} }, 40);
+      carregarLinhas(num, false);
+    }
+    function fechar() {
+      if (!DW.el || !DW.el.classList.contains('open')) { estado.aberta = null; return; }
+      DW.el.classList.remove('open'); DW.ov.classList.remove('open');
+      document.documentElement.classList.remove('kb-dw-on');
+      var num = estado.aberta; estado.aberta = null;
+      marcarAberta();
+      // o foco volta para o cartão da OV que estava na ficha (andou com ‹ ›?)
+      var f = (num && noQuadro(num)) || DW.volta;
+      if (f && f.focus) { try { f.focus(); } catch (e) {} }
+    }
+    function andar(dir) {
+      var lista = ordemVisivel(), i = lista.indexOf(estado.aberta);
+      var nx = i < 0 ? null : lista[i + dir]; if (!nx) return;
+      estado.aberta = nx; estado.filtroCampos = '';
+      var el = marcarAberta();
+      if (el && el.scrollIntoView) { try { el.scrollIntoView({ block: 'nearest' }); } catch (e) {} }
+      pintarFicha(true);
+      carregarLinhas(nx, false);
+    }
+    function copiar() {
+      var num = estado.aberta; if (!num) return;
+      var b = DW.el.querySelector('.kb-dw-cp'), t = $('kb-dw-cpt');
+      var ok = function () {
+        b.classList.add('ok'); t.textContent = 'Copiado';
+        clearTimeout(copiar._t); copiar._t = setTimeout(function () { b.classList.remove('ok'); t.textContent = 'Copiar nº'; }, 1600);
+      };
+      var reserva = function () {
+        try {
+          var ta = document.createElement('textarea'); ta.value = num; ta.setAttribute('readonly', ''); ta.style.position = 'fixed'; ta.style.opacity = '0';
+          document.body.appendChild(ta); ta.select(); document.execCommand('copy'); document.body.removeChild(ta); ok();
+        } catch (e) {}
+      };
+      if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(num).then(ok, reserva); else reserva();
+    }
+
+    // ── as linhas da OV: lidas no Dynamics quando a ficha abre ──
+    function carregarLinhas(num, forcar) {
+      var e = LINHAS.get(num);
+      if (e && e.st === 'carregando') return;
+      if (!forcar && e && e.st === 'ok' && Date.now() - e.ts < LINHAS_TTL) return;
+      // recarga com as linhas já na tela: mantém o que há até chegar o novo
+      if (e && e.st === 'ok') e.recarregando = true;
+      else { LINHAS.set(num, { st: 'carregando' }); if (estado.aberta === num) pintarFicha(); }
+      fetch('/api/kanban-ov?ov=' + encodeURIComponent(num) + (forcar ? '&atualizar=1' : ''), { cache: 'no-store' })
+        .then(function (res) {
+          return res.json().catch(function () { return null; }).then(function (j) {
+            if (res.status === 401) throw new Error('entre com a sua conta Microsoft');
+            if (res.status === 403) throw new Error('a área Kanban é de acesso restrito');
+            if (!res.ok || !j || j.ok === false) throw new Error((j && (j.detalhe || j.error)) || ('HTTP ' + res.status));
+            if (j.configured === false) throw new Error('o Dynamics não está configurado neste ambiente');
+            LINHAS.set(num, { st: 'ok', linhas: j.linhas || [], em: new Date(), ts: Date.now() });
+          });
+        })
+        .catch(function (err) {
+          var ant = LINHAS.get(num);
+          if (ant && ant.st === 'ok') { ant.recarregando = false; return; }   // recarga falhou: fica a leitura anterior
+          LINHAS.set(num, { st: 'erro', erro: String((err && err.message) || err).slice(0, 200) });
+        })
+        .then(function () {
+          if (LINHAS.size > 150) LINHAS.delete(LINHAS.keys().next().value);
+          if (estado.aberta === num) pintarFicha();
+        });
+    }
+
+    // ── desenho da ficha ──
+    function kp(k, v, s, cls, vcls, scls) {
+      return '<div class="kb-dw-kp' + (cls ? ' ' + cls : '') + '"><div class="k">' + esc(k) + '</div><div class="v' + (vcls ? ' ' + vcls : '') + '">' + v + '</div>'
+        + (s ? '<div class="s' + (scls ? ' ' + scls : '') + '">' + s + '</div>' : '') + '</div>';
+    }
+    function pintarFicha(nova) {
+      var o = acharOv(estado.aberta); if (!o || !DW.el) return;
+      var body = $('kb-dw-body');
+      // a releitura de 30 s não fecha o que estava aberto nem pula o scroll
+      var abertos = {};
+      if (!nova) Array.prototype.forEach.call(body.querySelectorAll('details[data-k]'), function (d) { abertos[d.getAttribute('data-k')] = d.open; });
+      var topo = nova ? 0 : body.scrollTop;
+      var cor = corEtapa(o.etapa), nomeEt = NOME_ETAPA[o.etapa] || o.etapa;
+      $('kb-dw-k').textContent = 'Ordem de venda · ' + (o.etapa === 'cancelada' ? 'cancelada · fora do quadro' : nomeEt);
+      $('kb-dw-tt').textContent = o.numero;
+      var cid = vOv(o, ['DeliveryAddressCity']), uf = vOv(o, ['DeliveryAddressStateId', 'DeliveryAddressState']);
+      $('kb-dw-sub').textContent = [o.cliente, o.conta, [cid, uf].filter(Boolean).join('/')].filter(Boolean).join(' · ');
+      var tags = ['<span class="kb-dw-tag" style="--c:' + cor[2] + ';background:' + cor[0] + ';color:' + cor[2] + '"><i></i>' + esc(nomeEt) + '</span>'];
+      if (estado.mudou[o.numero] === 'nova') tags.push('<span class="kb-dw-tag nv">nova</span>');
+      else if (estado.mudou[o.numero] === 'status') tags.push('<span class="kb-dw-tag nv">mudou de etapa</span>');
+      if (o.deposito) tags.push('<span class="kb-dw-tag az" title="Depósito">' + esc(o.deposito) + '</span>');
+      if (o.oc) tags.push('<span class="kb-dw-tag" title="OC do cliente">OC ' + esc(o.oc) + '</span>');
+      if (o.pool) tags.push('<span class="kb-dw-tag" title="Pool">' + esc(o.pool) + '</span>');
+      $('kb-dw-tags').innerHTML = tags.join('');
+      var lista = ordemVisivel(), i = lista.indexOf(o.numero);
+      DW.el.querySelector('[data-kb-dw="ant"]').disabled = i <= 0;
+      DW.el.querySelector('[data-kb-dw="prox"]').disabled = i < 0 || i >= lista.length - 1;
+      var lido = estado.r && estado.r.geradoEm ? new Date(estado.r.geradoEm).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }) : '';
+      $('kb-dw-lido').textContent = [lido ? 'lido às ' + lido : '', i >= 0 ? (i + 1) + ' de ' + lista.length : ''].filter(Boolean).join(' · ');
+
+      body.innerHTML = fichaOv(o, abertos);
+      if (estado.filtroCampos) { var f = body.querySelector('.kb-dw-filtro'); if (f) f.value = estado.filtroCampos; filtrarCampos(); }
+      body.scrollTop = topo;
+    }
+
+    function fichaOv(o, abertos) {
+      var hoje = hojeSP(), pos = ORDEM_ETAPA[o.etapa];
+      // números-chave
+      var noDia = (estado.r.ovs || []).filter(function (x) { return x.etapa !== 'cancelada'; });
+      var totDia = noDia.reduce(function (s, x) { return s + (x.valor || 0); }, 0);
+      var subV = [o.itens != null ? plural(o.itens, 'item', 'itens') : '', o.valor != null && totDia > 0 && o.etapa !== 'cancelada' && noDia.length > 1 ? fPct(o.valor / totDia) + ' do valor do dia' : ''].filter(Boolean).join(' · ');
+      var diaC = diaSP(o.criadaEm), ent = isoData(o.entrega), late = ent && ent < hoje && pos >= 0 && pos < 3;
+      var h = '<div class="kb-dw-kpis">'
+        + kp('Valor da OV', o.valor != null ? esc(fBRL(o.valor)) : '—', subV ? esc(subV) : (o.valor == null ? 'linhas não lidas no quadro' : ''), 'destaque')
+        + (diaC === hoje
+            ? kp('Criada às', esc(fHora(o.criadaEm) || '—'), esc('hoje · ' + haQuanto(o.criadaEm)), '', '', 'hoje')
+            : kp('Criada em', diaC ? esc(fDia(diaC)) : '—', diaC ? esc(diaSem(diaC) + ' · ' + fHora(o.criadaEm)) : 'sem data no ERP', '', diaC ? '' : 'z'))
+        + kp('Entrega solicitada', ent ? esc(fDia(ent)) : '—',
+            ent ? esc(late ? 'passou · ' + relDia(ent) : diaSem(ent) + ' · ' + relDia(ent)) : 'sem data no ERP',
+            '', ent ? (late ? 'warn' : '') : 'z', late ? 'warn' : (ent === hoje ? 'hoje' : ''))
+        + '</div>';
+
+      // onde está o pedido
+      h += '<section class="kb-dw-card"><h5>Onde está o pedido</h5><ol class="kb-tl">' + passosOv(o).map(function (p) {
+        var fim = /\bfeito\b/.test(p.cls);
+        return '<li class="' + p.cls + '"><span class="dot">' + (fim ? '✓' : '') + '</span><span class="tt">' + esc(p.tt) + '</span>'
+          + '<span class="dt' + (p.z ? ' z' : '') + (p.warn ? ' warn' : '') + '">' + esc(p.dt || '') + '</span><span class="ds">' + p.ds + '</span></li>';
+      }).join('') + '</ol></section>';
+
+      h += secRegra(o);
+      h += secLinhas(o);
+      h += secDados(o);
+      h += secCrus(o, abertos.crus);
+      h += '<details class="kb-dw-card kb-dw-mais" data-k="regra"' + (abertos.regra ? ' open' : '') + '><summary><h5>Como a etapa é decidida</h5></summary>'
+        + '<p class="kb-dw-p">A etapa sai de três campos da OV no Dynamics, nesta ordem — vale a primeira regra que bater:</p>'
+        + '<ol class="kb-dw-ol" style="margin-top:6px;">'
+        + '<li class="' + (o.etapa === 'faturado' ? 'on' : '') + '">Situação (<code>SalesStatus</code>) que não é <b>Ordem em aberto</b> → <b>Faturado</b> (cancelada fica fora do quadro).</li>'
+        + '<li class="' + (o.etapa === 'credito' ? 'on' : '') + '">Crédito (<code>CredManInCreditControl</code>) marcado → <b>Gerenciamento de Crédito</b>.</li>'
+        + '<li class="' + (o.etapa === 'liberado' ? 'on' : '') + '">Liberação (<code>ReleaseStatus</code>) = Liberado → <b>Liberado</b>.</li>'
+        + '<li class="' + (o.etapa === 'criada' ? 'on' : '') + '">Nenhuma das anteriores → <b>Criada</b>.</li></ol>'
+        + '<p class="kb-dw-p" style="margin-top:8px;">Entram as OVs da <b>MSB</b> criadas no dia escolhido (horário de Brasília). O quadro relê o Dynamics a cada 30 s no dia de hoje; as linhas desta ficha são lidas quando ela abre.</p></details>';
+      return h;
+    }
+
+    // as etapas do quadro como linha do tempo (+ a entrega solicitada)
+    function passosOv(o) {
+      var rg = o.regra || {}, pos = ORDEM_ETAPA[o.etapa], hoje = hojeSP();
+      var quem = criadorOv(o), diaC = diaSP(o.criadaEm);
+      var dtC = (diaC && diaC !== hoje ? fDM(diaC) + ' ' : '') + fHora(o.criadaEm);
+      var credVeio = rg.credito != null, libVeio = rg.releaseStatus != null;
+      var cCred = colCurta(rg.creditoCol, 'CredManInCreditControl'), cLib = colCurta(rg.releaseStatusCol, 'ReleaseStatus'), cSit = colCurta(rg.salesStatusCol, 'SalesStatus');
+      var cod = function (col, v) { return '<code>' + esc(col) + ' = ' + esc(v) + '</code>'; };
+      var porQuem = quem ? ' por <b>' + esc(quem) + '</b>' : '';
+      var p = [];
+      if (pos === 0) {
+        p.push({ cls: 'agora', tt: 'Agora: Criada', dt: dtC,
+          ds: 'Registrada no Dynamics' + porQuem + '. Ainda não foi liberada para o depósito' + (libVeio ? ' (' + cod(cLib, rg.releaseStatus) + ')' : '') + (credVeio ? ' e não está retida no crédito.' : '.') });
+      } else {
+        p.push({ cls: 'feito', tt: 'Ordem criada', dt: dtC, ds: 'Registrada no Dynamics' + porQuem + '.' });
+      }
+      if (o.etapa === 'cancelada') {
+        p.push({ cls: 'agora alerta', tt: 'Agora: Cancelada', dt: '', ds: 'A OV foi cancelada no Dynamics (' + cod(cSit, rg.salesStatus) + ') e fica fora do quadro.' });
+        return p;
+      }
+      // gerenciamento de crédito
+      if (pos === 1) p.push({ cls: 'agora', tt: 'Agora: Gerenciamento de crédito', ds: 'A OV está retida no gerenciamento de crédito (' + cod(cCred, rg.credito) + '). Segue para a liberação quando o crédito aprovar.' });
+      else if (pos > 1) p.push({ cls: 'feito', tt: 'Crédito sem retenção', ds: credVeio ? 'A OV não está retida no gerenciamento de crédito.' : 'O Dynamics não trouxe o campo de crédito; a OV seguiu pelos outros status.' });
+      else p.push({ cls: 'depois', tt: 'Gerenciamento de crédito', dt: credVeio ? '' : 'campo não veio', z: !credVeio,
+        ds: credVeio ? 'Sem retenção agora. Se o Dynamics reter a OV no crédito, ela vem para esta etapa antes da liberação.'
+                     : 'O Dynamics não trouxe o campo <code>' + esc(cCred) + '</code>: não dá para saber se a OV está retida no crédito.' });
+      // liberado
+      if (pos === 2) p.push({ cls: 'agora', tt: 'Agora: Liberado', ds: 'Liberada para o depósito (' + cod(cLib, rg.releaseStatus) + '): separação, conferência e expedição. Ainda sem nota fiscal.' });
+      else if (pos === 3) p.push({ cls: 'feito', tt: 'Liberado para o depósito', ds: 'A OV passou pela liberação para o depósito.' });
+      else p.push({ cls: 'depois', tt: 'Liberado', ds: 'Quando a OV for liberada para o depósito, vem para esta etapa: separação, conferência e expedição.' });
+      // faturado
+      if (pos === 3) {
+        var sit = rot(rg.salesStatus);
+        p.push({ cls: 'feito fim', tt: 'Agora: ' + (sit === 'Entregue' ? 'Entregue' : 'Faturado'), ds: 'A OV não está mais em aberto: situação <b>' + esc(sit || '—') + '</b> (' + cod(cSit, rg.salesStatus) + ').' });
+      } else {
+        p.push({ cls: 'depois', tt: 'Faturado', ds: 'Quando a nota fiscal sair, a OV sai do aberto e vem para esta etapa.' });
+      }
+      // entrega solicitada
+      var ent = isoData(o.entrega), late = ent && ent < hoje && pos < 3;
+      p.push({ cls: 'depois', tt: 'Entrega solicitada', dt: ent ? fDia(ent) : 'sem data', z: !ent, warn: late,
+        ds: ent ? (late ? 'A data solicitada já passou (' + esc(relDia(ent)) + ') e a OV ainda não foi faturada.' : 'Data pedida pelo cliente: ' + esc(diaSem(ent) + ', ' + relDia(ent)) + '.')
+                : 'O ERP não traz data de entrega solicitada.' });
+      return p;
+    }
+
+    // por que está nesta coluna: os 3 campos da regra, com o que decidiu
+    function secRegra(o) {
+      var rg = o.regra || {}, et = o.etapa;
+      var decide = et === 'faturado' || et === 'cancelada' ? 'sit' : et === 'credito' ? 'cred' : et === 'liberado' ? 'lib' : '';
+      var tile = function (id, k, cru, col, padrao, fmt) {
+        var veio = cru != null && cru !== '';
+        return '<div class="' + (decide === id ? 'decide' : '') + '"><div class="k">' + esc(k) + '</div>'
+          + '<div class="v' + (veio ? '' : ' z') + '">' + esc(veio ? fmt(cru) : 'não veio') + '</div>'
+          + '<code>' + esc(colCurta(col, padrao)) + (veio ? ' = ' + esc(cru) : '') + '</code>'
+          + (decide === id ? '<span class="dc">decidiu a etapa</span>' : '') + '</div>';
+      };
+      var credVeio = rg.credito != null;
+      var porque = {
+        criada: 'Ordem em aberto' + (credVeio ? ', sem retenção de crédito' : '') + ' e ainda não liberada para o depósito: fica em <b>Criada</b>.' + (credVeio ? '' : ' O campo de crédito não veio do Dynamics.'),
+        credito: 'O crédito marcado decide: a OV fica em <b>Gerenciamento de Crédito</b> até o crédito aprovar, qualquer que seja a liberação.',
+        liberado: 'Ordem em aberto, sem retenção de crédito e liberada para o depósito: fica em <b>Liberado</b>.',
+        faturado: 'A situação não é mais “Ordem em aberto”: fica em <b>Faturado</b> — a situação vale antes do crédito e da liberação.',
+        cancelada: 'Situação <b>Cancelada</b>: a OV fica fora do quadro (só aparece na lista).'
+      }[et] || '';
+      return '<section class="kb-dw-card"><h5>Por que está em ' + esc(et === 'cancelada' ? 'Cancelada' : (NOME_ETAPA[et] || et)) + '</h5><div class="kb-rg">'
+        + tile('sit', 'Situação da OV', rg.salesStatus, rg.salesStatusCol, 'SalesStatus', rot)
+        + tile('lib', 'Liberação', rg.releaseStatus, rg.releaseStatusCol, 'ReleaseStatus', rotLib)
+        + tile('cred', 'Crédito', rg.credito, rg.creditoCol, 'CredManInCreditControl', rotCred)
+        + '</div>' + (porque ? '<p class="kb-rg-p">' + porque + '</p>' : '') + '</section>';
+    }
+
+    // linhas da OV (produto, quantidade × preço, status e entrega de cada uma)
+    function secLinhas(o) {
+      var e = LINHAS.get(o.numero), tt = 'Linhas da OV';
+      if (!e || e.st === 'carregando') return '<section class="kb-dw-card"><h5>' + tt + '</h5><div class="kb-dw-load"><span class="kb-spin"></span>Lendo as linhas da OV no Dynamics…</div></section>';
+      if (e.st === 'erro') return '<section class="kb-dw-card"><h5>' + tt + '</h5><div class="kb-dw-err"><span>Não deu para ler as linhas: <b>' + esc(e.erro) + '</b></span><button type="button" data-kb-dw="tentar">Tentar de novo</button></div></section>';
+      var ls = e.linhas || [];
+      if (!ls.length) return '<section class="kb-dw-card"><h5>' + tt + '</h5><div class="kb-dw-nada">O Dynamics não trouxe linhas para esta OV.</div></section>';
+      var hoje = hojeSP(), tv = 0, tq = 0, temQ = false, grupos = [], porSt = {};
+      ls.forEach(function (l) {
+        tv += l.valor || 0;
+        if (l.qtd != null && isFinite(l.qtd)) { tq += l.qtd; temQ = true; }
+        var k = rot(l.status) || 'sem status';
+        if (!porSt[k]) { porSt[k] = { st: k, n: 0, v: 0, rows: [] }; grupos.push(porSt[k]); }
+        porSt[k].n++; porSt[k].v += l.valor || 0; porSt[k].rows.push(l);
+      });
+      var h = '<section class="kb-dw-card"><h5>' + tt + ' <small>' + esc(fQtd(ls.length)) + '</small></h5>'
+        + '<div class="kb-its-r"><span>Total da OV <b>' + esc(fBRL(Math.round(tv * 100) / 100)) + '</b></span>'
+        + (temQ ? '<span><b>' + esc(fQtd(tq)) + '</b> ' + (tq === 1 ? 'unidade' : 'unidades') + '</span>' : '') + '</div><div class="kb-its">';
+      var multi = grupos.length > 1, n = 0;
+      grupos.forEach(function (g) {
+        if (multi) h += '<div class="kb-lin-g"><span class="kb-dw-tag">' + esc(g.st) + '</span><span>' + esc(plural(g.n, 'linha', 'linhas')) + ' · <b>' + esc(fBRL(Math.round(g.v * 100) / 100)) + '</b></span></div>';
+        g.rows.forEach(function (l) {
+          n++;
+          var meta = [l.item ? 'cód. ' + l.item : '', l.deposito && l.deposito !== o.deposito ? l.deposito : ''].filter(Boolean).join(' · ');
+          var aberta = chaveEnum(l.status) === 'backorder';
+          var atras = l.entrega && l.entrega < hoje && aberta;
+          var entTxt = l.entrega ? 'entrega ' + fDM(l.entrega) + (atras ? ' · passou' : '') : 'sem data de entrega';
+          var conf = l.confirmada && l.confirmada !== l.entrega ? ' · confirmada ' + fDM(l.confirmada) : '';
+          var lg = (!multi && l.status ? esc(rotLinha(l.status)) + ' · ' : '') + '<span class="' + (atras ? 'warn' : '') + '">' + esc(entTxt) + '</span>' + esc(conf);
+          var un = l.un ? ' ' + l.un.toLowerCase() : '';
+          var qx = l.qtd != null && isFinite(l.qtd) ? fQtd(l.qtd) + un + (l.preco != null && isFinite(l.preco) ? ' × ' + fBRL(l.preco) : '') : '';
+          var desc = l.descPct ? 'desc. ' + fQtd(l.descPct) + '%' : (l.desconto ? 'desc. ' + fBRL(l.desconto) : '');
+          h += '<div class="kb-it"><div class="n">' + n + '</div><div class="c"><div class="t">' + esc(l.produto || l.item || 'Produto sem nome') + '</div>'
+            + (meta ? '<div class="s">' + esc(meta) + '</div>' : '') + '<div class="s lg">' + lg + '</div></div>'
+            + '<div class="v"><b>' + esc(l.valor != null ? fBRL(l.valor) : '—') + '</b>' + (qx ? '<span>' + esc(qx) + '</span>' : '') + (desc ? '<span>' + esc(desc) + '</span>' : '') + '</div></div>';
+        });
+      });
+      h += '</div>';
+      if (o.valor != null && Math.abs(tv - o.valor) > 0.05) {
+        h += '<div class="kb-dw-nada" style="margin-top:8px;">As linhas somam ' + esc(fBRL(Math.round(tv * 100) / 100)) + ' e o quadro mostra ' + esc(fBRL(o.valor)) + ': a OV mudou entre as leituras — o quadro acerta na próxima atualização.</div>';
+      }
+      return h + '</section>';
+    }
+
+    // dados do pedido, com nome de gente (dos campos crus de todas as entidades)
+    var DADOS = [
+      ['Situação da OV', ['SalesOrderStatus', 'SalesStatus'], 'rot'],
+      ['Processamento', ['SalesOrderProcessingStatus'], 'rot'],
+      ['Status da liberação', ['ReleaseStatus', 'SalesOrderReleaseStatus'], 'lib'],
+      ['Em gerenciamento de crédito', ['CredManInCreditControl', 'CreditManagementInCreditControl', 'InCreditControl'], 'rot'],
+      ['Pedido criado por', ['CreatedBy_SalesTable', 'CreatedBy', 'CREATEDBY']],
+      ['Atendente (nº pessoal)', ['OrderTakerPersonnelNumber']],
+      ['Responsável (nº pessoal)', ['OrderResponsiblePersonnelNumber']],
+      ['Conta do cliente', ['OrderingCustomerAccountNumber', 'CustomerAccountNumber', 'CustAccount']],
+      ['Conta de faturamento', ['InvoiceCustomerAccountNumber']],
+      ['OC do cliente', ['CustomersOrderReference', 'CustomerRequisitionNumber', 'PurchaseOrderFormNumber', 'PurchOrderFormNum']],
+      ['Pool', ['SalesOrderPoolId', 'SalesPoolId']],
+      ['Origem', ['SalesOrderOriginCode']],
+      ['Site', ['DefaultShippingSiteId']],
+      ['Depósito', ['DefaultShippingWarehouseId', 'InventLocationId']],
+      ['Modo de entrega', ['DeliveryModeCode']],
+      ['Termos de entrega', ['DeliveryTermsCode']],
+      ['Condição de pagamento', ['PaymentTermsName', 'PaymentTermsCode']],
+      ['Forma de pagamento', ['CustomerPaymentMethodName', 'PaymentMethodName']],
+      ['Moeda', ['CurrencyCode']],
+      ['Entrega confirmada', ['ConfirmedShippingDate'], 'data'],
+      ['Recebimento solicitado', ['RequestedReceiptDate'], 'data'],
+      ['Empresa', ['dataAreaId'], 'up']
+    ];
+    function secDados(o) {
+      var pares = [];
+      DADOS.forEach(function (d) {
+        var x = campoOv(o, d[1]); if (!x) return;
+        var cru = String(x.v).trim(), v = cru, mostraCru = false;
+        if (d[2] === 'rot' || d[2] === 'lib') { v = d[2] === 'lib' ? rotLib(cru) : rot(cru); mostraCru = v !== cru; }
+        else if (d[2] === 'data') { var iso = isoData(cru); if (!iso) return; v = fDia(iso); }
+        else if (d[2] === 'up') v = cru.toUpperCase();
+        pares.push([d[0], esc(v) + (mostraCru ? '<small>' + esc(cru) + '</small>' : ''), '']);
+      });
+      // entrega: para quem e onde
+      var quemRecebe = vOv(o, ['DeliveryAddressName']);
+      var rua = [vOv(o, ['DeliveryAddressStreet']), vOv(o, ['DeliveryAddressStreetNumber'])].filter(Boolean).join(', ');
+      var lugar = [vOv(o, ['DeliveryAddressDistrictName']), [vOv(o, ['DeliveryAddressCity']), vOv(o, ['DeliveryAddressStateId', 'DeliveryAddressState'])].filter(Boolean).join('/')].filter(Boolean).join(' · ');
+      var cep = vOv(o, ['DeliveryAddressZipCode']);
+      var end = [rua, lugar, cep ? 'CEP ' + cep : ''].filter(Boolean).join(' · ');
+      if (quemRecebe) pares.push(['Entregar a', esc(quemRecebe), 'largo']);
+      if (end) pares.push(['Endereço de entrega', esc(end), 'largo']);
+      if (!pares.length) return '<section class="kb-dw-card"><h5>Dados do pedido</h5><div class="kb-dw-nada">O Dynamics não trouxe outros dados desta OV.</div></section>';
+      return '<section class="kb-dw-card"><h5>Dados do pedido</h5><dl class="kb-dw-dl">' + pares.map(function (p) {
+        return '<div' + (p[2] ? ' class="' + p[2] + '"' : '') + '><dt>' + esc(p[0]) + '</dt><dd>' + p[1] + '</dd></div>';
+      }).join('') + '</dl></section>';
+    }
+
+    // campos crus do Dynamics (recolhidos): os status lidos + todos os campos de cada entidade
+    function secCrus(o, aberto) {
+      var nCampos = 0, h = '';
+      var sts = (estado.r.statusCols || []);
+      if (sts.length) {
+        h += '<div class="kb-kv-h">Status lidos (valores crus)</div><table class="kb-kv">' + sts.map(function (s) {
+          var v = o.status && o.status[s.chave];
+          return '<tr class="st"><td>' + esc(rotuloCol(s)) + '</td><td>' + esc(v == null ? '(sem registro)' : v) + '</td></tr>';
+        }).join('') + '</table>';
+      }
+      Object.keys(o.campos || {}).forEach(function (ent) {
+        var c = o.campos[ent], ks = Object.keys(c).sort();
+        nCampos += ks.length;
+        h += '<div class="kb-kv-h">' + esc(ent) + '</div><table class="kb-kv">' + ks.map(function (k) { return '<tr><td>' + esc(k) + '</td><td>' + esc(c[k]) + '</td></tr>'; }).join('') + '</table>';
+      });
+      return '<details class="kb-dw-card kb-dw-mais" data-k="crus"' + (aberto ? ' open' : '') + '><summary><h5>Campos do Dynamics <small>' + esc(fQtd(nCampos)) + '</small></h5></summary>'
+        + '<input type="search" class="kb-dw-filtro" placeholder="Filtrar campo ou valor…" aria-label="Filtrar os campos do Dynamics">'
+        + h + '<div class="kb-dw-nada kb-kv-vazio" style="margin-top:8px;" hidden>Nenhum campo com esse filtro.</div></details>';
+    }
+    function filtrarCampos() {
+      if (!DW.el) return;
+      var q = String(estado.filtroCampos || '').trim().toLowerCase(), algum = false;
+      Array.prototype.forEach.call(DW.el.querySelectorAll('details[data-k="crus"] .kb-kv tr'), function (tr) {
+        var ok = !q || tr.textContent.toLowerCase().indexOf(q) >= 0;
+        tr.hidden = !ok; if (ok) algum = true;
+      });
+      Array.prototype.forEach.call(DW.el.querySelectorAll('details[data-k="crus"] .kb-kv'), function (tb) {
+        var vis = Array.prototype.some.call(tb.rows, function (r) { return !r.hidden; });
+        tb.hidden = !vis; if (tb.previousElementSibling && tb.previousElementSibling.classList.contains('kb-kv-h')) tb.previousElementSibling.hidden = !vis;
+      });
+      var vz = DW.el.querySelector('.kb-kv-vazio'); if (vz) vz.hidden = algum;
+    }
 
     // o que mudou desde a leitura anterior: OV nova ou status (da coluna escolhida) diferente
     function marcarMudancas(novo) {
@@ -359,7 +957,12 @@
         $('kb-diag').style.display = '';
         $('kb-diag-txt').textContent = JSON.stringify({ fontes: j.fontes, etapas: j.etapas, diagnostico: j.diagnostico }, null, 1);
         render();
-        if (estado.aberta) abrir(estado.aberta);
+        // ficha aberta: repinta com a leitura nova (sem pular o scroll); a OV que
+        // mudou de etapa relê as linhas; a que sumiu (outro dia) fecha a ficha
+        if (estado.aberta) {
+          if (!acharOv(estado.aberta)) fechar();
+          else { pintarFicha(); if (estado.mudou[estado.aberta] === 'status') carregarLinhas(estado.aberta, true); }
+        }
         var hora = new Date(j.geradoEm || Date.now()).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
         var aoVivo = j.data === hojeSP();
         var n = Object.keys(estado.mudou).length;
@@ -398,10 +1001,13 @@
         render();
       });
     });
-    $('kb-quadro').addEventListener('click', function (e) { var el = e.target.closest && e.target.closest('[data-ov]'); if (el) abrir(el.getAttribute('data-ov')); });
-    $('kb-dr-x').addEventListener('click', fechar);
-    $('kb-drawer-bg').addEventListener('click', fechar);
-    document.addEventListener('keydown', function (e) { if (e.key === 'Escape' && estado.aberta) fechar(); });
+    $('kb-quadro').addEventListener('click', function (e) { var el = e.target.closest && e.target.closest('[data-ov]'); if (el) abrir(el.getAttribute('data-ov'), el); });
+    // a linha da lista abre a ficha pelo teclado também (o cartão já é botão)
+    $('kb-quadro').addEventListener('keydown', function (e) {
+      if (e.key !== 'Enter' && e.key !== ' ') return;
+      var tr = e.target.matches && e.target.matches('tr[data-ov]') ? e.target : null;
+      if (tr) { e.preventDefault(); abrir(tr.getAttribute('data-ov'), tr); }
+    });
 
     // abre já buscando: assim que o login (auth.js) estiver pronto
     var foi = false;
