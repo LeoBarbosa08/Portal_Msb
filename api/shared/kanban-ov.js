@@ -621,6 +621,11 @@ const RE_OPER_NAO = /operationalsite|operatingunit|date|time/i;
 // enum que diz "não se aplica" não é tipo de operação (no print do dono, toda
 // nota saía "DoesNotApply · pela OV")
 const SEM_VALOR_OP = /^(doesnotapply|notapplicable|not applicable|none|no|nao se aplica|não se aplica|n\/a)$/i;
+// 09/11/26 (o dono achou o campo na ficha da OV do Kanban): o tipo de operação
+// da nota ligada à OV é o FiscalDocumentOperationTypeId (ex.: "S.LIC.002").
+// Ele vence qualquer outra coluna com cara de operação. KANBAN_COL_OPERACAO
+// troca/acrescenta nomes (lista, em ordem de preferência).
+const COL_OPERACAO = envLista('KANBAN_COL_OPERACAO', ['FiscalDocumentOperationTypeId']);
 async function operacoesDasOvs(numeros, ate) {
   const diag = [], porOv = {};
   const nums = Array.from(new Set((numeros || []).map(chaveOv).filter(Boolean)));
@@ -642,10 +647,14 @@ async function operacoesDasOvs(numeros, ate) {
       });
     } catch (e) { /* o erro já está no diag */ }
   }));
-  // o que vai para a tela: a coluna de DESCRIÇÃO, se houver; senão a 1ª preenchida
+  // o que vai para a tela: o FiscalDocumentOperationTypeId (COL_OPERACAO), se
+  // alguma entidade trouxer; senão uma coluna de descrição; senão a 1ª preenchida
+  const colDe = (chave) => chave.split('.').pop().toLowerCase();
   Object.keys(porOv).forEach(k => {
     const ks = Object.keys(porOv[k].todos);
-    const pref = ks.find(x => /descr|name|nome|texto|text/i.test(x)) || ks[0] || null;
+    let pref = null;
+    for (const nome of COL_OPERACAO) { pref = ks.find(x => colDe(x) === nome.toLowerCase()); if (pref) break; }
+    pref = pref || ks.find(x => /descr|name|nome|texto|text/i.test(x)) || ks[0] || null;
     porOv[k].coluna = pref; porOv[k].valor = pref ? porOv[k].todos[pref] : '';
   });
   return { porOv, colunas: comOp.map(x => x.E.entidade + ': ' + x.cols.join(', ')), diag };

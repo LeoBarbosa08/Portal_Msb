@@ -872,6 +872,18 @@ Junto: a coluna Operação deixou de mostrar **"DoesNotApply"** (o enum "não se
 aplica" de uma coluna da OV aparecia como operação em toda nota) — valores
 desse tipo contam como vazios. `sw.js` — cache `bm-comest-v36` (o v35 ficou com o crédito do Kanban, de outra sessão).
 
+### Faturamento do Dia · tipo de operação = FiscalDocumentOperationTypeId da OV (09/11/2026)
+
+O dono achou, na ficha da OV do Kanban, o campo do tipo de operação da nota
+ligada à OV: **`FiscalDocumentOperationTypeId`** (ex.: "S.LIC.002"). O
+Faturamento do Dia já buscava a operação na OV da nota (pelo número da OV,
+nas mesmas entidades de OV do Kanban), mas escolhia a 1ª coluna com cara de
+operação — e saía o "DoesNotApply" do `FiscalOperationPresenceType`. Agora
+`operacoesDasOvs()` (`api/shared/kanban-ov.js`) dá prioridade ao
+`FiscalDocumentOperationTypeId` (`KANBAN_COL_OPERACAO` troca a lista); as outras
+colunas só valem quando ele não vem. A coluna Operação e o Excel mostram o
+código, com "pela OV". `sw.js` — cache `bm-comest-v37`.
+
 ## Como colocar no ar
 
 1. **Repositório no GitHub** — crie um repositório **privado e vazio** (sem

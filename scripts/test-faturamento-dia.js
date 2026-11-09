@@ -98,11 +98,12 @@ const CLIENTES = { porConta: true, amostra: { dataAreaId: 'msb', CustomerAccount
   const K = require('../api/shared/kanban-ov');
   FD._limparCache(); K._limparCache(); chamadas.length = 0;
   // AFiscalOperationType = 'DoesNotApply' (o que saía na tela do dono): não é operação, cede para a real
-  CEN.BIOSalesOrderHeaderV1 = { amostra: { dataAreaId: 'msb', SalesOrderNumber: 'OV1', AFiscalOperationType: 'DoesNotApply', SalesPurchOperationType_BR: 'VENDA', SalesStatus: 'Invoiced', CreatedDateTime: '2026-11-06T10:00:00Z' },
-    linhas: [{ dataAreaId: 'msb', SalesOrderNumber: 'OV017456', AFiscalOperationType: 'DoesNotApply', SalesPurchOperationType_BR: 'VENDA' }] };
+  // + FiscalDocumentOperationTypeId (o campo que o dono achou na ficha da OV): ele VENCE as outras
+  CEN.BIOSalesOrderHeaderV1 = { amostra: { dataAreaId: 'msb', SalesOrderNumber: 'OV1', AFiscalOperationType: 'DoesNotApply', SalesPurchOperationType_BR: 'VENDA', FiscalDocumentOperationTypeId: 'S.LIC.001', SalesStatus: 'Invoiced', CreatedDateTime: '2026-11-06T10:00:00Z' },
+    linhas: [{ dataAreaId: 'msb', SalesOrderNumber: 'OV017456', AFiscalOperationType: 'DoesNotApply', SalesPurchOperationType_BR: 'VENDA', FiscalDocumentOperationTypeId: 'S.LIC.002' }] };
   r = await FD.notasDoDia({ data: DIA });
   let nOv = r.notas.find(x => x.numero === '000011774');
-  t('operação vem da OV da nota', nOv.operacao === 'VENDA' && /^OV · BIOSalesOrderHeaderV1\.SalesPurchOperationType_BR$/.test(nOv.operacaoFonte), nOv);
+  t('operação vem da OV: o FiscalDocumentOperationTypeId', nOv.operacao === 'S.LIC.002' && /^OV · BIOSalesOrderHeaderV1\.FiscalDocumentOperationTypeId$/.test(nOv.operacaoFonte), nOv);
   t('nota sem OV fica sem operação', !r.notas.find(x => x.numero === '000011780').operacao);
   t('a operação não mexe nos valores', r.resumo.venda.valor === 1000 && r.resumo.devolucao.valor === 150, r.resumo);
   t('operacaoOv no diagnóstico', r.operacaoOv && r.operacaoOv.achadas === 1, r.operacaoOv);
