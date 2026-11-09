@@ -431,7 +431,8 @@ async function exigirEquipe(req) {
     // ou se o Graph não respondeu.
     if (!comercial) {
       const motivo = !az ? 'a consulta dos seus grupos no Entra falhou — tente de novo em instantes'
-        : az.reason === 'groups_unavailable' ? 'o Microsoft Graph não respondeu a consulta dos seus grupos — tente de novo em instantes'
+        : az.reason === 'groups_unavailable' ? 'o Microsoft Graph não respondeu a consulta dos seus grupos'
+          + (az.falhaGrupos ? ' (' + az.falhaGrupos + ')' : '') + ' — tente de novo em instantes'
         : az.reason === 'no_group_match' ? 'a conta ' + email + ' não está em nenhum grupo de segurança liberado no portal'
           + (typeof az.gruposLidos === 'number' ? ' (o Entra devolveu ' + az.gruposLidos + ' grupo' + (az.gruposLidos === 1 ? '' : 's') + ' para ela)' : '')
         : 'os grupos da conta ' + email + ' não liberam o Comercial';

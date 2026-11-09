@@ -467,30 +467,71 @@ async function getAppToken(novo) {
 //   . TOKEN NOVO — o token app-only fica guardado até perto de expirar; se o
 //     Graph recusar uma página (401/403/429/5xx), pede um token NOVO e tenta
 //     essa página mais uma vez antes de desistir.
+//   . (09/11/26, mesmo caso, depois do deploy: "o Microsoft Graph não
+//     respondeu") MOTIVO + PLANO B — a falha agora diz o porquê (HTTP e
+//     código do Graph, em falhaGrupos, que o erro do CRM mostra) e, se o
+//     transitiveMemberOf recusar, tenta o getMemberGroups (também
+//     transitivo; devolve só os IDs, que é a chave do GRUPO_AREAS).
 const GRAPH_PROX = /^https:\/\/graph\.microsoft\.com\/v1\.0\//;
-async function listGroups(oid) {
-  if (!GUID.test(String(oid || ''))) return null; // nunca concatena não-GUID na URL do Graph
-  let tok = await getAppToken();
-  if (!tok) return null;
+// "HTTP 403 Authorization_RequestDenied: Insufficient privileges…"
+async function falhaGraph(r) {
+  let det = '';
+  try { const e = ((await r.json()) || {}).error || {}; det = [e.code, e.message].filter(Boolean).join(': '); } catch (e) { /* corpo vazio */ }
+  return ('HTTP ' + r.status + (det ? ' ' + det : '')).slice(0, 200);
+}
+async function graphGet(url, tok) {
+  try { return await fetch(url, { headers: { Authorization: 'Bearer ' + tok } }); }
+  catch (e) { return { ok: false, status: 0, json: async () => ({ error: { code: 'rede', message: String(e && e.message || e) } }) }; }
+}
+async function transitivos(oid, tok) {
   let url = 'https://graph.microsoft.com/v1.0/users/' + encodeURIComponent(oid) +
     '/transitiveMemberOf/microsoft.graph.group?$select=id,displayName&$top=999';
   const out = [];
   let renovou = false;
   for (let pag = 0; url && pag < 20; pag++) {
-    let r = await fetch(url, { headers: { Authorization: 'Bearer ' + tok } });
+    let r = await graphGet(url, tok);
     if (!r.ok && !renovou) {
       renovou = true;
-      tok = await getAppToken(true).catch(() => null);
-      if (!tok) return null;
-      r = await fetch(url, { headers: { Authorization: 'Bearer ' + tok } });
+      const novo = await getAppToken(true).catch(() => null);
+      if (novo) { tok = novo; r = await graphGet(url, tok); }
     }
-    if (!r.ok) return null;
+    if (!r.ok) return { falha: 'transitiveMemberOf ' + await falhaGraph(r), tok: tok };
     const j = await r.json();
     (j.value || []).forEach(g => out.push({ id: g.id, name: g.displayName }));
     const prox = String(j['@odata.nextLink'] || '');
     url = GRAPH_PROX.test(prox) ? prox : null;
   }
-  return out;
+  return { grupos: out, tok: tok };
+}
+async function membroDe(oid, tok) {
+  let r;
+  try {
+    r = await fetch('https://graph.microsoft.com/v1.0/users/' + encodeURIComponent(oid) + '/getMemberGroups', {
+      method: 'POST', headers: { Authorization: 'Bearer ' + tok, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ securityEnabledOnly: false })
+    });
+  } catch (e) { return { falha: 'getMemberGroups rede: ' + String(e && e.message || e).slice(0, 120) }; }
+  if (!r.ok) return { falha: 'getMemberGroups ' + await falhaGraph(r) };
+  const j = await r.json();
+  return { grupos: (j.value || []).map(id => ({ id: String(id), name: '' })) };
+}
+// { grupos } ou { falha: 'o porquê' } — nunca lança
+async function lerGrupos(oid) {
+  if (!GUID.test(String(oid || ''))) return { falha: 'o login não trouxe o identificador (oid) da conta' }; // nunca concatena não-GUID na URL do Graph
+  let tok;
+  try { tok = await getAppToken(); } catch (e) { return { falha: 'token do app: ' + String(e && e.message || e).slice(0, 120) }; }
+  if (!tok) return { falha: 'PORTAL_CLIENT_SECRET não configurado' };
+  const t = await transitivos(oid, tok);
+  if (t.grupos) return t;
+  const m = await membroDe(oid, t.tok);
+  if (m.grupos) { console.warn('[auth] grupos pelo getMemberGroups (plano B) · oid=' + oid + ' · ' + t.falha); return m; }
+  const falha = t.falha + ' | ' + m.falha;
+  console.warn('[auth] grupos indisponíveis · oid=' + oid + ' · ' + falha);
+  return { falha: falha };
+}
+async function listGroups(oid) {
+  const r = await lerGrupos(oid);
+  return r.grupos || null;
 }
 
 // Tem acesso full? Para quem NÃO passou por authorizedAreas — o requireArea e
@@ -509,8 +550,9 @@ async function authorizedAreas(user) {
   // TODA saída desta função passa por podarReservadas(): área reservada não
   // escapa por admin, por grupo sem restrição nem pelos dois fail-open.
   if (email && ADMIN_EMAILS.indexOf(email) >= 0) return todasMenosReservadas(email, 'admin');
-  const groups = await listGroups(user && user.oid);
-  if (!groups) return todasMenosReservadas(email, 'groups_unavailable');
+  const lidos = await lerGrupos(user && user.oid);
+  const groups = lidos.grupos;
+  if (!groups) return Object.assign(todasMenosReservadas(email, 'groups_unavailable'), { falhaGrupos: lidos.falha });
   const allowed = new Set();
   const modulos = new Set();
   let matched = false, unrestricted = false;
