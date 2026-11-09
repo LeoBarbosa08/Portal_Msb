@@ -118,7 +118,8 @@ const AREAS_RESERVADAS = {
 // RESTRITA (todas as outras áreas) — é o que tira o cartão e o menu da tela
 // dele, como já acontece com os dois fail-open.
 // 07/11/26: + kanban (pedido do dono: "oculte o kanban") — só as duas contas
-// dele, nem o acesso full.
+// dele, nem o acesso full. 09/11/26: o cartão voltou à home ("traga a área
+// kanban, porém somente para mim") — esta reserva é o que o mantém só dele.
 const RESERVA_ESTRITA = ['compras', 'kanban'];
 
 // ── ACESSO FULL ──────────────────────────────────────────────────

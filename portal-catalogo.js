@@ -76,8 +76,10 @@ window.PORTAL_CATALOGO = (function () {
     // api/shared/auth.js). SEM módulos por enquanto — a busca leva à visão geral.
     ['compras',        'Compras',        'Fornecedores, requisições, pedidos de compra, importação e recebimento.', 'compras.html', 'cart', 'compras compra comprador suprimentos fornecedor fornecedores requisicao requisicoes pedido de compra oc ordem de compra cotacao importacao follow-up embarque recebimento reposicao lead time'],
     ['contabil',       'Contábil',       'Contabilidade, fechamentos, obrigações fiscais e demonstrativos.',     'contabil.html',       'file',    'contabil contabilidade custos sgna margem contribuicao fiscal demonstrativo'],
-    // Kanban (06/11/26): OCULTO desde 07/11/26 a pedido do dono — fora da busca
-    // (abre só pelo endereço pages/kanban.html, só para as contas dele).
+    // Kanban (06/11/26; oculto em 07/11; de volta em 09/11/26, "somente para
+    // mim"): RESERVADO às contas do dono, nem o acesso full (RESERVA_ESTRITA em
+    // api/shared/auth.js) — a busca filtra pela área, então para os outros não aparece
+    ['kanban',         'Kanban',         'Ordens de venda do dia do ALMOX-PA, ao vivo do Dynamics.',             'kanban.html',         'grid',    'kanban quadro ordens de venda ov ovs pedido pedidos status dia hoje dynamics d365 tempo real expedicao almox-pa logistica credito faturado'],
     ['licitacao',      'Licitação',      'Editais, propostas públicas, pregões e contratos com órgãos.',         'licitacao.html',      'file',    'licitacao edital pregao contrato empenho orgao publico pncp ata lici'],
     ['administrativo', 'Administrativo', 'Requisições de compra, lançamento de faturas no Dynamics e pagamento de comissão dos vendedores PJ.', 'administrativo.html', 'brief', 'administrativo requisicao compra ordem comissao pj comissionado fatura lancamento diario'],
     ['produtos',       'Produtos',       'Linhas, estratégias e famílias de produtos, e cadastro de novos SKUs.','produtos.html',       'tag',     'produtos produto familia familias estrategia sku cadastro portfolio ncm anvisa'],
@@ -179,6 +181,8 @@ window.PORTAL_CATALOGO = (function () {
     ['contabil', 'Margem de Contribuição', '',                       'contabil-margem.html',           'bars',  'margem contribuicao mc meta visao geral'],
     ['contabil', 'Analítico',              'Margem de Contribuição', 'contabil-margem-analitico.html', 'sub',   'margem analitico detalhado produto familia'],
     ['contabil', 'Analítico por NF',       'Margem de Contribuição', 'contabil-margem-nf.html',        'sub',   'margem nota fiscal nf analitico item'],
+    // ── Kanban (09/11/26) — espelho do NAV.kanban: um módulo só ─────
+    ['kanban', 'Ordens do Dia',            '',                       'kanban.html',                    'grid',  'kanban quadro ordens de venda ov ovs dia hoje almox-pa criada credito logistica faturado dynamics tempo real'],
 
     // ── Licitação ─────────────────────────────────────────────────
     ['licitacao', 'Sales Report',              '',             'licitacao-sales-report.html',            'bars',  'sales report licitacao bi empenho visao geral'],

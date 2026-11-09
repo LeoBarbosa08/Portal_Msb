@@ -773,6 +773,40 @@ dono), `detalheNota()` em `api/shared/faturamento-dia.js`. `sw.js` — cache
 `bm-comest-v32` (junção com a ficha da OV do Kanban, que entrou no master por
 outra sessão).
 
+### Kanban · só o ALMOX-PA e a coluna Logística (09/11/2026)
+
+Pedidos do dono: "depósito somente o que for ALMOX-PA, não precisa do
+restante" e "troque esse nome de LIBERADO para LOGÍSTICA".
+
+- **Só o depósito ALMOX-PA** (`api/shared/kanban-ov.js`): pelo depósito do
+  cabeçalho da OV (`DefaultShippingWarehouseId`…), a OV de outro depósito — ou
+  sem depósito — sai do quadro ANTES de contar status, etapas e valores; a
+  resposta traz `depositos` e `foraDeposito` (no Diagnóstico da página). Sem
+  nenhuma OV com depósito, o quadro fica vazio e vem um aviso. Trocável por
+  env: `KANBAN_DEPOSITOS` (lista; `*` = todos). Na tela, o subtítulo diz
+  "MSB · ALMOX-PA" e o chip do depósito nos cartões e na ficha só aparece se
+  for diferente do filtro (seria igual em todos).
+- **Coluna "Liberado" → "Logística"**: só o nome (quadro, lista, ficha e
+  avisos); o id segue `liberado` e a regra é a mesma (`ReleaseStatus` =
+  Liberado).
+- Testes: `node scripts/test-kanban-ov.js` (filtro do depósito e o nome da
+  coluna). `sw.js` — cache `bm-comest-v33` (junto com o item abaixo).
+
+### Kanban de volta na home, só para o dono (09/11/2026)
+
+Pedido do dono: "traga a área kanban, porém somente para mim". Desfaz a parte
+"oculto" de 07/11 — o acesso continua igual:
+
+- **Cartão "Kanban"** de volta na grade de Departamentos do `index.html`
+  (`data-area="kanban"`, "1 módulo") e a área + o módulo **Ordens do Dia** de
+  volta no `portal-catalogo.js` (a busca).
+- **Só as contas do dono** (`ia@` e `leonardo.barbosa@`): a área segue em
+  `AREAS_RESERVADAS` e na `RESERVA_ESTRITA` (`api/shared/auth.js`) — nem quem
+  tem acesso full recebe a área no `/api/my-areas`, e o `area-access.js`
+  esconde o cartão e tira o Kanban da busca de quem não tem.
+- `portal-catalogo.js?v=23` (`index.html` e `script.js`); `sw.js` — cache
+  `bm-comest-v33` (as v31/v32 foram da outra sessão, no master).
+
 ### Faturamento do Dia · número repetido no diário: vale o registro 1 (09/11/2026)
 
 O painel da 000021098 mostrou **dois** documentos com esse número no diário
@@ -784,7 +818,7 @@ os documentos com o mesmo número (qualquer data); o original é o 1º pela data
 (empate: a ordem do D365, a mesma do painel). A linha do dia só fica se for o
 original; as outras saem da lista e da soma, com aviso ("000021098 de dd/mm
 (−R$ 5.999,40); o original é de 07/10 (R$ 18.000,00)") e em `repetidas`.
-Falha da consulta mantém tudo. `sw.js` — cache `bm-comest-v33`.
+Falha da consulta mantém tudo. `sw.js` — cache `bm-comest-v34` (o v33 ficou com o Kanban de outra sessão).
 
 ## Como colocar no ar
 

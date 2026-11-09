@@ -63,7 +63,7 @@
                (/api/kanban-ov: BIOSalesOrderHeaderV1 + SalesOrderHeadersV3/V2,
                juntas pelo número da OV; valor pelas linhas). 07/11/26: QUATRO
                colunas fixas, na ordem do fluxo — Criada, Gerenciamento de Crédito,
-               Liberado, Faturado — pela regra do dono (SalesStatus, ReleaseStatus,
+               Logística (era "Liberado"; 09/11/26), Faturado — pela regra do dono (SalesStatus, ReleaseStatus,
                CredManInCreditControl), calculada no servidor (api/shared/kanban-ov.js).
                Área RESERVADA (AREAS_RESERVADAS em api/shared/auth.js). -->
           <style>
@@ -361,9 +361,14 @@
     var TONS_ESC = [['#1F3149', '#2E4668', '#A9C8F5'], ['#3A3320', '#5A4E2A', '#F0D98A'], ['#2A3138', '#3C454E', '#C7D0D8'], ['#2F2742', '#46395F', '#CDB8F0'],
                     ['#3D2D1F', '#5C4330', '#F2C08F'], ['#1E3832', '#2D5249', '#8FE0C6'], ['#1F3A25', '#2E5636', '#9BE0A8'], ['#3D2129', '#5A303C', '#F2A9B9']];
     function tom(i) { var esc_ = document.documentElement.getAttribute('data-tema') === 'escuro'; var t = (esc_ ? TONS_ESC : TONS)[i % TONS.length]; return '--kb-bg:' + t[0] + ';--kb-bd:' + t[1] + ';--kb-ink:' + t[2]; }
-    // tom de cada etapa: Criada azul, Crédito amarelo, Liberado cinza, Faturado lilás
+    // tom de cada etapa: Criada azul, Crédito amarelo, Logística cinza, Faturado lilás
     var TOM_ETAPA = { criada: 0, credito: 1, liberado: 2, faturado: 3 };
-    var NOME_ETAPA = { criada: 'Criada', credito: 'Gerenciamento de Crédito', liberado: 'Liberado', faturado: 'Faturado', cancelada: 'Cancelada' };
+    var NOME_ETAPA = { criada: 'Criada', credito: 'Gerenciamento de Crédito', liberado: 'Logística', faturado: 'Faturado', cancelada: 'Cancelada' };
+    // o quadro mostra só o depósito do filtro do servidor (ALMOX-PA, 09/11/26):
+    // o chip/selo do depósito só aparece quando ele foge do filtro
+    function depFiltro() { return (estado.r && estado.r.depositos) || []; }
+    function depDiferente(dep) { return !!dep && depFiltro().indexOf(String(dep).toUpperCase()) < 0; }
+    function depTexto() { return depFiltro().join(', '); }
 
     var estado = { r: null, vis: 'kanban', busca: '', carregando: false, timer: null, antes: null, mudou: {}, aberta: null, filtroCampos: '' };
 
@@ -387,7 +392,7 @@
         + '<div class="kb-l1"><span class="kb-ov">' + esc(o.numero) + '</span><span class="kb-cli" title="' + esc(o.cliente) + '">' + esc(o.cliente || o.conta) + '</span></div>'
         + '<div class="kb-l2">' + (novo ? '<span class="kb-chip kb-nova">nova</span>' : '')
         + (o.oc ? '<span class="kb-chip" title="OC do cliente">' + esc(o.oc) + '</span>' : '')
-        + (o.deposito ? '<span class="kb-chip">' + esc(o.deposito) + '</span>' : '')
+        + (depDiferente(o.deposito) ? '<span class="kb-chip">' + esc(o.deposito) + '</span>' : '')
         + '<span>' + esc(fHora(o.criadaEm)) + '</span>'
         + (o.itens != null ? '<span>· ' + o.itens + ' ite' + (o.itens === 1 ? 'm' : 'ns') + '</span>' : '')
         + '<span class="kb-val">' + (o.valor != null ? esc(fBRL(o.valor)) : '') + '</span></div></button>';
@@ -412,7 +417,7 @@
 
     function renderLista(ovs) {
       var r = estado.r;
-      if (!ovs.length) { $('kb-quadro').innerHTML = '<div class="kb-vazio">' + ((r.ovs || []).length ? 'Nenhuma OV com essa busca.' : 'Nenhuma ordem de venda da MSB criada em ' + fDia(r.data) + '.') + '</div>'; return; }
+      if (!ovs.length) { $('kb-quadro').innerHTML = '<div class="kb-vazio">' + ((r.ovs || []).length ? 'Nenhuma OV com essa busca.' : 'Nenhuma ordem de venda da MSB' + (depTexto() ? ' do ' + depTexto() : '') + ' criada em ' + fDia(r.data) + '.') + '</div>'; return; }
       var g = function (o, k) { return (o.regra && o.regra[k]) || ''; };
       $('kb-quadro').innerHTML = '<div class="kb-lista"><table class="kb-tbl"><thead><tr><th>OV</th><th>Cliente</th><th>Criada</th><th>OC</th><th>Etapa</th>'
         + '<th>SalesStatus</th><th>ReleaseStatus</th><th>CredManInCreditControl</th><th class="num">Itens</th><th class="num">Valor</th></tr></thead><tbody>'
@@ -668,7 +673,7 @@
       var tags = ['<span class="kb-dw-tag" style="--c:' + cor[2] + ';background:' + cor[0] + ';color:' + cor[2] + '"><i></i>' + esc(nomeEt) + '</span>'];
       if (estado.mudou[o.numero] === 'nova') tags.push('<span class="kb-dw-tag nv">nova</span>');
       else if (estado.mudou[o.numero] === 'status') tags.push('<span class="kb-dw-tag nv">mudou de etapa</span>');
-      if (o.deposito) tags.push('<span class="kb-dw-tag az" title="Depósito">' + esc(o.deposito) + '</span>');
+      if (depDiferente(o.deposito)) tags.push('<span class="kb-dw-tag az" title="Depósito">' + esc(o.deposito) + '</span>');
       if (o.oc) tags.push('<span class="kb-dw-tag" title="OC do cliente">OC ' + esc(o.oc) + '</span>');
       if (o.pool) tags.push('<span class="kb-dw-tag" title="Pool">' + esc(o.pool) + '</span>');
       $('kb-dw-tags').innerHTML = tags.join('');
@@ -716,9 +721,9 @@
         + '<ol class="kb-dw-ol" style="margin-top:6px;">'
         + '<li class="' + (o.etapa === 'faturado' ? 'on' : '') + '">Situação (<code>SalesStatus</code>) que não é <b>Ordem em aberto</b> → <b>Faturado</b> (cancelada fica fora do quadro).</li>'
         + '<li class="' + (o.etapa === 'credito' ? 'on' : '') + '">Crédito (<code>CredManInCreditControl</code>) marcado → <b>Gerenciamento de Crédito</b>.</li>'
-        + '<li class="' + (o.etapa === 'liberado' ? 'on' : '') + '">Liberação (<code>ReleaseStatus</code>) = Liberado → <b>Liberado</b>.</li>'
+        + '<li class="' + (o.etapa === 'liberado' ? 'on' : '') + '">Liberação (<code>ReleaseStatus</code>) = Liberado → <b>Logística</b>.</li>'
         + '<li class="' + (o.etapa === 'criada' ? 'on' : '') + '">Nenhuma das anteriores → <b>Criada</b>.</li></ol>'
-        + '<p class="kb-dw-p" style="margin-top:8px;">Entram as OVs da <b>MSB</b> criadas no dia escolhido (horário de Brasília). O quadro relê o Dynamics a cada 30 s no dia de hoje; as linhas desta ficha são lidas quando ela abre.</p></details>';
+        + '<p class="kb-dw-p" style="margin-top:8px;">Entram as OVs da <b>MSB</b>' + (depTexto() ? ' do depósito <b>' + esc(depTexto()) + '</b>' : '') + ' criadas no dia escolhido (horário de Brasília); as de outros depósitos ficam fora. O quadro relê o Dynamics a cada 30 s no dia de hoje; as linhas desta ficha são lidas quando ela abre.</p></details>';
       return h;
     }
 
@@ -749,9 +754,9 @@
         ds: credVeio ? 'Sem retenção agora. Se o Dynamics reter a OV no crédito, ela vem para esta etapa antes da liberação.'
                      : 'O Dynamics não trouxe o campo <code>' + esc(cCred) + '</code>: não dá para saber se a OV está retida no crédito.' });
       // liberado
-      if (pos === 2) p.push({ cls: 'agora', tt: 'Agora: Liberado', ds: 'Liberada para o depósito (' + cod(cLib, rg.releaseStatus) + '): separação, conferência e expedição. Ainda sem nota fiscal.' });
-      else if (pos === 3) p.push({ cls: 'feito', tt: 'Liberado para o depósito', ds: 'A OV passou pela liberação para o depósito.' });
-      else p.push({ cls: 'depois', tt: 'Liberado', ds: 'Quando a OV for liberada para o depósito, vem para esta etapa: separação, conferência e expedição.' });
+      if (pos === 2) p.push({ cls: 'agora', tt: 'Agora: Logística', ds: 'Liberada para o depósito (' + cod(cLib, rg.releaseStatus) + '): separação, conferência e expedição. Ainda sem nota fiscal.' });
+      else if (pos === 3) p.push({ cls: 'feito', tt: 'Logística', ds: 'A OV foi liberada para o depósito e passou pela logística.' });
+      else p.push({ cls: 'depois', tt: 'Logística', ds: 'Quando a OV for liberada para o depósito, vem para esta etapa: separação, conferência e expedição.' });
       // faturado
       if (pos === 3) {
         var sit = rot(rg.salesStatus);
@@ -782,7 +787,7 @@
       var porque = {
         criada: 'Ordem em aberto' + (credVeio ? ', sem retenção de crédito' : '') + ' e ainda não liberada para o depósito: fica em <b>Criada</b>.' + (credVeio ? '' : ' O campo de crédito não veio do Dynamics.'),
         credito: 'O crédito marcado decide: a OV fica em <b>Gerenciamento de Crédito</b> até o crédito aprovar, qualquer que seja a liberação.',
-        liberado: 'Ordem em aberto, sem retenção de crédito e liberada para o depósito: fica em <b>Liberado</b>.',
+        liberado: 'Ordem em aberto, sem retenção de crédito e liberada para o depósito: fica em <b>Logística</b>.',
         faturado: 'A situação não é mais “Ordem em aberto”: fica em <b>Faturado</b> — a situação vale antes do crédito e da liberação.',
         cancelada: 'Situação <b>Cancelada</b>: a OV fica fora do quadro (só aparece na lista).'
       }[et] || '';
@@ -953,9 +958,9 @@
         var noQuadro = (j.ovs || []).filter(function (o) { return o.etapa !== 'cancelada'; });
         var total = noQuadro.reduce(function (s, o) { return s + (o.valor || 0); }, 0);
         var fontes = (j.fontes || []).map(function (f) { return f.entidade; }).join(' + ');
-        $('kb-sub').textContent = 'MSB · ' + noQuadro.length + ' ordem(ns) de venda criada(s) em ' + fDia(j.data) + (noQuadro.some(function (o) { return o.valor != null; }) ? ' · ' + fBRL(total) : '') + (fontes ? ' · ' + fontes : '');
+        $('kb-sub').textContent = 'MSB · ' + (j.depositos && j.depositos.length ? j.depositos.join(', ') + ' · ' : '') + noQuadro.length + ' ordem(ns) de venda criada(s) em ' + fDia(j.data) + (noQuadro.some(function (o) { return o.valor != null; }) ? ' · ' + fBRL(total) : '') + (fontes ? ' · ' + fontes : '');
         $('kb-diag').style.display = '';
-        $('kb-diag-txt').textContent = JSON.stringify({ fontes: j.fontes, etapas: j.etapas, diagnostico: j.diagnostico }, null, 1);
+        $('kb-diag-txt').textContent = JSON.stringify({ fontes: j.fontes, etapas: j.etapas, depositos: j.depositos, foraDeposito: j.foraDeposito, diagnostico: j.diagnostico }, null, 1);
         render();
         // ficha aberta: repinta com a leitura nova (sem pular o scroll); a OV que
         // mudou de etapa relê as linhas; a que sumiu (outro dia) fecha a ficha
