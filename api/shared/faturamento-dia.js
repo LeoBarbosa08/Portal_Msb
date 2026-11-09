@@ -487,7 +487,7 @@ async function notasDoDia(opts) {
       try {
         const st = await ST.statusPorNumero(semSt.map(n => n.numero), ate);
         st.diag.forEach(d => diag.push(d));
-        semSt.forEach(n => { const x = ST.statusDaNota(st.porNum[ST.numNorm(n.numero)]); if (x) { n.status = x.status; n.statusFonte = x.entidade + '.' + x.coluna; } });
+        semSt.forEach(n => { const x = ST.statusDaNota(st.porNum[ST.numNorm(n.numero)], n.emissao); if (x) { n.status = x.status; n.statusFonte = x.entidade + '.' + x.coluna; } });
       } catch (e) { diag.push({ etapa: 'status', erro: String(e.message || e).slice(0, 200) }); }
     }
     if (!notas.some(n => n.status)) {

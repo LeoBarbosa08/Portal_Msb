@@ -241,18 +241,20 @@ const CLIENTES = { porConta: true, amostra: { dataAreaId: 'msb', CustomerAccount
   console.log('9) só nota com status Aprovado (o caso da 000021478 "Descartado")');
   const ST9 = require('../api/shared/fatdia-status');
   FD._limparCache(); K8._limparCache(); ST9._limparCache(); chamadas.length = 0;
-  const ef = (n, st) => ({ dataAreaId: 'msb', FiscalDocumentNumber: n, Status: st });
+  const ef = (n, st, dt) => ({ dataAreaId: 'msb', FiscalDocumentNumber: n, Status: st, FiscalDocumentDate: (dt || DIA) + 'T00:00:00Z' });
   CEN = {
     FiscalDocuments: { amostra: AMOSTRA_FISCAL, linhas: [], ultima: '2023-12-05T00:00:00Z', colData: 'FiscalDocumentDate' },
     SalesInvoiceHeadersV2: Object.assign(DIARIO([jl8('000021500', 'OV1', 1000), jl8('000021501', 'OV2', -150), jl8('000021478', 'OV1', 777), jl8('000021506', 'OV1', 333)]), { porNumero: true }),
     BIOSalesOrderHeaderV1: { amostra: ov8('OV0', 'S.VEN.006'), linhas: [ov8('OV1', 'S.VEN.006'), ov8('OV2', 'E.VEN.002')] },
-    EFDocumentsBR: { porNumero: true, amostra: ef('1', 'Approved'), linhas: [ef('000021500', 'Aprovado'), ef('000021501', 'Approved'), ef('000021478', 'Discarded')] },
+    // + documentos ANTIGOS (2023) com os mesmos números: não podem emprestar o status
+    EFDocumentsBR: { porNumero: true, amostra: ef('1', 'Approved'), linhas: [ef('000021500', 'Aprovado'), ef('000021501', 'Cancelled', '2023-05-02'), ef('000021501', 'Approved'), ef('000021478', 'Discarded'), ef('000021506', 'Cancelled', '2023-12-05')] },
     CustomersV3: CLIENTES
   };
   r = await FD.notasDoDia({ data: DIA });
   t('aprovadas ficam (Aprovado e Approved)', r.resumo.venda.qtd === 1 && r.resumo.venda.valor === 1000 && r.resumo.devolucao.valor === 150, r.resumo);
   t('000021478 "Discarded" fica fora', r.foraStatus.some(x => x.numero === '000021478' && x.status === 'Discarded' && x.valor === 777), r.foraStatus);
-  t('nota sem status fica fora como "(sem status)"', r.foraStatus.some(x => x.numero === '000021506' && x.status === '(sem status)'), r.foraStatus);
+  t('nota sem status fica fora como "(sem status)" — o "Cancelled" de 2023 com o mesmo número não vale', r.foraStatus.some(x => x.numero === '000021506' && x.status === '(sem status)'), r.foraStatus);
+  t('o "Cancelled" de 2023 da 000021501 não derruba a devolução aprovada de hoje', r.resumo.devolucao.qtd === 1, r.resumo);
   t('aviso com os status que ficaram fora', r.avisos.some(a => /2 nota\(s\) fora do faturamento por não estarem com status Aprovado/.test(a) && /Discarded \(1\)/.test(a)), r.avisos);
   t('filtro do status aplicado', r.filtroStatus && r.filtroStatus.aplicado === true && r.filtroStatus.fora === 2, r.filtroStatus);
   t('status buscado pelo número, só a MSB', chamadas.some(c => c.ent === 'EFDocumentsBR' && /FiscalDocumentNumber eq '000021478'/.test(c.q.filter) && /dataAreaId eq 'msb'/.test(c.q.filter)), chamadas.filter(c => c.ent === 'EFDocumentsBR').map(c => c.q.filter));

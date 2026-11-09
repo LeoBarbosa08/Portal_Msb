@@ -952,6 +952,17 @@ lidas)" saiu de `pages/kanban.html`. As entidades continuam no "Diagnóstico da
 leitura no Dynamics", no rodapé; quantidade e valor estão nas colunas.
 `sw.js` — cache `bm-comest-v41`.
 
+### Faturamento do Dia · status só de documento com data perto da nota (09/11/2026)
+
+A sonda do dono mostrou que o `Status` da `FiscalDocuments` é o campo certo
+(Approved / Cancelled / Discarded…), mas a entidade para na MSB em 05/12/2023.
+Como a busca do status é PELO NÚMERO, um documento antigo com o mesmo número
+poderia emprestar o status ("Cancelled") para a nota de hoje e tirá-la da
+soma. `api/shared/fatdia-status.js` agora lê também a data do documento
+(FiscalDocumentDate, AccountingDate…) e o status só vale se ela estiver a até
+7 dias da data da nota (`FATDIA_STATUS_DIAS`); fora disso, conta como "não
+achado". `sw.js` — cache `bm-comest-v42`.
+
 ## Como colocar no ar
 
 1. **Repositório no GitHub** — crie um repositório **privado e vazio** (sem

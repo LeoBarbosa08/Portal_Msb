@@ -30,6 +30,13 @@ const RE_ENT_NAO = /line|linha|tax|imposto|item/i;           // linhas/impostos 
 const NUMS    = ['FiscalDocumentNumber', 'DocumentNumber', 'NFeNumber', 'Number', 'InvoiceNumber', 'InvoiceId'];
 const STATUS  = envLista('FATDIA_COL_STATUS', ['Status', 'FiscalDocumentStatus', 'DocumentStatus', 'EFDocStatus', 'NFeStatus', 'ElectronicDocumentStatus']);
 const RE_STATUS = /^(?!.*(date|time|reason|motivo|message|mensagem)).*status/i;
+// DATA do documento: a busca é pelo NÚMERO, e número se repete ao longo dos
+// anos (a FiscalDocuments para na MSB em 2023) — um documento antigo com o
+// mesmo número não pode emprestar o status ("Cancelled") para a nota de hoje.
+// O status só vale se a data do documento estiver a até DIAS_MAX da nota.
+const DATAS   = ['FiscalDocumentDate', 'AccountingDate', 'DocumentDate', 'IssueDate', 'EmissionDate', 'InvoiceDate', 'CreatedDateTime'];
+const DIAS_MAX = Number(process.env.FATDIA_STATUS_DIAS || 7);
+const isoD = (v) => { const m = /^(\d{4})-(\d{2})-(\d{2})/.exec(txt(v)); return m ? m[1] + '-' + m[2] + '-' + m[3] : null; };
 const ENT_TTL = 30 * 60000, LOTE = 10, FOLGA = 1500;
 
 const txt = (v) => String(v == null ? '' : v).trim();
@@ -66,12 +73,12 @@ async function descobrir(token, ate, diag) {
         const cols = colunasDe(rows[0]);
         const num = achaCol(cols, NUMS);
         const st = achaCol(cols, STATUS) || cols.find(c => RE_STATUS.test(c)) || null;
-        return { entidade: ent, num, status: st, temEmpresa: !!filtro && cols.some(c => c.toLowerCase() === 'dataareaid'), serve: !!(num && st) };
+        return { entidade: ent, num, status: st, data: achaCol(cols, DATAS), temEmpresa: !!filtro && cols.some(c => c.toLowerCase() === 'dataareaid'), serve: !!(num && st) };
       } catch (e) { if (/\b404\b/.test(String(e.message)) || e.demorou) break; }
     }
     return { entidade: ent, serve: false };
   }));
-  provas.forEach(p => diag.push({ etapa: 'status:entidade', entidade: p.entidade, serve: p.serve, numero: p.num || null, status: p.status || null }));
+  provas.forEach(p => diag.push({ etapa: 'status:entidade', entidade: p.entidade, serve: p.serve, numero: p.num || null, status: p.status || null, data: p.data || null }));
   const servem = provas.filter(p => p.serve);
   if (servem.length) { _fontes = servem; _fontesTs = Date.now(); }
   return servem;
@@ -90,10 +97,10 @@ async function statusPorNumero(numeros, ate) {
       lista.slice(i, i + LOTE).forEach(n => { const d = numNorm(n); [n, d, ('000000000' + d).slice(-9)].forEach(f => { if (f && formas.indexOf(f) < 0) formas.push(f); }); });
       const filtro = (F.temEmpresa ? "dataAreaId eq '" + D.odataStr(EMPRESA) + "' and " : '') + '(' + formas.map(f => F.num + " eq '" + D.odataStr(f) + "'").join(' or ') + ')';
       try {
-        const rows = await D.odataGetComPrazo(F.entidade, { crossCompany: true, filter: filtro, select: [F.num, F.status].join(',') }, token, prazo(ate, 10000));
+        const rows = await D.odataGetComPrazo(F.entidade, { crossCompany: true, filter: filtro, select: [F.num, F.status].concat(F.data ? [F.data] : []).join(',') }, token, prazo(ate, 10000));
         rows.forEach(r => {
           const k = numNorm(r[F.num]); const s = txt(r[F.status]);
-          if (k && s) (porNum[k] = porNum[k] || []).push({ status: s, entidade: F.entidade, coluna: F.status });
+          if (k && s) (porNum[k] = porNum[k] || []).push({ status: s, entidade: F.entidade, coluna: F.status, data: F.data ? isoD(r[F.data]) : null });
         });
         diag.push({ etapa: 'status:leitura', entidade: F.entidade, numeros: lista.slice(i, i + LOTE).length, linhas: rows.length });
       } catch (e) {
@@ -105,11 +112,18 @@ async function statusPorNumero(numeros, ate) {
   return { porNum, fontes: fontes.map(f => f.entidade + '.' + f.status), diag };
 }
 
-// o status que vale para a nota: o aprovado, se algum documento com o número
-// estiver aprovado; senão o 1º encontrado
-function statusDaNota(lista) {
+// o status que vale para a nota: só dos documentos com data perto da da nota
+// (documento sem data entra); entre eles, o aprovado, se houver; senão o 1º
+function statusDaNota(lista, dataNota) {
   if (!lista || !lista.length) return null;
-  return lista.find(x => aprovado(x.status)) || lista[0];
+  const perto = (x) => {
+    if (!x.data || !dataNota) return true;
+    const d = Math.abs(Date.parse(x.data + 'T00:00:00Z') - Date.parse(dataNota + 'T00:00:00Z')) / 86400000;
+    return !(d > DIAS_MAX);
+  };
+  const ok = lista.filter(perto);
+  if (!ok.length) return null;
+  return ok.find(x => aprovado(x.status)) || ok[0];
 }
 
 function _limparCache() { _fontes = null; _fontesTs = 0; }
