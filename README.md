@@ -723,6 +723,18 @@ valor — a regra das operações saiu em 07/11):
   ("Procurar no Dynamics").
 - `sw.js` — cache `bm-comest-v30`.
 
+### Faturamento do Dia · o dado cru de cada nota (09/11/2026)
+
+O dono achou a **000021098** como "Devolução −R$ 5.999,40" no portal, e no D365
+ela é uma venda de R$ 18.000,00 (300 × R$ 60,00). Daqui não se vê o Dynamics,
+então antes de mexer na regra o portal passou a mostrar o dado cru: **clicar
+numa nota** abre um painel com tudo o que o D365 devolve para aquele número na
+MSB — os registros do diário de faturas (o que a lista usa: TotalInvoiceAmount
+& cia.), as linhas da fatura (`SalesInvoiceLines`, com a soma do LineAmount) e o
+documento fiscal —, com "Copiar". `GET /api/faturamento-hoje?nota=…` (só do
+dono), `detalheNota()` em `api/shared/faturamento-dia.js`. `sw.js` — cache
+`bm-comest-v31`.
+
 ## Como colocar no ar
 
 1. **Repositório no GitHub** — crie um repositório **privado e vazio** (sem

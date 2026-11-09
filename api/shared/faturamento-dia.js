@@ -453,6 +453,33 @@ async function notasDoDia(opts) {
   return r;
 }
 
+// ── DETALHE CRU DE UMA NOTA (09/11/2026) ─────────────────────────
+// O dono achou a 000021098 como "Devolução −R$ 5.999,40" no portal, e no D365
+// ela é uma venda de R$ 18.000,00. Daqui não se vê o Dynamics, então o portal
+// mostra o dado CRU: TODAS as linhas da MSB com esse número no diário de
+// faturas (todos os campos), as linhas da fatura e o documento fiscal.
+const ENT_LINHAS_FAT = envLista('FATDIA_ENT_LINHAS', ['SalesInvoiceLines', 'SalesInvoiceV2Lines', 'SalesInvoiceLinesV2']);
+async function detalheNota(numero) {
+  const num = txt(numero);
+  const ate = Date.now() + ORCAMENTO;
+  const diag = [];
+  const token = await D.getToken();
+  const so = (r) => { const o = {}; Object.keys(r || {}).forEach(k => { if (k.charAt(0) !== '@') o[k] = r[k]; }); return o; };
+  const lerPorNumero = async (ent, col) => {
+    try {
+      const rows = await D.odataGetComPrazo(ent, { crossCompany: true, top: 50, filter: "dataAreaId eq '" + D.odataStr(EMPRESA) + "' and " + col + " eq '" + D.odataStr(num) + "'" }, token, prazo(ate, 12000));
+      diag.push({ entidade: ent, coluna: col, linhas: rows.length });
+      return { entidade: ent, linhas: rows.map(so) };
+    } catch (e) { diag.push({ entidade: ent, coluna: col, erro: String(e.message || e).slice(0, 220) }); return null; }
+  };
+  const [J, F] = await Promise.all([resolver('diario', token, ate, diag, false), resolver('fiscal', token, ate, diag, false)]);
+  const cab = J ? await lerPorNumero(J.entidade, J.col.numero) : null;
+  let lin = null;
+  for (const ent of ENT_LINHAS_FAT) { lin = await lerPorNumero(ent, 'InvoiceNumber'); if (lin) break; }
+  const fis = F ? await lerPorNumero(F.entidade, F.col.numero) : null;
+  return { ok: true, empresa: EMPRESA, numero: num, diario: cab, linhasFatura: lin, fiscal: fis, colunasUsadas: J ? J.col : null, diagnostico: diag };
+}
+
 function _limparCache() { _cache.clear(); _cli.clear(); Object.keys(_ent).forEach(k => delete _ent[k]); }
 
-module.exports = { notasDoDia, hojeSP, EMPRESA, CONFIGURED: D.CONFIGURED, _limparCache, _interno: { mapaColunas, PAPEIS, direcaoDe, tipoContaDe } };
+module.exports = { notasDoDia, detalheNota, hojeSP, EMPRESA, CONFIGURED: D.CONFIGURED, _limparCache, _interno: { mapaColunas, PAPEIS, direcaoDe, tipoContaDe } };

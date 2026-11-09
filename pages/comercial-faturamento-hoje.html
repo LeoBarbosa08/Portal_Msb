@@ -196,6 +196,22 @@
             .fd-tbl .cli{font-weight:600;color:var(--text);}
             .fd-tbl .sub{font-size:11px;color:var(--text-3);}
             .fd-tbl tr.cancel td{opacity:.5;text-decoration:line-through;}
+            #fd-tbody tr[data-nota]{cursor:pointer;}
+            #fd-tbody tr[data-nota]:hover td{background:var(--surface-2);}
+            /* painel com o dado CRU da nota no D365 (09/11/26) */
+            .fd-dr-bg{position:fixed;inset:0;background:rgba(16,24,30,.35);z-index:9000;display:none;}
+            .fd-dr{position:fixed;top:0;right:0;bottom:0;width:min(640px,100vw);background:var(--surface);z-index:9001;box-shadow:-20px 0 50px rgba(0,0,0,.18);display:none;flex-direction:column;}
+            .fd-dr.on,.fd-dr-bg.on{display:flex;}
+            .fd-dr-h{display:flex;align-items:flex-start;gap:10px;padding:16px 18px;border-bottom:1px solid var(--border);}
+            .fd-dr-h h3{margin:0;font-size:18px;font-weight:800;color:var(--text);}
+            .fd-dr-h .sub{font-size:12.5px;color:var(--text-3);margin-top:2px;}
+            .fd-x{border:none;background:transparent;font-size:22px;line-height:1;color:var(--text-3);cursor:pointer;padding:2px 6px;}
+            .fd-dr-b{padding:10px 18px 24px;overflow:auto;}
+            .fd-dr-b h4{margin:14px 0 6px;font-size:11px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:var(--text-3);}
+            .fd-kv{width:100%;border-collapse:collapse;font-size:12px;margin-bottom:6px;}
+            .fd-kv td{padding:4px 6px;border-top:1px solid var(--border);vertical-align:top;color:var(--text-2);word-break:break-word;}
+            .fd-kv td:first-child{width:44%;font-family:'JetBrains Mono',ui-monospace,monospace;font-size:11px;color:var(--text-3);}
+            .fd-kv tr.chave td{background:rgba(30,91,216,.06);font-weight:600;color:var(--text);}
             .fd-tbl tr.cancel td .fd-tag{text-decoration:none;}
             .fd-tag{display:inline-block;padding:2px 8px;border-radius:999px;font-size:11px;font-weight:700;white-space:nowrap;}
             .fd-tag.venda{background:#E3F7E8;color:#16702C;}
@@ -284,6 +300,16 @@
     </div><!-- /container -->
   </div><!-- /area-body -->
 
+  <div class="fd-dr-bg" id="fd-dr-bg"></div>
+  <aside class="fd-dr" id="fd-dr" role="dialog" aria-modal="true" aria-labelledby="fd-dr-tt">
+    <div class="fd-dr-h">
+      <div style="flex:1;min-width:0;"><h3 id="fd-dr-tt">—</h3><div class="sub">O que o Dynamics devolve para este número (MSB), sem tratamento</div></div>
+      <button type="button" class="fd-btn" id="fd-dr-copiar">Copiar</button>
+      <button type="button" class="fd-x" id="fd-dr-x" aria-label="Fechar">×</button>
+    </div>
+    <div class="fd-dr-b" id="fd-dr-b"></div>
+  </aside>
+
   <footer class="site-footer">
     <div class="container">
       <div class="bm-footer-bottom">
@@ -351,7 +377,7 @@
         $('fd-tbody').innerHTML = notas.map(function (n) {
           var dev = n.tipo === 'devolucao';
           var sub = [n.conta, fCnpj(n.cnpj)].filter(Boolean).join(' · ');
-          return '<tr class="' + (n.cancelada ? 'cancel' : '') + '">'
+          return '<tr class="' + (n.cancelada ? 'cancel' : '') + '" data-nota="' + esc(n.numero) + '" title="Clique para ver o dado desta nota no Dynamics">'
             + '<td><span class="fd-tag ' + n.tipo + '">' + (dev ? 'Devolução' : 'Venda') + '</span>' + (n.cancelada ? '<span class="fd-tag cancel">Cancelada</span>' : '') + '</td>'
             + '<td class="nf">' + esc(n.numero) + (n.serie ? '<div class="sub">série ' + esc(n.serie) + '</div>' : '') + '</td>'
             + '<td><div class="cli">' + (esc(n.cliente) || '<span class="sub">sem razão social</span>') + '</div>' + (sub ? '<div class="sub">' + esc(sub) + '</div>' : '') + '</td>'
@@ -442,6 +468,55 @@
         Array.prototype.forEach.call(document.querySelectorAll('.fd-seg button'), function (x) { x.classList.toggle('on', x === b); });
         render();
       });
+    });
+
+    // ── PAINEL: o dado CRU da nota no D365 (09/11/26) ──
+    var _det = null;
+    var CHAVES = /^(InvoiceNumber|InvoiceId|InvoiceDate|TotalInvoiceAmount|InvoiceAmount|TotalTaxAmount|TotalDiscountAmount|TotalChargeAmount|SalesOrderNumber|InvoiceCustomerAccountNumber|OrderingCustomerAccountNumber|LineAmount|InvoicedQuantity|SalesPrice|ItemNumber|ProductName|FiscalDocumentNumber|Direction|TotalAmount|OperationDescription|Status|CurrencyCode)$/i;
+    function kv(o) {
+      var ks = Object.keys(o || {});
+      ks.sort(function (a, b) { return (CHAVES.test(b) - CHAVES.test(a)) || a.localeCompare(b); });
+      return '<table class="fd-kv">' + ks.map(function (k) {
+        var v = o[k]; if (v === null || v === '') return '';
+        return '<tr class="' + (CHAVES.test(k) ? 'chave' : '') + '"><td>' + esc(k) + '</td><td>' + esc(typeof v === 'object' ? JSON.stringify(v) : v) + '</td></tr>';
+      }).join('') + '</table>';
+    }
+    function bloco(titulo, x) {
+      if (!x) return '<h4>' + esc(titulo) + '</h4><div class="sub">não foi possível ler (veja o diagnóstico no fim)</div>';
+      var h = '<h4>' + esc(titulo) + ' · ' + esc(x.entidade) + ' · ' + (x.linhas || []).length + ' registro(s)</h4>';
+      if (!(x.linhas || []).length) return h + '<div class="sub">nenhum registro da MSB com este número</div>';
+      return h + x.linhas.map(function (r, i) { return (x.linhas.length > 1 ? '<div class="sub">registro ' + (i + 1) + '</div>' : '') + kv(r); }).join('');
+    }
+    async function abrirNota(num) {
+      $('fd-dr-tt').textContent = 'Nota ' + num;
+      $('fd-dr-b').innerHTML = '<div class="sub" style="padding:12px 0;">Lendo o Dynamics…</div>';
+      $('fd-dr').classList.add('on'); $('fd-dr-bg').classList.add('on'); $('fd-dr-x').focus();
+      try {
+        var res = await fetch('/api/faturamento-hoje?nota=' + encodeURIComponent(num), { cache: 'no-store' });
+        var j = null; try { j = await res.json(); } catch (e) {}
+        if (!res.ok || !j || j.ok === false) throw new Error((j && (j.detalhe || j.error)) || ('HTTP ' + res.status));
+        _det = j;
+        var lin = (j.linhasFatura && j.linhasFatura.linhas) || [];
+        var somaLin = lin.reduce(function (s2, r) { return s2 + (Number(r.LineAmount) || 0); }, 0);
+        $('fd-dr-b').innerHTML = (lin.length ? '<div class="fd-msg info" style="margin-top:6px;">Soma das linhas (LineAmount): <b>' + fBRL(somaLin) + '</b></div>' : '')
+          + bloco('Diário de faturas (o que a lista usa)', j.diario)
+          + bloco('Linhas da fatura', j.linhasFatura)
+          + bloco('Documento fiscal', j.fiscal)
+          + '<h4>Diagnóstico</h4><pre style="font-size:11px;white-space:pre-wrap;">' + esc(JSON.stringify({ colunasUsadas: j.colunasUsadas, diagnostico: j.diagnostico }, null, 1)) + '</pre>';
+      } catch (e) {
+        $('fd-dr-b').innerHTML = '<div class="fd-msg erro">Não foi possível ler esta nota no Dynamics: ' + esc(e.message) + '</div>';
+      }
+    }
+    function fecharNota() { $('fd-dr').classList.remove('on'); $('fd-dr-bg').classList.remove('on'); }
+    $('fd-tbody').addEventListener('click', function (e) { var tr = e.target.closest && e.target.closest('tr[data-nota]'); if (tr) abrirNota(tr.getAttribute('data-nota')); });
+    $('fd-dr-x').addEventListener('click', fecharNota);
+    $('fd-dr-bg').addEventListener('click', fecharNota);
+    document.addEventListener('keydown', function (e) { if (e.key === 'Escape') fecharNota(); });
+    $('fd-dr-copiar').addEventListener('click', async function () {
+      if (!_det) return; var b = this, t = JSON.stringify(_det, null, 1);
+      try { await navigator.clipboard.writeText(t); b.textContent = 'Copiado ✓'; }
+      catch (e) { var ta = document.createElement('textarea'); ta.value = t; document.body.appendChild(ta); ta.select(); try { document.execCommand('copy'); b.textContent = 'Copiado ✓'; } catch (e2) { b.textContent = 'Não copiou'; } ta.remove(); }
+      setTimeout(function () { b.textContent = 'Copiar'; }, 2500);
     });
 
     // ── SONDA do tipo de operação (09/11/26) ──

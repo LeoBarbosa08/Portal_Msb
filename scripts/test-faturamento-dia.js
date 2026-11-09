@@ -36,6 +36,9 @@ global.fetch = async (url) => {
     const pedidas = (q.filter.match(/'([^']+)'/g) || []).map(s => s.slice(1, -1));
     return corpo({ value: E.linhas.filter(r => pedidas.indexOf(r.CustomerAccount) >= 0) });
   }
+  // busca por número de nota (o painel da nota: ?nota=)
+  const mNum = /(InvoiceNumber|FiscalDocumentNumber) eq '([^']+)'/.exec(q.filter);
+  if (mNum && E.porNumero) return corpo({ value: (E.linhas || []).filter(r => r[mNum[1]] === mNum[2]) });
   return corpo({ value: E.linhas || [] });
 };
 
@@ -152,6 +155,35 @@ const CLIENTES = { porConta: true, amostra: { dataAreaId: 'msb', CustomerAccount
   res = await chama('IA@biomedical.com.br', true, { data: DIA });
   t('dono -> 200 com notas', res.status === 200 && res.body.ok && Array.isArray(res.body.notas), res.status);
   auth.requireUser = orig;
+
+  console.log('6) o dado cru de uma nota (?nota=) — o caso da 000021098');
+  FD._limparCache(); chamadas.length = 0;
+  CEN = {
+    FiscalDocuments: { amostra: AMOSTRA_FISCAL, linhas: [], porNumero: true },
+    SalesInvoiceHeadersV2: Object.assign(DIARIO([
+      { dataAreaId: 'msb', InvoiceNumber: '000021098', InvoiceDate: '2026-09-30T00:00:00Z', InvoiceCustomerAccountNumber: 'C006154', TotalInvoiceAmount: -5999.40, SalesOrderNumber: 'OV016900' },
+      { dataAreaId: 'msb', InvoiceNumber: '000021099', InvoiceDate: '2026-09-30T00:00:00Z', InvoiceCustomerAccountNumber: 'C1', TotalInvoiceAmount: 10 }
+    ]), { porNumero: true }),
+    SalesInvoiceLines: { porNumero: true, linhas: [{ dataAreaId: 'msb', InvoiceNumber: '000021098', ItemNumber: 'X', InvoicedQuantity: 300, SalesPrice: 60, LineAmount: 18000 }] }
+  };
+  const d = await FD.detalheNota('000021098');
+  t('diário: só os registros desse número, crus', d.diario && d.diario.entidade === 'SalesInvoiceHeadersV2' && d.diario.linhas.length === 1 && d.diario.linhas[0].TotalInvoiceAmount === -5999.40, d.diario);
+  t('linhas da fatura, cruas', d.linhasFatura && d.linhasFatura.entidade === 'SalesInvoiceLines' && d.linhasFatura.linhas[0].LineAmount === 18000, d.linhasFatura);
+  t('documento fiscal: nenhum registro', d.fiscal && d.fiscal.linhas.length === 0, d.fiscal);
+  t('toda busca filtra a MSB', chamadas.filter(c => /'000021098'/.test(c.q.filter)).every(c => /dataAreaId eq 'msb'/.test(c.q.filter)), chamadas.map(c => c.q.filter));
+  {
+    const auth = require('../api/shared/auth');
+    const fn = require('../api/faturamento-hoje/index.js');
+    const orig = auth.requireUser;
+    const chama = async (email, query) => { auth.requireUser = async () => ({ user: { email }, validated: true }); const ctx = { log: { error() {} } }; await fn(ctx, { method: 'GET', headers: {}, query }); return ctx.res; };
+    let res = await chama('fulano@biomedical.com.br', { nota: '000021098' });
+    t('nota: outro e-mail -> 403', res.status === 403, res.status);
+    res = await chama('ia@biomedical.com.br', { nota: "x' or 1 eq 1" });
+    t('nota: número inválido -> 400', res.status === 400, res.status);
+    res = await chama('ia@biomedical.com.br', { nota: '000021098' });
+    t('nota: dono -> 200 com o diário', res.status === 200 && res.body.diario && res.body.diario.linhas.length === 1, res.status);
+    auth.requireUser = orig;
+  }
 
   console.log(falhas ? '\n' + falhas + ' FALHA(S)' : '\ntudo ok');
   process.exit(falhas ? 1 : 0);
