@@ -48,6 +48,7 @@ const S = require('../api/shared/fatdia-sonda');
   t('as que servem vêm primeiro e na lista "servem"', r.entidades[0].serve && r.servem.indexOf('SalesInvoiceLines') >= 0 && r.servem.length === 2, r.servem);
   t('não testou o que o service document não publica', !chamadas.some(c => c.e === 'SalesInvoiceHeaders'));
   t('leituras da MSB', chamadas.filter(c => c.f).every(c => /dataAreaId eq 'msb'/.test(c.f)));
+  t('traz os nomes de todas as colunas', por.SalesInvoiceHeadersV2.nomesColunas.slice().sort().join(',') === 'InvoiceDate,InvoiceNumber,TotalInvoiceAmount,dataAreaId', por.SalesInvoiceHeadersV2.nomesColunas);
   t('ordenou pela data para achar a mais recente', chamadas.some(c => c.e === 'SalesInvoiceLines' && c.o === 'InvoiceDate desc'));
 
   // rota: a sonda é só do dono (o exigirDono vem antes)

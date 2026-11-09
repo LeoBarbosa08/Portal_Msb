@@ -597,7 +597,9 @@
           return '<tr><td class="nf">' + esc(x.entidade) + (x.serve ? ' <span class="fd-tag venda">serve</span>' : '') + (x.serveStatus ? ' <span class="fd-tag venda">status</span>' : '') + '</td>'
             + '<td>' + (ops || '<span class="sub">nenhuma</span>') + (sts ? '<div class="sub" style="margin-top:4px;">status: ' + sts + '</div>' : '') + '</td>'
             + '<td>' + esc(x.ultimaData ? fDia(x.ultimaData) : '—') + (x.dataCol ? '<div class="sub">' + esc(x.dataCol) + '</div>' : '') + '</td>'
-            + '<td class="num">' + (x.colunas || '') + '</td></tr>';
+            + '<td class="num">' + (x.nomesColunas && x.nomesColunas.length
+                ? '<details><summary style="cursor:pointer;">' + x.colunas + '</summary><div style="text-align:left;font-family:\'JetBrains Mono\',monospace;font-size:11px;white-space:normal;max-width:360px;">' + x.nomesColunas.map(esc).join('<br>') + '</div></details>'
+                : (x.colunas || '')) + '</td></tr>';
         }).join('');
         var falhas = ents.filter(function (x) { return !x.ok; }).map(function (x) { return esc(x.entidade); }).join(', ');
         $('fd-sonda-res').innerHTML = '<div style="margin-bottom:8px;">' + esc(j.servicoDocumento || '') + ' · <b>' + ((j.servem || []).length ? 'servem: ' + esc(j.servem.join(', ')) : 'nenhuma entidade com operação preenchida em 2026') + '</b></div>'

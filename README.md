@@ -963,6 +963,14 @@ soma. `api/shared/fatdia-status.js` agora lê também a data do documento
 7 dias da data da nota (`FATDIA_STATUS_DIAS`); fora disso, conta como "não
 achado". `sw.js` — cache `bm-comest-v42`.
 
+### Sonda · os nomes das colunas (09/11/2026)
+
+Pedido do dono: "me mostre as colunas dessas duas" (SalesInvoiceHeadersV2 e
+SalesInvoiceHeaders, na sonda). A sonda passou a devolver `nomesColunas` de
+cada entidade; na tela, clicar no número de colunas abre a lista. (As do
+diário também aparecem no painel da nota — todos os campos do registro.)
+`sw.js` — cache `bm-comest-v43`.
+
 ## Como colocar no ar
 
 1. **Repositório no GitHub** — crie um repositório **privado e vazio** (sem

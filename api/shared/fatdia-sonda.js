@@ -76,6 +76,7 @@ async function sondarUma(ent, token, ate) {
   out.ok = true;
   const cols = colunasDe(rows[0]);
   out.colunas = cols.length;
+  out.nomesColunas = cols.slice().sort((a, b) => a.localeCompare(b));   // 09/11/26: o dono quer ver as colunas
   out.colunasOperacao = cols.filter(c => RE_OP.test(c) && !RE_NAO.test(c));
   out.colunasStatus = cols.filter(c => RE_ST.test(c));
   const num = achaCol(cols, NUMEROS);
