@@ -104,8 +104,8 @@ const CLIENTES = { porConta: true, amostra: { dataAreaId: 'msb', CustomerAccount
   r = await FD.notasDoDia({ data: DIA });
   let nOv = r.notas.find(x => x.numero === '000011774');
   t('operação vem da OV: o FiscalDocumentOperationTypeId', nOv.operacao === 'S.LIC.002' && /^OV · BIOSalesOrderHeaderV1\.FiscalDocumentOperationTypeId$/.test(nOv.operacaoFonte), nOv);
-  t('nota sem OV fica sem operação', !r.notas.find(x => x.numero === '000011780').operacao);
-  t('a operação não mexe nos valores', r.resumo.venda.valor === 1000 && r.resumo.devolucao.valor === 150, r.resumo);
+  t('nota sem OV: sem tipo de operação, fora da soma', !r.notas.find(x => x.numero === '000011780') && r.foraOperacao.some(x => x.numero === '000011780' && x.operacao === '(sem tipo de operação)' && x.valor === -150), r.foraOperacao);
+  t('S.LIC.002 é aceito: venda 1.000, sem devolução', r.resumo.venda.valor === 1000 && r.resumo.devolucao.qtd === 0 && r.filtroOperacao.aplicado, r.resumo);
   t('operacaoOv no diagnóstico', r.operacaoOv && r.operacaoOv.achadas === 1, r.operacaoOv);
   t('"DoesNotApply" não vira operação', !r.notas.some(x => /DoesNotApply/i.test(x.operacao || '')), r.notas.map(x => x.operacao));
   t('leu a OV pelo número, só a MSB', chamadas.some(c => c.ent === 'BIOSalesOrderHeaderV1' && /SalesOrderNumber eq 'OV017456'/.test(c.q.filter) && /dataAreaId eq 'msb'/.test(c.q.filter)));
@@ -115,8 +115,8 @@ const CLIENTES = { porConta: true, amostra: { dataAreaId: 'msb', CustomerAccount
   CEN.SalesInvoiceHeadersV2 = { amostra: { dataAreaId: 'msb', InvoiceNumber: 'X', InvoiceDate: DIA + 'T00:00:00Z', InvoiceCustomerAccountNumber: 'C1', TotalInvoiceAmount: 1, SalesOrderNumber: 'OV1', CurrencyCode: 'BRL', OperationDescription: 'Venda' },
     linhas: [{ InvoiceNumber: '000011790', InvoiceDate: DIA + 'T00:00:00Z', InvoiceCustomerAccountNumber: 'C1', TotalInvoiceAmount: 500, SalesOrderNumber: 'OV017456', OperationDescription: 'Venda de produção do estabelecimento' }] };
   r = await FD.notasDoDia({ data: DIA });
-  nOv = r.notas.find(x => x.numero === '000011790');
-  t('operação da própria nota', nOv && nOv.operacao === 'Venda de produção do estabelecimento' && nOv.operacaoFonte === 'nota', nOv);
+  nOv = r.foraOperacao.find(x => x.numero === '000011790');
+  t('operação da própria nota (fora da lista aceita: fica fora)', nOv && nOv.operacao === 'Venda de produção do estabelecimento' && !r.notas.length, r.foraOperacao);
   t('não consultou a OV', !chamadas.some(c => c.ent === 'BIOSalesOrderHeaderV1'), chamadas.map(c => c.ent));
   delete CEN.BIOSalesOrderHeaderV1;
 
@@ -210,6 +210,33 @@ const CLIENTES = { porConta: true, amostra: { dataAreaId: 'msb', CustomerAccount
   CEN.SalesInvoiceHeadersV2 = Object.assign(DIARIO([orig98, dup98, n470]), { porNumero: true, doDia: [orig98] });
   r = await FD.notasDoDia({ data: '2026-10-07' });
   t('em 07/10 a venda original (R$ 18.000) fica', r.notas.length === 1 && r.notas[0].numero === '000021098' && r.notas[0].valor === 18000 && r.notas[0].tipo === 'venda' && r.repetidas.length === 0, r.notas);
+
+  console.log('8) só os tipos de operação aceitos (S.VEN.006, E.CON.002, S.CON.004, S.LIC.002, E.VEN.002)');
+  const K8 = require('../api/shared/kanban-ov');
+  const jl8 = (n, ov, v) => ({ dataAreaId: 'msb', InvoiceNumber: n, InvoiceDate: DIA + 'T12:00:00Z', InvoiceCustomerAccountNumber: 'C1', TotalInvoiceAmount: v, SalesOrderNumber: ov });
+  const ov8 = (n, op) => ({ dataAreaId: 'msb', SalesOrderNumber: n, FiscalDocumentOperationTypeId: op, FiscalOperationPresenceType: 'DoesNotApply' });
+  FD._limparCache(); K8._limparCache(); chamadas.length = 0;
+  CEN = {
+    FiscalDocuments: { amostra: AMOSTRA_FISCAL, linhas: [], ultima: '2023-12-05T00:00:00Z', colData: 'FiscalDocumentDate' },
+    SalesInvoiceHeadersV2: Object.assign(DIARIO([jl8('000021500', 'OV1', 1000), jl8('000021501', 'OV2', -150), jl8('000021502', 'OV3', 500), jl8('000021503', 'OV4', 300), jl8('000021504', 'OV5', 200)]), { porNumero: true }),
+    BIOSalesOrderHeaderV1: { amostra: ov8('OV0', 'S.VEN.006'), linhas: [ov8('OV1', 'S.VEN.006'), ov8('OV2', 'e.ven.002'), ov8('OV3', 'S.REM.001'), ov8('OV5', 'S.LIC.002')] },
+    CustomersV3: CLIENTES
+  };
+  r = await FD.notasDoDia({ data: DIA });
+  t('S.VEN.006 e S.LIC.002 contam como venda', r.resumo.venda.qtd === 2 && r.resumo.venda.valor === 1200, r.resumo.venda);
+  t('E.VEN.002 conta como devolução (maiúscula/minúscula tanto faz)', r.resumo.devolucao.qtd === 1 && r.resumo.devolucao.valor === 150, r.resumo.devolucao);
+  t('líquido = 1.050', r.resumo.liquido === 1050, r.resumo.liquido);
+  t('S.REM.001 fica fora', r.foraOperacao.some(x => x.numero === '000021502' && x.operacao === 'S.REM.001' && x.valor === 500), r.foraOperacao);
+  t('OV sem tipo fica fora como "(sem tipo de operação)"', r.foraOperacao.some(x => x.numero === '000021503' && x.operacao === '(sem tipo de operação)'), r.foraOperacao);
+  t('aviso com os tipos que ficaram fora', r.avisos.some(a => /2 nota\(s\) fora do faturamento pelo tipo de operação/.test(a) && /S\.REM\.001 \(1\)/.test(a)), r.avisos);
+  t('filtro aplicado', r.filtroOperacao && r.filtroOperacao.aplicado === true && r.filtroOperacao.fora === 2, r.filtroOperacao);
+
+  console.log('8b) a leitura dos tipos falha: NÃO filtra e avisa (não zera)');
+  FD._limparCache(); K8._limparCache(); chamadas.length = 0;
+  delete CEN.BIOSalesOrderHeaderV1;   // nenhuma entidade de OV responde
+  r = await FD.notasDoDia({ data: DIA });
+  t('sem tipos lidos, todas as notas ficam', r.notas.length === 5 && r.resumo.liquido === 1850, r.resumo);
+  t('aviso em destaque: filtro NÃO aplicado', /NÃO foi aplicado/.test(r.avisos[0]) && r.filtroOperacao && r.filtroOperacao.aplicado === false, r.avisos);
 
   console.log(falhas ? '\n' + falhas + ' FALHA(S)' : '\ntudo ok');
   process.exit(falhas ? 1 : 0);
