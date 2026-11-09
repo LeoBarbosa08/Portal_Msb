@@ -1174,6 +1174,26 @@ restantes dos cards têm que pegar toda a vida da empresa".
   por período, de/até trocados, o F&O recusando o enum; a rota (período > 1 ano
   e data inválida → 400). `sw.js` — cache `bm-comest-v52`.
 
+### Sonda · status da nota nas entidades fiscais da Bio primeiro (09/11/2026)
+
+Pedido do dono: "vê se acha algum status de alguma entidade que tem nota
+fiscal". Daqui não se alcança o Dynamics (a rede do ambiente de
+desenvolvimento bloqueia `mlb.operations.dynamics.com` e não há credenciais),
+então a busca é a sonda do portal: Faturamento do Dia › "Operação e status da
+nota no Dynamics" › **Procurar no Dynamics** (só do dono) › "Copiar resultado".
+
+- `api/shared/fatdia-sonda.js`: o corte de 36 entidades podia deixar de fora a
+  entidade de documento fiscal da Bio (o mesmo corte que escondia a
+  FiscalDocumentBioEntity no status). Agora entram **primeiro** as de documento
+  fiscal / NF-e com "bio" no nome, depois as outras de documento fiscal / NF-e
+  (linhas, impostos e tipos não), depois as conhecidas e o resto. As que trazem
+  status preenchido numa nota de 2026 sobem na lista.
+- `pages/comercial-faturamento-hoje.html`: o quadro diz também quais entidades
+  trazem o **status da nota** (`servemStatus`), além da operação.
+- Teste: `node scripts/test-fatdia-sonda.js` (caso 2: 40 entidades de fatura
+  publicadas antes da da Bio — sem a correção, ela nem era testada).
+- `sw.js` — cache `bm-comest-v53`.
+
 ## Como colocar no ar
 
 1. **Repositório no GitHub** — crie um repositório **privado e vazio** (sem

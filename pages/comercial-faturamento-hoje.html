@@ -291,7 +291,7 @@
                  /api/faturamento-hoje?sondar=1 (api/shared/fatdia-sonda.js). -->
             <div class="fd-tbl-wrap" id="fd-sonda" style="display:none;">
               <div class="fd-tbl-head">
-                <h4>Tipo de operação no Dynamics <span style="font-weight:500;color:var(--text-3);font-size:11px;">· procura a entidade que traz a operação das notas de 2026</span></h4>
+                <h4>Operação e status da nota no Dynamics <span style="font-weight:500;color:var(--text-3);font-size:11px;">· procura as entidades que trazem a operação e o status das notas de 2026</span></h4>
                 <button type="button" class="fd-btn" id="fd-sonda-btn" style="margin-left:auto;">Procurar no Dynamics</button>
                 <button type="button" class="fd-btn" id="fd-sonda-copiar" style="display:none;">Copiar resultado</button>
               </div>
@@ -594,7 +594,7 @@
           var rec = x.maisRecente || {};
           var ops = (x.colunasOperacao || []).map(function (c) { return esc(c) + (rec[c] != null && String(rec[c]) !== '' ? ' = <b>' + esc(rec[c]) + '</b>' : ''); }).join('<br>');
           var sts = (x.colunasStatus || []).map(function (c) { return esc(c) + (rec[c] != null && String(rec[c]) !== '' ? ' = <b>' + esc(rec[c]) + '</b>' : ''); }).join('<br>');
-          return '<tr><td class="nf">' + esc(x.entidade) + (x.serve ? ' <span class="fd-tag venda">serve</span>' : '') + (x.serveStatus ? ' <span class="fd-tag venda">status</span>' : '') + '</td>'
+          return '<tr><td class="nf">' + esc(x.entidade) + (x.serve ? ' <span class="fd-tag venda">operação</span>' : '') + (x.serveStatus ? ' <span class="fd-tag venda">status</span>' : '') + '</td>'
             + '<td>' + (ops || '<span class="sub">nenhuma</span>') + (sts ? '<div class="sub" style="margin-top:4px;">status: ' + sts + '</div>' : '') + '</td>'
             + '<td>' + esc(x.ultimaData ? fDia(x.ultimaData) : '—') + (x.dataCol ? '<div class="sub">' + esc(x.dataCol) + '</div>' : '') + '</td>'
             + '<td class="num">' + (x.nomesColunas && x.nomesColunas.length
@@ -602,8 +602,9 @@
                 : (x.colunas || '')) + '</td></tr>';
         }).join('');
         var falhas = ents.filter(function (x) { return !x.ok; }).map(function (x) { return esc(x.entidade); }).join(', ');
-        $('fd-sonda-res').innerHTML = '<div style="margin-bottom:8px;">' + esc(j.servicoDocumento || '') + ' · <b>' + ((j.servem || []).length ? 'servem: ' + esc(j.servem.join(', ')) : 'nenhuma entidade com operação preenchida em 2026') + '</b></div>'
-          + '<div class="fd-scroll" style="max-height:420px;"><table class="fd-tbl"><thead><tr><th>Entidade</th><th>Colunas de operação (valor na nota mais recente)</th><th>Nota mais recente</th><th class="num">Colunas</th></tr></thead><tbody>' + (linhas || '<tr><td colspan="4" class="fd-vazio">nenhuma respondeu</td></tr>') + '</tbody></table></div>'
+        $('fd-sonda-res').innerHTML = '<div style="margin-bottom:8px;">' + esc(j.servicoDocumento || '') + ' · <b>' + ((j.servem || []).length ? 'operação: ' + esc(j.servem.join(', ')) : 'nenhuma entidade com operação preenchida em 2026') + '</b>'
+          + ' · <b>' + ((j.servemStatus || []).length ? 'status da nota: ' + esc(j.servemStatus.join(', ')) : 'nenhuma entidade com status preenchido numa nota de 2026') + '</b></div>'
+          + '<div class="fd-scroll" style="max-height:420px;"><table class="fd-tbl"><thead><tr><th>Entidade</th><th>Colunas de operação e de status (valor na nota mais recente)</th><th>Nota mais recente</th><th class="num">Colunas</th></tr></thead><tbody>' + (linhas || '<tr><td colspan="4" class="fd-vazio">nenhuma respondeu</td></tr>') + '</tbody></table></div>'
           + (falhas ? '<div class="sub" style="margin-top:8px;">Não responderam (não existem ou sem permissão): ' + falhas + '</div>' : '');
         $('fd-sonda-copiar').style.display = '';
       } catch (e) {

@@ -23,12 +23,13 @@ const ENT = {
   NFeHeadersBR: [{ dataAreaId: 'msb', DocumentNumber: '21466', CreatedDateTime: '2026-11-06T13:00:00Z', NatureOfOperation: 'VENDA' }]
 };
 const chamadas = [];
+let EXTRA = [];   // nomes a mais no service document (caso 2)
 const corpo = (j, st) => ({ ok: (st || 200) < 400, status: st || 200, text: async () => JSON.stringify(j) });
 global.fetch = async (url) => {
   url = String(url);
   if (/login\.microsoftonline/.test(url)) return corpo({ access_token: 'tok', expires_in: 3600 });
   const u = new URL(url);
-  if (u.pathname === '/data') return corpo({ value: Object.keys(ENT).concat(['Customers', 'Vendors']).map(n => ({ name: n })) });
+  if (u.pathname === '/data') return corpo({ value: Object.keys(ENT).filter(n => EXTRA.indexOf(n) < 0).concat(['Customers', 'Vendors'], EXTRA).map(n => ({ name: n })) });   // EXTRA no fim, na ordem dada
   const e = u.pathname.replace('/data/', '');
   chamadas.push({ e, f: u.searchParams.get('$filter') || '', o: u.searchParams.get('$orderby') });
   if (!ENT[e]) return corpo({ error: {} }, 404);
@@ -50,6 +51,22 @@ const S = require('../api/shared/fatdia-sonda');
   t('leituras da MSB', chamadas.filter(c => c.f).every(c => /dataAreaId eq 'msb'/.test(c.f)));
   t('traz os nomes de todas as colunas', por.SalesInvoiceHeadersV2.nomesColunas.slice().sort().join(',') === 'InvoiceDate,InvoiceNumber,TotalInvoiceAmount,dataAreaId', por.SalesInvoiceHeadersV2.nomesColunas);
   t('ordenou pela data para achar a mais recente', chamadas.some(c => c.e === 'SalesInvoiceLines' && c.o === 'InvoiceDate desc'));
+
+  console.log('2) status da nota: a entidade fiscal da Bio não pode cair no corte de MAX_ENT');
+  // 09/11/26 (dono: "vê se acha algum status de alguma entidade que tem nota
+  // fiscal"): 40 entidades de fatura publicadas antes da da Bio
+  EXTRA = Array.from({ length: 40 }, (_, i) => 'VendInvoiceExtra' + i).concat(['FiscalDocumentLineBioEntities']);
+  ENT.FiscalDocumentBioEntities = [{ dataAreaId: 'msb', FiscalDocumentNumber: '000021497', FiscalDocumentDate: '2026-11-09T12:00:00Z', Status: 'Approved' }];
+  EXTRA.push('FiscalDocumentBioEntities');
+  chamadas.length = 0;
+  const r2 = await S.sondar();
+  const bio = r2.entidades.find(x => x.entidade === 'FiscalDocumentBioEntities');
+  t('a entidade fiscal da Bio foi testada mesmo com 40 de fatura antes', !!bio && bio.ok, r2.entidades.map(x => x.entidade).slice(0, 5));
+  t('ela traz o status da nota de 2026 (Status = Approved)', bio && bio.serveStatus === true && bio.colunasStatus.indexOf('Status') >= 0 && bio.maisRecente.Status === 'Approved', bio);
+  t('ela está em "servemStatus"', r2.servemStatus.indexOf('FiscalDocumentBioEntities') >= 0, r2.servemStatus);
+  t('a de linhas da Bio não passa na frente', r2.entidades.findIndex(x => x.entidade === 'FiscalDocumentBioEntities') >= 0 && chamadas.findIndex(c => c.e === 'FiscalDocumentBioEntities') < chamadas.findIndex(c => c.e === 'FiscalDocumentLineBioEntities' || c.e === 'SalesInvoiceHeadersV2'));
+  t('o limite de entidades testadas continua', new Set(chamadas.map(c => c.e)).size <= 36, new Set(chamadas.map(c => c.e)).size);
+  EXTRA = []; delete ENT.FiscalDocumentBioEntities;
 
   // rota: a sonda é só do dono (o exigirDono vem antes)
   const auth = require('../api/shared/auth');

@@ -38,6 +38,9 @@ const CONHECIDAS = [
   'SalesOrderHeadersV2', 'BIOSalesOrderHeaderV1', 'SalesOrderLines'
 ];
 const RE_NOME = /invoice|fiscal|cfop|nfe|efdoc|electronic|operationtype|opertype|salespurchoper/i;
+// documento fiscal / NF-e — onde mora o STATUS da nota (aprovada, cancelada…)
+const RE_DOC  = /fiscaldoc|nfe|efdoc|electronic|notafiscal/i;
+const RE_DOC_NAO = /line|linha|tax|imposto|item|type|tipo/i;   // linhas/impostos/tipos não têm o status da nota
 // 09/11/26: também o STATUS da nota (aprovado, descartado…) — o filtro "Aprovado"
 const RE_ST = /^(?!.*(date|time|reason|motivo|message|mensagem)).*status/i;
 const RE_OP   = /operation|opera[cç]|cfop|natur|operType/i;
@@ -108,23 +111,31 @@ async function sondar() {
   const token = await D.getToken();
   const sv = await servico(token, ate);
   const existe = {}; sv.nomes.forEach(n => { existe[n.toLowerCase()] = n; });
-  let alvos = CONHECIDAS.filter(n => !sv.nomes.length || existe[n.toLowerCase()]).map(n => existe[n.toLowerCase()] || n);
-  const doServico = sv.nomes.filter(n => RE_NOME.test(n) && alvos.indexOf(n) < 0);
-  alvos = alvos.concat(doServico).slice(0, MAX_ENT);
+  const conhecidas = CONHECIDAS.filter(n => !sv.nomes.length || existe[n.toLowerCase()]).map(n => existe[n.toLowerCase()] || n);
+  const doServico = sv.nomes.filter(n => RE_NOME.test(n) && conhecidas.indexOf(n) < 0);
+  // 09/11/26 (dono: "vê se acha algum status de alguma entidade que tem nota
+  // fiscal"): o corte de MAX_ENT podia deixar de fora a entidade de documento
+  // fiscal da Bio (o mesmo corte que escondia a FiscalDocumentBioEntity no
+  // status). Agora entram PRIMEIRO as de documento fiscal / NF-e da Bio, depois
+  // as de documento fiscal / NF-e, depois as conhecidas e o resto.
+  const prio = (n) => !RE_DOC.test(n) || RE_DOC_NAO.test(n) ? 2 : /bio/i.test(n) ? 0 : 1;
+  const frente = doServico.filter(n => prio(n) < 2).sort((a, b) => prio(a) - prio(b));
+  const resto  = doServico.filter(n => prio(n) === 2);
+  let alvos = frente.concat(conhecidas.filter(n => frente.indexOf(n) < 0), resto).slice(0, MAX_ENT);
   const res = [];
   for (let i = 0; i < alvos.length; i += PARALELO) {
     if (restante(ate) < 3000) { alvos.slice(i).forEach(ent => res.push({ entidade: ent, ok: false, serve: false, erro: 'não testada: o tempo da consulta acabou' })); break; }
     const lote = await Promise.all(alvos.slice(i, i + PARALELO).map(ent => sondarUma(ent, token, ate).catch(e => ({ entidade: ent, ok: false, serve: false, erro: String(e.message || e).slice(0, 200) }))));
     lote.forEach(x => res.push(x));
   }
-  res.sort((a, b) => (b.serve - a.serve) || ((b.colunasOperacao || []).length ? 1 : 0) - ((a.colunasOperacao || []).length ? 1 : 0) || String(b.ultimaData || '').localeCompare(String(a.ultimaData || '')));
+  res.sort((a, b) => (b.serve - a.serve) || (!!b.serveStatus - !!a.serveStatus) || ((b.colunasOperacao || []).length ? 1 : 0) - ((a.colunasOperacao || []).length ? 1 : 0) || String(b.ultimaData || '').localeCompare(String(a.ultimaData || '')));
   return {
     ok: true, empresa: EMPRESA, geradoEm: new Date().toISOString(),
-    servicoDocumento: sv.erro || ('ok · ' + sv.nomes.length + ' entidades publicadas · ' + doServico.length + ' com invoice/fiscal/cfop/nfe/operation no nome'),
+    servicoDocumento: sv.erro || ('ok · ' + sv.nomes.length + ' entidades publicadas · ' + doServico.length + ' com invoice/fiscal/cfop/nfe/operation no nome · ' + frente.length + ' de documento fiscal / NF-e testadas primeiro'),
     servem: res.filter(x => x.serve).map(x => x.entidade),
     servemStatus: res.filter(x => x.serveStatus).map(x => x.entidade),
     entidades: res
   };
 }
 
-module.exports = { sondar, _interno: { sondarUma, RE_OP, RE_NOME } };
+module.exports = { sondar, _interno: { sondarUma, RE_OP, RE_NOME, RE_DOC } };
