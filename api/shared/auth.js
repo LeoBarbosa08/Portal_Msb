@@ -57,6 +57,7 @@ const GUID = /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a
 // (as páginas que não vieram estão em PAGINAS_FORA, mais abaixo).
 // 06/11/26: entra o KANBAN (ordens de venda do dia, ao vivo do Dynamics),
 // RESERVADO em AREAS_RESERVADAS logo abaixo.
+// 09/11/26: o KANBAN deixou de ser reservado — aberto a todos (AREAS_ABERTAS).
 const ALL_AREAS = ['comercial', 'estoque', 'contabil', 'kanban'];
 
 // Áreas ABERTAS a qualquer pessoa autenticada — entram no allowed mesmo de
@@ -68,7 +69,10 @@ const ALL_AREAS = ['comercial', 'estoque', 'contabil', 'kanban'];
 // quem está em UNRESTRICTED_GROUPS e os e-mails da reserva; o resto da
 // empresa, não. Reabrir para TODOS é devolver 'diretoria' aqui e tirar de
 // AREAS_RESERVADAS.
-const AREAS_ABERTAS = [];
+// 09/11/2026 (pedido do dono: "libera o kanban para todo mundo"): + kanban —
+// qualquer pessoa autenticada do domínio vê o quadro (saiu de AREAS_RESERVADAS
+// e de RESERVA_ESTRITA).
+const AREAS_ABERTAS = ['kanban'];
 
 // E-mails que SEMPRE veem todas as áreas (TI / diretoria), minúsculo
 const ADMIN_EMAILS = ['leonardo.barbosa@biomedical.com.br'];
@@ -103,13 +107,9 @@ const AREAS_RESERVADAS = {
   vendedor:    ['leonardo.barbosa@biomedical.com.br', 'ia@biomedical.com.br'],
   gerencial:   ['leonardo.barbosa@biomedical.com.br', 'ia@biomedical.com.br'],
   atendimento: ['leonardo.barbosa@biomedical.com.br'],
-  compras:     ['leonardo.barbosa@biomedical.com.br', 'ia@biomedical.com.br'],
-  // Kanban: área nova de 06/11/2026 (o quadro das ordens de venda do dia, ao
-  // vivo do Dynamics). EM CONSTRUÇÃO: o dono ainda vai definir o que cada
-  // status significa. Mesma regra do Vendedor/Gerencial — as duas contas
-  // dele e quem tem acesso full. Abrir para a equipe = tirar 'kanban' daqui
-  // e mapear os grupos em GRUPO_AREAS.
-  kanban:      ['leonardo.barbosa@biomedical.com.br', 'ia@biomedical.com.br']
+  compras:     ['leonardo.barbosa@biomedical.com.br', 'ia@biomedical.com.br']
+  // Kanban (06/11/2026): era reservado às duas contas do dono; desde
+  // 09/11/2026 é ABERTO a todos (AREAS_ABERTAS, acima).
 };
 
 // ── RESERVA ESTRITA ──────────────────────────────────────────────
@@ -117,10 +117,9 @@ const AREAS_RESERVADAS = {
 // lista em AREAS_RESERVADAS. Quem tem acesso full passa a receber a resposta
 // RESTRITA (todas as outras áreas) — é o que tira o cartão e o menu da tela
 // dele, como já acontece com os dois fail-open.
-// 07/11/26: + kanban (pedido do dono: "oculte o kanban") — só as duas contas
-// dele, nem o acesso full. 09/11/26: o cartão voltou à home ("traga a área
-// kanban, porém somente para mim") — esta reserva é o que o mantém só dele.
-const RESERVA_ESTRITA = ['compras', 'kanban'];
+// 07/11/26: + kanban ("oculte o kanban"); 09/11/26: saiu — o Kanban foi
+// liberado para todo mundo (AREAS_ABERTAS).
+const RESERVA_ESTRITA = ['compras'];
 
 // ── ACESSO FULL ──────────────────────────────────────────────────
 // 03/09/2026, pedido do dono do portal: "a área Diretoria é somente para as

@@ -19,9 +19,9 @@
 //        qtd, un, preco, desconto, descPct, valor, status, entrega,
 //        confirmada, deposito }] }
 //
-// Acesso: a ÁREA kanban, que nasce RESERVADA (AREAS_RESERVADAS em
-// api/shared/auth.js — as duas contas do dono e quem tem acesso full),
-// enquanto o dono define o que cada status significa.
+// Acesso: a ÁREA kanban. Nasceu RESERVADA às contas do dono; desde
+// 09/11/2026 é ABERTA a qualquer pessoa autenticada do domínio
+// (AREAS_ABERTAS em api/shared/auth.js).
 // ================================================================
 
 const auth = require('../shared/auth');
@@ -50,7 +50,7 @@ module.exports = async function (context, req) {
     json(200, await K.ordensDoDia({ data, atualizar: q.atualizar === '1', diag: q.diag === '1' }));
   } catch (e) {
     if (e && (e.status === 401 || e.status === 403 || e.status === 400)) { http.sendError(context, req, 'kanban-ov', e); return; }
-    // área reservada ao dono: o motivo do Dynamics volta para ele (é o diagnóstico)
+    // o motivo do Dynamics volta na resposta (é o diagnóstico da tela)
     http.logError(context, 'kanban-ov', e);
     json(502, { ok: false, error: 'Não foi possível ler o Dynamics agora.', detalhe: String((e && e.message) || e).slice(0, 400) });
   }

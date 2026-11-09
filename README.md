@@ -1042,6 +1042,18 @@ em cotação". Por enquanto **só leitura, sem regra** — a Cotação segue
   trabalho sem carga, só leitura, entidade fora do OData, sem LoadId nem
   procura). `sw.js` — cache `bm-comest-v46`.
 
+### Kanban liberado para todo mundo (09/11/2026)
+
+Pedido do dono: "libera o kanban para todo mundo". Em `api/shared/auth.js`, a
+área `kanban` saiu de `AREAS_RESERVADAS` e de `RESERVA_ESTRITA` e entrou em
+`AREAS_ABERTAS` (a lista que estava vazia): qualquer pessoa autenticada do
+domínio recebe a área no `/api/my-areas` — quem é só de um grupo (Comercial,
+Administrativo…), quem não tem grupo mapeado e o acesso full. Com isso o
+cartão "Kanban" da home, a busca, o menu e o `/api/kanban-ov` valem para
+todos. Compras segue só do dono. Conferido simulando o Graph (grupo do
+Comercial, grupo de outra área, sem grupo, admin: todos veem o Kanban).
+`sw.js` — cache `bm-comest-v47`.
+
 ## Como colocar no ar
 
 1. **Repositório no GitHub** — crie um repositório **privado e vazio** (sem
