@@ -12,7 +12,8 @@
 //   GET /api/kanban-ov?diag=1          -> + colunas das entidades
 //   -> { ok, configured, empresa, data, fontes, etapas, canceladas,
 //        depositos (só ALMOX-PA: KANBAN_DEPOSITOS), foraDeposito, statusCols,
-//        statusPadrao, ovs:[...], avisos, diagnostico }
+//        statusPadrao, ovs:[{ …, etapa, regra:{ …, credito*, trabalho }, trabalhos:[…] }],
+//        avisos, diagnostico }
 //   GET /api/kanban-ov?ov=OV017525     -> as linhas da OV (a ficha do painel)
 //   -> { ok, configured, numero, entidade, linhas:[{ linha, item, produto,
 //        qtd, un, preco, desconto, descPct, valor, status, entrega,

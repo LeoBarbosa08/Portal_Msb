@@ -64,7 +64,8 @@
                juntas pelo número da OV; valor pelas linhas). 07/11/26: QUATRO
                colunas fixas, na ordem do fluxo — Criada, Gerenciamento de Crédito,
                Separação (era "Liberado"), Faturado; 09/11/26: SEIS — + Conferência e
-               Cotação, vazias até o dono mandar os campos — pela regra do dono (SalesStatus, ReleaseStatus,
+               Cotação, vazias até o dono mandar os campos; + Expedição depois do Faturado,
+               também à espera dos campos — pela regra do dono (SalesStatus, ReleaseStatus,
                e o crédito: tabela BioCredManTableV1, ACTIVE pelo SALESID — 09/11/26),
                calculada no servidor (api/shared/kanban-ov.js).
                Área RESERVADA (AREAS_RESERVADAS em api/shared/auth.js). -->
@@ -98,12 +99,12 @@
 
             /* uma coluna por etapa (6 desde 09/11/26): lado a lado; sem espaço, o
                quadro rola na horizontal em vez de quebrar em duas linhas */
-            .kb-board{display:grid;grid-template-columns:repeat(var(--kb-n,6),minmax(165px,1fr));gap:12px;align-items:start;overflow-x:auto;padding-bottom:4px;}
+            .kb-board{display:grid;grid-template-columns:repeat(var(--kb-n,7),minmax(145px,1fr));gap:12px;align-items:start;overflow-x:auto;padding-bottom:4px;}
             .kb-vazio.pend{font-size:12px;font-style:italic;}
             .kb-col{border-radius:12px;background:var(--kb-bg);border:1px solid var(--kb-bd);display:flex;flex-direction:column;min-height:180px;max-height:70vh;}
             .kb-col-h{padding:10px 12px 8px;display:flex;flex-direction:column;gap:2px;}
             .kb-col-t{display:flex;align-items:flex-start;gap:8px;font-size:13.5px;font-weight:700;color:var(--kb-ink);}
-            .kb-col-t .nome{flex:1;min-width:0;line-height:1.25;overflow-wrap:anywhere;}
+            .kb-col-t .nome{flex:1;min-width:0;line-height:1.25;overflow-wrap:break-word;-webkit-hyphens:auto;hyphens:auto;}
             .kb-cnt{min-width:24px;height:22px;padding:0 7px;border-radius:999px;background:var(--surface);color:var(--text);font-size:12px;font-weight:700;display:inline-flex;align-items:center;justify-content:center;}
             .kb-col-v{font-size:12px;font-weight:600;color:var(--kb-ink);opacity:.85;}
             .kb-cards{padding:4px 8px 10px;display:flex;flex-direction:column;gap:6px;overflow-y:auto;}
@@ -236,7 +237,12 @@
             .kb-tl li.agora .ds,.kb-tl li.fim .ds{color:var(--dw-body);}
             .kb-tl .ds code{font-family:'JetBrains Mono',ui-monospace,monospace;font-size:10.5px;color:var(--dw-ink);}
             /* por que está nesta coluna: os 3 campos da regra */
-            .kb-rg{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;}
+            .kb-rg{display:grid;grid-template-columns:repeat(auto-fit,minmax(118px,1fr));gap:8px;}
+            .kb-trab-st{display:inline-block;padding:1px 8px;border-radius:999px;font-size:10.5px;font-weight:700;background:#F1F4F6;color:var(--dw-body);}
+            .kb-trab-st.fechado{background:#EAF8F0;color:#22794C;}
+            .kb-trab-st.processo{background:#ECF3F7;color:#286473;}
+            .kb-trab-st.aberto{background:#FFF6D6;color:#7A5A06;}
+            .kb-trab-st.ignora{background:#F1F4F6;color:var(--dw-mut2);text-decoration:line-through;}
             .kb-rg>div{border:1px solid var(--dw-bd);border-radius:10px;padding:9px 10px;min-width:0;background:#FAFCFD;}
             .kb-rg>div.decide{border-color:#9DC5D2;background:#F0F7FA;box-shadow:inset 3px 0 0 var(--dw-blue);}
             .kb-rg .k{font-size:9px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:var(--dw-mut3);}
@@ -366,8 +372,8 @@
     function tom(i) { var esc_ = document.documentElement.getAttribute('data-tema') === 'escuro'; var t = (esc_ ? TONS_ESC : TONS)[i % TONS.length]; return '--kb-bg:' + t[0] + ';--kb-bd:' + t[1] + ';--kb-ink:' + t[2]; }
     // tom de cada etapa: Criada azul, Crédito amarelo, Separação cinza, Conferência
     // verde-água, Cotação laranja, Faturado lilás
-    var TOM_ETAPA = { criada: 0, credito: 1, liberado: 2, conferencia: 5, cotacao: 4, faturado: 3 };
-    var NOME_ETAPA = { criada: 'Criada', credito: 'Gerenciamento de Crédito', liberado: 'Separação', conferencia: 'Conferência', cotacao: 'Cotação', faturado: 'Faturado', cancelada: 'Cancelada' };
+    var TOM_ETAPA = { criada: 0, credito: 1, liberado: 2, conferencia: 5, cotacao: 4, faturado: 3, expedicao: 6 };
+    var NOME_ETAPA = { criada: 'Criada', credito: 'Gerenciamento de Crédito', liberado: 'Separação', conferencia: 'Conferência', cotacao: 'Cotação', faturado: 'Faturado', expedicao: 'Expedição', cancelada: 'Cancelada' };
     // o quadro mostra só o depósito do filtro do servidor (ALMOX-PA, 09/11/26):
     // o chip/selo do depósito só aparece quando ele foge do filtro
     function depFiltro() { return (estado.r && estado.r.depositos) || []; }
@@ -409,7 +415,7 @@
       // as 4 colunas fixas, na ordem do fluxo (a etapa vem calculada do servidor);
       // cancelada não entra no quadro
       var etapas = r.etapas || [];
-      $('kb-quadro').innerHTML = '<div class="kb-board" style="--kb-n:' + (etapas.length || 6) + '">' + etapas.map(function (e) {
+      $('kb-quadro').innerHTML = '<div class="kb-board" style="--kb-n:' + (etapas.length || 7) + '">' + etapas.map(function (e) {
         var lista = ovs.filter(function (o) { return o.etapa === e.id; });
         var soma = lista.reduce(function (s, o) { return s + (o.valor || 0); }, 0);
         var temValor = lista.some(function (o) { return o.valor != null; });
@@ -424,10 +430,10 @@
       if (!ovs.length) { $('kb-quadro').innerHTML = '<div class="kb-vazio">' + ((r.ovs || []).length ? 'Nenhuma OV com essa busca.' : 'Nenhuma ordem de venda da MSB' + (depTexto() ? ' do ' + depTexto() : '') + ' criada em ' + fDia(r.data) + '.') + '</div>'; return; }
       var g = function (o, k) { return (o.regra && o.regra[k]) || ''; };
       $('kb-quadro').innerHTML = '<div class="kb-lista"><table class="kb-tbl"><thead><tr><th>OV</th><th>Cliente</th><th>Criada</th><th>OC</th><th>Etapa</th>'
-        + '<th>SalesStatus</th><th>ReleaseStatus</th><th>Crédito</th><th class="num">Itens</th><th class="num">Valor</th></tr></thead><tbody>'
+        + '<th>SalesStatus</th><th>ReleaseStatus</th><th>Crédito</th><th>Trabalho</th><th class="num">Itens</th><th class="num">Valor</th></tr></thead><tbody>'
         + ovs.map(function (o) {
           return '<tr tabindex="0" data-ov="' + esc(o.numero) + '"' + (estado.aberta === o.numero ? ' class="is-aberta"' : '') + '><td><b>' + esc(o.numero) + '</b></td><td>' + esc(o.cliente || o.conta) + '</td><td>' + esc(fHora(o.criadaEm)) + '</td><td>' + esc(o.oc) + '</td>'
-            + '<td><b>' + esc(NOME_ETAPA[o.etapa] || o.etapa) + '</b></td><td>' + esc(g(o, 'salesStatus')) + '</td><td>' + esc(g(o, 'releaseStatus')) + '</td><td>' + esc(credInfo(o.regra).veio ? credInfo(o.regra).rotulo : '') + '</td>'
+            + '<td><b>' + esc(NOME_ETAPA[o.etapa] || o.etapa) + '</b></td><td>' + esc(g(o, 'salesStatus')) + '</td><td>' + esc(g(o, 'releaseStatus')) + '</td><td>' + esc(credInfo(o.regra).veio ? credInfo(o.regra).rotulo : '') + '</td><td>' + esc(trabInfo(o).veio ? trabInfo(o).rotulo : '') + '</td>'
             + '<td class="num">' + (o.itens == null ? '' : o.itens) + '</td><td class="num">' + esc(o.valor == null ? '—' : fBRL(o.valor)) + '</td></tr>';
         }).join('') + '</tbody></table></div>';
     }
@@ -444,7 +450,7 @@
     var DW = { el: null, ov: null, volta: null };
     var LINHAS = new Map();          // nº da OV -> { st, linhas, em, erro, ts }
     var LINHAS_TTL = 60000;
-    var ORDEM_ETAPA = { criada: 0, credito: 1, liberado: 2, conferencia: 3, cotacao: 4, faturado: 5, cancelada: -1 };
+    var ORDEM_ETAPA = { criada: 0, credito: 1, liberado: 2, conferencia: 3, cotacao: 4, faturado: 5, expedicao: 6, cancelada: -1 };
     var POS_FAT = ORDEM_ETAPA.faturado;
     var IC_X = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>';
     var IC_ANT = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="15 18 9 12 15 6"/></svg>';
@@ -487,6 +493,32 @@
     // liberação: "Open" é "não liberada" (o F&O mostra "Abrir")
     function rotLib(v) { var k = chaveEnum(v); return k === 'open' || k === 'abrir' ? 'Não liberada' : rot(v); }
     function rotCred(v) { var k = chaveEnum(v); return /^(yes|sim|true|1|noyesyes)$/.test(k) ? 'Retida no crédito' : /^(no|nao|false|0|noyesno)$/.test(k) ? 'Sem retenção' : rot(v); }
+    // trabalho de depósito (WHSWorkTableBiEntity, 09/11/26): o WorkStatus em português
+    var ROT_TRAB = { open: 'Aberto', inprocess: 'Em processo', closed: 'Fechado', cancelled: 'Cancelado', canceled: 'Cancelado', combined: 'Combinado', pendingreview: 'Em revisão' };
+    function rotTrab(v) { return ROT_TRAB[chaveEnum(v)] || String(v || '—'); }
+    // resumo do trabalho da OV -> { veio (entidade no OData), fase, rotulo, cod, quem, ini, fim }
+    function trabInfo(o) {
+      var t = (o.regra || {}).trabalho, ls = o.trabalhos || [];
+      if (!t) return { veio: false, fase: null, rotulo: 'não veio', cod: 'WHSWorkTableBiEntity · WorkStatus' };
+      var col = colCurta(t.coluna, 'WorkStatus');
+      var conta = [t.fechados ? t.fechados + ' fechado' + (t.fechados > 1 ? 's' : '') : '', t.processo ? t.processo + ' em processo' : '',
+                   t.abertos ? t.abertos + ' aberto' + (t.abertos > 1 ? 's' : '') : '', t.ignorados ? t.ignorados + ' cancelado' + (t.ignorados > 1 ? 's' : '') : ''].filter(Boolean).join(', ');
+      var vivo = ls.filter(function (w) { return w.fase === 'processo'; })[0] || null;
+      var fechados = ls.filter(function (w) { return w.fase === 'fechado' && w.fim; }).sort(function (a, b) { return String(a.fim).localeCompare(String(b.fim)); });
+      var ult = fechados[fechados.length - 1] || null;
+      return {
+        veio: true, fase: t.fase,
+        rotulo: !t.fase ? 'Sem trabalho' : t.fase === 'fechado' ? 'Fechado' : t.fase === 'processo' ? 'Em processo' : 'Aberto · não iniciado',
+        cod: !t.fase ? colCurta(t.colOv, 'OrderNum') + ': sem trabalho' : col + ': ' + conta,
+        quem: (vivo && vivo.usuario) || (ult && ult.usuario) || '', ini: vivo && vivo.inicio, fim: ult && ult.fim, total: t.total, fechados: t.fechados
+      };
+    }
+    // hora (Brasília) de uma data-hora UTC; com o dia se não for hoje
+    function quando(iso) { if (!iso) return ''; var d = diaSP(iso); return (d && d !== hojeSP() ? fDM(d) + ' ' : '') + fHora(iso); }
+    function duracao(a, b) {
+      var ms = Date.parse(b) - Date.parse(a); if (!(ms >= 0)) return '';
+      var m = Math.round(ms / 60000); return m < 60 ? m + ' min' : Math.floor(m / 60) + ' h' + (m % 60 ? ' ' + (m % 60) + ' min' : '');
+    }
     function rotLinha(v) { var r = rot(v); return r === 'Ordem em aberto' ? 'em aberto' : r.toLowerCase(); }
 
     // valor de um campo nos campos crus da OV (qualquer entidade), pelo 1º nome que existir
@@ -739,6 +771,7 @@
       }).join('') + '</ol></section>';
 
       h += secRegra(o);
+      h += secTrabalho(o);
       h += secLinhas(o);
       h += secDados(o);
       h += secCrus(o, abertos.crus);
@@ -747,9 +780,10 @@
         + '<ol class="kb-dw-ol" style="margin-top:6px;">'
         + '<li class="' + (o.etapa === 'faturado' ? 'on' : '') + '">Situação (<code>SalesStatus</code>) que não é <b>Ordem em aberto</b> → <b>Faturado</b> (cancelada fica fora do quadro).</li>'
         + '<li class="' + (o.etapa === 'credito' ? 'on' : '') + '">Registro <b>ativo</b> na tabela de gerenciamento de crédito (<code>BioCredManTableV1</code>: <code>ACTIVE</code>, pela OV no <code>SALESID</code>) → <b>Gerenciamento de Crédito</b>. Sem a tabela no OData, vale o <code>CredManInCreditControl</code> do cabeçalho.</li>'
-        + '<li class="' + (o.etapa === 'liberado' ? 'on' : '') + '">Liberação (<code>ReleaseStatus</code>) = Liberado (Released) → <b>Separação</b>.</li>'
+        + '<li class="' + (o.etapa === 'conferencia' ? 'on' : '') + '">Todos os trabalhos de depósito da OV (<code>WHSWorkTableBiEntity</code>, pelo <code>OrderNum</code>) <b>Fechados</b> → <b>Conferência</b>. Cancelados não contam.</li>'
+        + '<li class="' + (o.etapa === 'liberado' ? 'on' : '') + '">Liberação (<code>ReleaseStatus</code>) = Liberado (Released), ou trabalho de depósito aberto/<b>em processo</b> → <b>Separação</b>.</li>'
         + '<li class="' + (o.etapa === 'criada' ? 'on' : '') + '">Nenhuma das anteriores → <b>Criada</b>.</li></ol>'
-        + '<p class="kb-dw-p" style="margin-top:8px;"><b>Conferência</b> e <b>Cotação</b> já estão no quadro, mas os campos que definem essas fases ainda vão ser informados: por enquanto nenhuma OV cai nelas.</p>'
+        + '<p class="kb-dw-p" style="margin-top:8px;"><b>Cotação</b> e <b>Expedição</b> já estão no quadro, mas os campos que definem essas fases ainda vão ser informados: por enquanto nenhuma OV cai nelas.</p>'
         + '<p class="kb-dw-p" style="margin-top:8px;">Entram as OVs da <b>MSB</b>' + (depTexto() ? ' do depósito <b>' + esc(depTexto()) + '</b>' : '') + ' criadas no dia escolhido (horário de Brasília); as de outros depósitos ficam fora. O quadro relê o Dynamics a cada 30 s no dia de hoje; as linhas desta ficha são lidas quando ela abre.</p></details>';
       return h;
     }
@@ -788,22 +822,41 @@
                                            : 'O registro da OV' + naTabela + ' está inativo (' + ci.cod + '). Se ficar ativo, a OV vem para esta etapa.')
           : 'Sem retenção agora. Se o Dynamics reter a OV no crédito, ela vem para esta etapa antes da liberação.' });
       // liberado
-      if (pos === 2) p.push({ cls: 'agora', tt: 'Agora: Separação', ds: 'Liberada para o depósito (' + cod(cLib, rg.releaseStatus) + '): os itens estão sendo separados. Ainda sem nota fiscal.' });
-      else if (pos > 2) p.push({ cls: 'feito', tt: 'Separação', ds: 'A OV foi liberada para o depósito' + (libVeio ? ' (' + cod(cLib, rg.releaseStatus) + ')' : '') + '.' });
-      else p.push({ cls: 'depois', tt: 'Separação', ds: 'Quando a OV for liberada para o depósito (<code>ReleaseStatus = Released</code>), vem para esta etapa: separação dos itens.' });
-      // conferência e cotação: fases novas, à espera dos campos do dono
-      [[3, 'Conferência'], [4, 'Cotação']].forEach(function (f) {
-        if (pos === f[0]) p.push({ cls: 'agora', tt: 'Agora: ' + f[1], ds: '' });
-        else if (pos > f[0]) p.push({ cls: 'feito', tt: f[1], ds: '' });
-        else p.push({ cls: 'depois', tt: f[1], dt: 'a definir', z: true, ds: 'Os campos que definem esta fase ainda vão ser informados.' });
-      });
+      var ti = trabInfo(o), porQuemT = ti.quem ? ' por <b>' + esc(ti.quem) + '</b>' : '';
+      if (pos === 2) {
+        var oQue = !ti.veio ? '' : ti.fase === 'processo' ? ' Trabalho de separação <b>em processo</b>' + porQuemT + (ti.fechados ? ' — ' + ti.fechados + ' de ' + ti.total + ' fechados' : '') + '.'
+          : ti.fase === 'aberto' ? ' Trabalho de separação criado, ainda não iniciado.' : ' Ainda sem trabalho de depósito.';
+        p.push({ cls: 'agora', tt: 'Agora: Separação', dt: ti.ini ? quando(ti.ini) : '',
+          ds: 'Liberada para o depósito' + (libVeio ? ' (' + cod(cLib, rg.releaseStatus) + ')' : '') + '.' + oQue + (ti.veio ? ' Quando o trabalho fechar, vai para Conferência.' : '') });
+      } else if (pos > 2) {
+        p.push({ cls: 'feito', tt: 'Separação', dt: ti.fase === 'fechado' && ti.fim ? quando(ti.fim) : '',
+          ds: ti.fase === 'fechado' ? 'Separação concluída: trabalho fechado' + porQuemT + '.' : 'A OV foi liberada para o depósito' + (libVeio ? ' (' + cod(cLib, rg.releaseStatus) + ')' : '') + '.' });
+      } else {
+        p.push({ cls: 'depois', tt: 'Separação', ds: 'Quando a OV for liberada para o depósito (<code>ReleaseStatus = Released</code>) e o trabalho de separação começar (<b>em processo</b>), vem para esta etapa.' });
+      }
+      // conferência: todos os trabalhos de depósito fechados
+      if (pos === 3) p.push({ cls: 'agora', tt: 'Agora: Conferência', dt: ti.fim ? quando(ti.fim) : '',
+        ds: 'Todos os trabalhos de separação estão <b>fechados</b> (<code>' + esc(ti.cod) + '</code>). Fica aqui até a nota fiscal sair.' });
+      else if (pos > 3) p.push({ cls: 'feito', tt: 'Conferência', ds: '' });
+      else p.push({ cls: 'depois', tt: 'Conferência', dt: ti.veio ? '' : 'não veio', z: !ti.veio,
+        ds: ti.veio ? 'Quando o trabalho de separação fechar (<code>WorkStatus = Closed</code>), a OV vem para esta etapa.'
+                    : 'A entidade de trabalho de depósito não respondeu no OData: sem ela, ninguém entra em Conferência.' });
+      // cotação: fase nova, à espera dos campos do dono
+      if (pos === 4) p.push({ cls: 'agora', tt: 'Agora: Cotação', ds: '' });
+      else if (pos > 4) p.push({ cls: 'feito', tt: 'Cotação', ds: '' });
+      else p.push({ cls: 'depois', tt: 'Cotação', dt: 'a definir', z: true, ds: 'Os campos que definem esta fase ainda vão ser informados.' });
       // faturado
       if (pos === POS_FAT) {
         var sit = rot(rg.salesStatus);
         p.push({ cls: 'feito fim', tt: 'Agora: ' + (sit === 'Entregue' ? 'Entregue' : 'Faturado'), ds: 'A OV não está mais em aberto: situação <b>' + esc(sit || '—') + '</b> (' + cod(cSit, rg.salesStatus) + ').' });
+      } else if (pos > POS_FAT) {
+        p.push({ cls: 'feito', tt: 'Faturado', ds: '' });
       } else {
         p.push({ cls: 'depois', tt: 'Faturado', ds: 'Quando a nota fiscal sair, a OV sai do aberto e vem para esta etapa.' });
       }
+      // expedição: fase nova (depois do Faturado), à espera dos campos do dono
+      if (pos === ORDEM_ETAPA.expedicao) p.push({ cls: 'agora', tt: 'Agora: Expedição', ds: '' });
+      else p.push({ cls: 'depois', tt: 'Expedição', dt: 'a definir', z: true, ds: 'Os campos que definem esta fase ainda vão ser informados.' });
       // entrega solicitada
       var ent = isoData(o.entrega), late = ent && ent < hoje && pos < POS_FAT;
       p.push({ cls: 'depois', tt: 'Entrega solicitada', dt: ent ? fDia(ent) : 'sem data', z: !ent, warn: late,
@@ -815,7 +868,9 @@
     // por que está nesta coluna: os 3 campos da regra, com o que decidiu
     function secRegra(o) {
       var rg = o.regra || {}, et = o.etapa;
-      var decide = et === 'faturado' || et === 'cancelada' ? 'sit' : et === 'credito' ? 'cred' : et === 'liberado' ? 'lib' : '';
+      var libRel = /^(released|liberado|liberada)$/.test(chaveEnum(rg.releaseStatus));
+      var decide = et === 'faturado' || et === 'cancelada' ? 'sit' : et === 'credito' ? 'cred' : et === 'conferencia' ? 'trab' : et === 'liberado' ? (libRel ? 'lib' : 'trab') : '';
+      var ti = trabInfo(o);
       var tile = function (id, k, cru, col, padrao, fmt) {
         var veio = cru != null && cru !== '';
         return '<div class="' + (decide === id ? 'decide' : '') + '"><div class="k">' + esc(k) + '</div>'
@@ -827,7 +882,10 @@
       var porque = {
         criada: 'Ordem em aberto' + (credVeio ? ', sem crédito ativo' : '') + ' e ainda não liberada para o depósito: fica em <b>Criada</b>.' + (credVeio ? '' : ' O crédito não veio do Dynamics.'),
         credito: (ci.fonte === 'tabela' ? 'O registro <b>ativo</b> na tabela de gerenciamento de crédito decide' : 'O crédito marcado decide') + ': a OV fica em <b>Gerenciamento de Crédito</b> até o crédito aprovar, qualquer que seja a liberação.',
-        liberado: 'Ordem em aberto, sem crédito ativo e liberada para o depósito (<code>ReleaseStatus = Released</code>): fica em <b>Separação</b>.',
+        liberado: ti.fase === 'processo' ? 'Liberada para o depósito e com o trabalho de separação <b>em processo</b>: fica em <b>Separação</b> até todos os trabalhos fecharem.'
+          : ti.fase === 'aberto' ? 'Liberada para o depósito, com o trabalho de separação criado e ainda não iniciado: fica em <b>Separação</b>.'
+          : 'Ordem em aberto, sem crédito ativo e liberada para o depósito (<code>ReleaseStatus = Released</code>): fica em <b>Separação</b>.' + (ti.veio ? ' Ainda sem trabalho de depósito.' : ''),
+        conferencia: 'Todos os trabalhos de separação da OV estão <b>fechados</b>: fica em <b>Conferência</b> até a nota fiscal sair.',
         faturado: 'A situação não é mais “Ordem em aberto”: fica em <b>Faturado</b> — a situação vale antes do crédito e da liberação.',
         cancelada: 'Situação <b>Cancelada</b>: a OV fica fora do quadro (só aparece na lista).'
       }[et] || '';
@@ -838,7 +896,27 @@
         +   '<div class="v' + (credVeio ? '' : ' z') + '">' + esc(ci.rotulo) + '</div>'
         +   '<code>' + (ci.tabela ? esc(ci.tabela) + ' · ' : '') + ci.cod.replace(/<\/?code>/g, '') + '</code>'
         +   (decide === 'cred' ? '<span class="dc">decidiu a etapa</span>' : '') + '</div>'
+        + '<div class="' + (decide === 'trab' ? 'decide' : '') + '"><div class="k">Trabalho no depósito</div>'
+        +   '<div class="v' + (ti.veio ? '' : ' z') + '">' + esc(ti.rotulo) + '</div>'
+        +   '<code>' + esc(ti.cod) + '</code>'
+        +   (decide === 'trab' ? '<span class="dc">decidiu a etapa</span>' : '') + '</div>'
         + '</div>' + (porque ? '<p class="kb-rg-p">' + porque + '</p>' : '') + '</section>';
+    }
+
+    // trabalho no depósito: cada trabalho da OV (WHSWorkTableBiEntity), com
+    // status, quem, início/fim, onda e carga — o material para analisar a fase
+    function secTrabalho(o) {
+      var t = (o.regra || {}).trabalho, ls = o.trabalhos || [], tt = 'Trabalho no depósito';
+      if (!t) return '<section class="kb-dw-card"><h5>' + tt + '</h5><div class="kb-dw-nada">A entidade de trabalho de depósito (WHSWorkTableBiEntity) não respondeu no OData — veja o aviso no topo do quadro.</div></section>';
+      if (!ls.length) return '<section class="kb-dw-card"><h5>' + tt + '</h5><div class="kb-dw-nada">Nenhum trabalho de depósito para esta OV ainda.'
+        + (o.etapa === 'liberado' ? ' Ela já está liberada: o trabalho aparece quando o depósito criar a separação.' : '') + '</div></section>';
+      return '<section class="kb-dw-card"><h5>' + tt + ' <small>' + esc(fQtd(ls.length)) + '</small></h5><div class="kb-its">' + ls.map(function (w, i) {
+        var meta = [w.onda ? 'onda ' + w.onda : '', w.carga ? 'carga ' + w.carga : '', w.remessa ? 'remessa ' + w.remessa : '', w.deposito ? w.deposito : ''].filter(Boolean).join(' · ');
+        var tempo = [w.usuario ? 'por ' + w.usuario : '', w.inicio ? 'início ' + quando(w.inicio) : '', w.fim ? 'fim ' + quando(w.fim) : '', w.inicio && w.fim ? duracao(w.inicio, w.fim) : ''].filter(Boolean).join(' · ');
+        return '<div class="kb-it"><div class="n">' + (i + 1) + '</div><div class="c"><div class="t">' + esc(w.id ? 'Trabalho ' + w.id : 'Trabalho sem número') + '</div>'
+          + (meta ? '<div class="s">' + esc(meta) + '</div>' : '') + (tempo ? '<div class="s lg">' + esc(tempo) + '</div>' : '') + '</div>'
+          + '<div class="v"><span class="kb-trab-st ' + esc(w.fase) + '">' + esc(rotTrab(w.status)) + '</span>' + (w.tipo ? '<span>' + esc(w.tipo) + '</span>' : '') + '</div></div>';
+      }).join('') + '</div></section>';
     }
 
     // linhas da OV (produto, quantidade × preço, status e entrega de cada uma)

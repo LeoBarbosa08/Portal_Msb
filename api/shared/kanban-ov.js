@@ -111,9 +111,13 @@ const ETAPAS = [
   { id: 'criada',      nome: 'Criada' },
   { id: 'credito',     nome: 'Gerenciamento de Crédito' },
   { id: 'liberado',    nome: 'Separação' },
-  { id: 'conferencia', nome: 'Conferência', pendente: true },
+  // Conferência: trabalho de depósito da OV FECHADO (09/11/26 — ver TRABALHO DE DEPÓSITO)
+  { id: 'conferencia', nome: 'Conferência' },
   { id: 'cotacao',     nome: 'Cotação',     pendente: true },
-  { id: 'faturado',    nome: 'Faturado' }
+  { id: 'faturado',    nome: 'Faturado' },
+  // 09/11/2026 (dono: "insira mais um cartão de Expedição"): depois do
+  // Faturado — a mercadoria sai com a nota. VAZIA até o dono mandar os campos.
+  { id: 'expedicao',   nome: 'Expedição',   pendente: true }
 ];
 const COL_SALES   = envLista('KANBAN_COL_SALESSTATUS', ['SalesStatus', 'SalesOrderStatus']);
 const COL_RELEASE = envLista('KANBAN_COL_RELEASE', ['ReleaseStatus', 'SalesOrderReleaseStatus']);
@@ -136,6 +140,46 @@ const ENT_CREDITO = envLista('KANBAN_ENT_CREDITO', []).concat([
 ]).filter((v, i, a) => a.indexOf(v) === i);
 const COL_CRED_OV    = envLista('KANBAN_COL_CREDITO_OV', ['SALESID', 'SalesOrderNumber', 'SalesOrderId']);
 const COL_CRED_ATIVO = envLista('KANBAN_COL_CREDITO_ATIVO', ['ACTIVE', 'IsActive']);
+// ── TRABALHO DE DEPÓSITO: SEPARAÇÃO -> CONFERÊNCIA (09/11/2026) ──
+// Dono: "Separação será o status do ReleaseStatus e a fase é em processo;
+// quando sair desse status para fechado ele vai para Conferência". A fase é a
+// do TRABALHO de depósito da OV (WHSWorkTableBiEntity — o cabeçalho do
+// trabalho: WorkStatus Aberto/Em processo/Fechado/Cancelado), ligado à OV
+// pelo nº do pedido de origem (OrderNum). Por OV, sem os cancelados/combinados:
+//   • todos os trabalhos FECHADOS            -> Conferência
+//   • algum aberto ou em processo            -> Separação (mesmo sem o
+//     ReleaseStatus = Liberado: parcialmente liberada, por ex.)
+//   • sem trabalho                           -> segue o ReleaseStatus
+// Nome público no OData e colunas: descobertos como os da tabela de crédito
+// (candidatas + "worktable"/"warehousework" no service document; env
+// KANBAN_ENT_TRABALHO, KANBAN_COL_TRABALHO_OV, KANBAN_COL_TRABALHO_STATUS).
+const ENT_TRABALHO = envLista('KANBAN_ENT_TRABALHO', []).concat([
+  'WHSWorkTableBiEntities', 'WHSWorkTableBiEntity', 'WHSWorkTableBi', 'WHSWorkTableBis',
+  'WarehouseWorkHeadersBi', 'WarehouseWorkHeaders', 'WHSWorkTables', 'WarehouseWorkTables'
+]).filter((v, i, a) => a.indexOf(v) === i);
+const COL_TRAB = {
+  numero:   envLista('KANBAN_COL_TRABALHO_OV', ['OrderNum', 'OrderNumber', 'SourceOrderNumber', 'SalesId', 'SalesOrderNumber']),
+  status:   envLista('KANBAN_COL_TRABALHO_STATUS', ['WorkStatus', 'Status']),
+  id:       ['WorkId'],
+  tipo:     ['WorkTransType', 'WorkOrderType', 'TransType'],
+  usuario:  ['LockedUser', 'WorkInProcessUserId', 'UserId'],
+  inicio:   ['WorkInProcessUTCDateTime', 'WorkInProcessDateTime'],
+  fim:      ['WorkClosedUTCDateTime', 'WorkClosedDateTime'],
+  criado:   ['WorkCreatedDateTime', 'WorkCreatedUTCDateTime', 'CreatedDateTime'],
+  onda:     ['WaveId'],
+  carga:    ['LoadId'],
+  remessa:  ['ShipmentId'],
+  deposito: ['InventLocationId', 'WarehouseId']
+};
+// fase de UM trabalho, pelo WorkStatus (nome do enum no OData ou rótulo da tela)
+function faseTrab(v) {
+  const n = normV(v);
+  if (/^(closed|fechado|fechada|encerrado|encerrada)$/.test(n)) return 'fechado';
+  if (/^(cancelled|canceled|cancelado|cancelada|combined|combinado|combinada)$/.test(n)) return 'ignora';
+  if (/^(inprocess|in process|em processo|em processamento|processando)$/.test(n)) return 'processo';
+  if (/^(open|aberto|aberta)$/.test(n)) return 'aberto';
+  return 'outro';
+}
 const normV = (v) => String(v == null ? '' : v).normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().replace(/[^a-z0-9]+/g, ' ').trim();
 // enum SalesStatus do F&O: None 0, Backorder 1, Delivered 2, Invoiced 3, Canceled 4
 function situacaoOv(v) {
@@ -147,12 +191,15 @@ function situacaoOv(v) {
 }
 const liberadoV = (v) => /^(released|liberado|liberada)$/.test(normV(v));
 const marcadoV = (v) => v === true || /^(yes|sim|true|1|noyes yes)$/.test(normV(v));
-function etapaDe(sales, release, credito) {
+// trabalho = fase do trabalho de depósito da OV ('fechado' | 'processo' |
+// 'aberto' | null = sem trabalho / sem a entidade)
+function etapaDe(sales, release, credito, trabalho) {
   const sit = situacaoOv(sales);
   if (sit === 'cancelada') return 'cancelada';
   if (sit === 'outra') return 'faturado';
   if (marcadoV(credito)) return 'credito';
-  if (liberadoV(release)) return 'liberado';
+  if (trabalho === 'fechado') return 'conferencia';
+  if (liberadoV(release) || trabalho === 'processo' || trabalho === 'aberto') return 'liberado';
   return 'criada';
 }
 
@@ -238,9 +285,23 @@ async function entidades(token, ate, diag, comColunas) {
   return achadas;
 }
 
-// ── a tabela de crédito: descoberta (cache 30 min; sem ela, 5 min) ─
-let _entCred = null, _entCredTs = 0, _entCredMotivo = '';
-async function sondarCredito(ent, token, ate) {
+// ── entidades EXTRAS da OV (crédito, trabalho de depósito) ────────
+// Mesma descoberta para as duas: as candidatas + o que o service document
+// publicar com o pedaço do nome (reNome); a que tiver as colunas obrigatórias
+// na linha de amostra serve. Cache 30 min (sem ela, refaz em 5 min); o motivo
+// de não servir vai para o aviso da tela.
+const CFG_CREDITO = {
+  chave: 'credito', candidatas: ENT_CREDITO, reNome: /credman/i, pedaco: 'credman',
+  cols: { numero: COL_CRED_OV, ativo: COL_CRED_ATIVO }, obrig: ['numero', 'ativo'],
+  erroCol: (p) => p === 'numero' ? 'sem a coluna da OV (' + COL_CRED_OV.join('/') + ')' : 'sem a coluna ' + COL_CRED_ATIVO.join('/')
+};
+const CFG_TRABALHO = {
+  chave: 'trabalho', candidatas: ENT_TRABALHO, reNome: /worktable|warehousework/i, pedaco: 'worktable',
+  cols: COL_TRAB, obrig: ['numero', 'status'],
+  erroCol: (p) => 'sem a coluna ' + COL_TRAB[p].join('/')
+};
+const _extras = {};
+async function sondarExtra(cfg, ent, token, ate) {
   let rows = null, erro = null;
   for (const filtro of ["dataAreaId eq '" + D.odataStr(EMPRESA) + "'", null]) {
     try {
@@ -250,38 +311,44 @@ async function sondarCredito(ent, token, ate) {
   }
   if (!rows || !rows.length) return { entidade: ent, serve: false, erro: erro ? erro.slice(0, 200) : 'sem linhas' };
   const cols = colunasDe(rows[0]);
-  const numero = achaCol(cols, COL_CRED_OV), ativo = achaCol(cols, COL_CRED_ATIVO);
-  const temEmpresa = cols.some(c => c.toLowerCase() === 'dataareaid');
-  return { entidade: ent, serve: !!(numero && ativo), numero, ativo, temEmpresa, colunas: cols,
-    erro: !numero ? 'sem a coluna da OV (' + COL_CRED_OV.join('/') + ')' : !ativo ? 'sem a coluna ' + COL_CRED_ATIVO.join('/') : null };
+  const achado = {};
+  Object.keys(cfg.cols).forEach(papel => { achado[papel] = achaCol(cols, cfg.cols[papel]); });
+  const falta = cfg.obrig.filter(papel => !achado[papel]);
+  return Object.assign({ entidade: ent, serve: !falta.length, temEmpresa: cols.some(c => c.toLowerCase() === 'dataareaid'), colunas: cols,
+    erro: falta.length ? cfg.erroCol(falta[0]) : null }, achado);
 }
-async function entidadeCredito(token, ate, diag) {
-  if (_entCred !== null && Date.now() - _entCredTs < (_entCred ? ENT_TTL : 5 * 60000)) {
-    diag.push({ etapa: 'credito:entidade', cache: true, entidade: _entCred ? _entCred.entidade : null });
-    return _entCred || null;
+async function entidadeExtra(cfg, token, ate, diag) {
+  const c = _extras[cfg.chave];
+  if (c && Date.now() - c.ts < (c.E ? ENT_TTL : 5 * 60000)) {
+    diag.push({ etapa: cfg.chave + ':entidade', cache: true, entidade: c.E ? c.E.entidade : null });
+    return c;
   }
   const servico = await doServico(token, ate);
   const existe = {}; servico.forEach(n => { existe[n.toLowerCase()] = n; });
-  let alvos = ENT_CREDITO.map(n => existe[n.toLowerCase()] || n);
+  let alvos = cfg.candidatas.map(n => existe[n.toLowerCase()] || n);
   if (servico.length) {
     alvos = alvos.filter(n => existe[n.toLowerCase()]);
-    servico.filter(n => /credman/i.test(n) && alvos.indexOf(n) < 0).slice(0, 6).forEach(n => alvos.push(n));
+    servico.filter(n => cfg.reNome.test(n) && alvos.indexOf(n) < 0).slice(0, 6).forEach(n => alvos.push(n));
   }
-  diag.push({ etapa: 'credito:candidatas', servico: servico.length > 0, alvos });
-  const sondas = await Promise.all(alvos.map(ent => sondarCredito(ent, token, ate).catch(e => ({ entidade: ent, serve: false, erro: String(e.message || e).slice(0, 200) }))));
-  sondas.forEach(x => diag.push({ etapa: 'credito:entidade', entidade: x.entidade, serve: x.serve, numero: x.numero || null, ativo: x.ativo || null, empresa: !!x.temEmpresa, erro: x.erro || null }));
-  _entCred = sondas.find(x => x.serve) || false; _entCredTs = Date.now();
-  // por que não serviu — vai para o aviso da tela
-  _entCredMotivo = _entCred ? '' : !alvos.length
-    ? 'nenhuma entidade com "credman" no nome está publicada no OData'
+  diag.push({ etapa: cfg.chave + ':candidatas', servico: servico.length > 0, alvos });
+  const sondas = await Promise.all(alvos.map(ent => sondarExtra(cfg, ent, token, ate).catch(e => ({ entidade: ent, serve: false, erro: String(e.message || e).slice(0, 200) }))));
+  sondas.forEach(x => {
+    const d = { etapa: cfg.chave + ':entidade', entidade: x.entidade, serve: x.serve, empresa: !!x.temEmpresa, erro: x.erro || null };
+    cfg.obrig.forEach(papel => { d[papel] = x[papel] || null; });
+    diag.push(d);
+  });
+  const E = sondas.find(x => x.serve) || false;
+  const motivo = E ? '' : !alvos.length
+    ? 'nenhuma entidade com "' + cfg.pedaco + '" no nome está publicada no OData'
     : sondas.map(x => x.entidade + ': ' + (x.erro || 'não serve')).join('; ').slice(0, 300);
-  return _entCred || null;
+  _extras[cfg.chave] = { E, ts: Date.now(), motivo };
+  return _extras[cfg.chave];
 }
-// por OV: quantos registros, se algum está ATIVO e o registro que decide
-// (o ativo; sem ativo, o primeiro)
+// crédito, por OV: quantos registros, se algum está ATIVO e o registro que
+// decide (o ativo; sem ativo, o primeiro)
 async function creditoDasOvs(numeros, token, ate, diag) {
-  const E = await entidadeCredito(token, ate, diag);
-  if (!E) return { E: null, por: {}, erro: _entCredMotivo };
+  const x = await entidadeExtra(CFG_CREDITO, token, ate, diag), E = x.E;
+  if (!E) return { E: null, por: {}, erro: x.motivo };
   const rows = await porNumeros(E.entidade, E.numero, numeros, token, ate, diag, 'ov:credito', null, !E.temEmpresa);
   const por = {};
   rows.forEach(r => {
@@ -290,6 +357,41 @@ async function creditoDasOvs(numeros, token, ate, diag) {
     o.n++;
     if (marcadoV(r[E.ativo]) && !o.ativo) { o.ativo = true; o.row = r; }
     else if (!o.row) o.row = r;
+  });
+  return { E, por };
+}
+
+// trabalho de depósito, por OV: os trabalhos (sem os cancelados/combinados),
+// quantos em cada fase e a fase da OV
+const dataHora = (v) => { const t = txt(v); return /^\d{4}-\d{2}-\d{2}/.test(t) && !/^1900-01-01/.test(t) ? t : null; };
+async function trabalhosDasOvs(numeros, token, ate, diag) {
+  const x = await entidadeExtra(CFG_TRABALHO, token, ate, diag), E = x.E;
+  if (!E) return { E: null, por: {}, erro: x.motivo };
+  const rows = await porNumeros(E.entidade, E.numero, numeros, token, ate, diag, 'ov:trabalho', null, !E.temEmpresa);
+  const por = {};
+  const v = (r, papel) => { const col = E[papel] || achaCol(colunasDe(r), COL_TRAB[papel]); return col ? r[col] : null; };
+  rows.forEach(r => {
+    const k = chaveOv(r[E.numero]); if (!k) return;
+    const o = por[k] || (por[k] = { fechados: 0, processo: 0, abertos: 0, outros: 0, ignorados: 0, lista: [], row: null });
+    const st = txt(r[E.status]), fase = faseTrab(st);
+    if (fase === 'ignora') o.ignorados++;
+    else if (fase === 'fechado') o.fechados++;
+    else if (fase === 'processo') o.processo++;
+    else if (fase === 'aberto') o.abertos++;
+    else o.outros++;
+    o.lista.push({
+      id: txt(v(r, 'id')), status: st, fase, tipo: txt(v(r, 'tipo')), usuario: txt(v(r, 'usuario')),
+      criado: dataHora(v(r, 'criado')), inicio: dataHora(v(r, 'inicio')), fim: dataHora(v(r, 'fim')),
+      onda: txt(v(r, 'onda')), carga: txt(v(r, 'carga')), remessa: txt(v(r, 'remessa')), deposito: txt(v(r, 'deposito'))
+    });
+    // o registro que vai para os campos crus: o em processo; senão o 1º válido
+    if (fase === 'processo' || (!o.row && fase !== 'ignora')) o.row = r;
+  });
+  Object.keys(por).forEach(k => {
+    const o = por[k], validos = o.fechados + o.processo + o.abertos + o.outros;
+    o.total = validos;
+    o.fase = !validos ? null : o.fechados === validos ? 'fechado' : (o.processo || o.outros || o.fechados) ? 'processo' : 'aberto';
+    o.lista.sort((a, b) => String(a.criado || a.id).localeCompare(String(b.criado || b.id)));
   });
   return { E, por };
 }
@@ -407,7 +509,7 @@ async function ordensDoDia(opts) {
 
   // complemento (as outras entidades) e linhas, em paralelo
   const complementos = ents.filter(e => e !== principal);
-  const [compl, porLinha, CRED] = await Promise.all([
+  const [compl, porLinha, CRED, TRAB] = await Promise.all([
     Promise.all(complementos.map(async E => {
       if (!numeros.length) return { E, rows: [] };
       try { return { E, rows: await porNumeros(E.entidade, E.numero, numeros, token, ate, diag, 'ov:complemento', null, !E.temEmpresa) }; }
@@ -417,8 +519,13 @@ async function ordensDoDia(opts) {
     // gerenciamento de crédito: a tabela da Bio (BioCredManTableV1), pelo SALESID
     numeros.length
       ? creditoDasOvs(numeros, token, ate, diag).catch(e => ({ E: null, por: {}, erro: String(e.message || e).slice(0, 160) }))
+      : Promise.resolve({ E: null, por: {} }),
+    // trabalho de depósito (WHSWorkTableBiEntity), pelo nº da OV: Separação/Conferência
+    numeros.length
+      ? trabalhosDasOvs(numeros, token, ate, diag).catch(e => ({ E: null, por: {}, erro: String(e.message || e).slice(0, 160) }))
       : Promise.resolve({ E: null, por: {} })
   ]);
+  if (TRAB.E) fontes.push({ entidade: TRAB.E.entidade, papel: 'trabalho', colunas: TRAB.E.numero + ' + ' + TRAB.E.status, trabalhos: Object.keys(TRAB.por).reduce((s2, k) => s2 + TRAB.por[k].lista.length, 0) });
   if (CRED.E) fontes.push({ entidade: CRED.E.entidade, papel: 'crédito', colunas: CRED.E.numero + ' + ' + CRED.E.ativo, registros: Object.keys(CRED.por).reduce((s2, k) => s2 + CRED.por[k].n, 0) });
   compl.forEach(({ E, rows: rs }) => {
     fontes.push({ entidade: E.entidade, papel: 'complemento', linhas: rs.length });
@@ -499,12 +606,14 @@ async function ordensDoDia(opts) {
       if (cr) { crFonte = 'cabecalho'; crAtivo = marcadoV(cr.valor); }
     }
     if (sa) achou.sales++; if (re) achou.release++; if (crFonte) achou.credito++;
-    const etapa = etapaDe(sa && sa.valor, re && re.valor, crAtivo);
+    const tb = TRAB.E ? (TRAB.por[k] || null) : null;
+    const etapa = etapaDe(sa && sa.valor, re && re.valor, crAtivo, tb ? tb.fase : null);
     const status = {};
     statusCols.forEach(s => { const r = reg[k][s.entidade]; status[s.chave] = r ? (txt(r[s.coluna]) || '(vazio)') : null; });
     const campos = {};
     Object.keys(reg[k]).forEach(ent => { campos[ent] = crus(reg[k][ent]); });
     if (cd && cd.row) campos[CRED.E.entidade] = crus(cd.row);
+    if (tb && tb.row) campos[TRAB.E.entidade] = crus(tb.row);
     const l = porLinha[k] || null;
     return {
       numero: k,
@@ -521,8 +630,12 @@ async function ordensDoDia(opts) {
         // de onde veio o crédito ('tabela' = BioCredManTableV1; 'cabecalho' =
         // CredManInCreditControl), se está ativo e quantos registros a OV tem
         creditoFonte: crFonte, creditoAtivo: crFonte ? crAtivo : null, creditoRegistros: crN,
-        creditoOv: CRED.E ? CRED.E.numero : null
+        creditoOv: CRED.E ? CRED.E.numero : null,
+        // trabalho de depósito: a fase da OV e a contagem (null = entidade fora do OData)
+        trabalho: TRAB.E ? { fase: tb ? tb.fase : null, total: tb ? tb.total : 0, fechados: tb ? tb.fechados : 0, processo: tb ? tb.processo : 0,
+          abertos: tb ? tb.abertos : 0, ignorados: tb ? tb.ignorados : 0, coluna: TRAB.E.entidade + '.' + TRAB.E.status, colOv: TRAB.E.numero } : null
       },
+      trabalhos: tb ? tb.lista : [],
       status, campos
     };
   }).sort((a, b) => b.criadaEm.localeCompare(a.criadaEm) || b.numero.localeCompare(a.numero));
@@ -538,6 +651,10 @@ async function ordensDoDia(opts) {
     if (!achou.sales) falta.push(COL_SALES[0]);
     if (!achou.release) falta.push(COL_RELEASE[0]);
     // o crédito que faltar já sai no aviso da tabela de crédito, logo abaixo
+    if (!TRAB.E) {
+      avisos.push('A entidade de trabalho de depósito (WHSWorkTableBiEntity) não respondeu no OData' + (TRAB.erro ? ' (' + TRAB.erro + ')' : '') +
+        '. Sem ela, a Conferência fica vazia e a Separação segue só o ReleaseStatus. Se a entidade não for pública no OData, é preciso publicá-la (ou fixar o nome em KANBAN_ENT_TRABALHO).');
+    }
     if (!CRED.E) {
       avisos.push('A tabela de gerenciamento de crédito (Credit management · BioCredManTableV1Entity) não respondeu no OData' +
         (CRED.erro ? ' (' + CRED.erro + ')' : '') +
@@ -668,6 +785,6 @@ async function operacoesDasOvs(numeros, ate) {
 }
 
 
-function _limparCache() { _cache.clear(); _cacheLinhas.clear(); _ents = null; _entsTs = 0; _servico = null; _servicoTs = 0; _entLinhas = null; _entCred = null; _entCredTs = 0; _entCredMotivo = ''; }
+function _limparCache() { _cache.clear(); _cacheLinhas.clear(); _ents = null; _entsTs = 0; _servico = null; _servicoTs = 0; _entLinhas = null; Object.keys(_extras).forEach(k => { delete _extras[k]; }); }
 
 module.exports = { ordensDoDia, linhasDaOv, operacoesDasOvs, hojeSP, EMPRESA, CONFIGURED: D.CONFIGURED, ETAPAS, _limparCache, _interno: { diaDe, RE_STATUS, RE_NAO_STATUS, etapaDe } };

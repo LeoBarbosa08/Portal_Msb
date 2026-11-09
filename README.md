@@ -944,13 +944,57 @@ passou a mostrar também as colunas de status (`servemStatus`). Envs:
 `FATDIA_ENT_STATUS`, `FATDIA_COL_STATUS`, `FATDIA_COL_STATUS_DIARIO`.
 `sw.js` — cache `bm-comest-v40` (o v39 ficou com o Kanban de 6 colunas, de outra sessão).
 
+### Kanban · Separação e Conferência pelo trabalho de depósito (09/11/2026)
+
+Pedido do dono: "Separação será o status do ReleaseStatus e a fase é em
+processo; quando sair desse status para fechado ele vai para Conferência" — a
+fase é a do **trabalho de depósito** da OV (`WHSWorkTableBiEntity`, o
+cabeçalho do trabalho: `WorkStatus` Aberto / Em processo / Fechado / Cancelado).
+
+- **Regra** (`etapaDe()` em `api/shared/kanban-ov.js`), por OV, sem os
+  trabalhos cancelados/combinados, ligados pelo nº do pedido (`OrderNum`):
+  todos **fechados** → **Conferência**; algum aberto ou **em processo** →
+  **Separação** (vale também para a parcialmente liberada); sem trabalho →
+  segue o `ReleaseStatus` (Released → Separação). Ordem: Faturado → Crédito →
+  Conferência → Separação → Criada. Cotação continua à espera dos campos.
+- **A entidade no OData**: descoberta como a de crédito — a descoberta virou
+  uma só (`entidadeExtra`, com `CFG_CREDITO` e `CFG_TRABALHO`): candidatas
+  (`WHSWorkTableBiEntities`, `WHSWorkTableBiEntity`, `WarehouseWorkHeaders`…) +
+  o que o service document publicar com "worktable"/"warehousework". Colunas
+  pelo nome, sem caixa (`OrderNum`, `WorkStatus`, `WorkId`, `LockedUser`,
+  `WorkInProcessUTCDateTime`, `WorkClosedUTCDateTime`, `WaveId`, `LoadId`,
+  `ShipmentId`…). Envs: `KANBAN_ENT_TRABALHO`, `KANBAN_COL_TRABALHO_OV`,
+  `KANBAN_COL_TRABALHO_STATUS`. Sem a entidade no OData: aviso na tela, a
+  Conferência fica vazia e a Separação segue só o `ReleaseStatus`.
+- **Ficha da OV**: quadro "Trabalho no depósito" na regra (Em processo /
+  Fechado / Aberto · não iniciado / Sem trabalho, com a contagem), seção
+  **Trabalho no depósito** com cada trabalho (nº, status, quem, início, fim,
+  duração, onda, carga, remessa) e a linha do tempo dizendo quem está
+  separando e quando fechou. O trabalho entra em "Campos do Dynamics" (o
+  material para analisar os campos da entidade). Na Lista, a coluna "Trabalho".
+- Testes: `node scripts/test-kanban-ov.js` (em processo, fechado, cancelado
+  não conta, parcial, sem trabalho, faturada/crédito antes, entidade fora do
+  OData). `sw.js` — cache `bm-comest-v41`.
+
+### Kanban · coluna Expedição (09/11/2026)
+
+Pedido do dono: "insira mais um cartão de Expedição". Sétima coluna, **depois
+do Faturado** (a mercadoria sai com a nota): Criada → Gerenciamento de Crédito
+→ Separação → Conferência → Cotação → Faturado → **Expedição**. Entra como a
+Cotação: `pendente: true` em `ETAPAS`, vazia e com "aguardando os campos da
+fase" até o dono mandar os campos (aí: regra em `etapaDe()` e tirar o
+`pendente`). Na ficha, a linha do tempo tem a Expedição "a definir" depois do
+Faturado. O quadro continua cabendo em 1440 px (coluna mínima de 145 px; o
+nome comprido quebra com hífen). Testes: 7 colunas na ordem e a Expedição
+pendente. `sw.js` — cache `bm-comest-v42`.
+
 ### Kanban · sem a linha embaixo do título (09/11/2026)
 
 Pedido do dono: "remova essa escrita" — a linha "MSB · ALMOX-PA · N ordem(ns)
 de venda criada(s) em … · R$ … · BioSalesOrderHeadersV1 + … (as entidades
 lidas)" saiu de `pages/kanban.html`. As entidades continuam no "Diagnóstico da
 leitura no Dynamics", no rodapé; quantidade e valor estão nas colunas.
-`sw.js` — cache `bm-comest-v41`.
+`sw.js` — cache `bm-comest-v43`.
 
 ### Faturamento do Dia · status só de documento com data perto da nota (09/11/2026)
 
@@ -961,7 +1005,7 @@ poderia emprestar o status ("Cancelled") para a nota de hoje e tirá-la da
 soma. `api/shared/fatdia-status.js` agora lê também a data do documento
 (FiscalDocumentDate, AccountingDate…) e o status só vale se ela estiver a até
 7 dias da data da nota (`FATDIA_STATUS_DIAS`); fora disso, conta como "não
-achado". `sw.js` — cache `bm-comest-v42`.
+achado". `sw.js` — cache `bm-comest-v44`.
 
 ### Sonda · os nomes das colunas (09/11/2026)
 
@@ -969,7 +1013,7 @@ Pedido do dono: "me mostre as colunas dessas duas" (SalesInvoiceHeadersV2 e
 SalesInvoiceHeaders, na sonda). A sonda passou a devolver `nomesColunas` de
 cada entidade; na tela, clicar no número de colunas abre a lista. (As do
 diário também aparecem no painel da nota — todos os campos do registro.)
-`sw.js` — cache `bm-comest-v43`.
+`sw.js` — cache `bm-comest-v45`.
 
 ## Como colocar no ar
 
