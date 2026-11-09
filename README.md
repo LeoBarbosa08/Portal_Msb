@@ -820,6 +820,38 @@ original; as outras saem da lista e da soma, com aviso ("000021098 de dd/mm
 (−R$ 5.999,40); o original é de 07/10 (R$ 18.000,00)") e em `repetidas`.
 Falha da consulta mantém tudo. `sw.js` — cache `bm-comest-v34` (o v33 ficou com o Kanban de outra sessão).
 
+### Kanban · Gerenciamento de Crédito pela tabela da Bio (09/11/2026)
+
+Pedido do dono (print do Gerenciamento de dados: entidade **Credit management**,
+preparo `BioCredManTableV1Staging`, destino `BioCredManTableV1Entity`):
+"gerenciamento de crédito vem dessa tabela, o campo é ACTIVE, a ordem é
+SALESID; cruzar com o número da OV do BIOSalesOrderHeader e ver se está ativo".
+
+- **Regra** (`api/shared/kanban-ov.js`): a OV com um registro **ativo** na
+  tabela (`ACTIVE` = Sim/Yes/1, pela OV no `SALESID`) vai para
+  **Gerenciamento de Crédito**; sem registro, ou só com registro inativo, não
+  está no crédito. A tabela vale antes do `CredManInCreditControl` do
+  cabeçalho, que fica só de reserva. A ordem das regras não mudou: situação
+  fora de "Ordem em aberto" → Faturado vem primeiro.
+- **A entidade no OData**: o nome público não se sabe daqui — o motor testa
+  `BioCredManTableV1`, `BioCredManTablesV1`, `BioCredManTableV1Entity`… e o que
+  o service document publicar com **"credman"** no nome (cache de 30 min; sem
+  ela, refaz em 5 min). Colunas pelo nome, sem diferenciar caixa. Lida pelos
+  números das OVs do dia, só `msb`, em paralelo com o complemento e as linhas.
+- **Sem a entidade no OData** (não pública, ou sem `SALESID`/`ACTIVE`): aviso
+  na tela dizendo o porquê (o Diagnóstico mostra as candidatas testadas), e o
+  crédito volta ao `CredManInCreditControl` do cabeçalho. Para publicar: a
+  entidade precisa de **IsPublic = Sim** e de um nome público no AOT; fixar o
+  nome: `KANBAN_ENT_CREDITO` (e `KANBAN_COL_CREDITO_OV` / `KANBAN_COL_CREDITO_ATIVO`
+  se as colunas tiverem outro nome).
+- **Ficha da OV**: o quadro "Crédito · tabela" mostra **Ativo · retida /
+  Inativo / Sem registro** com o `ACTIVE` cru; a linha do tempo e "Dados do
+  pedido" falam da tabela; o registro de crédito entra em "Campos do
+  Dynamics". Na Lista, a coluna "Crédito" no lugar do CredManInCreditControl.
+- Testes: `node scripts/test-kanban-ov.js` (ativo/inativo/sem registro, dois
+  registros, a tabela antes do cabeçalho, faturada, tabela fora do OData e sem
+  a coluna ACTIVE). `sw.js` — cache `bm-comest-v35`.
+
 ### Faturamento do Dia · Exportar Excel (09/11/2026)
 
 Pedido do dono: "coloca um botão de export para Excel para eu fazer uma
@@ -838,7 +870,7 @@ filtro da tela) em três abas:
 
 Junto: a coluna Operação deixou de mostrar **"DoesNotApply"** (o enum "não se
 aplica" de uma coluna da OV aparecia como operação em toda nota) — valores
-desse tipo contam como vazios. `sw.js` — cache `bm-comest-v35`.
+desse tipo contam como vazios. `sw.js` — cache `bm-comest-v36` (o v35 ficou com o crédito do Kanban, de outra sessão).
 
 ## Como colocar no ar
 

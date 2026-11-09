@@ -111,6 +111,24 @@ const ETAPAS = [
 const COL_SALES   = envLista('KANBAN_COL_SALESSTATUS', ['SalesStatus', 'SalesOrderStatus']);
 const COL_RELEASE = envLista('KANBAN_COL_RELEASE', ['ReleaseStatus', 'SalesOrderReleaseStatus']);
 const COL_CREDITO = envLista('KANBAN_COL_CREDITO', ['CredManInCreditControl', 'CreditManagementInCreditControl', 'InCreditControl']);
+// ── GERENCIAMENTO DE CRÉDITO PELA TABELA DA BIO (09/11/2026) ─────
+// Dono: "gerenciamento de crédito vem dessa tabela (Credit management:
+// BioCredManTableV1Staging -> BioCredManTableV1Entity), o campo é ACTIVE, a
+// ordem é SALESID; cruzar com o nº da OV do BIOSalesOrderHeader e ver se está
+// ativo". OV com um registro ATIVO na tabela -> Gerenciamento de Crédito; sem
+// registro, ou só com registro inativo -> não está no crédito. A tabela vale
+// ANTES do CredManInCreditControl do cabeçalho, que fica só de reserva para
+// quando a entidade não responder (com aviso na tela).
+// O nome PÚBLICO da entidade no OData não se sabe daqui: as candidatas abaixo
+// + o que o service document publicar com "credman" no nome (KANBAN_ENT_CREDITO
+// fixa outro). Colunas pelo nome, sem caixa: KANBAN_COL_CREDITO_OV (SALESID) e
+// KANBAN_COL_CREDITO_ATIVO (ACTIVE).
+const ENT_CREDITO = envLista('KANBAN_ENT_CREDITO', []).concat([
+  'BioCredManTableV1', 'BioCredManTablesV1', 'BioCredManTableV1Entity', 'BioCredManTableV1Entities',
+  'BIOCredManTableV1', 'BIOCredManTablesV1', 'BioCredManTable', 'BioCredManTables'
+]).filter((v, i, a) => a.indexOf(v) === i);
+const COL_CRED_OV    = envLista('KANBAN_COL_CREDITO_OV', ['SALESID', 'SalesOrderNumber', 'SalesOrderId']);
+const COL_CRED_ATIVO = envLista('KANBAN_COL_CREDITO_ATIVO', ['ACTIVE', 'IsActive']);
 const normV = (v) => String(v == null ? '' : v).normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().replace(/[^a-z0-9]+/g, ' ').trim();
 // enum SalesStatus do F&O: None 0, Backorder 1, Delivered 2, Invoiced 3, Canceled 4
 function situacaoOv(v) {
@@ -211,6 +229,62 @@ async function entidades(token, ate, diag, comColunas) {
   });
   if (achadas.length) { _ents = achadas; _entsTs = Date.now(); }
   return achadas;
+}
+
+// ── a tabela de crédito: descoberta (cache 30 min; sem ela, 5 min) ─
+let _entCred = null, _entCredTs = 0, _entCredMotivo = '';
+async function sondarCredito(ent, token, ate) {
+  let rows = null, erro = null;
+  for (const filtro of ["dataAreaId eq '" + D.odataStr(EMPRESA) + "'", null]) {
+    try {
+      rows = await D.odataGetComPrazo(ent, Object.assign({ top: 1, crossCompany: true }, filtro ? { filter: filtro } : {}), token, prazo(ate, PROVA_MS));
+      if (rows.length) break;
+    } catch (e) { erro = String(e.message || e); if (/\b404\b/.test(erro) || e.demorou) break; }
+  }
+  if (!rows || !rows.length) return { entidade: ent, serve: false, erro: erro ? erro.slice(0, 200) : 'sem linhas' };
+  const cols = colunasDe(rows[0]);
+  const numero = achaCol(cols, COL_CRED_OV), ativo = achaCol(cols, COL_CRED_ATIVO);
+  const temEmpresa = cols.some(c => c.toLowerCase() === 'dataareaid');
+  return { entidade: ent, serve: !!(numero && ativo), numero, ativo, temEmpresa, colunas: cols,
+    erro: !numero ? 'sem a coluna da OV (' + COL_CRED_OV.join('/') + ')' : !ativo ? 'sem a coluna ' + COL_CRED_ATIVO.join('/') : null };
+}
+async function entidadeCredito(token, ate, diag) {
+  if (_entCred !== null && Date.now() - _entCredTs < (_entCred ? ENT_TTL : 5 * 60000)) {
+    diag.push({ etapa: 'credito:entidade', cache: true, entidade: _entCred ? _entCred.entidade : null });
+    return _entCred || null;
+  }
+  const servico = await doServico(token, ate);
+  const existe = {}; servico.forEach(n => { existe[n.toLowerCase()] = n; });
+  let alvos = ENT_CREDITO.map(n => existe[n.toLowerCase()] || n);
+  if (servico.length) {
+    alvos = alvos.filter(n => existe[n.toLowerCase()]);
+    servico.filter(n => /credman/i.test(n) && alvos.indexOf(n) < 0).slice(0, 6).forEach(n => alvos.push(n));
+  }
+  diag.push({ etapa: 'credito:candidatas', servico: servico.length > 0, alvos });
+  const sondas = await Promise.all(alvos.map(ent => sondarCredito(ent, token, ate).catch(e => ({ entidade: ent, serve: false, erro: String(e.message || e).slice(0, 200) }))));
+  sondas.forEach(x => diag.push({ etapa: 'credito:entidade', entidade: x.entidade, serve: x.serve, numero: x.numero || null, ativo: x.ativo || null, empresa: !!x.temEmpresa, erro: x.erro || null }));
+  _entCred = sondas.find(x => x.serve) || false; _entCredTs = Date.now();
+  // por que não serviu — vai para o aviso da tela
+  _entCredMotivo = _entCred ? '' : !alvos.length
+    ? 'nenhuma entidade com "credman" no nome está publicada no OData'
+    : sondas.map(x => x.entidade + ': ' + (x.erro || 'não serve')).join('; ').slice(0, 300);
+  return _entCred || null;
+}
+// por OV: quantos registros, se algum está ATIVO e o registro que decide
+// (o ativo; sem ativo, o primeiro)
+async function creditoDasOvs(numeros, token, ate, diag) {
+  const E = await entidadeCredito(token, ate, diag);
+  if (!E) return { E: null, por: {}, erro: _entCredMotivo };
+  const rows = await porNumeros(E.entidade, E.numero, numeros, token, ate, diag, 'ov:credito', null, !E.temEmpresa);
+  const por = {};
+  rows.forEach(r => {
+    const k = chaveOv(r[E.numero]); if (!k) return;
+    const o = por[k] || (por[k] = { n: 0, ativo: false, row: null });
+    o.n++;
+    if (marcadoV(r[E.ativo]) && !o.ativo) { o.ativo = true; o.row = r; }
+    else if (!o.row) o.row = r;
+  });
+  return { E, por };
 }
 
 // ── leituras ─────────────────────────────────────────────────────
@@ -326,14 +400,19 @@ async function ordensDoDia(opts) {
 
   // complemento (as outras entidades) e linhas, em paralelo
   const complementos = ents.filter(e => e !== principal);
-  const [compl, porLinha] = await Promise.all([
+  const [compl, porLinha, CRED] = await Promise.all([
     Promise.all(complementos.map(async E => {
       if (!numeros.length) return { E, rows: [] };
       try { return { E, rows: await porNumeros(E.entidade, E.numero, numeros, token, ate, diag, 'ov:complemento', null, !E.temEmpresa) }; }
       catch (e) { avisos.push('Complemento ' + E.entidade + ': ' + String(e.message || e).slice(0, 160)); return { E, rows: [] }; }
     })),
-    numeros.length ? linhas(numeros, token, ate, diag) : Promise.resolve({})
+    numeros.length ? linhas(numeros, token, ate, diag) : Promise.resolve({}),
+    // gerenciamento de crédito: a tabela da Bio (BioCredManTableV1), pelo SALESID
+    numeros.length
+      ? creditoDasOvs(numeros, token, ate, diag).catch(e => ({ E: null, por: {}, erro: String(e.message || e).slice(0, 160) }))
+      : Promise.resolve({ E: null, por: {} })
   ]);
+  if (CRED.E) fontes.push({ entidade: CRED.E.entidade, papel: 'crédito', colunas: CRED.E.numero + ' + ' + CRED.E.ativo, registros: Object.keys(CRED.por).reduce((s2, k) => s2 + CRED.por[k].n, 0) });
   compl.forEach(({ E, rows: rs }) => {
     fontes.push({ entidade: E.entidade, papel: 'complemento', linhas: rs.length });
     rs.forEach(r => { const k = chaveOv(r[E.numero]); if (reg[k]) reg[k][E.entidade] = r; });
@@ -400,13 +479,25 @@ async function ordensDoDia(opts) {
   };
   const achou = { sales: 0, release: 0, credito: 0 };
   const ovs = Object.keys(reg).map(k => {
-    const sa = cru(k, COL_SALES), re = cru(k, COL_RELEASE), cr = cru(k, COL_CREDITO);
-    if (sa) achou.sales++; if (re) achou.release++; if (cr) achou.credito++;
-    const etapa = etapaDe(sa && sa.valor, re && re.valor, cr && cr.valor);
+    const sa = cru(k, COL_SALES), re = cru(k, COL_RELEASE);
+    // crédito: a tabela da Bio decide (registro ATIVO pelo SALESID); sem a
+    // tabela no OData, o CredManInCreditControl do cabeçalho
+    let cr = null, crAtivo = null, crFonte = null, crN = null;
+    const cd = CRED.E ? (CRED.por[k] || null) : null;
+    if (CRED.E) {
+      crFonte = 'tabela'; crN = cd ? cd.n : 0; crAtivo = !!(cd && cd.ativo);
+      cr = { valor: cd && cd.row ? cd.row[CRED.E.ativo] : null, coluna: CRED.E.entidade + '.' + CRED.E.ativo };
+    } else {
+      cr = cru(k, COL_CREDITO);
+      if (cr) { crFonte = 'cabecalho'; crAtivo = marcadoV(cr.valor); }
+    }
+    if (sa) achou.sales++; if (re) achou.release++; if (crFonte) achou.credito++;
+    const etapa = etapaDe(sa && sa.valor, re && re.valor, crAtivo);
     const status = {};
     statusCols.forEach(s => { const r = reg[k][s.entidade]; status[s.chave] = r ? (txt(r[s.coluna]) || '(vazio)') : null; });
     const campos = {};
     Object.keys(reg[k]).forEach(ent => { campos[ent] = crus(reg[k][ent]); });
+    if (cd && cd.row) campos[CRED.E.entidade] = crus(cd.row);
     const l = porLinha[k] || null;
     return {
       numero: k,
@@ -419,7 +510,11 @@ async function ordensDoDia(opts) {
       regra: {
         salesStatus: sa ? txt(sa.valor) : null, salesStatusCol: sa ? sa.coluna : null,
         releaseStatus: re ? txt(re.valor) : null, releaseStatusCol: re ? re.coluna : null,
-        credito: cr ? txt(cr.valor) : null, creditoCol: cr ? cr.coluna : null
+        credito: cr && cr.valor != null ? txt(cr.valor) : null, creditoCol: cr ? cr.coluna : null,
+        // de onde veio o crédito ('tabela' = BioCredManTableV1; 'cabecalho' =
+        // CredManInCreditControl), se está ativo e quantos registros a OV tem
+        creditoFonte: crFonte, creditoAtivo: crFonte ? crAtivo : null, creditoRegistros: crN,
+        creditoOv: CRED.E ? CRED.E.numero : null
       },
       status, campos
     };
@@ -435,7 +530,13 @@ async function ordensDoDia(opts) {
     const falta = [];
     if (!achou.sales) falta.push(COL_SALES[0]);
     if (!achou.release) falta.push(COL_RELEASE[0]);
-    if (!achou.credito) falta.push(COL_CREDITO[0]);
+    // o crédito que faltar já sai no aviso da tabela de crédito, logo abaixo
+    if (!CRED.E) {
+      avisos.push('A tabela de gerenciamento de crédito (Credit management · BioCredManTableV1Entity) não respondeu no OData' +
+        (CRED.erro ? ' (' + CRED.erro + ')' : '') +
+        '. Sem ela, o crédito sai do ' + COL_CREDITO[0] + ' do cabeçalho' + (achou.credito ? '' : ', que também não veio') +
+        '. Se a entidade não for pública no OData, é preciso publicá-la (ou fixar o nome em KANBAN_ENT_CREDITO).');
+    }
     if (falta.length) avisos.push('Não achei ' + falta.join(', ') + ' nas entidades lidas (' + fontes.map(f => f.entidade).join(', ') + '): as etapas dependem desses campos. Veja os campos de cada OV no painel.');
     else if (achou.sales < ovs.length) avisos.push((ovs.length - achou.sales) + ' OV(s) sem SalesStatus: ficaram em Criada, Gerenciamento de Crédito ou Logística pelos outros campos.');
   }
@@ -551,6 +652,6 @@ async function operacoesDasOvs(numeros, ate) {
 }
 
 
-function _limparCache() { _cache.clear(); _cacheLinhas.clear(); _ents = null; _entsTs = 0; _servico = null; _servicoTs = 0; _entLinhas = null; }
+function _limparCache() { _cache.clear(); _cacheLinhas.clear(); _ents = null; _entsTs = 0; _servico = null; _servicoTs = 0; _entLinhas = null; _entCred = null; _entCredTs = 0; _entCredMotivo = ''; }
 
 module.exports = { ordensDoDia, linhasDaOv, operacoesDasOvs, hojeSP, EMPRESA, CONFIGURED: D.CONFIGURED, ETAPAS, _limparCache, _interno: { diaDe, RE_STATUS, RE_NAO_STATUS, etapaDe } };
