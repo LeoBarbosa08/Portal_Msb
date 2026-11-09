@@ -773,6 +773,19 @@ dono), `detalheNota()` em `api/shared/faturamento-dia.js`. `sw.js` — cache
 `bm-comest-v32` (junção com a ficha da OV do Kanban, que entrou no master por
 outra sessão).
 
+### Faturamento do Dia · número repetido no diário: vale o registro 1 (09/11/2026)
+
+O painel da 000021098 mostrou **dois** documentos com esse número no diário
+de faturas da MSB: a venda de R$ 18.000,00 (07/10, OV017088 — o "registro 1")
+e outro de −R$ 5.999,40 (o "registro 2"), que aparecia na lista como
+devolução. Decisão do dono: **vale o registro 1**. `originaisDoDiario()` em
+`api/shared/faturamento-dia.js`: para as notas do dia, busca no diário todos
+os documentos com o mesmo número (qualquer data); o original é o 1º pela data
+(empate: a ordem do D365, a mesma do painel). A linha do dia só fica se for o
+original; as outras saem da lista e da soma, com aviso ("000021098 de dd/mm
+(−R$ 5.999,40); o original é de 07/10 (R$ 18.000,00)") e em `repetidas`.
+Falha da consulta mantém tudo. `sw.js` — cache `bm-comest-v33`.
+
 ## Como colocar no ar
 
 1. **Repositório no GitHub** — crie um repositório **privado e vazio** (sem

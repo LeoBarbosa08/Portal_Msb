@@ -378,6 +378,13 @@ async function notasDoDia(opts) {
   };
   const [F, J] = await Promise.all([lerFonte('fiscal'), lerFonte('diario')]);
 
+  // número repetido no diário: vale o registro 1 (o documento original)
+  let repetidas = [];
+  if (J.E && J.rows.length) {
+    const o = await originaisDoDiario(J, token, ate, diag);
+    J.rows = o.manter; repetidas = o.repetidas;
+  }
+
   // contas que precisam de nome (ou de "é cliente?" na fiscal sem tipo de conta)
   const contas = [];
   if (F.E && F.E.col.conta) F.rows.forEach(r => {
@@ -434,6 +441,14 @@ async function notasDoDia(opts) {
     }
   }
 
+  if (repetidas.length) {
+    const fBR = (v) => v == null ? '—' : 'R$ ' + Number(v).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    const fD = (d) => d ? d.split('-').reverse().join('/') : '—';
+    avisos.push(repetidas.length + ' documento(s) com número repetido no diário ficaram fora (vale o registro 1, o original): '
+      + repetidas.slice(0, 5).map(x => x.numero + ' de ' + fD(x.data) + ' (' + fBR(x.valor) + '); o original é de ' + fD(x.original.data) + ' (' + fBR(x.original.valor) + ')').join(' · ')
+      + (repetidas.length > 5 ? ' · …' : '') + '.');
+  }
+
   const r = {
     ok: true, configured: true, empresa: EMPRESA, data: dia, hoje: hojeSP(),
     geradoEm: new Date().toISOString(),
@@ -446,11 +461,58 @@ async function notasDoDia(opts) {
     conferencia: fonte && fonte.papel === 'fiscal' && J.E && !J.erro
       ? Object.assign({ entidade: J.E.entidade }, resumo(diario)) : null,
     operacaoOv,
+    repetidas,
     avisos,
     diagnostico: diag
   };
   if (!opts.diag) _cache.set(dia, { ts: Date.now(), r });
   return r;
+}
+
+// ── NÚMERO REPETIDO NO DIÁRIO: vale o REGISTRO 1 (09/11/2026) ─────
+// O D365 tem DOIS documentos com o número 000021098 na MSB: a venda de
+// R$ 18.000,00 (07/10, OV017088) e outro de −R$ 5.999,40 (o "registro 2" do
+// painel da nota). Decisão do dono: vale o REGISTRO 1 — o documento original
+// de cada número. Para as notas do dia, busca no diário TODOS os documentos
+// com o mesmo número (qualquer data); o original é o 1º pela data (e, no
+// empate, pela ordem em que o D365 devolve — a mesma do painel). A linha do
+// dia só fica se for esse original; as outras saem da lista e da soma e vão
+// para `repetidas` (com o original ao lado), com aviso. Falha da consulta =
+// mantém tudo (não some nota por erro de leitura).
+async function originaisDoDiario(J, token, ate, diag) {
+  const C = J.E.col;
+  const numeros = Array.from(new Set(J.rows.map(r => txt(r[C.numero])).filter(Boolean)));
+  if (!numeros.length) return { manter: J.rows, repetidas: [] };
+  const sel = Array.from(new Set([C.numero, C.data, C.valor, C.ordem, C.conta].filter(Boolean))).join(',');
+  const todos = {};   // número -> registros (todas as datas), na ordem do D365
+  for (let i = 0; i < numeros.length; i += 15) {
+    if (restante(ate) < FOLGA_MS + 1500) { diag.push({ etapa: 'diario:repetidas', erro: 'sem tempo: ' + (numeros.length - i) + ' número(s) sem conferir' }); return { manter: J.rows, repetidas: [] }; }
+    const lote = numeros.slice(i, i + 15);
+    const filtro = "dataAreaId eq '" + D.odataStr(EMPRESA) + "' and (" + lote.map(n => C.numero + " eq '" + D.odataStr(n) + "'").join(' or ') + ')';
+    try {
+      const rows = await D.odataGetComPrazo(J.E.entidade, { crossCompany: true, filter: filtro, select: sel }, token, prazo(ate, 12000));
+      rows.forEach(r => { const k = txt(r[C.numero]); (todos[k] = todos[k] || []).push(r); });
+    } catch (e) {
+      diag.push({ etapa: 'diario:repetidas', erro: String(e.message || e).slice(0, 200) });
+      return { manter: J.rows, repetidas: [] };
+    }
+  }
+  const mesmo = (a, b) => isoData(a[C.data]) === isoData(b[C.data]) && num(a[C.valor]) === num(b[C.valor]) && txt(C.ordem ? a[C.ordem] : '') === txt(C.ordem ? b[C.ordem] : '');
+  const manter = [], repetidas = [];
+  J.rows.forEach(r => {
+    const lista = (todos[txt(r[C.numero])] || []).slice();
+    if (lista.length < 2) { manter.push(r); return; }
+    lista.sort((a, b) => String(isoData(a[C.data]) || '').localeCompare(String(isoData(b[C.data]) || '')));   // estável: empate fica na ordem do D365
+    const orig = lista[0];
+    if (mesmo(r, orig)) { manter.push(r); return; }
+    repetidas.push({
+      numero: txt(r[C.numero]), data: isoData(r[C.data]), valor: num(r[C.valor]), ordem: C.ordem ? txt(r[C.ordem]) : '',
+      original: { data: isoData(orig[C.data]), valor: num(orig[C.valor]), ordem: C.ordem ? txt(orig[C.ordem]) : '' },
+      registros: lista.length
+    });
+  });
+  diag.push({ etapa: 'diario:repetidas', numeros: numeros.length, repetidas: repetidas.length });
+  return { manter, repetidas };
 }
 
 // ── DETALHE CRU DE UMA NOTA (09/11/2026) ─────────────────────────

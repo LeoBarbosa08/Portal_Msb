@@ -37,8 +37,9 @@ global.fetch = async (url) => {
     return corpo({ value: E.linhas.filter(r => pedidas.indexOf(r.CustomerAccount) >= 0) });
   }
   // busca por número de nota (o painel da nota: ?nota=)
-  const mNum = /(InvoiceNumber|FiscalDocumentNumber) eq '([^']+)'/.exec(q.filter);
-  if (mNum && E.porNumero) return corpo({ value: (E.linhas || []).filter(r => r[mNum[1]] === mNum[2]) });
+  if (E.doDia && / ge /.test(q.filter)) return corpo({ value: E.doDia });   // a leitura do dia
+  const nums = [...q.filter.matchAll(/(InvoiceNumber|FiscalDocumentNumber) eq '([^']+)'/g)];
+  if (nums.length && E.porNumero) return corpo({ value: (E.linhas || []).filter(r => nums.some(m => r[m[1]] === m[2])) });
   return corpo({ value: E.linhas || [] });
 };
 
@@ -184,6 +185,28 @@ const CLIENTES = { porConta: true, amostra: { dataAreaId: 'msb', CustomerAccount
     t('nota: dono -> 200 com o diário', res.status === 200 && res.body.diario && res.body.diario.linhas.length === 1, res.status);
     auth.requireUser = orig;
   }
+
+  console.log('7) número repetido no diário: vale o registro 1 (o caso da 000021098)');
+  const orig98 = { dataAreaId: 'msb', InvoiceNumber: '000021098', InvoiceDate: '2026-10-07T12:00:00Z', InvoiceCustomerAccountNumber: 'C006154', TotalInvoiceAmount: 18000, SalesOrderNumber: 'OV017088' };
+  const dup98  = { dataAreaId: 'msb', InvoiceNumber: '000021098', InvoiceDate: DIA + 'T12:00:00Z', InvoiceCustomerAccountNumber: 'C006154', TotalInvoiceAmount: -5999.40, SalesOrderNumber: 'OV017540' };
+  const n470   = { dataAreaId: 'msb', InvoiceNumber: '000021470', InvoiceDate: DIA + 'T12:00:00Z', InvoiceCustomerAccountNumber: 'C1', TotalInvoiceAmount: 2231.10, SalesOrderNumber: 'OV017512' };
+  FD._limparCache(); require('../api/shared/kanban-ov')._limparCache(); chamadas.length = 0;
+  CEN = {
+    FiscalDocuments: { amostra: AMOSTRA_FISCAL, linhas: [], ultima: '2023-12-05T00:00:00Z', colData: 'FiscalDocumentDate' },
+    SalesInvoiceHeadersV2: Object.assign(DIARIO([orig98, dup98, n470]), { porNumero: true, doDia: [dup98, n470] }),
+    CustomersV3: CLIENTES
+  };
+  r = await FD.notasDoDia({ data: DIA });
+  t('o −5.999,40 (registro 2) sai da lista', !r.notas.some(n => n.numero === '000021098'), r.notas.map(n => n.numero + ' ' + n.valor));
+  t('e da soma: só a 000021470', r.resumo.venda.qtd === 1 && r.resumo.venda.valor === 2231.10 && r.resumo.devolucao.qtd === 0, r.resumo);
+  t('repetidas traz o original ao lado', r.repetidas.length === 1 && r.repetidas[0].valor === -5999.40 && r.repetidas[0].original.valor === 18000 && r.repetidas[0].original.data === '2026-10-07', r.repetidas);
+  t('aviso diz qual ficou fora e o original', r.avisos.some(a => /000021098 de 06\/11\/2026/.test(a) && /original é de 07\/10\/2026/.test(a)), r.avisos);
+  t('buscou todos os registros do número, só a MSB', chamadas.some(c => c.ent === 'SalesInvoiceHeadersV2' && /InvoiceNumber eq '000021098'/.test(c.q.filter) && /dataAreaId eq 'msb'/.test(c.q.filter) && !/ ge /.test(c.q.filter)));
+
+  FD._limparCache(); chamadas.length = 0;
+  CEN.SalesInvoiceHeadersV2 = Object.assign(DIARIO([orig98, dup98, n470]), { porNumero: true, doDia: [orig98] });
+  r = await FD.notasDoDia({ data: '2026-10-07' });
+  t('em 07/10 a venda original (R$ 18.000) fica', r.notas.length === 1 && r.notas[0].numero === '000021098' && r.notas[0].valor === 18000 && r.notas[0].tipo === 'venda' && r.repetidas.length === 0, r.notas);
 
   console.log(falhas ? '\n' + falhas + ' FALHA(S)' : '\ntudo ok');
   process.exit(falhas ? 1 : 0);
