@@ -114,7 +114,9 @@
             /* 09/11/26 (dono: "os cards têm que ser do mesmo tamanho; se precisar ver
                as outras ordens, ele desce e rola a barra"): TODAS as colunas com a
                mesma altura; o que não couber rola dentro da coluna */
-            .kb-board.linhas .kb-col{height:52vh;min-height:300px;max-height:none;}
+            /* 09/11/26 ("não precisa ser grande, pode ser no tamanho de 5 OVs"): cabeçalho
+               (57) + 5 cartões (5 × 52) + 4 espaços (6) + respiro (14) + borda = 360 px */
+            .kb-board.linhas .kb-col{height:360px;min-height:0;max-height:none;}
             .kb-board.linhas .kb-cards{flex:1;min-height:0;overflow-y:auto;}
             .kb-col{border-radius:12px;background:var(--kb-bg);border:1px solid var(--kb-bd);display:flex;flex-direction:column;min-height:180px;max-height:70vh;min-width:0;container-type:inline-size;}
             .kb-col-h{padding:10px 12px 8px;display:flex;flex-direction:column;gap:2px;}

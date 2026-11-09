@@ -1295,8 +1295,10 @@ Pedido do dono: "os cards têm que ser do mesmo tamanho; caso ele necessite ver 
 outras ordens, ele desce e rola a barra". E o aviso do print: a entidade de
 cargas escolhida (`OutboundLoadHeaders`) não tem o `QuotationPerformed_InoveProjects`.
 
-- **Mesma altura**: no quadro em linhas (4 × 4 × 3), todas as colunas com 52 vh
-  (mín. 300 px); o que não couber rola dentro da coluna.
+- **Mesma altura**: no quadro em linhas (4 × 4 × 3), todas as colunas com a mesma
+  altura — **o tamanho de 5 OVs** (360 px: cabeçalho 57 + 5 cartões de 52 + os
+  espaços; ajuste seguinte do dono: "não precisa ser grande, pode ser no tamanho
+  de 5 OVs"); o que não couber rola dentro da coluna. `sw.js` — `bm-comest-v59`.
 - **Segurança da escrita**: a busca "pelo pedaço do nome" dos campos da carga foi
   apertada — o do pallet só aceita `enviar…pallet` (antes, qualquer campo com
   "pallet", como `PalletQuantity`, poderia ser o GRAVADO pelo botão) e o da
