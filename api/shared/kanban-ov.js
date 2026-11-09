@@ -119,17 +119,17 @@ const ETAPAS = [
   { id: 'conferencia', nome: 'Conferência' },
   // Cotação: vai sair das CARGAS (WHSOutboundLoadHeaderEntity) — status e
   // campos a definir pelo dono; por ora a carga só aparece na ficha
-  { id: 'cotacao',     nome: 'Cotação',     pendente: true },
+  { id: 'cotacao',     nome: 'Cotação' },
   { id: 'faturado',    nome: 'Faturado' },
   // 09/11/2026 (dono): "crie depois de FATURADA um card escrito REJEITADA,
   // caso a NF seja rejeitada, ou cancelada/descartada" — ver NOTAS FISCAIS
   { id: 'rejeitada',   nome: 'Rejeitada' },
   // 09/11/2026 (dono: "um card a mais que vai chamar PALLET, que vem depois do
   // rejeitado"): VAZIA até o dono mandar os campos
-  { id: 'pallet',      nome: 'Pallet',      pendente: true },
+  { id: 'pallet',      nome: 'Pallet' },
   // 09/11/2026 (dono: "insira mais um cartão de Expedição"): depois do
   // Faturado — a mercadoria sai com a nota. VAZIA até o dono mandar os campos.
-  { id: 'expedicao',   nome: 'Expedição',   pendente: true }
+  { id: 'expedicao',   nome: 'Expedição' }
 ];
 const COL_SALES   = envLista('KANBAN_COL_SALESSTATUS', ['SalesStatus', 'SalesOrderStatus']);
 const COL_RELEASE = envLista('KANBAN_COL_RELEASE', ['ReleaseStatus', 'SalesOrderReleaseStatus']);
@@ -205,8 +205,33 @@ const COL_CARGA = {
   envio:          ['ScheduledShippingDateTime', 'LoadSchedShipUTCDateTime', 'ScheduledLoadShippingDateTime', 'ScheduledShipDateTime'],
   expedido:       ['LoadShippedUTCDateTime', 'ShippedDateTime', 'ActualShippingDateTime'],
   deposito:       ['InventLocationId', 'WarehouseId', 'ShippingWarehouseId'],
-  modelo:         ['LoadTemplateId']
+  modelo:         ['LoadTemplateId'],
+  // 09/11/2026 (dono): "Cotação realizada" e "ENVIARPALLET_CUSTOM" — campos
+  // próprios da carga; nomes trocáveis por env (e procurados pelo pedaço do nome)
+  cotacao:        envLista('KANBAN_COL_CARGA_COTACAO', ['COTACAOREALIZADA_CUSTOM', 'CotacaoRealizada_Custom', 'CotacaoRealizada', 'QuotationDone_Custom']),
+  pallet:         envLista('KANBAN_COL_CARGA_PALLET', ['ENVIARPALLET_CUSTOM', 'EnviarPallet_Custom', 'EnviarPallet'])
 };
+// ── AS REGRAS DO DONO PELA CARGA E PELA NOTA (09/11/2026) ─────────
+//   Separação   = status do TRABALHO = "Abrir" (Open)
+//   Conferência = status da CARGA = "Em processamento" (InProcess)
+//   Cotação     = CARGA "Carregado" (Loaded) E "Cotação realizada" = Não
+//   Faturado    = NOTA FISCAL "Aprovada"
+//   Pallet      = botão "Enviar para o Pallet" (carga Carregado E cotação
+//                 realizada = Sim) grava ENVIARPALLET_CUSTOM = Sim no D365
+//   Rejeitada   = nota "Rejeitada" (e cancelada/descartada, pedido anterior)
+//   Expedição   = status da CARGA = "Remetido" (Shipped)
+// Fase da carga da OV (a MENOS adiantada, se a OV tiver mais de uma carga):
+//   remetido > pallet > cotado (carregado + cotação Sim) > cotacao (carregado +
+//   cotação Não) > processando > outro
+const RANK_CARGA = { outro: 0, processando: 1, cotacao: 2, cotado: 3, pallet: 4, remetido: 5 };
+function faseCarga(c) {
+  const st = normV(c.status).replace(/ /g, '');
+  if (/^(shipped|remetid|expedid)/.test(st)) return 'remetido';
+  if (c.palletSim) return 'pallet';
+  if (/^(loaded|carregad)/.test(st)) return c.cotacaoSim ? 'cotado' : 'cotacao';
+  if (/^(inprocess|emprocessament|emprocess|inpacking|emembalagem)/.test(st)) return 'processando';
+  return 'outro';
+}
 // ── NOTAS FISCAIS DA OV: o número e a REJEITADA (09/11/2026) ──────
 // Dono: "crie depois de FATURADA um card escrito REJEITADA, caso a NF seja
 // rejeitada, ou cancelada/descartada" e "preciso saber qual a nota fiscal".
@@ -248,16 +273,26 @@ const liberadoV = (v) => /^(released|liberado|liberada)$/.test(normV(v));
 const marcadoV = (v) => v === true || /^(yes|sim|true|1|noyes yes)$/.test(normV(v));
 // trabalho = fase do trabalho de depósito da OV ('fechado' | 'processo' |
 // 'aberto' | null = sem trabalho / sem a entidade)
-// nota = 'rejeitada' quando a nota mais recente da OV está rejeitada /
-// cancelada / descartada / denegada (vale antes de tudo, menos da OV cancelada)
-function etapaDe(sales, release, credito, trabalho, nota) {
+// nota  = a nota mais recente da OV com status: 'rejeitada' | 'aprovada' |
+//         'outra' (status que não é nenhum dos dois) | null (sem nota/status)
+// carga = a fase da carga da OV (faseCarga) ou null (sem carga)
+// Do mais adiantado para o menos (09/11/2026, as regras do dono acima); onde
+// as regras do dono não falam, as anteriores ficam de reserva.
+function etapaDe(sales, release, credito, trabalho, nota, carga) {
   const sit = situacaoOv(sales);
   if (sit === 'cancelada') return 'cancelada';
   if (nota === 'rejeitada') return 'rejeitada';
-  if (sit === 'outra') return 'faturado';
+  if (carga === 'remetido') return 'expedicao';
+  if (carga === 'pallet') return 'pallet';
+  if (nota === 'aprovada') return 'faturado';
+  // reserva: a OV saiu do aberto e não há status de nota para conferir
+  if (sit === 'outra' && nota !== 'outra') return 'faturado';
+  if (carga === 'cotacao' || carga === 'cotado') return 'cotacao';
+  if (carga === 'processando') return 'conferencia';
   if (marcadoV(credito)) return 'credito';
+  // reserva: todos os trabalhos fechados e a carga ainda não em processamento
   if (trabalho === 'fechado') return 'conferencia';
-  if (liberadoV(release) || trabalho === 'processo' || trabalho === 'aberto') return 'liberado';
+  if (trabalho === 'aberto' || trabalho === 'processo' || liberadoV(release)) return 'liberado';
   return 'criada';
 }
 
@@ -361,6 +396,8 @@ const CFG_TRABALHO = {
 const CFG_CARGA = {
   chave: 'carga', candidatas: ENT_CARGA, reNome: /outboundload|loadheader/i, pedaco: 'outboundload',
   cols: COL_CARGA, obrig: ['numero'],
+  // os campos _CUSTOM: se o nome exato não bater, o pedaço do nome
+  reCols: { cotacao: /cota[cç]/i, pallet: /enviar.?pallet|pallet/i },
   erroCol: (p) => 'sem a coluna ' + COL_CARGA[p].join('/')
 };
 const CFG_NOTA = {
@@ -380,7 +417,9 @@ async function sondarExtra(cfg, ent, token, ate) {
   if (!rows || !rows.length) return { entidade: ent, serve: false, erro: erro ? erro.slice(0, 200) : 'sem linhas' };
   const cols = colunasDe(rows[0]);
   const achado = {};
-  Object.keys(cfg.cols).forEach(papel => { achado[papel] = achaCol(cols, cfg.cols[papel]); });
+  Object.keys(cfg.cols).forEach(papel => {
+    achado[papel] = achaCol(cols, cfg.cols[papel]) || (cfg.reCols && cfg.reCols[papel] ? cols.find(c => cfg.reCols[papel].test(c)) || null : null);
+  });
   const falta = cfg.obrig.filter(papel => !achado[papel]);
   return Object.assign({ entidade: ent, serve: !falta.length, temEmpresa: cols.some(c => c.toLowerCase() === 'dataareaid'), colunas: cols,
     erro: falta.length ? cfg.erroCol(falta[0]) : null }, achado);
@@ -491,10 +530,16 @@ async function cargasPorId(ids, token, ate, diag) {
   const v = (r, papel) => { const col = E[papel] || achaCol(colunasDe(r), COL_CARGA[papel]); return col ? r[col] : null; };
   rows.forEach(r => {
     const id = txt(r[E.numero]); if (!id || por[id.toUpperCase()]) return;
-    por[id.toUpperCase()] = { row: r, carga: {
+    const cot = v(r, 'cotacao'), pal = v(r, 'pallet');
+    const carga = {
       id, status: txt(v(r, 'status')), transportadora: txt(v(r, 'transportadora')), servico: txt(v(r, 'servico')),
-      envio: dataHora(v(r, 'envio')), expedido: dataHora(v(r, 'expedido')), deposito: txt(v(r, 'deposito')), modelo: txt(v(r, 'modelo'))
-    } };
+      envio: dataHora(v(r, 'envio')), expedido: dataHora(v(r, 'expedido')), deposito: txt(v(r, 'deposito')), modelo: txt(v(r, 'modelo')),
+      cotacao: cot == null ? null : txt(cot), cotacaoSim: marcadoV(cot), pallet: pal == null ? null : txt(pal), palletSim: marcadoV(pal)
+    };
+    carga.fase = faseCarga(carga);
+    // o botão "Enviar para o Pallet": carga Carregado E cotação realizada = Sim (e ainda não enviada)
+    carga.podePallet = carga.fase === 'cotado';
+    por[id.toUpperCase()] = { row: r, carga };
   });
   return { E, por };
 }
@@ -844,16 +889,20 @@ async function montar(opts, modo) {
     // notas da OV (a mais recente primeiro); vale a mais recente com status
     const nts = NOTAS.E ? (NOTAS.por[k] || []) : [];
     const nVale = nts.find(n => n.status) || null;
-    const etapa = etapaDe(sa && sa.valor, re && re.valor, crAtivo, tb ? tb.fase : null, nVale && nVale.rejeitada ? 'rejeitada' : null);
+    // cargas da OV (pelos LoadId dos trabalhos dela) e a fase: a menos adiantada
+    const idsOv = tb ? Array.from(new Set(tb.lista.map(w => w.carga).filter(Boolean))) : [];
+    const cargasOv = idsOv.map(id => CARGA.por[id.toUpperCase()] ? CARGA.por[id.toUpperCase()].carga : { id, status: '', naoAchada: !!CARGA.E });
+    const comFase = cargasOv.filter(c => c.fase);
+    const faseOv = comFase.length ? comFase.reduce((m, c) => RANK_CARGA[c.fase] < RANK_CARGA[m] ? c.fase : m, 'remetido') : null;
+    const notaFase = nVale ? (nVale.rejeitada ? 'rejeitada' : nVale.aprovada ? 'aprovada' : 'outra') : null;
+    const etapa = etapaDe(sa && sa.valor, re && re.valor, crAtivo, tb ? tb.fase : null, notaFase, faseOv);
     const status = {};
     statusCols.forEach(s => { const r = reg[k][s.entidade]; status[s.chave] = r ? (txt(r[s.coluna]) || '(vazio)') : null; });
     const campos = {};
     Object.keys(reg[k]).forEach(ent => { campos[ent] = crus(reg[k][ent]); });
     if (cd && cd.row) campos[CRED.E.entidade] = crus(cd.row);
     if (tb && tb.row) campos[TRAB.E.entidade] = crus(tb.row);
-    // cargas da OV (pelos LoadId dos trabalhos dela): ficha + campos crus
-    const idsOv = tb ? Array.from(new Set(tb.lista.map(w => w.carga).filter(Boolean))) : [];
-    const cargasOv = idsOv.map(id => CARGA.por[id.toUpperCase()] ? CARGA.por[id.toUpperCase()].carga : { id, status: '', naoAchada: !!CARGA.E });
+    // o registro da carga nos campos crus
     if (CARGA.E && idsOv.length && CARGA.por[idsOv[0].toUpperCase()]) campos[CARGA.E.entidade] = crus(CARGA.por[idsOv[0].toUpperCase()].row);
     const l = porLinha[k] || null;
     return {
@@ -880,8 +929,11 @@ async function montar(opts, modo) {
       // notas fiscais da OV (o número vai para o cartão) e a que decide a Rejeitada
       notas: nts, nota: nts.length ? { numero: (nVale || nts[0]).numero, status: nVale ? nVale.status : '', rejeitada: !!(nVale && nVale.rejeitada),
         aprovada: !!(nVale && nVale.aprovada), fonte: nVale ? nVale.statusFonte : '' } : null, notaFonte: NOTAS.E ? NOTAS.E.entidade : null,
-      // cargas (WHSOutboundLoadHeaderEntity): só leitura por enquanto — a Cotação vai sair daqui
-      cargas: cargasOv, cargaFonte: CARGA.E ? CARGA.E.entidade + (CARGA.E.status ? '.' + CARGA.E.status : '') : null,
+      // cargas (WHSOutboundLoadHeaderEntity): Conferência, Cotação, Pallet e Expedição
+      cargas: cargasOv, cargaFase: faseOv, cargaFonte: CARGA.E ? CARGA.E.entidade + (CARGA.E.status ? '.' + CARGA.E.status : '') : null,
+      cargaCols: CARGA.E ? { status: CARGA.E.status || null, cotacao: CARGA.E.cotacao || null, pallet: CARGA.E.pallet || null } : null,
+      // pode enviar para o Pallet: alguma carga Carregado + cotação Sim, ainda não enviada
+      podePallet: cargasOv.some(c => c.podePallet) && !!(CARGA.E && CARGA.E.pallet),
       status, campos
     };
   }).sort((a, b) => b.criadaEm.localeCompare(a.criadaEm) || b.numero.localeCompare(a.numero));
@@ -918,6 +970,10 @@ async function montar(opts, modo) {
     } else if (nfs.length && !(STN.fontes || []).length) {
       avisos.push('Não achei o status da nota fiscal (documento fiscal / NF-e) no OData' + (STN.erro ? ' (' + STN.erro + ')' : '') +
         ': o número da nota aparece, mas a coluna Rejeitada fica vazia.');
+    }
+    if (CARGA.E && (!CARGA.E.cotacao || !CARGA.E.pallet)) {
+      avisos.push('Na entidade de cargas (' + CARGA.E.entidade + ') não achei ' + [!CARGA.E.cotacao ? '"Cotação realizada" (' + COL_CARGA.cotacao[0] + ')' : '', !CARGA.E.pallet ? COL_CARGA.pallet[0] : ''].filter(Boolean).join(' nem ') +
+        ': carga Carregado fica em Cotação' + (!CARGA.E.pallet ? ' e o botão "Enviar para o Pallet" não aparece' : '') + '. Fixe os nomes em KANBAN_COL_CARGA_COTACAO / KANBAN_COL_CARGA_PALLET.');
     }
     if (!CARGA.E && !CARGA.semIds) {
       avisos.push('A entidade de cargas (WHSOutboundLoadHeaderEntity) não respondeu no OData' + (CARGA.erro ? ' (' + CARGA.erro + ')' : '') +
@@ -1053,6 +1109,41 @@ async function operacoesDasOvs(numeros, ate) {
 }
 
 
+// ── "ENVIAR PARA O PALLET" (09/11/2026) — a ÚNICA escrita do Kanban ──
+// Dono: "BOTÃO ENVIAR PARA O PALLET = Carga -> Status da carga = Carregado AND
+// Cotação realizada = SIM -> ENVIARPALLET_CUSTOM = SIM (INSERIR NO D365)".
+// Relê a carga NA HORA (a tela pode estar velha), confere a condição de novo e
+// só então grava ENVIARPALLET_CUSTOM = Sim (PATCH na entidade de cargas, pela
+// chave dataAreaId + LoadId). Já enviada = ok sem gravar de novo.
+function erroStatus(msg, status) { const e = new Error(msg); e.status = status; e.publicMessage = msg; return e; }
+async function enviarParaPallet(loadId) {
+  const id = txt(loadId);
+  if (!/^[A-Za-z0-9._\-\/]{1,40}$/.test(id)) throw erroStatus('Número de carga inválido.', 400);
+  const ate = Date.now() + 25000, diag = [];
+  const token = await D.getToken();
+  const x = await entidadeExtra(CFG_CARGA, token, ate, diag), E = x.E;
+  if (!E) throw erroStatus('A entidade de cargas não respondeu no OData' + (x.motivo ? ' (' + x.motivo + ')' : '') + '.', 409);
+  if (!E.pallet) throw erroStatus('Não achei a coluna ' + COL_CARGA.pallet[0] + ' na ' + E.entidade + ' (fixe o nome em KANBAN_COL_CARGA_PALLET).', 409);
+  const rows = await D.odataGetComPrazo(E.entidade, { crossCompany: true, top: 2,
+    filter: (E.temEmpresa ? "dataAreaId eq '" + D.odataStr(EMPRESA) + "' and " : '') + E.numero + " eq '" + D.odataStr(id) + "'" }, token, prazo(ate, 12000));
+  if (!rows.length) throw erroStatus('A carga ' + id + ' não foi encontrada no Dynamics.', 404);
+  const r = rows[0];
+  const c = { status: E.status ? txt(r[E.status]) : '', cotacaoSim: E.cotacao ? marcadoV(r[E.cotacao]) : false, palletSim: marcadoV(r[E.pallet]) };
+  if (c.palletSim) return { ok: true, ja: true, carga: id, entidade: E.entidade, coluna: E.pallet };
+  if (faseCarga(c) !== 'cotado') {
+    throw erroStatus('A carga ' + id + ' não está "Carregado" com a cotação realizada (status: ' + (c.status || '—') + ', cotação realizada: ' +
+      (E.cotacao ? txt(r[E.cotacao]) || '—' : 'coluna não encontrada') + ').', 409);
+  }
+  // o valor no formato da coluna: enum NoYes ("Yes"), booleano ou número
+  const atual = r[E.pallet];
+  const valor = typeof atual === 'boolean' ? true : typeof atual === 'number' ? 1 : 'Yes';
+  const chave = (E.temEmpresa ? "dataAreaId='" + D.odataStr(txt(r.dataAreaId) || EMPRESA) + "'," : '') + E.numero + "='" + D.odataStr(id) + "'";
+  const corpo = {}; corpo[E.pallet] = valor;
+  await D.odataEnviar('PATCH', E.entidade + '(' + chave + ')?cross-company=true', corpo, token, 20000);
+  _cache.clear();   // a próxima leitura do quadro já vem com a carga no Pallet
+  return { ok: true, carga: id, entidade: E.entidade, coluna: E.pallet, valor };
+}
+
 function _limparCache() { _cache.clear(); _cacheLinhas.clear(); _ents = null; _entsTs = 0; _servico = null; _servicoTs = 0; _entLinhas = null; Object.keys(_extras).forEach(k => { delete _extras[k]; }); ST_NOTA._limparCache(); }
 
-module.exports = { ordensDoDia, quadro, linhasDaOv, operacoesDasOvs, hojeSP, EMPRESA, CONFIGURED: D.CONFIGURED, ETAPAS, _limparCache, _interno: { diaDe, RE_STATUS, RE_NAO_STATUS, etapaDe } };
+module.exports = { ordensDoDia, quadro, linhasDaOv, enviarParaPallet, operacoesDasOvs, hojeSP, EMPRESA, CONFIGURED: D.CONFIGURED, ETAPAS, _limparCache, _interno: { diaDe, RE_STATUS, RE_NAO_STATUS, etapaDe } };

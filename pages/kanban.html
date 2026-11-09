@@ -59,16 +59,14 @@
         <div class="area-main">
 
           <!-- ═══════════ KANBAN · ORDENS DO DIA ═══════════
-               As ordens de venda da MSB criadas no dia, AO VIVO do Dynamics
-               (/api/kanban-ov: BIOSalesOrderHeaderV1 + SalesOrderHeadersV3/V2,
-               juntas pelo número da OV; valor pelas linhas). 07/11/26: QUATRO
-               colunas fixas, na ordem do fluxo — Criada, Gerenciamento de Crédito,
-               Separação (era "Liberado"), Faturado; 09/11/26: SEIS — + Conferência e
-               Cotação, vazias até o dono mandar os campos; + Expedição depois do Faturado,
-               também à espera dos campos — pela regra do dono (SalesStatus, ReleaseStatus,
-               e o crédito: tabela BioCredManTableV1, ACTIVE pelo SALESID — 09/11/26),
-               calculada no servidor (api/shared/kanban-ov.js).
-               Área RESERVADA (AREAS_RESERVADAS em api/shared/auth.js). -->
+               As ordens de venda da MSB (ALMOX-PA), AO VIVO do Dynamics (/api/kanban-ov).
+               09/11/26: em aberto de QUALQUER data + Faturado/Rejeitada/Pallet/Expedição
+               no período escolhido. Colunas pelas regras do dono (api/shared/kanban-ov.js,
+               etapaDe): Criada → Crédito (BioCredManTableV1) → Separação (trabalho "Abrir")
+               → Conferência (carga "Em processamento") → Cotação (carga "Carregado" +
+               cotação não realizada) → Faturado (nota "Aprovada") → Rejeitada (nota
+               rejeitada) → Pallet (ENVIARPALLET_CUSTOM = Sim, pelo botão "Enviar para o
+               Pallet" da ficha — a única escrita no D365) → Expedição (carga "Remetido"). -->
           <style>
             .kb-head{display:flex;align-items:flex-end;justify-content:space-between;gap:16px;flex-wrap:wrap;padding:22px 0 10px;}
             .kb-bc{font-size:12px;color:var(--text-3);}
@@ -254,6 +252,16 @@
             .kb-trab-st.ignora{background:#F1F4F6;color:var(--dw-mut2);text-decoration:line-through;}
             .kb-trab-st.rej{background:#FCE8EC;color:#8E2440;}
             .kb-trab-st.ok{background:#EAF8F0;color:#22794C;}
+.kb-chip.kb-pal{border-color:#E3D5C0;background:#F4EDE3;color:#6B4E2A;}
+            .kb-acao{display:flex;align-items:center;gap:12px;flex-wrap:wrap;border-color:#E3D5C0;background:#FBF7F1;}
+            .kb-acao-t{flex:1;min-width:200px;font-size:12.5px;color:var(--dw-body);line-height:1.45;}
+            .kb-acao-t b{display:block;color:var(--dw-ink);font-size:13px;}
+            .kb-acao-b{padding:9px 14px;border-radius:9px;border:none;background:#6B4E2A;color:#fff;font:inherit;font-size:12.5px;font-weight:700;cursor:pointer;white-space:nowrap;}
+            .kb-acao-b:hover:not(:disabled){background:#56401f;}
+            .kb-acao-b:disabled{opacity:.6;cursor:default;}
+            .kb-acao-msg{flex-basis:100%;font-size:12px;font-weight:600;}
+            .kb-acao-msg:empty{display:none;}
+            .kb-acao-msg.ok{color:#22794C;} .kb-acao-msg.erro{color:#A8541F;}
             .kb-chip.kb-nf{font-variant-numeric:tabular-nums;}
             .kb-chip.kb-nf-rej{border-color:#F3C9D2;background:#FCE8EC;color:#8E2440;}
             .kb-rg>div{border:1px solid var(--dw-bd);border-radius:10px;padding:9px 10px;min-width:0;background:#FAFCFD;}
@@ -433,7 +441,7 @@
     function depDiferente(dep) { return !!dep && depFiltro().indexOf(String(dep).toUpperCase()) < 0; }
     function depTexto() { return depFiltro().join(', '); }
 
-    var estado = { r: null, vis: 'kanban', busca: '', carregando: false, timer: null, antes: null, mudou: {}, aberta: null, filtroCampos: '' };
+    var estado = { r: null, vis: 'kanban', busca: '', carregando: false, timer: null, antes: null, mudou: {}, aberta: null, filtroCampos: '', enviadas: {} };
 
     function hojeSP() {
       try { return new Intl.DateTimeFormat('en-CA', { timeZone: 'America/Sao_Paulo', year: 'numeric', month: '2-digit', day: '2-digit' }).format(new Date()); }
@@ -454,6 +462,7 @@
       return '<button type="button" class="kb-card' + (estado.mudou[o.numero] ? ' mudou' : '') + (estado.aberta === o.numero ? ' is-aberta' : '') + '" data-ov="' + esc(o.numero) + '">'
         + '<div class="kb-l1"><span class="kb-ov">' + esc(o.numero) + '</span><span class="kb-cli" title="' + esc(o.cliente) + '">' + esc(o.cliente || o.conta) + '</span></div>'
         + '<div class="kb-l2">' + (novo ? '<span class="kb-chip kb-nova">nova</span>' : '')
+        + (o.podePallet ? '<span class="kb-chip kb-pal" title="Carga Carregado e cotação realizada: pode ser enviada para o Pallet (na ficha)">p/ Pallet</span>' : '')
         // a nota fiscal da OV (09/11/26: "preciso saber qual a nota fiscal")
         + (o.nota ? '<span class="kb-chip kb-nf' + (o.nota.rejeitada ? ' kb-nf-rej' : '') + '" title="Nota fiscal' + (o.nota.status ? ' · ' + esc(rotNF(o.nota.status)) : '') + ((o.notas || []).length > 1 ? ' · ' + o.notas.length + ' notas' : '') + '">NF ' + esc(o.nota.numero) + '</span>' + (o.nota.rejeitada ? '<span class="kb-chip kb-nf-rej">' + esc(rotNF(o.nota.status)) + '</span>' : '') : '')
         + (o.oc ? '<span class="kb-chip" title="OC do cliente">' + esc(o.oc) + '</span>' : '')
@@ -586,8 +595,11 @@
                    discarded: 'Descartada', denied: 'Denegada', pending: 'Pendente', created: 'Criada', sent: 'Enviada', none: 'Sem status' };
     function rotNF(v) { return v ? (ROT_NF[chaveEnum(v)] || String(v)) : 'Sem status'; }
     // carga (WHSOutboundLoadHeaderEntity, 09/11/26): o LoadStatus em português
-    var ROT_CARGA = { open: 'Aberta', posted: 'Lançada', waved: 'Em onda', inprocess: 'Em processo', inpacking: 'Em embalagem',
-                      loaded: 'Carregada', shipped: 'Expedida', received: 'Recebida' };
+    var ROT_CARGA = { open: 'Aberto', posted: 'Lançado', waved: 'Em onda', inprocess: 'Em processamento', inpacking: 'Em embalagem',
+                      loaded: 'Carregado', shipped: 'Remetido', received: 'Recebido' };
+    var simNao = function (v) { return v == null || v === '' ? '—' : /^(yes|sim|true|1)$/i.test(String(v)) ? 'Sim' : /^(no|nao|não|false|0)$/i.test(String(v)) ? 'Não' : String(v); };
+    // a carga da OV numa frase curta: "LD-1 (Carregado)"
+    function cargasTxt(o) { return (o.cargas || []).map(function (c) { return '<b>' + esc(c.id) + '</b>' + (c.status ? ' (' + esc(rotCarga(c.status)) + ')' : ''); }).join(', '); }
     function rotCarga(v) { return ROT_CARGA[chaveEnum(v)] || String(v || '—'); }
 
     // valor de um campo nos campos crus da OV (qualquer entidade), pelo 1º nome que existir
@@ -662,6 +674,7 @@
         else if (a === 'prox') andar(1);
         else if (a === 'copiar') copiar();
         else if (a === 'tentar' && estado.aberta) carregarLinhas(estado.aberta, true);
+        else if (a === 'pallet') enviarPallet();
       });
       // filtro dos campos crus: esconde as linhas que não casam (campo ou valor)
       DW.el.addEventListener('input', function (e) {
@@ -751,6 +764,33 @@
       if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(num).then(ok, reserva); else reserva();
     }
 
+    // ── "Enviar para o Pallet": a única escrita do Kanban (POST /api/kanban-ov) ──
+    function enviarPallet() {
+      var o = acharOv(estado.aberta); if (!o || !o.podePallet) return;
+      var cg = (o.cargas || []).filter(function (c) { return c.podePallet; })[0]; if (!cg) return;
+      if (!window.confirm('Enviar a carga ' + cg.id + ' (' + o.numero + ') para o Pallet?\n\nIsso grava ' + ((o.cargaCols && o.cargaCols.pallet) || 'ENVIARPALLET_CUSTOM') + ' = Sim no Dynamics.')) return;
+      var b = DW.el.querySelector('[data-kb-dw="pallet"]'), m = $('kb-acao-msg');
+      if (b) { b.disabled = true; b.textContent = 'Gravando no Dynamics…'; }
+      fetch('/api/kanban-ov', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ acao: 'enviar-pallet', carga: cg.id, ov: o.numero }) })
+        .then(function (res) {
+          return res.json().catch(function () { return null; }).then(function (j) {
+            if (!res.ok || !j || j.ok === false) throw new Error((j && (j.error || j.detalhe)) || ('HTTP ' + res.status));
+            return j;
+          });
+        })
+        .then(function (j) {
+          // fica guardado: a ficha continua dizendo "enviada" depois que o quadro recarrega
+          estado.enviadas[o.numero] = { carga: cg.id, hora: new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }) };
+          if (m) { m.className = 'kb-acao-msg ok'; m.textContent = j.ja ? 'A carga já estava no Pallet.' : 'Enviada para o Pallet. Atualizando o quadro…'; }
+          if (b) b.textContent = 'Enviada';
+          carregar(true);
+        })
+        .catch(function (e) {
+          if (m) { m.className = 'kb-acao-msg erro'; m.textContent = 'Não deu para enviar: ' + e.message; }
+          if (b) { b.disabled = false; b.textContent = 'Enviar para o Pallet'; }
+        });
+    }
+
     // ── as linhas da OV: lidas no Dynamics quando a ficha abre ──
     function carregarLinhas(num, forcar) {
       var e = LINHAS.get(num);
@@ -832,6 +872,17 @@
             '', ent ? (late ? 'warn' : '') : 'z', late ? 'warn' : (ent === hoje ? 'hoje' : ''))
         + '</div>';
 
+      // "Enviar para o Pallet" (09/11/26): carga Carregado + cotação realizada = Sim
+      var env = estado.enviadas[o.numero];
+      if (o.podePallet) {
+        var cgP = (o.cargas || []).filter(function (c) { return c.podePallet; })[0];
+        h += '<section class="kb-dw-card kb-acao"><div class="kb-acao-t"><b>Pronta para o Pallet</b>Carga ' + esc(cgP ? cgP.id : '') + ' carregada e com a cotação realizada. '
+          + 'Enviar grava <code>' + esc((o.cargaCols && o.cargaCols.pallet) || 'ENVIARPALLET_CUSTOM') + ' = Sim</code> no Dynamics.</div>'
+          + (env ? '<button type="button" class="kb-acao-b" disabled>Enviada</button><div class="kb-acao-msg ok" id="kb-acao-msg">Enviada para o Pallet às ' + esc(env.hora) + '. Aguardando o Dynamics atualizar o quadro…</div>'
+                 : '<button type="button" class="kb-acao-b" data-kb-dw="pallet">Enviar para o Pallet</button><div class="kb-acao-msg" id="kb-acao-msg"></div>') + '</section>';
+      } else if (env) {
+        h += '<section class="kb-dw-card kb-acao"><div class="kb-acao-t"><b>Enviada para o Pallet</b>Carga ' + esc(env.carga) + ' enviada às ' + esc(env.hora) + '.</div></section>';
+      }
       // onde está o pedido
       h += '<section class="kb-dw-card"><h5>Onde está o pedido</h5><ol class="kb-tl">' + passosOv(o).map(function (p) {
         var fim = /\bfeito\b/.test(p.cls);
@@ -847,15 +898,18 @@
       h += secDados(o);
       h += secCrus(o, abertos.crus);
       h += '<details class="kb-dw-card kb-dw-mais" data-k="regra"' + (abertos.regra ? ' open' : '') + '><summary><h5>Como a etapa é decidida</h5></summary>'
-        + '<p class="kb-dw-p">A etapa sai de três campos da OV no Dynamics, nesta ordem — vale a primeira regra que bater:</p>'
+        + '<p class="kb-dw-p">Do mais adiantado para o menos — vale a primeira regra que bater:</p>'
         + '<ol class="kb-dw-ol" style="margin-top:6px;">'
-        + '<li class="' + (o.etapa === 'rejeitada' ? 'on' : '') + '">Nota fiscal mais recente da OV <b>rejeitada, cancelada, descartada ou denegada</b> (status do documento fiscal / NF-e) → <b>Rejeitada</b>, até sair uma nota aprovada.</li>'
-        + '<li class="' + (o.etapa === 'faturado' ? 'on' : '') + '">Situação (<code>SalesStatus</code>) que não é <b>Ordem em aberto</b> → <b>Faturado</b> (cancelada fica fora do quadro).</li>'
-        + '<li class="' + (o.etapa === 'credito' ? 'on' : '') + '">Registro <b>ativo</b> na tabela de gerenciamento de crédito (<code>BioCredManTableV1</code>: <code>ACTIVE</code>, pela OV no <code>SALESID</code>) → <b>Gerenciamento de Crédito</b>. Sem a tabela no OData, vale o <code>CredManInCreditControl</code> do cabeçalho.</li>'
-        + '<li class="' + (o.etapa === 'conferencia' ? 'on' : '') + '">Todos os trabalhos de depósito da OV (<code>WHSWorkTableBiEntity</code>, pelo <code>OrderNum</code>) <b>Fechados</b> → <b>Conferência</b>. Cancelados não contam.</li>'
-        + '<li class="' + (o.etapa === 'liberado' ? 'on' : '') + '">Liberação (<code>ReleaseStatus</code>) = Liberado (Released), ou trabalho de depósito aberto/<b>em processo</b> → <b>Separação</b>.</li>'
+        + '<li class="' + (o.etapa === 'rejeitada' ? 'on' : '') + '">Nota fiscal mais recente <b>Rejeitada</b> (ou cancelada/descartada) → <b>Rejeitada</b>.</li>'
+        + '<li class="' + (o.etapa === 'expedicao' ? 'on' : '') + '">Status da carga = <b>Remetido</b> → <b>Expedição</b>.</li>'
+        + '<li class="' + (o.etapa === 'pallet' ? 'on' : '') + '"><code>ENVIARPALLET_CUSTOM</code> = Sim (o botão <b>Enviar para o Pallet</b>, que aparece com a carga Carregado e a cotação realizada) → <b>Pallet</b>.</li>'
+        + '<li class="' + (o.etapa === 'faturado' ? 'on' : '') + '">Nota fiscal <b>Aprovada</b> → <b>Faturado</b>.</li>'
+        + '<li class="' + (o.etapa === 'cotacao' ? 'on' : '') + '">Status da carga = <b>Carregado</b> e cotação realizada = Não → <b>Cotação</b>.</li>'
+        + '<li class="' + (o.etapa === 'conferencia' ? 'on' : '') + '">Status da carga = <b>Em processamento</b> → <b>Conferência</b>.</li>'
+        + '<li class="' + (o.etapa === 'credito' ? 'on' : '') + '">Registro <b>ativo</b> na tabela de gerenciamento de crédito (<code>ACTIVE</code>, pelo <code>SALESID</code>) → <b>Gerenciamento de Crédito</b>.</li>'
+        + '<li class="' + (o.etapa === 'liberado' ? 'on' : '') + '">Status do trabalho = <b>Abrir</b> (ou em processo), ou a OV liberada para o depósito → <b>Separação</b>.</li>'
         + '<li class="' + (o.etapa === 'criada' ? 'on' : '') + '">Nenhuma das anteriores → <b>Criada</b>.</li></ol>'
-        + '<p class="kb-dw-p" style="margin-top:8px;"><b>Cotação</b>, <b>Pallet</b> e <b>Expedição</b> já estão no quadro, mas os campos que definem essas fases ainda vão ser informados: por enquanto nenhuma OV cai nelas. A Cotação vai sair da <b>carga</b> da OV (<code>WHSOutboundLoadHeaderEntity</code>, pelo <code>LoadId</code> dos trabalhos de depósito).</p>'
+        + '<p class="kb-dw-p" style="margin-top:8px;">Onde as regras não falam, vale a de antes: OV que saiu do aberto sem status de nota → Faturado; todos os trabalhos fechados sem a carga em processamento → Conferência.</p>'
         + '<p class="kb-dw-p" style="margin-top:8px;">Entram as OVs da <b>MSB</b>' + (depTexto() ? ' do depósito <b>' + esc(depTexto()) + '</b>' : '') + '. <b>Criada, Crédito, Separação, Conferência e Cotação</b>: todas as OVs <b>em aberto</b>, de qualquer data. <b>Faturado, Rejeitada, Pallet e Expedição</b>: só as do <b>período escolhido</b> lá em cima (pela data da nota fiscal; sem nota, a de criação). O quadro relê o Dynamics a cada 60 s; as linhas desta ficha são lidas quando ela abre.</p></details>';
       return h;
     }
@@ -895,40 +949,40 @@
           : 'Sem retenção agora. Se o Dynamics reter a OV no crédito, ela vem para esta etapa antes da liberação.' });
       // liberado
       var ti = trabInfo(o), porQuemT = ti.quem ? ' por <b>' + esc(ti.quem) + '</b>' : '';
+      var cf = o.cargaFase, cgT = cargasTxt(o);
+      // separação: trabalho "Abrir" (ou em processo); liberada sem trabalho também
       if (pos === 2) {
-        var oQue = !ti.veio ? '' : ti.fase === 'processo' ? ' Trabalho de separação <b>em processo</b>' + porQuemT + (ti.fechados ? ' — ' + ti.fechados + ' de ' + ti.total + ' fechados' : '') + '.'
-          : ti.fase === 'aberto' ? ' Trabalho de separação criado, ainda não iniciado.' : ' Ainda sem trabalho de depósito.';
+        var oQue = !ti.veio ? '' : ti.fase === 'aberto' ? ' Trabalho de separação <b>aberto</b> (Status do trabalho = Abrir).'
+          : ti.fase === 'processo' ? ' Trabalho de separação <b>em processo</b>' + porQuemT + (ti.fechados ? ' — ' + ti.fechados + ' de ' + ti.total + ' fechados' : '') + '.'
+          : ' Ainda sem trabalho de depósito.';
         p.push({ cls: 'agora', tt: 'Agora: Separação', dt: ti.ini ? quando(ti.ini) : '',
-          ds: 'Liberada para o depósito' + (libVeio ? ' (' + cod(cLib, rg.releaseStatus) + ')' : '') + '.' + oQue + (ti.veio ? ' Quando o trabalho fechar, vai para Conferência.' : '') });
+          ds: 'Liberada para o depósito' + (libVeio ? ' (' + cod(cLib, rg.releaseStatus) + ')' : '') + '.' + oQue + ' Quando a carga entrar em processamento, vai para Conferência.' });
       } else if (pos > 2) {
         p.push({ cls: 'feito', tt: 'Separação', dt: ti.fase === 'fechado' && ti.fim ? quando(ti.fim) : '',
           ds: ti.fase === 'fechado' ? 'Separação concluída: trabalho fechado' + porQuemT + '.' : 'A OV foi liberada para o depósito' + (libVeio ? ' (' + cod(cLib, rg.releaseStatus) + ')' : '') + '.' });
       } else {
-        p.push({ cls: 'depois', tt: 'Separação', ds: 'Quando a OV for liberada para o depósito (<code>ReleaseStatus = Released</code>) e o trabalho de separação começar (<b>em processo</b>), vem para esta etapa.' });
+        p.push({ cls: 'depois', tt: 'Separação', ds: 'Quando a OV for liberada para o depósito e o trabalho de separação for aberto (<b>Status do trabalho = Abrir</b>), vem para esta etapa.' });
       }
-      // conferência: todos os trabalhos de depósito fechados
+      // conferência: carga "Em processamento"
       if (pos === 3) p.push({ cls: 'agora', tt: 'Agora: Conferência', dt: ti.fim ? quando(ti.fim) : '',
-        ds: 'Todos os trabalhos de separação estão <b>fechados</b> (<code>' + esc(ti.cod) + '</code>). Fica aqui até a nota fiscal sair.' });
+        ds: cf === 'processando' ? 'Carga ' + cgT + ' <b>em processamento</b>. Quando ficar Carregado, vai para Cotação.'
+          : 'Todos os trabalhos de separação estão <b>fechados</b> (<code>' + esc(ti.cod) + '</code>); a carga ainda não entrou em processamento.' });
       else if (pos > 3) p.push({ cls: 'feito', tt: 'Conferência', ds: '' });
-      else p.push({ cls: 'depois', tt: 'Conferência', dt: ti.veio ? '' : 'não veio', z: !ti.veio,
-        ds: ti.veio ? 'Quando o trabalho de separação fechar (<code>WorkStatus = Closed</code>), a OV vem para esta etapa.'
-                    : 'A entidade de trabalho de depósito não respondeu no OData: sem ela, ninguém entra em Conferência.' });
-      // cotação: fase nova, à espera dos campos do dono
-      if (pos === 4) p.push({ cls: 'agora', tt: 'Agora: Cotação', ds: '' });
+      else p.push({ cls: 'depois', tt: 'Conferência', ds: 'Quando a carga da OV entrar em processamento (<b>Status da carga = Em processamento</b>), vem para esta etapa.' });
+      // cotação: carga "Carregado" e cotação realizada = Não
+      if (pos === 4) p.push({ cls: 'agora', tt: 'Agora: Cotação',
+        ds: cf === 'cotado' ? 'Carga ' + cgT + ' carregada e com a <b>cotação realizada</b>; falta a nota fiscal ser aprovada' + (o.podePallet ? ' — já pode ser enviada para o Pallet.' : '.')
+          : 'Carga ' + cgT + ' <b>carregada</b> e a cotação <b>ainda não realizada</b>.' });
       else if (pos > 4) p.push({ cls: 'feito', tt: 'Cotação', ds: '' });
-      else {
-        var cgs = o.cargas || [];
-        p.push({ cls: 'depois', tt: 'Cotação', dt: 'a definir', z: true,
-          ds: (cgs.length ? 'Carga ' + cgs.map(function (c) { return '<b>' + esc(c.id) + '</b>' + (c.status ? ' (' + esc(rotCarga(c.status)) + ')' : ''); }).join(', ') + '. ' : '')
-            + 'Os status e campos da carga que definem esta fase ainda vão ser informados.' });
-      }
+      else p.push({ cls: 'depois', tt: 'Cotação', ds: 'Quando a carga ficar <b>Carregado</b>, vem para esta etapa até a cotação ser realizada.' });
       // faturado (com a nota fiscal) e, se for o caso, a nota rejeitada
       var nt = o.nota, ntTxt = nt ? ' Nota fiscal <b>' + esc(nt.numero) + '</b>' + (nt.status ? ' (' + esc(rotNF(nt.status)) + ')' : '') + '.' : '';
       var ntData = nt && (o.notas || [])[0] && o.notas[0].data ? fDM(o.notas[0].data) : '';
       if (pos === POS_FAT) {
         var sit = rot(rg.salesStatus);
-        p.push({ cls: 'feito fim', tt: 'Agora: ' + (sit === 'Entregue' ? 'Entregue' : 'Faturado'), dt: ntData,
-          ds: 'A OV não está mais em aberto: situação <b>' + esc(sit || '—') + '</b> (' + cod(cSit, rg.salesStatus) + ').' + ntTxt });
+        p.push({ cls: 'feito fim', tt: 'Agora: Faturado', dt: ntData,
+          ds: (nt && nt.aprovada ? 'Nota fiscal <b>' + esc(nt.numero) + '</b> <b>aprovada</b>.' : 'A OV não está mais em aberto: situação <b>' + esc(sit || '—') + '</b> (' + cod(cSit, rg.salesStatus) + ').' + ntTxt)
+            + (o.podePallet ? ' A carga está carregada e com a cotação realizada: pode ir para o Pallet.' : '') });
       } else if (pos > POS_FAT) {
         p.push({ cls: 'feito', tt: 'Faturado', dt: ntData, ds: nt ? 'Nota fiscal <b>' + esc(nt.numero) + '</b> emitida.' : '' });
         if (o.etapa === 'rejeitada') {
@@ -937,15 +991,17 @@
             ds: 'A nota fiscal <b>' + esc(nt ? nt.numero : '—') + '</b> está <b>' + esc(rotNF(nt && nt.status)) + '</b> (<code>' + esc(colNF) + ' = ' + esc(nt ? nt.status : '') + '</code>): a OV fica aqui até sair uma nota aprovada.' });
         }
       } else {
-        p.push({ cls: 'depois', tt: 'Faturado', ds: 'Quando a nota fiscal sair, a OV sai do aberto e vem para esta etapa.' });
+        p.push({ cls: 'depois', tt: 'Faturado', ds: 'Quando a nota fiscal for <b>aprovada</b>, vem para esta etapa.' });
       }
-      // pallet: fase nova (depois da Rejeitada), à espera dos campos do dono
-      if (pos === ORDEM_ETAPA.pallet) p.push({ cls: 'agora', tt: 'Agora: Pallet', ds: '' });
+      // pallet: ENVIARPALLET_CUSTOM = Sim (o botão "Enviar para o Pallet")
+      if (pos === ORDEM_ETAPA.pallet) p.push({ cls: 'agora', tt: 'Agora: Pallet',
+        ds: 'Enviada para o Pallet (<code>' + esc((o.cargaCols && o.cargaCols.pallet) || 'ENVIARPALLET_CUSTOM') + ' = Sim</code>)' + (cgT ? ' — carga ' + cgT : '') + '. Quando a carga for remetida, vai para Expedição.' });
       else if (pos > ORDEM_ETAPA.pallet) p.push({ cls: 'feito', tt: 'Pallet', ds: '' });
-      else p.push({ cls: 'depois', tt: 'Pallet', dt: 'a definir', z: true, ds: 'Os campos que definem esta fase ainda vão ser informados.' });
-      // expedição: fase nova (depois do Faturado), à espera dos campos do dono
-      if (pos === ORDEM_ETAPA.expedicao) p.push({ cls: 'agora', tt: 'Agora: Expedição', ds: '' });
-      else p.push({ cls: 'depois', tt: 'Expedição', dt: 'a definir', z: true, ds: 'Os campos que definem esta fase ainda vão ser informados.' });
+      else p.push({ cls: 'depois', tt: 'Pallet', ds: o.podePallet ? 'Pronta: carga carregada e com a cotação realizada — use <b>Enviar para o Pallet</b> no alto da ficha.'
+        : 'Com a carga Carregado e a cotação realizada, o botão <b>Enviar para o Pallet</b> grava no Dynamics e a OV vem para esta etapa.' });
+      // expedição: carga "Remetido"
+      if (pos === ORDEM_ETAPA.expedicao) p.push({ cls: 'feito fim', tt: 'Agora: Expedição', ds: 'Carga ' + cgT + ' <b>remetida</b> (Status da carga = Remetido).' });
+      else p.push({ cls: 'depois', tt: 'Expedição', ds: 'Quando a carga for remetida (<b>Status da carga = Remetido</b>), vem para esta etapa.' });
       // entrega solicitada
       var ent = isoData(o.entrega), late = ent && ent < hoje && pos < POS_FAT;
       p.push({ cls: 'depois', tt: 'Entrega solicitada', dt: ent ? fDia(ent) : 'sem data', z: !ent, warn: late,
@@ -958,8 +1014,11 @@
     function secRegra(o) {
       var rg = o.regra || {}, et = o.etapa;
       var libRel = /^(released|liberado|liberada)$/.test(chaveEnum(rg.releaseStatus));
-      var decide = et === 'rejeitada' ? 'nota' : et === 'faturado' || et === 'cancelada' ? 'sit' : et === 'credito' ? 'cred' : et === 'conferencia' ? 'trab' : et === 'liberado' ? (libRel ? 'lib' : 'trab') : '';
       var ti = trabInfo(o);
+      var decide = et === 'rejeitada' ? 'nota' : et === 'faturado' ? (o.nota && o.nota.aprovada ? 'nota' : 'sit') : et === 'cancelada' ? 'sit'
+        : (et === 'expedicao' || et === 'pallet' || et === 'cotacao') ? 'carga' : et === 'conferencia' ? (o.cargaFase === 'processando' ? 'carga' : 'trab')
+        : et === 'credito' ? 'cred' : et === 'liberado' ? (ti.fase === 'aberto' || ti.fase === 'processo' ? 'trab' : 'lib') : '';
+      var cg1 = (o.cargas || [])[0] || null, ccol = o.cargaCols || {};
       var tile = function (id, k, cru, col, padrao, fmt) {
         var veio = cru != null && cru !== '';
         return '<div class="' + (decide === id ? 'decide' : '') + '"><div class="k">' + esc(k) + '</div>'
@@ -971,11 +1030,16 @@
       var porque = {
         criada: 'Ordem em aberto' + (credVeio ? ', sem crédito ativo' : '') + ' e ainda não liberada para o depósito: fica em <b>Criada</b>.' + (credVeio ? '' : ' O crédito não veio do Dynamics.'),
         credito: (ci.fonte === 'tabela' ? 'O registro <b>ativo</b> na tabela de gerenciamento de crédito decide' : 'O crédito marcado decide') + ': a OV fica em <b>Gerenciamento de Crédito</b> até o crédito aprovar, qualquer que seja a liberação.',
-        liberado: ti.fase === 'processo' ? 'Liberada para o depósito e com o trabalho de separação <b>em processo</b>: fica em <b>Separação</b> até todos os trabalhos fecharem.'
-          : ti.fase === 'aberto' ? 'Liberada para o depósito, com o trabalho de separação criado e ainda não iniciado: fica em <b>Separação</b>.'
+        liberado: ti.fase === 'processo' ? 'Liberada para o depósito e com o trabalho de separação <b>em processo</b>: fica em <b>Separação</b> até a carga entrar em processamento.'
+          : ti.fase === 'aberto' ? 'Trabalho de separação <b>aberto</b> (Status do trabalho = Abrir): fica em <b>Separação</b>.'
           : 'Ordem em aberto, sem crédito ativo e liberada para o depósito (<code>ReleaseStatus = Released</code>): fica em <b>Separação</b>.' + (ti.veio ? ' Ainda sem trabalho de depósito.' : ''),
-        conferencia: 'Todos os trabalhos de separação da OV estão <b>fechados</b>: fica em <b>Conferência</b> até a nota fiscal sair.',
-        faturado: 'A situação não é mais “Ordem em aberto”: fica em <b>Faturado</b> — a situação vale antes do crédito e da liberação.' + (o.nota ? ' Nota fiscal <b>' + esc(o.nota.numero) + '</b>' + (o.nota.status ? ' (' + esc(rotNF(o.nota.status)) + ')' : '') + '.' : ''),
+        conferencia: o.cargaFase === 'processando' ? 'A carga está <b>em processamento</b>: fica em <b>Conferência</b> até ficar Carregado.'
+          : 'Todos os trabalhos de separação da OV estão <b>fechados</b> e a carga ainda não entrou em processamento: fica em <b>Conferência</b>.',
+        cotacao: 'A carga está <b>Carregado</b> e a cotação ' + (o.cargaFase === 'cotado' ? 'já foi realizada, mas a nota fiscal ainda não foi aprovada' : '<b>ainda não foi realizada</b>') + ': fica em <b>Cotação</b>.',
+        faturado: o.nota && o.nota.aprovada ? 'A nota fiscal <b>' + esc(o.nota.numero) + '</b> está <b>Aprovada</b>: fica em <b>Faturado</b>.'
+          : 'A situação não é mais “Ordem em aberto” e não há status de nota para conferir: fica em <b>Faturado</b>.' + (o.nota ? ' Nota fiscal <b>' + esc(o.nota.numero) + '</b>.' : ''),
+        pallet: 'A carga foi enviada para o Pallet (<code>' + esc(ccol.pallet || 'ENVIARPALLET_CUSTOM') + ' = Sim</code>): fica em <b>Pallet</b> até ser remetida.',
+        expedicao: 'A carga está <b>Remetido</b>: fica em <b>Expedição</b>.',
         rejeitada: 'A nota fiscal mais recente da OV (<b>' + esc(o.nota ? o.nota.numero : '—') + '</b>) está <b>' + esc(rotNF(o.nota && o.nota.status)) + '</b>: fica em <b>Rejeitada</b> até sair uma nota aprovada — vale antes das outras regras.',
         cancelada: 'Situação <b>Cancelada</b>: a OV fica fora do quadro (só aparece na lista).'
       }[et] || '';
@@ -990,6 +1054,10 @@
         +   '<div class="v' + (ti.veio ? '' : ' z') + '">' + esc(ti.rotulo) + '</div>'
         +   '<code>' + esc(ti.cod) + '</code>'
         +   (decide === 'trab' ? '<span class="dc">decidiu a etapa</span>' : '') + '</div>'
+        + '<div class="' + (decide === 'carga' ? 'decide' : '') + '"><div class="k">Carga</div>'
+        +   '<div class="v' + (cg1 || o.cargaFonte ? '' : ' z') + '">' + esc(cg1 ? rotCarga(cg1.status) : o.cargaFonte ? 'Sem carga' : 'não veio') + '</div>'
+        +   '<code>' + esc(cg1 ? cg1.id + (cg1.status ? ' · ' + (ccol.status || 'LoadStatus') + ' = ' + cg1.status : '') + ' · cotação: ' + simNao(cg1.cotacao) + ' · pallet: ' + simNao(cg1.pallet) : 'WHSOutboundLoadHeaderEntity') + '</code>'
+        +   (decide === 'carga' ? '<span class="dc">decidiu a etapa</span>' : '') + '</div>'
         + '<div class="' + (decide === 'nota' ? 'decide' : '') + '"><div class="k">Nota fiscal</div>'
         +   '<div class="v' + (o.nota || o.notaFonte ? '' : ' z') + '">' + esc(o.nota ? rotNF(o.nota.status) : o.notaFonte ? 'Sem nota' : 'não veio') + '</div>'
         +   '<code>' + esc(o.nota ? 'NF ' + o.nota.numero + (o.nota.status ? ' · ' + colCurta(o.nota.fonte, 'Status') + ' = ' + o.nota.status : '') : o.notaFonte ? 'nenhuma nota da OV' : 'SalesInvoiceHeadersV2') + '</code>'
@@ -1016,11 +1084,11 @@
 
     // trabalho no depósito: cada trabalho da OV (WHSWorkTableBiEntity), com
     // status, quem, início/fim, onda e carga — o material para analisar a fase
-    // carga da OV (WHSOutboundLoadHeaderEntity): só leitura — a futura Cotação.
+    // carga da OV (WHSOutboundLoadHeaderEntity): Conferência, Cotação, Pallet e Expedição.
     // Ligada pelos LoadId dos trabalhos de depósito da OV.
     function secCarga(o) {
       var cs = o.cargas || [], tt = 'Carga', t = (o.regra || {}).trabalho;
-      var dica = '<p class="kb-dw-p" style="margin-top:8px;">A <b>Cotação</b> vai sair daqui: os status e campos da carga que a definem ainda vão ser informados.</p>';
+      var dica = '';
       if (!cs.length) {
         return '<section class="kb-dw-card"><h5>' + tt + '</h5><div class="kb-dw-nada">'
           + (t ? 'Nenhuma carga ligada a esta OV ainda: ela aparece quando o trabalho de depósito tiver um <code>LoadId</code>.' : 'Sem o trabalho de depósito no OData, não dá para achar a carga da OV.')
@@ -1028,9 +1096,11 @@
       }
       return '<section class="kb-dw-card"><h5>' + tt + ' <small>' + esc(fQtd(cs.length)) + '</small></h5><div class="kb-its">' + cs.map(function (c, i) {
         var meta = [c.transportadora ? 'transportadora ' + c.transportadora : '', c.servico ? c.servico : '', c.deposito ? c.deposito : '', c.modelo ? 'modelo ' + c.modelo : ''].filter(Boolean).join(' · ');
-        var datas = [c.envio ? 'envio previsto ' + quando(c.envio) : '', c.expedido ? 'expedida ' + quando(c.expedido) : ''].filter(Boolean).join(' · ');
+        var datas = [c.envio ? 'envio previsto ' + quando(c.envio) : '', c.expedido ? 'remetida ' + quando(c.expedido) : ''].filter(Boolean).join(' · ');
+        var campos = o.cargaFonte ? 'cotação realizada: ' + simNao(c.cotacao) + ' · enviada ao Pallet: ' + simNao(c.pallet) : '';
         return '<div class="kb-it"><div class="n">' + (i + 1) + '</div><div class="c"><div class="t">Carga ' + esc(c.id) + '</div>'
           + (meta ? '<div class="s">' + esc(meta) + '</div>' : '') + (datas ? '<div class="s lg">' + esc(datas) + '</div>' : '')
+          + (campos ? '<div class="s lg">' + esc(campos) + '</div>' : '')
           + (!o.cargaFonte ? '<div class="s lg">A entidade de cargas não respondeu: só o número da carga, sem os dados.</div>' : c.naoAchada ? '<div class="s lg">Carga não encontrada na entidade de cargas.</div>' : '')
           + '</div><div class="v">' + (c.status ? '<span class="kb-trab-st">' + esc(rotCarga(c.status)) + '</span><span>' + esc(c.status) + '</span>' : '') + '</div></div>';
       }).join('') + '</div>' + dica + '</section>';

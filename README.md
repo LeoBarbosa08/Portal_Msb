@@ -1174,6 +1174,50 @@ restantes dos cards têm que pegar toda a vida da empresa".
   por período, de/até trocados, o F&O recusando o enum; a rota (período > 1 ano
   e data inválida → 400). `sw.js` — cache `bm-comest-v52`.
 
+### Kanban · as regras do dono pela carga e pela nota + "Enviar para o Pallet" (09/11/2026)
+
+Pedido do dono (os status de cada coluna):
+
+| Coluna | Regra |
+|---|---|
+| Separação | status do **trabalho** = "Abrir" |
+| Conferência | status da **carga** = "Em processamento" |
+| Cotação | carga "Carregado" **e** "Cotação realizada" = Não |
+| Faturado | **nota fiscal** "Aprovada" |
+| Pallet | botão **Enviar para o Pallet** (carga "Carregado" e cotação realizada = Sim) grava `ENVIARPALLET_CUSTOM` = Sim no D365 |
+| Rejeitada | nota "Rejeitado" (e cancelada/descartada, pedido anterior) |
+| Expedição | status da carga = "Remetido" |
+
+- **Regra** (`etapaDe()` em `api/shared/kanban-ov.js`), do mais adiantado para o
+  menos: Rejeitada → Expedição → Pallet → Faturado → Cotação → Conferência →
+  Crédito → Separação → Criada. Onde as regras do dono não falam, as anteriores
+  ficam de reserva (OV que saiu do aberto sem status de nota → Faturado; todos os
+  trabalhos fechados sem a carga em processamento → Conferência; trabalho em
+  processo ou OV liberada sem trabalho → Separação). Carga "Carregado" com a
+  cotação já realizada e a nota ainda não aprovada fica em Cotação (com o botão).
+  Fase da carga (`faseCarga`): Remetido > Pallet > Carregado+cotação Sim >
+  Carregado > Em processamento (e "Em embalagem") > outro; OV com mais de uma
+  carga = a **menos** adiantada.
+- **Campos da carga** (`WHSOutboundLoadHeaderEntity`, pelo `LoadId` dos
+  trabalhos): `LoadStatus`, "Cotação realizada" (`COTACAOREALIZADA_CUSTOM`… ou o
+  1º campo com "cota" no nome; env `KANBAN_COL_CARGA_COTACAO`) e
+  `ENVIARPALLET_CUSTOM` (env `KANBAN_COL_CARGA_PALLET`). Sem eles: aviso.
+- **"Enviar para o Pallet"** — a única **escrita** do Kanban: `POST
+  /api/kanban-ov { acao: 'enviar-pallet', carga, ov }` → `enviarParaPallet()`:
+  relê a carga **na hora**, confere de novo (Carregado + cotação Sim), e só então
+  `PATCH WHSOutboundLoadHeaderEntities(dataAreaId='msb',LoadId='…')?cross-company=true`
+  com `ENVIARPALLET_CUSTOM = "Yes"` (booleano/número se a coluna for assim). Já
+  enviada = ok sem gravar; fora da condição = 409; carga inexistente = 404. Exige
+  o **login validado** e fica no log da Function (quem, carga, OV). Na tela: selo
+  "p/ Pallet" no cartão e o cartão "Pronta para o Pallet" na ficha, com
+  confirmação; depois de gravar, o quadro relê e a ficha diz "Enviada às HH:MM".
+- Testes: `node scripts/test-kanban-ov.js` — cada regra (trabalho Abrir, carga em
+  processamento, Carregado com/sem cotação, nota aprovada, pallet, remetido,
+  rejeitada antes da carga, 2 cargas, reservas) e a escrita (PATCH pela chave,
+  cross-company, já enviada, fora da condição, 404, 400; a rota sem login
+  validado → 403, validada → grava e loga, outra ação → 400). `sw.js` — cache
+  `bm-comest-v53`.
+
 ## Como colocar no ar
 
 1. **Repositório no GitHub** — crie um repositório **privado e vazio** (sem

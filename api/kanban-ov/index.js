@@ -19,6 +19,9 @@
 //        depositos (só ALMOX-PA: KANBAN_DEPOSITOS), foraDeposito, statusCols,
 //        statusPadrao, ovs:[{ …, etapa, regra:{ …, credito*, trabalho }, trabalhos:[…] }],
 //        avisos, diagnostico }
+//   POST /api/kanban-ov { acao: 'enviar-pallet', carga: 'LD-…', ov: 'OV…' }
+//                                      -> grava ENVIARPALLET_CUSTOM = Sim na carga
+//                                         (exige o login VALIDADO; fica no log)
 //   GET /api/kanban-ov?ov=OV017525     -> as linhas da OV (a ficha do painel)
 //   -> { ok, configured, numero, entidade, linhas:[{ linha, item, produto,
 //        qtd, un, preco, desconto, descPct, valor, status, entrega,
@@ -40,8 +43,29 @@ module.exports = async function (context, req) {
     context.res = { status, headers: Object.assign({ 'Content-Type': 'application/json', 'Cache-Control': 'no-store' }, cors), body };
   };
   try {
-    await auth.requireArea(req, 'kanban');
+    const base = await auth.requireArea(req, 'kanban');
     if (!K.CONFIGURED) { json(200, { ok: true, configured: false }); return; }
+    // ── ESCRITA: "Enviar para o Pallet" (09/11/2026) ──
+    if (req.method === 'POST') {
+      let b = req.body;
+      if (typeof b === 'string') { try { b = JSON.parse(b); } catch (e) { b = {}; } }
+      b = b || {};
+      if (String(b.acao || '') !== 'enviar-pallet') throw http.badRequest('Ação desconhecida.');
+      // gravar no Dynamics só com o login VALIDADO (com o enforce desligado a
+      // identidade vem de cabeçalho e qualquer um forjaria o e-mail)
+      if (!base.validated) { const e = new Error('Para gravar no Dynamics é preciso o login validado. Saia e entre de novo no portal.'); e.status = 403; e.publicMessage = e.message; throw e; }
+      const email = String((base.user && base.user.email) || '').toLowerCase();
+      try {
+        const r = await K.enviarParaPallet(b.carga);
+        context.log('[kanban-ov] enviar-pallet', JSON.stringify({ por: email, carga: r.carga, ov: String(b.ov || '').slice(0, 40), ja: !!r.ja, coluna: r.coluna }));
+        json(200, r);
+      } catch (e) {
+        context.log('[kanban-ov] enviar-pallet recusado', JSON.stringify({ por: email, carga: String(b.carga || '').slice(0, 40), erro: String(e.message || e).slice(0, 300) }));
+        if (e && (e.status === 400 || e.status === 404 || e.status === 409)) { json(e.status, { ok: false, error: e.message }); return; }
+        throw e;
+      }
+      return;
+    }
     const q = req.query || {};
     // ?ov=OV017525 -> as linhas da OV (a ficha do painel lê ao abrir)
     const ov = String(q.ov || '').trim();
@@ -63,6 +87,6 @@ module.exports = async function (context, req) {
     if (e && (e.status === 401 || e.status === 403 || e.status === 400)) { http.sendError(context, req, 'kanban-ov', e); return; }
     // o motivo do Dynamics volta na resposta (é o diagnóstico da tela)
     http.logError(context, 'kanban-ov', e);
-    json(502, { ok: false, error: 'Não foi possível ler o Dynamics agora.', detalhe: String((e && e.message) || e).slice(0, 400) });
+    json(502, { ok: false, error: req.method === 'POST' ? 'Não foi possível gravar no Dynamics agora.' : 'Não foi possível ler o Dynamics agora.', detalhe: String((e && e.message) || e).slice(0, 400) });
   }
 };
