@@ -334,7 +334,7 @@ function notasDiario(rows, E, cli) {
       emissao: isoData(r[C.data]),
       conta, cliente: c.nome || '', cnpj: c.cnpj || '',
       valor: v == null ? null : Math.abs(v),
-      status: '', cancelada: false, operacao: C.natureza ? txt(r[C.natureza]) : '',
+      status: '', cancelada: false, operacao: C.natureza && !/^(doesnotapply|notapplicable|none|no)$/i.test(txt(r[C.natureza])) ? txt(r[C.natureza]) : '',
       ordem: C.ordem ? txt(r[C.ordem]) : ''
     };
   });

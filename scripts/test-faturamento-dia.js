@@ -97,14 +97,16 @@ const CLIENTES = { porConta: true, amostra: { dataAreaId: 'msb', CustomerAccount
   console.log('2b) tipo de operação pela OV (o diário não tem) — 09/11/2026');
   const K = require('../api/shared/kanban-ov');
   FD._limparCache(); K._limparCache(); chamadas.length = 0;
-  CEN.BIOSalesOrderHeaderV1 = { amostra: { dataAreaId: 'msb', SalesOrderNumber: 'OV1', SalesPurchOperationType_BR: 'VENDA', SalesStatus: 'Invoiced', CreatedDateTime: '2026-11-06T10:00:00Z' },
-    linhas: [{ dataAreaId: 'msb', SalesOrderNumber: 'OV017456', SalesPurchOperationType_BR: 'VENDA' }] };
+  // AFiscalOperationType = 'DoesNotApply' (o que saía na tela do dono): não é operação, cede para a real
+  CEN.BIOSalesOrderHeaderV1 = { amostra: { dataAreaId: 'msb', SalesOrderNumber: 'OV1', AFiscalOperationType: 'DoesNotApply', SalesPurchOperationType_BR: 'VENDA', SalesStatus: 'Invoiced', CreatedDateTime: '2026-11-06T10:00:00Z' },
+    linhas: [{ dataAreaId: 'msb', SalesOrderNumber: 'OV017456', AFiscalOperationType: 'DoesNotApply', SalesPurchOperationType_BR: 'VENDA' }] };
   r = await FD.notasDoDia({ data: DIA });
   let nOv = r.notas.find(x => x.numero === '000011774');
   t('operação vem da OV da nota', nOv.operacao === 'VENDA' && /^OV · BIOSalesOrderHeaderV1\.SalesPurchOperationType_BR$/.test(nOv.operacaoFonte), nOv);
   t('nota sem OV fica sem operação', !r.notas.find(x => x.numero === '000011780').operacao);
   t('a operação não mexe nos valores', r.resumo.venda.valor === 1000 && r.resumo.devolucao.valor === 150, r.resumo);
-  t('operacaoOv no diagnóstico', r.operacaoOv && r.operacaoOv.achadas === 1 && r.operacaoOv.colunas.length === 1, r.operacaoOv);
+  t('operacaoOv no diagnóstico', r.operacaoOv && r.operacaoOv.achadas === 1, r.operacaoOv);
+  t('"DoesNotApply" não vira operação', !r.notas.some(x => /DoesNotApply/i.test(x.operacao || '')), r.notas.map(x => x.operacao));
   t('leu a OV pelo número, só a MSB', chamadas.some(c => c.ent === 'BIOSalesOrderHeaderV1' && /SalesOrderNumber eq 'OV017456'/.test(c.q.filter) && /dataAreaId eq 'msb'/.test(c.q.filter)));
 
   console.log('2c) o diário com a operação na própria nota: não vai à OV');

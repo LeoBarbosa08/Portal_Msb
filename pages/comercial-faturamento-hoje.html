@@ -242,6 +242,10 @@
               <label for="fd-data">Dia</label>
               <input type="date" id="fd-data">
               <button type="button" class="fd-btn" id="fd-hoje">Hoje</button>
+              <button type="button" class="fd-btn" id="fd-excel" title="Baixar as notas do dia em Excel, para validar" disabled>
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                Exportar Excel
+              </button>
               <button type="button" class="fd-btn" id="fd-atualizar">
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>
                 Atualizar
@@ -321,6 +325,7 @@
 
   <script src="../script.js?v=8"></script>
   <script src="../nav-sidebar.js?v=86"></script>
+  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
   <script>
   (function () {
     'use strict';
@@ -431,6 +436,7 @@
         }
         estado.r = j;
         renderMeta(j); render();
+        $('fd-excel').disabled = false;
         var hora = new Date(j.geradoEm || Date.now()).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
         var aoVivo = j.data === hojeSP();
         status((aoVivo ? 'Ao vivo · ' : '') + 'atualizado às ' + hora + (j.cache ? ' (cache de 1 min)' : '') + (aoVivo ? ' · atualiza a cada 5 min' : ''), aoVivo);
@@ -469,6 +475,49 @@
         render();
       });
     });
+
+    // ── EXPORTAR EXCEL (09/11/26, pedido do dono: "para eu fazer uma validação") ──
+    // TODAS as notas do dia (não só o filtro da tela) + as que a regra do
+    // registro 1 tirou da soma + o resumo. Valor da devolução sai NEGATIVO.
+    function exportar() {
+      var r = estado.r; if (!r) return;
+      if (typeof XLSX === 'undefined') { alert('A biblioteca de exportação não carregou. Recarregue a página.'); return; }
+      var notas = r.notas || [];
+      var aoa = [['Data', 'Tipo', 'Nota', 'Série', 'Cancelada', 'Cliente', 'Conta', 'CNPJ', 'OV', 'Operação', 'Origem da operação', 'Status', 'Valor (R$)']];
+      notas.forEach(function (n) {
+        var v = n.valor == null ? '' : (n.tipo === 'devolucao' ? -n.valor : n.valor);
+        aoa.push([fDia(n.emissao), n.tipo === 'devolucao' ? 'Devolução' : 'Venda', n.numero, n.serie || '', n.cancelada ? 'sim' : '', n.cliente || '', n.conta || '', fCnpj(n.cnpj),
+          n.ordem || '', n.operacao || '', n.operacaoFonte || '', fStatus(n.status), v]);
+      });
+      var rs = r.resumo || { venda: {}, devolucao: {} };
+      aoa.push([]);
+      aoa.push(['', 'TOTAL LÍQUIDO (sem canceladas)', '', '', '', '', '', '', '', '', '', '', rs.liquido == null ? '' : rs.liquido]);
+      var ws = XLSX.utils.aoa_to_sheet(aoa);
+      ws['!cols'] = [12, 11, 12, 7, 10, 46, 11, 20, 12, 34, 30, 12, 14].map(function (w) { return { wch: w }; });
+      ws['!autofilter'] = { ref: 'A1:M' + (notas.length + 1) };
+      var wb = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(wb, ws, 'Notas');
+
+      var rep = r.repetidas || [];
+      var aoa2 = [['Nota', 'Data (fora)', 'Valor fora (R$)', 'OV (fora)', 'Data do original', 'Valor do original (R$)', 'OV do original', 'Registros com o número']];
+      rep.forEach(function (x) { aoa2.push([x.numero, fDia(x.data), x.valor == null ? '' : x.valor, x.ordem || '', fDia(x.original && x.original.data), x.original && x.original.valor != null ? x.original.valor : '', (x.original && x.original.ordem) || '', x.registros || '']); });
+      if (!rep.length) aoa2.push(['Nenhuma nota ficou fora neste dia.']);
+      var ws2 = XLSX.utils.aoa_to_sheet(aoa2);
+      ws2['!cols'] = [12, 12, 16, 12, 16, 20, 14, 22].map(function (w) { return { wch: w }; });
+      XLSX.utils.book_append_sheet(wb, ws2, 'Fora da soma');
+
+      var f = r.fonte || {};
+      var aoa3 = [['Faturamento do Dia · MSB'], ['Dia', fDia(r.data)], ['Gerado em', new Date(r.geradoEm || Date.now()).toLocaleString('pt-BR')],
+        ['Fonte', (f.entidade || '') + (f.papel === 'diario' ? ' (diário de faturas)' : f.papel === 'fiscal' ? ' (documento fiscal)' : '')], [],
+        ['', 'Notas', 'Valor (R$)'], ['Vendas', rs.venda.qtd || 0, rs.venda.valor || 0], ['Devoluções', rs.devolucao.qtd || 0, rs.devolucao.valor || 0],
+        ['Faturamento líquido', '', rs.liquido || 0], ['Canceladas (fora da soma)', rs.canceladas || 0, ''], ['Número repetido (fora da soma, vale o registro 1)', rep.length, '']];
+      (r.avisos || []).forEach(function (a, i) { if (i === 0) aoa3.push([]); aoa3.push(['Aviso', a]); });
+      var ws3 = XLSX.utils.aoa_to_sheet(aoa3);
+      ws3['!cols'] = [{ wch: 44 }, { wch: 16 }, { wch: 16 }];
+      XLSX.utils.book_append_sheet(wb, ws3, 'Resumo');
+      XLSX.writeFile(wb, 'Faturamento_do_Dia_MSB_' + (r.data || hojeSP()) + '.xlsx');
+    }
+    $('fd-excel').addEventListener('click', exportar);
 
     // ── PAINEL: o dado CRU da nota no D365 (09/11/26) ──
     var _det = null;

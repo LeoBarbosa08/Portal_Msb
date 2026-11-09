@@ -517,6 +517,9 @@ async function linhasDaOv(numero, opts) {
 // -> { porOv: { OV: { valor, coluna, todos:{ 'Ent.Col': v } } }, colunas:[…], diag:[…] }
 const RE_OPER = /operation|opera[cç]|cfop|natur|opertype|salespurchoper/i;
 const RE_OPER_NAO = /operationalsite|operatingunit|date|time/i;
+// enum que diz "não se aplica" não é tipo de operação (no print do dono, toda
+// nota saía "DoesNotApply · pela OV")
+const SEM_VALOR_OP = /^(doesnotapply|notapplicable|not applicable|none|no|nao se aplica|não se aplica|n\/a)$/i;
 async function operacoesDasOvs(numeros, ate) {
   const diag = [], porOv = {};
   const nums = Array.from(new Set((numeros || []).map(chaveOv).filter(Boolean)));
@@ -534,7 +537,7 @@ async function operacoesDasOvs(numeros, ate) {
       rows.forEach(r => {
         const k = chaveOv(r[E.numero]); if (!k) return;
         const o = porOv[k] || (porOv[k] = { todos: {} });
-        cols.forEach(c => { const v = txt(r[c]); if (v && !VAZIOS.test(v)) o.todos[E.entidade + '.' + c] = v; });
+        cols.forEach(c => { const v = txt(r[c]); if (v && !VAZIOS.test(v) && !SEM_VALOR_OP.test(v)) o.todos[E.entidade + '.' + c] = v; });
       });
     } catch (e) { /* o erro já está no diag */ }
   }));

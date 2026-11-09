@@ -820,6 +820,26 @@ original; as outras saem da lista e da soma, com aviso ("000021098 de dd/mm
 (−R$ 5.999,40); o original é de 07/10 (R$ 18.000,00)") e em `repetidas`.
 Falha da consulta mantém tudo. `sw.js` — cache `bm-comest-v34` (o v33 ficou com o Kanban de outra sessão).
 
+### Faturamento do Dia · Exportar Excel (09/11/2026)
+
+Pedido do dono: "coloca um botão de export para Excel para eu fazer uma
+validação". Botão **Exportar Excel** na barra (ao lado de Atualizar), com a
+mesma biblioteca da Base de Notas Fiscais (SheetJS `xlsx@0.18.5`). O arquivo
+`Faturamento_do_Dia_MSB_AAAA-MM-DD.xlsx` traz TODAS as notas do dia (não só o
+filtro da tela) em três abas:
+
+- **Notas** — data, tipo, nota, série, cancelada, cliente, conta, CNPJ, OV,
+  operação (e de onde veio), status e valor (devolução NEGATIVA), com filtro
+  automático e a linha do total líquido (sem canceladas).
+- **Fora da soma** — as notas que a regra do registro 1 tirou, com o original
+  ao lado (data, valor, OV).
+- **Resumo** — vendas, devoluções, líquido, canceladas, número repetido,
+  fonte, hora e os avisos.
+
+Junto: a coluna Operação deixou de mostrar **"DoesNotApply"** (o enum "não se
+aplica" de uma coluna da OV aparecia como operação em toda nota) — valores
+desse tipo contam como vazios. `sw.js` — cache `bm-comest-v35`.
+
 ## Como colocar no ar
 
 1. **Repositório no GitHub** — crie um repositório **privado e vazio** (sem
