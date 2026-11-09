@@ -121,6 +121,9 @@ const ETAPAS = [
   // 09/11/2026 (dono): "crie depois de FATURADA um card escrito REJEITADA,
   // caso a NF seja rejeitada, ou cancelada/descartada" — ver NOTAS FISCAIS
   { id: 'rejeitada',   nome: 'Rejeitada' },
+  // 09/11/2026 (dono: "um card a mais que vai chamar PALLET, que vem depois do
+  // rejeitado"): VAZIA até o dono mandar os campos
+  { id: 'pallet',      nome: 'Pallet',      pendente: true },
   // 09/11/2026 (dono: "insira mais um cartão de Expedição"): depois do
   // Faturado — a mercadoria sai com a nota. VAZIA até o dono mandar os campos.
   { id: 'expedicao',   nome: 'Expedição',   pendente: true }
