@@ -24,10 +24,19 @@ function envLista(nome, padrao) {
   const v = String(process.env[nome] || '').trim();
   return v ? v.split(',').map(s => s.trim()).filter(Boolean) : padrao;
 }
-const CANDIDATAS = envLista('FATDIA_ENT_STATUS', ['FiscalDocuments', 'FiscalDocumentHeaders', 'EFDocumentsBR', 'EFDocuments', 'NFeHeadersBR', 'ElectronicFiscalDocuments']);
+// 09/11/2026 (dono, pelo Kanban: "tá com nota fiscal sem status,
+// FiscalDocumentBioEntity verifica nessa entidade, porque ela tá aprovada" —
+// a 000021497 está "Aprovado" na tela Nota fiscal do D365): a entidade de
+// documento fiscal PRÓPRIA da Bio vem PRIMEIRO, com as variações do nome
+// público no OData; e, do service document, os nomes com "bio" entram antes
+// dos outros (o corte de 8 extras deixava a da Bio de fora).
+const CANDIDATAS = envLista('FATDIA_ENT_STATUS', [
+  'FiscalDocumentBioEntities', 'FiscalDocumentBioEntity', 'FiscalDocumentsBio', 'FiscalDocumentBio', 'BioFiscalDocuments', 'BIOFiscalDocumentEntities',
+  'FiscalDocuments', 'FiscalDocumentHeaders', 'EFDocumentsBR', 'EFDocuments', 'NFeHeadersBR', 'ElectronicFiscalDocuments'
+]);
 const RE_ENT  = /efdoc|nfe|electronic|fiscaldocument/i;
 const RE_ENT_NAO = /line|linha|tax|imposto|item/i;           // linhas/impostos não têm o status da nota
-const NUMS    = ['FiscalDocumentNumber', 'DocumentNumber', 'NFeNumber', 'Number', 'InvoiceNumber', 'InvoiceId'];
+const NUMS    = ['FiscalDocumentNumber', 'DocumentNumber', 'NFeNumber', 'Number', 'Numero', 'InvoiceNumber', 'InvoiceId'];
 const STATUS  = envLista('FATDIA_COL_STATUS', ['Status', 'FiscalDocumentStatus', 'DocumentStatus', 'EFDocStatus', 'NFeStatus', 'ElectronicDocumentStatus']);
 const RE_STATUS = /^(?!.*(date|time|reason|motivo|message|mensagem)).*status/i;
 // DATA do documento: a busca é pelo NÚMERO, e número se repete ao longo dos
@@ -64,7 +73,9 @@ async function descobrir(token, ate, diag) {
   } catch (e) { /* sem service document: só as candidatas */ }
   const existe = {}; nomes.forEach(n => { existe[n.toLowerCase()] = n; });
   let alvos = CANDIDATAS.filter(n => !nomes.length || existe[n.toLowerCase()]).map(n => existe[n.toLowerCase()] || n);
-  nomes.filter(n => RE_ENT.test(n) && !RE_ENT_NAO.test(n) && alvos.indexOf(n) < 0).slice(0, 8).forEach(n => alvos.push(n));
+  nomes.filter(n => RE_ENT.test(n) && !RE_ENT_NAO.test(n) && alvos.indexOf(n) < 0)
+    .sort((a, b) => (/bio/i.test(b) ? 1 : 0) - (/bio/i.test(a) ? 1 : 0))   // as da Bio primeiro
+    .slice(0, 8).forEach(n => alvos.push(n));
   const provas = await Promise.all(alvos.map(async ent => {
     for (const filtro of ["dataAreaId eq '" + D.odataStr(EMPRESA) + "'", null]) {
       try {

@@ -99,9 +99,15 @@
 
             /* uma coluna por etapa (6 desde 09/11/26): lado a lado; sem espaço, o
                quadro rola na horizontal em vez de quebrar em duas linhas */
-            .kb-board{display:grid;grid-template-columns:repeat(var(--kb-n,9),minmax(145px,1fr));gap:12px;align-items:start;overflow-x:auto;padding-bottom:4px;}
+            /* 09/11/26 (dono: "um layout para caber tudo na tela, sem precisar ficar
+               arrastando para o lado"): a coluna VAZIA fica estreita (meia fração) e a
+               que tem OV divide o resto — --kb-cols vem do render(); cada coluna é um
+               container e o cartão se reorganiza quando ela é estreita (abaixo). Cabe
+               nas 9 colunas a partir de ~1.100 px de quadro; só abaixo disso rola. */
+            .kb-board{display:grid;grid-template-columns:var(--kb-cols,repeat(9,minmax(112px,1fr)));gap:8px;align-items:start;overflow-x:auto;padding-bottom:4px;}
             .kb-vazio.pend{font-size:12px;font-style:italic;}
-            .kb-col{border-radius:12px;background:var(--kb-bg);border:1px solid var(--kb-bd);display:flex;flex-direction:column;min-height:180px;max-height:70vh;}
+            .kb-curto{display:none;}
+            .kb-col{border-radius:12px;background:var(--kb-bg);border:1px solid var(--kb-bd);display:flex;flex-direction:column;min-height:180px;max-height:70vh;min-width:0;container-type:inline-size;}
             .kb-col-h{padding:10px 12px 8px;display:flex;flex-direction:column;gap:2px;}
             .kb-col-t{display:flex;align-items:flex-start;gap:8px;font-size:13.5px;font-weight:700;color:var(--kb-ink);}
             .kb-col-t .nome{flex:1;min-width:0;line-height:1.25;overflow-wrap:break-word;-webkit-hyphens:auto;hyphens:auto;}
@@ -294,6 +300,32 @@
             .kb-diag summary{cursor:pointer;font-weight:600;}
             .kb-diag pre{margin:8px 0 0;padding:10px;max-height:300px;overflow:auto;background:var(--surface-2);border-radius:8px;font-size:11px;white-space:pre-wrap;word-break:break-word;}
 
+            /* coluna estreita: cabeçalho e cartão mais enxutos; o cliente desce para a
+               linha de baixo (em vez de virar "RIO …") e o valor vai para a direita */
+            @container (max-width: 175px){
+              .kb-col-h{padding:8px 8px 6px;}
+              .kb-col-t{font-size:12.5px;gap:4px;}
+              .kb-cnt{min-width:20px;height:20px;padding:0 5px;font-size:11px;}
+              .kb-col-v{font-size:11.5px;}
+              .kb-cards{padding:3px 5px 8px;gap:5px;}
+              .kb-card{padding:7px 8px;}
+              .kb-l1{flex-wrap:wrap;gap:0 6px;}
+              .kb-ov{font-size:12.5px;}
+              .kb-cli{flex-basis:100%;font-size:10.5px;}
+              .kb-l2{gap:4px;font-size:10.5px;}
+              .kb-chip{max-width:100%;}
+              .kb-vazio{padding:18px 0;font-size:12px;}
+              .kb-longo{display:none;}
+              .kb-curto{display:inline;}
+            }
+            /* coluna VAZIA bem estreita = coluna recolhida: a contagem em cima e o nome
+               na vertical (sem quebrar "Co-ta-ção"); o "a definir" fica no title */
+            @container (max-width: 110px){
+              .kb-col-h{align-items:center;padding:10px 4px;}
+              .kb-col-t{flex-direction:column-reverse;align-items:center;gap:10px;}
+              .kb-col-t .nome{flex:none;writing-mode:vertical-rl;transform:rotate(180deg);white-space:nowrap;-webkit-hyphens:none;hyphens:none;font-size:12.5px;}
+              .kb-col-v,.kb-vazio{display:none;}
+            }
             @media(max-width:767.98px){
               .kb-title{font-size:18px;}
               .kb-live{margin-left:0;width:100%;}
@@ -379,6 +411,8 @@
     // tom de cada etapa: Criada azul, Crédito amarelo, Separação cinza, Conferência
     // verde-água, Cotação laranja, Faturado lilás
     var TOM_ETAPA = { criada: 0, credito: 1, liberado: 2, conferencia: 5, cotacao: 4, faturado: 3, rejeitada: 7, pallet: 8, expedicao: 6 };
+    // nome curto da coluna quando ela é estreita (o completo fica no title)
+    var NOME_CURTO = { credito: 'Crédito' };
     var NOME_ETAPA = { criada: 'Criada', credito: 'Gerenciamento de Crédito', liberado: 'Separação', conferencia: 'Conferência', cotacao: 'Cotação', faturado: 'Faturado', rejeitada: 'Rejeitada', pallet: 'Pallet', expedicao: 'Expedição', cancelada: 'Cancelada' };
     // o quadro mostra só o depósito do filtro do servidor (ALMOX-PA, 09/11/26):
     // o chip/selo do depósito só aparece quando ele foge do filtro
@@ -423,13 +457,18 @@
       // as 4 colunas fixas, na ordem do fluxo (a etapa vem calculada do servidor);
       // cancelada não entra no quadro
       var etapas = r.etapas || [];
-      $('kb-quadro').innerHTML = '<div class="kb-board" style="--kb-n:' + (etapas.length || 9) + '">' + etapas.map(function (e) {
-        var lista = ovs.filter(function (o) { return o.etapa === e.id; });
+      // largura de cada coluna (09/11/26): com OV, uma fração inteira (mín. 112 px);
+      // vazia, meia fração (mín. 64 px) — assim as 9 cabem sem rolar para o lado
+      var porEtapa = {};
+      etapas.forEach(function (e) { porEtapa[e.id] = ovs.filter(function (o) { return o.etapa === e.id; }); });
+      var cols = etapas.map(function (e) { return porEtapa[e.id].length ? 'minmax(112px,1fr)' : 'minmax(64px,.5fr)'; }).join(' ');
+      $('kb-quadro').innerHTML = '<div class="kb-board" style="--kb-cols:' + cols + '">' + etapas.map(function (e) {
+        var lista = porEtapa[e.id];
         var soma = lista.reduce(function (s, o) { return s + (o.valor || 0); }, 0);
         var temValor = lista.some(function (o) { return o.valor != null; });
-        return '<section class="kb-col" style="' + tom(TOM_ETAPA[e.id] || 0) + '"><div class="kb-col-h"><div class="kb-col-t"><span class="nome">' + esc(e.nome) + '</span><span class="kb-cnt">' + lista.length + '</span></div>'
+        return '<section class="kb-col" style="' + tom(TOM_ETAPA[e.id] || 0) + '"' + (e.pendente && !lista.length ? ' title="' + esc(e.nome) + ': aguardando os campos da fase"' : '') + '><div class="kb-col-h"><div class="kb-col-t"><span class="nome" title="' + esc(e.nome) + '">' + (NOME_CURTO[e.id] ? '<span class="kb-longo">' + esc(e.nome) + '</span><span class="kb-curto">' + esc(NOME_CURTO[e.id]) + '</span>' : esc(e.nome)) + '</span><span class="kb-cnt">' + lista.length + '</span></div>'
           + '<div class="kb-col-v">' + (temValor ? esc(fK(soma)) : '&nbsp;') + '</div></div>'
-          + '<div class="kb-cards">' + (lista.length ? lista.map(cardHtml).join('') : e.pendente ? '<div class="kb-vazio pend">aguardando os campos da fase</div>' : '<div class="kb-vazio">—</div>') + '</div></section>';
+          + '<div class="kb-cards">' + (lista.length ? lista.map(cardHtml).join('') : e.pendente ? '<div class="kb-vazio pend" title="aguardando os campos da fase"><span class="kb-longo">aguardando os campos da fase</span><span class="kb-curto">a definir</span></div>' : '<div class="kb-vazio">—</div>') + '</div></section>';
       }).join('') + '</div>';
     }
 

@@ -370,6 +370,26 @@ const bio = (n, st, lib) => ({ dataAreaId: 'msb', SalesOrderNumber: n, StatusPed
   t('ninguém em Rejeitada; o número continua', !r.ovs.some(o => o.etapa === 'rejeitada') && r.ovs.find(o => o.numero === 'OV017571').nota.numero === '000021471', r.ovs.map(o => o.etapa));
   t('aviso do status da nota', r.avisos.some(a => /Não achei o status da nota fiscal/.test(a)), r.avisos);
 
+  console.log('4l) status da nota pela FiscalDocumentBioEntity (a 000021497 "sem status", aprovada no D365)');
+  K._limparCache(); chamadas.length = 0;
+  // 9 entidades fiscais publicadas antes da da Bio: o corte de 8 não pode deixá-la de fora
+  const extras = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I'].map(x => 'FiscalDocumentExtra' + x);
+  SERVICO = ['BIOSalesOrderHeaderV1', 'SalesOrderHeadersV2', 'SalesOrderLines', 'SalesInvoiceHeadersV2', 'FiscalDocuments'].concat(extras, ['FiscalDocumentBioV2Entities']);
+  CEN = {
+    SalesOrderHeadersV2: { linhas: [v2('OV017526', DIA + 'T13:00:00Z', 'Backorder')] },
+    BIOSalesOrderHeaderV1: { linhas: [b4('OV017526', 'Invoiced', 'Released', 'No')] },
+    SalesOrderLines: { linhas: [] },
+    SalesInvoiceHeadersV2: { linhas: [nf('OV017526', '000021497', DIA)] },
+    // a FiscalDocuments só tem um documento de 2023 com o mesmo número (não vale: data longe)
+    FiscalDocuments: { linhas: [fd('000021497', 'Cancelled', '2023-03-01')] },
+    FiscalDocumentBioV2Entities: { linhas: [{ dataAreaId: 'msb', FiscalDocumentNumber: '000021497', Status: 'Approved', FiscalDocumentDate: DIA + 'T12:00:00Z' }] }
+  };
+  r = await K.ordensDoDia({ data: DIA });
+  const n97 = r.ovs.find(o => o.numero === 'OV017526');
+  t('a nota sai Aprovada pela entidade da Bio', n97.nota && n97.nota.status === 'Approved' && n97.nota.aprovada === true && n97.nota.fonte === 'FiscalDocumentBioV2Entities.Status', n97.nota);
+  t('o documento antigo (2023) da FiscalDocuments não empresta o "Cancelled"', n97.etapa === 'faturado' && !n97.nota.rejeitada, n97.etapa);
+  t('a entidade da Bio foi testada mesmo com 9 fiscais antes dela', chamadas.some(c => c.ent === 'FiscalDocumentBioV2Entities'), chamadas.map(c => c.ent).filter((x, i, a) => a.indexOf(x) === i));
+
   console.log('5) linhas de uma OV (a ficha do painel)');
   K._limparCache(); chamadas.length = 0;
   CEN = {

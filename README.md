@@ -1114,6 +1114,32 @@ tempo. As 9 colunas cabem na tela larga do dono; em 1440 px o quadro rola na
 horizontal. Testes: 9 colunas na ordem e a Pallet pendente. `sw.js` — cache
 `bm-comest-v50`.
 
+### Kanban cabe na tela + status da nota pela FiscalDocumentBioEntity (09/11/2026)
+
+Pedidos do dono: "consegue criar um layout para caber tudo na tela? não
+precisar ficar arrastando para o lado" e "tá com nota fiscal sem status,
+FiscalDocumentBioEntity verifica nessa entidade, porque ela tá aprovada" (a
+000021497, "Aprovado" na tela Nota fiscal do D365).
+
+- **Layout** (`pages/kanban.html`): a largura de cada coluna sai do que ela tem
+  (`--kb-cols`, montado no `render()`): com OV, uma fração inteira (mín. 112
+  px); **vazia, meia fração** (mín. 64 px). Cada coluna é um *container*: em
+  coluna estreita (≤ 175 px) o cartão se reorganiza (o cliente desce para a
+  linha de baixo, valor à direita, "Gerenciamento de Crédito" vira "Crédito",
+  "aguardando os campos da fase" vira "a definir"); coluna vazia bem estreita
+  (≤ 110 px) fica **recolhida** — a contagem em cima e o nome na vertical. As 9
+  colunas cabem sem rolar de 1280 px a 1920 px (conferido); só abaixo disso o
+  quadro rola.
+- **Status da nota** (`api/shared/fatdia-status.js`, que serve o Kanban e o
+  Faturamento do Dia): a entidade de documento fiscal própria da Bio
+  (`FiscalDocumentBioEntities`, `FiscalDocumentBioEntity`… — as variações do
+  nome público) vem **primeiro** nas candidatas, e, do service document, os
+  nomes com "bio" entram antes dos outros (o corte de 8 extras deixava a da Bio
+  de fora). Teste: a 000021497 sem status na `FiscalDocuments` (só um documento
+  de 2023 com o mesmo número) sai **Aprovada** pela da Bio — sem a correção, a
+  entidade da Bio nem era consultada.
+- `sw.js` — cache `bm-comest-v51`.
+
 ## Como colocar no ar
 
 1. **Repositório no GitHub** — crie um repositório **privado e vazio** (sem
