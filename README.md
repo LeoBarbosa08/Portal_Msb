@@ -905,6 +905,27 @@ Decisão do dono: "só posso aceitar esses tipos de OP no faturamento diário":
   de operação; "Resumo" com os tipos aceitos e se o filtro foi aplicado.
 - `sw.js` — cache `bm-comest-v38`.
 
+### Kanban em 6 colunas: Separação, Conferência e Cotação (09/11/2026)
+
+Pedido do dono: "Criada, Gerenciamento de Crédito, Separação (ReleaseStatus =
+Released), Conferência, Cotação, Faturado; conferência e cotação irei te mandar
+os campos para definição da fase".
+
+- **Separação** é a antiga "Liberado"/"Logística": o id segue `liberado` e a
+  regra é a mesma (`ReleaseStatus` = Liberado/Released).
+- **Conferência** e **Cotação** entram no quadro (`ETAPAS` em
+  `api/shared/kanban-ov.js`, com `pendente: true`) **vazias**, com "aguardando
+  os campos da fase", até o dono mandar os campos — nenhuma OV cai nelas por
+  enquanto. Quando chegarem: regra em `etapaDe()` e tirar o `pendente`.
+- Ordem das regras sem mudança: situação fora de "Ordem em aberto" → Faturado;
+  crédito ativo → Gerenciamento de Crédito; liberada → Separação; senão Criada.
+- Tela: o quadro tem uma coluna por etapa (`--kb-n`), lado a lado — cabe em
+  1440 px; abaixo disso rola na horizontal em vez de quebrar em duas linhas; o
+  nome comprido da coluna quebra a linha em vez de cortar. Na ficha, a linha do
+  tempo tem as 6 etapas (Conferência e Cotação "a definir").
+- Testes: `node scripts/test-kanban-ov.js` (6 colunas na ordem, nomes,
+  Conferência/Cotação vazias e pendentes). `sw.js` — cache `bm-comest-v39` (a v38 foi da outra sessão, no master).
+
 ### Faturamento do Dia · só nota com status Aprovado (09/11/2026)
 
 Decisão do dono: "o status da nota tem que estar Aprovado" — a 000021478
@@ -921,7 +942,7 @@ proteção do filtro de operação: se nenhuma nota tiver status lido, o filtro
 NÃO é aplicado e o aviso em vermelho diz isso. A sonda "Procurar no Dynamics"
 passou a mostrar também as colunas de status (`servemStatus`). Envs:
 `FATDIA_ENT_STATUS`, `FATDIA_COL_STATUS`, `FATDIA_COL_STATUS_DIARIO`.
-`sw.js` — cache `bm-comest-v39`.
+`sw.js` — cache `bm-comest-v40` (o v39 ficou com o Kanban de 6 colunas, de outra sessão).
 
 ## Como colocar no ar
 

@@ -63,7 +63,8 @@
                (/api/kanban-ov: BIOSalesOrderHeaderV1 + SalesOrderHeadersV3/V2,
                juntas pelo número da OV; valor pelas linhas). 07/11/26: QUATRO
                colunas fixas, na ordem do fluxo — Criada, Gerenciamento de Crédito,
-               Logística (era "Liberado"; 09/11/26), Faturado — pela regra do dono (SalesStatus, ReleaseStatus,
+               Separação (era "Liberado"), Faturado; 09/11/26: SEIS — + Conferência e
+               Cotação, vazias até o dono mandar os campos — pela regra do dono (SalesStatus, ReleaseStatus,
                e o crédito: tabela BioCredManTableV1, ACTIVE pelo SALESID — 09/11/26),
                calculada no servidor (api/shared/kanban-ov.js).
                Área RESERVADA (AREAS_RESERVADAS em api/shared/auth.js). -->
@@ -95,12 +96,14 @@
             html[data-tema="escuro"] .kb-msg.aviso{background:#3A3220;border-color:#6B5A2A;color:#F5DFA8;}
             html[data-tema="escuro"] .kb-msg.erro{background:#3B2426;border-color:#6E3A3E;color:#F6C7CB;}
 
-            .kb-board{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;align-items:start;}
-            @media(max-width:1200px){.kb-board{grid-template-columns:repeat(2,minmax(0,1fr));}}
+            /* uma coluna por etapa (6 desde 09/11/26): lado a lado; sem espaço, o
+               quadro rola na horizontal em vez de quebrar em duas linhas */
+            .kb-board{display:grid;grid-template-columns:repeat(var(--kb-n,6),minmax(165px,1fr));gap:12px;align-items:start;overflow-x:auto;padding-bottom:4px;}
+            .kb-vazio.pend{font-size:12px;font-style:italic;}
             .kb-col{border-radius:12px;background:var(--kb-bg);border:1px solid var(--kb-bd);display:flex;flex-direction:column;min-height:180px;max-height:70vh;}
             .kb-col-h{padding:10px 12px 8px;display:flex;flex-direction:column;gap:2px;}
-            .kb-col-t{display:flex;align-items:center;gap:8px;font-size:13.5px;font-weight:700;color:var(--kb-ink);}
-            .kb-col-t .nome{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+            .kb-col-t{display:flex;align-items:flex-start;gap:8px;font-size:13.5px;font-weight:700;color:var(--kb-ink);}
+            .kb-col-t .nome{flex:1;min-width:0;line-height:1.25;overflow-wrap:anywhere;}
             .kb-cnt{min-width:24px;height:22px;padding:0 7px;border-radius:999px;background:var(--surface);color:var(--text);font-size:12px;font-weight:700;display:inline-flex;align-items:center;justify-content:center;}
             .kb-col-v{font-size:12px;font-weight:600;color:var(--kb-ink);opacity:.85;}
             .kb-cards{padding:4px 8px 10px;display:flex;flex-direction:column;gap:6px;overflow-y:auto;}
@@ -193,7 +196,7 @@
             .kb-dw-p{margin:0;font-size:12px;line-height:1.55;color:var(--dw-body);font-weight:500;}
             .kb-dw-p+.kb-dw-p{margin-top:6px;}
             .kb-dw-p b{color:var(--dw-ink);font-weight:700;}
-            .kb-dw-p code,.kb-dw-ol code{font-family:'JetBrains Mono',ui-monospace,monospace;font-size:10.5px;background:#F1F5F7;border-radius:4px;padding:0 4px;color:var(--dw-ink);}
+            .kb-dw-p code,.kb-dw-ol code,.kb-rg-p code,.kb-tl .ds code{font-family:'JetBrains Mono',ui-monospace,monospace;font-size:10.5px;background:#F1F5F7;border-radius:4px;padding:0 4px;color:var(--dw-ink);}
             .kb-dw-ol{margin:0;padding-left:18px;font-size:12px;line-height:1.6;color:var(--dw-body);}
             .kb-dw-ol li.on{font-weight:700;color:var(--dw-ink);}
             .kb-dw-dl{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px 16px;margin:0;}
@@ -362,9 +365,10 @@
     var TONS_ESC = [['#1F3149', '#2E4668', '#A9C8F5'], ['#3A3320', '#5A4E2A', '#F0D98A'], ['#2A3138', '#3C454E', '#C7D0D8'], ['#2F2742', '#46395F', '#CDB8F0'],
                     ['#3D2D1F', '#5C4330', '#F2C08F'], ['#1E3832', '#2D5249', '#8FE0C6'], ['#1F3A25', '#2E5636', '#9BE0A8'], ['#3D2129', '#5A303C', '#F2A9B9']];
     function tom(i) { var esc_ = document.documentElement.getAttribute('data-tema') === 'escuro'; var t = (esc_ ? TONS_ESC : TONS)[i % TONS.length]; return '--kb-bg:' + t[0] + ';--kb-bd:' + t[1] + ';--kb-ink:' + t[2]; }
-    // tom de cada etapa: Criada azul, Crédito amarelo, Logística cinza, Faturado lilás
-    var TOM_ETAPA = { criada: 0, credito: 1, liberado: 2, faturado: 3 };
-    var NOME_ETAPA = { criada: 'Criada', credito: 'Gerenciamento de Crédito', liberado: 'Logística', faturado: 'Faturado', cancelada: 'Cancelada' };
+    // tom de cada etapa: Criada azul, Crédito amarelo, Separação cinza, Conferência
+    // verde-água, Cotação laranja, Faturado lilás
+    var TOM_ETAPA = { criada: 0, credito: 1, liberado: 2, conferencia: 5, cotacao: 4, faturado: 3 };
+    var NOME_ETAPA = { criada: 'Criada', credito: 'Gerenciamento de Crédito', liberado: 'Separação', conferencia: 'Conferência', cotacao: 'Cotação', faturado: 'Faturado', cancelada: 'Cancelada' };
     // o quadro mostra só o depósito do filtro do servidor (ALMOX-PA, 09/11/26):
     // o chip/selo do depósito só aparece quando ele foge do filtro
     function depFiltro() { return (estado.r && estado.r.depositos) || []; }
@@ -406,13 +410,13 @@
       // as 4 colunas fixas, na ordem do fluxo (a etapa vem calculada do servidor);
       // cancelada não entra no quadro
       var etapas = r.etapas || [];
-      $('kb-quadro').innerHTML = '<div class="kb-board">' + etapas.map(function (e) {
+      $('kb-quadro').innerHTML = '<div class="kb-board" style="--kb-n:' + (etapas.length || 6) + '">' + etapas.map(function (e) {
         var lista = ovs.filter(function (o) { return o.etapa === e.id; });
         var soma = lista.reduce(function (s, o) { return s + (o.valor || 0); }, 0);
         var temValor = lista.some(function (o) { return o.valor != null; });
         return '<section class="kb-col" style="' + tom(TOM_ETAPA[e.id] || 0) + '"><div class="kb-col-h"><div class="kb-col-t"><span class="nome">' + esc(e.nome) + '</span><span class="kb-cnt">' + lista.length + '</span></div>'
           + '<div class="kb-col-v">' + (temValor ? esc(fK(soma)) : '&nbsp;') + '</div></div>'
-          + '<div class="kb-cards">' + (lista.length ? lista.map(cardHtml).join('') : '<div class="kb-vazio">—</div>') + '</div></section>';
+          + '<div class="kb-cards">' + (lista.length ? lista.map(cardHtml).join('') : e.pendente ? '<div class="kb-vazio pend">aguardando os campos da fase</div>' : '<div class="kb-vazio">—</div>') + '</div></section>';
       }).join('') + '</div>';
     }
 
@@ -441,7 +445,8 @@
     var DW = { el: null, ov: null, volta: null };
     var LINHAS = new Map();          // nº da OV -> { st, linhas, em, erro, ts }
     var LINHAS_TTL = 60000;
-    var ORDEM_ETAPA = { criada: 0, credito: 1, liberado: 2, faturado: 3, cancelada: -1 };
+    var ORDEM_ETAPA = { criada: 0, credito: 1, liberado: 2, conferencia: 3, cotacao: 4, faturado: 5, cancelada: -1 };
+    var POS_FAT = ORDEM_ETAPA.faturado;
     var IC_X = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>';
     var IC_ANT = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="15 18 9 12 15 6"/></svg>';
     var IC_PROX = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="9 18 15 12 9 6"/></svg>';
@@ -716,7 +721,7 @@
       var noDia = (estado.r.ovs || []).filter(function (x) { return x.etapa !== 'cancelada'; });
       var totDia = noDia.reduce(function (s, x) { return s + (x.valor || 0); }, 0);
       var subV = [o.itens != null ? plural(o.itens, 'item', 'itens') : '', o.valor != null && totDia > 0 && o.etapa !== 'cancelada' && noDia.length > 1 ? fPct(o.valor / totDia) + ' do valor do dia' : ''].filter(Boolean).join(' · ');
-      var diaC = diaSP(o.criadaEm), ent = isoData(o.entrega), late = ent && ent < hoje && pos >= 0 && pos < 3;
+      var diaC = diaSP(o.criadaEm), ent = isoData(o.entrega), late = ent && ent < hoje && pos >= 0 && pos < POS_FAT;
       var h = '<div class="kb-dw-kpis">'
         + kp('Valor da OV', o.valor != null ? esc(fBRL(o.valor)) : '—', subV ? esc(subV) : (o.valor == null ? 'linhas não lidas no quadro' : ''), 'destaque')
         + (diaC === hoje
@@ -743,8 +748,9 @@
         + '<ol class="kb-dw-ol" style="margin-top:6px;">'
         + '<li class="' + (o.etapa === 'faturado' ? 'on' : '') + '">Situação (<code>SalesStatus</code>) que não é <b>Ordem em aberto</b> → <b>Faturado</b> (cancelada fica fora do quadro).</li>'
         + '<li class="' + (o.etapa === 'credito' ? 'on' : '') + '">Registro <b>ativo</b> na tabela de gerenciamento de crédito (<code>BioCredManTableV1</code>: <code>ACTIVE</code>, pela OV no <code>SALESID</code>) → <b>Gerenciamento de Crédito</b>. Sem a tabela no OData, vale o <code>CredManInCreditControl</code> do cabeçalho.</li>'
-        + '<li class="' + (o.etapa === 'liberado' ? 'on' : '') + '">Liberação (<code>ReleaseStatus</code>) = Liberado → <b>Logística</b>.</li>'
+        + '<li class="' + (o.etapa === 'liberado' ? 'on' : '') + '">Liberação (<code>ReleaseStatus</code>) = Liberado (Released) → <b>Separação</b>.</li>'
         + '<li class="' + (o.etapa === 'criada' ? 'on' : '') + '">Nenhuma das anteriores → <b>Criada</b>.</li></ol>'
+        + '<p class="kb-dw-p" style="margin-top:8px;"><b>Conferência</b> e <b>Cotação</b> já estão no quadro, mas os campos que definem essas fases ainda vão ser informados: por enquanto nenhuma OV cai nelas.</p>'
         + '<p class="kb-dw-p" style="margin-top:8px;">Entram as OVs da <b>MSB</b>' + (depTexto() ? ' do depósito <b>' + esc(depTexto()) + '</b>' : '') + ' criadas no dia escolhido (horário de Brasília); as de outros depósitos ficam fora. O quadro relê o Dynamics a cada 30 s no dia de hoje; as linhas desta ficha são lidas quando ela abre.</p></details>';
       return h;
     }
@@ -783,18 +789,24 @@
                                            : 'O registro da OV' + naTabela + ' está inativo (' + ci.cod + '). Se ficar ativo, a OV vem para esta etapa.')
           : 'Sem retenção agora. Se o Dynamics reter a OV no crédito, ela vem para esta etapa antes da liberação.' });
       // liberado
-      if (pos === 2) p.push({ cls: 'agora', tt: 'Agora: Logística', ds: 'Liberada para o depósito (' + cod(cLib, rg.releaseStatus) + '): separação, conferência e expedição. Ainda sem nota fiscal.' });
-      else if (pos === 3) p.push({ cls: 'feito', tt: 'Logística', ds: 'A OV foi liberada para o depósito e passou pela logística.' });
-      else p.push({ cls: 'depois', tt: 'Logística', ds: 'Quando a OV for liberada para o depósito, vem para esta etapa: separação, conferência e expedição.' });
+      if (pos === 2) p.push({ cls: 'agora', tt: 'Agora: Separação', ds: 'Liberada para o depósito (' + cod(cLib, rg.releaseStatus) + '): os itens estão sendo separados. Ainda sem nota fiscal.' });
+      else if (pos > 2) p.push({ cls: 'feito', tt: 'Separação', ds: 'A OV foi liberada para o depósito' + (libVeio ? ' (' + cod(cLib, rg.releaseStatus) + ')' : '') + '.' });
+      else p.push({ cls: 'depois', tt: 'Separação', ds: 'Quando a OV for liberada para o depósito (<code>ReleaseStatus = Released</code>), vem para esta etapa: separação dos itens.' });
+      // conferência e cotação: fases novas, à espera dos campos do dono
+      [[3, 'Conferência'], [4, 'Cotação']].forEach(function (f) {
+        if (pos === f[0]) p.push({ cls: 'agora', tt: 'Agora: ' + f[1], ds: '' });
+        else if (pos > f[0]) p.push({ cls: 'feito', tt: f[1], ds: '' });
+        else p.push({ cls: 'depois', tt: f[1], dt: 'a definir', z: true, ds: 'Os campos que definem esta fase ainda vão ser informados.' });
+      });
       // faturado
-      if (pos === 3) {
+      if (pos === POS_FAT) {
         var sit = rot(rg.salesStatus);
         p.push({ cls: 'feito fim', tt: 'Agora: ' + (sit === 'Entregue' ? 'Entregue' : 'Faturado'), ds: 'A OV não está mais em aberto: situação <b>' + esc(sit || '—') + '</b> (' + cod(cSit, rg.salesStatus) + ').' });
       } else {
         p.push({ cls: 'depois', tt: 'Faturado', ds: 'Quando a nota fiscal sair, a OV sai do aberto e vem para esta etapa.' });
       }
       // entrega solicitada
-      var ent = isoData(o.entrega), late = ent && ent < hoje && pos < 3;
+      var ent = isoData(o.entrega), late = ent && ent < hoje && pos < POS_FAT;
       p.push({ cls: 'depois', tt: 'Entrega solicitada', dt: ent ? fDia(ent) : 'sem data', z: !ent, warn: late,
         ds: ent ? (late ? 'A data solicitada já passou (' + esc(relDia(ent)) + ') e a OV ainda não foi faturada.' : 'Data pedida pelo cliente: ' + esc(diaSem(ent) + ', ' + relDia(ent)) + '.')
                 : 'O ERP não traz data de entrega solicitada.' });
@@ -816,7 +828,7 @@
       var porque = {
         criada: 'Ordem em aberto' + (credVeio ? ', sem crédito ativo' : '') + ' e ainda não liberada para o depósito: fica em <b>Criada</b>.' + (credVeio ? '' : ' O crédito não veio do Dynamics.'),
         credito: (ci.fonte === 'tabela' ? 'O registro <b>ativo</b> na tabela de gerenciamento de crédito decide' : 'O crédito marcado decide') + ': a OV fica em <b>Gerenciamento de Crédito</b> até o crédito aprovar, qualquer que seja a liberação.',
-        liberado: 'Ordem em aberto, sem retenção de crédito e liberada para o depósito: fica em <b>Logística</b>.',
+        liberado: 'Ordem em aberto, sem crédito ativo e liberada para o depósito (<code>ReleaseStatus = Released</code>): fica em <b>Separação</b>.',
         faturado: 'A situação não é mais “Ordem em aberto”: fica em <b>Faturado</b> — a situação vale antes do crédito e da liberação.',
         cancelada: 'Situação <b>Cancelada</b>: a OV fica fora do quadro (só aparece na lista).'
       }[et] || '';

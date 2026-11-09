@@ -95,18 +95,25 @@ const VAZIOS = /^(|0|1900-01-01T00:00:00Z|00000000-0000-0000-0000-000000000000|N
 //   1) SalesStatus que não é "Ordem em aberto" -> Faturado ("o restante")
 //      (cancelada não é faturamento: fica FORA do quadro, contada à parte)
 //   2) CredManInCreditControl marcado          -> Gerenciamento de Crédito
-//   3) ReleaseStatus = Liberado                -> Liberado
+//   3) ReleaseStatus = Liberado                -> Separação (id liberado)
 //   4) senão                                   -> Criada
 // Aceita o valor do OData (nome do enum: Backorder, Released, Yes) e o rótulo
 // em português da tela do F&O. Colunas trocáveis por env: KANBAN_COL_SALESSTATUS,
 // KANBAN_COL_RELEASE, KANBAN_COL_CREDITO.
+// 09/11/2026 (dono): SEIS colunas — "Criada, Gerenciamento de Crédito,
+// Separação (ReleaseStatus = Released), Conferência, Cotação, Faturado;
+// conferência e cotação irei te mandar os campos para definição da fase".
+//   • Separação = a antiga "Liberado"/"Logística": o id segue 'liberado' e a
+//     regra é a mesma (ReleaseStatus = Liberado);
+//   • Conferência e Cotação entram no quadro VAZIAS (pendente: true) até o
+//     dono mandar os campos — nenhuma OV cai nelas por enquanto.
 const ETAPAS = [
-  { id: 'criada',   nome: 'Criada' },
-  { id: 'credito',  nome: 'Gerenciamento de Crédito' },
-  // 09/11/2026: a coluna "Liberado" passou a se chamar "Logística" (pedido do
-  // dono); o id segue 'liberado' — a regra é a mesma (ReleaseStatus = Liberado)
-  { id: 'liberado', nome: 'Logística' },
-  { id: 'faturado', nome: 'Faturado' }
+  { id: 'criada',      nome: 'Criada' },
+  { id: 'credito',     nome: 'Gerenciamento de Crédito' },
+  { id: 'liberado',    nome: 'Separação' },
+  { id: 'conferencia', nome: 'Conferência', pendente: true },
+  { id: 'cotacao',     nome: 'Cotação',     pendente: true },
+  { id: 'faturado',    nome: 'Faturado' }
 ];
 const COL_SALES   = envLista('KANBAN_COL_SALESSTATUS', ['SalesStatus', 'SalesOrderStatus']);
 const COL_RELEASE = envLista('KANBAN_COL_RELEASE', ['ReleaseStatus', 'SalesOrderReleaseStatus']);
@@ -523,7 +530,7 @@ async function ordensDoDia(opts) {
   // as 4 colunas, na ordem do fluxo, com contagem e valor
   const etapas = ETAPAS.map(e => {
     const lista = ovs.filter(o => o.etapa === e.id);
-    return { id: e.id, nome: e.nome, qtd: lista.length, valor: Math.round(lista.reduce((s2, o) => s2 + (o.valor || 0), 0) * 100) / 100 };
+    return { id: e.id, nome: e.nome, pendente: !!e.pendente, qtd: lista.length, valor: Math.round(lista.reduce((s2, o) => s2 + (o.valor || 0), 0) * 100) / 100 };
   });
   const canceladas = ovs.filter(o => o.etapa === 'cancelada').length;
   if (ovs.length) {
@@ -538,7 +545,7 @@ async function ordensDoDia(opts) {
         '. Se a entidade não for pública no OData, é preciso publicá-la (ou fixar o nome em KANBAN_ENT_CREDITO).');
     }
     if (falta.length) avisos.push('Não achei ' + falta.join(', ') + ' nas entidades lidas (' + fontes.map(f => f.entidade).join(', ') + '): as etapas dependem desses campos. Veja os campos de cada OV no painel.');
-    else if (achou.sales < ovs.length) avisos.push((ovs.length - achou.sales) + ' OV(s) sem SalesStatus: ficaram em Criada, Gerenciamento de Crédito ou Logística pelos outros campos.');
+    else if (achou.sales < ovs.length) avisos.push((ovs.length - achou.sales) + ' OV(s) sem SalesStatus: ficaram em Criada, Gerenciamento de Crédito ou Separação pelos outros campos.');
   }
   const r = Object.assign(base, { fontes, etapas, canceladas, depositos: TODOS_DEPOSITOS ? null : DEPOSITOS, foraDeposito, statusCols, statusPadrao, ovs, avisos, diagnostico: diag });
   if (!opts.diag) _cache.set(dia, { ts: Date.now(), r });
