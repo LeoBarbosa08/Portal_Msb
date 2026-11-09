@@ -223,6 +223,8 @@ const COL_CARGA = {
 // Fase da carga da OV (a MENOS adiantada, se a OV tiver mais de uma carga):
 //   remetido > pallet > cotado (carregado + cotação Sim) > cotacao (carregado +
 //   cotação Não) > processando > outro
+// Sim / Não para as mensagens (o OData devolve o enum: Yes / No)
+const simNaoV = (v) => marcadoV(v) ? 'Sim' : /^(no|nao|false|0|noyes no)$/.test(normV(v)) ? 'Não' : (txt(v) || 'vazia');
 const RANK_CARGA = { outro: 0, processando: 1, cotacao: 2, cotado: 3, pallet: 4, remetido: 5 };
 function faseCarga(c) {
   const st = normV(c.status).replace(/ /g, '');
@@ -395,7 +397,7 @@ const CFG_TRABALHO = {
 };
 const CFG_CARGA = {
   chave: 'carga', candidatas: ENT_CARGA, reNome: /outboundload|loadheader/i, pedaco: 'outboundload',
-  cols: COL_CARGA, obrig: ['numero'],
+  cols: COL_CARGA, obrig: ['numero'], prefer: ['cotacao', 'pallet', 'status'],
   // os campos _CUSTOM: se o nome exato não bater, o pedaço do nome
   reCols: { cotacao: /cota[cç]/i, pallet: /enviar.?pallet|pallet/i },
   erroCol: (p) => 'sem a coluna ' + COL_CARGA[p].join('/')
@@ -441,10 +443,14 @@ async function entidadeExtra(cfg, token, ate, diag) {
   const sondas = await Promise.all(alvos.map(ent => sondarExtra(cfg, ent, token, ate).catch(e => ({ entidade: ent, serve: false, erro: String(e.message || e).slice(0, 200) }))));
   sondas.forEach(x => {
     const d = { etapa: cfg.chave + ':entidade', entidade: x.entidade, serve: x.serve, empresa: !!x.temEmpresa, erro: x.erro || null };
-    cfg.obrig.forEach(papel => { d[papel] = x[papel] || null; });
+    cfg.obrig.concat(cfg.prefer || []).forEach(papel => { d[papel] = x[papel] || null; });
     diag.push(d);
   });
-  const E = sondas.find(x => x.serve) || false;
+  // entre as que servem, a que tem MAIS das colunas preferidas (cfg.prefer) —
+  // 09/11/26: o D365 pode publicar mais de uma entidade de cargas; a que tem os
+  // campos _CUSTOM (COTACAOREALIZADA_CUSTOM, ENVIARPALLET_CUSTOM) é a que vale
+  const pontos = (x) => (cfg.prefer || []).filter(papel => x[papel]).length;
+  const E = sondas.filter(x => x.serve).sort((a, b) => pontos(b) - pontos(a))[0] || false;
   const motivo = E ? '' : !alvos.length
     ? 'nenhuma entidade com "' + cfg.pedaco + '" no nome está publicada no OData'
     : sondas.map(x => x.entidade + ': ' + (x.erro || 'não serve')).join('; ').slice(0, 300);
@@ -538,7 +544,14 @@ async function cargasPorId(ids, token, ate, diag) {
     };
     carga.fase = faseCarga(carga);
     // o botão "Enviar para o Pallet": carga Carregado E cotação realizada = Sim (e ainda não enviada)
-    carga.podePallet = carga.fase === 'cotado';
+    carga.podePallet = carga.fase === 'cotado' && !!E.pallet;
+    // e o porquê de NÃO poder (a ficha mostra o botão desativado com o motivo)
+    carga.motivoPallet = carga.podePallet ? '' : !E.pallet ? 'não achei o campo ' + COL_CARGA.pallet[0] + ' na carga'
+      : carga.palletSim ? 'a carga já foi enviada para o Pallet'
+      : carga.fase === 'remetido' ? 'a carga já foi remetida'
+      : !/^(loaded|carregad)/.test(normV(carga.status).replace(/ /g, '')) ? 'a carga está "' + (carga.status || 'sem status') + '" — precisa estar Carregado'
+      : !E.cotacao ? 'não achei o campo ' + COL_CARGA.cotacao[0] + ' na carga'
+      : 'a cotação realizada está "' + simNaoV(carga.cotacao) + '" — precisa estar Sim';
     por[id.toUpperCase()] = { row: r, carga };
   });
   return { E, por };
@@ -1132,7 +1145,7 @@ async function enviarParaPallet(loadId) {
   if (c.palletSim) return { ok: true, ja: true, carga: id, entidade: E.entidade, coluna: E.pallet };
   if (faseCarga(c) !== 'cotado') {
     throw erroStatus('A carga ' + id + ' não está "Carregado" com a cotação realizada (status: ' + (c.status || '—') + ', cotação realizada: ' +
-      (E.cotacao ? txt(r[E.cotacao]) || '—' : 'coluna não encontrada') + ').', 409);
+      (E.cotacao ? simNaoV(r[E.cotacao]) : 'coluna não encontrada') + ').', 409);
   }
   // o valor no formato da coluna: enum NoYes ("Yes"), booleano ou número
   const atual = r[E.pallet];

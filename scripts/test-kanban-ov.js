@@ -520,6 +520,22 @@ const bio = (n, st, lib) => ({ dataAreaId: 'msb', SalesOrderNumber: n, StatusPed
   t('colunas da carga achadas', o8('OV019004').cargaCols.cotacao === 'COTACAOREALIZADA_CUSTOM' && o8('OV019004').cargaCols.pallet === 'ENVIARPALLET_CUSTOM', o8('OV019004').cargaCols);
   t('sem aviso das colunas da carga', !r.avisos.some(a => /Cotação realizada/.test(a)), r.avisos);
 
+  t('motivo de não poder ir para o Pallet', /cotação realizada está "Não"/.test(o8('OV019003').cargas[0].motivoPallet) && /precisa estar Carregado/.test(o8('OV019002').cargas[0].motivoPallet) && o8('OV019004').cargas[0].motivoPallet === '', [o8('OV019003').cargas[0].motivoPallet, o8('OV019002').cargas[0].motivoPallet]);
+
+  console.log('8b) duas entidades de cargas: vale a que tem os campos _CUSTOM');
+  K._limparCache();
+  // a 1ª candidata (WHSOutboundLoadHeaderEntities) sem os _CUSTOM; a OutboundLoadHeaders com eles
+  const semCustom = CEN.WHSOutboundLoadHeaderEntities.linhas.map(x => ({ dataAreaId: 'msb', LoadId: x.LoadId, LoadStatus: x.LoadStatus }));
+  CEN.OutboundLoadHeaders = { linhas: CEN.WHSOutboundLoadHeaderEntities.linhas };
+  CEN.WHSOutboundLoadHeaderEntities = { linhas: semCustom };
+  SERVICO = SERVICO.concat(['OutboundLoadHeaders']);
+  r = await K.ordensDoDia({ data: DIA });
+  t('escolhe a OutboundLoadHeaders (com COTACAOREALIZADA_CUSTOM e ENVIARPALLET_CUSTOM)', r.fontes.some(f => f.papel === 'carga' && f.entidade === 'OutboundLoadHeaders'), r.fontes.filter(f => f.papel === 'carga'));
+  t('e as regras continuam: Cotação, Pallet, Expedição', r.ovs.find(o => o.numero === 'OV019003').etapa === 'cotacao' && r.ovs.find(o => o.numero === 'OV019006').etapa === 'pallet' && r.ovs.find(o => o.numero === 'OV019007').etapa === 'expedicao');
+  CEN.WHSOutboundLoadHeaderEntities = CEN.OutboundLoadHeaders; delete CEN.OutboundLoadHeaders;
+  SERVICO = SERVICO.filter(x => x !== 'OutboundLoadHeaders');
+  K._limparCache(); r = await K.ordensDoDia({ data: DIA });
+
   console.log('9) "Enviar para o Pallet": grava ENVIARPALLET_CUSTOM = Sim no D365');
   chamadas.length = 0;
   let rp = await K.enviarParaPallet('LD-4');
@@ -532,7 +548,7 @@ const bio = (n, st, lib) => ({ dataAreaId: 'msb', SalesOrderNumber: n, StatusPed
   rp = await K.enviarParaPallet('LD-6');
   t('já enviada: ok, sem gravar de novo', rp.ok && rp.ja === true && !chamadas.some(c => c.metodo === 'PATCH'), rp);
   let erro = null; try { await K.enviarParaPallet('LD-3'); } catch (e) { erro = e; }
-  t('cotação não realizada: recusa (409) sem gravar', erro && erro.status === 409 && /cotação realizada: No/.test(erro.message) && !chamadas.some(c => c.metodo === 'PATCH'), erro && erro.message);
+  t('cotação não realizada: recusa (409) sem gravar', erro && erro.status === 409 && /cotação realizada: Não/.test(erro.message) && !chamadas.some(c => c.metodo === 'PATCH'), erro && erro.message);
   erro = null; try { await K.enviarParaPallet('LD-NAO'); } catch (e) { erro = e; }
   t('carga que não existe: 404', erro && erro.status === 404, erro && erro.message);
   erro = null; try { await K.enviarParaPallet("LD' or 1"); } catch (e) { erro = e; }

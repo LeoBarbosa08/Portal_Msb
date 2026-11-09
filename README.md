@@ -1218,6 +1218,25 @@ Pedido do dono (os status de cada coluna):
   validado → 403, validada → grava e loga, outra ação → 400). `sw.js` — cache
   `bm-comest-v53`.
 
+### Kanban · onde está o botão do Pallet (09/11/2026)
+
+O dono perguntou "onde está esse botão?" e confirmou o campo
+`COTACAOREALIZADA_CUSTOM` (o nome que o portal já procurava). Duas correções:
+
+- **Entidade de cargas**: o D365 pode publicar mais de uma; a descoberta
+  (`entidadeExtra`) agora escolhe, entre as que servem, a que tem **mais** das
+  colunas preferidas (`prefer` do `CFG_CARGA`: `COTACAOREALIZADA_CUSTOM`,
+  `ENVIARPALLET_CUSTOM`, `LoadStatus`) — antes valia a primeira com `LoadId`, e
+  uma sem os `_CUSTOM` escondia a cotação e o pallet. O Diagnóstico mostra as
+  colunas achadas em cada candidata. Teste: com as duas publicadas, vale a com
+  os `_CUSTOM` (sem a correção, as regras quebram).
+- **Botão visível**: na ficha da OV com carga (Separação, Conferência, Cotação,
+  Faturado), o quadro "Enviar para o Pallet" aparece **desativado com o
+  motivo** (`motivoPallet` por carga: a carga está "Em processamento" — precisa
+  estar Carregado; a cotação realizada está "Não"; campo não encontrado; já
+  enviada / remetida). Liberado: o botão marrom de sempre.
+- `sw.js` — cache `bm-comest-v54`.
+
 ## Como colocar no ar
 
 1. **Repositório no GitHub** — crie um repositório **privado e vazio** (sem
