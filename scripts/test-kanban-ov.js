@@ -8,7 +8,7 @@
 // principal é a que tem data de criação, "do dia" no fuso de Brasília,
 // complemento da BIO juntado pelo número da OV, status crus das duas
 // entidades, valor/itens pelas linhas, só a MSB nos filtros e a rota
-// exigindo a área kanban.
+// exigindo a área kanban; as linhas de uma OV (?ov=) para a ficha.
 // ================================================================
 
 process.env.D365_TENANT_ID = 't'; process.env.D365_CLIENT_ID = 'c'; process.env.D365_CLIENT_SECRET = 's';
@@ -130,7 +130,31 @@ const bio = (n, st, lib) => ({ dataAreaId: 'msb', SalesOrderNumber: n, StatusPed
   t('regra vem com os campos e a origem', r.ovs.find(o => o.numero === 'OV017517').regra.salesStatusCol === 'BIOSalesOrderHeaderV1.SalesStatus', r.ovs.find(o => o.numero === 'OV017517').regra);
   t('sem aviso de campo faltando', !r.avisos.some(a => /Não achei/.test(a)), r.avisos);
 
-  console.log('5) rota exige a área kanban');
+  console.log('5) linhas de uma OV (a ficha do painel)');
+  K._limparCache(); chamadas.length = 0;
+  CEN = {
+    SalesOrderLines: { linhas: [
+      { dataAreaId: 'msb', SalesOrderNumber: 'OV017525', LineNumber: 2, ItemNumber: '73172', LineDescription: 'CAT BALAO 8MM', OrderedSalesQuantity: 2, SalesUnitSymbol: 'UN',
+        SalesPrice: 400, LineDiscountAmount: 0, LineAmount: 800, SalesOrderLineStatus: 'Backorder', RequestedShippingDate: '2026-11-10T12:00:00Z',
+        ConfirmedShippingDate: '1900-01-01T12:00:00Z', ShippingWarehouseId: 'RETCONSIGV' },
+      { dataAreaId: 'msb', SalesOrderNumber: 'OV017525', LineNumber: 1, ItemNumber: '73171', LineDescription: 'CAT BALAO 7MM', OrderedSalesQuantity: 5, SalesUnitSymbol: 'UN',
+        SalesPrice: 365, LineAmount: 1825, SalesOrderLineStatus: 'Backorder', ShippingWarehouseId: 'RETCONSIGV' },
+      { dataAreaId: 'msb', SalesOrderNumber: 'OV099999', LineNumber: 1, ItemNumber: 'X', LineAmount: 1 }
+    ] }
+  };
+  r = await K.linhasDaOv('ov017525');
+  t('só as linhas da OV pedida, pela ordem da linha', r.linhas.length === 2 && r.linhas[0].item === '73171' && r.linhas[1].item === '73172', r.linhas);
+  const l2 = r.linhas[1];
+  t('produto, qtd × preço, valor e status', l2.produto === 'CAT BALAO 8MM' && l2.qtd === 2 && l2.preco === 400 && l2.valor === 800 && l2.status === 'Backorder' && l2.un === 'UN', l2);
+  t('entrega pela data; 1900 = sem data', l2.entrega === '2026-11-10' && l2.confirmada === null, l2);
+  t('entidade e número normalizado', r.entidade === 'SalesOrderLines' && r.numero === 'OV017525', r);
+  const cl = chamadas.find(c => c.ent === 'SalesOrderLines');
+  t('filtra a MSB e o número, sem $select', cl && /dataAreaId eq 'msb' and SalesOrderNumber eq 'OV017525'/.test(cl.q.filter) && !cl.q.select, cl && cl.q);
+  const n1 = chamadas.length;
+  r = await K.linhasDaOv('OV017525');
+  t('2ª leitura vem do cache', r.cache === true && chamadas.length === n1);
+
+  console.log('6) rota exige a área kanban (e ?ov=)');
   K._limparCache();
   const auth = require('../api/shared/auth');
   const fn = require('../api/kanban-ov/index.js');
@@ -143,6 +167,10 @@ const bio = (n, st, lib) => ({ dataAreaId: 'msb', SalesOrderNumber: n, StatusPed
   auth.requireArea = async () => ({ user: { email: 'ia@biomedical.com.br' }, validated: true });
   await fn(ctx, { method: 'GET', headers: {}, query: { data: 'hoje' } });
   t('data inválida -> 400', ctx.res.status === 400, ctx.res.status);
+  await fn(ctx, { method: 'GET', headers: {}, query: { ov: "OV1' or 1 eq 1" } });
+  t('nº de OV inválido -> 400', ctx.res.status === 400, ctx.res.status);
+  await fn(ctx, { method: 'GET', headers: {}, query: { ov: 'OV017525' } });
+  t('?ov= devolve as linhas', ctx.res.status === 200 && ctx.res.body.linhas && ctx.res.body.linhas.length === 2, ctx.res.status);
   auth.requireArea = orig;
 
   console.log(falhas ? '\n' + falhas + ' FALHA(S)' : '\ntudo ok');

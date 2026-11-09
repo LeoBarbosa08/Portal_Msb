@@ -421,7 +421,69 @@ async function ordensDoDia(opts) {
   return r;
 }
 
-function _limparCache() { _cache.clear(); _ents = null; _entsTs = 0; _servico = null; _servicoTs = 0; _entLinhas = null; }
+// ── AS LINHAS DE UMA OV (o painel da OV, 09/11/2026) ─────────────
+// "No kanban, melhore o modal à direita, se baseie muito no Sales Report,
+// pedido em andamento": a ficha lista as linhas da OV (produto, quantidade ×
+// preço, status e entrega de cada linha). Lidas SÓ quando a ficha abre —
+// o quadro, que relê a cada 30 s, continua pedindo só o valor das linhas.
+// Sem $select (uma OV tem poucas linhas e cada campo é lido por vários
+// nomes: o que a entidade não tiver fica vazio). Cache por OV: 15 s.
+const COLS_LINHA = {
+  linha:      ['LineNumber', 'LineCreationSequenceNumber'],
+  item:       ['ItemNumber', 'ItemId'],
+  produto:    ['LineDescription', 'ProductName', 'ItemName', 'Name'],
+  qtd:        ['OrderedSalesQuantity', 'SalesQuantity', 'Quantity'],
+  un:         ['SalesUnitSymbol', 'SalesUnit'],
+  preco:      ['SalesPrice', 'UnitPrice'],
+  desconto:   ['LineDiscountAmount'],
+  descPct:    ['LineDiscountPercentage'],
+  valor:      ['LineAmount', 'NetAmount'],
+  status:     ['SalesOrderLineStatus', 'LineStatus', 'SalesStatus'],
+  entrega:    ['RequestedShippingDate', 'RequestedReceiptDate'],
+  confirmada: ['ConfirmedShippingDate', 'ConfirmedReceiptDate'],
+  deposito:   ['ShippingWarehouseId', 'InventLocationId']
+};
+// data "vazia" do F&O (1900-01-01, em qualquer hora) = sem data
+const dataLinha = (v) => { const s = txt(v); return /^\d{4}-\d{2}-\d{2}/.test(s) && !/^1900-01-01/.test(s) ? s.slice(0, 10) : null; };
+const _cacheLinhas = new Map();
+async function linhasDaOv(numero, opts) {
+  opts = opts || {};
+  const n = chaveOv(numero);
+  const base = { ok: true, configured: true, numero: n, geradoEm: new Date().toISOString() };
+  if (!n) return Object.assign(base, { linhas: [], entidade: null });
+  const c = _cacheLinhas.get(n);
+  if (!opts.atualizar && c && Date.now() - c.ts < TTL_MS) return Object.assign({}, c.r, { cache: true });
+  const ate = Date.now() + Math.min(ORCAMENTO, 25000);
+  const token = await D.getToken();
+  const alvos = _entLinhas ? [_entLinhas] : ENT_LINHAS;
+  let rows = null, entidade = null, ultimo = null;
+  for (const ent of alvos) {
+    try {
+      rows = await D.odataGetComPrazo(ent, { crossCompany: true, top: 500,
+        filter: "dataAreaId eq '" + D.odataStr(EMPRESA) + "' and SalesOrderNumber eq '" + D.odataStr(n) + "'" }, token, prazo(ate, 15000));
+      entidade = ent; _entLinhas = _entLinhas || ent;
+      break;
+    } catch (e) {
+      ultimo = e;
+      if (!/\b(400|404)\b/.test(String(e.message))) break;
+    }
+  }
+  if (!rows) throw ultimo || new Error('nenhuma entidade de linhas de OV respondeu (' + alvos.join(', ') + ')');
+  const pk = (r, campo) => D.pick(r, COLS_LINHA[campo]);
+  const linhas = rows.map(r => {
+    const s = (campo) => { const v = pk(r, campo); return v == null || VAZIOS.test(txt(v)) ? '' : txt(v); };
+    return {
+      linha: num(pk(r, 'linha')), item: s('item'), produto: s('produto'),
+      qtd: num(pk(r, 'qtd')), un: s('un'), preco: num(pk(r, 'preco')),
+      desconto: num(pk(r, 'desconto')), descPct: num(pk(r, 'descPct')), valor: num(pk(r, 'valor')),
+      status: s('status'), entrega: dataLinha(pk(r, 'entrega')), confirmada: dataLinha(pk(r, 'confirmada')), deposito: s('deposito')
+    };
+  }).sort((a, b) => (a.linha == null ? 1e9 : a.linha) - (b.linha == null ? 1e9 : b.linha));
+  const r = Object.assign(base, { entidade, linhas });
+  _cacheLinhas.set(n, { ts: Date.now(), r });
+  if (_cacheLinhas.size > 200) _cacheLinhas.delete(_cacheLinhas.keys().next().value);
+  return r;
+}
 
 // ── TIPO DE OPERAÇÃO DAS OVs (09/11/2026) ─────────────────────────
 // Pedido do dono: o Faturamento do Dia mostra o tipo de operação de cada
@@ -462,4 +524,7 @@ async function operacoesDasOvs(numeros, ate) {
   return { porOv, colunas: comOp.map(x => x.E.entidade + ': ' + x.cols.join(', ')), diag };
 }
 
-module.exports = { ordensDoDia, operacoesDasOvs, hojeSP, EMPRESA, CONFIGURED: D.CONFIGURED, ETAPAS, _limparCache, _interno: { diaDe, RE_STATUS, RE_NAO_STATUS, etapaDe } };
+
+function _limparCache() { _cache.clear(); _cacheLinhas.clear(); _ents = null; _entsTs = 0; _servico = null; _servicoTs = 0; _entLinhas = null; }
+
+module.exports = { ordensDoDia, linhasDaOv, operacoesDasOvs, hojeSP, EMPRESA, CONFIGURED: D.CONFIGURED, ETAPAS, _limparCache, _interno: { diaDe, RE_STATUS, RE_NAO_STATUS, etapaDe } };

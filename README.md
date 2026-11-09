@@ -703,6 +703,43 @@ tem fonte conhecida (o diário não tem; a FiscalDocuments parou na MSB em
   Testes: `node scripts/test-fatdia-sonda.js`.
 - `sw.js` — cache `bm-comest-v29`.
 
+### Kanban · ficha da OV no molde do Sales Report (09/11/2026)
+
+Pedido do dono: "no kanban, melhore o modal à direita, se baseie muito no
+salesreport, pedido em andamento". O painel que abria com a lista de campos
+crus virou a **ficha da OV**, no mesmo desenho da ficha de pedido em andamento
+do Sales Report (`sr-diario.css`/`.sd-dw`), com prefixo próprio (`.kb-dw`) no
+`<style>` de `pages/kanban.html`:
+
+- **Cabeçalho**: "Ordem de venda · etapa", nº da OV, cliente · conta ·
+  cidade/UF, selo da etapa na cor da coluna, "nova"/"mudou de etapa",
+  depósito, OC e pool; ‹ › andam pelas OVs na ordem do quadro (coluna a
+  coluna; na Lista, a lista) e as setas do teclado também; Esc fecha e o foco
+  volta ao cartão. Rodapé com **Copiar nº** e "lido às · n de N".
+- **Números-chave**: valor da OV (itens e % do valor do dia), hora de criação
+  ("há 47 min") e entrega solicitada (avisa quando já passou).
+- **Onde está o pedido**: as 4 etapas do quadro como linha do tempo (Criada →
+  Gerenciamento de Crédito → Liberado → Faturado → entrega solicitada), cada
+  uma explicada pelo valor do campo que a decide; cancelada aparece como tal.
+- **Por que está em <etapa>**: os três campos da regra (situação, liberação,
+  crédito) em português, com o valor cru e a coluna, e o que decidiu marcado;
+  "não veio" quando o Dynamics não trouxe o campo.
+- **Linhas da OV**: produto, código, quantidade × preço, desconto, status e
+  entrega de cada linha, agrupadas por status quando há mais de um — lidas
+  **só quando a ficha abre**: `GET /api/kanban-ov?ov=OV017525`
+  (`linhasDaOv` em `api/shared/kanban-ov.js`, `SalesOrderLines` sem
+  `$select`, só `msb`, cache de 15 s). O quadro, que relê a cada 30 s,
+  continua pedindo só o valor das linhas.
+- **Dados do pedido** com nome de gente (criado por, atendente, conta, OC,
+  site, depósito, modo de entrega, condição de pagamento, endereço de
+  entrega…), tirados dos campos crus de todas as entidades.
+- Recolhidos: **Campos do Dynamics** (status lidos + todos os campos de cada
+  entidade, com filtro — o material para triar os status) e **Como a etapa é
+  decidida**. A releitura de 30 s repinta a ficha aberta sem fechar o que está
+  aberto nem pular o scroll; OV que mudou de etapa relê as linhas.
+- Testes: `node scripts/test-kanban-ov.js` (linhas de uma OV e `?ov=`
+  inválido). `sw.js` — cache `bm-comest-v30`.
+
 ### Faturamento do Dia · tipo de operação pela OV (09/11/2026)
 
 Pedido do dono: "nessa entidade não tem tipo de operação? caso não tiver, puxe
@@ -721,7 +758,7 @@ valor — a regra das operações saiu em 07/11):
   vai em `operacaoFonte` e o resumo em `operacaoOv` (diagnóstico).
 - Se nem as entidades de OV tiverem a coluna, a tela avisa e pede a sonda
   ("Procurar no Dynamics").
-- `sw.js` — cache `bm-comest-v30`.
+- `sw.js` — cache `bm-comest-v31` (o v30 ficou com a ficha da OV do Kanban, de outra sessão no mesmo dia).
 
 ### Faturamento do Dia · o dado cru de cada nota (09/11/2026)
 
@@ -733,7 +770,8 @@ MSB — os registros do diário de faturas (o que a lista usa: TotalInvoiceAmoun
 & cia.), as linhas da fatura (`SalesInvoiceLines`, com a soma do LineAmount) e o
 documento fiscal —, com "Copiar". `GET /api/faturamento-hoje?nota=…` (só do
 dono), `detalheNota()` em `api/shared/faturamento-dia.js`. `sw.js` — cache
-`bm-comest-v31`.
+`bm-comest-v32` (junção com a ficha da OV do Kanban, que entrou no master por
+outra sessão).
 
 ## Como colocar no ar
 
