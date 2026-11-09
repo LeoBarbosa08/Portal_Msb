@@ -1042,6 +1042,25 @@ em cotação". Por enquanto **só leitura, sem regra** — a Cotação segue
   trabalho sem carga, só leitura, entidade fora do OData, sem LoadId nem
   procura). `sw.js` — cache `bm-comest-v46`.
 
+
+### Faturamento do Dia liberado para o Comercial (09/11/2026)
+
+Pedido do dono: "libera o faturamento diário para todo mundo". A página
+`pages/comercial-faturamento-hoje.html` passa a abrir para quem tem a **área
+Comercial**, como as outras abas do Sales Report:
+
+- a aba "Faturamento do Dia" voltou nas 6 páginas do Sales Report, o item
+  voltou no `NAV.comercial` e a página entrou na busca da home
+  (`portal-catalogo.js`, `MSB_VISIVEIS`);
+- `/api/faturamento-hoje` exige `requireArea('comercial')` (era só as contas
+  do dono); o painel da nota (`?nota=`) e o Excel valem para todos;
+- continuam **só do dono**: a sonda "Procurar no Dynamics" (`?sondar=1` com
+  `exigirDono`; o quadro só aparece para ele) e o selo do faturamento no
+  banner do Comercial — o gate deles é o id `comercial-faturamento-dono` no
+  `SO_DONO` do `nav-sidebar.js` (não é página).
+- `nav-sidebar.js?v=87` em todas as páginas, `portal-catalogo.js?v=24`;
+  `sw.js` — cache `bm-comest-v47`.
+
 ### Kanban liberado para todo mundo (09/11/2026)
 
 Pedido do dono: "libera o kanban para todo mundo". Em `api/shared/auth.js`, a
@@ -1052,7 +1071,7 @@ Administrativo…), quem não tem grupo mapeado e o acesso full. Com isso o
 cartão "Kanban" da home, a busca, o menu e o `/api/kanban-ov` valem para
 todos. Compras segue só do dono. Conferido simulando o Graph (grupo do
 Comercial, grupo de outra área, sem grupo, admin: todos veem o Kanban).
-`sw.js` — cache `bm-comest-v47`.
+`sw.js` — cache `bm-comest-v48` (a v47 foi da outra sessão, no master).
 
 ## Como colocar no ar
 

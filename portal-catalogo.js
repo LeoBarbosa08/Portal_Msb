@@ -110,6 +110,8 @@ window.PORTAL_CATALOGO = (function () {
     ['comercial', 'CRM',                       '',             'comercial-cot-funil.html',              'filter','crm funil de oportunidade oportunidades venda recorrente cotacoes cotacao portal de compras bionexo proposta funil de conversao cotada virou pedido perdida pipeline'],
     ['comercial', 'Analítico das Oportunidades','CRM',         'comercial-cot-analitico.html',          'sub',   'analitico oportunidades cotacoes itens ganhos perdidos em andamento familia sku produto por que perdi motivo da perda preco do concorrente resultado do item venda recorrente'],
     ['comercial', 'Gestão de Oportunidades',   'CRM',          'comercial-cot-casos.html',              'sub',   'gestao de oportunidades oportunidades gestao cotacoes casos lista proposta ordem de venda ov pi venda recorrente'],
+    // 09/11/26: Faturamento do Dia liberado para a área Comercial
+    ['comercial', 'Faturamento do Dia',        'Sales Report', 'comercial-faturamento-hoje.html',       'sub',   'faturamento dia hoje diario notas fiscais nf ao vivo dynamics d365 vendas devolucoes liquido'],
     ['comercial', 'Quadro de Oportunidades',   'CRM',          'comercial-cot-casos.html#quadro',       'sub',   'quadro kanban oportunidades cotacoes fases arrastar cotada em andamento virou pedido'],
     ['comercial', 'Histórico do Cliente',      'CRM',          'comercial-cot-casos.html#historico',    'sub',   'historico cliente codigo oportunidades cotacoes precos cotados ganhas perdidas amostras'],
     ['comercial', 'Nova oportunidade',         'CRM',          'comercial-cot-nova.html',               'sub',   'nova oportunidade agente de oportunidades agente de cotacoes registrar cotacao pdf portal de compras bionexo leitura ia proposta caso'],
@@ -306,7 +308,7 @@ window.PORTAL_CATALOGO = (function () {
   var MSB_VISIVEIS = [
     'comercial-sales-report.html', 'comercial-performance-vendas.html', 'comercial-vendas.html',
     'comercial-clientes.html', 'comercial-base-notas-fiscais.html',
-    'comercial-comportamento-clientes.html', 'comercial-tabela-precos.html',
+    'comercial-comportamento-clientes.html', 'comercial-tabela-precos.html', 'comercial-faturamento-hoje.html',
     // 04/11/26: o CRM, só com a Venda Recorrente (o mesmo do NAV.comercial)
     'comercial-cot-funil.html', 'comercial-cot-analitico.html',
     'comercial-cot-casos.html', 'comercial-cot-casos.html#quadro', 'comercial-cot-casos.html#historico',

@@ -289,7 +289,7 @@
             <!-- 09/11/26 — SONDA: qual entidade do D365 traz o TIPO DE OPERAÇÃO das notas
                  de 2026 (o diário não tem; a FiscalDocuments parou na MSB em 2023).
                  /api/faturamento-hoje?sondar=1 (api/shared/fatdia-sonda.js). -->
-            <div class="fd-tbl-wrap" id="fd-sonda">
+            <div class="fd-tbl-wrap" id="fd-sonda" style="display:none;">
               <div class="fd-tbl-head">
                 <h4>Tipo de operação no Dynamics <span style="font-weight:500;color:var(--text-3);font-size:11px;">· procura a entidade que traz a operação das notas de 2026</span></h4>
                 <button type="button" class="fd-btn" id="fd-sonda-btn" style="margin-left:auto;">Procurar no Dynamics</button>
@@ -324,7 +324,7 @@
   </footer>
 
   <script src="../script.js?v=8"></script>
-  <script src="../nav-sidebar.js?v=86"></script>
+  <script src="../nav-sidebar.js?v=87"></script>
   <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
   <script>
   (function () {
@@ -622,8 +622,9 @@
     var foi = false;
     function iniciar() {
       if (foi) return; foi = true;
-      // quem não é o dono nem chega a chamar a API (o servidor recusaria com 403)
-      if (window.bmRestritoPorEmail && window.bmRestritoPorEmail('comercial-faturamento-hoje')) return;
+      // 09/11/26: a página é da área Comercial; a SONDA ("Procurar no Dynamics")
+      // segue só do dono (gate 'comercial-faturamento-dono' do nav-sidebar.js)
+      if (window.bmRestritoPorEmail && !window.bmRestritoPorEmail('comercial-faturamento-dono')) $('fd-sonda').style.display = '';
       carregar(false);
     }
     if (window._portalUser && window._portalUser.email) iniciar();

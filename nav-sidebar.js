@@ -152,11 +152,16 @@ if (!window._bmPerfilSheetLoaded && !window._bmPerfilSheetInjected) {
     //   saiu das abas do Sales Report e do menu — a página fica só pelo
     //   endereço direto (pages/comercial-faturamento-hoje.html), e o gate
     //   continua. Para mostrar de novo: recolocar a aba e o item no NAV.comercial.
-    'comercial-faturamento-hoje',
+    //   09/11/26 (pedido do dono: "libera o faturamento diário para todo
+    //   mundo"): a PÁGINA saiu deste gate — abre para quem tem a área
+    //   Comercial, com a aba de volta no Sales Report e no menu. Continuam só
+    //   do dono o selo do banner do Comercial e a sonda "Procurar no
+    //   Dynamics": é o id de mentira abaixo (não é página; só o gate).
+    'comercial-faturamento-dono',
   ].forEach(function (id) { RESTRICTED[id] = 1; });
   // módulo restrito com lista própria de contas (o resto usa só o ALLOWED)
   var DONO_PI = ['leonardo.barbosa@biomedical.com.br', 'ia@biomedical.com.br'];
-  var SO_DONO = { 'pedido-inteligente': DONO_PI, 'comercial-faturamento-hoje': DONO_PI };
+  var SO_DONO = { 'pedido-inteligente': DONO_PI, 'comercial-faturamento-dono': DONO_PI };
 
   function fileOf(href){ return String(href||'').split('/').pop().split('#')[0].split('?')[0].replace(/\.html$/i,'').toLowerCase(); }
   function email(){ return ((window._portalUser && window._portalUser.email) || '').trim().toLowerCase(); }
@@ -896,6 +901,8 @@ if (!window._bmPerfilSheetLoaded && !window._bmPerfilSheetInjected) {
           {id:'comercial-clientes',        label:'Análise de Pedidos',href:'comercial-clientes.html'},
           {id:'comercial-base-notas-fiscais', label:'Base de Notas Fiscais', href:'comercial-base-notas-fiscais.html'},
           {id:'comercial-comportamento-clientes', label:'Comportamento de Clientes', href:'comercial-comportamento-clientes.html'},
+          // 09/11/26: liberado para quem tem a área Comercial
+          {id:'comercial-faturamento-hoje', label:'Faturamento do Dia', href:'comercial-faturamento-hoje.html'},
         ]},
         // RECORTE MSB (20/10/26): no portal da MSB o Comercial mostra SÓ o
         // Sales Report e a Tabela de Preços. Saíram do menu (e, por tabela,
