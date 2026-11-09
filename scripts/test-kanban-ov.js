@@ -33,8 +33,8 @@ global.fetch = async (url) => {
   if (!E) return corpo({ error: { message: 'not found' } }, 404);
   if (q.top === '1') return corpo({ value: E.linhas.slice(0, 1) });
   // filtro por número de OV (complemento / linhas)
-  const nums = (q.filter.match(/(SalesOrderNumber|SalesId|SALESID) eq '([^']+)'/g) || []).map(s => s.split("'")[1]);
-  if (nums.length) return corpo({ value: E.linhas.filter(r => nums.indexOf(r.SalesOrderNumber || r.SalesId || r.SALESID) >= 0) });
+  const nums = (q.filter.match(/(SalesOrderNumber|SalesId|SALESID|OrderNum) eq '([^']+)'/g) || []).map(s => s.split("'")[1]);
+  if (nums.length) return corpo({ value: E.linhas.filter(r => nums.indexOf(r.SalesOrderNumber || r.SalesId || r.SALESID || r.OrderNum) >= 0) });
   // filtro por data de criação: devolve o que cai no intervalo pedido
   const m = /ge (\S+) and \S+ lt (\S+)/.exec(q.filter);
   if (m) return corpo({ value: E.linhas.filter(r => r.OrderCreationDateTime >= m[1] && r.OrderCreationDateTime < m[2]) });
@@ -127,7 +127,7 @@ const bio = (n, st, lib) => ({ dataAreaId: 'msb', SalesOrderNumber: n, StatusPed
   t('entregue = Faturado', et.OV017516 === 'faturado', et);
   t('cancelada fora do quadro', et.OV017515 === 'cancelada' && r.canceladas === 1, et);
   t('6 colunas na ordem do fluxo', r.etapas.map(e => e.id).join(',') === 'criada,credito,liberado,conferencia,cotacao,faturado', r.etapas);
-  t('Conferência e Cotação: vazias, à espera dos campos', ['conferencia', 'cotacao'].every(id => { const e = r.etapas.find(x => x.id === id); return e.pendente === true && e.qtd === 0; }) && !r.etapas.find(e => e.id === 'liberado').pendente, r.etapas);
+  t('Cotação vazia, à espera dos campos; Conferência já tem regra', r.etapas.find(e => e.id === 'cotacao').pendente === true && r.etapas.find(e => e.id === 'cotacao').qtd === 0 && !r.etapas.find(e => e.id === 'conferencia').pendente && !r.etapas.find(e => e.id === 'liberado').pendente, r.etapas);
   t('nomes das 6 colunas', r.etapas.map(e => e.nome).join('|') === 'Criada|Gerenciamento de Crédito|Separação|Conferência|Cotação|Faturado', r.etapas.map(e => e.nome));
   t('contagem e valor por coluna', r.etapas.find(e => e.id === 'faturado').qtd === 2 && r.etapas.find(e => e.id === 'faturado').valor === 1000 && r.etapas.find(e => e.id === 'credito').valor === 50, r.etapas);
   t('regra vem com os campos e a origem', r.ovs.find(o => o.numero === 'OV017517').regra.salesStatusCol === 'BIOSalesOrderHeaderV1.SalesStatus', r.ovs.find(o => o.numero === 'OV017517').regra);
@@ -152,7 +152,7 @@ const bio = (n, st, lib) => ({ dataAreaId: 'msb', SalesOrderNumber: n, StatusPed
   t('etapas e valor sem as de outro depósito', r.etapas.find(e => e.id === 'criada').qtd === 2 && r.etapas.find(e => e.id === 'criada').valor === 100 && r.etapas.find(e => e.id === 'faturado').qtd === 0, r.etapas);
   const stv = r.statusCols.find(x => x.chave === 'SalesOrderHeadersV2.SalesOrderStatus');
   t('contagem de status sem as de outro depósito', stv && stv.valores.Backorder === 2 && !stv.valores.Invoiced, stv && stv.valores);
-  t('sem aviso de depósito', !r.avisos.some(a => /depósito/.test(a)), r.avisos);
+  t('sem aviso de depósito', !r.avisos.some(a => /trouxe o depósito/.test(a)), r.avisos);
   K._limparCache();
   CEN.SalesOrderHeadersV2.linhas = CEN.SalesOrderHeadersV2.linhas.map(x => Object.assign({}, x, { DefaultShippingWarehouseId: '' }));
   r = await K.ordensDoDia({ data: DIA });
@@ -209,6 +209,66 @@ const bio = (n, st, lib) => ({ dataAreaId: 'msb', SalesOrderNumber: n, StatusPed
   r = await K.ordensDoDia({ data: DIA });
   t('aviso diz que falta a coluna ACTIVE', r.avisos.some(a => /BioCredManTableV1: sem a coluna ACTIVE/.test(a)), r.avisos);
   delete CEN.BioCredManTableV1;
+
+  console.log('4f) Separação e Conferência pelo trabalho de depósito (WorkStatus)');
+  K._limparCache(); chamadas.length = 0;
+  SERVICO = ['BIOSalesOrderHeaderV1', 'SalesOrderHeadersV2', 'SalesOrderLines', 'WHSWorkTableBiEntities'];
+  const w = (ov, id, st, extra) => Object.assign({ dataAreaId: 'msb', OrderNum: ov, WorkId: id, WorkStatus: st, WorkTransType: 'Sales', LockedUser: 'joao',
+    WorkInProcessUTCDateTime: '2026-11-06T14:00:00Z', WorkClosedUTCDateTime: st === 'Closed' ? '2026-11-06T15:00:00Z' : '1900-01-01T00:00:00Z', WaveId: 'WAV1', LoadId: 'LD1' }, extra || {});
+  const ovsW = ['OV017550', 'OV017551', 'OV017552', 'OV017553', 'OV017554', 'OV017555', 'OV017556', 'OV017557', 'OV017558'];
+  CEN = {
+    SalesOrderHeadersV2: { linhas: ovsW.map((n, i) => v2(n, DIA + 'T1' + i + ':00:00Z', 'Backorder')) },
+    BIOSalesOrderHeaderV1: { linhas: [
+      b4('OV017550', 'Backorder', 'Released', 'No'),        // trabalho em processo -> Separação
+      b4('OV017551', 'Backorder', 'Released', 'No'),        // trabalho fechado -> Conferência
+      b4('OV017552', 'Backorder', 'Released', 'No'),        // fechado + cancelado -> Conferência (cancelado não conta)
+      b4('OV017553', 'Backorder', 'Released', 'No'),        // fechado + aberto -> Separação (parcial)
+      b4('OV017554', 'Backorder', 'Open', 'No'),            // não liberada, sem trabalho -> Criada
+      b4('OV017555', 'Invoiced', 'Released', 'No'),         // faturada -> Faturado (mesmo com trabalho fechado)
+      b4('OV017556', 'Backorder', 'Released', 'Yes'),       // crédito marcado -> Crédito (antes do trabalho)
+      b4('OV017557', 'Backorder', 'Released', 'No'),        // liberada, sem trabalho ainda -> Separação
+      b4('OV017558', 'Backorder', 'PartialReleased', 'No')  // parcialmente liberada, trabalho aberto -> Separação
+    ] },
+    SalesOrderLines: { linhas: [] },
+    WHSWorkTableBiEntities: { linhas: [
+      w('OV017550', 'W1', 'InProcess'), w('OV017551', 'W2', 'Closed'), w('OV017552', 'W3', 'Closed'), w('OV017552', 'W4', 'Cancelled'),
+      w('OV017553', 'W5', 'Closed'), w('OV017553', 'W6', 'Open'), w('OV017555', 'W7', 'Closed'), w('OV017556', 'W8', 'Closed'), w('OV017558', 'W9', 'Open')
+    ] }
+  };
+  r = await K.ordensDoDia({ data: DIA });
+  const ew = {}; r.ovs.forEach(o => { ew[o.numero] = o.etapa; });
+  t('em processo -> Separação', ew.OV017550 === 'liberado', ew);
+  t('fechado -> Conferência', ew.OV017551 === 'conferencia', ew);
+  t('cancelado não conta: fechado + cancelado -> Conferência', ew.OV017552 === 'conferencia', ew);
+  t('parcial (fechado + aberto) -> Separação', ew.OV017553 === 'liberado', ew);
+  t('não liberada, sem trabalho -> Criada', ew.OV017554 === 'criada', ew);
+  t('faturada vale antes do trabalho', ew.OV017555 === 'faturado', ew);
+  t('crédito vale antes do trabalho', ew.OV017556 === 'credito', ew);
+  t('liberada sem trabalho -> Separação', ew.OV017557 === 'liberado', ew);
+  t('parcialmente liberada com trabalho aberto -> Separação', ew.OV017558 === 'liberado', ew);
+  const o53 = r.ovs.find(o => o.numero === 'OV017553'), o52 = r.ovs.find(o => o.numero === 'OV017552');
+  t('regra traz a fase e a contagem', o53.regra.trabalho.fase === 'processo' && o53.regra.trabalho.total === 2 && o53.regra.trabalho.fechados === 1 && o53.regra.trabalho.abertos === 1 && o53.regra.trabalho.coluna === 'WHSWorkTableBiEntities.WorkStatus', o53.regra.trabalho);
+  t('cancelado contado à parte', o52.regra.trabalho.total === 1 && o52.regra.trabalho.ignorados === 1 && o52.regra.trabalho.fase === 'fechado', o52.regra.trabalho);
+  const tw = r.ovs.find(o => o.numero === 'OV017551').trabalhos[0];
+  t('lista de trabalhos da OV: id, status, quem, início/fim, onda, carga', tw.id === 'W2' && tw.status === 'Closed' && tw.usuario === 'joao' && tw.inicio === '2026-11-06T14:00:00Z' && tw.fim === '2026-11-06T15:00:00Z' && tw.onda === 'WAV1' && tw.carga === 'LD1', tw);
+  t('data vazia (1900) do trabalho = sem data', r.ovs.find(o => o.numero === 'OV017550').trabalhos[0].fim === null, r.ovs.find(o => o.numero === 'OV017550').trabalhos[0]);
+  t('o trabalho entra nos campos da OV', r.ovs.find(o => o.numero === 'OV017550').campos.WHSWorkTableBiEntities.WorkId === 'W1', Object.keys(r.ovs.find(o => o.numero === 'OV017550').campos));
+  t('sem trabalho: fase nula, total 0', r.ovs.find(o => o.numero === 'OV017557').regra.trabalho.fase === null && r.ovs.find(o => o.numero === 'OV017557').trabalhos.length === 0);
+  t('a entidade entra nas fontes', r.fontes.some(f => f.entidade === 'WHSWorkTableBiEntities' && f.papel === 'trabalho'), r.fontes);
+  const lw = chamadas.find(c => c.ent === 'WHSWorkTableBiEntities' && /OrderNum eq/.test(c.q.filter));
+  t('lê pelo OrderNum, só a MSB', lw && /dataAreaId eq 'msb'/.test(lw.q.filter), lw && lw.q.filter);
+  t('sem aviso de trabalho', !r.avisos.some(a => /trabalho de depósito/.test(a)), r.avisos);
+  t('Conferência conta', r.etapas.find(e => e.id === 'conferencia').qtd === 2, r.etapas);
+
+  console.log('4g) entidade de trabalho fora do OData: Separação pelo ReleaseStatus, com aviso');
+  K._limparCache();
+  SERVICO = ['BIOSalesOrderHeaderV1', 'SalesOrderHeadersV2', 'SalesOrderLines'];
+  delete CEN.WHSWorkTableBiEntities;
+  r = await K.ordensDoDia({ data: DIA });
+  const eg = {}; r.ovs.forEach(o => { eg[o.numero] = o.etapa; });
+  t('sem a entidade: liberada -> Separação; ninguém em Conferência', eg.OV017551 === 'liberado' && eg.OV017558 === 'criada' && !r.ovs.some(o => o.etapa === 'conferencia'), eg);
+  t('aviso diz que a entidade não respondeu', r.avisos.some(a => /WHSWorkTableBiEntity\) não respondeu/.test(a) && /worktable/.test(a)), r.avisos);
+  t('regra.trabalho nulo', r.ovs.every(o => o.regra.trabalho === null && o.trabalhos.length === 0));
 
   console.log('5) linhas de uma OV (a ficha do painel)');
   K._limparCache(); chamadas.length = 0;

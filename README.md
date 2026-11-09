@@ -944,6 +944,38 @@ passou a mostrar também as colunas de status (`servemStatus`). Envs:
 `FATDIA_ENT_STATUS`, `FATDIA_COL_STATUS`, `FATDIA_COL_STATUS_DIARIO`.
 `sw.js` — cache `bm-comest-v40` (o v39 ficou com o Kanban de 6 colunas, de outra sessão).
 
+### Kanban · Separação e Conferência pelo trabalho de depósito (09/11/2026)
+
+Pedido do dono: "Separação será o status do ReleaseStatus e a fase é em
+processo; quando sair desse status para fechado ele vai para Conferência" — a
+fase é a do **trabalho de depósito** da OV (`WHSWorkTableBiEntity`, o
+cabeçalho do trabalho: `WorkStatus` Aberto / Em processo / Fechado / Cancelado).
+
+- **Regra** (`etapaDe()` em `api/shared/kanban-ov.js`), por OV, sem os
+  trabalhos cancelados/combinados, ligados pelo nº do pedido (`OrderNum`):
+  todos **fechados** → **Conferência**; algum aberto ou **em processo** →
+  **Separação** (vale também para a parcialmente liberada); sem trabalho →
+  segue o `ReleaseStatus` (Released → Separação). Ordem: Faturado → Crédito →
+  Conferência → Separação → Criada. Cotação continua à espera dos campos.
+- **A entidade no OData**: descoberta como a de crédito — a descoberta virou
+  uma só (`entidadeExtra`, com `CFG_CREDITO` e `CFG_TRABALHO`): candidatas
+  (`WHSWorkTableBiEntities`, `WHSWorkTableBiEntity`, `WarehouseWorkHeaders`…) +
+  o que o service document publicar com "worktable"/"warehousework". Colunas
+  pelo nome, sem caixa (`OrderNum`, `WorkStatus`, `WorkId`, `LockedUser`,
+  `WorkInProcessUTCDateTime`, `WorkClosedUTCDateTime`, `WaveId`, `LoadId`,
+  `ShipmentId`…). Envs: `KANBAN_ENT_TRABALHO`, `KANBAN_COL_TRABALHO_OV`,
+  `KANBAN_COL_TRABALHO_STATUS`. Sem a entidade no OData: aviso na tela, a
+  Conferência fica vazia e a Separação segue só o `ReleaseStatus`.
+- **Ficha da OV**: quadro "Trabalho no depósito" na regra (Em processo /
+  Fechado / Aberto · não iniciado / Sem trabalho, com a contagem), seção
+  **Trabalho no depósito** com cada trabalho (nº, status, quem, início, fim,
+  duração, onda, carga, remessa) e a linha do tempo dizendo quem está
+  separando e quando fechou. O trabalho entra em "Campos do Dynamics" (o
+  material para analisar os campos da entidade). Na Lista, a coluna "Trabalho".
+- Testes: `node scripts/test-kanban-ov.js` (em processo, fechado, cancelado
+  não conta, parcial, sem trabalho, faturada/crédito antes, entidade fora do
+  OData). `sw.js` — cache `bm-comest-v41`.
+
 ## Como colocar no ar
 
 1. **Repositório no GitHub** — crie um repositório **privado e vazio** (sem
