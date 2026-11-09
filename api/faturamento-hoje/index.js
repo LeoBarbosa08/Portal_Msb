@@ -9,6 +9,8 @@
 //   GET /api/faturamento-hoje?data=2026-11-05 -> outro dia
 //   GET /api/faturamento-hoje?atualizar=1     -> ignora o cache de 1 min
 //   GET /api/faturamento-hoje?diag=1          -> + colunas das entidades
+//   GET /api/faturamento-hoje?sondar=1        -> SONDA: qual entidade do D365
+//        traz o tipo de operação das notas de 2026 (api/shared/fatdia-sonda.js)
 //   -> { ok, configured, empresa, data, fonte, notas:[...], resumo,
 //        conferencia, avisos, diagnostico }
 //   -> { configured:false }   (sem credenciais D365)
@@ -22,6 +24,7 @@
 const auth = require('../shared/auth');
 const http = require('../shared/http');
 const FD   = require('../shared/faturamento-dia');
+const SONDA = require('../shared/fatdia-sonda');
 
 const DONOS = ['leonardo.barbosa@biomedical.com.br', 'ia@biomedical.com.br'];
 async function exigirDono(req) {
@@ -41,6 +44,7 @@ module.exports = async function (context, req) {
     await exigirDono(req);
     if (!FD.CONFIGURED) { json(200, { ok: true, configured: false }); return; }
     const q = req.query || {};
+    if (q.sondar === '1') { json(200, await SONDA.sondar()); return; }
     const data = String(q.data || '').trim();
     if (data && !/^\d{4}-\d{2}-\d{2}$/.test(data)) throw http.badRequest('Data inválida: use AAAA-MM-DD.');
     const r = await FD.notasDoDia({ data, atualizar: q.atualizar === '1', diag: q.diag === '1' });

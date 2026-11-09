@@ -681,6 +681,28 @@ operações de faturamento", "regra estrita", "por tipo de operação") ficam
 como histórico — nada daquilo está mais no código. `sw.js` — cache
 `bm-comest-v28`.
 
+### Tipo de operação de cada nota (09/11/2026)
+
+Pedido do dono: "traga as notas fiscais e o tipo de operação de cada uma". Daqui
+não se alcança o Dynamics, e no próprio D365 a operação das notas de 2026 não
+tem fonte conhecida (o diário não tem; a FiscalDocuments parou na MSB em
+2023). Duas frentes:
+
+- **Base de Notas Fiscais** (`pages/comercial-base-notas-fiscais.html`, Power
+  BI): coluna **Operação** (`'Operações'[Operação]`) ao lado da Classificação, e
+  filtro "Operação" na barra. Vale o que o modelo tiver (a nota de hoje só
+  depois da atualização).
+- **Sonda no D365** (`api/shared/fatdia-sonda.js`, `GET
+  /api/faturamento-hoje?sondar=1`, só do dono): testa as entidades de
+  nota/fatura conhecidas e as que o service document publicar com
+  invoice/fiscal/cfop/nfe/operation no nome; em cada uma, as colunas com cara de
+  operação e a linha mais recente da MSB. "Serve" = coluna de operação
+  preenchida numa nota de 2026. Na página do Faturamento do Dia, quadro "Tipo
+  de operação no Dynamics": "Procurar no Dynamics" e "Copiar resultado" (o dono
+  manda o resultado e a entidade que servir é ligada ao Faturamento do Dia).
+  Testes: `node scripts/test-fatdia-sonda.js`.
+- `sw.js` — cache `bm-comest-v29`.
+
 ## Como colocar no ar
 
 1. **Repositório no GitHub** — crie um repositório **privado e vazio** (sem

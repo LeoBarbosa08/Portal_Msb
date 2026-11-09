@@ -404,6 +404,9 @@
     { k:'convenio', h:'Convênio do paciente',          kind:'dim', t:'txt', cands:[['Faturamentos','Convênio do paciente'],['Faturamentos','Convenio do paciente']] },
     { k:'medico',   h:'Médico',                        kind:'dim', t:'txt', cands:[['Médicos','Médico'],['Medicos','Medico']] },
     { k:'classif',  h:'Classificação',                 kind:'dim', t:'txt', cands:[['Operações','Classificação'],['Operacoes','Classificacao']] },
+    // 09/11/26 (pedido do dono): o TIPO DE OPERAÇÃO de cada nota — a mesma
+    // 'Operações'[Operação] do campo da Análise de Vendas
+    { k:'operacao', h:'Operação',                      kind:'dim', t:'txt', cands:[['Operações','Operação'],['Operacoes','Operacao']] },
     { k:'tipocli',  h:'Tipo de cliente',               kind:'dim', t:'txt', cands:[['Clientes','Tipo de cliente (Revisado)'],['Clientes','Tipo de cliente']] },
     { k:'codcli',   h:'Cód. Cliente',                  kind:'dim', t:'id',  cands:[['Clientes','Cód. Cliente'],['Clientes','Cod. Cliente'],['Clientes','Código do cliente']] },
     { k:'cliente',  h:'Cliente',                       kind:'dim', t:'txt', cands:[['Clientes','Cliente']] },
@@ -438,7 +441,9 @@
     // slicer reaproveitar a grafia que o catalogo do modelo resolveu la.
     { id:'codproduto', label:'Cód. Produto',       col:"'Produtos'[Cód. produto]", colK:'codprod' },
     { id:'cliente',    label:'Cliente',            col:"'Clientes'[Cliente]" },
-    { id:'codcliente', label:'Cód. Cliente',       col:"'Clientes'[Cód. Cliente]", colK:'codcli' }
+    { id:'codcliente', label:'Cód. Cliente',       col:"'Clientes'[Cód. Cliente]", colK:'codcli' },
+    // 09/11/26: filtro pelo tipo de operação (a grafia vem da coluna "Operação")
+    { id:'operacao',   label:'Operação',           col:"'Operações'[Operação]", colK:'operacao' }
   ];
   window._avFiltro = { mes:(new Date().getMonth()+1), ano:2026, sem:null, tri:null };   // padrão = mês atual
   // coluna efetiva do slicer: a que o catalogo confirmou, quando houver

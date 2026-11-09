@@ -265,6 +265,18 @@
               <summary>Diagnóstico da leitura no Dynamics</summary>
               <pre id="fd-diag-txt"></pre>
             </details>
+
+            <!-- 09/11/26 — SONDA: qual entidade do D365 traz o TIPO DE OPERAÇÃO das notas
+                 de 2026 (o diário não tem; a FiscalDocuments parou na MSB em 2023).
+                 /api/faturamento-hoje?sondar=1 (api/shared/fatdia-sonda.js). -->
+            <div class="fd-tbl-wrap" id="fd-sonda">
+              <div class="fd-tbl-head">
+                <h4>Tipo de operação no Dynamics <span style="font-weight:500;color:var(--text-3);font-size:11px;">· procura a entidade que traz a operação das notas de 2026</span></h4>
+                <button type="button" class="fd-btn" id="fd-sonda-btn" style="margin-left:auto;">Procurar no Dynamics</button>
+                <button type="button" class="fd-btn" id="fd-sonda-copiar" style="display:none;">Copiar resultado</button>
+              </div>
+              <div id="fd-sonda-res" style="padding:12px 14px;font-size:12.5px;color:var(--text-3);">Clique em "Procurar no Dynamics" (leva até ~40 s) e depois em "Copiar resultado" para mandar no chat.</div>
+            </div>
           </div><!-- /fd-wrap -->
 
         </div><!-- /area-main -->
@@ -430,6 +442,42 @@
         Array.prototype.forEach.call(document.querySelectorAll('.fd-seg button'), function (x) { x.classList.toggle('on', x === b); });
         render();
       });
+    });
+
+    // ── SONDA do tipo de operação (09/11/26) ──
+    var _sonda = null;
+    $('fd-sonda-btn').addEventListener('click', async function () {
+      var btn = this; btn.disabled = true; btn.textContent = 'Procurando…';
+      $('fd-sonda-res').innerHTML = 'Testando as entidades de nota/fatura do Dynamics… (até ~40 s)';
+      try {
+        var res = await fetch('/api/faturamento-hoje?sondar=1', { cache: 'no-store' });
+        var j = null; try { j = await res.json(); } catch (e) {}
+        if (!res.ok || !j || j.ok === false) throw new Error((j && (j.detalhe || j.error)) || ('HTTP ' + res.status));
+        _sonda = j;
+        var ents = j.entidades || [];
+        var linhas = ents.filter(function (x) { return x.ok; }).map(function (x) {
+          var rec = x.maisRecente || {};
+          var ops = (x.colunasOperacao || []).map(function (c) { return esc(c) + (rec[c] != null && String(rec[c]) !== '' ? ' = <b>' + esc(rec[c]) + '</b>' : ''); }).join('<br>');
+          return '<tr><td class="nf">' + esc(x.entidade) + (x.serve ? ' <span class="fd-tag venda">serve</span>' : '') + '</td>'
+            + '<td>' + (ops || '<span class="sub">nenhuma</span>') + '</td>'
+            + '<td>' + esc(x.ultimaData ? fDia(x.ultimaData) : '—') + (x.dataCol ? '<div class="sub">' + esc(x.dataCol) + '</div>' : '') + '</td>'
+            + '<td class="num">' + (x.colunas || '') + '</td></tr>';
+        }).join('');
+        var falhas = ents.filter(function (x) { return !x.ok; }).map(function (x) { return esc(x.entidade); }).join(', ');
+        $('fd-sonda-res').innerHTML = '<div style="margin-bottom:8px;">' + esc(j.servicoDocumento || '') + ' · <b>' + ((j.servem || []).length ? 'servem: ' + esc(j.servem.join(', ')) : 'nenhuma entidade com operação preenchida em 2026') + '</b></div>'
+          + '<div class="fd-scroll" style="max-height:420px;"><table class="fd-tbl"><thead><tr><th>Entidade</th><th>Colunas de operação (valor na nota mais recente)</th><th>Nota mais recente</th><th class="num">Colunas</th></tr></thead><tbody>' + (linhas || '<tr><td colspan="4" class="fd-vazio">nenhuma respondeu</td></tr>') + '</tbody></table></div>'
+          + (falhas ? '<div class="sub" style="margin-top:8px;">Não responderam (não existem ou sem permissão): ' + falhas + '</div>' : '');
+        $('fd-sonda-copiar').style.display = '';
+      } catch (e) {
+        $('fd-sonda-res').innerHTML = '<span style="color:var(--danger);">Não deu para consultar o Dynamics: ' + esc(e.message) + '</span>';
+      } finally { btn.disabled = false; btn.textContent = 'Procurar de novo'; }
+    });
+    $('fd-sonda-copiar').addEventListener('click', async function () {
+      if (!_sonda) return;
+      var t = JSON.stringify(_sonda, null, 1), b = this;
+      try { await navigator.clipboard.writeText(t); b.textContent = 'Copiado ✓'; }
+      catch (e) { var ta = document.createElement('textarea'); ta.value = t; document.body.appendChild(ta); ta.select(); try { document.execCommand('copy'); b.textContent = 'Copiado ✓'; } catch (e2) { b.textContent = 'Não copiou'; } ta.remove(); }
+      setTimeout(function () { b.textContent = 'Copiar resultado'; }, 2500);
     });
 
     // abre já buscando: assim que o login (auth.js) estiver pronto
