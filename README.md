@@ -1073,6 +1073,35 @@ todos. Compras segue só do dono. Conferido simulando o Graph (grupo do
 Comercial, grupo de outra área, sem grupo, admin: todos veem o Kanban).
 `sw.js` — cache `bm-comest-v48` (a v47 foi da outra sessão, no master).
 
+### Kanban · a nota fiscal da OV e a coluna Rejeitada (09/11/2026)
+
+Pedidos do dono: "crie depois de FATURADA um card escrito REJEITADA, caso a NF
+seja rejeitada, ou cancelada/descartada" e "preciso saber qual a nota fiscal".
+
+- **As notas da OV**: do **diário de faturas** (`SalesInvoiceHeadersV2`, pelo
+  `SalesOrderNumber` — o mesmo do Faturamento do Dia; descoberta `CFG_NOTA`,
+  env `KANBAN_ENT_NOTA`), lidas em paralelo com crédito/trabalho/linhas. O
+  **status** de cada nota sai do documento fiscal / NF-e **pelo número**,
+  reaproveitando `api/shared/fatdia-status.js` (a mesma leitura que tira a nota
+  "Descartado" do Faturamento do Dia; status só de documento com data perto da
+  nota).
+- **Coluna Rejeitada** (logo depois de Faturado): vale a nota **mais recente**
+  da OV com status — rejeitada / cancelada / descartada / denegada →
+  Rejeitada (antes de qualquer outra regra, menos a OV cancelada, que segue fora
+  do quadro). Reemitida e aprovada → volta a valer a regra de sempre (Faturado).
+  Ordem das colunas: Criada → Crédito → Separação → Conferência → Cotação →
+  Faturado → **Rejeitada** → Expedição.
+- **Na tela**: chip **NF 000021470** no cartão (vermelho, com o status, quando
+  rejeitada); coluna NF na Lista; na ficha, seção **Nota fiscal** (número,
+  emissão, valor, status em português + o cru), o quadro "Nota fiscal" na regra
+  e a nota no passo Faturado / "Agora: Rejeitada" da linha do tempo.
+- **Sem o diário no OData**: aviso, sem número e sem Rejeitada. **Sem o status
+  da nota**: aviso; o número aparece, a Rejeitada fica vazia.
+- Quadro com 8 colunas: cabe na tela larga do dono; em 1440 px rola na
+  horizontal. Testes: `node scripts/test-kanban-ov.js` (aprovada, rejeitada,
+  cancelada, descartada com a OV em aberto, reemitida e aprovada, sem status, OV
+  cancelada, sem o status no OData). `sw.js` — cache `bm-comest-v49`.
+
 ## Como colocar no ar
 
 1. **Repositório no GitHub** — crie um repositório **privado e vazio** (sem

@@ -37,6 +37,7 @@
 // ================================================================
 
 const D = require('./d365');
+const ST_NOTA = require('./fatdia-status');   // status da nota (documento fiscal / NF-e), pelo número
 
 const EMPRESA   = String(process.env.KANBAN_EMPRESA || process.env.ESTOQUE_MSB_EMPRESA || 'msb').trim().toLowerCase();
 const TTL_MS    = Number(process.env.KANBAN_TTL_MS || 15000);        // cache do dia: 15 s (a tela consulta a cada 30 s)
@@ -117,6 +118,9 @@ const ETAPAS = [
   // campos a definir pelo dono; por ora a carga só aparece na ficha
   { id: 'cotacao',     nome: 'Cotação',     pendente: true },
   { id: 'faturado',    nome: 'Faturado' },
+  // 09/11/2026 (dono): "crie depois de FATURADA um card escrito REJEITADA,
+  // caso a NF seja rejeitada, ou cancelada/descartada" — ver NOTAS FISCAIS
+  { id: 'rejeitada',   nome: 'Rejeitada' },
   // 09/11/2026 (dono: "insira mais um cartão de Expedição"): depois do
   // Faturado — a mercadoria sai com a nota. VAZIA até o dono mandar os campos.
   { id: 'expedicao',   nome: 'Expedição',   pendente: true }
@@ -197,6 +201,25 @@ const COL_CARGA = {
   deposito:       ['InventLocationId', 'WarehouseId', 'ShippingWarehouseId'],
   modelo:         ['LoadTemplateId']
 };
+// ── NOTAS FISCAIS DA OV: o número e a REJEITADA (09/11/2026) ──────
+// Dono: "crie depois de FATURADA um card escrito REJEITADA, caso a NF seja
+// rejeitada, ou cancelada/descartada" e "preciso saber qual a nota fiscal".
+// As notas da OV saem do DIÁRIO DE FATURAS (SalesInvoiceHeadersV2, pelo
+// SalesOrderNumber — o mesmo do Faturamento do Dia) e o STATUS de cada nota,
+// do documento fiscal / NF-e, PELO NÚMERO (api/shared/fatdia-status.js, a
+// mesma leitura que tira a nota "Descartado" do Faturamento do Dia). Vale a
+// nota MAIS RECENTE da OV com status: rejeitada / cancelada / descartada /
+// denegada -> coluna Rejeitada (antes de qualquer outra regra, menos a OV
+// cancelada); reemitida e aprovada -> volta a valer a regra de sempre.
+const ENT_NOTA = envLista('KANBAN_ENT_NOTA', []).concat(['SalesInvoiceHeadersV2', 'SalesInvoiceHeaders', 'SalesInvoiceHeaderV4Entity'])
+  .filter((v, i, a) => a.indexOf(v) === i);
+const COL_NOTA = {
+  numero: ['SalesOrderNumber', 'SalesId'],
+  nota:   ['InvoiceNumber', 'InvoiceId'],
+  data:   ['InvoiceDate', 'InvoiceDateTime'],
+  valor:  ['TotalInvoiceAmount', 'InvoiceAmount', 'InvoiceTotalAmount']
+};
+const nfRejeitadaV = (v) => /^(rejected|rejeitad|rejection|cancel|discard|descartad|denied|denegad)/.test(normV(v).replace(/ /g, ''));
 // fase de UM trabalho, pelo WorkStatus (nome do enum no OData ou rótulo da tela)
 function faseTrab(v) {
   const n = normV(v);
@@ -219,9 +242,12 @@ const liberadoV = (v) => /^(released|liberado|liberada)$/.test(normV(v));
 const marcadoV = (v) => v === true || /^(yes|sim|true|1|noyes yes)$/.test(normV(v));
 // trabalho = fase do trabalho de depósito da OV ('fechado' | 'processo' |
 // 'aberto' | null = sem trabalho / sem a entidade)
-function etapaDe(sales, release, credito, trabalho) {
+// nota = 'rejeitada' quando a nota mais recente da OV está rejeitada /
+// cancelada / descartada / denegada (vale antes de tudo, menos da OV cancelada)
+function etapaDe(sales, release, credito, trabalho, nota) {
   const sit = situacaoOv(sales);
   if (sit === 'cancelada') return 'cancelada';
+  if (nota === 'rejeitada') return 'rejeitada';
   if (sit === 'outra') return 'faturado';
   if (marcadoV(credito)) return 'credito';
   if (trabalho === 'fechado') return 'conferencia';
@@ -331,6 +357,11 @@ const CFG_CARGA = {
   cols: COL_CARGA, obrig: ['numero'],
   erroCol: (p) => 'sem a coluna ' + COL_CARGA[p].join('/')
 };
+const CFG_NOTA = {
+  chave: 'nota', candidatas: ENT_NOTA, reNome: /salesinvoiceheader/i, pedaco: 'salesinvoiceheader',
+  cols: COL_NOTA, obrig: ['numero', 'nota'],
+  erroCol: (p) => 'sem a coluna ' + COL_NOTA[p].join('/')
+};
 const _extras = {};
 async function sondarExtra(cfg, ent, token, ate) {
   let rows = null, erro = null;
@@ -424,6 +455,24 @@ async function trabalhosDasOvs(numeros, token, ate, diag) {
     o.fase = !validos ? null : o.fechados === validos ? 'fechado' : (o.processo || o.outros || o.fechados) ? 'processo' : 'aberto';
     o.lista.sort((a, b) => String(a.criado || a.id).localeCompare(String(b.criado || b.id)));
   });
+  return { E, por };
+}
+
+// notas fiscais por OV (diário de faturas): OV -> [{ numero, data, valor }]
+async function notasDasOvs(numeros, token, ate, diag) {
+  const x = await entidadeExtra(CFG_NOTA, token, ate, diag), E = x.E;
+  if (!E) return { E: null, por: {}, erro: x.motivo };
+  const rows = await porNumeros(E.entidade, E.numero, numeros, token, ate, diag, 'ov:nota', null, !E.temEmpresa);
+  const por = {};
+  const v = (r, papel) => { const col = E[papel] || achaCol(colunasDe(r), COL_NOTA[papel]); return col ? r[col] : null; };
+  rows.forEach(r => {
+    const k = chaveOv(r[E.numero]), nf = txt(r[E.nota]); if (!k || !nf) return;
+    const l = por[k] || (por[k] = []);
+    if (l.some(n => n.numero === nf)) return;
+    l.push({ numero: nf, data: (dataHora(v(r, 'data')) || '').slice(0, 10) || null, valor: num(v(r, 'valor')) });
+  });
+  // a mais recente primeiro (data; empate: o número)
+  Object.keys(por).forEach(k => por[k].sort((a, b) => String(b.data || '').localeCompare(String(a.data || '')) || String(b.numero).localeCompare(String(a.numero))));
   return { E, por };
 }
 
@@ -557,7 +606,7 @@ async function ordensDoDia(opts) {
 
   // complemento (as outras entidades) e linhas, em paralelo
   const complementos = ents.filter(e => e !== principal);
-  const [compl, porLinha, CRED, TRAB] = await Promise.all([
+  const [compl, porLinha, CRED, TRAB, NOTAS] = await Promise.all([
     Promise.all(complementos.map(async E => {
       if (!numeros.length) return { E, rows: [] };
       try { return { E, rows: await porNumeros(E.entidade, E.numero, numeros, token, ate, diag, 'ov:complemento', null, !E.temEmpresa) }; }
@@ -571,8 +620,25 @@ async function ordensDoDia(opts) {
     // trabalho de depósito (WHSWorkTableBiEntity), pelo nº da OV: Separação/Conferência
     numeros.length
       ? trabalhosDasOvs(numeros, token, ate, diag).catch(e => ({ E: null, por: {}, erro: String(e.message || e).slice(0, 160) }))
+      : Promise.resolve({ E: null, por: {} }),
+    // notas fiscais da OV (diário de faturas): o número na tela e a Rejeitada
+    numeros.length
+      ? notasDasOvs(numeros, token, ate, diag).catch(e => ({ E: null, por: {}, erro: String(e.message || e).slice(0, 160) }))
       : Promise.resolve({ E: null, por: {} })
   ]);
+  // o status de cada nota (documento fiscal / NF-e, pelo número)
+  const nfs = Array.from(new Set([].concat.apply([], Object.keys(NOTAS.por).map(k => NOTAS.por[k].map(n => n.numero)))));
+  let STN = { porNum: {}, fontes: [], vazio: true };
+  if (nfs.length) {
+    try { STN = await ST_NOTA.statusPorNumero(nfs, ate); (STN.diag || []).forEach(d => diag.push(d)); }
+    catch (e) { STN = { porNum: {}, fontes: [], erro: String(e.message || e).slice(0, 160) }; }
+    Object.keys(NOTAS.por).forEach(k => NOTAS.por[k].forEach(n => {
+      const st = ST_NOTA.statusDaNota(STN.porNum[ST_NOTA.numNorm(n.numero)], n.data);
+      n.status = st ? st.status : ''; n.statusFonte = st ? st.entidade + '.' + st.coluna : '';
+      n.rejeitada = !!(st && nfRejeitadaV(st.status)); n.aprovada = !!(st && ST_NOTA.aprovado(st.status));
+    }));
+  }
+  if (NOTAS.E) fontes.push({ entidade: NOTAS.E.entidade, papel: 'notas', colunas: NOTAS.E.numero + ' + ' + NOTAS.E.nota, notas: nfs.length, status: STN.fontes || [] });
   // cargas: só se a entidade de trabalho respondeu e algum trabalho tem LoadId
   const idsCarga = TRAB.E ? Array.from(new Set([].concat.apply([], Object.keys(TRAB.por).map(k => TRAB.por[k].lista.map(w => w.carga))).filter(Boolean))) : [];
   const CARGA = idsCarga.length
@@ -661,7 +727,10 @@ async function ordensDoDia(opts) {
     }
     if (sa) achou.sales++; if (re) achou.release++; if (crFonte) achou.credito++;
     const tb = TRAB.E ? (TRAB.por[k] || null) : null;
-    const etapa = etapaDe(sa && sa.valor, re && re.valor, crAtivo, tb ? tb.fase : null);
+    // notas da OV (a mais recente primeiro); vale a mais recente com status
+    const nts = NOTAS.E ? (NOTAS.por[k] || []) : [];
+    const nVale = nts.find(n => n.status) || null;
+    const etapa = etapaDe(sa && sa.valor, re && re.valor, crAtivo, tb ? tb.fase : null, nVale && nVale.rejeitada ? 'rejeitada' : null);
     const status = {};
     statusCols.forEach(s => { const r = reg[k][s.entidade]; status[s.chave] = r ? (txt(r[s.coluna]) || '(vazio)') : null; });
     const campos = {};
@@ -694,6 +763,9 @@ async function ordensDoDia(opts) {
           abertos: tb ? tb.abertos : 0, ignorados: tb ? tb.ignorados : 0, coluna: TRAB.E.entidade + '.' + TRAB.E.status, colOv: TRAB.E.numero } : null
       },
       trabalhos: tb ? tb.lista : [],
+      // notas fiscais da OV (o número vai para o cartão) e a que decide a Rejeitada
+      notas: nts, nota: nts.length ? { numero: (nVale || nts[0]).numero, status: nVale ? nVale.status : '', rejeitada: !!(nVale && nVale.rejeitada),
+        aprovada: !!(nVale && nVale.aprovada), fonte: nVale ? nVale.statusFonte : '' } : null, notaFonte: NOTAS.E ? NOTAS.E.entidade : null,
       // cargas (WHSOutboundLoadHeaderEntity): só leitura por enquanto — a Cotação vai sair daqui
       cargas: cargasOv, cargaFonte: CARGA.E ? CARGA.E.entidade + (CARGA.E.status ? '.' + CARGA.E.status : '') : null,
       status, campos
@@ -714,6 +786,13 @@ async function ordensDoDia(opts) {
     if (!TRAB.E) {
       avisos.push('A entidade de trabalho de depósito (WHSWorkTableBiEntity) não respondeu no OData' + (TRAB.erro ? ' (' + TRAB.erro + ')' : '') +
         '. Sem ela, a Conferência fica vazia e a Separação segue só o ReleaseStatus. Se a entidade não for pública no OData, é preciso publicá-la (ou fixar o nome em KANBAN_ENT_TRABALHO).');
+    }
+    if (!NOTAS.E) {
+      avisos.push('A entidade de notas fiscais (SalesInvoiceHeadersV2) não respondeu no OData' + (NOTAS.erro ? ' (' + NOTAS.erro + ')' : '') +
+        '. Sem ela, o número da nota não aparece e a coluna Rejeitada fica vazia.');
+    } else if (nfs.length && !(STN.fontes || []).length) {
+      avisos.push('Não achei o status da nota fiscal (documento fiscal / NF-e) no OData' + (STN.erro ? ' (' + STN.erro + ')' : '') +
+        ': o número da nota aparece, mas a coluna Rejeitada fica vazia.');
     }
     if (!CARGA.E && !CARGA.semIds) {
       avisos.push('A entidade de cargas (WHSOutboundLoadHeaderEntity) não respondeu no OData' + (CARGA.erro ? ' (' + CARGA.erro + ')' : '') +
@@ -849,6 +928,6 @@ async function operacoesDasOvs(numeros, ate) {
 }
 
 
-function _limparCache() { _cache.clear(); _cacheLinhas.clear(); _ents = null; _entsTs = 0; _servico = null; _servicoTs = 0; _entLinhas = null; Object.keys(_extras).forEach(k => { delete _extras[k]; }); }
+function _limparCache() { _cache.clear(); _cacheLinhas.clear(); _ents = null; _entsTs = 0; _servico = null; _servicoTs = 0; _entLinhas = null; Object.keys(_extras).forEach(k => { delete _extras[k]; }); ST_NOTA._limparCache(); }
 
 module.exports = { ordensDoDia, linhasDaOv, operacoesDasOvs, hojeSP, EMPRESA, CONFIGURED: D.CONFIGURED, ETAPAS, _limparCache, _interno: { diaDe, RE_STATUS, RE_NAO_STATUS, etapaDe } };

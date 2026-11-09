@@ -99,7 +99,7 @@
 
             /* uma coluna por etapa (6 desde 09/11/26): lado a lado; sem espaço, o
                quadro rola na horizontal em vez de quebrar em duas linhas */
-            .kb-board{display:grid;grid-template-columns:repeat(var(--kb-n,7),minmax(145px,1fr));gap:12px;align-items:start;overflow-x:auto;padding-bottom:4px;}
+            .kb-board{display:grid;grid-template-columns:repeat(var(--kb-n,8),minmax(145px,1fr));gap:12px;align-items:start;overflow-x:auto;padding-bottom:4px;}
             .kb-vazio.pend{font-size:12px;font-style:italic;}
             .kb-col{border-radius:12px;background:var(--kb-bg);border:1px solid var(--kb-bd);display:flex;flex-direction:column;min-height:180px;max-height:70vh;}
             .kb-col-h{padding:10px 12px 8px;display:flex;flex-direction:column;gap:2px;}
@@ -243,6 +243,10 @@
             .kb-trab-st.processo{background:#ECF3F7;color:#286473;}
             .kb-trab-st.aberto{background:#FFF6D6;color:#7A5A06;}
             .kb-trab-st.ignora{background:#F1F4F6;color:var(--dw-mut2);text-decoration:line-through;}
+            .kb-trab-st.rej{background:#FCE8EC;color:#8E2440;}
+            .kb-trab-st.ok{background:#EAF8F0;color:#22794C;}
+            .kb-chip.kb-nf{font-variant-numeric:tabular-nums;}
+            .kb-chip.kb-nf-rej{border-color:#F3C9D2;background:#FCE8EC;color:#8E2440;}
             .kb-rg>div{border:1px solid var(--dw-bd);border-radius:10px;padding:9px 10px;min-width:0;background:#FAFCFD;}
             .kb-rg>div.decide{border-color:#9DC5D2;background:#F0F7FA;box-shadow:inset 3px 0 0 var(--dw-blue);}
             .kb-rg .k{font-size:9px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:var(--dw-mut3);}
@@ -372,8 +376,8 @@
     function tom(i) { var esc_ = document.documentElement.getAttribute('data-tema') === 'escuro'; var t = (esc_ ? TONS_ESC : TONS)[i % TONS.length]; return '--kb-bg:' + t[0] + ';--kb-bd:' + t[1] + ';--kb-ink:' + t[2]; }
     // tom de cada etapa: Criada azul, Crédito amarelo, Separação cinza, Conferência
     // verde-água, Cotação laranja, Faturado lilás
-    var TOM_ETAPA = { criada: 0, credito: 1, liberado: 2, conferencia: 5, cotacao: 4, faturado: 3, expedicao: 6 };
-    var NOME_ETAPA = { criada: 'Criada', credito: 'Gerenciamento de Crédito', liberado: 'Separação', conferencia: 'Conferência', cotacao: 'Cotação', faturado: 'Faturado', expedicao: 'Expedição', cancelada: 'Cancelada' };
+    var TOM_ETAPA = { criada: 0, credito: 1, liberado: 2, conferencia: 5, cotacao: 4, faturado: 3, rejeitada: 7, expedicao: 6 };
+    var NOME_ETAPA = { criada: 'Criada', credito: 'Gerenciamento de Crédito', liberado: 'Separação', conferencia: 'Conferência', cotacao: 'Cotação', faturado: 'Faturado', rejeitada: 'Rejeitada', expedicao: 'Expedição', cancelada: 'Cancelada' };
     // o quadro mostra só o depósito do filtro do servidor (ALMOX-PA, 09/11/26):
     // o chip/selo do depósito só aparece quando ele foge do filtro
     function depFiltro() { return (estado.r && estado.r.depositos) || []; }
@@ -401,6 +405,8 @@
       return '<button type="button" class="kb-card' + (estado.mudou[o.numero] ? ' mudou' : '') + (estado.aberta === o.numero ? ' is-aberta' : '') + '" data-ov="' + esc(o.numero) + '">'
         + '<div class="kb-l1"><span class="kb-ov">' + esc(o.numero) + '</span><span class="kb-cli" title="' + esc(o.cliente) + '">' + esc(o.cliente || o.conta) + '</span></div>'
         + '<div class="kb-l2">' + (novo ? '<span class="kb-chip kb-nova">nova</span>' : '')
+        // a nota fiscal da OV (09/11/26: "preciso saber qual a nota fiscal")
+        + (o.nota ? '<span class="kb-chip kb-nf' + (o.nota.rejeitada ? ' kb-nf-rej' : '') + '" title="Nota fiscal' + (o.nota.status ? ' · ' + esc(rotNF(o.nota.status)) : '') + ((o.notas || []).length > 1 ? ' · ' + o.notas.length + ' notas' : '') + '">NF ' + esc(o.nota.numero) + '</span>' + (o.nota.rejeitada ? '<span class="kb-chip kb-nf-rej">' + esc(rotNF(o.nota.status)) + '</span>' : '') : '')
         + (o.oc ? '<span class="kb-chip" title="OC do cliente">' + esc(o.oc) + '</span>' : '')
         + (depDiferente(o.deposito) ? '<span class="kb-chip">' + esc(o.deposito) + '</span>' : '')
         + '<span>' + esc(fHora(o.criadaEm)) + '</span>'
@@ -415,7 +421,7 @@
       // as 4 colunas fixas, na ordem do fluxo (a etapa vem calculada do servidor);
       // cancelada não entra no quadro
       var etapas = r.etapas || [];
-      $('kb-quadro').innerHTML = '<div class="kb-board" style="--kb-n:' + (etapas.length || 7) + '">' + etapas.map(function (e) {
+      $('kb-quadro').innerHTML = '<div class="kb-board" style="--kb-n:' + (etapas.length || 8) + '">' + etapas.map(function (e) {
         var lista = ovs.filter(function (o) { return o.etapa === e.id; });
         var soma = lista.reduce(function (s, o) { return s + (o.valor || 0); }, 0);
         var temValor = lista.some(function (o) { return o.valor != null; });
@@ -430,10 +436,10 @@
       if (!ovs.length) { $('kb-quadro').innerHTML = '<div class="kb-vazio">' + ((r.ovs || []).length ? 'Nenhuma OV com essa busca.' : 'Nenhuma ordem de venda da MSB' + (depTexto() ? ' do ' + depTexto() : '') + ' criada em ' + fDia(r.data) + '.') + '</div>'; return; }
       var g = function (o, k) { return (o.regra && o.regra[k]) || ''; };
       $('kb-quadro').innerHTML = '<div class="kb-lista"><table class="kb-tbl"><thead><tr><th>OV</th><th>Cliente</th><th>Criada</th><th>OC</th><th>Etapa</th>'
-        + '<th>SalesStatus</th><th>ReleaseStatus</th><th>Crédito</th><th>Trabalho</th><th class="num">Itens</th><th class="num">Valor</th></tr></thead><tbody>'
+        + '<th>SalesStatus</th><th>ReleaseStatus</th><th>Crédito</th><th>Trabalho</th><th>NF</th><th class="num">Itens</th><th class="num">Valor</th></tr></thead><tbody>'
         + ovs.map(function (o) {
           return '<tr tabindex="0" data-ov="' + esc(o.numero) + '"' + (estado.aberta === o.numero ? ' class="is-aberta"' : '') + '><td><b>' + esc(o.numero) + '</b></td><td>' + esc(o.cliente || o.conta) + '</td><td>' + esc(fHora(o.criadaEm)) + '</td><td>' + esc(o.oc) + '</td>'
-            + '<td><b>' + esc(NOME_ETAPA[o.etapa] || o.etapa) + '</b></td><td>' + esc(g(o, 'salesStatus')) + '</td><td>' + esc(g(o, 'releaseStatus')) + '</td><td>' + esc(credInfo(o.regra).veio ? credInfo(o.regra).rotulo : '') + '</td><td>' + esc(trabInfo(o).veio ? trabInfo(o).rotulo : '') + '</td>'
+            + '<td><b>' + esc(NOME_ETAPA[o.etapa] || o.etapa) + '</b></td><td>' + esc(g(o, 'salesStatus')) + '</td><td>' + esc(g(o, 'releaseStatus')) + '</td><td>' + esc(credInfo(o.regra).veio ? credInfo(o.regra).rotulo : '') + '</td><td>' + esc(trabInfo(o).veio ? trabInfo(o).rotulo : '') + '</td><td>' + (o.nota ? esc(o.nota.numero) + (o.nota.status ? ' · ' + esc(rotNF(o.nota.status)) : '') : '') + '</td>'
             + '<td class="num">' + (o.itens == null ? '' : o.itens) + '</td><td class="num">' + esc(o.valor == null ? '—' : fBRL(o.valor)) + '</td></tr>';
         }).join('') + '</tbody></table></div>';
     }
@@ -450,7 +456,7 @@
     var DW = { el: null, ov: null, volta: null };
     var LINHAS = new Map();          // nº da OV -> { st, linhas, em, erro, ts }
     var LINHAS_TTL = 60000;
-    var ORDEM_ETAPA = { criada: 0, credito: 1, liberado: 2, conferencia: 3, cotacao: 4, faturado: 5, expedicao: 6, cancelada: -1 };
+    var ORDEM_ETAPA = { criada: 0, credito: 1, liberado: 2, conferencia: 3, cotacao: 4, faturado: 5, rejeitada: 6, expedicao: 7, cancelada: -1 };
     var POS_FAT = ORDEM_ETAPA.faturado;
     var IC_X = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>';
     var IC_ANT = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="15 18 9 12 15 6"/></svg>';
@@ -520,6 +526,10 @@
       var m = Math.round(ms / 60000); return m < 60 ? m + ' min' : Math.floor(m / 60) + ' h' + (m % 60 ? ' ' + (m % 60) + ' min' : '');
     }
     function rotLinha(v) { var r = rot(v); return r === 'Ordem em aberto' ? 'em aberto' : r.toLowerCase(); }
+    // nota fiscal (09/11/26): o status do documento fiscal / NF-e em português
+    var ROT_NF = { approved: 'Aprovada', authorized: 'Autorizada', rejected: 'Rejeitada', cancelled: 'Cancelada', canceled: 'Cancelada',
+                   discarded: 'Descartada', denied: 'Denegada', pending: 'Pendente', created: 'Criada', sent: 'Enviada', none: 'Sem status' };
+    function rotNF(v) { return v ? (ROT_NF[chaveEnum(v)] || String(v)) : 'Sem status'; }
     // carga (WHSOutboundLoadHeaderEntity, 09/11/26): o LoadStatus em português
     var ROT_CARGA = { open: 'Aberta', posted: 'Lançada', waved: 'Em onda', inprocess: 'Em processo', inpacking: 'Em embalagem',
                       loaded: 'Carregada', shipped: 'Expedida', received: 'Recebida' };
@@ -775,6 +785,7 @@
       }).join('') + '</ol></section>';
 
       h += secRegra(o);
+      h += secNota(o);
       h += secTrabalho(o);
       h += secCarga(o);
       h += secLinhas(o);
@@ -783,6 +794,7 @@
       h += '<details class="kb-dw-card kb-dw-mais" data-k="regra"' + (abertos.regra ? ' open' : '') + '><summary><h5>Como a etapa é decidida</h5></summary>'
         + '<p class="kb-dw-p">A etapa sai de três campos da OV no Dynamics, nesta ordem — vale a primeira regra que bater:</p>'
         + '<ol class="kb-dw-ol" style="margin-top:6px;">'
+        + '<li class="' + (o.etapa === 'rejeitada' ? 'on' : '') + '">Nota fiscal mais recente da OV <b>rejeitada, cancelada, descartada ou denegada</b> (status do documento fiscal / NF-e) → <b>Rejeitada</b>, até sair uma nota aprovada.</li>'
         + '<li class="' + (o.etapa === 'faturado' ? 'on' : '') + '">Situação (<code>SalesStatus</code>) que não é <b>Ordem em aberto</b> → <b>Faturado</b> (cancelada fica fora do quadro).</li>'
         + '<li class="' + (o.etapa === 'credito' ? 'on' : '') + '">Registro <b>ativo</b> na tabela de gerenciamento de crédito (<code>BioCredManTableV1</code>: <code>ACTIVE</code>, pela OV no <code>SALESID</code>) → <b>Gerenciamento de Crédito</b>. Sem a tabela no OData, vale o <code>CredManInCreditControl</code> do cabeçalho.</li>'
         + '<li class="' + (o.etapa === 'conferencia' ? 'on' : '') + '">Todos os trabalhos de depósito da OV (<code>WHSWorkTableBiEntity</code>, pelo <code>OrderNum</code>) <b>Fechados</b> → <b>Conferência</b>. Cancelados não contam.</li>'
@@ -855,12 +867,20 @@
           ds: (cgs.length ? 'Carga ' + cgs.map(function (c) { return '<b>' + esc(c.id) + '</b>' + (c.status ? ' (' + esc(rotCarga(c.status)) + ')' : ''); }).join(', ') + '. ' : '')
             + 'Os status e campos da carga que definem esta fase ainda vão ser informados.' });
       }
-      // faturado
+      // faturado (com a nota fiscal) e, se for o caso, a nota rejeitada
+      var nt = o.nota, ntTxt = nt ? ' Nota fiscal <b>' + esc(nt.numero) + '</b>' + (nt.status ? ' (' + esc(rotNF(nt.status)) + ')' : '') + '.' : '';
+      var ntData = nt && (o.notas || [])[0] && o.notas[0].data ? fDM(o.notas[0].data) : '';
       if (pos === POS_FAT) {
         var sit = rot(rg.salesStatus);
-        p.push({ cls: 'feito fim', tt: 'Agora: ' + (sit === 'Entregue' ? 'Entregue' : 'Faturado'), ds: 'A OV não está mais em aberto: situação <b>' + esc(sit || '—') + '</b> (' + cod(cSit, rg.salesStatus) + ').' });
+        p.push({ cls: 'feito fim', tt: 'Agora: ' + (sit === 'Entregue' ? 'Entregue' : 'Faturado'), dt: ntData,
+          ds: 'A OV não está mais em aberto: situação <b>' + esc(sit || '—') + '</b> (' + cod(cSit, rg.salesStatus) + ').' + ntTxt });
       } else if (pos > POS_FAT) {
-        p.push({ cls: 'feito', tt: 'Faturado', ds: '' });
+        p.push({ cls: 'feito', tt: 'Faturado', dt: ntData, ds: nt ? 'Nota fiscal <b>' + esc(nt.numero) + '</b> emitida.' : '' });
+        if (o.etapa === 'rejeitada') {
+          var colNF = nt && nt.fonte ? colCurta(nt.fonte, 'Status') : 'Status';
+          p.push({ cls: 'agora alerta', tt: 'Agora: Rejeitada',
+            ds: 'A nota fiscal <b>' + esc(nt ? nt.numero : '—') + '</b> está <b>' + esc(rotNF(nt && nt.status)) + '</b> (<code>' + esc(colNF) + ' = ' + esc(nt ? nt.status : '') + '</code>): a OV fica aqui até sair uma nota aprovada.' });
+        }
       } else {
         p.push({ cls: 'depois', tt: 'Faturado', ds: 'Quando a nota fiscal sair, a OV sai do aberto e vem para esta etapa.' });
       }
@@ -879,7 +899,7 @@
     function secRegra(o) {
       var rg = o.regra || {}, et = o.etapa;
       var libRel = /^(released|liberado|liberada)$/.test(chaveEnum(rg.releaseStatus));
-      var decide = et === 'faturado' || et === 'cancelada' ? 'sit' : et === 'credito' ? 'cred' : et === 'conferencia' ? 'trab' : et === 'liberado' ? (libRel ? 'lib' : 'trab') : '';
+      var decide = et === 'rejeitada' ? 'nota' : et === 'faturado' || et === 'cancelada' ? 'sit' : et === 'credito' ? 'cred' : et === 'conferencia' ? 'trab' : et === 'liberado' ? (libRel ? 'lib' : 'trab') : '';
       var ti = trabInfo(o);
       var tile = function (id, k, cru, col, padrao, fmt) {
         var veio = cru != null && cru !== '';
@@ -896,7 +916,8 @@
           : ti.fase === 'aberto' ? 'Liberada para o depósito, com o trabalho de separação criado e ainda não iniciado: fica em <b>Separação</b>.'
           : 'Ordem em aberto, sem crédito ativo e liberada para o depósito (<code>ReleaseStatus = Released</code>): fica em <b>Separação</b>.' + (ti.veio ? ' Ainda sem trabalho de depósito.' : ''),
         conferencia: 'Todos os trabalhos de separação da OV estão <b>fechados</b>: fica em <b>Conferência</b> até a nota fiscal sair.',
-        faturado: 'A situação não é mais “Ordem em aberto”: fica em <b>Faturado</b> — a situação vale antes do crédito e da liberação.',
+        faturado: 'A situação não é mais “Ordem em aberto”: fica em <b>Faturado</b> — a situação vale antes do crédito e da liberação.' + (o.nota ? ' Nota fiscal <b>' + esc(o.nota.numero) + '</b>' + (o.nota.status ? ' (' + esc(rotNF(o.nota.status)) + ')' : '') + '.' : ''),
+        rejeitada: 'A nota fiscal mais recente da OV (<b>' + esc(o.nota ? o.nota.numero : '—') + '</b>) está <b>' + esc(rotNF(o.nota && o.nota.status)) + '</b>: fica em <b>Rejeitada</b> até sair uma nota aprovada — vale antes das outras regras.',
         cancelada: 'Situação <b>Cancelada</b>: a OV fica fora do quadro (só aparece na lista).'
       }[et] || '';
       return '<section class="kb-dw-card"><h5>Por que está em ' + esc(et === 'cancelada' ? 'Cancelada' : (NOME_ETAPA[et] || et)) + '</h5><div class="kb-rg">'
@@ -910,7 +931,28 @@
         +   '<div class="v' + (ti.veio ? '' : ' z') + '">' + esc(ti.rotulo) + '</div>'
         +   '<code>' + esc(ti.cod) + '</code>'
         +   (decide === 'trab' ? '<span class="dc">decidiu a etapa</span>' : '') + '</div>'
+        + '<div class="' + (decide === 'nota' ? 'decide' : '') + '"><div class="k">Nota fiscal</div>'
+        +   '<div class="v' + (o.nota || o.notaFonte ? '' : ' z') + '">' + esc(o.nota ? rotNF(o.nota.status) : o.notaFonte ? 'Sem nota' : 'não veio') + '</div>'
+        +   '<code>' + esc(o.nota ? 'NF ' + o.nota.numero + (o.nota.status ? ' · ' + colCurta(o.nota.fonte, 'Status') + ' = ' + o.nota.status : '') : o.notaFonte ? 'nenhuma nota da OV' : 'SalesInvoiceHeadersV2') + '</code>'
+        +   (decide === 'nota' ? '<span class="dc">decidiu a etapa</span>' : '') + '</div>'
         + '</div>' + (porque ? '<p class="kb-rg-p">' + porque + '</p>' : '') + '</section>';
+    }
+
+    // notas fiscais da OV (diário de faturas + status do documento fiscal / NF-e)
+    function secNota(o) {
+      var ns = o.notas || [], tt = 'Nota fiscal';
+      if (!ns.length) {
+        if (ORDEM_ETAPA[o.etapa] < POS_FAT) return '';            // antes do faturamento: nada a mostrar
+        return '<section class="kb-dw-card"><h5>' + tt + '</h5><div class="kb-dw-nada">'
+          + (o.notaFonte ? 'O diário de faturas não trouxe nota para esta OV.' : 'A entidade de notas fiscais (SalesInvoiceHeadersV2) não respondeu no OData.') + '</div></section>';
+      }
+      return '<section class="kb-dw-card"><h5>' + tt + (ns.length > 1 ? 's <small>' + esc(fQtd(ns.length)) + '</small>' : '') + '</h5><div class="kb-its">' + ns.map(function (n, i) {
+        var meta = [n.data ? 'emitida ' + fDia(n.data) : '', n.statusFonte ? 'status em ' + String(n.statusFonte).split('.')[0] : 'sem status no documento fiscal'].filter(Boolean).join(' · ');
+        return '<div class="kb-it"><div class="n">' + (i + 1) + '</div><div class="c"><div class="t">NF ' + esc(n.numero) + (i === 0 && ns.length > 1 ? ' <span class="kb-dw-nada" style="font-size:10.5px;">· a mais recente</span>' : '') + '</div>'
+          + (meta ? '<div class="s">' + esc(meta) + '</div>' : '') + '</div>'
+          + '<div class="v">' + (n.valor != null ? '<b>' + esc(fBRL(n.valor)) + '</b>' : '')
+          + '<span class="kb-trab-st' + (n.rejeitada ? ' rej' : n.aprovada ? ' ok' : '') + '">' + esc(rotNF(n.status)) + '</span>' + (n.status ? '<span>' + esc(n.status) + '</span>' : '') + '</div></div>';
+      }).join('') + '</div></section>';
     }
 
     // trabalho no depósito: cada trabalho da OV (WHSWorkTableBiEntity), com

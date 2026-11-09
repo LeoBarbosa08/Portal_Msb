@@ -33,8 +33,8 @@ global.fetch = async (url) => {
   if (!E) return corpo({ error: { message: 'not found' } }, 404);
   if (q.top === '1') return corpo({ value: E.linhas.slice(0, 1) });
   // filtro por número de OV (complemento / linhas)
-  const nums = (q.filter.match(/(SalesOrderNumber|SalesId|SALESID|OrderNum|LoadId) eq '([^']+)'/g) || []).map(s => s.split("'")[1]);
-  if (nums.length) return corpo({ value: E.linhas.filter(r => nums.indexOf(r.SalesOrderNumber || r.SalesId || r.SALESID || r.OrderNum || r.LoadId) >= 0) });
+  const pares = (q.filter.match(/(\w+) eq '([^']+)'/g) || []).map(x => /(\w+) eq '([^']+)'/.exec(x)).map(m => [m[1], m[2]]).filter(p => p[0] !== 'dataAreaId');
+  if (pares.length) return corpo({ value: E.linhas.filter(r => pares.some(p => String(r[p[0]]) === p[1])) });
   // filtro por data de criação: devolve o que cai no intervalo pedido
   const m = /ge (\S+) and \S+ lt (\S+)/.exec(q.filter);
   if (m) return corpo({ value: E.linhas.filter(r => r.OrderCreationDateTime >= m[1] && r.OrderCreationDateTime < m[2]) });
@@ -126,10 +126,11 @@ const bio = (n, st, lib) => ({ dataAreaId: 'msb', SalesOrderNumber: n, StatusPed
   t('faturada + liberada = Faturado (OV017517)', et.OV017517 === 'faturado', et);
   t('entregue = Faturado', et.OV017516 === 'faturado', et);
   t('cancelada fora do quadro', et.OV017515 === 'cancelada' && r.canceladas === 1, et);
-  t('7 colunas na ordem do fluxo', r.etapas.map(e => e.id).join(',') === 'criada,credito,liberado,conferencia,cotacao,faturado,expedicao', r.etapas);
-  t('Expedição depois do Faturado, vazia e à espera dos campos', r.etapas[6].id === 'expedicao' && r.etapas[6].pendente === true && r.etapas[6].qtd === 0, r.etapas[6]);
+  t('8 colunas na ordem do fluxo', r.etapas.map(e => e.id).join(',') === 'criada,credito,liberado,conferencia,cotacao,faturado,rejeitada,expedicao', r.etapas);
+  t('Rejeitada logo depois do Faturado, com regra (não pendente)', r.etapas[6].id === 'rejeitada' && !r.etapas[6].pendente, r.etapas[6]);
+  t('Expedição no fim, vazia e à espera dos campos', r.etapas[7].id === 'expedicao' && r.etapas[7].pendente === true && r.etapas[7].qtd === 0, r.etapas[7]);
   t('Cotação vazia, à espera dos campos; Conferência já tem regra', r.etapas.find(e => e.id === 'cotacao').pendente === true && r.etapas.find(e => e.id === 'cotacao').qtd === 0 && !r.etapas.find(e => e.id === 'conferencia').pendente && !r.etapas.find(e => e.id === 'liberado').pendente, r.etapas);
-  t('nomes das 7 colunas', r.etapas.map(e => e.nome).join('|') === 'Criada|Gerenciamento de Crédito|Separação|Conferência|Cotação|Faturado|Expedição', r.etapas.map(e => e.nome));
+  t('nomes das 8 colunas', r.etapas.map(e => e.nome).join('|') === 'Criada|Gerenciamento de Crédito|Separação|Conferência|Cotação|Faturado|Rejeitada|Expedição', r.etapas.map(e => e.nome));
   t('contagem e valor por coluna', r.etapas.find(e => e.id === 'faturado').qtd === 2 && r.etapas.find(e => e.id === 'faturado').valor === 1000 && r.etapas.find(e => e.id === 'credito').valor === 50, r.etapas);
   t('regra vem com os campos e a origem', r.ovs.find(o => o.numero === 'OV017517').regra.salesStatusCol === 'BIOSalesOrderHeaderV1.SalesStatus', r.ovs.find(o => o.numero === 'OV017517').regra);
   t('sem aviso de campo faltando', !r.avisos.some(a => /Não achei/.test(a)), r.avisos);
@@ -312,6 +313,61 @@ const bio = (n, st, lib) => ({ dataAreaId: 'msb', SalesOrderNumber: n, StatusPed
   CEN.WHSWorkTableBiEntities.linhas = CEN.WHSWorkTableBiEntities.linhas.map(x => Object.assign({}, x, { LoadId: '' }));
   r = await K.ordensDoDia({ data: DIA });
   t('sem LoadId nos trabalhos: nem procura a entidade, nem avisa', !r.avisos.some(a => /cargas/.test(a)) && !r.diagnostico.some(d => /^carga:/.test(d.etapa)), r.avisos);
+
+  console.log('4j) notas fiscais da OV e a coluna Rejeitada (NF rejeitada / cancelada / descartada)');
+  K._limparCache(); chamadas.length = 0;
+  SERVICO = ['BIOSalesOrderHeaderV1', 'SalesOrderHeadersV2', 'SalesOrderLines', 'SalesInvoiceHeadersV2', 'FiscalDocuments'];
+  const ovsN = ['OV017570', 'OV017571', 'OV017572', 'OV017573', 'OV017574', 'OV017575', 'OV017576'];
+  const nf = (ov, n, data) => ({ dataAreaId: 'msb', SalesOrderNumber: ov, InvoiceNumber: n, InvoiceDate: data + 'T12:00:00Z', TotalInvoiceAmount: 100 });
+  const fd = (n, st, data) => ({ dataAreaId: 'msb', FiscalDocumentNumber: n, Status: st, FiscalDocumentDate: data + 'T12:00:00Z' });
+  CEN = {
+    SalesOrderHeadersV2: { linhas: ovsN.map((n, i) => v2(n, DIA + 'T1' + i + ':00:00Z', 'Backorder')) },
+    BIOSalesOrderHeaderV1: { linhas: [
+      b4('OV017570', 'Invoiced', 'Released', 'No'),   // NF aprovada -> Faturado (com o número)
+      b4('OV017571', 'Invoiced', 'Released', 'No'),   // NF rejeitada -> Rejeitada
+      b4('OV017572', 'Invoiced', 'Released', 'No'),   // NF cancelada -> Rejeitada
+      b4('OV017573', 'Backorder', 'Released', 'No'),  // NF descartada (a OV voltou a "em aberto") -> Rejeitada
+      b4('OV017574', 'Invoiced', 'Released', 'No'),   // 1ª rejeitada, reemitida e aprovada -> Faturado
+      b4('OV017575', 'Invoiced', 'Released', 'No'),   // nota sem status no documento fiscal -> Faturado
+      b4('OV017576', 'Canceled', 'Open', 'No')        // OV cancelada: fica cancelada (fora do quadro)
+    ] },
+    SalesOrderLines: { linhas: [] },
+    SalesInvoiceHeadersV2: { linhas: [
+      nf('OV017570', '000021470', DIA), nf('OV017571', '000021471', DIA), nf('OV017572', '000021472', DIA), nf('OV017573', '000021473', DIA),
+      nf('OV017574', '000021474', DIA), nf('OV017574', '000021480', DIA.slice(0, 8) + '07'), nf('OV017575', '000021475', DIA), nf('OV017576', '000021476', DIA)
+    ] },
+    FiscalDocuments: { linhas: [
+      fd('000021470', 'Approved', DIA), fd('000021471', 'Rejected', DIA), fd('000021472', 'Cancelled', DIA), fd('000021473', 'Discarded', DIA),
+      fd('000021474', 'Rejected', DIA), fd('000021480', 'Approved', DIA.slice(0, 8) + '07'), fd('000021476', 'Cancelled', DIA)
+    ] }
+  };
+  r = await K.ordensDoDia({ data: DIA });
+  const en = {}; r.ovs.forEach(o => { en[o.numero] = o.etapa; });
+  t('NF aprovada -> Faturado', en.OV017570 === 'faturado', en);
+  t('NF rejeitada -> Rejeitada', en.OV017571 === 'rejeitada', en);
+  t('NF cancelada -> Rejeitada', en.OV017572 === 'rejeitada', en);
+  t('NF descartada -> Rejeitada (mesmo com a OV em aberto)', en.OV017573 === 'rejeitada', en);
+  t('reemitida e aprovada (a mais recente vale) -> Faturado', en.OV017574 === 'faturado', en);
+  t('nota sem status -> Faturado', en.OV017575 === 'faturado', en);
+  t('OV cancelada continua fora do quadro', en.OV017576 === 'cancelada', en);
+  const n70 = r.ovs.find(o => o.numero === 'OV017570'), n71 = r.ovs.find(o => o.numero === 'OV017571'), n74 = r.ovs.find(o => o.numero === 'OV017574');
+  t('o número da nota vai para a OV', n70.nota && n70.nota.numero === '000021470' && n70.nota.aprovada === true && n70.nota.status === 'Approved', n70.nota);
+  t('a nota rejeitada diz o status e a fonte', n71.nota.rejeitada === true && n71.nota.status === 'Rejected' && n71.nota.fonte === 'FiscalDocuments.Status', n71.nota);
+  t('duas notas: a mais recente primeiro, e é ela que vale', n74.notas.length === 2 && n74.notas[0].numero === '000021480' && n74.nota.numero === '000021480' && n74.notas[1].rejeitada === true, n74.notas);
+  t('a nota sem status também mostra o número', r.ovs.find(o => o.numero === 'OV017575').nota.numero === '000021475');
+  t('Rejeitada conta na coluna', r.etapas.find(e => e.id === 'rejeitada').qtd === 3, r.etapas);
+  t('notas e status nas fontes', r.fontes.some(f => f.papel === 'notas' && f.notas === 8 && f.status.indexOf('FiscalDocuments.Status') >= 0), r.fontes);
+  const ln = chamadas.find(c => c.ent === 'SalesInvoiceHeadersV2' && /SalesOrderNumber eq/.test(c.q.filter));
+  t('lê as notas pelo nº da OV, só a MSB', ln && /dataAreaId eq 'msb'/.test(ln.q.filter), ln && ln.q.filter);
+  t('sem aviso de nota', !r.avisos.some(a => /nota fiscal|notas fiscais/.test(a)), r.avisos);
+
+  console.log('4k) sem o status da nota no OData: o número aparece, a Rejeitada fica vazia, com aviso');
+  K._limparCache();
+  SERVICO = ['BIOSalesOrderHeaderV1', 'SalesOrderHeadersV2', 'SalesOrderLines', 'SalesInvoiceHeadersV2'];
+  delete CEN.FiscalDocuments;
+  r = await K.ordensDoDia({ data: DIA });
+  t('ninguém em Rejeitada; o número continua', !r.ovs.some(o => o.etapa === 'rejeitada') && r.ovs.find(o => o.numero === 'OV017571').nota.numero === '000021471', r.ovs.map(o => o.etapa));
+  t('aviso do status da nota', r.avisos.some(a => /Não achei o status da nota fiscal/.test(a)), r.avisos);
 
   console.log('5) linhas de uma OV (a ficha do painel)');
   K._limparCache(); chamadas.length = 0;
