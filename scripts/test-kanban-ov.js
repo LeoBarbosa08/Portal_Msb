@@ -109,11 +109,11 @@ const bio = (n, st, lib) => ({ dataAreaId: 'msb', SalesOrderNumber: n, StatusPed
     BIOSalesOrderHeaderV1: { linhas: [
       b4('OV017518', 'Backorder', 'Open', 'No'),          // ordem em aberto, não liberada -> Criada
       b4('OV017519', 'Backorder', 'Open', 'Yes'),         // crédito marcado -> Gerenciamento de Crédito
-      b4('OV017520', 'Backorder', 'Released', 'No'),      // liberada -> Logística
+      b4('OV017520', 'Backorder', 'Released', 'No'),      // liberada -> Separação
       b4('OV017517', 'Invoiced', 'Released', 'No'),       // faturada E liberada (o print) -> Faturado
       b4('OV017516', 'Delivered', 'Released', 'No'),      // entregue -> Faturado ("o restante")
       b4('OV017515', 'Canceled', 'Open', 'No'),           // cancelada -> fora do quadro
-      b4('OV017514', 'Ordem em aberto', 'Liberado', 'Não') // rótulos em português -> Logística
+      b4('OV017514', 'Ordem em aberto', 'Liberado', 'Não') // rótulos em português -> Separação
     ] },
     SalesOrderLines: { linhas: [{ dataAreaId: 'msb', SalesOrderNumber: 'OV017517', LineAmount: 1000 }, { dataAreaId: 'msb', SalesOrderNumber: 'OV017519', LineAmount: 50 }] }
   };
@@ -121,12 +121,14 @@ const bio = (n, st, lib) => ({ dataAreaId: 'msb', SalesOrderNumber: n, StatusPed
   const et = {}; r.ovs.forEach(o => { et[o.numero] = o.etapa; });
   t('Criada', et.OV017518 === 'criada', et);
   t('Gerenciamento de Crédito', et.OV017519 === 'credito', et);
-  t('Logística (liberada)', et.OV017520 === 'liberado' && et.OV017514 === 'liberado', et);
-  t('a coluna se chama Logística', r.etapas.find(e => e.id === 'liberado').nome === 'Logística', r.etapas);
+  t('Separação (liberada)', et.OV017520 === 'liberado' && et.OV017514 === 'liberado', et);
+  t('a coluna se chama Separação', r.etapas.find(e => e.id === 'liberado').nome === 'Separação', r.etapas);
   t('faturada + liberada = Faturado (OV017517)', et.OV017517 === 'faturado', et);
   t('entregue = Faturado', et.OV017516 === 'faturado', et);
   t('cancelada fora do quadro', et.OV017515 === 'cancelada' && r.canceladas === 1, et);
-  t('4 colunas na ordem do fluxo', r.etapas.map(e => e.id).join(',') === 'criada,credito,liberado,faturado', r.etapas);
+  t('6 colunas na ordem do fluxo', r.etapas.map(e => e.id).join(',') === 'criada,credito,liberado,conferencia,cotacao,faturado', r.etapas);
+  t('Conferência e Cotação: vazias, à espera dos campos', ['conferencia', 'cotacao'].every(id => { const e = r.etapas.find(x => x.id === id); return e.pendente === true && e.qtd === 0; }) && !r.etapas.find(e => e.id === 'liberado').pendente, r.etapas);
+  t('nomes das 6 colunas', r.etapas.map(e => e.nome).join('|') === 'Criada|Gerenciamento de Crédito|Separação|Conferência|Cotação|Faturado', r.etapas.map(e => e.nome));
   t('contagem e valor por coluna', r.etapas.find(e => e.id === 'faturado').qtd === 2 && r.etapas.find(e => e.id === 'faturado').valor === 1000 && r.etapas.find(e => e.id === 'credito').valor === 50, r.etapas);
   t('regra vem com os campos e a origem', r.ovs.find(o => o.numero === 'OV017517').regra.salesStatusCol === 'BIOSalesOrderHeaderV1.SalesStatus', r.ovs.find(o => o.numero === 'OV017517').regra);
   t('sem aviso de campo faltando', !r.avisos.some(a => /Não achei/.test(a)), r.avisos);
@@ -165,8 +167,8 @@ const bio = (n, st, lib) => ({ dataAreaId: 'msb', SalesOrderNumber: n, StatusPed
     SalesOrderHeadersV2: { linhas: ['OV017540', 'OV017541', 'OV017542', 'OV017543', 'OV017544'].map((n, i) => v2(n, DIA + 'T1' + i + ':00:00Z', 'Backorder')) },
     BIOSalesOrderHeaderV1: { linhas: [
       b4('OV017540', 'Backorder', 'Open', 'No'),         // tabela ATIVA -> crédito (o cabeçalho diz No)
-      b4('OV017541', 'Backorder', 'Released', 'Yes'),    // tabela INATIVA -> Logística (o cabeçalho diz Yes: a tabela vale)
-      b4('OV017542', 'Backorder', 'Released', 'No'),     // sem registro na tabela -> Logística
+      b4('OV017541', 'Backorder', 'Released', 'Yes'),    // tabela INATIVA -> Separação (o cabeçalho diz Yes: a tabela vale)
+      b4('OV017542', 'Backorder', 'Released', 'No'),     // sem registro na tabela -> Separação
       b4('OV017543', 'Backorder', 'Open', 'No'),         // 2 registros, um ativo -> crédito
       b4('OV017544', 'Invoiced', 'Released', 'No')       // faturada: a situação vale antes do crédito
     ] },

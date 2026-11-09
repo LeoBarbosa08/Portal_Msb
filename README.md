@@ -884,6 +884,27 @@ operação — e saía o "DoesNotApply" do `FiscalOperationPresenceType`. Agora
 colunas só valem quando ele não vem. A coluna Operação e o Excel mostram o
 código, com "pela OV". `sw.js` — cache `bm-comest-v37`.
 
+### Kanban em 6 colunas: Separação, Conferência e Cotação (09/11/2026)
+
+Pedido do dono: "Criada, Gerenciamento de Crédito, Separação (ReleaseStatus =
+Released), Conferência, Cotação, Faturado; conferência e cotação irei te mandar
+os campos para definição da fase".
+
+- **Separação** é a antiga "Liberado"/"Logística": o id segue `liberado` e a
+  regra é a mesma (`ReleaseStatus` = Liberado/Released).
+- **Conferência** e **Cotação** entram no quadro (`ETAPAS` em
+  `api/shared/kanban-ov.js`, com `pendente: true`) **vazias**, com "aguardando
+  os campos da fase", até o dono mandar os campos — nenhuma OV cai nelas por
+  enquanto. Quando chegarem: regra em `etapaDe()` e tirar o `pendente`.
+- Ordem das regras sem mudança: situação fora de "Ordem em aberto" → Faturado;
+  crédito ativo → Gerenciamento de Crédito; liberada → Separação; senão Criada.
+- Tela: o quadro tem uma coluna por etapa (`--kb-n`), lado a lado — cabe em
+  1440 px; abaixo disso rola na horizontal em vez de quebrar em duas linhas; o
+  nome comprido da coluna quebra a linha em vez de cortar. Na ficha, a linha do
+  tempo tem as 6 etapas (Conferência e Cotação "a definir").
+- Testes: `node scripts/test-kanban-ov.js` (6 colunas na ordem, nomes,
+  Conferência/Cotação vazias e pendentes). `sw.js` — cache `bm-comest-v38`.
+
 ## Como colocar no ar
 
 1. **Repositório no GitHub** — crie um repositório **privado e vazio** (sem
