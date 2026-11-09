@@ -105,7 +105,7 @@
                que tem OV divide o resto — --kb-cols vem do render(); cada coluna é um
                container e o cartão se reorganiza quando ela é estreita (abaixo). Cabe
                nas 9 colunas a partir de ~1.100 px de quadro; só abaixo disso rola. */
-            .kb-board{display:grid;grid-template-columns:var(--kb-cols,repeat(9,minmax(112px,1fr)));gap:8px;align-items:start;overflow-x:auto;padding-bottom:4px;}
+            .kb-board{display:grid;grid-template-columns:var(--kb-cols,repeat(9,minmax(104px,1fr)));gap:8px;align-items:start;overflow-x:auto;padding-bottom:4px;}
             .kb-vazio.pend{font-size:12px;font-style:italic;}
             .kb-curto{display:none;}
             .kb-col{border-radius:12px;background:var(--kb-bg);border:1px solid var(--kb-bd);display:flex;flex-direction:column;min-height:180px;max-height:70vh;min-width:0;container-type:inline-size;}
@@ -333,10 +333,11 @@
             /* coluna VAZIA bem estreita = coluna recolhida: a contagem em cima e o nome
                na vertical (sem quebrar "Co-ta-ção"); o "a definir" fica no title */
             @container (max-width: 110px){
-              .kb-col-h{align-items:center;padding:10px 4px;}
-              .kb-col-t{flex-direction:column-reverse;align-items:center;gap:10px;}
-              .kb-col-t .nome{flex:none;writing-mode:vertical-rl;transform:rotate(180deg);white-space:nowrap;-webkit-hyphens:none;hyphens:none;font-size:12.5px;}
-              .kb-col-v,.kb-col-p,.kb-vazio{display:none;}
+              /* só a coluna VAZIA recolhe; a que tem cartões fica com o nome deitado */
+              .kb-col.vazia .kb-col-h{align-items:center;padding:10px 4px;}
+              .kb-col.vazia .kb-col-t{flex-direction:column-reverse;align-items:center;gap:10px;}
+              .kb-col.vazia .kb-col-t .nome{flex:none;writing-mode:vertical-rl;transform:rotate(180deg);white-space:nowrap;-webkit-hyphens:none;hyphens:none;font-size:12.5px;}
+              .kb-col.vazia .kb-col-v,.kb-col.vazia .kb-col-p,.kb-col.vazia .kb-vazio{display:none;}
             }
             @media(max-width:767.98px){
               .kb-title{font-size:18px;}
@@ -425,17 +426,19 @@
     // cores das colunas (fundo, borda, texto), na ordem das colunas — claro e escuro
     var TONS = [['#E6F0FD', '#C9DCF8', '#1C4E9C'], ['#FFF6D6', '#F3E2A3', '#7A5A06'], ['#ECEEF1', '#D6DADF', '#3D4852'], ['#F1E9FB', '#DCCDF2', '#5B3794'],
                 ['#FDEEE0', '#F5D6B8', '#8A4B12'], ['#DFF6EF', '#BCE8D9', '#126B52'], ['#E3F7E6', '#C2EBC9', '#1B6B2B'], ['#FCE8EC', '#F3C9D2', '#8E2440'],
-                ['#F4EDE3', '#E3D5C0', '#6B4E2A']];   // 9º (Pallet, 09/11/26): madeira
+                ['#F4EDE3', '#E3D5C0', '#6B4E2A'],    // 9º (Pallet, 09/11/26): madeira
+                ['#E9EBFB', '#CDD2F3', '#3B44A0']];   // 10º (Aguardando Faturamento, 09/11/26): anil
     var TONS_ESC = [['#1F3149', '#2E4668', '#A9C8F5'], ['#3A3320', '#5A4E2A', '#F0D98A'], ['#2A3138', '#3C454E', '#C7D0D8'], ['#2F2742', '#46395F', '#CDB8F0'],
                     ['#3D2D1F', '#5C4330', '#F2C08F'], ['#1E3832', '#2D5249', '#8FE0C6'], ['#1F3A25', '#2E5636', '#9BE0A8'], ['#3D2129', '#5A303C', '#F2A9B9'],
-                    ['#362C21', '#504131', '#E6CBA4']];
+                    ['#362C21', '#504131', '#E6CBA4'],
+                    ['#262A47', '#383E66', '#B9C0F5']];
     function tom(i) { var esc_ = document.documentElement.getAttribute('data-tema') === 'escuro'; var t = (esc_ ? TONS_ESC : TONS)[i % TONS.length]; return '--kb-bg:' + t[0] + ';--kb-bd:' + t[1] + ';--kb-ink:' + t[2]; }
     // tom de cada etapa: Criada azul, Crédito amarelo, Separação cinza, Conferência
     // verde-água, Cotação laranja, Faturado lilás
-    var TOM_ETAPA = { criada: 0, credito: 1, liberado: 2, conferencia: 5, cotacao: 4, faturado: 3, rejeitada: 7, pallet: 8, expedicao: 6 };
+    var TOM_ETAPA = { criada: 0, credito: 1, liberado: 2, conferencia: 5, cotacao: 4, aguardando: 9, faturado: 3, rejeitada: 7, pallet: 8, expedicao: 6 };
     // nome curto da coluna quando ela é estreita (o completo fica no title)
-    var NOME_CURTO = { credito: 'Crédito' };
-    var NOME_ETAPA = { criada: 'Criada', credito: 'Gerenciamento de Crédito', liberado: 'Separação', conferencia: 'Conferência', cotacao: 'Cotação', faturado: 'Faturado', rejeitada: 'Rejeitada', pallet: 'Pallet', expedicao: 'Expedição', cancelada: 'Cancelada' };
+    var NOME_CURTO = { credito: 'Crédito', aguardando: 'Ag. Faturamento' };
+    var NOME_ETAPA = { criada: 'Criada', credito: 'Gerenciamento de Crédito', liberado: 'Separação', conferencia: 'Conferência', cotacao: 'Cotação', aguardando: 'Aguardando Faturamento', faturado: 'Faturado', rejeitada: 'Rejeitada', pallet: 'Pallet', expedicao: 'Expedição', cancelada: 'Cancelada' };
     // o quadro mostra só o depósito do filtro do servidor (ALMOX-PA, 09/11/26):
     // o chip/selo do depósito só aparece quando ele foge do filtro
     function depFiltro() { return (estado.r && estado.r.depositos) || []; }
@@ -480,16 +483,16 @@
       // as 4 colunas fixas, na ordem do fluxo (a etapa vem calculada do servidor);
       // cancelada não entra no quadro
       var etapas = r.etapas || [];
-      // largura de cada coluna (09/11/26): com OV, uma fração inteira (mín. 112 px);
+      // largura de cada coluna (09/11/26): com OV, uma fração inteira (mín. 104 px);
       // vazia, meia fração (mín. 64 px) — assim as 9 cabem sem rolar para o lado
       var porEtapa = {};
       etapas.forEach(function (e) { porEtapa[e.id] = ovs.filter(function (o) { return o.etapa === e.id; }); });
-      var cols = etapas.map(function (e) { return porEtapa[e.id].length ? 'minmax(112px,1fr)' : 'minmax(64px,.5fr)'; }).join(' ');
+      var cols = etapas.map(function (e) { return porEtapa[e.id].length ? 'minmax(104px,1fr)' : 'minmax(64px,.5fr)'; }).join(' ');
       $('kb-quadro').innerHTML = '<div class="kb-board" style="--kb-cols:' + cols + '">' + etapas.map(function (e) {
         var lista = porEtapa[e.id];
         var soma = lista.reduce(function (s, o) { return s + (o.valor || 0); }, 0);
         var temValor = lista.some(function (o) { return o.valor != null; });
-        return '<section class="kb-col" style="' + tom(TOM_ETAPA[e.id] || 0) + '"' + (e.pendente && !lista.length ? ' title="' + esc(e.nome) + ': aguardando os campos da fase"' : '') + '><div class="kb-col-h"><div class="kb-col-t"><span class="nome" title="' + esc(e.nome) + '">' + (NOME_CURTO[e.id] ? '<span class="kb-longo">' + esc(e.nome) + '</span><span class="kb-curto">' + esc(NOME_CURTO[e.id]) + '</span>' : esc(e.nome)) + '</span><span class="kb-cnt">' + lista.length + '</span></div>'
+        return '<section class="kb-col' + (lista.length ? '' : ' vazia') + '" style="' + tom(TOM_ETAPA[e.id] || 0) + '"' + (e.pendente && !lista.length ? ' title="' + esc(e.nome) + ': aguardando os campos da fase"' : '') + '><div class="kb-col-h"><div class="kb-col-t"><span class="nome" title="' + esc(e.nome) + '">' + (NOME_CURTO[e.id] ? '<span class="kb-longo">' + esc(e.nome) + '</span><span class="kb-curto">' + esc(NOME_CURTO[e.id]) + '</span>' : esc(e.nome)) + '</span><span class="kb-cnt">' + lista.length + '</span></div>'
           + '<div class="kb-col-v">' + (temValor ? esc(fK(soma)) : '&nbsp;') + '</div>'
           + ((r.datadas || []).indexOf(e.id) >= 0 ? '<div class="kb-col-p" title="Só as do período escolhido (data da nota fiscal)">' + esc(textoPeriodo(r)) + '</div>' : '') + '</div>'
           + '<div class="kb-cards">' + (lista.length ? lista.map(cardHtml).join('') : e.pendente ? '<div class="kb-vazio pend" title="aguardando os campos da fase"><span class="kb-longo">aguardando os campos da fase</span><span class="kb-curto">a definir</span></div>' : '<div class="kb-vazio">—</div>') + '</div></section>';
@@ -521,7 +524,7 @@
     var DW = { el: null, ov: null, volta: null };
     var LINHAS = new Map();          // nº da OV -> { st, linhas, em, erro, ts }
     var LINHAS_TTL = 60000;
-    var ORDEM_ETAPA = { criada: 0, credito: 1, liberado: 2, conferencia: 3, cotacao: 4, faturado: 5, rejeitada: 6, pallet: 7, expedicao: 8, cancelada: -1 };
+    var ORDEM_ETAPA = { criada: 0, credito: 1, liberado: 2, conferencia: 3, cotacao: 4, aguardando: 5, faturado: 6, rejeitada: 7, pallet: 8, expedicao: 9, cancelada: -1 };
     var POS_FAT = ORDEM_ETAPA.faturado;
     var IC_X = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>';
     var IC_ANT = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="15 18 9 12 15 6"/></svg>';
@@ -883,7 +886,7 @@
                  : '<button type="button" class="kb-acao-b" data-kb-dw="pallet">Enviar para o Pallet</button><div class="kb-acao-msg" id="kb-acao-msg"></div>') + '</section>';
       } else if (env) {
         h += '<section class="kb-dw-card kb-acao"><div class="kb-acao-t"><b>Enviada para o Pallet</b>Carga ' + esc(env.carga) + ' enviada às ' + esc(env.hora) + '.</div></section>';
-      } else if ((o.cargas || []).length && ['conferencia', 'cotacao', 'faturado', 'liberado'].indexOf(o.etapa) >= 0) {
+      } else if ((o.cargas || []).length && ['conferencia', 'cotacao', 'aguardando', 'faturado', 'liberado'].indexOf(o.etapa) >= 0) {
         // 09/11/26 ("onde está esse botão?"): com carga, o botão aparece DESATIVADO
         // e diz por que ainda não dá para enviar
         var cgM = (o.cargas || [])[0];
@@ -913,6 +916,7 @@
         + '<li class="' + (o.etapa === 'expedicao' ? 'on' : '') + '">Status da carga = <b>Remetido</b> → <b>Expedição</b>.</li>'
         + '<li class="' + (o.etapa === 'pallet' ? 'on' : '') + '"><code>ENVIARPALLET_CUSTOM</code> = Sim (o botão <b>Enviar para o Pallet</b>, que aparece com a carga Carregado e a cotação realizada) → <b>Pallet</b>.</li>'
         + '<li class="' + (o.etapa === 'faturado' ? 'on' : '') + '">Nota fiscal <b>Aprovada</b> → <b>Faturado</b>.</li>'
+        + '<li class="' + (o.etapa === 'aguardando' ? 'on' : '') + '">Status da carga = <b>Carregado</b> e cotação realizada = <b>Sim</b> (<code>QuotationPerformed_InoveProjects</code>) → <b>Aguardando Faturamento</b>.</li>'
         + '<li class="' + (o.etapa === 'cotacao' ? 'on' : '') + '">Status da carga = <b>Carregado</b> e cotação realizada = Não → <b>Cotação</b>.</li>'
         + '<li class="' + (o.etapa === 'conferencia' ? 'on' : '') + '">Status da carga = <b>Em processamento</b> → <b>Conferência</b>.</li>'
         + '<li class="' + (o.etapa === 'credito' ? 'on' : '') + '">Registro <b>ativo</b> na tabela de gerenciamento de crédito (<code>ACTIVE</code>, pelo <code>SALESID</code>) → <b>Gerenciamento de Crédito</b>.</li>'
@@ -979,11 +983,14 @@
       else if (pos > 3) p.push({ cls: 'feito', tt: 'Conferência', ds: '' });
       else p.push({ cls: 'depois', tt: 'Conferência', ds: 'Quando a carga da OV entrar em processamento (<b>Status da carga = Em processamento</b>), vem para esta etapa.' });
       // cotação: carga "Carregado" e cotação realizada = Não
-      if (pos === 4) p.push({ cls: 'agora', tt: 'Agora: Cotação',
-        ds: cf === 'cotado' ? 'Carga ' + cgT + ' carregada e com a <b>cotação realizada</b>; falta a nota fiscal ser aprovada' + (o.podePallet ? ' — já pode ser enviada para o Pallet.' : '.')
-          : 'Carga ' + cgT + ' <b>carregada</b> e a cotação <b>ainda não realizada</b>.' });
+      if (pos === 4) p.push({ cls: 'agora', tt: 'Agora: Cotação', ds: 'Carga ' + cgT + ' <b>carregada</b> e a cotação <b>ainda não realizada</b>. Quando a cotação for realizada, vai para Aguardando Faturamento.' });
       else if (pos > 4) p.push({ cls: 'feito', tt: 'Cotação', ds: '' });
       else p.push({ cls: 'depois', tt: 'Cotação', ds: 'Quando a carga ficar <b>Carregado</b>, vem para esta etapa até a cotação ser realizada.' });
+      // aguardando faturamento: carga "Carregado" e cotação realizada = Sim (09/11/26)
+      if (pos === 5) p.push({ cls: 'agora', tt: 'Agora: Aguardando Faturamento',
+        ds: 'Carga ' + cgT + ' carregada e com a <b>cotação realizada</b>; falta a nota fiscal ser aprovada' + (o.podePallet ? ' — já pode ser enviada para o Pallet.' : '.') });
+      else if (pos > 5) p.push({ cls: 'feito', tt: 'Aguardando Faturamento', ds: '' });
+      else p.push({ cls: 'depois', tt: 'Aguardando Faturamento', ds: 'Com a carga <b>Carregado</b> e a <b>cotação realizada = Sim</b>, vem para esta etapa até a nota fiscal ser aprovada.' });
       // faturado (com a nota fiscal) e, se for o caso, a nota rejeitada
       var nt = o.nota, ntTxt = nt ? ' Nota fiscal <b>' + esc(nt.numero) + '</b>' + (nt.status ? ' (' + esc(rotNF(nt.status)) + ')' : '') + '.' : '';
       var ntData = nt && (o.notas || [])[0] && o.notas[0].data ? fDM(o.notas[0].data) : '';
@@ -1025,7 +1032,7 @@
       var libRel = /^(released|liberado|liberada)$/.test(chaveEnum(rg.releaseStatus));
       var ti = trabInfo(o);
       var decide = et === 'rejeitada' ? 'nota' : et === 'faturado' ? (o.nota && o.nota.aprovada ? 'nota' : 'sit') : et === 'cancelada' ? 'sit'
-        : (et === 'expedicao' || et === 'pallet' || et === 'cotacao' || et === 'conferencia') ? 'carga'
+        : (et === 'expedicao' || et === 'pallet' || et === 'aguardando' || et === 'cotacao' || et === 'conferencia') ? 'carga'
         : et === 'credito' ? 'cred' : et === 'liberado' ? (ti.fase ? 'trab' : 'lib') : '';
       var cg1 = (o.cargas || [])[0] || null, ccol = o.cargaCols || {};
       var tile = function (id, k, cru, col, padrao, fmt) {
@@ -1044,7 +1051,8 @@
           : ti.fase === 'fechado' ? 'Trabalho de separação <b>fechado</b>, mas a carga ainda não entrou em processamento: fica em <b>Separação</b> até a carga ficar Em processamento.'
           : 'Ordem em aberto, sem crédito ativo e liberada para o depósito (<code>ReleaseStatus = Released</code>): fica em <b>Separação</b>.' + (ti.veio ? ' Ainda sem trabalho de depósito.' : ''),
         conferencia: 'A carga está <b>em processamento</b> (Status da carga = Em processamento): fica em <b>Conferência</b> até ficar Carregado.',
-        cotacao: 'A carga está <b>Carregado</b> e a cotação ' + (o.cargaFase === 'cotado' ? 'já foi realizada, mas a nota fiscal ainda não foi aprovada' : '<b>ainda não foi realizada</b>') + ': fica em <b>Cotação</b>.',
+        cotacao: 'A carga está <b>Carregado</b> e a cotação <b>ainda não foi realizada</b>: fica em <b>Cotação</b>.',
+        aguardando: 'A carga está <b>Carregado</b> e a <b>cotação realizada = Sim</b>: fica em <b>Aguardando Faturamento</b> até a nota fiscal ser aprovada.',
         faturado: o.nota && o.nota.aprovada ? 'A nota fiscal <b>' + esc(o.nota.numero) + '</b> está <b>Aprovada</b>: fica em <b>Faturado</b>.'
           : 'A situação não é mais “Ordem em aberto” e não há status de nota para conferir: fica em <b>Faturado</b>.' + (o.nota ? ' Nota fiscal <b>' + esc(o.nota.numero) + '</b>.' : ''),
         pallet: 'A carga foi enviada para o Pallet (<code>' + esc(ccol.pallet || 'ENVIARPALLET_CUSTOM') + ' = Sim</code>): fica em <b>Pallet</b> até ser remetida.',

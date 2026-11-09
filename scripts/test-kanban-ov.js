@@ -158,12 +158,13 @@ const bio = (n, st, lib) => ({ dataAreaId: 'msb', SalesOrderNumber: n, StatusPed
   t('faturada + liberada = Faturado (OV017517)', et.OV017517 === 'faturado', et);
   t('entregue = Faturado', et.OV017516 === 'faturado', et);
   t('cancelada fora do quadro', et.OV017515 === 'cancelada' && r.canceladas === 1, et);
-  t('9 colunas na ordem do fluxo', r.etapas.map(e => e.id).join(',') === 'criada,credito,liberado,conferencia,cotacao,faturado,rejeitada,pallet,expedicao', r.etapas);
-  t('Pallet logo depois da Rejeitada, com regra', r.etapas[7].id === 'pallet' && !r.etapas[7].pendente, r.etapas[7]);
-  t('Rejeitada logo depois do Faturado, com regra (não pendente)', r.etapas[6].id === 'rejeitada' && !r.etapas[6].pendente, r.etapas[6]);
-  t('Expedição no fim, com regra', r.etapas[8].id === 'expedicao' && !r.etapas[8].pendente, r.etapas[8]);
+  t('10 colunas na ordem do fluxo', r.etapas.map(e => e.id).join(',') === 'criada,credito,liberado,conferencia,cotacao,aguardando,faturado,rejeitada,pallet,expedicao', r.etapas);
+  t('Aguardando Faturamento logo depois da Cotação', r.etapas[5].id === 'aguardando' && r.etapas[5].nome === 'Aguardando Faturamento' && !r.etapas[5].pendente, r.etapas[5]);
+  t('Pallet logo depois da Rejeitada, com regra', r.etapas[8].id === 'pallet' && !r.etapas[8].pendente, r.etapas[8]);
+  t('Rejeitada logo depois do Faturado, com regra (não pendente)', r.etapas[7].id === 'rejeitada' && r.etapas[6].id === 'faturado' && !r.etapas[7].pendente, r.etapas[7]);
+  t('Expedição no fim, com regra', r.etapas[9].id === 'expedicao' && !r.etapas[9].pendente, r.etapas[9]);
   t('nenhuma coluna pendente: todas têm regra', !r.etapas.some(e => e.pendente), r.etapas.filter(e => e.pendente));
-  t('nomes das 9 colunas', r.etapas.map(e => e.nome).join('|') === 'Criada|Gerenciamento de Crédito|Separação|Conferência|Cotação|Faturado|Rejeitada|Pallet|Expedição', r.etapas.map(e => e.nome));
+  t('nomes das 10 colunas', r.etapas.map(e => e.nome).join('|') === 'Criada|Gerenciamento de Crédito|Separação|Conferência|Cotação|Aguardando Faturamento|Faturado|Rejeitada|Pallet|Expedição', r.etapas.map(e => e.nome));
   t('contagem e valor por coluna', r.etapas.find(e => e.id === 'faturado').qtd === 2 && r.etapas.find(e => e.id === 'faturado').valor === 1000 && r.etapas.find(e => e.id === 'credito').valor === 50, r.etapas);
   t('regra vem com os campos e a origem', r.ovs.find(o => o.numero === 'OV017517').regra.salesStatusCol === 'BIOSalesOrderHeaderV1.SalesStatus', r.ovs.find(o => o.numero === 'OV017517').regra);
   t('sem aviso de campo faltando', !r.avisos.some(a => /Não achei/.test(a)), r.avisos);
@@ -479,7 +480,7 @@ const bio = (n, st, lib) => ({ dataAreaId: 'msb', SalesOrderNumber: n, StatusPed
   K._limparCache(); chamadas.length = 0;
   SERVICO = ['BIOSalesOrderHeaderV1', 'SalesOrderHeadersV2', 'SalesOrderLines', 'WHSWorkTableBiEntities', 'WHSOutboundLoadHeaderEntities', 'SalesInvoiceHeadersV2', 'FiscalDocuments'];
   const ovs8 = ['OV019001', 'OV019002', 'OV019003', 'OV019004', 'OV019005', 'OV019006', 'OV019007', 'OV019008', 'OV019009', 'OV019010'];
-  const ld = (id, st, cot, pal) => ({ dataAreaId: 'msb', LoadId: id, LoadStatus: st, COTACAOREALIZADA_CUSTOM: cot, ENVIARPALLET_CUSTOM: pal, CarrierCode: 'TRANSP' });
+  const ld = (id, st, cot, pal) => ({ dataAreaId: 'msb', LoadId: id, LoadStatus: st, QuotationPerformed_InoveProjects: cot, ENVIARPALLET_CUSTOM: pal, CarrierCode: 'TRANSP' });
   CEN = {
     SalesOrderHeadersV2: { linhas: ovs8.map((n, i) => v2(n, DIA + 'T1' + i + ':00:00Z', 'Backorder')) },
     BIOSalesOrderHeaderV1: { linhas: ovs8.map(n => b4(n, 'Backorder', 'Released', 'No')) },
@@ -510,14 +511,14 @@ const bio = (n, st, lib) => ({ dataAreaId: 'msb', SalesOrderNumber: n, StatusPed
   t('Separação = trabalho "Abrir"', e8.OV019001 === 'liberado', e8);
   t('Conferência = carga "Em processamento"', e8.OV019002 === 'conferencia' && o8('OV019002').cargaFase === 'processando', e8);
   t('Cotação = carga "Carregado" + cotação realizada Não', e8.OV019003 === 'cotacao' && o8('OV019003').podePallet === false, e8);
-  t('carregado + cotação Sim, sem nota: segue em Cotação, com o botão do pallet', e8.OV019004 === 'cotacao' && o8('OV019004').podePallet === true, { e: e8.OV019004, pode: o8('OV019004').podePallet });
+  t('Aguardando Faturamento = Carregado + cotação Sim (sem nota aprovada), com o botão do pallet', e8.OV019004 === 'aguardando' && o8('OV019004').podePallet === true, { e: e8.OV019004, pode: o8('OV019004').podePallet });
   t('Faturado = nota Aprovada (com o botão do pallet)', e8.OV019005 === 'faturado' && o8('OV019005').podePallet === true, { e: e8.OV019005, pode: o8('OV019005').podePallet });
   t('Pallet = ENVIARPALLET_CUSTOM Sim (sem o botão)', e8.OV019006 === 'pallet' && o8('OV019006').podePallet === false, e8);
   t('Expedição = carga "Remetido"', e8.OV019007 === 'expedicao', e8);
   t('Rejeitada vale antes da carga', e8.OV019008 === 'rejeitada', e8);
   t('2 cargas: vale a menos adiantada', e8.OV019009 === 'conferencia', e8);
   t('trabalho em processo, carga em onda -> Separação', e8.OV019010 === 'liberado', e8);
-  t('colunas da carga achadas', o8('OV019004').cargaCols.cotacao === 'COTACAOREALIZADA_CUSTOM' && o8('OV019004').cargaCols.pallet === 'ENVIARPALLET_CUSTOM', o8('OV019004').cargaCols);
+  t('colunas da carga achadas: QuotationPerformed_InoveProjects e ENVIARPALLET_CUSTOM', o8('OV019004').cargaCols.cotacao === 'QuotationPerformed_InoveProjects' && o8('OV019004').cargaCols.pallet === 'ENVIARPALLET_CUSTOM', o8('OV019004').cargaCols);
   t('sem aviso das colunas da carga', !r.avisos.some(a => /Cotação realizada/.test(a)), r.avisos);
 
   t('motivo de não poder ir para o Pallet', /cotação realizada está "Não"/.test(o8('OV019003').cargas[0].motivoPallet) && /precisa estar Carregado/.test(o8('OV019002').cargas[0].motivoPallet) && o8('OV019004').cargas[0].motivoPallet === '', [o8('OV019003').cargas[0].motivoPallet, o8('OV019002').cargas[0].motivoPallet]);
@@ -530,7 +531,7 @@ const bio = (n, st, lib) => ({ dataAreaId: 'msb', SalesOrderNumber: n, StatusPed
   CEN.WHSOutboundLoadHeaderEntities = { linhas: semCustom };
   SERVICO = SERVICO.concat(['OutboundLoadHeaders']);
   r = await K.ordensDoDia({ data: DIA });
-  t('escolhe a OutboundLoadHeaders (com COTACAOREALIZADA_CUSTOM e ENVIARPALLET_CUSTOM)', r.fontes.some(f => f.papel === 'carga' && f.entidade === 'OutboundLoadHeaders'), r.fontes.filter(f => f.papel === 'carga'));
+  t('escolhe a OutboundLoadHeaders (com QuotationPerformed_InoveProjects e ENVIARPALLET_CUSTOM)', r.fontes.some(f => f.papel === 'carga' && f.entidade === 'OutboundLoadHeaders'), r.fontes.filter(f => f.papel === 'carga'));
   t('e as regras continuam: Cotação, Pallet, Expedição', r.ovs.find(o => o.numero === 'OV019003').etapa === 'cotacao' && r.ovs.find(o => o.numero === 'OV019006').etapa === 'pallet' && r.ovs.find(o => o.numero === 'OV019007').etapa === 'expedicao');
   CEN.WHSOutboundLoadHeaderEntities = CEN.OutboundLoadHeaders; delete CEN.OutboundLoadHeaders;
   SERVICO = SERVICO.filter(x => x !== 'OutboundLoadHeaders');
@@ -596,7 +597,7 @@ const bio = (n, st, lib) => ({ dataAreaId: 'msb', SalesOrderNumber: n, StatusPed
   await fn(ctx, { method: 'GET', headers: {}, query: { ov: 'OV017525' } });
   t('?ov= devolve as linhas', ctx.res.status === 200 && ctx.res.body.linhas && ctx.res.body.linhas.length === 2, ctx.res.status);
   K._limparCache();
-  CEN = { WHSOutboundLoadHeaderEntities: { linhas: [{ dataAreaId: 'msb', LoadId: 'LD-50', LoadStatus: 'Loaded', COTACAOREALIZADA_CUSTOM: 'Yes', ENVIARPALLET_CUSTOM: 'No' }] } };
+  CEN = { WHSOutboundLoadHeaderEntities: { linhas: [{ dataAreaId: 'msb', LoadId: 'LD-50', LoadStatus: 'Loaded', QuotationPerformed_InoveProjects: 'Yes', ENVIARPALLET_CUSTOM: 'No' }] } };
   SERVICO = ['WHSOutboundLoadHeaderEntities'];
   const logs = []; const ctxL = { log: Object.assign((...a) => logs.push(a.join(' ')), { error() {} }) };
   auth.requireArea = async () => ({ user: { email: 'fulano@biomedical.com.br' }, validated: false });

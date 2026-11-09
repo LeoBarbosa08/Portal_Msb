@@ -1247,6 +1247,30 @@ processamento **segue em Separação**. Na ficha, a linha do tempo e "Por que es
 em…" falam só da carga. Testes ajustados (trabalho fechado sem carga →
 Separação). `sw.js` — cache `bm-comest-v55`.
 
+### Kanban · Aguardando Faturamento + o campo real da cotação (09/11/2026)
+
+Pedidos do dono: "insira depois da Cotação AGUARDANDO FATURAMENTO, onde Carga →
+Status da carga = Carregado AND Cotação realizada = Sim" e "cotação realizada é
+esse campo aqui, QuotationPerformed_InoveProjects".
+
+- **Campo da cotação**: `QuotationPerformed_InoveProjects` passa a ser o 1º nome
+  procurado em `COL_CARGA.cotacao` (o `COTACAOREALIZADA_CUSTOM` fica de reserva) e
+  a busca pelo pedaço do nome aceita "quotation" — antes só "cota", e por isso o
+  campo real não era achado (a cotação ficava sempre "Não" e o botão do Pallet
+  não aparecia).
+- **Coluna Aguardando Faturamento** (id `aguardando`, depois da Cotação; sem o
+  filtro de período, como as outras antes do Faturado): carga **Carregado** e
+  cotação realizada = **Sim** — o que antes ficava em Cotação. Cotação agora é só
+  Carregado + cotação Não. Faturado (nota aprovada) continua valendo antes. O
+  botão "Enviar para o Pallet" aparece nas OVs daqui (e nas faturadas com a
+  mesma condição). Cor nova (a 10ª, anil); nome curto "Ag. Faturamento" na coluna
+  estreita.
+- **Layout**: 10 colunas — coluna com OV de no mínimo 104 px; só a coluna
+  **vazia** recolhe (nome na vertical) — antes uma coluna cheia estreita também
+  recolhia. Com as 10 cheias, cabe sem rolar a partir de ~1.536 px.
+- Testes: 10 colunas na ordem, Aguardando = Carregado + cotação Sim, o campo
+  `QuotationPerformed_InoveProjects` achado. `sw.js` — cache `bm-comest-v56`.
+
 ## Como colocar no ar
 
 1. **Repositório no GitHub** — crie um repositório **privado e vazio** (sem

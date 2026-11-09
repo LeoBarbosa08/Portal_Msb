@@ -120,6 +120,9 @@ const ETAPAS = [
   // Cotação: vai sair das CARGAS (WHSOutboundLoadHeaderEntity) — status e
   // campos a definir pelo dono; por ora a carga só aparece na ficha
   { id: 'cotacao',     nome: 'Cotação' },
+  // 09/11/2026 (dono): "insira depois da Cotação AGUARDANDO FATURAMENTO, onde
+  // Carga -> Status da carga = Carregado AND Cotação realizada = Sim"
+  { id: 'aguardando',  nome: 'Aguardando Faturamento' },
   { id: 'faturado',    nome: 'Faturado' },
   // 09/11/2026 (dono): "crie depois de FATURADA um card escrito REJEITADA,
   // caso a NF seja rejeitada, ou cancelada/descartada" — ver NOTAS FISCAIS
@@ -208,13 +211,16 @@ const COL_CARGA = {
   modelo:         ['LoadTemplateId'],
   // 09/11/2026 (dono): "Cotação realizada" e "ENVIARPALLET_CUSTOM" — campos
   // próprios da carga; nomes trocáveis por env (e procurados pelo pedaço do nome)
-  cotacao:        envLista('KANBAN_COL_CARGA_COTACAO', ['COTACAOREALIZADA_CUSTOM', 'CotacaoRealizada_Custom', 'CotacaoRealizada', 'QuotationDone_Custom']),
+  // 09/11/26 (dono): "cotação realizada é esse campo aqui, QuotationPerformed_InoveProjects"
+  cotacao:        envLista('KANBAN_COL_CARGA_COTACAO', ['QuotationPerformed_InoveProjects', 'COTACAOREALIZADA_CUSTOM', 'CotacaoRealizada_Custom', 'CotacaoRealizada', 'QuotationDone_Custom']),
   pallet:         envLista('KANBAN_COL_CARGA_PALLET', ['ENVIARPALLET_CUSTOM', 'EnviarPallet_Custom', 'EnviarPallet'])
 };
 // ── AS REGRAS DO DONO PELA CARGA E PELA NOTA (09/11/2026) ─────────
 //   Separação   = status do TRABALHO = "Abrir" (Open)
 //   Conferência = status da CARGA = "Em processamento" (InProcess)
 //   Cotação     = CARGA "Carregado" (Loaded) E "Cotação realizada" = Não
+//   Aguardando Faturamento = CARGA "Carregado" E "Cotação realizada" = Sim
+//                 (QuotationPerformed_InoveProjects)
 //   Faturado    = NOTA FISCAL "Aprovada"
 //   Pallet      = botão "Enviar para o Pallet" (carga Carregado E cotação
 //                 realizada = Sim) grava ENVIARPALLET_CUSTOM = Sim no D365
@@ -289,7 +295,8 @@ function etapaDe(sales, release, credito, trabalho, nota, carga) {
   if (nota === 'aprovada') return 'faturado';
   // reserva: a OV saiu do aberto e não há status de nota para conferir
   if (sit === 'outra' && nota !== 'outra') return 'faturado';
-  if (carga === 'cotacao' || carga === 'cotado') return 'cotacao';
+  if (carga === 'cotado') return 'aguardando';     // Carregado + cotação realizada Sim
+  if (carga === 'cotacao') return 'cotacao';       // Carregado + cotação realizada Não
   if (carga === 'processando') return 'conferencia';
   if (marcadoV(credito)) return 'credito';
   // 09/11/26 (dono): Conferência é SÓ a carga "Em processamento" — o trabalho
@@ -399,7 +406,7 @@ const CFG_CARGA = {
   chave: 'carga', candidatas: ENT_CARGA, reNome: /outboundload|loadheader/i, pedaco: 'outboundload',
   cols: COL_CARGA, obrig: ['numero'], prefer: ['cotacao', 'pallet', 'status'],
   // os campos _CUSTOM: se o nome exato não bater, o pedaço do nome
-  reCols: { cotacao: /cota[cç]/i, pallet: /enviar.?pallet|pallet/i },
+  reCols: { cotacao: /quotationperformed|cota[cç]|quotation/i, pallet: /enviar.?pallet|pallet/i },
   erroCol: (p) => 'sem a coluna ' + COL_CARGA[p].join('/')
 };
 const CFG_NOTA = {
