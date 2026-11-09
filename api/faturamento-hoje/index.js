@@ -17,10 +17,11 @@
 //        conferencia, avisos, diagnostico }
 //   -> { configured:false }   (sem credenciais D365)
 //
-// SÓ DO DONO (pedido dele, 06/11/2026: "oculta para todo mundo menos para
-// mim"): as mesmas duas contas do PI · Pedido. Token VALIDADO obrigatório —
-// sem o modo legado de e-mail em header. Para abrir para a equipe: tirar
-// daqui (DONOS) e do SO_DONO do nav-sidebar.js.
+// ACESSO (09/11/2026, pedido do dono: "libera o faturamento diário para todo
+// mundo"): quem tem a ÁREA Comercial (requireArea), como as outras abas do
+// Sales Report. Nasceu só do dono (06/11). Continua SÓ DO DONO a sonda
+// (?sondar=1 — ferramenta de diagnóstico pesada no D365): DONOS abaixo,
+// token validado obrigatório.
 // ================================================================
 
 const auth = require('../shared/auth');
@@ -43,10 +44,10 @@ module.exports = async function (context, req) {
     context.res = { status, headers: Object.assign({ 'Content-Type': 'application/json', 'Cache-Control': 'no-store' }, cors), body };
   };
   try {
-    await exigirDono(req);
+    await auth.requireArea(req, 'comercial');
     if (!FD.CONFIGURED) { json(200, { ok: true, configured: false }); return; }
     const q = req.query || {};
-    if (q.sondar === '1') { json(200, await SONDA.sondar()); return; }
+    if (q.sondar === '1') { await exigirDono(req); json(200, await SONDA.sondar()); return; }
     if (q.nota) {
       const n = String(q.nota).trim();
       if (!/^[0-9A-Za-z.\-\/]{1,30}$/.test(n)) throw http.badRequest('Número de nota inválido.');

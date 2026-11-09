@@ -211,7 +211,7 @@
   </footer>
 
   <script src="../script.js?v=8"></script>
-  <script src="../nav-sidebar.js?v=86"></script>
+  <script src="../nav-sidebar.js?v=87"></script>
   <!-- ═══ FATURAMENTO LÍQUIDO DO DIA no banner — SÓ DO DONO (07/11/2026) ═══
        Pedido do dono: "coloque aqui o valor do faturamento diário, líquido,
        somente para mim". Selo no banner do Comercial com o líquido do dia
@@ -233,7 +233,9 @@
   <script>
   (function () {
     'use strict';
-    var ID = 'comercial-faturamento-hoje', AUTO_MS = 5 * 60000, timer = null, foi = false;
+    // 09/11/26: a página foi liberada para a área Comercial; o SELO segue só do
+    // dono, pelo gate próprio 'comercial-faturamento-dono' (SO_DONO no nav-sidebar.js)
+    var ID = 'comercial-faturamento-dono', AUTO_MS = 5 * 60000, timer = null, foi = false;
     var fBRL = function (v) { return v == null ? '—' : 'R$ ' + Number(v).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }); };
     var ICO = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>';
     function email() { return ((window._portalUser && window._portalUser.email) || '').trim().toLowerCase(); }

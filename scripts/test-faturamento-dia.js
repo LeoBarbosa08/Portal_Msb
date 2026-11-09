@@ -144,21 +144,28 @@ const CLIENTES = { porConta: true, amostra: { dataAreaId: 'msb', CustomerAccount
   t('entrada de não-cliente = compra, fora', !r.notas.some(n => n.numero === '000000777') && r.foraDaConta.fornecedor === 1, r.foraDaConta);
   t('venda 120', r.resumo.venda.valor === 120, r.resumo);
 
-  console.log('5) rota: só o dono');
+  console.log('5) rota: a área Comercial (09/11/2026: liberado para todo mundo do Comercial); a sonda só do dono');
   FD._limparCache();
   const auth = require('../api/shared/auth');
   const fn = require('../api/faturamento-hoje/index.js');
-  const orig = auth.requireUser;
-  const chama = async (email, validated, query) => { auth.requireUser = async () => ({ user: { email }, validated }); const ctx = { log: { error() {} } }; await fn(ctx, { method: 'GET', headers: {}, query: query || {} }); return ctx.res; };
-  let res = await chama('fulano@biomedical.com.br', true);
-  t('outro e-mail -> 403', res.status === 403, res.status);
-  res = await chama('ia@biomedical.com.br', false);
-  t('token não validado -> 401', res.status === 401, res.status);
-  res = await chama('ia@biomedical.com.br', true, { data: '06/11/2026' });
+  const origArea = auth.requireArea, origUser = auth.requireUser;
+  // temArea: a pessoa tem a área Comercial? (requireArea simulado)
+  const chama = async (email, temArea, query) => {
+    let pediu = null;
+    auth.requireArea = async (req, area) => { pediu = area; if (!temArea) { const e = new Error('forbidden'); e.status = 403; throw e; } return { user: { email }, validated: true }; };
+    auth.requireUser = async () => ({ user: { email }, validated: true });
+    const ctx = { log: { error() {} } }; await fn(ctx, { method: 'GET', headers: {}, query: query || {} });
+    ctx.res.pediu = pediu; return ctx.res;
+  };
+  let res = await chama('fulano@biomedical.com.br', false);
+  t('sem a área Comercial -> 403 (e pediu a área comercial)', res.status === 403 && res.pediu === 'comercial', res.status);
+  res = await chama('fulano@biomedical.com.br', true, { data: '06/11/2026' });
   t('data inválida -> 400', res.status === 400, res.status);
-  res = await chama('IA@biomedical.com.br', true, { data: DIA });
-  t('dono -> 200 com notas', res.status === 200 && res.body.ok && Array.isArray(res.body.notas), res.status);
-  auth.requireUser = orig;
+  res = await chama('fulano@biomedical.com.br', true, { data: DIA });
+  t('qualquer um do Comercial -> 200 com notas', res.status === 200 && res.body.ok && Array.isArray(res.body.notas), res.status);
+  res = await chama('fulano@biomedical.com.br', true, { sondar: '1' });
+  t('sonda: do Comercial mas não é o dono -> 403', res.status === 403, res.status);
+  auth.requireArea = origArea; auth.requireUser = origUser;
 
   console.log('6) o dado cru de uma nota (?nota=) — o caso da 000021098');
   FD._limparCache(); chamadas.length = 0;
@@ -178,15 +185,15 @@ const CLIENTES = { porConta: true, amostra: { dataAreaId: 'msb', CustomerAccount
   {
     const auth = require('../api/shared/auth');
     const fn = require('../api/faturamento-hoje/index.js');
-    const orig = auth.requireUser;
-    const chama = async (email, query) => { auth.requireUser = async () => ({ user: { email }, validated: true }); const ctx = { log: { error() {} } }; await fn(ctx, { method: 'GET', headers: {}, query }); return ctx.res; };
-    let res = await chama('fulano@biomedical.com.br', { nota: '000021098' });
-    t('nota: outro e-mail -> 403', res.status === 403, res.status);
-    res = await chama('ia@biomedical.com.br', { nota: "x' or 1 eq 1" });
+    const origArea = auth.requireArea;
+    const chama = async (temArea, query) => { auth.requireArea = async () => { if (!temArea) { const e = new Error('forbidden'); e.status = 403; throw e; } return {}; }; const ctx = { log: { error() {} } }; await fn(ctx, { method: 'GET', headers: {}, query }); return ctx.res; };
+    let res = await chama(false, { nota: '000021098' });
+    t('nota: sem a área Comercial -> 403', res.status === 403, res.status);
+    res = await chama(true, { nota: "x' or 1 eq 1" });
     t('nota: número inválido -> 400', res.status === 400, res.status);
-    res = await chama('ia@biomedical.com.br', { nota: '000021098' });
-    t('nota: dono -> 200 com o diário', res.status === 200 && res.body.diario && res.body.diario.linhas.length === 1, res.status);
-    auth.requireUser = orig;
+    res = await chama(true, { nota: '000021098' });
+    t('nota: do Comercial -> 200 com o diário', res.status === 200 && res.body.diario && res.body.diario.linhas.length === 1, res.status);
+    auth.requireArea = origArea;
   }
 
   console.log('7) número repetido no diário: vale o registro 1 (o caso da 000021098)');
