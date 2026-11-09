@@ -356,7 +356,7 @@
             + '<td class="nf">' + esc(n.numero) + (n.serie ? '<div class="sub">série ' + esc(n.serie) + '</div>' : '') + '</td>'
             + '<td><div class="cli">' + (esc(n.cliente) || '<span class="sub">sem razão social</span>') + '</div>' + (sub ? '<div class="sub">' + esc(sub) + '</div>' : '') + '</td>'
             + (temOv ? '<td>' + esc(n.ordem || '') + '</td>' : '')
-            + (temOp ? '<td class="op">' + esc(n.operacao || '') + '</td>' : '')
+            + (temOp ? '<td class="op">' + esc(n.operacao || '') + (n.operacaoFonte && n.operacaoFonte.indexOf('OV') === 0 ? '<div class="sub" title="' + esc(n.operacaoFonte) + '">pela OV</div>' : '') + '</td>' : '')
             + (temSt ? '<td class="st">' + esc(fStatus(n.status)) + '</td>' : '')
             + '<td class="num' + (dev ? ' fd-neg' : '') + '">' + (n.valor == null ? '—' : (dev ? '− ' : '') + fBRL(n.valor)) + '</td></tr>';
         }).join('');
@@ -381,7 +381,7 @@
       var f = r.fonte;
       $('fd-sub').textContent = '· MSB · ' + fDia(r.data) + (f ? ' · fonte: ' + f.entidade + (f.papel === 'fiscal' ? ' (documento fiscal)' : ' (diário de faturas)') : '');
       $('fd-diag').style.display = '';
-      $('fd-diag-txt').textContent = JSON.stringify({ fonte: r.fonte, foraDaConta: r.foraDaConta, diagnostico: r.diagnostico }, null, 1);
+      $('fd-diag-txt').textContent = JSON.stringify({ fonte: r.fonte, operacaoOv: r.operacaoOv, foraDaConta: r.foraDaConta, diagnostico: r.diagnostico }, null, 1);
     }
 
     async function carregar(forcar) {

@@ -703,6 +703,26 @@ tem fonte conhecida (o diário não tem; a FiscalDocuments parou na MSB em
   Testes: `node scripts/test-fatdia-sonda.js`.
 - `sw.js` — cache `bm-comest-v29`.
 
+### Faturamento do Dia · tipo de operação pela OV (09/11/2026)
+
+Pedido do dono: "nessa entidade não tem tipo de operação? caso não tiver, puxe
+das sales order com base na OV". Só para **mostrar** (não filtra nem muda
+valor — a regra das operações saiu em 07/11):
+
+- O diário de faturas (`SalesInvoiceHeadersV2`) ganhou o campo `natureza`
+  (OperationDescription, SalesPurchOperationType_BR, OperationType, CFOP… ou o
+  que tiver cara de operação; `FATDIA_COL_OPERACAO_DIARIO` fixa). Se a nota
+  trouxer, vale a da nota.
+- Sem ela, a operação vem da **ordem de venda** da nota (a coluna OV):
+  `operacoesDasOvs()` em `api/shared/kanban-ov.js` reaproveita a descoberta das
+  entidades de OV do Kanban (BIOSalesOrderHeaderV1, SalesOrderHeadersV3/V2…),
+  pega as colunas com cara de tipo de operação e lê pelos números das OVs (só
+  a MSB). A tela mostra na coluna "Operação", com "pela OV" embaixo; a origem
+  vai em `operacaoFonte` e o resumo em `operacaoOv` (diagnóstico).
+- Se nem as entidades de OV tiverem a coluna, a tela avisa e pede a sonda
+  ("Procurar no Dynamics").
+- `sw.js` — cache `bm-comest-v30`.
+
 ## Como colocar no ar
 
 1. **Repositório no GitHub** — crie um repositório **privado e vazio** (sem

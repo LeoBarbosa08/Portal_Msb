@@ -99,9 +99,11 @@ const PAPEIS = {
       conta:  ['InvoiceCustomerAccountNumber', 'InvoiceAccount', 'OrderingCustomerAccountNumber', 'CustomerAccount'],
       valor:  ['TotalInvoiceAmount', 'InvoiceTotalAmount', 'InvoiceAmount'],
       ordem:  ['SalesOrderNumber', 'SalesId'],
-      moeda:  ['CurrencyCode']
+      moeda:  ['CurrencyCode'],
+      // 09/11/26: tipo de operação, se o diário tiver (só para MOSTRAR — não filtra nada)
+      natureza: envLista('FATDIA_COL_OPERACAO_DIARIO', ['OperationDescription', 'SalesPurchOperationType_BR', 'SalesPurchOperationType', 'OperationTypeId', 'OperationType', 'FiscalOperationType', 'CFOP'])
     },
-    re: {}
+    re: { natureza: /^(?!.*(operationalsite|operatingunit|date|time)).*(operation|opera[cç]|cfop|natur)/i }
   },
   cliente: {
     rotulo: 'clientes',
@@ -332,7 +334,7 @@ function notasDiario(rows, E, cli) {
       emissao: isoData(r[C.data]),
       conta, cliente: c.nome || '', cnpj: c.cnpj || '',
       valor: v == null ? null : Math.abs(v),
-      status: '', cancelada: false, operacao: '',
+      status: '', cancelada: false, operacao: C.natureza ? txt(r[C.natureza]) : '',
       ordem: C.ordem ? txt(r[C.ordem]) : ''
     };
   });
@@ -412,6 +414,26 @@ async function notasDoDia(opts) {
   if (fonte && fonte.papel === 'fiscal' && !F.E.col.direcao) avisos.push('A ' + F.E.entidade + ' não diz se a nota é de entrada ou saída: nenhuma pôde ser separada em venda/devolução.');
   if (fonte && fonte.papel === 'fiscal' && fiscal.fora.entradaSemTipo) avisos.push(fiscal.fora.entradaSemTipo + ' nota(s) de entrada ficaram de fora: não deu para saber se a conta é de cliente (devolução) ou de fornecedor (compra).');
 
+  // 09/11/26 (pedido do dono): o TIPO DE OPERAÇÃO de cada nota — só para mostrar.
+  // A nota que não trouxer (o diário não tem) recebe o da sua ORDEM DE VENDA,
+  // pela OV da própria nota (motor do Kanban: api/shared/kanban-ov.js).
+  notas.forEach(n => { if (n.operacao) n.operacaoFonte = 'nota'; });
+  const semOp = notas.filter(n => !n.operacao && n.ordem);
+  let operacaoOv = null;
+  if (semOp.length && Date.now() < ate - 4000) {
+    try {
+      const o = await require('./kanban-ov').operacoesDasOvs(semOp.map(n => n.ordem), ate);
+      o.diag.forEach(d => diag.push(d));
+      let achou = 0;
+      semOp.forEach(n => { const x = o.porOv[String(n.ordem).trim().toUpperCase()]; if (x && x.valor) { n.operacao = x.valor; n.operacaoFonte = 'OV · ' + x.coluna; achou++; } });
+      operacaoOv = { colunas: o.colunas, notas: semOp.length, achadas: achou };
+      if (!o.colunas.length) avisos.push('Tipo de operação: o diário de faturas não tem, e as entidades de ordem de venda também não trazem uma coluna de tipo de operação. Rode "Procurar no Dynamics" lá embaixo e mande o resultado.');
+      else if (achou < semOp.length) avisos.push('Tipo de operação: ' + (semOp.length - achou) + ' nota(s) sem operação na OV (' + o.colunas.join(' · ') + ').');
+    } catch (e) {
+      diag.push({ etapa: 'ov:operacao', erro: String(e.message || e).slice(0, 200) });
+    }
+  }
+
   const r = {
     ok: true, configured: true, empresa: EMPRESA, data: dia, hoje: hojeSP(),
     geradoEm: new Date().toISOString(),
@@ -423,6 +445,7 @@ async function notasDoDia(opts) {
     // a outra fonte, para conferir os totais
     conferencia: fonte && fonte.papel === 'fiscal' && J.E && !J.erro
       ? Object.assign({ entidade: J.E.entidade }, resumo(diario)) : null,
+    operacaoOv,
     avisos,
     diagnostico: diag
   };
