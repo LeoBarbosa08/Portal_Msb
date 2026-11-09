@@ -458,15 +458,39 @@ async function getAppToken(novo) {
   return _appTok.t;
 }
 
+// 09/11/26 (gerente da MSB no grupo certo e o CRM recusando):
+//   . PAGINAÇÃO — lia só a 1ª página do transitiveMemberOf. Quem está em
+//     muitos grupos (Teams, listas de distribuição, M365) podia ter o grupo
+//     do portal numa página seguinte e cair em no_group_match. Agora segue o
+//     @odata.nextLink (só do próprio Graph — nada de URL de fora), até 20
+//     páginas.
+//   . TOKEN NOVO — o token app-only fica guardado até perto de expirar; se o
+//     Graph recusar uma página (401/403/429/5xx), pede um token NOVO e tenta
+//     essa página mais uma vez antes de desistir.
+const GRAPH_PROX = /^https:\/\/graph\.microsoft\.com\/v1\.0\//;
 async function listGroups(oid) {
   if (!GUID.test(String(oid || ''))) return null; // nunca concatena não-GUID na URL do Graph
-  const tok = await getAppToken();
+  let tok = await getAppToken();
   if (!tok) return null;
-  const url = 'https://graph.microsoft.com/v1.0/users/' + encodeURIComponent(oid) +
+  let url = 'https://graph.microsoft.com/v1.0/users/' + encodeURIComponent(oid) +
     '/transitiveMemberOf/microsoft.graph.group?$select=id,displayName&$top=999';
-  const r = await fetch(url, { headers: { Authorization: 'Bearer ' + tok } });
-  if (!r.ok) return null;
-  return (((await r.json()).value) || []).map(g => ({ id: g.id, name: g.displayName }));
+  const out = [];
+  let renovou = false;
+  for (let pag = 0; url && pag < 20; pag++) {
+    let r = await fetch(url, { headers: { Authorization: 'Bearer ' + tok } });
+    if (!r.ok && !renovou) {
+      renovou = true;
+      tok = await getAppToken(true).catch(() => null);
+      if (!tok) return null;
+      r = await fetch(url, { headers: { Authorization: 'Bearer ' + tok } });
+    }
+    if (!r.ok) return null;
+    const j = await r.json();
+    (j.value || []).forEach(g => out.push({ id: g.id, name: g.displayName }));
+    const prox = String(j['@odata.nextLink'] || '');
+    url = GRAPH_PROX.test(prox) ? prox : null;
+  }
+  return out;
 }
 
 // Tem acesso full? Para quem NÃO passou por authorizedAreas — o requireArea e
@@ -500,7 +524,8 @@ async function authorizedAreas(user) {
     if (mods) { matched = true; mods.forEach(m => modulos.add(String(m).toLowerCase())); }
   });
   if (unrestricted) return todasMenosReservadas(email, 'unrestricted_group');
-  if (!matched) return todasMenosReservadas(email, 'no_group_match');
+  // gruposLidos: quantos grupos o Graph devolveu — o diagnóstico do CRM mostra
+  if (!matched) return Object.assign(todasMenosReservadas(email, 'no_group_match'), { gruposLidos: groups.length });
   (EMAIL_AREAS[email] || []).forEach(a => allowed.add(a));
   AREAS_ABERTAS.forEach(a => allowed.add(a));   // hoje vazio (ver AREAS_ABERTAS)
   return {
