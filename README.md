@@ -1102,6 +1102,18 @@ seja rejeitada, ou cancelada/descartada" e "preciso saber qual a nota fiscal".
   cancelada, descartada com a OV em aberto, reemitida e aprovada, sem status, OV
   cancelada, sem o status no OData). `sw.js` — cache `bm-comest-v49`.
 
+### Kanban · coluna Pallet (09/11/2026)
+
+Pedido do dono: "um card a mais que vai chamar PALLET, que vem depois do
+rejeitado". Nona coluna, entre Rejeitada e Expedição: Criada → Crédito →
+Separação → Conferência → Cotação → Faturado → Rejeitada → **Pallet** →
+Expedição. Entra como Cotação e Expedição: `pendente: true` em `ETAPAS`, vazia
+e com "aguardando os campos da fase" até o dono mandar os campos. Cor nova (a
+9ª, madeira) em `TONS`/`TONS_ESC`; na ficha, Pallet "a definir" na linha do
+tempo. As 9 colunas cabem na tela larga do dono; em 1440 px o quadro rola na
+horizontal. Testes: 9 colunas na ordem e a Pallet pendente. `sw.js` — cache
+`bm-comest-v50`.
+
 ## Como colocar no ar
 
 1. **Repositório no GitHub** — crie um repositório **privado e vazio** (sem
