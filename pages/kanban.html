@@ -520,6 +520,10 @@
       var m = Math.round(ms / 60000); return m < 60 ? m + ' min' : Math.floor(m / 60) + ' h' + (m % 60 ? ' ' + (m % 60) + ' min' : '');
     }
     function rotLinha(v) { var r = rot(v); return r === 'Ordem em aberto' ? 'em aberto' : r.toLowerCase(); }
+    // carga (WHSOutboundLoadHeaderEntity, 09/11/26): o LoadStatus em português
+    var ROT_CARGA = { open: 'Aberta', posted: 'Lançada', waved: 'Em onda', inprocess: 'Em processo', inpacking: 'Em embalagem',
+                      loaded: 'Carregada', shipped: 'Expedida', received: 'Recebida' };
+    function rotCarga(v) { return ROT_CARGA[chaveEnum(v)] || String(v || '—'); }
 
     // valor de um campo nos campos crus da OV (qualquer entidade), pelo 1º nome que existir
     function campoOv(o, nomes) {
@@ -772,6 +776,7 @@
 
       h += secRegra(o);
       h += secTrabalho(o);
+      h += secCarga(o);
       h += secLinhas(o);
       h += secDados(o);
       h += secCrus(o, abertos.crus);
@@ -783,7 +788,7 @@
         + '<li class="' + (o.etapa === 'conferencia' ? 'on' : '') + '">Todos os trabalhos de depósito da OV (<code>WHSWorkTableBiEntity</code>, pelo <code>OrderNum</code>) <b>Fechados</b> → <b>Conferência</b>. Cancelados não contam.</li>'
         + '<li class="' + (o.etapa === 'liberado' ? 'on' : '') + '">Liberação (<code>ReleaseStatus</code>) = Liberado (Released), ou trabalho de depósito aberto/<b>em processo</b> → <b>Separação</b>.</li>'
         + '<li class="' + (o.etapa === 'criada' ? 'on' : '') + '">Nenhuma das anteriores → <b>Criada</b>.</li></ol>'
-        + '<p class="kb-dw-p" style="margin-top:8px;"><b>Cotação</b> e <b>Expedição</b> já estão no quadro, mas os campos que definem essas fases ainda vão ser informados: por enquanto nenhuma OV cai nelas.</p>'
+        + '<p class="kb-dw-p" style="margin-top:8px;"><b>Cotação</b> e <b>Expedição</b> já estão no quadro, mas os campos que definem essas fases ainda vão ser informados: por enquanto nenhuma OV cai nelas. A Cotação vai sair da <b>carga</b> da OV (<code>WHSOutboundLoadHeaderEntity</code>, pelo <code>LoadId</code> dos trabalhos de depósito).</p>'
         + '<p class="kb-dw-p" style="margin-top:8px;">Entram as OVs da <b>MSB</b>' + (depTexto() ? ' do depósito <b>' + esc(depTexto()) + '</b>' : '') + ' criadas no dia escolhido (horário de Brasília); as de outros depósitos ficam fora. O quadro relê o Dynamics a cada 30 s no dia de hoje; as linhas desta ficha são lidas quando ela abre.</p></details>';
       return h;
     }
@@ -844,7 +849,12 @@
       // cotação: fase nova, à espera dos campos do dono
       if (pos === 4) p.push({ cls: 'agora', tt: 'Agora: Cotação', ds: '' });
       else if (pos > 4) p.push({ cls: 'feito', tt: 'Cotação', ds: '' });
-      else p.push({ cls: 'depois', tt: 'Cotação', dt: 'a definir', z: true, ds: 'Os campos que definem esta fase ainda vão ser informados.' });
+      else {
+        var cgs = o.cargas || [];
+        p.push({ cls: 'depois', tt: 'Cotação', dt: 'a definir', z: true,
+          ds: (cgs.length ? 'Carga ' + cgs.map(function (c) { return '<b>' + esc(c.id) + '</b>' + (c.status ? ' (' + esc(rotCarga(c.status)) + ')' : ''); }).join(', ') + '. ' : '')
+            + 'Os status e campos da carga que definem esta fase ainda vão ser informados.' });
+      }
       // faturado
       if (pos === POS_FAT) {
         var sit = rot(rg.salesStatus);
@@ -905,6 +915,26 @@
 
     // trabalho no depósito: cada trabalho da OV (WHSWorkTableBiEntity), com
     // status, quem, início/fim, onda e carga — o material para analisar a fase
+    // carga da OV (WHSOutboundLoadHeaderEntity): só leitura — a futura Cotação.
+    // Ligada pelos LoadId dos trabalhos de depósito da OV.
+    function secCarga(o) {
+      var cs = o.cargas || [], tt = 'Carga', t = (o.regra || {}).trabalho;
+      var dica = '<p class="kb-dw-p" style="margin-top:8px;">A <b>Cotação</b> vai sair daqui: os status e campos da carga que a definem ainda vão ser informados.</p>';
+      if (!cs.length) {
+        return '<section class="kb-dw-card"><h5>' + tt + '</h5><div class="kb-dw-nada">'
+          + (t ? 'Nenhuma carga ligada a esta OV ainda: ela aparece quando o trabalho de depósito tiver um <code>LoadId</code>.' : 'Sem o trabalho de depósito no OData, não dá para achar a carga da OV.')
+          + '</div>' + dica + '</section>';
+      }
+      return '<section class="kb-dw-card"><h5>' + tt + ' <small>' + esc(fQtd(cs.length)) + '</small></h5><div class="kb-its">' + cs.map(function (c, i) {
+        var meta = [c.transportadora ? 'transportadora ' + c.transportadora : '', c.servico ? c.servico : '', c.deposito ? c.deposito : '', c.modelo ? 'modelo ' + c.modelo : ''].filter(Boolean).join(' · ');
+        var datas = [c.envio ? 'envio previsto ' + quando(c.envio) : '', c.expedido ? 'expedida ' + quando(c.expedido) : ''].filter(Boolean).join(' · ');
+        return '<div class="kb-it"><div class="n">' + (i + 1) + '</div><div class="c"><div class="t">Carga ' + esc(c.id) + '</div>'
+          + (meta ? '<div class="s">' + esc(meta) + '</div>' : '') + (datas ? '<div class="s lg">' + esc(datas) + '</div>' : '')
+          + (!o.cargaFonte ? '<div class="s lg">A entidade de cargas não respondeu: só o número da carga, sem os dados.</div>' : c.naoAchada ? '<div class="s lg">Carga não encontrada na entidade de cargas.</div>' : '')
+          + '</div><div class="v">' + (c.status ? '<span class="kb-trab-st">' + esc(rotCarga(c.status)) + '</span><span>' + esc(c.status) + '</span>' : '') + '</div></div>';
+      }).join('') + '</div>' + dica + '</section>';
+    }
+
     function secTrabalho(o) {
       var t = (o.regra || {}).trabalho, ls = o.trabalhos || [], tt = 'Trabalho no depósito';
       if (!t) return '<section class="kb-dw-card"><h5>' + tt + '</h5><div class="kb-dw-nada">A entidade de trabalho de depósito (WHSWorkTableBiEntity) não respondeu no OData — veja o aviso no topo do quadro.</div></section>';

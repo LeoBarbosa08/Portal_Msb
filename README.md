@@ -1015,6 +1015,33 @@ cada entidade; na tela, clicar no número de colunas abre a lista. (As do
 diário também aparecem no painel da nota — todos os campos do registro.)
 `sw.js` — cache `bm-comest-v45`.
 
+### Kanban · a carga da OV na ficha (a futura Cotação) (09/11/2026)
+
+Pedido do dono: "na hora da cotação vou integrar com essa entidade de cargas,
+WHSOutboundLoadHeaderEntity, e vou definir os status e campos para que esteja
+em cotação". Por enquanto **só leitura, sem regra** — a Cotação segue
+"aguardando os campos da fase":
+
+- **Ligação**: o cabeçalho da carga não tem a OV; vale o `LoadId` dos
+  **trabalhos de depósito** da OV (OV → trabalho → carga). As cargas do dia são
+  lidas de uma vez pelos `LoadId`, só `msb`, depois do lote paralelo (e só se
+  algum trabalho tiver carga). Descoberta como as outras extras (`CFG_CARGA`:
+  candidatas `WHSOutboundLoadHeaderEntities`… + "outboundload"/"loadheader" no
+  service document; envs `KANBAN_ENT_CARGA`, `KANBAN_COL_CARGA_ID`,
+  `KANBAN_COL_CARGA_STATUS`).
+- **Na resposta**: `ovs[].cargas` (`id`, `status` = LoadStatus, transportadora,
+  serviço, envio previsto, expedida, depósito, modelo) e `cargaFonte`; o
+  registro da carga entra nos campos crus da OV.
+- **Na ficha**: seção **Carga** (status em português + o cru, transportadora,
+  serviço, datas) e a etapa Cotação da linha do tempo mostra a carga. O
+  material para o dono escolher os status/campos; quando chegarem: regra em
+  `etapaDe()` e tirar o `pendente` da Cotação.
+- **Sem a entidade no OData**: aviso (só quando há carga para procurar); a ficha
+  mostra só o número da carga.
+- Testes: `node scripts/test-kanban-ov.js` (carga pelo LoadId, uma por OV,
+  trabalho sem carga, só leitura, entidade fora do OData, sem LoadId nem
+  procura). `sw.js` — cache `bm-comest-v46`.
+
 ## Como colocar no ar
 
 1. **Repositório no GitHub** — crie um repositório **privado e vazio** (sem

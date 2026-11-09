@@ -33,8 +33,8 @@ global.fetch = async (url) => {
   if (!E) return corpo({ error: { message: 'not found' } }, 404);
   if (q.top === '1') return corpo({ value: E.linhas.slice(0, 1) });
   // filtro por número de OV (complemento / linhas)
-  const nums = (q.filter.match(/(SalesOrderNumber|SalesId|SALESID|OrderNum) eq '([^']+)'/g) || []).map(s => s.split("'")[1]);
-  if (nums.length) return corpo({ value: E.linhas.filter(r => nums.indexOf(r.SalesOrderNumber || r.SalesId || r.SALESID || r.OrderNum) >= 0) });
+  const nums = (q.filter.match(/(SalesOrderNumber|SalesId|SALESID|OrderNum|LoadId) eq '([^']+)'/g) || []).map(s => s.split("'")[1]);
+  if (nums.length) return corpo({ value: E.linhas.filter(r => nums.indexOf(r.SalesOrderNumber || r.SalesId || r.SALESID || r.OrderNum || r.LoadId) >= 0) });
   // filtro por data de criação: devolve o que cai no intervalo pedido
   const m = /ge (\S+) and \S+ lt (\S+)/.exec(q.filter);
   if (m) return corpo({ value: E.linhas.filter(r => r.OrderCreationDateTime >= m[1] && r.OrderCreationDateTime < m[2]) });
@@ -270,6 +270,48 @@ const bio = (n, st, lib) => ({ dataAreaId: 'msb', SalesOrderNumber: n, StatusPed
   t('sem a entidade: liberada -> Separação; ninguém em Conferência', eg.OV017551 === 'liberado' && eg.OV017558 === 'criada' && !r.ovs.some(o => o.etapa === 'conferencia'), eg);
   t('aviso diz que a entidade não respondeu', r.avisos.some(a => /WHSWorkTableBiEntity\) não respondeu/.test(a) && /worktable/.test(a)), r.avisos);
   t('regra.trabalho nulo', r.ovs.every(o => o.regra.trabalho === null && o.trabalhos.length === 0));
+
+  console.log('4h) cargas (WHSOutboundLoadHeaderEntity) pelo LoadId dos trabalhos — só leitura');
+  K._limparCache(); chamadas.length = 0;
+  SERVICO = ['BIOSalesOrderHeaderV1', 'SalesOrderHeadersV2', 'SalesOrderLines', 'WHSWorkTableBiEntities', 'WHSOutboundLoadHeaderEntities'];
+  CEN = {
+    SalesOrderHeadersV2: { linhas: ['OV017560', 'OV017561', 'OV017562'].map((n, i) => v2(n, DIA + 'T1' + i + ':00:00Z', 'Backorder')) },
+    BIOSalesOrderHeaderV1: { linhas: [b4('OV017560', 'Backorder', 'Released', 'No'), b4('OV017561', 'Backorder', 'Released', 'No'), b4('OV017562', 'Backorder', 'Released', 'No')] },
+    SalesOrderLines: { linhas: [] },
+    WHSWorkTableBiEntities: { linhas: [
+      w('OV017560', 'W1', 'Closed', { LoadId: 'LD-100' }), w('OV017560', 'W2', 'Closed', { LoadId: 'LD-100' }),   // a mesma carga, 2 trabalhos
+      w('OV017561', 'W3', 'InProcess', { LoadId: 'LD-200' }),
+      w('OV017562', 'W4', 'Open', { LoadId: '' })                                                                    // trabalho sem carga
+    ] },
+    WHSOutboundLoadHeaderEntities: { linhas: [
+      { dataAreaId: 'msb', LoadId: 'LD-100', LoadStatus: 'Loaded', CarrierCode: 'TRANSP-SUL', CarrierServiceCode: 'RODO', LoadSchedShipUTCDateTime: '2026-11-07T12:00:00Z', InventLocationId: 'ALMOX-PA' },
+      { dataAreaId: 'msb', LoadId: 'LD-200', LoadStatus: 'Open', CarrierCode: '', InventLocationId: 'ALMOX-PA' }
+    ] }
+  };
+  r = await K.ordensDoDia({ data: DIA });
+  const c60 = r.ovs.find(o => o.numero === 'OV017560'), c61 = r.ovs.find(o => o.numero === 'OV017561'), c62 = r.ovs.find(o => o.numero === 'OV017562');
+  t('a carga da OV pelo LoadId dos trabalhos (uma só, mesmo com 2 trabalhos)', c60.cargas.length === 1 && c60.cargas[0].id === 'LD-100' && c60.cargas[0].status === 'Loaded', c60.cargas);
+  t('transportadora, serviço, envio previsto e depósito', c60.cargas[0].transportadora === 'TRANSP-SUL' && c60.cargas[0].servico === 'RODO' && c60.cargas[0].envio === '2026-11-07T12:00:00Z' && c60.cargas[0].deposito === 'ALMOX-PA', c60.cargas[0]);
+  t('outra OV, outra carga', c61.cargas.length === 1 && c61.cargas[0].id === 'LD-200' && c61.cargas[0].status === 'Open', c61.cargas);
+  t('trabalho sem carga: nenhuma carga', c62.cargas.length === 0, c62.cargas);
+  t('a carga entra nos campos crus da OV', c60.campos.WHSOutboundLoadHeaderEntities && c60.campos.WHSOutboundLoadHeaderEntities.LoadId === 'LD-100', Object.keys(c60.campos));
+  t('fonte da carga e na lista de fontes', c60.cargaFonte === 'WHSOutboundLoadHeaderEntities.LoadStatus' && r.fontes.some(f => f.papel === 'carga' && f.cargas === 2), r.fontes);
+  const lcg = chamadas.find(c => c.ent === 'WHSOutboundLoadHeaderEntities' && /LoadId eq/.test(c.q.filter));
+  t('lê as cargas pelo LoadId, só a MSB, de uma vez', lcg && /dataAreaId eq 'msb'/.test(lcg.q.filter) && /LD-100/.test(lcg.q.filter) && /LD-200/.test(lcg.q.filter), lcg && lcg.q.filter);
+  t('só leitura: nenhuma OV em Cotação; etapas pela regra do trabalho', r.etapas.find(e => e.id === 'cotacao').qtd === 0 && c60.etapa === 'conferencia' && c61.etapa === 'liberado', { c60: c60.etapa, c61: c61.etapa });
+  t('sem aviso de cargas', !r.avisos.some(a => /cargas/.test(a)), r.avisos);
+
+  console.log('4i) entidade de cargas fora do OData: aviso só quando há carga para procurar');
+  K._limparCache();
+  SERVICO = ['BIOSalesOrderHeaderV1', 'SalesOrderHeadersV2', 'SalesOrderLines', 'WHSWorkTableBiEntities'];
+  delete CEN.WHSOutboundLoadHeaderEntities;
+  r = await K.ordensDoDia({ data: DIA });
+  t('aviso diz que a entidade de cargas não respondeu', r.avisos.some(a => /WHSOutboundLoadHeaderEntity\) não respondeu/.test(a) && /outboundload/.test(a)), r.avisos);
+  t('a carga aparece só com o LoadId (sem status)', r.ovs.find(o => o.numero === 'OV017560').cargas[0].id === 'LD-100' && r.ovs.find(o => o.numero === 'OV017560').cargaFonte === null);
+  K._limparCache();
+  CEN.WHSWorkTableBiEntities.linhas = CEN.WHSWorkTableBiEntities.linhas.map(x => Object.assign({}, x, { LoadId: '' }));
+  r = await K.ordensDoDia({ data: DIA });
+  t('sem LoadId nos trabalhos: nem procura a entidade, nem avisa', !r.avisos.some(a => /cargas/.test(a)) && !r.diagnostico.some(d => /^carga:/.test(d.etapa)), r.avisos);
 
   console.log('5) linhas de uma OV (a ficha do painel)');
   K._limparCache(); chamadas.length = 0;

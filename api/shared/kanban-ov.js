@@ -113,6 +113,8 @@ const ETAPAS = [
   { id: 'liberado',    nome: 'Separação' },
   // Conferência: trabalho de depósito da OV FECHADO (09/11/26 — ver TRABALHO DE DEPÓSITO)
   { id: 'conferencia', nome: 'Conferência' },
+  // Cotação: vai sair das CARGAS (WHSOutboundLoadHeaderEntity) — status e
+  // campos a definir pelo dono; por ora a carga só aparece na ficha
   { id: 'cotacao',     nome: 'Cotação',     pendente: true },
   { id: 'faturado',    nome: 'Faturado' },
   // 09/11/2026 (dono: "insira mais um cartão de Expedição"): depois do
@@ -170,6 +172,30 @@ const COL_TRAB = {
   carga:    ['LoadId'],
   remessa:  ['ShipmentId'],
   deposito: ['InventLocationId', 'WarehouseId']
+};
+// ── CARGAS (a futura COTAÇÃO, 09/11/2026) ─────────────────────────
+// Dono: "na hora da cotação vou integrar com essa entidade de cargas,
+// WHSOutboundLoadHeaderEntity, e vou definir os status e campos para que
+// esteja em cotação". Por enquanto SÓ LEITURA, sem regra: a carga de cada OV
+// vai para a ficha (status, transportadora, modo, datas) e para os campos
+// crus — o material para o dono escolher os campos. A Cotação segue pendente.
+// O cabeçalho da carga não tem a OV: a ligação é pelo LoadId dos TRABALHOS de
+// depósito da OV (OV -> trabalho -> carga). Descoberta como as outras extras
+// (candidatas + "outboundload"/"loadheader" no service document; env
+// KANBAN_ENT_CARGA, KANBAN_COL_CARGA_ID, KANBAN_COL_CARGA_STATUS).
+const ENT_CARGA = envLista('KANBAN_ENT_CARGA', []).concat([
+  'WHSOutboundLoadHeaderEntities', 'WHSOutboundLoadHeaderEntity', 'WHSOutboundLoadHeaders',
+  'OutboundLoadHeaders', 'OutboundLoads', 'WarehouseOutboundLoadHeaders', 'WHSLoadTables'
+]).filter((v, i, a) => a.indexOf(v) === i);
+const COL_CARGA = {
+  numero:         envLista('KANBAN_COL_CARGA_ID', ['LoadId']),
+  status:         envLista('KANBAN_COL_CARGA_STATUS', ['LoadStatus', 'Status']),
+  transportadora: ['CarrierCode', 'ShippingCarrierId', 'CarrierId'],
+  servico:        ['CarrierServiceCode', 'ModeCode', 'DeliveryModeCode', 'TransportationModeCode'],
+  envio:          ['ScheduledShippingDateTime', 'LoadSchedShipUTCDateTime', 'ScheduledLoadShippingDateTime', 'ScheduledShipDateTime'],
+  expedido:       ['LoadShippedUTCDateTime', 'ShippedDateTime', 'ActualShippingDateTime'],
+  deposito:       ['InventLocationId', 'WarehouseId', 'ShippingWarehouseId'],
+  modelo:         ['LoadTemplateId']
 };
 // fase de UM trabalho, pelo WorkStatus (nome do enum no OData ou rótulo da tela)
 function faseTrab(v) {
@@ -300,6 +326,11 @@ const CFG_TRABALHO = {
   cols: COL_TRAB, obrig: ['numero', 'status'],
   erroCol: (p) => 'sem a coluna ' + COL_TRAB[p].join('/')
 };
+const CFG_CARGA = {
+  chave: 'carga', candidatas: ENT_CARGA, reNome: /outboundload|loadheader/i, pedaco: 'outboundload',
+  cols: COL_CARGA, obrig: ['numero'],
+  erroCol: (p) => 'sem a coluna ' + COL_CARGA[p].join('/')
+};
 const _extras = {};
 async function sondarExtra(cfg, ent, token, ate) {
   let rows = null, erro = null;
@@ -392,6 +423,23 @@ async function trabalhosDasOvs(numeros, token, ate, diag) {
     o.total = validos;
     o.fase = !validos ? null : o.fechados === validos ? 'fechado' : (o.processo || o.outros || o.fechados) ? 'processo' : 'aberto';
     o.lista.sort((a, b) => String(a.criado || a.id).localeCompare(String(b.criado || b.id)));
+  });
+  return { E, por };
+}
+
+// cargas pelos LoadId (os dos trabalhos das OVs): LoadId -> { carga, row }
+async function cargasPorId(ids, token, ate, diag) {
+  const x = await entidadeExtra(CFG_CARGA, token, ate, diag), E = x.E;
+  if (!E) return { E: null, por: {}, erro: x.motivo };
+  const rows = await porNumeros(E.entidade, E.numero, ids, token, ate, diag, 'ov:carga', null, !E.temEmpresa);
+  const por = {};
+  const v = (r, papel) => { const col = E[papel] || achaCol(colunasDe(r), COL_CARGA[papel]); return col ? r[col] : null; };
+  rows.forEach(r => {
+    const id = txt(r[E.numero]); if (!id || por[id.toUpperCase()]) return;
+    por[id.toUpperCase()] = { row: r, carga: {
+      id, status: txt(v(r, 'status')), transportadora: txt(v(r, 'transportadora')), servico: txt(v(r, 'servico')),
+      envio: dataHora(v(r, 'envio')), expedido: dataHora(v(r, 'expedido')), deposito: txt(v(r, 'deposito')), modelo: txt(v(r, 'modelo'))
+    } };
   });
   return { E, por };
 }
@@ -525,6 +573,12 @@ async function ordensDoDia(opts) {
       ? trabalhosDasOvs(numeros, token, ate, diag).catch(e => ({ E: null, por: {}, erro: String(e.message || e).slice(0, 160) }))
       : Promise.resolve({ E: null, por: {} })
   ]);
+  // cargas: só se a entidade de trabalho respondeu e algum trabalho tem LoadId
+  const idsCarga = TRAB.E ? Array.from(new Set([].concat.apply([], Object.keys(TRAB.por).map(k => TRAB.por[k].lista.map(w => w.carga))).filter(Boolean))) : [];
+  const CARGA = idsCarga.length
+    ? await cargasPorId(idsCarga, token, ate, diag).catch(e => ({ E: null, por: {}, erro: String(e.message || e).slice(0, 160) }))
+    : { E: null, por: {}, semIds: true };
+  if (CARGA.E) fontes.push({ entidade: CARGA.E.entidade, papel: 'carga', colunas: CARGA.E.numero + (CARGA.E.status ? ' + ' + CARGA.E.status : ''), cargas: Object.keys(CARGA.por).length });
   if (TRAB.E) fontes.push({ entidade: TRAB.E.entidade, papel: 'trabalho', colunas: TRAB.E.numero + ' + ' + TRAB.E.status, trabalhos: Object.keys(TRAB.por).reduce((s2, k) => s2 + TRAB.por[k].lista.length, 0) });
   if (CRED.E) fontes.push({ entidade: CRED.E.entidade, papel: 'crédito', colunas: CRED.E.numero + ' + ' + CRED.E.ativo, registros: Object.keys(CRED.por).reduce((s2, k) => s2 + CRED.por[k].n, 0) });
   compl.forEach(({ E, rows: rs }) => {
@@ -614,6 +668,10 @@ async function ordensDoDia(opts) {
     Object.keys(reg[k]).forEach(ent => { campos[ent] = crus(reg[k][ent]); });
     if (cd && cd.row) campos[CRED.E.entidade] = crus(cd.row);
     if (tb && tb.row) campos[TRAB.E.entidade] = crus(tb.row);
+    // cargas da OV (pelos LoadId dos trabalhos dela): ficha + campos crus
+    const idsOv = tb ? Array.from(new Set(tb.lista.map(w => w.carga).filter(Boolean))) : [];
+    const cargasOv = idsOv.map(id => CARGA.por[id.toUpperCase()] ? CARGA.por[id.toUpperCase()].carga : { id, status: '', naoAchada: !!CARGA.E });
+    if (CARGA.E && idsOv.length && CARGA.por[idsOv[0].toUpperCase()]) campos[CARGA.E.entidade] = crus(CARGA.por[idsOv[0].toUpperCase()].row);
     const l = porLinha[k] || null;
     return {
       numero: k,
@@ -636,6 +694,8 @@ async function ordensDoDia(opts) {
           abertos: tb ? tb.abertos : 0, ignorados: tb ? tb.ignorados : 0, coluna: TRAB.E.entidade + '.' + TRAB.E.status, colOv: TRAB.E.numero } : null
       },
       trabalhos: tb ? tb.lista : [],
+      // cargas (WHSOutboundLoadHeaderEntity): só leitura por enquanto — a Cotação vai sair daqui
+      cargas: cargasOv, cargaFonte: CARGA.E ? CARGA.E.entidade + (CARGA.E.status ? '.' + CARGA.E.status : '') : null,
       status, campos
     };
   }).sort((a, b) => b.criadaEm.localeCompare(a.criadaEm) || b.numero.localeCompare(a.numero));
@@ -654,6 +714,10 @@ async function ordensDoDia(opts) {
     if (!TRAB.E) {
       avisos.push('A entidade de trabalho de depósito (WHSWorkTableBiEntity) não respondeu no OData' + (TRAB.erro ? ' (' + TRAB.erro + ')' : '') +
         '. Sem ela, a Conferência fica vazia e a Separação segue só o ReleaseStatus. Se a entidade não for pública no OData, é preciso publicá-la (ou fixar o nome em KANBAN_ENT_TRABALHO).');
+    }
+    if (!CARGA.E && !CARGA.semIds) {
+      avisos.push('A entidade de cargas (WHSOutboundLoadHeaderEntity) não respondeu no OData' + (CARGA.erro ? ' (' + CARGA.erro + ')' : '') +
+        '. As cargas não aparecem na ficha — e a Cotação vai depender dela. Se a entidade não for pública no OData, é preciso publicá-la (ou fixar o nome em KANBAN_ENT_CARGA).');
     }
     if (!CRED.E) {
       avisos.push('A tabela de gerenciamento de crédito (Credit management · BioCredManTableV1Entity) não respondeu no OData' +
