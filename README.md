@@ -884,6 +884,27 @@ operação — e saía o "DoesNotApply" do `FiscalOperationPresenceType`. Agora
 colunas só valem quando ele não vem. A coluna Operação e o Excel mostram o
 código, com "pela OV". `sw.js` — cache `bm-comest-v37`.
 
+### Faturamento do Dia · só os tipos de operação aceitos (09/11/2026)
+
+Decisão do dono: "só posso aceitar esses tipos de OP no faturamento diário":
+**S.VEN.006 · E.CON.002 · S.CON.004 · S.LIC.002 · E.VEN.002** — o
+`FiscalDocumentOperationTypeId` da OV de cada nota (`OPS_ACEITAS` em
+`api/shared/faturamento-dia.js`; `FATDIA_OPS_ACEITAS` troca a lista).
+
+- Nota de outro tipo, ou sem tipo (sem OV / OV sem o campo), fica **fora da
+  soma**: aviso com os tipos e quantidades, `foraOperacao` na resposta e a
+  aba "Fora da soma" do Excel (com o motivo).
+- **Não zera por erro de leitura** (o que aconteceu em 07/11): se não der para
+  ler o tipo de NENHUMA nota (entidade fora, sem tempo), o filtro NÃO é
+  aplicado e a tela avisa em vermelho que os valores incluem todas as notas
+  (`filtroOperacao.aplicado = false`).
+- Venda/devolução continua pelo sinal do valor (E.* vem negativo).
+- As notas que a regra do registro 1 tirou também recebem o tipo de operação
+  (aviso e Excel), para o dono ver se são devoluções E.VEN.002.
+- Excel: "Fora da soma" com Motivo (tipo não aceito / número repetido) e tipo
+  de operação; "Resumo" com os tipos aceitos e se o filtro foi aplicado.
+- `sw.js` — cache `bm-comest-v38`.
+
 ### Kanban em 6 colunas: Separação, Conferência e Cotação (09/11/2026)
 
 Pedido do dono: "Criada, Gerenciamento de Crédito, Separação (ReleaseStatus =
@@ -903,7 +924,7 @@ os campos para definição da fase".
   nome comprido da coluna quebra a linha em vez de cortar. Na ficha, a linha do
   tempo tem as 6 etapas (Conferência e Cotação "a definir").
 - Testes: `node scripts/test-kanban-ov.js` (6 colunas na ordem, nomes,
-  Conferência/Cotação vazias e pendentes). `sw.js` — cache `bm-comest-v38`.
+  Conferência/Cotação vazias e pendentes). `sw.js` — cache `bm-comest-v39` (a v38 foi da outra sessão, no master).
 
 ## Como colocar no ar
 

@@ -421,23 +421,55 @@ async function notasDoDia(opts) {
   if (fonte && fonte.papel === 'fiscal' && !F.E.col.direcao) avisos.push('A ' + F.E.entidade + ' não diz se a nota é de entrada ou saída: nenhuma pôde ser separada em venda/devolução.');
   if (fonte && fonte.papel === 'fiscal' && fiscal.fora.entradaSemTipo) avisos.push(fiscal.fora.entradaSemTipo + ' nota(s) de entrada ficaram de fora: não deu para saber se a conta é de cliente (devolução) ou de fornecedor (compra).');
 
-  // 09/11/26 (pedido do dono): o TIPO DE OPERAÇÃO de cada nota — só para mostrar.
-  // A nota que não trouxer (o diário não tem) recebe o da sua ORDEM DE VENDA,
-  // pela OV da própria nota (motor do Kanban: api/shared/kanban-ov.js).
+  // 09/11/26 (pedido do dono): o TIPO DE OPERAÇÃO de cada nota. A nota que não
+  // trouxer (o diário não tem) recebe o da sua ORDEM DE VENDA — o
+  // FiscalDocumentOperationTypeId, pela OV da própria nota (motor do Kanban:
+  // api/shared/kanban-ov.js). As repetidas (registro 2+) também, para o dono
+  // ver o tipo delas no "Fora da soma".
   notas.forEach(n => { if (n.operacao) n.operacaoFonte = 'nota'; });
   const semOp = notas.filter(n => !n.operacao && n.ordem);
-  let operacaoOv = null;
-  if (semOp.length && Date.now() < ate - 4000) {
+  let operacaoOv = null, lerOpFalhou = false;
+  const ordensRep = repetidas.filter(x => x.ordem).map(x => x.ordem);
+  if ((semOp.length || ordensRep.length) && Date.now() < ate - 4000) {
     try {
-      const o = await require('./kanban-ov').operacoesDasOvs(semOp.map(n => n.ordem), ate);
+      const o = await require('./kanban-ov').operacoesDasOvs(semOp.map(n => n.ordem).concat(ordensRep), ate);
       o.diag.forEach(d => diag.push(d));
       let achou = 0;
-      semOp.forEach(n => { const x = o.porOv[String(n.ordem).trim().toUpperCase()]; if (x && x.valor) { n.operacao = x.valor; n.operacaoFonte = 'OV · ' + x.coluna; achou++; } });
+      const daOv = (ov) => o.porOv[String(ov || '').trim().toUpperCase()];
+      semOp.forEach(n => { const x = daOv(n.ordem); if (x && x.valor) { n.operacao = x.valor; n.operacaoFonte = 'OV · ' + x.coluna; achou++; } });
+      repetidas.forEach(x => { const y = daOv(x.ordem); if (y && y.valor) x.operacao = y.valor; });
       operacaoOv = { colunas: o.colunas, notas: semOp.length, achadas: achou };
       if (!o.colunas.length) avisos.push('Tipo de operação: o diário de faturas não tem, e as entidades de ordem de venda também não trazem uma coluna de tipo de operação. Rode "Procurar no Dynamics" lá embaixo e mande o resultado.');
       else if (achou < semOp.length) avisos.push('Tipo de operação: ' + (semOp.length - achou) + ' nota(s) sem operação na OV (' + o.colunas.join(' · ') + ').');
     } catch (e) {
+      lerOpFalhou = true;
       diag.push({ etapa: 'ov:operacao', erro: String(e.message || e).slice(0, 200) });
+    }
+  } else if (semOp.length) lerOpFalhou = true;   // sem tempo para ler os tipos
+
+  // só os TIPOS DE OPERAÇÃO ACEITOS entram no faturamento (diário de faturas)
+  let foraOperacao = [], filtroOperacao = null;
+  if (fonte && fonte.papel === 'diario' && notas.length) {
+    const aceitos = new Set(OPS_ACEITAS.map(codOp));
+    const algumTipo = notas.some(n => n.operacao);
+    if (!algumTipo || lerOpFalhou) {
+      filtroOperacao = { aplicado: false, aceitos: OPS_ACEITAS };
+      avisos.unshift('ATENÇÃO: o filtro dos tipos de operação aceitos (' + OPS_ACEITAS.join(', ') + ') NÃO foi aplicado — não deu para ler o tipo de operação das notas agora. Os valores abaixo incluem todas as notas. Clique em Atualizar.');
+    } else {
+      const ficam = [];
+      notas.forEach(n => {
+        if (n.operacao && aceitos.has(codOp(n.operacao))) { ficam.push(n); return; }
+        foraOperacao.push({ numero: n.numero, data: n.emissao, tipo: n.tipo, valor: n.valor == null ? null : (n.tipo === 'devolucao' ? -n.valor : n.valor),
+          cliente: n.cliente, conta: n.conta, ordem: n.ordem || '', operacao: n.operacao || '(sem tipo de operação)' });
+      });
+      notas = ficam;
+      filtroOperacao = { aplicado: true, aceitos: OPS_ACEITAS, fora: foraOperacao.length };
+      if (foraOperacao.length) {
+        const cont = {};
+        foraOperacao.forEach(x => { cont[x.operacao] = (cont[x.operacao] || 0) + 1; });
+        avisos.push(foraOperacao.length + ' nota(s) fora do faturamento pelo tipo de operação (aceitos: ' + OPS_ACEITAS.join(', ') + '): '
+          + Object.keys(cont).sort((a, b) => cont[b] - cont[a]).map(k => k + ' (' + cont[k] + ')').join(' · ') + '.');
+      }
     }
   }
 
@@ -445,7 +477,7 @@ async function notasDoDia(opts) {
     const fBR = (v) => v == null ? '—' : 'R$ ' + Number(v).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
     const fD = (d) => d ? d.split('-').reverse().join('/') : '—';
     avisos.push(repetidas.length + ' documento(s) com número repetido no diário ficaram fora (vale o registro 1, o original): '
-      + repetidas.slice(0, 5).map(x => x.numero + ' de ' + fD(x.data) + ' (' + fBR(x.valor) + '); o original é de ' + fD(x.original.data) + ' (' + fBR(x.original.valor) + ')').join(' · ')
+      + repetidas.slice(0, 5).map(x => x.numero + ' de ' + fD(x.data) + ' (' + fBR(x.valor) + (x.operacao ? ', ' + x.operacao : '') + '); o original é de ' + fD(x.original.data) + ' (' + fBR(x.original.valor) + ')').join(' · ')
       + (repetidas.length > 5 ? ' · …' : '') + '.');
   }
 
@@ -461,6 +493,8 @@ async function notasDoDia(opts) {
     conferencia: fonte && fonte.papel === 'fiscal' && J.E && !J.erro
       ? Object.assign({ entidade: J.E.entidade }, resumo(diario)) : null,
     operacaoOv,
+    filtroOperacao,
+    foraOperacao,
     repetidas,
     avisos,
     diagnostico: diag
@@ -468,6 +502,18 @@ async function notasDoDia(opts) {
   if (!opts.diag) _cache.set(dia, { ts: Date.now(), r });
   return r;
 }
+
+// ── TIPOS DE OPERAÇÃO ACEITOS NO FATURAMENTO (09/11/2026) ─────────
+// Decisão do dono: "só posso aceitar esses tipos de OP no faturamento diário"
+// — o FiscalDocumentOperationTypeId da OV da nota (ver operacoesDasOvs em
+// api/shared/kanban-ov.js). Nota de outro tipo, ou sem tipo, fica FORA da
+// soma (lista em `foraOperacao`, com aviso). Se a leitura dos tipos falhar
+// por inteiro (nenhuma nota com tipo), o filtro NÃO é aplicado e a tela avisa
+// em vermelho — erro de leitura não zera o faturamento (o que aconteceu em
+// 07/11 com a regra do OperationDescription). Venda/devolução continua pelo
+// sinal do valor. FATDIA_OPS_ACEITAS troca a lista (separada por vírgula).
+const OPS_ACEITAS = envLista('FATDIA_OPS_ACEITAS', ['S.VEN.006', 'E.CON.002', 'S.CON.004', 'S.LIC.002', 'E.VEN.002']);
+const codOp = (v) => txt(v).toUpperCase().replace(/\s+/g, '');
 
 // ── NÚMERO REPETIDO NO DIÁRIO: vale o REGISTRO 1 (09/11/2026) ─────
 // O D365 tem DOIS documentos com o número 000021098 na MSB: a venda de
