@@ -905,6 +905,24 @@ Decisão do dono: "só posso aceitar esses tipos de OP no faturamento diário":
   de operação; "Resumo" com os tipos aceitos e se o filtro foi aplicado.
 - `sw.js` — cache `bm-comest-v38`.
 
+### Faturamento do Dia · só nota com status Aprovado (09/11/2026)
+
+Decisão do dono: "o status da nota tem que estar Aprovado" — a 000021478
+está "Descartado" na tela Nota fiscal do D365 e aparecia no portal. O diário
+não traz esse status; ele mora no documento fiscal / NF-e. Novo
+`api/shared/fatdia-status.js`: busca o status **pelo número** em todas as
+entidades de documento fiscal / NF-e publicadas (as candidatas
+`FiscalDocuments`, `EFDocumentsBR`, `NFeHeadersBR`… + as do service document com
+efdoc/nfe/electronic/fiscaldocument no nome), cada uma provada pela amostra
+(tem número e status?), só a MSB, em lote. Fica só "Aprovado" (Approved,
+Aprovada, Autorizada…); Descartado, Cancelado, Rejeitado e "(sem status)" saem
+da soma (`foraStatus`, aviso, Excel "Fora da soma" com o motivo). Mesma
+proteção do filtro de operação: se nenhuma nota tiver status lido, o filtro
+NÃO é aplicado e o aviso em vermelho diz isso. A sonda "Procurar no Dynamics"
+passou a mostrar também as colunas de status (`servemStatus`). Envs:
+`FATDIA_ENT_STATUS`, `FATDIA_COL_STATUS`, `FATDIA_COL_STATUS_DIARIO`.
+`sw.js` — cache `bm-comest-v39`.
+
 ## Como colocar no ar
 
 1. **Repositório no GitHub** — crie um repositório **privado e vazio** (sem

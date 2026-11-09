@@ -337,7 +337,8 @@
     var fCnpj = function (s) { var d = String(s || '').replace(/\D/g, ''); if (d.length === 14) return d.replace(/^(\d{2})(\d{3})(\d{3})(\d{4})(\d{2})$/, '$1.$2.$3/$4-$5'); if (d.length === 11) return d.replace(/^(\d{3})(\d{3})(\d{3})(\d{2})$/, '$1.$2.$3-$4'); return s || ''; };
 
     // status da nota como o Dynamics grava (enum em inglês) -> português
-    var STATUS = { approved: 'Autorizada', authorized: 'Autorizada', canceled: 'Cancelada', cancelled: 'Cancelada', denied: 'Denegada',
+    var STATUS = { approved: 'Aprovada', aprovado: 'Aprovada', aprovada: 'Aprovada', discarded: 'Descartada', descartado: 'Descartada', descartada: 'Descartada',
+      authorized: 'Autorizada', canceled: 'Cancelada', cancelled: 'Cancelada', denied: 'Denegada',
       rejected: 'Rejeitada', pending: 'Pendente', created: 'Criada', posted: 'Lançada', voided: 'Inutilizada', discarded: 'Inutilizada', contingency: 'Contingência' };
     var fStatus = function (s) { var k = String(s || '').trim().toLowerCase(); return STATUS[k] || s || ''; };
 
@@ -500,15 +501,16 @@
       XLSX.utils.book_append_sheet(wb, ws, 'Notas');
 
       // fora da soma: pelo TIPO DE OPERAÇÃO (fora da lista aceita) e pelo NÚMERO REPETIDO (vale o registro 1)
-      var rep = r.repetidas || [], fop = r.foraOperacao || [];
+      var rep = r.repetidas || [], fop = r.foraOperacao || [], fst = r.foraStatus || [];
       var aoa2 = [['Motivo', 'Nota', 'Data', 'Tipo', 'Valor (R$)', 'Cliente', 'OV', 'Tipo de operação', 'Data do original', 'Valor do original (R$)', 'OV do original']];
       fop.forEach(function (x) { aoa2.push(['Tipo de operação não aceito', x.numero, fDia(x.data), x.tipo === 'devolucao' ? 'Devolução' : 'Venda', x.valor == null ? '' : x.valor, x.cliente || '', x.ordem || '', x.operacao || '', '', '', '']); });
+      fst.forEach(function (x) { aoa2.push(['Status não aprovado: ' + fStatus(x.status), x.numero, fDia(x.data), x.tipo === 'devolucao' ? 'Devolução' : 'Venda', x.valor == null ? '' : x.valor, x.cliente || '', x.ordem || '', x.operacao || '', '', '', '']); });
       rep.forEach(function (x) { aoa2.push(['Número repetido (vale o registro 1)', x.numero, fDia(x.data), (x.valor || 0) < 0 ? 'Devolução' : 'Venda', x.valor == null ? '' : x.valor, '', x.ordem || '', x.operacao || '',
         fDia(x.original && x.original.data), x.original && x.original.valor != null ? x.original.valor : '', (x.original && x.original.ordem) || '']); });
-      if (!rep.length && !fop.length) aoa2.push(['Nenhuma nota ficou fora neste dia.']);
+      if (!rep.length && !fop.length && !fst.length) aoa2.push(['Nenhuma nota ficou fora neste dia.']);
       var ws2 = XLSX.utils.aoa_to_sheet(aoa2);
       ws2['!cols'] = [34, 12, 12, 11, 14, 40, 12, 18, 16, 20, 14].map(function (w) { return { wch: w }; });
-      if (rep.length || fop.length) ws2['!autofilter'] = { ref: 'A1:K' + (rep.length + fop.length + 1) };
+      if (rep.length || fop.length || fst.length) ws2['!autofilter'] = { ref: 'A1:K' + (rep.length + fop.length + fst.length + 1) };
       XLSX.utils.book_append_sheet(wb, ws2, 'Fora da soma');
 
       var f = r.fonte || {};
@@ -516,9 +518,10 @@
         ['Fonte', (f.entidade || '') + (f.papel === 'diario' ? ' (diário de faturas)' : f.papel === 'fiscal' ? ' (documento fiscal)' : '')], [],
         ['', 'Notas', 'Valor (R$)'], ['Vendas', rs.venda.qtd || 0, rs.venda.valor || 0], ['Devoluções', rs.devolucao.qtd || 0, rs.devolucao.valor || 0],
         ['Faturamento líquido', '', rs.liquido || 0], ['Canceladas (fora da soma)', rs.canceladas || 0, ''], ['Número repetido (fora da soma, vale o registro 1)', rep.length, ''],
-        ['Tipo de operação não aceito (fora da soma)', fop.length, ''], [],
+        ['Tipo de operação não aceito (fora da soma)', fop.length, ''], ['Status não aprovado (fora da soma)', fst.length, ''], [],
         ['Tipos de operação aceitos', ((r.filtroOperacao && r.filtroOperacao.aceitos) || []).join(', ')],
-        ['Filtro dos tipos aplicado?', r.filtroOperacao ? (r.filtroOperacao.aplicado ? 'sim' : 'NÃO (não deu para ler os tipos)') : '—']];
+        ['Filtro dos tipos aplicado?', r.filtroOperacao ? (r.filtroOperacao.aplicado ? 'sim' : 'NÃO (não deu para ler os tipos)') : '—'],
+        ['Filtro "status Aprovado" aplicado?', r.filtroStatus ? (r.filtroStatus.aplicado ? 'sim' : 'NÃO (não deu para ler o status)') : '—']];
       (r.avisos || []).forEach(function (a, i) { if (i === 0) aoa3.push([]); aoa3.push(['Aviso', a]); });
       var ws3 = XLSX.utils.aoa_to_sheet(aoa3);
       ws3['!cols'] = [{ wch: 44 }, { wch: 16 }, { wch: 16 }];
@@ -590,8 +593,9 @@
         var linhas = ents.filter(function (x) { return x.ok; }).map(function (x) {
           var rec = x.maisRecente || {};
           var ops = (x.colunasOperacao || []).map(function (c) { return esc(c) + (rec[c] != null && String(rec[c]) !== '' ? ' = <b>' + esc(rec[c]) + '</b>' : ''); }).join('<br>');
-          return '<tr><td class="nf">' + esc(x.entidade) + (x.serve ? ' <span class="fd-tag venda">serve</span>' : '') + '</td>'
-            + '<td>' + (ops || '<span class="sub">nenhuma</span>') + '</td>'
+          var sts = (x.colunasStatus || []).map(function (c) { return esc(c) + (rec[c] != null && String(rec[c]) !== '' ? ' = <b>' + esc(rec[c]) + '</b>' : ''); }).join('<br>');
+          return '<tr><td class="nf">' + esc(x.entidade) + (x.serve ? ' <span class="fd-tag venda">serve</span>' : '') + (x.serveStatus ? ' <span class="fd-tag venda">status</span>' : '') + '</td>'
+            + '<td>' + (ops || '<span class="sub">nenhuma</span>') + (sts ? '<div class="sub" style="margin-top:4px;">status: ' + sts + '</div>' : '') + '</td>'
             + '<td>' + esc(x.ultimaData ? fDia(x.ultimaData) : '—') + (x.dataCol ? '<div class="sub">' + esc(x.dataCol) + '</div>' : '') + '</td>'
             + '<td class="num">' + (x.colunas || '') + '</td></tr>';
         }).join('');

@@ -101,7 +101,9 @@ const PAPEIS = {
       ordem:  ['SalesOrderNumber', 'SalesId'],
       moeda:  ['CurrencyCode'],
       // 09/11/26: tipo de operação, se o diário tiver (só para MOSTRAR — não filtra nada)
-      natureza: envLista('FATDIA_COL_OPERACAO_DIARIO', ['OperationDescription', 'SalesPurchOperationType_BR', 'SalesPurchOperationType', 'OperationTypeId', 'OperationType', 'FiscalOperationType', 'CFOP'])
+      natureza: envLista('FATDIA_COL_OPERACAO_DIARIO', ['OperationDescription', 'SalesPurchOperationType_BR', 'SalesPurchOperationType', 'OperationTypeId', 'OperationType', 'FiscalOperationType', 'CFOP']),
+      // 09/11/26: status da nota, se o diário tiver (só nomes exatos)
+      status: envLista('FATDIA_COL_STATUS_DIARIO', ['FiscalDocumentStatus', 'NFeStatus', 'EFDocStatus', 'DocumentStatus'])
     },
     re: { natureza: /^(?!.*(operationalsite|operatingunit|date|time)).*(operation|opera[cç]|cfop|natur)/i }
   },
@@ -334,7 +336,7 @@ function notasDiario(rows, E, cli) {
       emissao: isoData(r[C.data]),
       conta, cliente: c.nome || '', cnpj: c.cnpj || '',
       valor: v == null ? null : Math.abs(v),
-      status: '', cancelada: false, operacao: C.natureza && !/^(doesnotapply|notapplicable|none|no)$/i.test(txt(r[C.natureza])) ? txt(r[C.natureza]) : '',
+      status: C.status ? txt(r[C.status]) : '', cancelada: false, operacao: C.natureza && !/^(doesnotapply|notapplicable|none|no)$/i.test(txt(r[C.natureza])) ? txt(r[C.natureza]) : '',
       ordem: C.ordem ? txt(r[C.ordem]) : ''
     };
   });
@@ -473,6 +475,42 @@ async function notasDoDia(opts) {
     }
   }
 
+  // 09/11/26 (decisão do dono): "o status da nota tem que estar Aprovado".
+  // O status mora no documento fiscal / NF-e: buscado PELO NÚMERO
+  // (api/shared/fatdia-status.js) para as notas que sobraram. Mesma proteção
+  // do filtro de operação: sem status para NENHUMA nota, não filtra e avisa.
+  let foraStatus = [], filtroStatus = null;
+  if (fonte && fonte.papel === 'diario' && notas.length) {
+    const ST = require('./fatdia-status');
+    const semSt = notas.filter(n => !n.status);
+    if (semSt.length && Date.now() < ate - 3000) {
+      try {
+        const st = await ST.statusPorNumero(semSt.map(n => n.numero), ate);
+        st.diag.forEach(d => diag.push(d));
+        semSt.forEach(n => { const x = ST.statusDaNota(st.porNum[ST.numNorm(n.numero)]); if (x) { n.status = x.status; n.statusFonte = x.entidade + '.' + x.coluna; } });
+      } catch (e) { diag.push({ etapa: 'status', erro: String(e.message || e).slice(0, 200) }); }
+    }
+    if (!notas.some(n => n.status)) {
+      filtroStatus = { aplicado: false };
+      avisos.unshift('ATENÇÃO: o filtro "status Aprovado" NÃO foi aplicado — não deu para ler o status das notas no Dynamics (nenhuma entidade de documento fiscal / NF-e trouxe o status destes números). Notas descartadas/canceladas podem estar na soma. Rode "Procurar no Dynamics" lá embaixo e mande o resultado.');
+    } else {
+      const ficam = [];
+      notas.forEach(n => {
+        if (n.status && ST.aprovado(n.status)) { ficam.push(n); return; }
+        foraStatus.push({ numero: n.numero, data: n.emissao, tipo: n.tipo, valor: n.valor == null ? null : (n.tipo === 'devolucao' ? -n.valor : n.valor),
+          cliente: n.cliente, conta: n.conta, ordem: n.ordem || '', operacao: n.operacao || '', status: n.status || '(sem status)' });
+      });
+      notas = ficam;
+      filtroStatus = { aplicado: true, fora: foraStatus.length };
+      if (foraStatus.length) {
+        const cont = {};
+        foraStatus.forEach(x => { cont[x.status] = (cont[x.status] || 0) + 1; });
+        avisos.push(foraStatus.length + ' nota(s) fora do faturamento por não estarem com status Aprovado: '
+          + Object.keys(cont).sort((a, b) => cont[b] - cont[a]).map(k => k + ' (' + cont[k] + ')').join(' · ') + '.');
+      }
+    }
+  }
+
   if (repetidas.length) {
     const fBR = (v) => v == null ? '—' : 'R$ ' + Number(v).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
     const fD = (d) => d ? d.split('-').reverse().join('/') : '—';
@@ -495,6 +533,8 @@ async function notasDoDia(opts) {
     operacaoOv,
     filtroOperacao,
     foraOperacao,
+    filtroStatus,
+    foraStatus,
     repetidas,
     avisos,
     diagnostico: diag

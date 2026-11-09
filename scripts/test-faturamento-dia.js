@@ -238,6 +238,32 @@ const CLIENTES = { porConta: true, amostra: { dataAreaId: 'msb', CustomerAccount
   t('sem tipos lidos, todas as notas ficam', r.notas.length === 5 && r.resumo.liquido === 1850, r.resumo);
   t('aviso em destaque: filtro NÃO aplicado', /NÃO foi aplicado/.test(r.avisos[0]) && r.filtroOperacao && r.filtroOperacao.aplicado === false, r.avisos);
 
+  console.log('9) só nota com status Aprovado (o caso da 000021478 "Descartado")');
+  const ST9 = require('../api/shared/fatdia-status');
+  FD._limparCache(); K8._limparCache(); ST9._limparCache(); chamadas.length = 0;
+  const ef = (n, st) => ({ dataAreaId: 'msb', FiscalDocumentNumber: n, Status: st });
+  CEN = {
+    FiscalDocuments: { amostra: AMOSTRA_FISCAL, linhas: [], ultima: '2023-12-05T00:00:00Z', colData: 'FiscalDocumentDate' },
+    SalesInvoiceHeadersV2: Object.assign(DIARIO([jl8('000021500', 'OV1', 1000), jl8('000021501', 'OV2', -150), jl8('000021478', 'OV1', 777), jl8('000021506', 'OV1', 333)]), { porNumero: true }),
+    BIOSalesOrderHeaderV1: { amostra: ov8('OV0', 'S.VEN.006'), linhas: [ov8('OV1', 'S.VEN.006'), ov8('OV2', 'E.VEN.002')] },
+    EFDocumentsBR: { porNumero: true, amostra: ef('1', 'Approved'), linhas: [ef('000021500', 'Aprovado'), ef('000021501', 'Approved'), ef('000021478', 'Discarded')] },
+    CustomersV3: CLIENTES
+  };
+  r = await FD.notasDoDia({ data: DIA });
+  t('aprovadas ficam (Aprovado e Approved)', r.resumo.venda.qtd === 1 && r.resumo.venda.valor === 1000 && r.resumo.devolucao.valor === 150, r.resumo);
+  t('000021478 "Discarded" fica fora', r.foraStatus.some(x => x.numero === '000021478' && x.status === 'Discarded' && x.valor === 777), r.foraStatus);
+  t('nota sem status fica fora como "(sem status)"', r.foraStatus.some(x => x.numero === '000021506' && x.status === '(sem status)'), r.foraStatus);
+  t('aviso com os status que ficaram fora', r.avisos.some(a => /2 nota\(s\) fora do faturamento por não estarem com status Aprovado/.test(a) && /Discarded \(1\)/.test(a)), r.avisos);
+  t('filtro do status aplicado', r.filtroStatus && r.filtroStatus.aplicado === true && r.filtroStatus.fora === 2, r.filtroStatus);
+  t('status buscado pelo número, só a MSB', chamadas.some(c => c.ent === 'EFDocumentsBR' && /FiscalDocumentNumber eq '000021478'/.test(c.q.filter) && /dataAreaId eq 'msb'/.test(c.q.filter)), chamadas.filter(c => c.ent === 'EFDocumentsBR').map(c => c.q.filter));
+
+  console.log('9b) nenhuma entidade traz o status: NÃO filtra e avisa (não zera)');
+  FD._limparCache(); K8._limparCache(); ST9._limparCache(); chamadas.length = 0;
+  delete CEN.EFDocumentsBR;
+  r = await FD.notasDoDia({ data: DIA });
+  t('sem status lido, as notas da operação aceita ficam', r.notas.length === 4 && r.filtroStatus && r.filtroStatus.aplicado === false, r.notas.length);
+  t('aviso em vermelho: filtro do status NÃO aplicado', r.avisos.some(a => /filtro "status Aprovado" NÃO foi aplicado/.test(a)), r.avisos);
+
   console.log(falhas ? '\n' + falhas + ' FALHA(S)' : '\ntudo ok');
   process.exit(falhas ? 1 : 0);
 })().catch(e => { console.error(e); process.exit(1); });

@@ -37,7 +37,9 @@ const CONHECIDAS = [
   'FiscalDocuments', 'FiscalDocumentLines', 'FiscalDocumentLinesBR', 'FiscalDocumentHeaders',
   'SalesOrderHeadersV2', 'BIOSalesOrderHeaderV1', 'SalesOrderLines'
 ];
-const RE_NOME = /invoice|fiscal|cfop|nfe|operationtype|opertype|salespurchoper/i;
+const RE_NOME = /invoice|fiscal|cfop|nfe|efdoc|electronic|operationtype|opertype|salespurchoper/i;
+// 09/11/26: também o STATUS da nota (aprovado, descartado…) — o filtro "Aprovado"
+const RE_ST = /^(?!.*(date|time|reason|motivo|message|mensagem)).*status/i;
 const RE_OP   = /operation|opera[cç]|cfop|natur|operType/i;
 const RE_NAO  = /operationalsite|operatingunit/i;          // "operation" que não é tipo de operação
 const DATAS   = ['InvoiceDate', 'FiscalDocumentDate', 'AccountingDate', 'TransDate', 'DocumentDate', 'CreatedDateTime', 'CREATEDDATETIME', 'OrderCreationDateTime'];
@@ -61,7 +63,7 @@ async function servico(token, ate) {
 }
 
 async function sondarUma(ent, token, ate) {
-  const out = { entidade: ent, ok: false, serve: false, erro: null, colunas: 0, empresa: false, colunasOperacao: [], dataCol: null, ultimaData: null, maisRecente: null, amostra: null };
+  const out = { entidade: ent, ok: false, serve: false, serveStatus: false, erro: null, colunas: 0, empresa: false, colunasOperacao: [], colunasStatus: [], dataCol: null, ultimaData: null, maisRecente: null, amostra: null };
   let rows = null, erro = null;
   for (const filtro of ["dataAreaId eq '" + D.odataStr(EMPRESA) + "'", null]) {
     if (restante(ate) < 2500) { erro = 'sem tempo'; break; }
@@ -75,14 +77,15 @@ async function sondarUma(ent, token, ate) {
   const cols = colunasDe(rows[0]);
   out.colunas = cols.length;
   out.colunasOperacao = cols.filter(c => RE_OP.test(c) && !RE_NAO.test(c));
+  out.colunasStatus = cols.filter(c => RE_ST.test(c));
   const num = achaCol(cols, NUMEROS);
   out.amostra = {};
-  out.colunasOperacao.concat(num ? [num] : []).forEach(c => { out.amostra[c] = rows[0][c]; });
+  out.colunasOperacao.concat(out.colunasStatus, num ? [num] : []).forEach(c => { out.amostra[c] = rows[0][c]; });
   // a linha mais recente da MSB: tem nota de 2026? a operação vem preenchida?
   out.dataCol = achaCol(cols, DATAS) || cols.find(c => /date/i.test(c)) || null;
   if (out.dataCol && restante(ate) > 2500) {
     try {
-      const sel = [out.dataCol].concat(out.colunasOperacao, num ? [num] : []).filter((v, i, a) => a.indexOf(v) === i).join(',');
+      const sel = [out.dataCol].concat(out.colunasOperacao, out.colunasStatus, num ? [num] : []).filter((v, i, a) => a.indexOf(v) === i).join(',');
       const rec = await D.odataGetComPrazo(ent, Object.assign({ top: 1, crossCompany: true, orderby: out.dataCol + ' desc', select: sel },
         out.empresa ? { filter: "dataAreaId eq '" + D.odataStr(EMPRESA) + "'" } : {}), token, prazo(ate, PROVA_MS));
       if (rec.length) {
@@ -94,6 +97,8 @@ async function sondarUma(ent, token, ate) {
   }
   const opPreenchida = out.maisRecente && out.colunasOperacao.some(c => txt(out.maisRecente[c]) !== '' && txt(out.maisRecente[c]) !== '0');
   out.serve = !!(out.colunasOperacao.length && out.ultimaData && out.ultimaData >= '2026-01-01' && opPreenchida);
+  const stPreenchido = out.maisRecente && out.colunasStatus.some(c => txt(out.maisRecente[c]) !== '');
+  out.serveStatus = !!(num && out.colunasStatus.length && out.ultimaData && out.ultimaData >= '2026-01-01' && stPreenchido);
   return out;
 }
 
@@ -116,6 +121,7 @@ async function sondar() {
     ok: true, empresa: EMPRESA, geradoEm: new Date().toISOString(),
     servicoDocumento: sv.erro || ('ok · ' + sv.nomes.length + ' entidades publicadas · ' + doServico.length + ' com invoice/fiscal/cfop/nfe/operation no nome'),
     servem: res.filter(x => x.serve).map(x => x.entidade),
+    servemStatus: res.filter(x => x.serveStatus).map(x => x.entidade),
     entidades: res
   };
 }
