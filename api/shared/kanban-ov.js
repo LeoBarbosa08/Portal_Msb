@@ -409,7 +409,12 @@ const CFG_CARGA = {
   chave: 'carga', candidatas: ENT_CARGA, reNome: /outboundload|loadheader/i, pedaco: 'outboundload',
   cols: COL_CARGA, obrig: ['numero'], prefer: ['cotacao', 'pallet', 'status'],
   // os campos _CUSTOM: se o nome exato não bater, o pedaço do nome
-  reCols: { cotacao: /quotationperformed|cota[cç]|quotation/i, pallet: /enviar.?pallet|pallet/i },
+  // (09/11/26: apertado — "pallet" sozinho pegaria PalletQuantity e afins, e o
+  // campo do pallet é GRAVADO pelo botão; "quotation" sozinho pegaria QuotationId)
+  reCols: { cotacao: /quotation.?performed|cota[cç][aã]o.?realizad|cotacaorealizad/i, pallet: /enviar.?pallet/i },
+  // sem as preferidas na melhor candidata: testa também as outras entidades do
+  // service document com "load" no nome (menos as de linhas)
+  reNomeExtra: /load/i, reNomeExtraNao: /line|linha/i,
   erroCol: (p) => 'sem a coluna ' + COL_CARGA[p].join('/')
 };
 const CFG_NOTA = {
@@ -450,7 +455,21 @@ async function entidadeExtra(cfg, token, ate, diag) {
     servico.filter(n => cfg.reNome.test(n) && alvos.indexOf(n) < 0).slice(0, 6).forEach(n => alvos.push(n));
   }
   diag.push({ etapa: cfg.chave + ':candidatas', servico: servico.length > 0, alvos });
-  const sondas = await Promise.all(alvos.map(ent => sondarExtra(cfg, ent, token, ate).catch(e => ({ entidade: ent, serve: false, erro: String(e.message || e).slice(0, 200) }))));
+  const sondar = (lista) => Promise.all(lista.map(ent => sondarExtra(cfg, ent, token, ate).catch(e => ({ entidade: ent, serve: false, erro: String(e.message || e).slice(0, 200) }))));
+  let sondas = await sondar(alvos);
+  const pontos = (x) => (cfg.prefer || []).filter(papel => x[papel]).length;
+  const melhor = () => sondas.filter(x => x.serve).sort((a, b) => pontos(b) - pontos(a))[0] || false;
+  // 09/11/26: a melhor não tem todas as preferidas (ex.: OutboundLoadHeaders sem o
+  // QuotationPerformed_InoveProjects) -> testa as outras com "load" no nome
+  if (cfg.prefer && cfg.reNomeExtra && servico.length && (!melhor() || pontos(melhor()) < cfg.prefer.length)) {
+    const ja = {}; alvos.forEach(n => { ja[n.toLowerCase()] = 1; });
+    const extras = servico.filter(n => cfg.reNomeExtra.test(n) && !ja[n.toLowerCase()] && !(cfg.reNomeExtraNao && cfg.reNomeExtraNao.test(n))).slice(0, 10);
+    if (extras.length) {
+      diag.push({ etapa: cfg.chave + ':candidatas-extra', alvos: extras });
+      sondas = sondas.concat(await sondar(extras));
+      alvos = alvos.concat(extras);
+    }
+  }
   sondas.forEach(x => {
     const d = { etapa: cfg.chave + ':entidade', entidade: x.entidade, serve: x.serve, empresa: !!x.temEmpresa, erro: x.erro || null };
     cfg.obrig.concat(cfg.prefer || []).forEach(papel => { d[papel] = x[papel] || null; });
@@ -459,8 +478,7 @@ async function entidadeExtra(cfg, token, ate, diag) {
   // entre as que servem, a que tem MAIS das colunas preferidas (cfg.prefer) —
   // 09/11/26: o D365 pode publicar mais de uma entidade de cargas; a que tem os
   // campos _CUSTOM (COTACAOREALIZADA_CUSTOM, ENVIARPALLET_CUSTOM) é a que vale
-  const pontos = (x) => (cfg.prefer || []).filter(papel => x[papel]).length;
-  const E = sondas.filter(x => x.serve).sort((a, b) => pontos(b) - pontos(a))[0] || false;
+  const E = melhor();
   const motivo = E ? '' : !alvos.length
     ? 'nenhuma entidade com "' + cfg.pedaco + '" no nome está publicada no OData'
     : sondas.map(x => x.entidade + ': ' + (x.erro || 'não serve')).join('; ').slice(0, 300);
@@ -994,9 +1012,15 @@ async function montar(opts, modo) {
       avisos.push('Não achei o status da nota fiscal (documento fiscal / NF-e) no OData' + (STN.erro ? ' (' + STN.erro + ')' : '') +
         ': o número da nota aparece, mas a coluna Rejeitada fica vazia.');
     }
-    if (CARGA.E && (!CARGA.E.cotacao || !CARGA.E.pallet)) {
-      avisos.push('Na entidade de cargas (' + CARGA.E.entidade + ') não achei ' + [!CARGA.E.cotacao ? '"Cotação realizada" (' + COL_CARGA.cotacao[0] + ')' : '', !CARGA.E.pallet ? COL_CARGA.pallet[0] : ''].filter(Boolean).join(' nem ') +
-        ': carga Carregado fica em Cotação' + (!CARGA.E.pallet ? ' e o botão "Enviar para o Pallet" não aparece' : '') + '. Fixe os nomes em KANBAN_COL_CARGA_COTACAO / KANBAN_COL_CARGA_PALLET.');
+    if (CARGA.E && (!CARGA.E.cotacao || !CARGA.E.pallet || !CARGA.E.status)) {
+      const falta = [!CARGA.E.status ? 'o status da carga (' + COL_CARGA.status[0] + ')' : '', !CARGA.E.cotacao ? '"Cotação realizada" (' + COL_CARGA.cotacao[0] + ')' : '',
+        !CARGA.E.pallet ? COL_CARGA.pallet[0] : ''].filter(Boolean);
+      // os campos da entidade que parecem ser o que falta — para o dono apontar o nome
+      const parecidos = (CARGA.E.colunas || []).filter(cn => /status|quot|cota|pallet|realiz/i.test(cn)).slice(0, 12);
+      avisos.push('Na entidade de cargas (' + CARGA.E.entidade + ') não achei ' + falta.join(', nem ') + '.' +
+        (!CARGA.E.cotacao ? ' Carga Carregado fica em Cotação.' : '') + (!CARGA.E.pallet ? ' O botão "Enviar para o Pallet" não aparece.' : '') +
+        (parecidos.length ? ' Campos parecidos nessa entidade: ' + parecidos.join(', ') + '.' : '') +
+        ' Fixe os nomes em KANBAN_COL_CARGA_STATUS / KANBAN_COL_CARGA_COTACAO / KANBAN_COL_CARGA_PALLET.');
     }
     if (!CARGA.E && !CARGA.semIds) {
       avisos.push('A entidade de cargas (WHSOutboundLoadHeaderEntity) não respondeu no OData' + (CARGA.erro ? ' (' + CARGA.erro + ')' : '') +

@@ -539,6 +539,30 @@ const bio = (n, st, lib) => ({ dataAreaId: 'msb', SalesOrderNumber: n, StatusPed
   SERVICO = SERVICO.filter(x => x !== 'OutboundLoadHeaders');
   K._limparCache(); r = await K.ordensDoDia({ data: DIA });
 
+  console.log('8c) a cotação numa entidade de cargas fora das candidatas; "pallet" sozinho não serve');
+  K._limparCache();
+  const base8c = CEN.WHSOutboundLoadHeaderEntities.linhas;
+  // a candidata (OutboundLoadHeaders) sem a cotação, e com um campo QUALQUER de pallet (não pode ser usado)
+  CEN.OutboundLoadHeaders = { linhas: base8c.map(x => ({ dataAreaId: 'msb', LoadId: x.LoadId, LoadStatus: x.LoadStatus, PalletQuantity: 3, QuotationId: 'Q1' })) };
+  // a que tem os campos está publicada com outro nome ("load" no nome, fora das candidatas)
+  CEN.InoveLoadTables = { linhas: base8c };
+  const guarda = CEN.WHSOutboundLoadHeaderEntities; delete CEN.WHSOutboundLoadHeaderEntities;
+  SERVICO = ['BIOSalesOrderHeaderV1', 'SalesOrderHeadersV2', 'SalesOrderLines', 'WHSWorkTableBiEntities', 'SalesInvoiceHeadersV2', 'FiscalDocuments', 'OutboundLoadHeaders', 'InoveLoadTables', 'OutboundLoadLines'];
+  r = await K.ordensDoDia({ data: DIA });
+  t('acha a entidade com QuotationPerformed_InoveProjects fora das candidatas', r.fontes.some(f => f.papel === 'carga' && f.entidade === 'InoveLoadTables'), r.fontes.filter(f => f.papel === 'carga'));
+  t('as regras continuam (Cotação, Aguardando, Pallet)', r.ovs.find(o => o.numero === 'OV019003').etapa === 'cotacao' && r.ovs.find(o => o.numero === 'OV019004').etapa === 'aguardando' && r.ovs.find(o => o.numero === 'OV019006').etapa === 'pallet', r.ovs.map(o => o.numero + ':' + o.etapa));
+  // só a candidata sem os campos: o PalletQuantity e o QuotationId NÃO podem virar pallet / cotação
+  K._limparCache();
+  delete CEN.InoveLoadTables;
+  SERVICO = SERVICO.filter(x => x !== 'InoveLoadTables');
+  r = await K.ordensDoDia({ data: DIA });
+  const o3 = r.ovs.find(o => o.numero === 'OV019004');
+  t('"PalletQuantity" e "QuotationId" não são usados', o3.cargaCols.pallet === null && o3.cargaCols.cotacao === null && o3.podePallet === false, o3.cargaCols);
+  t('aviso diz o que falta e mostra os campos parecidos', r.avisos.some(a => /não achei "Cotação realizada".*ENVIARPALLET_CUSTOM/.test(a) && /Campos parecidos nessa entidade: .*PalletQuantity/.test(a)), r.avisos);
+  delete CEN.OutboundLoadHeaders; CEN.WHSOutboundLoadHeaderEntities = guarda;
+  SERVICO = ['BIOSalesOrderHeaderV1', 'SalesOrderHeadersV2', 'SalesOrderLines', 'WHSWorkTableBiEntities', 'WHSOutboundLoadHeaderEntities', 'SalesInvoiceHeadersV2', 'FiscalDocuments'];
+  K._limparCache(); r = await K.ordensDoDia({ data: DIA });
+
   console.log('9) "Enviar para o Pallet": grava ENVIARPALLET_CUSTOM = Sim no D365');
   chamadas.length = 0;
   let rp = await K.enviarParaPallet('LD-4');

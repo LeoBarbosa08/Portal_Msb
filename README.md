@@ -1289,6 +1289,30 @@ Pedido do dono: "insira antes de Criada o card PENDÊNCIA, e quebre também,
 - Testes: 11 colunas na ordem, só a Pendência pendente. `sw.js` — cache
   `bm-comest-v57`.
 
+### Kanban · colunas da mesma altura + a cotação em outra entidade de cargas (09/11/2026)
+
+Pedido do dono: "os cards têm que ser do mesmo tamanho; caso ele necessite ver as
+outras ordens, ele desce e rola a barra". E o aviso do print: a entidade de
+cargas escolhida (`OutboundLoadHeaders`) não tem o `QuotationPerformed_InoveProjects`.
+
+- **Mesma altura**: no quadro em linhas (4 × 4 × 3), todas as colunas com 52 vh
+  (mín. 300 px); o que não couber rola dentro da coluna.
+- **Segurança da escrita**: a busca "pelo pedaço do nome" dos campos da carga foi
+  apertada — o do pallet só aceita `enviar…pallet` (antes, qualquer campo com
+  "pallet", como `PalletQuantity`, poderia ser o GRAVADO pelo botão) e o da
+  cotação só `quotation…performed` / `cotação realizada` (antes, `QuotationId`).
+- **Outras entidades de cargas**: se a melhor candidata não tem as colunas
+  preferidas (status, cotação, pallet), o portal testa também as outras
+  entidades do service document com "load" no nome (menos as de linhas) e fica
+  com a que tiver mais delas.
+- **Aviso mais útil**: diz o que falta (status da carga, cotação, pallet) e lista
+  os campos parecidos da entidade (status / quot / cota / pallet / realiz) — para
+  o dono apontar o nome certo (envs `KANBAN_COL_CARGA_STATUS`,
+  `KANBAN_COL_CARGA_COTACAO`, `KANBAN_COL_CARGA_PALLET`).
+- Testes: a cotação numa entidade fora das candidatas; `PalletQuantity` e
+  `QuotationId` não usados; o aviso com os campos parecidos. `sw.js` — cache
+  `bm-comest-v58`.
+
 ## Como colocar no ar
 
 1. **Repositório no GitHub** — crie um repositório **privado e vazio** (sem

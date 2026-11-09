@@ -111,7 +111,11 @@
             /* em linhas (4 x 4 x 3): mais espaço entre as linhas e a coluna um pouco
                mais baixa, para caberem duas linhas na tela */
             .kb-board.linhas{gap:12px;}
-            .kb-board.linhas .kb-col{max-height:56vh;}
+            /* 09/11/26 (dono: "os cards têm que ser do mesmo tamanho; se precisar ver
+               as outras ordens, ele desce e rola a barra"): TODAS as colunas com a
+               mesma altura; o que não couber rola dentro da coluna */
+            .kb-board.linhas .kb-col{height:52vh;min-height:300px;max-height:none;}
+            .kb-board.linhas .kb-cards{flex:1;min-height:0;overflow-y:auto;}
             .kb-col{border-radius:12px;background:var(--kb-bg);border:1px solid var(--kb-bd);display:flex;flex-direction:column;min-height:180px;max-height:70vh;min-width:0;container-type:inline-size;}
             .kb-col-h{padding:10px 12px 8px;display:flex;flex-direction:column;gap:2px;}
             .kb-col-t{display:flex;align-items:flex-start;gap:8px;font-size:13.5px;font-weight:700;color:var(--kb-ink);}
