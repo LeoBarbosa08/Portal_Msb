@@ -1052,10 +1052,9 @@ if (!window._bmPerfilSheetLoaded && !window._bmPerfilSheetInjected) {
       atal:[]
     },
 
-    // 07/11/26 (pedido do dono): OCULTO — sem cartão na home e fora da busca;
-    // abre só pelo endereço (pages/kanban.html) e só para as contas do dono
-    // (RESERVA_ESTRITA no api/shared/auth.js). Este bloco fica: é o menu
-    // lateral DENTRO da página.
+    // 07/11/26: oculto (sem cartão na home e fora da busca); 09/11/26: de volta
+    // na home e na busca, "somente para mim" — só as contas do dono
+    // (RESERVA_ESTRITA no api/shared/auth.js). É o menu lateral DENTRO da página.
     // KANBAN (06/11/26, pedido do dono): o quadro das ordens de venda do dia,
     // ao vivo do Dynamics (/api/kanban-ov). Área RESERVADA às contas do dono
     // (AREAS_RESERVADAS em api/shared/auth.js) enquanto ele define o que cada

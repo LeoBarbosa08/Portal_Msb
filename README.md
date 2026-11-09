@@ -759,6 +759,21 @@ restante" e "troque esse nome de LIBERADO para LOGÍSTICA".
 - Testes: `node scripts/test-kanban-ov.js` (filtro do depósito e o nome da
   coluna). `sw.js` — cache `bm-comest-v31`.
 
+### Kanban de volta na home, só para o dono (09/11/2026)
+
+Pedido do dono: "traga a área kanban, porém somente para mim". Desfaz a parte
+"oculto" de 07/11 — o acesso continua igual:
+
+- **Cartão "Kanban"** de volta na grade de Departamentos do `index.html`
+  (`data-area="kanban"`, "1 módulo") e a área + o módulo **Ordens do Dia** de
+  volta no `portal-catalogo.js` (a busca).
+- **Só as contas do dono** (`ia@` e `leonardo.barbosa@`): a área segue em
+  `AREAS_RESERVADAS` e na `RESERVA_ESTRITA` (`api/shared/auth.js`) — nem quem
+  tem acesso full recebe a área no `/api/my-areas`, e o `area-access.js`
+  esconde o cartão e tira o Kanban da busca de quem não tem.
+- `portal-catalogo.js?v=23` (`index.html` e `script.js`); `sw.js` — cache
+  `bm-comest-v32`.
+
 ## Como colocar no ar
 
 1. **Repositório no GitHub** — crie um repositório **privado e vazio** (sem
