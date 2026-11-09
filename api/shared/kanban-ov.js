@@ -508,6 +508,46 @@ async function linhasDaOv(numero, opts) {
   return r;
 }
 
+// ── TIPO DE OPERAÇÃO DAS OVs (09/11/2026) ─────────────────────────
+// Pedido do dono: o Faturamento do Dia mostra o tipo de operação de cada
+// nota; o diário de faturas não tem, então ele vem da ORDEM DE VENDA da nota.
+// Reaproveita a descoberta das entidades de OV deste motor (BIO + V3/V2…):
+// em cada uma, as colunas com cara de tipo de operação (operation, operação,
+// CFOP, natureza, SalesPurchOperationType), lidas pelos números das OVs.
+// -> { porOv: { OV: { valor, coluna, todos:{ 'Ent.Col': v } } }, colunas:[…], diag:[…] }
+const RE_OPER = /operation|opera[cç]|cfop|natur|opertype|salespurchoper/i;
+const RE_OPER_NAO = /operationalsite|operatingunit|date|time/i;
+async function operacoesDasOvs(numeros, ate) {
+  const diag = [], porOv = {};
+  const nums = Array.from(new Set((numeros || []).map(chaveOv).filter(Boolean)));
+  if (!nums.length) return { porOv, colunas: [], diag };
+  const token = await D.getToken();
+  const ents = await entidades(token, ate, diag, false);
+  const comOp = ents.map(E => ({ E, cols: (E.colunas || []).filter(c => RE_OPER.test(c) && !RE_OPER_NAO.test(c)) })).filter(x => x.cols.length);
+  if (!comOp.length) {
+    diag.push({ etapa: 'ov:operacao', erro: 'nenhuma entidade de OV tem coluna de tipo de operação', entidades: ents.map(e => e.entidade) });
+    return { porOv, colunas: [], diag };
+  }
+  await Promise.all(comOp.map(async ({ E, cols }) => {
+    try {
+      const rows = await porNumeros(E.entidade, E.numero, nums, token, ate, diag, 'ov:operacao', [E.numero].concat(cols).join(','), !E.temEmpresa);
+      rows.forEach(r => {
+        const k = chaveOv(r[E.numero]); if (!k) return;
+        const o = porOv[k] || (porOv[k] = { todos: {} });
+        cols.forEach(c => { const v = txt(r[c]); if (v && !VAZIOS.test(v)) o.todos[E.entidade + '.' + c] = v; });
+      });
+    } catch (e) { /* o erro já está no diag */ }
+  }));
+  // o que vai para a tela: a coluna de DESCRIÇÃO, se houver; senão a 1ª preenchida
+  Object.keys(porOv).forEach(k => {
+    const ks = Object.keys(porOv[k].todos);
+    const pref = ks.find(x => /descr|name|nome|texto|text/i.test(x)) || ks[0] || null;
+    porOv[k].coluna = pref; porOv[k].valor = pref ? porOv[k].todos[pref] : '';
+  });
+  return { porOv, colunas: comOp.map(x => x.E.entidade + ': ' + x.cols.join(', ')), diag };
+}
+
+
 function _limparCache() { _cache.clear(); _cacheLinhas.clear(); _ents = null; _entsTs = 0; _servico = null; _servicoTs = 0; _entLinhas = null; }
 
-module.exports = { ordensDoDia, linhasDaOv, hojeSP, EMPRESA, CONFIGURED: D.CONFIGURED, ETAPAS, _limparCache, _interno: { diaDe, RE_STATUS, RE_NAO_STATUS, etapaDe } };
+module.exports = { ordensDoDia, linhasDaOv, operacoesDasOvs, hojeSP, EMPRESA, CONFIGURED: D.CONFIGURED, ETAPAS, _limparCache, _interno: { diaDe, RE_STATUS, RE_NAO_STATUS, etapaDe } };

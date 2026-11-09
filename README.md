@@ -740,6 +740,39 @@ do Sales Report (`sr-diario.css`/`.sd-dw`), com prefixo próprio (`.kb-dw`) no
 - Testes: `node scripts/test-kanban-ov.js` (linhas de uma OV e `?ov=`
   inválido). `sw.js` — cache `bm-comest-v30`.
 
+### Faturamento do Dia · tipo de operação pela OV (09/11/2026)
+
+Pedido do dono: "nessa entidade não tem tipo de operação? caso não tiver, puxe
+das sales order com base na OV". Só para **mostrar** (não filtra nem muda
+valor — a regra das operações saiu em 07/11):
+
+- O diário de faturas (`SalesInvoiceHeadersV2`) ganhou o campo `natureza`
+  (OperationDescription, SalesPurchOperationType_BR, OperationType, CFOP… ou o
+  que tiver cara de operação; `FATDIA_COL_OPERACAO_DIARIO` fixa). Se a nota
+  trouxer, vale a da nota.
+- Sem ela, a operação vem da **ordem de venda** da nota (a coluna OV):
+  `operacoesDasOvs()` em `api/shared/kanban-ov.js` reaproveita a descoberta das
+  entidades de OV do Kanban (BIOSalesOrderHeaderV1, SalesOrderHeadersV3/V2…),
+  pega as colunas com cara de tipo de operação e lê pelos números das OVs (só
+  a MSB). A tela mostra na coluna "Operação", com "pela OV" embaixo; a origem
+  vai em `operacaoFonte` e o resumo em `operacaoOv` (diagnóstico).
+- Se nem as entidades de OV tiverem a coluna, a tela avisa e pede a sonda
+  ("Procurar no Dynamics").
+- `sw.js` — cache `bm-comest-v31` (o v30 ficou com a ficha da OV do Kanban, de outra sessão no mesmo dia).
+
+### Faturamento do Dia · o dado cru de cada nota (09/11/2026)
+
+O dono achou a **000021098** como "Devolução −R$ 5.999,40" no portal, e no D365
+ela é uma venda de R$ 18.000,00 (300 × R$ 60,00). Daqui não se vê o Dynamics,
+então antes de mexer na regra o portal passou a mostrar o dado cru: **clicar
+numa nota** abre um painel com tudo o que o D365 devolve para aquele número na
+MSB — os registros do diário de faturas (o que a lista usa: TotalInvoiceAmount
+& cia.), as linhas da fatura (`SalesInvoiceLines`, com a soma do LineAmount) e o
+documento fiscal —, com "Copiar". `GET /api/faturamento-hoje?nota=…` (só do
+dono), `detalheNota()` em `api/shared/faturamento-dia.js`. `sw.js` — cache
+`bm-comest-v32` (junção com a ficha da OV do Kanban, que entrou no master por
+outra sessão).
+
 ### Kanban · só o ALMOX-PA e a coluna Logística (09/11/2026)
 
 Pedidos do dono: "depósito somente o que for ALMOX-PA, não precisa do
@@ -757,7 +790,7 @@ restante" e "troque esse nome de LIBERADO para LOGÍSTICA".
   avisos); o id segue `liberado` e a regra é a mesma (`ReleaseStatus` =
   Liberado).
 - Testes: `node scripts/test-kanban-ov.js` (filtro do depósito e o nome da
-  coluna). `sw.js` — cache `bm-comest-v31`.
+  coluna). `sw.js` — cache `bm-comest-v33` (junto com o item abaixo).
 
 ### Kanban de volta na home, só para o dono (09/11/2026)
 
@@ -772,7 +805,7 @@ Pedido do dono: "traga a área kanban, porém somente para mim". Desfaz a parte
   tem acesso full recebe a área no `/api/my-areas`, e o `area-access.js`
   esconde o cartão e tira o Kanban da busca de quem não tem.
 - `portal-catalogo.js?v=23` (`index.html` e `script.js`); `sw.js` — cache
-  `bm-comest-v32`.
+  `bm-comest-v33` (as v31/v32 foram da outra sessão, no master).
 
 ## Como colocar no ar
 
