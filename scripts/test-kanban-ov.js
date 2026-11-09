@@ -273,8 +273,8 @@ const bio = (n, st, lib) => ({ dataAreaId: 'msb', SalesOrderNumber: n, StatusPed
   r = await K.ordensDoDia({ data: DIA });
   const ew = {}; r.ovs.forEach(o => { ew[o.numero] = o.etapa; });
   t('em processo -> Separação', ew.OV017550 === 'liberado', ew);
-  t('fechado -> Conferência', ew.OV017551 === 'conferencia', ew);
-  t('cancelado não conta: fechado + cancelado -> Conferência', ew.OV017552 === 'conferencia', ew);
+  t('trabalho fechado SEM carga em processamento -> Separação (Conferência é só pela carga)', ew.OV017551 === 'liberado', ew);
+  t('fechado + cancelado, sem carga -> Separação', ew.OV017552 === 'liberado', ew);
   t('parcial (fechado + aberto) -> Separação', ew.OV017553 === 'liberado', ew);
   t('não liberada, sem trabalho -> Criada', ew.OV017554 === 'criada', ew);
   t('faturada vale antes do trabalho', ew.OV017555 === 'faturado', ew);
@@ -293,7 +293,7 @@ const bio = (n, st, lib) => ({ dataAreaId: 'msb', SalesOrderNumber: n, StatusPed
   const lw = chamadas.find(c => c.ent === 'WHSWorkTableBiEntities' && /OrderNum eq/.test(c.q.filter));
   t('lê pelo OrderNum, só a MSB', lw && /dataAreaId eq 'msb'/.test(lw.q.filter), lw && lw.q.filter);
   t('sem aviso de trabalho', !r.avisos.some(a => /trabalho de depósito/.test(a)), r.avisos);
-  t('Conferência conta', r.etapas.find(e => e.id === 'conferencia').qtd === 2, r.etapas);
+  t('sem carga, ninguém em Conferência', r.etapas.find(e => e.id === 'conferencia').qtd === 0, r.etapas);
 
   console.log('4g) entidade de trabalho fora do OData: Separação pelo ReleaseStatus, com aviso');
   K._limparCache();

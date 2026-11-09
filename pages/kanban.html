@@ -918,7 +918,7 @@
         + '<li class="' + (o.etapa === 'credito' ? 'on' : '') + '">Registro <b>ativo</b> na tabela de gerenciamento de crédito (<code>ACTIVE</code>, pelo <code>SALESID</code>) → <b>Gerenciamento de Crédito</b>.</li>'
         + '<li class="' + (o.etapa === 'liberado' ? 'on' : '') + '">Status do trabalho = <b>Abrir</b> (ou em processo), ou a OV liberada para o depósito → <b>Separação</b>.</li>'
         + '<li class="' + (o.etapa === 'criada' ? 'on' : '') + '">Nenhuma das anteriores → <b>Criada</b>.</li></ol>'
-        + '<p class="kb-dw-p" style="margin-top:8px;">Onde as regras não falam, vale a de antes: OV que saiu do aberto sem status de nota → Faturado; todos os trabalhos fechados sem a carga em processamento → Conferência.</p>'
+        + '<p class="kb-dw-p" style="margin-top:8px;">Onde as regras não falam, vale a de antes: OV que saiu do aberto sem status de nota → Faturado; trabalho fechado com a carga ainda não em processamento → segue em Separação.</p>'
         + '<p class="kb-dw-p" style="margin-top:8px;">Entram as OVs da <b>MSB</b>' + (depTexto() ? ' do depósito <b>' + esc(depTexto()) + '</b>' : '') + '. <b>Criada, Crédito, Separação, Conferência e Cotação</b>: todas as OVs <b>em aberto</b>, de qualquer data. <b>Faturado, Rejeitada, Pallet e Expedição</b>: só as do <b>período escolhido</b> lá em cima (pela data da nota fiscal; sem nota, a de criação). O quadro relê o Dynamics a cada 60 s; as linhas desta ficha são lidas quando ela abre.</p></details>';
       return h;
     }
@@ -963,6 +963,7 @@
       if (pos === 2) {
         var oQue = !ti.veio ? '' : ti.fase === 'aberto' ? ' Trabalho de separação <b>aberto</b> (Status do trabalho = Abrir).'
           : ti.fase === 'processo' ? ' Trabalho de separação <b>em processo</b>' + porQuemT + (ti.fechados ? ' — ' + ti.fechados + ' de ' + ti.total + ' fechados' : '') + '.'
+          : ti.fase === 'fechado' ? ' Trabalho de separação <b>fechado</b>' + porQuemT + '; a carga ainda não entrou em processamento.'
           : ' Ainda sem trabalho de depósito.';
         p.push({ cls: 'agora', tt: 'Agora: Separação', dt: ti.ini ? quando(ti.ini) : '',
           ds: 'Liberada para o depósito' + (libVeio ? ' (' + cod(cLib, rg.releaseStatus) + ')' : '') + '.' + oQue + ' Quando a carga entrar em processamento, vai para Conferência.' });
@@ -974,8 +975,7 @@
       }
       // conferência: carga "Em processamento"
       if (pos === 3) p.push({ cls: 'agora', tt: 'Agora: Conferência', dt: ti.fim ? quando(ti.fim) : '',
-        ds: cf === 'processando' ? 'Carga ' + cgT + ' <b>em processamento</b>. Quando ficar Carregado, vai para Cotação.'
-          : 'Todos os trabalhos de separação estão <b>fechados</b> (<code>' + esc(ti.cod) + '</code>); a carga ainda não entrou em processamento.' });
+        ds: 'Carga ' + (o.cargas || []).map(function (c) { return '<b>' + esc(c.id) + '</b>'; }).join(', ') + ' com <b>Status da carga = Em processamento</b>. Quando ficar Carregado, vai para Cotação.' });
       else if (pos > 3) p.push({ cls: 'feito', tt: 'Conferência', ds: '' });
       else p.push({ cls: 'depois', tt: 'Conferência', ds: 'Quando a carga da OV entrar em processamento (<b>Status da carga = Em processamento</b>), vem para esta etapa.' });
       // cotação: carga "Carregado" e cotação realizada = Não
@@ -1025,8 +1025,8 @@
       var libRel = /^(released|liberado|liberada)$/.test(chaveEnum(rg.releaseStatus));
       var ti = trabInfo(o);
       var decide = et === 'rejeitada' ? 'nota' : et === 'faturado' ? (o.nota && o.nota.aprovada ? 'nota' : 'sit') : et === 'cancelada' ? 'sit'
-        : (et === 'expedicao' || et === 'pallet' || et === 'cotacao') ? 'carga' : et === 'conferencia' ? (o.cargaFase === 'processando' ? 'carga' : 'trab')
-        : et === 'credito' ? 'cred' : et === 'liberado' ? (ti.fase === 'aberto' || ti.fase === 'processo' ? 'trab' : 'lib') : '';
+        : (et === 'expedicao' || et === 'pallet' || et === 'cotacao' || et === 'conferencia') ? 'carga'
+        : et === 'credito' ? 'cred' : et === 'liberado' ? (ti.fase ? 'trab' : 'lib') : '';
       var cg1 = (o.cargas || [])[0] || null, ccol = o.cargaCols || {};
       var tile = function (id, k, cru, col, padrao, fmt) {
         var veio = cru != null && cru !== '';
@@ -1041,9 +1041,9 @@
         credito: (ci.fonte === 'tabela' ? 'O registro <b>ativo</b> na tabela de gerenciamento de crédito decide' : 'O crédito marcado decide') + ': a OV fica em <b>Gerenciamento de Crédito</b> até o crédito aprovar, qualquer que seja a liberação.',
         liberado: ti.fase === 'processo' ? 'Liberada para o depósito e com o trabalho de separação <b>em processo</b>: fica em <b>Separação</b> até a carga entrar em processamento.'
           : ti.fase === 'aberto' ? 'Trabalho de separação <b>aberto</b> (Status do trabalho = Abrir): fica em <b>Separação</b>.'
+          : ti.fase === 'fechado' ? 'Trabalho de separação <b>fechado</b>, mas a carga ainda não entrou em processamento: fica em <b>Separação</b> até a carga ficar Em processamento.'
           : 'Ordem em aberto, sem crédito ativo e liberada para o depósito (<code>ReleaseStatus = Released</code>): fica em <b>Separação</b>.' + (ti.veio ? ' Ainda sem trabalho de depósito.' : ''),
-        conferencia: o.cargaFase === 'processando' ? 'A carga está <b>em processamento</b>: fica em <b>Conferência</b> até ficar Carregado.'
-          : 'Todos os trabalhos de separação da OV estão <b>fechados</b> e a carga ainda não entrou em processamento: fica em <b>Conferência</b>.',
+        conferencia: 'A carga está <b>em processamento</b> (Status da carga = Em processamento): fica em <b>Conferência</b> até ficar Carregado.',
         cotacao: 'A carga está <b>Carregado</b> e a cotação ' + (o.cargaFase === 'cotado' ? 'já foi realizada, mas a nota fiscal ainda não foi aprovada' : '<b>ainda não foi realizada</b>') + ': fica em <b>Cotação</b>.',
         faturado: o.nota && o.nota.aprovada ? 'A nota fiscal <b>' + esc(o.nota.numero) + '</b> está <b>Aprovada</b>: fica em <b>Faturado</b>.'
           : 'A situação não é mais “Ordem em aberto” e não há status de nota para conferir: fica em <b>Faturado</b>.' + (o.nota ? ' Nota fiscal <b>' + esc(o.nota.numero) + '</b>.' : ''),

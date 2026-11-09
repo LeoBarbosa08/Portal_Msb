@@ -1237,6 +1237,16 @@ O dono perguntou "onde está esse botão?" e confirmou o campo
   enviada / remetida). Liberado: o botão marrom de sempre.
 - `sw.js` — cache `bm-comest-v54`.
 
+### Kanban · Conferência só pela carga (09/11/2026)
+
+Pedido do dono: "na Conferência não precisa ter 'todos os trabalhos de separação
+estão fechados', somente o Status da carga = Em processamento". Saiu a reserva
+"trabalho fechado → Conferência" de `etapaDe()`: a Conferência agora é **só** a
+carga "Em processamento"; o trabalho fechado com a carga ainda não em
+processamento **segue em Separação**. Na ficha, a linha do tempo e "Por que está
+em…" falam só da carga. Testes ajustados (trabalho fechado sem carga →
+Separação). `sw.js` — cache `bm-comest-v55`.
+
 ## Como colocar no ar
 
 1. **Repositório no GitHub** — crie um repositório **privado e vazio** (sem

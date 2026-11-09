@@ -292,9 +292,9 @@ function etapaDe(sales, release, credito, trabalho, nota, carga) {
   if (carga === 'cotacao' || carga === 'cotado') return 'cotacao';
   if (carga === 'processando') return 'conferencia';
   if (marcadoV(credito)) return 'credito';
-  // reserva: todos os trabalhos fechados e a carga ainda não em processamento
-  if (trabalho === 'fechado') return 'conferencia';
-  if (trabalho === 'aberto' || trabalho === 'processo' || liberadoV(release)) return 'liberado';
+  // 09/11/26 (dono): Conferência é SÓ a carga "Em processamento" — o trabalho
+  // fechado (sem a carga em processamento) segue em Separação
+  if (trabalho === 'aberto' || trabalho === 'processo' || trabalho === 'fechado' || liberadoV(release)) return 'liberado';
   return 'criada';
 }
 
