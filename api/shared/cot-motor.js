@@ -425,7 +425,18 @@ async function exigirEquipe(req) {
     const temRegra = !!(az && RAZOES_COM_REGRA.indexOf(az.reason) >= 0);
     const comercial = temRegra && ((az.areas || []).indexOf('comercial') >= 0 ||
       (az.modulos || []).some(function (m) { return /^comercial-(cot-|crm$)/.test(String(m)); }));
-    if (!comercial) throw erro(403, 'O CRM é do Comercial — o seu acesso ao Comercial não foi confirmado.');
+    // 09/11/26: o MOTIVO e a CONTA vão na mensagem — o "não foi confirmado"
+    // sozinho não dizia se a pessoa estava fora dos grupos, logada com outra
+    // conta (a @msbbrasil.com no lugar da @biomedical.com.br, ou o contrário)
+    // ou se o Graph não respondeu.
+    if (!comercial) {
+      const motivo = !az ? 'a consulta dos seus grupos no Entra falhou — tente de novo em instantes'
+        : az.reason === 'groups_unavailable' ? 'o Microsoft Graph não respondeu a consulta dos seus grupos — tente de novo em instantes'
+        : az.reason === 'no_group_match' ? 'a conta ' + email + ' não está em nenhum grupo de segurança liberado no portal'
+        : 'os grupos da conta ' + email + ' não liberam o Comercial';
+      throw erro(403, 'O CRM é do Comercial — o seu acesso ao Comercial não foi confirmado: ' + motivo + '.',
+        { motivoAcesso: az ? az.reason : 'erro', conta: email });
+    }
     full = !!(az && (az.reason === 'admin' || az.reason === 'unrestricted_group'));
   }
   const cfg = await lerConfig();
