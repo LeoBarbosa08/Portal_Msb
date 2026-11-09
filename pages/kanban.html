@@ -108,6 +108,10 @@
             .kb-board{display:grid;grid-template-columns:var(--kb-cols,repeat(9,minmax(104px,1fr)));gap:8px;align-items:start;overflow-x:auto;padding-bottom:4px;}
             .kb-vazio.pend{font-size:12px;font-style:italic;}
             .kb-curto{display:none;}
+            /* em linhas (4 x 4 x 3): mais espaço entre as linhas e a coluna um pouco
+               mais baixa, para caberem duas linhas na tela */
+            .kb-board.linhas{gap:12px;}
+            .kb-board.linhas .kb-col{max-height:56vh;}
             .kb-col{border-radius:12px;background:var(--kb-bg);border:1px solid var(--kb-bd);display:flex;flex-direction:column;min-height:180px;max-height:70vh;min-width:0;container-type:inline-size;}
             .kb-col-h{padding:10px 12px 8px;display:flex;flex-direction:column;gap:2px;}
             .kb-col-t{display:flex;align-items:flex-start;gap:8px;font-size:13.5px;font-weight:700;color:var(--kb-ink);}
@@ -427,18 +431,21 @@
     var TONS = [['#E6F0FD', '#C9DCF8', '#1C4E9C'], ['#FFF6D6', '#F3E2A3', '#7A5A06'], ['#ECEEF1', '#D6DADF', '#3D4852'], ['#F1E9FB', '#DCCDF2', '#5B3794'],
                 ['#FDEEE0', '#F5D6B8', '#8A4B12'], ['#DFF6EF', '#BCE8D9', '#126B52'], ['#E3F7E6', '#C2EBC9', '#1B6B2B'], ['#FCE8EC', '#F3C9D2', '#8E2440'],
                 ['#F4EDE3', '#E3D5C0', '#6B4E2A'],    // 9º (Pallet, 09/11/26): madeira
-                ['#E9EBFB', '#CDD2F3', '#3B44A0']];   // 10º (Aguardando Faturamento, 09/11/26): anil
+                ['#E9EBFB', '#CDD2F3', '#3B44A0'],    // 10º (Aguardando Faturamento, 09/11/26): anil
+                ['#FDECEA', '#F6CFC9', '#9A3B2E']];   // 11º (Pendência, 09/11/26): coral
     var TONS_ESC = [['#1F3149', '#2E4668', '#A9C8F5'], ['#3A3320', '#5A4E2A', '#F0D98A'], ['#2A3138', '#3C454E', '#C7D0D8'], ['#2F2742', '#46395F', '#CDB8F0'],
                     ['#3D2D1F', '#5C4330', '#F2C08F'], ['#1E3832', '#2D5249', '#8FE0C6'], ['#1F3A25', '#2E5636', '#9BE0A8'], ['#3D2129', '#5A303C', '#F2A9B9'],
                     ['#362C21', '#504131', '#E6CBA4'],
-                    ['#262A47', '#383E66', '#B9C0F5']];
+                    ['#262A47', '#383E66', '#B9C0F5'],
+                    ['#3E2422', '#5C3530', '#F2B1A6']];
     function tom(i) { var esc_ = document.documentElement.getAttribute('data-tema') === 'escuro'; var t = (esc_ ? TONS_ESC : TONS)[i % TONS.length]; return '--kb-bg:' + t[0] + ';--kb-bd:' + t[1] + ';--kb-ink:' + t[2]; }
     // tom de cada etapa: Criada azul, Crédito amarelo, Separação cinza, Conferência
     // verde-água, Cotação laranja, Faturado lilás
-    var TOM_ETAPA = { criada: 0, credito: 1, liberado: 2, conferencia: 5, cotacao: 4, aguardando: 9, faturado: 3, rejeitada: 7, pallet: 8, expedicao: 6 };
+    var TOM_ETAPA = { criada: 0, credito: 1, liberado: 2, conferencia: 5, cotacao: 4, aguardando: 9, faturado: 3, rejeitada: 7, pallet: 8, expedicao: 6, pendencia: 10 };
     // nome curto da coluna quando ela é estreita (o completo fica no title)
+    var POR_LINHA = 4;   // colunas por linha do quadro (4 x 4 x 3); 0 = tudo numa linha
     var NOME_CURTO = { credito: 'Crédito', aguardando: 'Ag. Faturamento' };
-    var NOME_ETAPA = { criada: 'Criada', credito: 'Gerenciamento de Crédito', liberado: 'Separação', conferencia: 'Conferência', cotacao: 'Cotação', aguardando: 'Aguardando Faturamento', faturado: 'Faturado', rejeitada: 'Rejeitada', pallet: 'Pallet', expedicao: 'Expedição', cancelada: 'Cancelada' };
+    var NOME_ETAPA = { pendencia: 'Pendência', criada: 'Criada', credito: 'Gerenciamento de Crédito', liberado: 'Separação', conferencia: 'Conferência', cotacao: 'Cotação', aguardando: 'Aguardando Faturamento', faturado: 'Faturado', rejeitada: 'Rejeitada', pallet: 'Pallet', expedicao: 'Expedição', cancelada: 'Cancelada' };
     // o quadro mostra só o depósito do filtro do servidor (ALMOX-PA, 09/11/26):
     // o chip/selo do depósito só aparece quando ele foge do filtro
     function depFiltro() { return (estado.r && estado.r.depositos) || []; }
@@ -487,8 +494,11 @@
       // vazia, meia fração (mín. 64 px) — assim as 9 cabem sem rolar para o lado
       var porEtapa = {};
       etapas.forEach(function (e) { porEtapa[e.id] = ovs.filter(function (o) { return o.etapa === e.id; }); });
-      var cols = etapas.map(function (e) { return porEtapa[e.id].length ? 'minmax(104px,1fr)' : 'minmax(64px,.5fr)'; }).join(' ');
-      $('kb-quadro').innerHTML = '<div class="kb-board" style="--kb-cols:' + cols + '">' + etapas.map(function (e) {
+      // 09/11/26 (dono: "quebre 4 x 4 x 3, por enquanto"): POR_LINHA colunas por linha;
+      // 0 volta ao layout de tudo numa linha (coluna vazia estreita / recolhida)
+      var cols = POR_LINHA ? 'repeat(' + POR_LINHA + ',minmax(0,1fr))'
+        : etapas.map(function (e) { return porEtapa[e.id].length ? 'minmax(104px,1fr)' : 'minmax(64px,.5fr)'; }).join(' ');
+      $('kb-quadro').innerHTML = '<div class="kb-board' + (POR_LINHA ? ' linhas' : '') + '" style="--kb-cols:' + cols + '">' + etapas.map(function (e) {
         var lista = porEtapa[e.id];
         var soma = lista.reduce(function (s, o) { return s + (o.valor || 0); }, 0);
         var temValor = lista.some(function (o) { return o.valor != null; });
@@ -524,7 +534,7 @@
     var DW = { el: null, ov: null, volta: null };
     var LINHAS = new Map();          // nº da OV -> { st, linhas, em, erro, ts }
     var LINHAS_TTL = 60000;
-    var ORDEM_ETAPA = { criada: 0, credito: 1, liberado: 2, conferencia: 3, cotacao: 4, aguardando: 5, faturado: 6, rejeitada: 7, pallet: 8, expedicao: 9, cancelada: -1 };
+    var ORDEM_ETAPA = { pendencia: -2, criada: 0, credito: 1, liberado: 2, conferencia: 3, cotacao: 4, aguardando: 5, faturado: 6, rejeitada: 7, pallet: 8, expedicao: 9, cancelada: -1 };
     var POS_FAT = ORDEM_ETAPA.faturado;
     var IC_X = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>';
     var IC_ANT = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="15 18 9 12 15 6"/></svg>';

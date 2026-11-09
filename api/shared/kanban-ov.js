@@ -112,6 +112,9 @@ const VAZIOS = /^(|0|1900-01-01T00:00:00Z|00000000-0000-0000-0000-000000000000|N
 //   • Conferência e Cotação entram no quadro VAZIAS (pendente: true) até o
 //     dono mandar os campos — nenhuma OV cai nelas por enquanto.
 const ETAPAS = [
+  // 09/11/2026 (dono): "insira antes de Criada o card PENDÊNCIA" — VAZIA
+  // (pendente) até o dono mandar os campos
+  { id: 'pendencia',   nome: 'Pendência', pendente: true },
   { id: 'criada',      nome: 'Criada' },
   { id: 'credito',     nome: 'Gerenciamento de Crédito' },
   { id: 'liberado',    nome: 'Separação' },

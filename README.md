@@ -1271,6 +1271,24 @@ esse campo aqui, QuotationPerformed_InoveProjects".
 - Testes: 10 colunas na ordem, Aguardando = Carregado + cotação Sim, o campo
   `QuotationPerformed_InoveProjects` achado. `sw.js` — cache `bm-comest-v56`.
 
+### Kanban · Pendência + o quadro em 4 × 4 × 3 (09/11/2026)
+
+Pedido do dono: "insira antes de Criada o card PENDÊNCIA, e quebre também,
+4 x 4 x 3, por enquanto".
+
+- **Pendência** (id `pendencia`, a 1ª coluna): `pendente: true` em `ETAPAS` —
+  vazia, "aguardando os campos da fase", até o dono mandar os campos (aí: regra em
+  `etapaDe()` e tirar o `pendente`). Cor nova (a 11ª, coral). Fora da linha do
+  tempo da ficha enquanto não tem regra (`ORDEM_ETAPA.pendencia = -2`).
+- **Quadro em linhas** (`POR_LINHA = 4` em `pages/kanban.html`): as 11 colunas em
+  4 × 4 × 3 — Pendência, Criada, Crédito, Separação / Conferência, Cotação,
+  Aguardando Faturamento, Faturado / Rejeitada, Pallet, Expedição —, colunas
+  largas (o cartão inteiro, sem o modo compacto) e um pouco mais baixas (56 vh).
+  `POR_LINHA = 0` volta ao layout de tudo numa linha (coluna vazia estreita /
+  recolhida), que segue no código.
+- Testes: 11 colunas na ordem, só a Pendência pendente. `sw.js` — cache
+  `bm-comest-v57`.
+
 ## Como colocar no ar
 
 1. **Repositório no GitHub** — crie um repositório **privado e vazio** (sem
