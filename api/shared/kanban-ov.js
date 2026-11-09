@@ -41,6 +41,9 @@ const ST_NOTA = require('./fatdia-status');   // status da nota (documento fisca
 
 const EMPRESA   = String(process.env.KANBAN_EMPRESA || process.env.ESTOQUE_MSB_EMPRESA || 'msb').trim().toLowerCase();
 const TTL_MS    = Number(process.env.KANBAN_TTL_MS || 15000);        // cache do dia: 15 s (a tela consulta a cada 30 s)
+// o QUADRO (em aberto de qualquer data, aberto a todos) é mais pesado: 45 s de
+// cache — várias pessoas com o quadro aberto viram UMA leitura no Dynamics
+const TTL_QUADRO = Number(process.env.KANBAN_TTL_QUADRO_MS || 45000);
 const ORCAMENTO = Number(process.env.KANBAN_ORCAMENTO_MS || 36000);  // SWA corta em ~45 s
 const PROVA_MS  = Number(process.env.KANBAN_PROVA_MS || 8000);
 const PRAZO_MS  = Number(process.env.KANBAN_PRAZO_MS || 20000);
@@ -519,21 +522,95 @@ async function ovsDoDia(E, dia, token, ate, diag) {
   throw ultimo || new Error('sem tempo para ler as OVs do dia');
 }
 
-// linhas de uma entidade pelos números das OVs (em lotes)
-async function porNumeros(ent, colNum, numeros, token, ate, diag, etapa, select, semEmpresa) {
-  const out = [];
-  for (let i = 0; i < numeros.length; i += LOTE_OV) {
-    if (restante(ate) < FOLGA_MS + 1000) { diag.push({ etapa, entidade: ent, erro: 'sem tempo: ' + (numeros.length - i) + ' OV(s) sem ' + etapa.split(':')[1] }); break; }
-    const lote = numeros.slice(i, i + LOTE_OV);
-    const filtro = (semEmpresa ? '' : "dataAreaId eq '" + D.odataStr(EMPRESA) + "' and ") + '(' + lote.map(n => colNum + " eq '" + D.odataStr(n) + "'").join(' or ') + ')';
+// ── O QUADRO SEM O "DO DIA" (09/11/2026) ──────────────────────────
+// Dono: "somente aplique o filtro de data para os cards Faturado, Rejeitado,
+// Pallet e Expedição, um filtro de quando até quando ele quer ver; os
+// restantes dos cards têm que pegar toda a vida da empresa". Então o quadro lê:
+//   • as OVs EM ABERTO (SalesStatus = Ordem em aberto), de QUALQUER data —
+//     Criada, Crédito, Separação, Conferência e Cotação;
+//   • as OVs com NOTA no período (diário de faturas pela InvoiceDate) —
+//     Faturado e Rejeitada (e, quando tiverem regra, Pallet e Expedição).
+// Depois da etapa calculada, as colunas DATADAS só ficam com a OV cuja data
+// (a da nota mais recente; sem nota, a de criação) cai no período.
+const DATADAS = ['faturado', 'rejeitada', 'pallet', 'expedicao', 'cancelada'];
+const JANELA_DIAS = Number(process.env.KANBAN_JANELA_DIAS || 365);  // reserva, se o filtro pelo status não passar
+const MAX_COMPL_QUADRO = Number(process.env.KANBAN_MAX_COMPL || 3); // complementos no quadro (V3, V2, SalesOrderHeaders)
+async function ovsAbertas(E, token, ate, diag, avisos) {
+  const cSt = achaCol(E.colunas || [], COL_SALES);
+  const cDep = achaCol(E.colunas || [], COLS.deposito);
+  const emp = E.temEmpresa ? "dataAreaId eq '" + D.odataStr(EMPRESA) + "' and " : '';
+  // o depósito já no filtro, quando a principal tem a coluna (menos linhas do F&O)
+  const dep = !TODOS_DEPOSITOS && cDep ? '(' + DEPOSITOS.map(d => cDep + " eq '" + D.odataStr(d) + "'").join(' or ') + ') and ' : '';
+  const formas = cSt ? [
+    { f: cSt + " eq Microsoft.Dynamics.DataEntities.SalesStatus'Backorder'", rot: 'enum' },
+    { f: cSt + " eq 'Backorder'", rot: 'texto' }
+  ] : [];
+  for (const fo of formas) {
+    if (restante(ate) < FOLGA_MS + 2000) break;
     try {
-      const rows = await D.odataGetComPrazo(ent, Object.assign({ crossCompany: true, filter: filtro }, select ? { select } : {}), token, prazo(ate, 12000));
-      rows.forEach(r => out.push(r));
+      const rows = await D.odataGetComPrazo(E.entidade, { crossCompany: true, filter: emp + dep + fo.f }, token, prazo(ate, PRAZO_MS));
+      diag.push({ etapa: 'ov:abertas', entidade: E.entidade, coluna: cSt, forma: fo.rot, deposito: !!dep, linhas: rows.length });
+      return rows.filter(r => situacaoOv(r[cSt]) === 'aberta');
     } catch (e) {
-      diag.push({ etapa, entidade: ent, erro: String(e.message || e).slice(0, 200) });
-      throw e;
+      diag.push({ etapa: 'ov:abertas', entidade: E.entidade, coluna: cSt, forma: fo.rot, erro: String(e.message || e).slice(0, 220) });
+      if (!/\b400\b/.test(String(e.message))) break;
     }
   }
+  // reserva: as criadas nos últimos JANELA_DIAS dias, e o "em aberto" na memória
+  avisos.push('Não deu para filtrar as OVs em aberto pelo status' + (cSt ? '' : ' (a ' + E.entidade + ' não tem ' + COL_SALES.join('/') + ')') +
+    ': o quadro mostra as em aberto criadas nos últimos ' + JANELA_DIAS + ' dias.');
+  const c = E.criadaEm, hoje = hojeSP(), ini = maisDias(hoje, -JANELA_DIAS);
+  const rows = await D.odataGetComPrazo(E.entidade, { crossCompany: true, filter: emp + dep + c + ' ge ' + ini + 'T00:00:00Z' }, token, prazo(ate, PRAZO_MS));
+  diag.push({ etapa: 'ov:abertas', entidade: E.entidade, forma: 'janela ' + JANELA_DIAS + ' dias', linhas: rows.length });
+  return rows.filter(r => !cSt || situacaoOv(r[cSt]) === 'aberta');
+}
+// OVs com nota no período [de, ateDia]: pelo diário de faturas (InvoiceDate)
+async function ovsComNotaNoPeriodo(de, ateDia, token, ate, diag) {
+  const x = await entidadeExtra(CFG_NOTA, token, ate, diag), E = x.E;
+  if (!E) return { numeros: [], erro: x.motivo };
+  const c = E.data;
+  if (!c) return { numeros: [], erro: 'a ' + E.entidade + ' não tem ' + COL_NOTA.data.join('/') };
+  const emp = E.temEmpresa ? "dataAreaId eq '" + D.odataStr(EMPRESA) + "' and " : '';
+  const prox = maisDias(ateDia, 1);
+  const formas = [{ f: c + ' ge ' + de + 'T00:00:00Z and ' + c + ' lt ' + prox + 'T00:00:00Z', rot: 'data-hora' }, { f: c + ' ge ' + de + ' and ' + c + ' lt ' + prox, rot: 'data' }];
+  let ultimo = null;
+  for (const fo of formas) {
+    try {
+      const rows = await D.odataGetComPrazo(E.entidade, { crossCompany: true, filter: emp + fo.f, select: [E.numero, E.nota, c].join(',') }, token, prazo(ate, PRAZO_MS));
+      diag.push({ etapa: 'ov:periodo', entidade: E.entidade, forma: fo.rot, de, ate: ateDia, linhas: rows.length });
+      const nums = rows.filter(r => { const d = (dataHora(r[c]) || '').slice(0, 10); return d >= de && d <= ateDia; }).map(r => chaveOv(r[E.numero])).filter(Boolean);
+      return { numeros: Array.from(new Set(nums)) };
+    } catch (e) {
+      ultimo = e;
+      diag.push({ etapa: 'ov:periodo', entidade: E.entidade, forma: fo.rot, erro: String(e.message || e).slice(0, 220) });
+      if (!/\b400\b/.test(String(e.message))) break;
+    }
+  }
+  return { numeros: [], erro: String((ultimo && ultimo.message) || ultimo || 'sem tempo').slice(0, 160) };
+}
+
+// linhas de uma entidade pelos números das OVs (em lotes; 2 lotes por vez —
+// o quadro de aberto tem centenas de OVs)
+const PARALELO = 2;
+async function porNumeros(ent, colNum, numeros, token, ate, diag, etapa, select, semEmpresa) {
+  const lotes = [];
+  for (let i = 0; i < numeros.length; i += LOTE_OV) lotes.push(numeros.slice(i, i + LOTE_OV));
+  const res = new Array(lotes.length);
+  let prox = 0, semTempo = 0, falha = null;
+  async function trabalhador() {
+    while (prox < lotes.length && !falha) {
+      const i = prox++;
+      if (restante(ate) < FOLGA_MS + 1000) { semTempo += lotes[i].length; continue; }
+      const filtro = (semEmpresa ? '' : "dataAreaId eq '" + D.odataStr(EMPRESA) + "' and ") + '(' + lotes[i].map(n => colNum + " eq '" + D.odataStr(n) + "'").join(' or ') + ')';
+      try {
+        res[i] = await D.odataGetComPrazo(ent, Object.assign({ crossCompany: true, filter: filtro }, select ? { select } : {}), token, prazo(ate, 12000));
+      } catch (e) { falha = e; }
+    }
+  }
+  await Promise.all(Array.from({ length: Math.min(PARALELO, lotes.length) }, trabalhador));
+  if (falha) { diag.push({ etapa, entidade: ent, erro: String(falha.message || falha).slice(0, 200) }); throw falha; }
+  if (semTempo) diag.push({ etapa, entidade: ent, erro: 'sem tempo: ' + semTempo + ' OV(s) sem ' + etapa.split(':')[1] });
+  const out = [].concat.apply([], res.filter(Boolean));
   diag.push({ etapa, entidade: ent, linhas: out.length });
   return out;
 }
@@ -576,17 +653,32 @@ function crus(row) {
 
 // ── o motor ──────────────────────────────────────────────────────
 const _cache = new Map();
+// modo "do dia" (o original: as OVs CRIADAS no dia) — ?modo=dia e os testes
 async function ordensDoDia(opts) {
   opts = opts || {};
   const dia = /^\d{4}-\d{2}-\d{2}$/.test(String(opts.data || '')) ? String(opts.data) : hojeSP();
-  const c = _cache.get(dia);
-  if (!opts.atualizar && !opts.diag && c && Date.now() - c.ts < TTL_MS) return Object.assign({}, c.r, { cache: true });
+  return montar(opts, { chave: 'dia|' + dia, dia });
+}
+// o QUADRO (09/11/2026): em aberto de qualquer data + as com nota no período
+async function quadro(opts) {
+  opts = opts || {};
+  const hoje = hojeSP();
+  const ehData = (v) => /^\d{4}-\d{2}-\d{2}$/.test(String(v || ''));
+  let de = ehData(opts.de) ? String(opts.de) : hoje, ateDia = ehData(opts.ate) ? String(opts.ate) : de;
+  if (ateDia < de) { const t = de; de = ateDia; ateDia = t; }
+  return montar(opts, { chave: 'quadro|' + de + '|' + ateDia, quadro: true, de, ateDia, dia: ateDia });
+}
+async function montar(opts, modo) {
+  const dia = modo.dia;
+  const c = _cache.get(modo.chave);
+  if (!opts.atualizar && !opts.diag && c && Date.now() - c.ts < (modo.quadro ? TTL_QUADRO : TTL_MS)) return Object.assign({}, c.r, { cache: true });
 
   const ate = Date.now() + ORCAMENTO;
   const diag = [], avisos = [];
   const token = await D.getToken();
   const ents = await entidades(token, ate, diag, !!opts.diag);
   const base = { ok: true, configured: true, empresa: EMPRESA, data: dia, hoje: hojeSP(), geradoEm: new Date().toISOString() };
+  if (modo.quadro) Object.assign(base, { modo: 'quadro', de: modo.de, ate: modo.ateDia, datadas: DATADAS.filter(x => x !== 'cancelada') });
   if (!ents.length) {
     return Object.assign(base, { fontes: [], etapas: ETAPAS.map(e => Object.assign({ qtd: 0, valor: 0 }, e)), canceladas: 0, statusCols: [], statusPadrao: null, ovs: [],
       avisos: ['Nenhuma entidade de ordem de venda respondeu no Dynamics (testadas: ' + CANDIDATAS.join(', ') + '). Veja o diagnóstico.'], diagnostico: diag });
@@ -599,7 +691,25 @@ async function ordensDoDia(opts) {
       avisos: ['As entidades de ordem de venda responderam, mas nenhuma tem coluna de data de criação para separar as OVs do dia (' + ents.map(e => e.entidade).join(', ') + '). Fixe a coluna em KANBAN_COL_CRIADA.'], diagnostico: diag });
   }
 
-  const rows = await ovsDoDia(principal, dia, token, ate, diag);
+  let rows;
+  if (modo.quadro) {
+    // em aberto (qualquer data) + as com nota no período, em paralelo
+    const [abertas, per] = await Promise.all([
+      ovsAbertas(principal, token, ate, diag, avisos),
+      ovsComNotaNoPeriodo(modo.de, modo.ateDia, token, ate, diag).catch(e => ({ numeros: [], erro: String(e.message || e).slice(0, 160) }))
+    ]);
+    if (per.erro) avisos.push('Não deu para ler as notas do período no diário de faturas (' + per.erro + '): Faturado e Rejeitada podem ficar incompletos.');
+    const ja = {}; abertas.forEach(r => { ja[chaveOv(r[principal.numero])] = 1; });
+    const faltam = per.numeros.filter(n => !ja[n]);
+    let faturadas = [];
+    if (faltam.length) {
+      try { faturadas = await porNumeros(principal.entidade, principal.numero, faltam, token, ate, diag, 'ov:faturadas', null, !principal.temEmpresa); }
+      catch (e) { avisos.push('Não deu para ler as OVs faturadas no período: ' + String(e.message || e).slice(0, 160)); }
+    }
+    rows = abertas.concat(faturadas);
+  } else {
+    rows = await ovsDoDia(principal, dia, token, ate, diag);
+  }
   const numeros = Array.from(new Set(rows.map(r => chaveOv(r[principal.numero])).filter(Boolean)));
   const fontes = [{ entidade: principal.entidade, papel: 'principal', colunaData: principal.criadaEm, linhas: rows.length }];
 
@@ -608,7 +718,8 @@ async function ordensDoDia(opts) {
   rows.forEach(r => { const k = chaveOv(r[principal.numero]); if (k) (reg[k] = reg[k] || {})[principal.entidade] = r; });
 
   // complemento (as outras entidades) e linhas, em paralelo
-  const complementos = ents.filter(e => e !== principal);
+  // no quadro (centenas de OVs) só os primeiros complementos (V3, V2, SalesOrderHeaders)
+  const complementos = ents.filter(e => e !== principal).slice(0, modo.quadro ? MAX_COMPL_QUADRO : 99);
   const [compl, porLinha, CRED, TRAB, NOTAS] = await Promise.all([
     Promise.all(complementos.map(async E => {
       if (!numeros.length) return { E, rows: [] };
@@ -715,7 +826,7 @@ async function ordensDoDia(opts) {
     return null;
   };
   const achou = { sales: 0, release: 0, credito: 0 };
-  const ovs = Object.keys(reg).map(k => {
+  const todas = Object.keys(reg).map(k => {
     const sa = cru(k, COL_SALES), re = cru(k, COL_RELEASE);
     // crédito: a tabela da Bio decide (registro ATIVO pelo SALESID); sem a
     // tabela no OData, o CredManInCreditControl do cabeçalho
@@ -774,6 +885,17 @@ async function ordensDoDia(opts) {
       status, campos
     };
   }).sort((a, b) => b.criadaEm.localeCompare(a.criadaEm) || b.numero.localeCompare(a.numero));
+  // quadro: as colunas DATADAS (Faturado, Rejeitada, Pallet, Expedição) só com a
+  // OV do período — pela data da nota mais recente; sem nota, a de criação
+  let foraPeriodo = 0;
+  const ovs = !modo.quadro ? todas : todas.filter(o => {
+    if (DATADAS.indexOf(o.etapa) < 0) return true;
+    const d = (o.notas && o.notas[0] && o.notas[0].data) || diaDe(o.criadaEm, principal.criadaEm) || '';
+    o.dataPeriodo = d || null;
+    const dentro = d >= modo.de && d <= modo.ateDia;
+    if (!dentro) foraPeriodo++;
+    return dentro;
+  });
 
   // as 4 colunas, na ordem do fluxo, com contagem e valor
   const etapas = ETAPAS.map(e => {
@@ -810,8 +932,8 @@ async function ordensDoDia(opts) {
     if (falta.length) avisos.push('Não achei ' + falta.join(', ') + ' nas entidades lidas (' + fontes.map(f => f.entidade).join(', ') + '): as etapas dependem desses campos. Veja os campos de cada OV no painel.');
     else if (achou.sales < ovs.length) avisos.push((ovs.length - achou.sales) + ' OV(s) sem SalesStatus: ficaram em Criada, Gerenciamento de Crédito ou Separação pelos outros campos.');
   }
-  const r = Object.assign(base, { fontes, etapas, canceladas, depositos: TODOS_DEPOSITOS ? null : DEPOSITOS, foraDeposito, statusCols, statusPadrao, ovs, avisos, diagnostico: diag });
-  if (!opts.diag) _cache.set(dia, { ts: Date.now(), r });
+  const r = Object.assign(base, { fontes, etapas, canceladas, depositos: TODOS_DEPOSITOS ? null : DEPOSITOS, foraDeposito, foraPeriodo, statusCols, statusPadrao, ovs, avisos, diagnostico: diag });
+  if (!opts.diag) _cache.set(modo.chave, { ts: Date.now(), r });
   return r;
 }
 
@@ -933,4 +1055,4 @@ async function operacoesDasOvs(numeros, ate) {
 
 function _limparCache() { _cache.clear(); _cacheLinhas.clear(); _ents = null; _entsTs = 0; _servico = null; _servicoTs = 0; _entLinhas = null; Object.keys(_extras).forEach(k => { delete _extras[k]; }); ST_NOTA._limparCache(); }
 
-module.exports = { ordensDoDia, linhasDaOv, operacoesDasOvs, hojeSP, EMPRESA, CONFIGURED: D.CONFIGURED, ETAPAS, _limparCache, _interno: { diaDe, RE_STATUS, RE_NAO_STATUS, etapaDe } };
+module.exports = { ordensDoDia, quadro, linhasDaOv, operacoesDasOvs, hojeSP, EMPRESA, CONFIGURED: D.CONFIGURED, ETAPAS, _limparCache, _interno: { diaDe, RE_STATUS, RE_NAO_STATUS, etapaDe } };

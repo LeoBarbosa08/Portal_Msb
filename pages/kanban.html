@@ -78,6 +78,9 @@
             .kb-btn{display:inline-flex;align-items:center;gap:6px;padding:8px 12px;border-radius:9px;border:1px solid var(--border);background:var(--surface);font:inherit;font-size:12.5px;font-weight:600;color:var(--text-2);cursor:pointer;white-space:nowrap;}
             .kb-btn:hover{border-color:#287A8E;color:var(--text);}
             .kb-btn:disabled{opacity:.55;cursor:default;}
+            .kb-periodo{display:inline-flex;align-items:center;gap:6px;flex-wrap:wrap;}
+            .kb-per-r{font-size:12px;font-weight:600;color:var(--text-3);white-space:nowrap;}
+            .kb-col-p{font-size:10.5px;font-weight:600;color:var(--kb-ink);opacity:.7;}
             .kb-in{padding:7px 10px;border-radius:9px;border:1px solid var(--border);background:var(--surface);color:var(--text);font:inherit;font-size:12.5px;}
             .kb-bar{display:flex;align-items:center;gap:10px;flex-wrap:wrap;padding:10px 12px;background:var(--surface);border:1px solid var(--border);border-radius:12px;margin-bottom:12px;}
             .kb-bar label{font-size:11px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--text-3);}
@@ -324,7 +327,7 @@
               .kb-col-h{align-items:center;padding:10px 4px;}
               .kb-col-t{flex-direction:column-reverse;align-items:center;gap:10px;}
               .kb-col-t .nome{flex:none;writing-mode:vertical-rl;transform:rotate(180deg);white-space:nowrap;-webkit-hyphens:none;hyphens:none;font-size:12.5px;}
-              .kb-col-v,.kb-vazio{display:none;}
+              .kb-col-v,.kb-col-p,.kb-vazio{display:none;}
             }
             @media(max-width:767.98px){
               .kb-title{font-size:18px;}
@@ -341,8 +344,18 @@
               <h1 class="kb-title">Ordens do Dia</h1>
             </div>
             <div class="kb-acoes">
-              <input type="date" class="kb-in" id="kb-data" aria-label="Dia">
+              <!-- 09/11/26: o período vale SÓ para Faturado, Rejeitada, Pallet e
+                   Expedição; as outras colunas mostram TODAS as OVs em aberto -->
+              <div class="kb-periodo" role="group" aria-label="Período de Faturado, Rejeitada, Pallet e Expedição"
+                   title="O período vale só para Faturado, Rejeitada, Pallet e Expedição (pela data da nota fiscal). As outras colunas mostram todas as OVs em aberto, de qualquer data.">
+                <span class="kb-per-r">Faturados de</span>
+                <input type="date" class="kb-in" id="kb-de" aria-label="Faturados de">
+                <span class="kb-per-r">até</span>
+                <input type="date" class="kb-in" id="kb-ate" aria-label="até">
+              </div>
               <button type="button" class="kb-btn" id="kb-hoje">Hoje</button>
+              <button type="button" class="kb-btn" id="kb-7d">7 dias</button>
+              <button type="button" class="kb-btn" id="kb-mes">Mês</button>
               <button type="button" class="kb-btn" id="kb-atualizar">
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>
                 Atualizar
@@ -388,7 +401,7 @@
   <script>
   (function () {
     'use strict';
-    var AUTO_MS = 30000;               // "tempo real": o dia de hoje relê o Dynamics a cada 30 s
+    var AUTO_MS = 60000;               // "tempo real": o quadro (em aberto = agora) relê o Dynamics a cada 60 s
     var $ = function (id) { return document.getElementById(id); };
     var esc = function (s) { return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); };
     var fBRL = function (v) { return v == null ? '—' : 'R$ ' + Number(v).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }); };
@@ -445,7 +458,7 @@
         + (o.nota ? '<span class="kb-chip kb-nf' + (o.nota.rejeitada ? ' kb-nf-rej' : '') + '" title="Nota fiscal' + (o.nota.status ? ' · ' + esc(rotNF(o.nota.status)) : '') + ((o.notas || []).length > 1 ? ' · ' + o.notas.length + ' notas' : '') + '">NF ' + esc(o.nota.numero) + '</span>' + (o.nota.rejeitada ? '<span class="kb-chip kb-nf-rej">' + esc(rotNF(o.nota.status)) + '</span>' : '') : '')
         + (o.oc ? '<span class="kb-chip" title="OC do cliente">' + esc(o.oc) + '</span>' : '')
         + (depDiferente(o.deposito) ? '<span class="kb-chip">' + esc(o.deposito) + '</span>' : '')
-        + '<span>' + esc(fHora(o.criadaEm)) + '</span>'
+        + '<span title="Criada em ' + esc(fDia(diaSP(o.criadaEm) || '') + ' ' + fHora(o.criadaEm)) + '">' + esc(quandoCriada(o)) + '</span>'
         + (o.itens != null ? '<span>· ' + o.itens + ' ite' + (o.itens === 1 ? 'm' : 'ns') + '</span>' : '')
         + '<span class="kb-val">' + (o.valor != null ? esc(fBRL(o.valor)) : '') + '</span></div></button>';
     }
@@ -467,19 +480,20 @@
         var soma = lista.reduce(function (s, o) { return s + (o.valor || 0); }, 0);
         var temValor = lista.some(function (o) { return o.valor != null; });
         return '<section class="kb-col" style="' + tom(TOM_ETAPA[e.id] || 0) + '"' + (e.pendente && !lista.length ? ' title="' + esc(e.nome) + ': aguardando os campos da fase"' : '') + '><div class="kb-col-h"><div class="kb-col-t"><span class="nome" title="' + esc(e.nome) + '">' + (NOME_CURTO[e.id] ? '<span class="kb-longo">' + esc(e.nome) + '</span><span class="kb-curto">' + esc(NOME_CURTO[e.id]) + '</span>' : esc(e.nome)) + '</span><span class="kb-cnt">' + lista.length + '</span></div>'
-          + '<div class="kb-col-v">' + (temValor ? esc(fK(soma)) : '&nbsp;') + '</div></div>'
+          + '<div class="kb-col-v">' + (temValor ? esc(fK(soma)) : '&nbsp;') + '</div>'
+          + ((r.datadas || []).indexOf(e.id) >= 0 ? '<div class="kb-col-p" title="Só as do período escolhido (data da nota fiscal)">' + esc(textoPeriodo(r)) + '</div>' : '') + '</div>'
           + '<div class="kb-cards">' + (lista.length ? lista.map(cardHtml).join('') : e.pendente ? '<div class="kb-vazio pend" title="aguardando os campos da fase"><span class="kb-longo">aguardando os campos da fase</span><span class="kb-curto">a definir</span></div>' : '<div class="kb-vazio">—</div>') + '</div></section>';
       }).join('') + '</div>';
     }
 
     function renderLista(ovs) {
       var r = estado.r;
-      if (!ovs.length) { $('kb-quadro').innerHTML = '<div class="kb-vazio">' + ((r.ovs || []).length ? 'Nenhuma OV com essa busca.' : 'Nenhuma ordem de venda da MSB' + (depTexto() ? ' do ' + depTexto() : '') + ' criada em ' + fDia(r.data) + '.') + '</div>'; return; }
+      if (!ovs.length) { $('kb-quadro').innerHTML = '<div class="kb-vazio">' + ((r.ovs || []).length ? 'Nenhuma OV com essa busca.' : 'Nenhuma ordem de venda da MSB' + (depTexto() ? ' do ' + depTexto() : '') + ' em aberto, nem faturada no período.') + '</div>'; return; }
       var g = function (o, k) { return (o.regra && o.regra[k]) || ''; };
       $('kb-quadro').innerHTML = '<div class="kb-lista"><table class="kb-tbl"><thead><tr><th>OV</th><th>Cliente</th><th>Criada</th><th>OC</th><th>Etapa</th>'
         + '<th>SalesStatus</th><th>ReleaseStatus</th><th>Crédito</th><th>Trabalho</th><th>NF</th><th class="num">Itens</th><th class="num">Valor</th></tr></thead><tbody>'
         + ovs.map(function (o) {
-          return '<tr tabindex="0" data-ov="' + esc(o.numero) + '"' + (estado.aberta === o.numero ? ' class="is-aberta"' : '') + '><td><b>' + esc(o.numero) + '</b></td><td>' + esc(o.cliente || o.conta) + '</td><td>' + esc(fHora(o.criadaEm)) + '</td><td>' + esc(o.oc) + '</td>'
+          return '<tr tabindex="0" data-ov="' + esc(o.numero) + '"' + (estado.aberta === o.numero ? ' class="is-aberta"' : '') + '><td><b>' + esc(o.numero) + '</b></td><td>' + esc(o.cliente || o.conta) + '</td><td>' + esc(quandoCriada(o)) + '</td><td>' + esc(o.oc) + '</td>'
             + '<td><b>' + esc(NOME_ETAPA[o.etapa] || o.etapa) + '</b></td><td>' + esc(g(o, 'salesStatus')) + '</td><td>' + esc(g(o, 'releaseStatus')) + '</td><td>' + esc(credInfo(o.regra).veio ? credInfo(o.regra).rotulo : '') + '</td><td>' + esc(trabInfo(o).veio ? trabInfo(o).rotulo : '') + '</td><td>' + (o.nota ? esc(o.nota.numero) + (o.nota.status ? ' · ' + esc(rotNF(o.nota.status)) : '') : '') + '</td>'
             + '<td class="num">' + (o.itens == null ? '' : o.itens) + '</td><td class="num">' + esc(o.valor == null ? '—' : fBRL(o.valor)) + '</td></tr>';
         }).join('') + '</tbody></table></div>';
@@ -806,7 +820,7 @@
       // números-chave
       var noDia = (estado.r.ovs || []).filter(function (x) { return x.etapa !== 'cancelada'; });
       var totDia = noDia.reduce(function (s, x) { return s + (x.valor || 0); }, 0);
-      var subV = [o.itens != null ? plural(o.itens, 'item', 'itens') : '', o.valor != null && totDia > 0 && o.etapa !== 'cancelada' && noDia.length > 1 ? fPct(o.valor / totDia) + ' do valor do dia' : ''].filter(Boolean).join(' · ');
+      var subV = [o.itens != null ? plural(o.itens, 'item', 'itens') : '', o.valor != null && totDia > 0 && o.etapa !== 'cancelada' && noDia.length > 1 ? fPct(o.valor / totDia) + ' do valor do quadro' : ''].filter(Boolean).join(' · ');
       var diaC = diaSP(o.criadaEm), ent = isoData(o.entrega), late = ent && ent < hoje && pos >= 0 && pos < POS_FAT;
       var h = '<div class="kb-dw-kpis">'
         + kp('Valor da OV', o.valor != null ? esc(fBRL(o.valor)) : '—', subV ? esc(subV) : (o.valor == null ? 'linhas não lidas no quadro' : ''), 'destaque')
@@ -842,7 +856,7 @@
         + '<li class="' + (o.etapa === 'liberado' ? 'on' : '') + '">Liberação (<code>ReleaseStatus</code>) = Liberado (Released), ou trabalho de depósito aberto/<b>em processo</b> → <b>Separação</b>.</li>'
         + '<li class="' + (o.etapa === 'criada' ? 'on' : '') + '">Nenhuma das anteriores → <b>Criada</b>.</li></ol>'
         + '<p class="kb-dw-p" style="margin-top:8px;"><b>Cotação</b>, <b>Pallet</b> e <b>Expedição</b> já estão no quadro, mas os campos que definem essas fases ainda vão ser informados: por enquanto nenhuma OV cai nelas. A Cotação vai sair da <b>carga</b> da OV (<code>WHSOutboundLoadHeaderEntity</code>, pelo <code>LoadId</code> dos trabalhos de depósito).</p>'
-        + '<p class="kb-dw-p" style="margin-top:8px;">Entram as OVs da <b>MSB</b>' + (depTexto() ? ' do depósito <b>' + esc(depTexto()) + '</b>' : '') + ' criadas no dia escolhido (horário de Brasília); as de outros depósitos ficam fora. O quadro relê o Dynamics a cada 30 s no dia de hoje; as linhas desta ficha são lidas quando ela abre.</p></details>';
+        + '<p class="kb-dw-p" style="margin-top:8px;">Entram as OVs da <b>MSB</b>' + (depTexto() ? ' do depósito <b>' + esc(depTexto()) + '</b>' : '') + '. <b>Criada, Crédito, Separação, Conferência e Cotação</b>: todas as OVs <b>em aberto</b>, de qualquer data. <b>Faturado, Rejeitada, Pallet e Expedição</b>: só as do <b>período escolhido</b> lá em cima (pela data da nota fiscal; sem nota, a de criação). O quadro relê o Dynamics a cada 60 s; as linhas desta ficha são lidas quando ela abre.</p></details>';
       return h;
     }
 
@@ -1175,30 +1189,52 @@
     }
     function lembrar(r) { estado.antes = {}; (r.ovs || []).forEach(function (o) { estado.antes[o.numero] = o.etapa; }); }
 
+    // ── período de Faturado, Rejeitada, Pallet e Expedição (09/11/26) ──
+    function somaDias(iso, n) { var d = new Date(iso + 'T12:00:00Z'); d.setUTCDate(d.getUTCDate() + n); return d.toISOString().slice(0, 10); }
+    function periodo() {
+      var de = $('kb-de').value || hojeSP(), ate = $('kb-ate').value || de;
+      if (ate < de) { var t = de; de = ate; ate = t; }
+      return { de: de, ate: ate };
+    }
+    function porPeriodo(de, ate) { $('kb-de').value = de; $('kb-ate').value = ate; estado.r = null; estado.antes = null; carregar(false); }
+    function textoPeriodo(r) {
+      if (!r || !r.de) return '';
+      var h = hojeSP();
+      if (r.de === r.ate) return r.de === h ? 'hoje' : fDia(r.de);
+      return fDM(r.de) + ' a ' + (r.ate === h ? 'hoje' : fDM(r.ate));
+    }
+    // data de criação curta: hoje = só a hora; antes = o dia (e o ano, se outro)
+    function quandoCriada(o) {
+      var d = diaSP(o.criadaEm), h = hojeSP();
+      if (!d) return '';
+      if (d === h) return fHora(o.criadaEm);
+      return d.slice(0, 4) === h.slice(0, 4) ? fDM(d) : fDM(d) + '/' + d.slice(2, 4);
+    }
+
     async function carregar(forcar) {
       if (estado.carregando) return;
       estado.carregando = true;
-      var dia = $('kb-data').value || hojeSP();
+      var per = periodo();
       $('kb-atualizar').disabled = true;
       status('Lendo o Dynamics…', true);
       try {
-        var res = await fetch('/api/kanban-ov?data=' + encodeURIComponent(dia) + (forcar ? '&atualizar=1' : ''), { cache: 'no-store' });
+        var res = await fetch('/api/kanban-ov?de=' + encodeURIComponent(per.de) + '&ate=' + encodeURIComponent(per.ate) + (forcar ? '&atualizar=1' : ''), { cache: 'no-store' });
         var j = null; try { j = await res.json(); } catch (e) {}
         if (res.status === 401) throw new Error('Entre com a sua conta Microsoft para ver o Kanban.');
         if (res.status === 403) throw new Error('A área Kanban é de acesso restrito.');
         if (!res.ok || !j || j.ok === false) throw new Error((j && (j.detalhe || j.error)) || ('HTTP ' + res.status));
         if (j.configured === false) { msgs([['aviso', 'O Dynamics não está configurado neste ambiente (credenciais D365 nas configurações do site).']]); $('kb-quadro').innerHTML = '<div class="kb-vazio">Sem conexão com o Dynamics.</div>'; status('Dynamics não configurado', false); return; }
-        if (estado.r && estado.r.data === j.data) marcarMudancas(j); else estado.mudou = {};
+        if (estado.r && estado.r.de === j.de && estado.r.ate === j.ate) marcarMudancas(j); else estado.mudou = {};
         lembrar(j);
         estado.r = j;
         var avs = (j.avisos || []).map(function (a) { return ['aviso', esc(a)]; });
-        if (j.canceladas) avs.push(['aviso', j.canceladas + ' OV(s) cancelada(s) no dia, fora do quadro.']);
+        if (j.canceladas) avs.push(['aviso', j.canceladas + ' OV(s) cancelada(s) no período, fora do quadro.']);
         msgs(avs);
         // 09/11/26 (pedido do dono: "remova essa escrita"): sem a linha embaixo do
         // título (MSB · depósito · quantas OVs · valor · as entidades lidas). As
         // entidades continuam no "Diagnóstico da leitura no Dynamics".
         $('kb-diag').style.display = '';
-        $('kb-diag-txt').textContent = JSON.stringify({ fontes: j.fontes, etapas: j.etapas, depositos: j.depositos, foraDeposito: j.foraDeposito, diagnostico: j.diagnostico }, null, 1);
+        $('kb-diag-txt').textContent = JSON.stringify({ de: j.de, ate: j.ate, fontes: j.fontes, etapas: j.etapas, depositos: j.depositos, foraDeposito: j.foraDeposito, foraPeriodo: j.foraPeriodo, diagnostico: j.diagnostico }, null, 1);
         render();
         // ficha aberta: repinta com a leitura nova (sem pular o scroll); a OV que
         // mudou de etapa relê as linhas; a que sumiu (outro dia) fecha a ficha
@@ -1207,9 +1243,8 @@
           else { pintarFicha(); if (estado.mudou[estado.aberta] === 'status') carregarLinhas(estado.aberta, true); }
         }
         var hora = new Date(j.geradoEm || Date.now()).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
-        var aoVivo = j.data === hojeSP();
         var n = Object.keys(estado.mudou).length;
-        status((aoVivo ? 'Ao vivo · ' : '') + 'atualizado às ' + hora + (aoVivo ? ' · a cada 30 s' : '') + (n ? ' · ' + n + ' mudança(s)' : ''), aoVivo);
+        status('Ao vivo · atualizado às ' + hora + ' · a cada 60 s' + (n ? ' · ' + n + ' mudança(s)' : ''), true);
       } catch (e) {
         msgs([['erro', 'Não foi possível ler as ordens de venda no Dynamics: ' + esc(e.message)]]);
         if (!estado.r) $('kb-quadro').innerHTML = '<div class="kb-vazio">—</div>';
@@ -1221,20 +1256,21 @@
       }
     }
 
-    // só o dia de hoje se atualiza sozinho, e só com a aba visível
+    // o quadro se atualiza sozinho (o que está em aberto é sempre "agora"), só com a aba visível
     function agendar() {
       clearTimeout(estado.timer);
-      if ($('kb-data').value !== hojeSP()) return;
       estado.timer = setTimeout(function () { if (document.visibilityState === 'visible') carregar(false); else agendar(); }, AUTO_MS);
     }
     document.addEventListener('visibilitychange', function () {
-      if (document.visibilityState === 'visible' && estado.r && $('kb-data').value === hojeSP()
-          && Date.now() - new Date(estado.r.geradoEm).getTime() > AUTO_MS) carregar(false);
+      if (document.visibilityState === 'visible' && estado.r && Date.now() - new Date(estado.r.geradoEm).getTime() > AUTO_MS) carregar(false);
     });
 
-    $('kb-data').value = hojeSP(); $('kb-data').max = hojeSP();
-    $('kb-data').addEventListener('change', function () { estado.r = null; estado.antes = null; carregar(false); });
-    $('kb-hoje').addEventListener('click', function () { $('kb-data').value = hojeSP(); estado.r = null; estado.antes = null; carregar(false); });
+    $('kb-de').value = $('kb-ate').value = hojeSP(); $('kb-de').max = $('kb-ate').max = hojeSP();
+    $('kb-de').addEventListener('change', function () { estado.r = null; estado.antes = null; carregar(false); });
+    $('kb-ate').addEventListener('change', function () { estado.r = null; estado.antes = null; carregar(false); });
+    $('kb-hoje').addEventListener('click', function () { porPeriodo(hojeSP(), hojeSP()); });
+    $('kb-7d').addEventListener('click', function () { porPeriodo(somaDias(hojeSP(), -6), hojeSP()); });
+    $('kb-mes').addEventListener('click', function () { porPeriodo(hojeSP().slice(0, 8) + '01', hojeSP()); });
     $('kb-atualizar').addEventListener('click', function () { carregar(true); });
     $('kb-busca').addEventListener('input', function (e) { estado.busca = e.target.value.trim(); render(); });
     Array.prototype.forEach.call(document.querySelectorAll('.kb-seg button'), function (b) {

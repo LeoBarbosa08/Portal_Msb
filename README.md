@@ -1140,6 +1140,40 @@ FiscalDocumentBioEntity verifica nessa entidade, porque ela tá aprovada" (a
   entidade da Bio nem era consultada.
 - `sw.js` — cache `bm-comest-v51`.
 
+### Kanban · em aberto de qualquer data + período só nas colunas finais (09/11/2026)
+
+Pedido do dono: "somente aplique o filtro de data para os cards Faturado,
+Rejeitado, Pallet e Expedição, um filtro de quando até quando ele quer ver; os
+restantes dos cards têm que pegar toda a vida da empresa".
+
+- **Motor** (`quadro()` em `api/shared/kanban-ov.js`; o modo antigo, as OVs
+  criadas no dia, segue em `ordensDoDia()` / `?modo=dia`): lê, em paralelo,
+  - as OVs **em aberto** (SalesStatus = Ordem em aberto) de **qualquer data** —
+    filtro pelo status no OData (`SalesOrderStatus eq
+    Microsoft.Dynamics.DataEntities.SalesStatus'Backorder'`; se o F&O recusar, o
+    mesmo em texto; se nada passar, as criadas nos últimos `KANBAN_JANELA_DIAS`
+    = 365 dias, com aviso) e pelo depósito ALMOX-PA já no filtro;
+  - as OVs com **nota no período** (diário de faturas pela `InvoiceDate`, de
+    `de` até `ate` inclusive), lidas pelos números.
+  Depois da etapa calculada, as colunas **datadas** (Faturado, Rejeitada, Pallet,
+  Expedição) só ficam com a OV cuja data — a da nota mais recente; sem nota, a de
+  criação — cai no período (`foraPeriodo` conta as que saíram). Para aguentar
+  centenas de OVs: as leituras por número vão 2 lotes por vez, o quadro usa só
+  os 3 primeiros complementos (`KANBAN_MAX_COMPL`) e o cache é de 45 s
+  (`KANBAN_TTL_QUADRO_MS`) — várias pessoas com o quadro aberto viram UMA
+  leitura no Dynamics.
+- **API**: `GET /api/kanban-ov?de=AAAA-MM-DD&ate=AAAA-MM-DD` (padrão: hoje; no
+  máximo 1 ano; `?data=` vale como de = até).
+- **Tela**: "Faturados de … até …" com os atalhos **Hoje / 7 dias / Mês** no
+  lugar da data única; as colunas datadas mostram o período embaixo do valor;
+  o cartão mostra a data de criação quando não é de hoje ("10/03/25"); o quadro
+  é sempre ao vivo (a cada 60 s).
+- Testes: `node scripts/test-kanban-ov.js` — o simulador do F&O agora avalia o
+  `$filter` de verdade (e/ou, enum, intervalos); o quadro: em aberto de 2025,
+  faturada e rejeitada dentro/fora do período, cancelada, outro depósito, cache
+  por período, de/até trocados, o F&O recusando o enum; a rota (período > 1 ano
+  e data inválida → 400). `sw.js` — cache `bm-comest-v52`.
+
 ## Como colocar no ar
 
 1. **Repositório no GitHub** — crie um repositório **privado e vazio** (sem
