@@ -33,8 +33,8 @@ global.fetch = async (url) => {
   if (!E) return corpo({ error: { message: 'not found' } }, 404);
   if (q.top === '1') return corpo({ value: E.linhas.slice(0, 1) });
   // filtro por número de OV (complemento / linhas)
-  const nums = (q.filter.match(/(SalesOrderNumber|SalesId) eq '([^']+)'/g) || []).map(s => s.split("'")[1]);
-  if (nums.length) return corpo({ value: E.linhas.filter(r => nums.indexOf(r.SalesOrderNumber || r.SalesId) >= 0) });
+  const nums = (q.filter.match(/(SalesOrderNumber|SalesId|SALESID) eq '([^']+)'/g) || []).map(s => s.split("'")[1]);
+  if (nums.length) return corpo({ value: E.linhas.filter(r => nums.indexOf(r.SalesOrderNumber || r.SalesId || r.SALESID) >= 0) });
   // filtro por data de criação: devolve o que cai no intervalo pedido
   const m = /ge (\S+) and \S+ lt (\S+)/.exec(q.filter);
   if (m) return corpo({ value: E.linhas.filter(r => r.OrderCreationDateTime >= m[1] && r.OrderCreationDateTime < m[2]) });
@@ -155,6 +155,58 @@ const bio = (n, st, lib) => ({ dataAreaId: 'msb', SalesOrderNumber: n, StatusPed
   CEN.SalesOrderHeadersV2.linhas = CEN.SalesOrderHeadersV2.linhas.map(x => Object.assign({}, x, { DefaultShippingWarehouseId: '' }));
   r = await K.ordensDoDia({ data: DIA });
   t('nenhuma OV com depósito: quadro vazio e aviso', r.ovs.length === 0 && r.avisos.some(a => /Nenhuma OV do dia trouxe o depósito/.test(a)), r.avisos);
+
+  console.log('4c) gerenciamento de crédito pela tabela da Bio (ACTIVE pelo SALESID)');
+  K._limparCache(); chamadas.length = 0;
+  // nome público fora das candidatas: achado pelo "credman" do service document
+  SERVICO = ['BIOSalesOrderHeaderV1', 'SalesOrderHeadersV2', 'SalesOrderLines', 'BioCredManTableV1Publica'];
+  const cm = (n, ativo) => ({ dataAreaId: 'msb', SALESID: n, ACTIVE: ativo, CUSTACCOUNT: 'C' + n.slice(-3) });
+  CEN = {
+    SalesOrderHeadersV2: { linhas: ['OV017540', 'OV017541', 'OV017542', 'OV017543', 'OV017544'].map((n, i) => v2(n, DIA + 'T1' + i + ':00:00Z', 'Backorder')) },
+    BIOSalesOrderHeaderV1: { linhas: [
+      b4('OV017540', 'Backorder', 'Open', 'No'),         // tabela ATIVA -> crédito (o cabeçalho diz No)
+      b4('OV017541', 'Backorder', 'Released', 'Yes'),    // tabela INATIVA -> Logística (o cabeçalho diz Yes: a tabela vale)
+      b4('OV017542', 'Backorder', 'Released', 'No'),     // sem registro na tabela -> Logística
+      b4('OV017543', 'Backorder', 'Open', 'No'),         // 2 registros, um ativo -> crédito
+      b4('OV017544', 'Invoiced', 'Released', 'No')       // faturada: a situação vale antes do crédito
+    ] },
+    SalesOrderLines: { linhas: [] },
+    BioCredManTableV1Publica: { linhas: [cm('OV017540', 'Yes'), cm('OV017541', 'No'), cm('OV017543', 'No'), cm('OV017543', 'Yes'), cm('OV017544', 'Yes')] }
+  };
+  r = await K.ordensDoDia({ data: DIA });
+  const ec = {}; r.ovs.forEach(o => { ec[o.numero] = o.etapa; });
+  t('ACTIVE ativo -> Gerenciamento de Crédito', ec.OV017540 === 'credito' && ec.OV017543 === 'credito', ec);
+  t('inativo ou sem registro -> segue a liberação', ec.OV017541 === 'liberado' && ec.OV017542 === 'liberado', ec);
+  t('a tabela vale antes do cabeçalho', ec.OV017541 === 'liberado' && ec.OV017540 === 'credito', ec);
+  t('faturada continua Faturado', ec.OV017544 === 'faturado', ec);
+  const rg40 = r.ovs.find(o => o.numero === 'OV017540').regra, rg42 = r.ovs.find(o => o.numero === 'OV017542').regra, rg43 = r.ovs.find(o => o.numero === 'OV017543').regra;
+  t('regra diz a fonte, a coluna e o valor', rg40.creditoFonte === 'tabela' && rg40.creditoAtivo === true && rg40.credito === 'Yes' && rg40.creditoCol === 'BioCredManTableV1Publica.ACTIVE' && rg40.creditoOv === 'SALESID', rg40);
+  t('sem registro: inativo, 0 registros', rg42.creditoFonte === 'tabela' && rg42.creditoAtivo === false && rg42.creditoRegistros === 0 && rg42.credito === null, rg42);
+  t('2 registros, decide o ativo', rg43.creditoRegistros === 2 && rg43.credito === 'Yes', rg43);
+  t('a tabela entra nas fontes', r.fontes.some(f => f.entidade === 'BioCredManTableV1Publica' && f.papel === 'crédito'), r.fontes);
+  t('o registro de crédito vai para os campos da OV', r.ovs.find(o => o.numero === 'OV017540').campos.BioCredManTableV1Publica.SALESID === 'OV017540', r.ovs.find(o => o.numero === 'OV017540').campos);
+  const lc = chamadas.find(c => c.ent === 'BioCredManTableV1Publica' && /SALESID eq/.test(c.q.filter));
+  t('lê a tabela pelo SALESID, só a MSB', lc && /dataAreaId eq 'msb'/.test(lc.q.filter), lc && lc.q.filter);
+  t('sem aviso de crédito', !r.avisos.some(a => /crédito|CredMan/i.test(a)), r.avisos);
+
+  console.log('4d) tabela de crédito fora do OData: cai no cabeçalho, com aviso');
+  K._limparCache();
+  SERVICO = ['BIOSalesOrderHeaderV1', 'SalesOrderHeadersV2', 'SalesOrderLines'];
+  delete CEN.BioCredManTableV1Publica;
+  r = await K.ordensDoDia({ data: DIA });
+  const ed = {}; r.ovs.forEach(o => { ed[o.numero] = o.etapa; });
+  t('cabeçalho decide: OV017541 (Yes) em crédito', ed.OV017541 === 'credito' && ed.OV017540 === 'criada', ed);
+  t('fonte = cabeçalho', r.ovs.find(o => o.numero === 'OV017541').regra.creditoFonte === 'cabecalho', r.ovs.find(o => o.numero === 'OV017541').regra);
+  t('aviso diz que a tabela não respondeu e por quê', r.avisos.some(a => /BioCredManTableV1Entity\) não respondeu/.test(a) && /credman/.test(a)), r.avisos);
+  t('sem o "Não achei CredManInCreditControl" repetido', !r.avisos.some(a => /Não achei .*CredMan/.test(a)), r.avisos);
+
+  console.log('4e) a entidade existe mas sem a coluna ACTIVE');
+  K._limparCache();
+  SERVICO = ['BIOSalesOrderHeaderV1', 'SalesOrderHeadersV2', 'SalesOrderLines', 'BioCredManTableV1'];
+  CEN.BioCredManTableV1 = { linhas: [{ dataAreaId: 'msb', SALESID: 'OV017540', STATUS: 'x' }] };
+  r = await K.ordensDoDia({ data: DIA });
+  t('aviso diz que falta a coluna ACTIVE', r.avisos.some(a => /BioCredManTableV1: sem a coluna ACTIVE/.test(a)), r.avisos);
+  delete CEN.BioCredManTableV1;
 
   console.log('5) linhas de uma OV (a ficha do painel)');
   K._limparCache(); chamadas.length = 0;

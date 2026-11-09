@@ -64,7 +64,8 @@
                juntas pelo número da OV; valor pelas linhas). 07/11/26: QUATRO
                colunas fixas, na ordem do fluxo — Criada, Gerenciamento de Crédito,
                Logística (era "Liberado"; 09/11/26), Faturado — pela regra do dono (SalesStatus, ReleaseStatus,
-               CredManInCreditControl), calculada no servidor (api/shared/kanban-ov.js).
+               e o crédito: tabela BioCredManTableV1, ACTIVE pelo SALESID — 09/11/26),
+               calculada no servidor (api/shared/kanban-ov.js).
                Área RESERVADA (AREAS_RESERVADAS em api/shared/auth.js). -->
           <style>
             .kb-head{display:flex;align-items:flex-end;justify-content:space-between;gap:16px;flex-wrap:wrap;padding:22px 0 10px;}
@@ -420,10 +421,10 @@
       if (!ovs.length) { $('kb-quadro').innerHTML = '<div class="kb-vazio">' + ((r.ovs || []).length ? 'Nenhuma OV com essa busca.' : 'Nenhuma ordem de venda da MSB' + (depTexto() ? ' do ' + depTexto() : '') + ' criada em ' + fDia(r.data) + '.') + '</div>'; return; }
       var g = function (o, k) { return (o.regra && o.regra[k]) || ''; };
       $('kb-quadro').innerHTML = '<div class="kb-lista"><table class="kb-tbl"><thead><tr><th>OV</th><th>Cliente</th><th>Criada</th><th>OC</th><th>Etapa</th>'
-        + '<th>SalesStatus</th><th>ReleaseStatus</th><th>CredManInCreditControl</th><th class="num">Itens</th><th class="num">Valor</th></tr></thead><tbody>'
+        + '<th>SalesStatus</th><th>ReleaseStatus</th><th>Crédito</th><th class="num">Itens</th><th class="num">Valor</th></tr></thead><tbody>'
         + ovs.map(function (o) {
           return '<tr tabindex="0" data-ov="' + esc(o.numero) + '"' + (estado.aberta === o.numero ? ' class="is-aberta"' : '') + '><td><b>' + esc(o.numero) + '</b></td><td>' + esc(o.cliente || o.conta) + '</td><td>' + esc(fHora(o.criadaEm)) + '</td><td>' + esc(o.oc) + '</td>'
-            + '<td><b>' + esc(NOME_ETAPA[o.etapa] || o.etapa) + '</b></td><td>' + esc(g(o, 'salesStatus')) + '</td><td>' + esc(g(o, 'releaseStatus')) + '</td><td>' + esc(g(o, 'credito')) + '</td>'
+            + '<td><b>' + esc(NOME_ETAPA[o.etapa] || o.etapa) + '</b></td><td>' + esc(g(o, 'salesStatus')) + '</td><td>' + esc(g(o, 'releaseStatus')) + '</td><td>' + esc(credInfo(o.regra).veio ? credInfo(o.regra).rotulo : '') + '</td>'
             + '<td class="num">' + (o.itens == null ? '' : o.itens) + '</td><td class="num">' + esc(o.valor == null ? '—' : fBRL(o.valor)) + '</td></tr>';
         }).join('') + '</tbody></table></div>';
     }
@@ -503,6 +504,27 @@
     }
     function vOv(o, nomes) { var x = campoOv(o, nomes); return x ? String(x.v).trim() : ''; }
     var colCurta = function (c, padrao) { return String(c || padrao).split('.').pop(); };
+    // gerenciamento de crédito da OV (09/11/26): a tabela da Bio (Credit
+    // management · BioCredManTableV1, ACTIVE pelo SALESID) decide; sem ela no
+    // OData, o CredManInCreditControl do cabeçalho. -> { veio, ativo, fonte,
+    // rotulo, cod (html), tabela, sem }
+    function credInfo(rg) {
+      rg = rg || {};
+      var col = colCurta(rg.creditoCol, rg.creditoFonte === 'tabela' ? 'ACTIVE' : 'CredManInCreditControl');
+      var tabela = rg.creditoFonte === 'tabela' ? String(rg.creditoCol || '').split('.')[0] : '';
+      if (rg.creditoFonte === 'tabela') {
+        var n = rg.creditoRegistros || 0;
+        return { veio: true, ativo: !!rg.creditoAtivo, fonte: 'tabela', tabela: tabela, sem: !n,
+          rotulo: rg.creditoAtivo ? 'Ativo · retida' : n ? 'Inativo' : 'Sem registro',
+          cod: n ? '<code>' + esc(col) + ' = ' + esc(rg.credito == null ? '' : rg.credito) + '</code>' + (n > 1 ? ' · ' + n + ' registros' : '')
+                 : '<code>' + esc(rg.creditoOv || 'SALESID') + ': sem registro</code>' };
+      }
+      if (rg.creditoFonte === 'cabecalho' || rg.credito != null) {
+        return { veio: true, ativo: rg.creditoAtivo != null ? !!rg.creditoAtivo : /^(yes|sim|true|1)$/i.test(String(rg.credito)), fonte: 'cabecalho', tabela: '', sem: false,
+          rotulo: rotCred(rg.credito), cod: '<code>' + esc(col) + ' = ' + esc(rg.credito) + '</code>' };
+      }
+      return { veio: false, ativo: false, fonte: '', tabela: '', sem: false, rotulo: 'não veio', cod: '<code>BioCredManTableV1 · ACTIVE</code>' };
+    }
     function criadorOv(o) { return vOv(o, ['CreatedBy_SalesTable', 'CreatedBy', 'CREATEDBY']) || o.criadoPor || ''; }
     function corEtapa(id) { var esc_ = document.documentElement.getAttribute('data-tema') === 'escuro'; return (esc_ ? TONS_ESC : TONS)[(TOM_ETAPA[id] != null ? TOM_ETAPA[id] : 2) % TONS.length]; }
 
@@ -720,7 +742,7 @@
         + '<p class="kb-dw-p">A etapa sai de três campos da OV no Dynamics, nesta ordem — vale a primeira regra que bater:</p>'
         + '<ol class="kb-dw-ol" style="margin-top:6px;">'
         + '<li class="' + (o.etapa === 'faturado' ? 'on' : '') + '">Situação (<code>SalesStatus</code>) que não é <b>Ordem em aberto</b> → <b>Faturado</b> (cancelada fica fora do quadro).</li>'
-        + '<li class="' + (o.etapa === 'credito' ? 'on' : '') + '">Crédito (<code>CredManInCreditControl</code>) marcado → <b>Gerenciamento de Crédito</b>.</li>'
+        + '<li class="' + (o.etapa === 'credito' ? 'on' : '') + '">Registro <b>ativo</b> na tabela de gerenciamento de crédito (<code>BioCredManTableV1</code>: <code>ACTIVE</code>, pela OV no <code>SALESID</code>) → <b>Gerenciamento de Crédito</b>. Sem a tabela no OData, vale o <code>CredManInCreditControl</code> do cabeçalho.</li>'
         + '<li class="' + (o.etapa === 'liberado' ? 'on' : '') + '">Liberação (<code>ReleaseStatus</code>) = Liberado → <b>Logística</b>.</li>'
         + '<li class="' + (o.etapa === 'criada' ? 'on' : '') + '">Nenhuma das anteriores → <b>Criada</b>.</li></ol>'
         + '<p class="kb-dw-p" style="margin-top:8px;">Entram as OVs da <b>MSB</b>' + (depTexto() ? ' do depósito <b>' + esc(depTexto()) + '</b>' : '') + ' criadas no dia escolhido (horário de Brasília); as de outros depósitos ficam fora. O quadro relê o Dynamics a cada 30 s no dia de hoje; as linhas desta ficha são lidas quando ela abre.</p></details>';
@@ -732,8 +754,9 @@
       var rg = o.regra || {}, pos = ORDEM_ETAPA[o.etapa], hoje = hojeSP();
       var quem = criadorOv(o), diaC = diaSP(o.criadaEm);
       var dtC = (diaC && diaC !== hoje ? fDM(diaC) + ' ' : '') + fHora(o.criadaEm);
-      var credVeio = rg.credito != null, libVeio = rg.releaseStatus != null;
-      var cCred = colCurta(rg.creditoCol, 'CredManInCreditControl'), cLib = colCurta(rg.releaseStatusCol, 'ReleaseStatus'), cSit = colCurta(rg.salesStatusCol, 'SalesStatus');
+      var ci = credInfo(rg), credVeio = ci.veio, libVeio = rg.releaseStatus != null;
+      var naTabela = ci.fonte === 'tabela' ? ' na tabela de gerenciamento de crédito' : '';
+      var cLib = colCurta(rg.releaseStatusCol, 'ReleaseStatus'), cSit = colCurta(rg.salesStatusCol, 'SalesStatus');
       var cod = function (col, v) { return '<code>' + esc(col) + ' = ' + esc(v) + '</code>'; };
       var porQuem = quem ? ' por <b>' + esc(quem) + '</b>' : '';
       var p = [];
@@ -748,11 +771,17 @@
         return p;
       }
       // gerenciamento de crédito
-      if (pos === 1) p.push({ cls: 'agora', tt: 'Agora: Gerenciamento de crédito', ds: 'A OV está retida no gerenciamento de crédito (' + cod(cCred, rg.credito) + '). Segue para a liberação quando o crédito aprovar.' });
-      else if (pos > 1) p.push({ cls: 'feito', tt: 'Crédito sem retenção', ds: credVeio ? 'A OV não está retida no gerenciamento de crédito.' : 'O Dynamics não trouxe o campo de crédito; a OV seguiu pelos outros status.' });
-      else p.push({ cls: 'depois', tt: 'Gerenciamento de crédito', dt: credVeio ? '' : 'campo não veio', z: !credVeio,
-        ds: credVeio ? 'Sem retenção agora. Se o Dynamics reter a OV no crédito, ela vem para esta etapa antes da liberação.'
-                     : 'O Dynamics não trouxe o campo <code>' + esc(cCred) + '</code>: não dá para saber se a OV está retida no crédito.' });
+      if (pos === 1) p.push({ cls: 'agora', tt: 'Agora: Gerenciamento de crédito',
+        ds: (ci.fonte === 'tabela' ? 'A OV está <b>ativa</b>' + naTabela : 'A OV está retida no gerenciamento de crédito') + ' (' + ci.cod + '). Segue para a liberação quando o crédito aprovar.' });
+      else if (pos > 1) p.push({ cls: 'feito', tt: 'Crédito sem retenção',
+        ds: !credVeio ? 'O Dynamics não trouxe o crédito; a OV seguiu pelos outros status.'
+          : ci.fonte === 'tabela' ? (ci.sem ? 'A OV não tem registro' + naTabela + '.' : 'O registro da OV' + naTabela + ' está inativo (' + ci.cod + ').')
+          : 'A OV não está retida no gerenciamento de crédito.' });
+      else p.push({ cls: 'depois', tt: 'Gerenciamento de crédito', dt: credVeio ? '' : 'não veio', z: !credVeio,
+        ds: !credVeio ? 'A tabela de gerenciamento de crédito não respondeu: não dá para saber se a OV está retida no crédito.'
+          : ci.fonte === 'tabela' ? (ci.sem ? 'Sem registro' + naTabela + '. Se a OV entrar no crédito (registro ativo), vem para esta etapa antes da liberação.'
+                                           : 'O registro da OV' + naTabela + ' está inativo (' + ci.cod + '). Se ficar ativo, a OV vem para esta etapa.')
+          : 'Sem retenção agora. Se o Dynamics reter a OV no crédito, ela vem para esta etapa antes da liberação.' });
       // liberado
       if (pos === 2) p.push({ cls: 'agora', tt: 'Agora: Logística', ds: 'Liberada para o depósito (' + cod(cLib, rg.releaseStatus) + '): separação, conferência e expedição. Ainda sem nota fiscal.' });
       else if (pos === 3) p.push({ cls: 'feito', tt: 'Logística', ds: 'A OV foi liberada para o depósito e passou pela logística.' });
@@ -783,10 +812,10 @@
           + '<code>' + esc(colCurta(col, padrao)) + (veio ? ' = ' + esc(cru) : '') + '</code>'
           + (decide === id ? '<span class="dc">decidiu a etapa</span>' : '') + '</div>';
       };
-      var credVeio = rg.credito != null;
+      var ci = credInfo(rg), credVeio = ci.veio;
       var porque = {
-        criada: 'Ordem em aberto' + (credVeio ? ', sem retenção de crédito' : '') + ' e ainda não liberada para o depósito: fica em <b>Criada</b>.' + (credVeio ? '' : ' O campo de crédito não veio do Dynamics.'),
-        credito: 'O crédito marcado decide: a OV fica em <b>Gerenciamento de Crédito</b> até o crédito aprovar, qualquer que seja a liberação.',
+        criada: 'Ordem em aberto' + (credVeio ? ', sem crédito ativo' : '') + ' e ainda não liberada para o depósito: fica em <b>Criada</b>.' + (credVeio ? '' : ' O crédito não veio do Dynamics.'),
+        credito: (ci.fonte === 'tabela' ? 'O registro <b>ativo</b> na tabela de gerenciamento de crédito decide' : 'O crédito marcado decide') + ': a OV fica em <b>Gerenciamento de Crédito</b> até o crédito aprovar, qualquer que seja a liberação.',
         liberado: 'Ordem em aberto, sem retenção de crédito e liberada para o depósito: fica em <b>Logística</b>.',
         faturado: 'A situação não é mais “Ordem em aberto”: fica em <b>Faturado</b> — a situação vale antes do crédito e da liberação.',
         cancelada: 'Situação <b>Cancelada</b>: a OV fica fora do quadro (só aparece na lista).'
@@ -794,7 +823,10 @@
       return '<section class="kb-dw-card"><h5>Por que está em ' + esc(et === 'cancelada' ? 'Cancelada' : (NOME_ETAPA[et] || et)) + '</h5><div class="kb-rg">'
         + tile('sit', 'Situação da OV', rg.salesStatus, rg.salesStatusCol, 'SalesStatus', rot)
         + tile('lib', 'Liberação', rg.releaseStatus, rg.releaseStatusCol, 'ReleaseStatus', rotLib)
-        + tile('cred', 'Crédito', rg.credito, rg.creditoCol, 'CredManInCreditControl', rotCred)
+        + '<div class="' + (decide === 'cred' ? 'decide' : '') + '"><div class="k">Crédito' + (ci.fonte === 'tabela' ? ' · tabela' : ci.fonte === 'cabecalho' ? ' · cabeçalho' : '') + '</div>'
+        +   '<div class="v' + (credVeio ? '' : ' z') + '">' + esc(ci.rotulo) + '</div>'
+        +   '<code>' + (ci.tabela ? esc(ci.tabela) + ' · ' : '') + ci.cod.replace(/<\/?code>/g, '') + '</code>'
+        +   (decide === 'cred' ? '<span class="dc">decidiu a etapa</span>' : '') + '</div>'
         + '</div>' + (porque ? '<p class="kb-rg-p">' + porque + '</p>' : '') + '</section>';
     }
 
@@ -868,7 +900,8 @@
       ['Empresa', ['dataAreaId'], 'up']
     ];
     function secDados(o) {
-      var pares = [];
+      var pares = [], ciD = credInfo(o.regra);
+      if (ciD.fonte === 'tabela') pares.push(['Gerenciamento de crédito', esc(ciD.rotulo) + '<small>' + esc(ciD.tabela) + '</small>', '']);
       DADOS.forEach(function (d) {
         var x = campoOv(o, d[1]); if (!x) return;
         var cru = String(x.v).trim(), v = cru, mostraCru = false;
