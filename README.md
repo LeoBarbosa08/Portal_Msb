@@ -740,6 +740,25 @@ do Sales Report (`sr-diario.css`/`.sd-dw`), com prefixo próprio (`.kb-dw`) no
 - Testes: `node scripts/test-kanban-ov.js` (linhas de uma OV e `?ov=`
   inválido). `sw.js` — cache `bm-comest-v30`.
 
+### Kanban · só o ALMOX-PA e a coluna Logística (09/11/2026)
+
+Pedidos do dono: "depósito somente o que for ALMOX-PA, não precisa do
+restante" e "troque esse nome de LIBERADO para LOGÍSTICA".
+
+- **Só o depósito ALMOX-PA** (`api/shared/kanban-ov.js`): pelo depósito do
+  cabeçalho da OV (`DefaultShippingWarehouseId`…), a OV de outro depósito — ou
+  sem depósito — sai do quadro ANTES de contar status, etapas e valores; a
+  resposta traz `depositos` e `foraDeposito` (no Diagnóstico da página). Sem
+  nenhuma OV com depósito, o quadro fica vazio e vem um aviso. Trocável por
+  env: `KANBAN_DEPOSITOS` (lista; `*` = todos). Na tela, o subtítulo diz
+  "MSB · ALMOX-PA" e o chip do depósito nos cartões e na ficha só aparece se
+  for diferente do filtro (seria igual em todos).
+- **Coluna "Liberado" → "Logística"**: só o nome (quadro, lista, ficha e
+  avisos); o id segue `liberado` e a regra é a mesma (`ReleaseStatus` =
+  Liberado).
+- Testes: `node scripts/test-kanban-ov.js` (filtro do depósito e o nome da
+  coluna). `sw.js` — cache `bm-comest-v31`.
+
 ## Como colocar no ar
 
 1. **Repositório no GitHub** — crie um repositório **privado e vazio** (sem

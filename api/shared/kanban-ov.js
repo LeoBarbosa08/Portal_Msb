@@ -71,6 +71,12 @@ const COLS = {
   pool:     ['SalesOrderPoolId', 'SalesPoolId'],
   criadoPor:['OrderTakerPersonnelNumber', 'CreatedBy', 'CREATEDBY', 'OrderResponsiblePersonnelNumber']
 };
+// SÓ O DEPÓSITO ALMOX-PA (09/11/2026, pedido do dono: "depósito somente o que
+// for ALMOX-PA, não precisa do restante"): a OV de outro depósito — ou sem
+// depósito — fica fora do quadro. Pelo depósito do CABEÇALHO da OV (COLS.deposito).
+// Trocável por env (lista): KANBAN_DEPOSITOS=ALMOX-PA,OUTRO; "*" = todos.
+const DEPOSITOS = envLista('KANBAN_DEPOSITOS', ['ALMOX-PA']).map(s => s.toUpperCase());
+const TODOS_DEPOSITOS = DEPOSITOS.indexOf('*') >= 0;
 const RE_CRIADA = /creat.*(date|time)|criad/i;
 // coluna com cara de status (inclusive as próprias da Bio, em português)
 const RE_STATUS = /status|situa|stage|etapa|fase|workflow|libera|release|hold|bloq|credit|credito|cr[eé]dito/i;
@@ -97,7 +103,9 @@ const VAZIOS = /^(|0|1900-01-01T00:00:00Z|00000000-0000-0000-0000-000000000000|N
 const ETAPAS = [
   { id: 'criada',   nome: 'Criada' },
   { id: 'credito',  nome: 'Gerenciamento de Crédito' },
-  { id: 'liberado', nome: 'Liberado' },
+  // 09/11/2026: a coluna "Liberado" passou a se chamar "Logística" (pedido do
+  // dono); o id segue 'liberado' — a regra é a mesma (ReleaseStatus = Liberado)
+  { id: 'liberado', nome: 'Logística' },
   { id: 'faturado', nome: 'Faturado' }
 ];
 const COL_SALES   = envLista('KANBAN_COL_SALESSTATUS', ['SalesStatus', 'SalesOrderStatus']);
@@ -331,6 +339,25 @@ async function ordensDoDia(opts) {
     rs.forEach(r => { const k = chaveOv(r[E.numero]); if (reg[k]) reg[k][E.entidade] = r; });
   });
 
+  const pega = (k, campo) => {
+    for (const ent of Object.keys(reg[k])) { const col = achaCol(colunasDe(reg[k][ent]), COLS[campo]); if (col && txt(reg[k][ent][col]) && !VAZIOS.test(txt(reg[k][ent][col]))) return txt(reg[k][ent][col]); }
+    return '';
+  };
+
+  // só as OVs do depósito do quadro (DEPOSITOS): as outras saem ANTES de
+  // contar status, etapas e valores — contadas à parte em foraDeposito
+  let foraDeposito = 0, semDeposito = 0;
+  if (!TODOS_DEPOSITOS) {
+    Object.keys(reg).forEach(k => {
+      const dep = pega(k, 'deposito').toUpperCase();
+      if (!dep) semDeposito++;
+      if (DEPOSITOS.indexOf(dep) < 0) { delete reg[k]; foraDeposito++; }
+    });
+    if (numeros.length && semDeposito === numeros.length) {
+      avisos.push('Nenhuma OV do dia trouxe o depósito (' + COLS.deposito.join(', ') + '): o quadro mostra só ' + DEPOSITOS.join(', ') + ' e ficou vazio.');
+    }
+  }
+
   // colunas de status de todas as entidades (valores crus + contagem)
   const statusMap = {};
   Object.keys(reg).forEach(k => {
@@ -360,10 +387,6 @@ async function ordensDoDia(opts) {
     || (statusCols.find(s => /^SalesOrderStatus$/i.test(s.coluna)) || {}).chave
     || (statusCols[0] || {}).chave || null;
 
-  const pega = (k, campo) => {
-    for (const ent of Object.keys(reg[k])) { const col = achaCol(colunasDe(reg[k][ent]), COLS[campo]); if (col && txt(reg[k][ent][col]) && !VAZIOS.test(txt(reg[k][ent][col]))) return txt(reg[k][ent][col]); }
-    return '';
-  };
   // valor cru de um campo da regra: o 1º NOME da lista que existir em qualquer
   // entidade (o nome que o dono deu — SalesStatus — ganha do equivalente)
   const cru = (k, nomes) => {
@@ -414,9 +437,9 @@ async function ordensDoDia(opts) {
     if (!achou.release) falta.push(COL_RELEASE[0]);
     if (!achou.credito) falta.push(COL_CREDITO[0]);
     if (falta.length) avisos.push('Não achei ' + falta.join(', ') + ' nas entidades lidas (' + fontes.map(f => f.entidade).join(', ') + '): as etapas dependem desses campos. Veja os campos de cada OV no painel.');
-    else if (achou.sales < ovs.length) avisos.push((ovs.length - achou.sales) + ' OV(s) sem SalesStatus: ficaram em Criada, Gerenciamento de Crédito ou Liberado pelos outros campos.');
+    else if (achou.sales < ovs.length) avisos.push((ovs.length - achou.sales) + ' OV(s) sem SalesStatus: ficaram em Criada, Gerenciamento de Crédito ou Logística pelos outros campos.');
   }
-  const r = Object.assign(base, { fontes, etapas, canceladas, statusCols, statusPadrao, ovs, avisos, diagnostico: diag });
+  const r = Object.assign(base, { fontes, etapas, canceladas, depositos: TODOS_DEPOSITOS ? null : DEPOSITOS, foraDeposito, statusCols, statusPadrao, ovs, avisos, diagnostico: diag });
   if (!opts.diag) _cache.set(dia, { ts: Date.now(), r });
   return r;
 }
