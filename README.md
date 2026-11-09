@@ -944,6 +944,14 @@ passou a mostrar também as colunas de status (`servemStatus`). Envs:
 `FATDIA_ENT_STATUS`, `FATDIA_COL_STATUS`, `FATDIA_COL_STATUS_DIARIO`.
 `sw.js` — cache `bm-comest-v40` (o v39 ficou com o Kanban de 6 colunas, de outra sessão).
 
+### Kanban · sem a linha embaixo do título (09/11/2026)
+
+Pedido do dono: "remova essa escrita" — a linha "MSB · ALMOX-PA · N ordem(ns)
+de venda criada(s) em … · R$ … · BioSalesOrderHeadersV1 + … (as entidades
+lidas)" saiu de `pages/kanban.html`. As entidades continuam no "Diagnóstico da
+leitura no Dynamics", no rodapé; quantidade e valor estão nas colunas.
+`sw.js` — cache `bm-comest-v41`.
+
 ## Como colocar no ar
 
 1. **Repositório no GitHub** — crie um repositório **privado e vazio** (sem

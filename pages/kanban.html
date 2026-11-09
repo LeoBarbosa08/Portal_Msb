@@ -297,7 +297,6 @@
             <div>
               <div class="kb-bc">Kanban</div>
               <h1 class="kb-title">Ordens do Dia</h1>
-              <div class="kb-sub" id="kb-sub">MSB · ordens de venda criadas no dia, direto do Dynamics</div>
             </div>
             <div class="kb-acoes">
               <input type="date" class="kb-in" id="kb-data" aria-label="Dia">
@@ -1000,10 +999,9 @@
         var avs = (j.avisos || []).map(function (a) { return ['aviso', esc(a)]; });
         if (j.canceladas) avs.push(['aviso', j.canceladas + ' OV(s) cancelada(s) no dia, fora do quadro.']);
         msgs(avs);
-        var noQuadro = (j.ovs || []).filter(function (o) { return o.etapa !== 'cancelada'; });
-        var total = noQuadro.reduce(function (s, o) { return s + (o.valor || 0); }, 0);
-        var fontes = (j.fontes || []).map(function (f) { return f.entidade; }).join(' + ');
-        $('kb-sub').textContent = 'MSB · ' + (j.depositos && j.depositos.length ? j.depositos.join(', ') + ' · ' : '') + noQuadro.length + ' ordem(ns) de venda criada(s) em ' + fDia(j.data) + (noQuadro.some(function (o) { return o.valor != null; }) ? ' · ' + fBRL(total) : '') + (fontes ? ' · ' + fontes : '');
+        // 09/11/26 (pedido do dono: "remova essa escrita"): sem a linha embaixo do
+        // título (MSB · depósito · quantas OVs · valor · as entidades lidas). As
+        // entidades continuam no "Diagnóstico da leitura no Dynamics".
         $('kb-diag').style.display = '';
         $('kb-diag-txt').textContent = JSON.stringify({ fontes: j.fontes, etapas: j.etapas, depositos: j.depositos, foraDeposito: j.foraDeposito, diagnostico: j.diagnostico }, null, 1);
         render();
