@@ -126,9 +126,10 @@ const bio = (n, st, lib) => ({ dataAreaId: 'msb', SalesOrderNumber: n, StatusPed
   t('faturada + liberada = Faturado (OV017517)', et.OV017517 === 'faturado', et);
   t('entregue = Faturado', et.OV017516 === 'faturado', et);
   t('cancelada fora do quadro', et.OV017515 === 'cancelada' && r.canceladas === 1, et);
-  t('6 colunas na ordem do fluxo', r.etapas.map(e => e.id).join(',') === 'criada,credito,liberado,conferencia,cotacao,faturado', r.etapas);
+  t('7 colunas na ordem do fluxo', r.etapas.map(e => e.id).join(',') === 'criada,credito,liberado,conferencia,cotacao,faturado,expedicao', r.etapas);
+  t('Expedição depois do Faturado, vazia e à espera dos campos', r.etapas[6].id === 'expedicao' && r.etapas[6].pendente === true && r.etapas[6].qtd === 0, r.etapas[6]);
   t('Cotação vazia, à espera dos campos; Conferência já tem regra', r.etapas.find(e => e.id === 'cotacao').pendente === true && r.etapas.find(e => e.id === 'cotacao').qtd === 0 && !r.etapas.find(e => e.id === 'conferencia').pendente && !r.etapas.find(e => e.id === 'liberado').pendente, r.etapas);
-  t('nomes das 6 colunas', r.etapas.map(e => e.nome).join('|') === 'Criada|Gerenciamento de Crédito|Separação|Conferência|Cotação|Faturado', r.etapas.map(e => e.nome));
+  t('nomes das 7 colunas', r.etapas.map(e => e.nome).join('|') === 'Criada|Gerenciamento de Crédito|Separação|Conferência|Cotação|Faturado|Expedição', r.etapas.map(e => e.nome));
   t('contagem e valor por coluna', r.etapas.find(e => e.id === 'faturado').qtd === 2 && r.etapas.find(e => e.id === 'faturado').valor === 1000 && r.etapas.find(e => e.id === 'credito').valor === 50, r.etapas);
   t('regra vem com os campos e a origem', r.ovs.find(o => o.numero === 'OV017517').regra.salesStatusCol === 'BIOSalesOrderHeaderV1.SalesStatus', r.ovs.find(o => o.numero === 'OV017517').regra);
   t('sem aviso de campo faltando', !r.avisos.some(a => /Não achei/.test(a)), r.avisos);

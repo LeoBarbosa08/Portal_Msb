@@ -976,6 +976,18 @@ cabeçalho do trabalho: `WorkStatus` Aberto / Em processo / Fechado / Cancelado)
   não conta, parcial, sem trabalho, faturada/crédito antes, entidade fora do
   OData). `sw.js` — cache `bm-comest-v41`.
 
+### Kanban · coluna Expedição (09/11/2026)
+
+Pedido do dono: "insira mais um cartão de Expedição". Sétima coluna, **depois
+do Faturado** (a mercadoria sai com a nota): Criada → Gerenciamento de Crédito
+→ Separação → Conferência → Cotação → Faturado → **Expedição**. Entra como a
+Cotação: `pendente: true` em `ETAPAS`, vazia e com "aguardando os campos da
+fase" até o dono mandar os campos (aí: regra em `etapaDe()` e tirar o
+`pendente`). Na ficha, a linha do tempo tem a Expedição "a definir" depois do
+Faturado. O quadro continua cabendo em 1440 px (coluna mínima de 145 px; o
+nome comprido quebra com hífen). Testes: 7 colunas na ordem e a Expedição
+pendente. `sw.js` — cache `bm-comest-v42`.
+
 ## Como colocar no ar
 
 1. **Repositório no GitHub** — crie um repositório **privado e vazio** (sem

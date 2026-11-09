@@ -64,7 +64,8 @@
                juntas pelo número da OV; valor pelas linhas). 07/11/26: QUATRO
                colunas fixas, na ordem do fluxo — Criada, Gerenciamento de Crédito,
                Separação (era "Liberado"), Faturado; 09/11/26: SEIS — + Conferência e
-               Cotação, vazias até o dono mandar os campos — pela regra do dono (SalesStatus, ReleaseStatus,
+               Cotação, vazias até o dono mandar os campos; + Expedição depois do Faturado,
+               também à espera dos campos — pela regra do dono (SalesStatus, ReleaseStatus,
                e o crédito: tabela BioCredManTableV1, ACTIVE pelo SALESID — 09/11/26),
                calculada no servidor (api/shared/kanban-ov.js).
                Área RESERVADA (AREAS_RESERVADAS em api/shared/auth.js). -->
@@ -98,12 +99,12 @@
 
             /* uma coluna por etapa (6 desde 09/11/26): lado a lado; sem espaço, o
                quadro rola na horizontal em vez de quebrar em duas linhas */
-            .kb-board{display:grid;grid-template-columns:repeat(var(--kb-n,6),minmax(165px,1fr));gap:12px;align-items:start;overflow-x:auto;padding-bottom:4px;}
+            .kb-board{display:grid;grid-template-columns:repeat(var(--kb-n,7),minmax(145px,1fr));gap:12px;align-items:start;overflow-x:auto;padding-bottom:4px;}
             .kb-vazio.pend{font-size:12px;font-style:italic;}
             .kb-col{border-radius:12px;background:var(--kb-bg);border:1px solid var(--kb-bd);display:flex;flex-direction:column;min-height:180px;max-height:70vh;}
             .kb-col-h{padding:10px 12px 8px;display:flex;flex-direction:column;gap:2px;}
             .kb-col-t{display:flex;align-items:flex-start;gap:8px;font-size:13.5px;font-weight:700;color:var(--kb-ink);}
-            .kb-col-t .nome{flex:1;min-width:0;line-height:1.25;overflow-wrap:anywhere;}
+            .kb-col-t .nome{flex:1;min-width:0;line-height:1.25;overflow-wrap:break-word;-webkit-hyphens:auto;hyphens:auto;}
             .kb-cnt{min-width:24px;height:22px;padding:0 7px;border-radius:999px;background:var(--surface);color:var(--text);font-size:12px;font-weight:700;display:inline-flex;align-items:center;justify-content:center;}
             .kb-col-v{font-size:12px;font-weight:600;color:var(--kb-ink);opacity:.85;}
             .kb-cards{padding:4px 8px 10px;display:flex;flex-direction:column;gap:6px;overflow-y:auto;}
@@ -372,8 +373,8 @@
     function tom(i) { var esc_ = document.documentElement.getAttribute('data-tema') === 'escuro'; var t = (esc_ ? TONS_ESC : TONS)[i % TONS.length]; return '--kb-bg:' + t[0] + ';--kb-bd:' + t[1] + ';--kb-ink:' + t[2]; }
     // tom de cada etapa: Criada azul, Crédito amarelo, Separação cinza, Conferência
     // verde-água, Cotação laranja, Faturado lilás
-    var TOM_ETAPA = { criada: 0, credito: 1, liberado: 2, conferencia: 5, cotacao: 4, faturado: 3 };
-    var NOME_ETAPA = { criada: 'Criada', credito: 'Gerenciamento de Crédito', liberado: 'Separação', conferencia: 'Conferência', cotacao: 'Cotação', faturado: 'Faturado', cancelada: 'Cancelada' };
+    var TOM_ETAPA = { criada: 0, credito: 1, liberado: 2, conferencia: 5, cotacao: 4, faturado: 3, expedicao: 6 };
+    var NOME_ETAPA = { criada: 'Criada', credito: 'Gerenciamento de Crédito', liberado: 'Separação', conferencia: 'Conferência', cotacao: 'Cotação', faturado: 'Faturado', expedicao: 'Expedição', cancelada: 'Cancelada' };
     // o quadro mostra só o depósito do filtro do servidor (ALMOX-PA, 09/11/26):
     // o chip/selo do depósito só aparece quando ele foge do filtro
     function depFiltro() { return (estado.r && estado.r.depositos) || []; }
@@ -415,7 +416,7 @@
       // as 4 colunas fixas, na ordem do fluxo (a etapa vem calculada do servidor);
       // cancelada não entra no quadro
       var etapas = r.etapas || [];
-      $('kb-quadro').innerHTML = '<div class="kb-board" style="--kb-n:' + (etapas.length || 6) + '">' + etapas.map(function (e) {
+      $('kb-quadro').innerHTML = '<div class="kb-board" style="--kb-n:' + (etapas.length || 7) + '">' + etapas.map(function (e) {
         var lista = ovs.filter(function (o) { return o.etapa === e.id; });
         var soma = lista.reduce(function (s, o) { return s + (o.valor || 0); }, 0);
         var temValor = lista.some(function (o) { return o.valor != null; });
@@ -450,7 +451,7 @@
     var DW = { el: null, ov: null, volta: null };
     var LINHAS = new Map();          // nº da OV -> { st, linhas, em, erro, ts }
     var LINHAS_TTL = 60000;
-    var ORDEM_ETAPA = { criada: 0, credito: 1, liberado: 2, conferencia: 3, cotacao: 4, faturado: 5, cancelada: -1 };
+    var ORDEM_ETAPA = { criada: 0, credito: 1, liberado: 2, conferencia: 3, cotacao: 4, faturado: 5, expedicao: 6, cancelada: -1 };
     var POS_FAT = ORDEM_ETAPA.faturado;
     var IC_X = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>';
     var IC_ANT = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="15 18 9 12 15 6"/></svg>';
@@ -783,7 +784,7 @@
         + '<li class="' + (o.etapa === 'conferencia' ? 'on' : '') + '">Todos os trabalhos de depósito da OV (<code>WHSWorkTableBiEntity</code>, pelo <code>OrderNum</code>) <b>Fechados</b> → <b>Conferência</b>. Cancelados não contam.</li>'
         + '<li class="' + (o.etapa === 'liberado' ? 'on' : '') + '">Liberação (<code>ReleaseStatus</code>) = Liberado (Released), ou trabalho de depósito aberto/<b>em processo</b> → <b>Separação</b>.</li>'
         + '<li class="' + (o.etapa === 'criada' ? 'on' : '') + '">Nenhuma das anteriores → <b>Criada</b>.</li></ol>'
-        + '<p class="kb-dw-p" style="margin-top:8px;"><b>Cotação</b> já está no quadro, mas os campos que definem essa fase ainda vão ser informados: por enquanto nenhuma OV cai nela.</p>'
+        + '<p class="kb-dw-p" style="margin-top:8px;"><b>Cotação</b> e <b>Expedição</b> já estão no quadro, mas os campos que definem essas fases ainda vão ser informados: por enquanto nenhuma OV cai nelas.</p>'
         + '<p class="kb-dw-p" style="margin-top:8px;">Entram as OVs da <b>MSB</b>' + (depTexto() ? ' do depósito <b>' + esc(depTexto()) + '</b>' : '') + ' criadas no dia escolhido (horário de Brasília); as de outros depósitos ficam fora. O quadro relê o Dynamics a cada 30 s no dia de hoje; as linhas desta ficha são lidas quando ela abre.</p></details>';
       return h;
     }
@@ -849,9 +850,14 @@
       if (pos === POS_FAT) {
         var sit = rot(rg.salesStatus);
         p.push({ cls: 'feito fim', tt: 'Agora: ' + (sit === 'Entregue' ? 'Entregue' : 'Faturado'), ds: 'A OV não está mais em aberto: situação <b>' + esc(sit || '—') + '</b> (' + cod(cSit, rg.salesStatus) + ').' });
+      } else if (pos > POS_FAT) {
+        p.push({ cls: 'feito', tt: 'Faturado', ds: '' });
       } else {
         p.push({ cls: 'depois', tt: 'Faturado', ds: 'Quando a nota fiscal sair, a OV sai do aberto e vem para esta etapa.' });
       }
+      // expedição: fase nova (depois do Faturado), à espera dos campos do dono
+      if (pos === ORDEM_ETAPA.expedicao) p.push({ cls: 'agora', tt: 'Agora: Expedição', ds: '' });
+      else p.push({ cls: 'depois', tt: 'Expedição', dt: 'a definir', z: true, ds: 'Os campos que definem esta fase ainda vão ser informados.' });
       // entrega solicitada
       var ent = isoData(o.entrega), late = ent && ent < hoje && pos < POS_FAT;
       p.push({ cls: 'depois', tt: 'Entrega solicitada', dt: ent ? fDia(ent) : 'sem data', z: !ent, warn: late,

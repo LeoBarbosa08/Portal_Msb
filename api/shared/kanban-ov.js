@@ -114,7 +114,10 @@ const ETAPAS = [
   // Conferência: trabalho de depósito da OV FECHADO (09/11/26 — ver TRABALHO DE DEPÓSITO)
   { id: 'conferencia', nome: 'Conferência' },
   { id: 'cotacao',     nome: 'Cotação',     pendente: true },
-  { id: 'faturado',    nome: 'Faturado' }
+  { id: 'faturado',    nome: 'Faturado' },
+  // 09/11/2026 (dono: "insira mais um cartão de Expedição"): depois do
+  // Faturado — a mercadoria sai com a nota. VAZIA até o dono mandar os campos.
+  { id: 'expedicao',   nome: 'Expedição',   pendente: true }
 ];
 const COL_SALES   = envLista('KANBAN_COL_SALESSTATUS', ['SalesStatus', 'SalesOrderStatus']);
 const COL_RELEASE = envLista('KANBAN_COL_RELEASE', ['ReleaseStatus', 'SalesOrderReleaseStatus']);
