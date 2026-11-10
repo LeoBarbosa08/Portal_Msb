@@ -60,8 +60,8 @@
 
           <!-- ═══════════ KANBAN · ORDENS DO DIA ═══════════
                As ordens de venda da MSB (ALMOX-PA), AO VIVO do Dynamics (/api/kanban-ov).
-               09/11/26: em aberto de QUALQUER data + Faturado/Rejeitada/Pallet/Expedição
-               no período escolhido. Colunas pelas regras do dono (api/shared/kanban-ov.js,
+               09/11/26: em aberto de QUALQUER data + Rejeitada/Pallet/Expedição no
+               período escolhido (10/11/26: o Faturado sem data — todo o histórico). Colunas pelas regras do dono (api/shared/kanban-ov.js,
                etapaDe): Criada → Crédito (BioCredManTableV1) → Separação (trabalho "Abrir")
                → Conferência (carga "Em processamento") → Cotação (carga "Carregado" +
                cotação não realizada) → Faturado (nota "Aprovada") → Rejeitada (nota
@@ -392,12 +392,13 @@
               <h1 class="kb-title">Ordens do Dia</h1>
             </div>
             <div class="kb-acoes">
-              <!-- 09/11/26: o período vale SÓ para Faturado, Rejeitada, Pallet e
-                   Expedição; as outras colunas mostram TODAS as OVs em aberto -->
-              <div class="kb-periodo" role="group" aria-label="Período de Faturado, Rejeitada, Pallet e Expedição"
-                   title="O período vale só para Faturado, Rejeitada, Pallet e Expedição (pela data da nota fiscal). As outras colunas mostram todas as OVs em aberto, de qualquer data.">
-                <span class="kb-per-r">Faturados de</span>
-                <input type="date" class="kb-in" id="kb-de" aria-label="Faturados de">
+              <!-- 09/11/26: o período vale SÓ para Rejeitada, Pallet e Expedição
+                   (10/11/26: o Faturado saiu — mostra todo o histórico, como as
+                   outras colunas) -->
+              <div class="kb-periodo" role="group" aria-label="Período de Rejeitada, Pallet e Expedição"
+                   title="O período vale só para Rejeitada, Pallet e Expedição (pela data da nota fiscal). As outras colunas, Faturado incluído, mostram todas as OVs que estão nelas agora, de qualquer data.">
+                <span class="kb-per-r">Período de</span>
+                <input type="date" class="kb-in" id="kb-de" aria-label="Período de">
                 <span class="kb-per-r">até</span>
                 <input type="date" class="kb-in" id="kb-ate" aria-label="até">
               </div>
@@ -1042,7 +1043,7 @@
         + '<li class="' + (o.etapa === 'liberado' ? 'on' : '') + '">Status do trabalho = <b>Abrir</b> (ou em processo), ou a OV liberada para o depósito → <b>Separação</b>.</li>'
         + '<li class="' + (o.etapa === 'criada' ? 'on' : '') + '">Nenhuma das anteriores → <b>Criada</b>.</li></ol>'
         + '<p class="kb-dw-p" style="margin-top:8px;">Onde as regras não falam, vale a de antes: OV que saiu do aberto sem status de nota → Faturado; trabalho fechado com a carga ainda não em processamento → segue em Separação.</p>'
-        + '<p class="kb-dw-p" style="margin-top:8px;">Entram as OVs da <b>MSB</b>' + (depTexto() ? ' do depósito <b>' + esc(depTexto()) + '</b>' : '') + '. <b>Criada, Crédito, Separação, Conferência e Cotação</b>: todas as OVs <b>em aberto</b>, de qualquer data. <b>Faturado, Rejeitada, Pallet e Expedição</b>: só as do <b>período escolhido</b> lá em cima (pela data da nota fiscal; sem nota, a de criação). O quadro relê o Dynamics a cada 60 s; as linhas desta ficha são lidas quando ela abre.</p></details>';
+        + '<p class="kb-dw-p" style="margin-top:8px;">Entram as OVs da <b>MSB</b>' + (depTexto() ? ' do depósito <b>' + esc(depTexto()) + '</b>' : '') + '. <b>Criada, Crédito, Separação, Conferência, Cotação e Aguardando Faturamento</b>: todas as OVs <b>em aberto</b>, de qualquer data. <b>Faturado</b>: toda OV que está nele agora, de qualquer data (as em aberto com nota aprovada e as faturadas com a carga ainda Carregado). <b>Rejeitada, Pallet e Expedição</b>: só as do <b>período escolhido</b> lá em cima (pela data da nota fiscal; sem nota, a de criação). O quadro relê o Dynamics a cada 60 s; as linhas desta ficha são lidas quando ela abre.</p></details>';
       return h;
     }
 
@@ -1395,7 +1396,7 @@
     }
     function lembrar(r) { estado.antes = {}; (r.ovs || []).forEach(function (o) { estado.antes[o.numero] = o.etapa; }); }
 
-    // ── período de Faturado, Rejeitada, Pallet e Expedição (09/11/26) ──
+    // ── período de Rejeitada, Pallet e Expedição (09/11/26; o Faturado saiu em 10/11/26) ──
     function somaDias(iso, n) { var d = new Date(iso + 'T12:00:00Z'); d.setUTCDate(d.getUTCDate() + n); return d.toISOString().slice(0, 10); }
     function periodo() {
       var de = $('kb-de').value || hojeSP(), ate = $('kb-ate').value || de;

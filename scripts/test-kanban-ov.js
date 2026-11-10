@@ -453,7 +453,7 @@ const bio = (n, st, lib) => ({ dataAreaId: 'msb', SalesOrderNumber: n, StatusPed
   };
   r = await K.quadro({ de: DE, ate: ATE });
   const eq = {}; r.ovs.forEach(o => { eq[o.numero] = o.etapa; });
-  t('modo quadro com o período', r.modo === 'quadro' && r.de === DE && r.ate === ATE && r.datadas.join() === 'faturado,rejeitada,pallet,expedicao', { modo: r.modo, de: r.de, ate: r.ate, datadas: r.datadas });
+  t('modo quadro com o período', r.modo === 'quadro' && r.de === DE && r.ate === ATE && r.datadas.join() === 'rejeitada,pallet,expedicao', { modo: r.modo, de: r.de, ate: r.ate, datadas: r.datadas });
   t('em aberto de QUALQUER data (até de 2025)', eq.OV018001 === 'criada' && eq.OV018002 === 'liberado', eq);
   t('faturada com nota no período -> Faturado', eq.OV018004 === 'faturado', eq);
   t('rejeitada com nota no período -> Rejeitada', eq.OV018006 === 'rejeitada', eq);
@@ -471,6 +471,47 @@ const bio = (n, st, lib) => ({ dataAreaId: 'msb', SalesOrderNumber: n, StatusPed
   t('período maior traz a faturada de 15/10 e a rejeitada de 01/10', eq2.OV018005 === 'faturado' && eq2.OV018007 === 'rejeitada' && eq2.OV018001 === 'criada', eq2);
   r = await K.quadro({ de: ATE, ate: DE });
   t('de/até trocados são acertados', r.de === DE && r.ate === ATE, { de: r.de, ate: r.ate });
+
+  console.log('7a) 10/11/26 Faturado SEM data: as faturadas com a carga Carregado, de qualquer data');
+  K._limparCache(); chamadas.length = 0;
+  const guarda7a = CEN, serv7a = SERVICO;
+  const ldF = (id, st, cot, pal) => ({ dataAreaId: 'msb', LoadId: id, LoadStatus: st, QuotationPerformed_InoveProjects: cot, ENVIARPALLET_CUSTOM: pal });
+  SERVICO = ['BIOSalesOrderHeaderV1', 'SalesOrderHeadersV2', 'SalesOrderLines', 'SalesInvoiceHeadersV2', 'FiscalDocuments', 'WHSWorkTableBiEntities', 'WHSOutboundLoadHeaderEntities'];
+  CEN = {
+    SalesOrderHeadersV2: { linhas: [
+      v2('OV018301', '2026-09-10T13:00:00Z', 'Invoiced'),    // nota de 20/10 (antes do período), carga Carregado -> Faturado
+      v2('OV018302', '2026-09-11T13:00:00Z', 'Invoiced'),    // nota de 21/10, carga Carregado + Pallet Sim -> Pallet, fora do período
+      v2('OV018303', '2026-09-12T13:00:00Z', 'Invoiced'),    // nota de 22/10, carga Remetido -> não vem
+      v2('OV018304', '2026-08-01T13:00:00Z', 'Backorder'),   // em aberto com nota aprovada antiga (parcial) -> Faturado (antes sumia)
+      v2('OV018305', '2026-11-02T13:00:00Z', 'Backorder')    // em aberto, carga Carregado, sem nota -> Cotação
+    ] },
+    BIOSalesOrderHeaderV1: { linhas: [b4('OV018301', 'Invoiced', 'Released', 'No'), b4('OV018302', 'Invoiced', 'Released', 'No'), b4('OV018303', 'Invoiced', 'Released', 'No'),
+      b4('OV018304', 'Backorder', 'Released', 'No'), b4('OV018305', 'Backorder', 'Released', 'No')] },
+    SalesOrderLines: { linhas: [] },
+    WHSWorkTableBiEntities: { linhas: [
+      w('OV018301', 'WF1', 'Closed', { LoadId: 'LD-F1' }), w('OV018302', 'WF2', 'Closed', { LoadId: 'LD-F2' }), w('OV018303', 'WF3', 'Closed', { LoadId: 'LD-F3' }),
+      w('OV018305', 'WF5', 'Closed', { LoadId: 'LD-F5' }), w('TR000777', 'WF9', 'Closed', { LoadId: 'LD-F1', WorkTransType: 'TransferIssue' })
+    ] },
+    WHSOutboundLoadHeaderEntities: { linhas: [ldF('LD-F1', 'Loaded', 'Yes', 'No'), ldF('LD-F2', 'Loaded', 'Yes', 'Yes'), ldF('LD-F3', 'Shipped', 'Yes', 'Yes'), ldF('LD-F5', 'Loaded', 'No', 'No')] },
+    SalesInvoiceHeadersV2: { linhas: [nf('OV018301', '000038301', '2026-10-20'), nf('OV018302', '000038302', '2026-10-21'), nf('OV018303', '000038303', '2026-10-22'), nf('OV018304', '000038304', '2026-10-01')] },
+    FiscalDocuments: { linhas: [fd('000038301', 'Approved', '2026-10-20'), fd('000038302', 'Approved', '2026-10-21'), fd('000038303', 'Approved', '2026-10-22'), fd('000038304', 'Approved', '2026-10-01')] }
+  };
+  r = await K.quadro({ de: DE, ate: ATE });
+  const e7a = {}; r.ovs.forEach(o => { e7a[o.numero] = o.etapa; });
+  t('Faturado não é mais coluna datada', r.datadas.indexOf('faturado') < 0, r.datadas);
+  t('faturada ANTES do período, carga Carregado -> Faturado', e7a.OV018301 === 'faturado', e7a);
+  t('em aberto com nota aprovada antiga -> Faturado (não some mais)', e7a.OV018304 === 'faturado', e7a);
+  t('carga já no Pallet ou Remetido: não vem pelo Faturado (o período decide)', !e7a.OV018302 && !e7a.OV018303, e7a);
+  t('em aberto com a carga Carregado segue em Cotação', e7a.OV018305 === 'cotacao', e7a);
+  const lc7a = chamadas.find(c => c.ent === 'WHSOutboundLoadHeaderEntities' && /LoadStatus eq/.test(c.q.filter || ''));
+  t('cargas Carregado pelo status (enum), sem data', lc7a && /LoadStatus eq Microsoft\.Dynamics\.DataEntities\.WHSLoadStatus'Loaded'/.test(lc7a.q.filter), lc7a && lc7a.q.filter);
+  const lt7a = chamadas.find(c => c.ent === 'WHSWorkTableBiEntities' && /LoadId eq/.test(c.q.filter || ''));
+  t('os trabalhos só das cargas Carregado e sem Pallet', lt7a && /LD-F1/.test(lt7a.q.filter) && /LD-F5/.test(lt7a.q.filter) && !/LD-F2|LD-F3/.test(lt7a.q.filter), lt7a && lt7a.q.filter);
+  t('trabalho de transferência na mesma carga não vira OV', !chamadas.some(c => c.ent === 'SalesOrderHeadersV2' && /TR000777/.test(c.q.filter || '')), chamadas.filter(c => /TR000777/.test(c.q.filter || '')).map(c => c.ent));
+  const d7a = r.diagnostico.find(d => d.etapa === 'fat:ovs');
+  t('o diagnóstico diz quantas cargas e OVs', d7a && d7a.cargas === 2 && d7a.ovs === 2, d7a);
+  t('sem aviso do Faturado', !r.avisos.some(a => /Carregado/.test(a)), r.avisos);
+  CEN = guarda7a; SERVICO = serv7a;
 
   console.log('7b) o F&O recusa o filtro de enum: vai pelo texto');
   K._limparCache(); chamadas.length = 0;

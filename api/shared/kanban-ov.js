@@ -693,7 +693,10 @@ async function ovsDoDia(E, dia, token, ate, diag) {
 //     Faturado e Rejeitada (e, quando tiverem regra, Pallet e Expedição).
 // Depois da etapa calculada, as colunas DATADAS só ficam com a OV cuja data
 // (a da nota mais recente; sem nota, a de criação) cai no período.
-const DATADAS = ['faturado', 'rejeitada', 'pallet', 'expedicao', 'cancelada'];
+// 10/11/2026 (dono: "o HOJE não precisa ter no card Faturado, pode deixar
+// histórico que nem os demais"): Faturado SAIU das datadas — mostra toda OV que
+// está em Faturado agora, de qualquer data (ovsDeCargasCarregadas, abaixo).
+const DATADAS = ['rejeitada', 'pallet', 'expedicao', 'cancelada'];
 const JANELA_DIAS = Number(process.env.KANBAN_JANELA_DIAS || 365);  // reserva, se o filtro pelo status não passar
 const MAX_COMPL_QUADRO = Number(process.env.KANBAN_MAX_COMPL || 3); // complementos no quadro (V3, V2, SalesOrderHeaders)
 async function ovsAbertas(E, token, ate, diag, avisos) {
@@ -748,6 +751,51 @@ async function ovsComNotaNoPeriodo(de, ateDia, token, ate, diag) {
     }
   }
   return { numeros: [], erro: String((ultimo && ultimo.message) || ultimo || 'sem tempo').slice(0, 160) };
+}
+
+// ── FATURADO SEM DATA (10/11/2026) ───────────────────────────────
+// A OV totalmente faturada sai do "em aberto" (SalesStatus = Faturado), e ler o
+// diário de faturas da vida toda não cabe no tempo. Mas a faturada fica com a
+// carga CARREGADO até ir para o Pallet (regras do dono) — então: as cargas
+// Carregado ainda não enviadas ao Pallet (em todas as entidades de cargas) ->
+// os trabalhos dessas cargas -> as OVs. Junto com as em aberto e as com nota no
+// período, a coluna Faturado fica com toda OV que está nela agora.
+const MAX_CARGAS_FAT = Number(process.env.KANBAN_MAX_CARGAS_FAT || 400);
+async function ovsDeCargasCarregadas(token, ate, diag) {
+  const [xc, xt] = await Promise.all([entidadeExtra(CFG_CARGA, token, ate, diag), entidadeExtra(CFG_TRABALHO, token, ate, diag)]);
+  if (!xc.E || !xt.E || !xt.E.carga) return { numeros: [], semFonte: true };
+  const ids = {};
+  for (const E of (xc.todas && xc.todas.length ? xc.todas : [xc.E]).filter(L => L.status)) {
+    const emp = E.temEmpresa ? "dataAreaId eq '" + D.odataStr(EMPRESA) + "' and " : '';
+    const sel = [E.numero, E.status].concat(E.pallet ? [E.pallet] : []).join(',');
+    const formas = [{ f: E.status + " eq Microsoft.Dynamics.DataEntities.WHSLoadStatus'Loaded'", rot: 'enum' }, { f: E.status + " eq 'Loaded'", rot: 'texto' }];
+    for (const fo of formas) {
+      if (restante(ate) < FOLGA_MS + 2000) break;
+      try {
+        const rows = await D.odataGetComPrazo(E.entidade, { crossCompany: true, filter: emp + fo.f, select: sel }, token, prazo(ate, PRAZO_MS));
+        let n = 0;
+        rows.forEach(r => {
+          const id = txt(r[E.numero]);
+          if (!id || !/^(loaded|carregad)/.test(normV(r[E.status]).replace(/ /g, '')) || (E.pallet && marcadoV(r[E.pallet]))) return;
+          ids[id.toUpperCase()] = id; n++;
+        });
+        diag.push({ etapa: 'fat:cargas', entidade: E.entidade, forma: fo.rot, linhas: rows.length, carregadas: n });
+        break;
+      } catch (e) {
+        diag.push({ etapa: 'fat:cargas', entidade: E.entidade, forma: fo.rot, erro: String(e.message || e).slice(0, 200) });
+        if (!/\b400\b/.test(String(e.message))) break;
+      }
+    }
+  }
+  let lista = Object.keys(ids).map(k => ids[k]);
+  if (!lista.length) return { numeros: [], cargas: 0 };
+  const total = lista.length;
+  if (lista.length > MAX_CARGAS_FAT) lista = lista.slice(0, MAX_CARGAS_FAT);
+  const T = xt.E, sel = [T.numero, T.carga].concat(T.tipo ? [T.tipo] : []).join(',');
+  const rows = await porNumeros(T.entidade, T.carga, lista, token, ate, diag, 'fat:trabalho', sel, !T.temEmpresa);
+  // só trabalho de VENDA (a carga também leva transferência)
+  const nums = rows.filter(r => !T.tipo || !txt(r[T.tipo]) || /^(sales|venda)/.test(normV(r[T.tipo]))).map(r => chaveOv(r[T.numero])).filter(Boolean);
+  return { numeros: Array.from(new Set(nums)), cargas: total, corte: total > lista.length ? total : 0 };
 }
 
 // linhas de uma entidade pelos números das OVs (em lotes; 2 lotes por vez —
@@ -879,17 +927,22 @@ async function montar(opts, modo) {
   let rows;
   if (modo.quadro) {
     // em aberto (qualquer data) + as com nota no período, em paralelo
-    const [abertas, per] = await Promise.all([
+    // (10/11/26: + as faturadas com a carga ainda Carregado, de qualquer data)
+    const [abertas, per, fat] = await Promise.all([
       ovsAbertas(principal, token, ate, diag, avisos),
-      ovsComNotaNoPeriodo(modo.de, modo.ateDia, token, ate, diag).catch(e => ({ numeros: [], erro: String(e.message || e).slice(0, 160) }))
+      ovsComNotaNoPeriodo(modo.de, modo.ateDia, token, ate, diag).catch(e => ({ numeros: [], erro: String(e.message || e).slice(0, 160) })),
+      ovsDeCargasCarregadas(token, ate, diag).catch(e => ({ numeros: [], erro: String(e.message || e).slice(0, 160) }))
     ]);
-    if (per.erro) avisos.push('Não deu para ler as notas do período no diário de faturas (' + per.erro + '): Faturado e Rejeitada podem ficar incompletos.');
+    if (per.erro) avisos.push('Não deu para ler as notas do período no diário de faturas (' + per.erro + '): Rejeitada, Pallet e Expedição podem ficar incompletos.');
+    if (fat.erro) avisos.push('Não deu para ler as cargas Carregado (' + fat.erro + '): no Faturado, as OVs faturadas antes do período podem faltar.');
+    if (fat.corte) avisos.push(fat.corte + ' cargas Carregado no Dynamics: o Faturado olhou só ' + MAX_CARGAS_FAT + ' delas (KANBAN_MAX_CARGAS_FAT).');
+    diag.push({ etapa: 'fat:ovs', cargas: fat.cargas || 0, ovs: (fat.numeros || []).length });
     const ja = {}; abertas.forEach(r => { ja[chaveOv(r[principal.numero])] = 1; });
-    const faltam = per.numeros.filter(n => !ja[n]);
+    const faltam = Array.from(new Set(per.numeros.concat(fat.numeros || []))).filter(n => !ja[n]);
     let faturadas = [];
     if (faltam.length) {
       try { faturadas = await porNumeros(principal.entidade, principal.numero, faltam, token, ate, diag, 'ov:faturadas', null, !principal.temEmpresa); }
-      catch (e) { avisos.push('Não deu para ler as OVs faturadas no período: ' + String(e.message || e).slice(0, 160)); }
+      catch (e) { avisos.push('Não deu para ler as OVs faturadas: ' + String(e.message || e).slice(0, 160)); }
     }
     rows = abertas.concat(faturadas);
   } else {
@@ -1090,7 +1143,7 @@ async function montar(opts, modo) {
   if (!colLote && Object.keys(porLinha).length) {
     avisos.push('As linhas da OV (' + (_entLinhas || 'SalesOrderLines') + ') não trazem o lote (' + COL_LOTE.join(' / ') + '): a Pendência por item sem lote fica desligada. Fixe o nome em KANBAN_COL_LOTE.');
   }
-  // quadro: as colunas DATADAS (Faturado, Rejeitada, Pallet, Expedição) só com a
+  // quadro: as colunas DATADAS (Rejeitada, Pallet, Expedição) só com a
   // OV do período — pela data da nota mais recente; sem nota, a de criação
   let foraPeriodo = 0;
   const ovs = !modo.quadro ? partes : partes.filter(o => {

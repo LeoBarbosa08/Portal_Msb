@@ -1402,6 +1402,30 @@ Conferência, Cotação, Pallet e Expedição.
   faltaram pedidas de novo, sem aviso; o envio grava na de cabeçalho. Só o
   servidor mudou (sem `sw.js`).
 
+### Kanban · Faturado sem data — todo o histórico (10/11/2026)
+
+O dono: "o HOJE não precisa ter no card Faturado, pode deixar histórico que nem
+os demais". O Faturado **saiu das colunas datadas**: mostra toda OV que está em
+Faturado agora, de qualquer data. O período (de/até) vale só para **Rejeitada,
+Pallet e Expedição**; o rótulo virou "Período de … até".
+
+- **De onde vêm as faturadas antigas**: a OV totalmente faturada sai do "em
+  aberto", e ler o diário de faturas da vida toda não cabe no tempo da leitura.
+  Pelas regras do dono, a faturada fica com a carga **Carregado** até ir para o
+  Pallet — então o quadro lê as cargas `LoadStatus = Loaded` ainda sem
+  `ENVIARPALLET_CUSTOM` (em todas as entidades de cargas; enum e, se recusar,
+  texto), os trabalhos dessas cargas (`LoadId`, só os de venda) e daí as OVs.
+  Somam-se às em aberto e às com nota no período. Teto: 400 cargas
+  (`KANBAN_MAX_CARGAS_FAT`, com aviso).
+- A OV em aberto com nota aprovada antiga (faturamento parcial) também aparece
+  no Faturado (antes sumia por estar fora do período).
+- Diagnóstico: `fat:cargas` (cargas Carregado por entidade) e `fat:ovs`
+  (quantas cargas e OVs).
+- Testes (7a): faturada antes do período com a carga Carregado → Faturado; em
+  aberto com nota antiga → Faturado; carga no Pallet ou Remetido não entra por
+  aí; trabalho de transferência na mesma carga não vira OV. `sw.js` — cache
+  `bm-comest-v64`.
+
 ## Como colocar no ar
 
 1. **Repositório no GitHub** — crie um repositório **privado e vazio** (sem

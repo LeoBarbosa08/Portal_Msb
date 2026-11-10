@@ -7,10 +7,12 @@
 // api/shared/kanban-ov.js.
 //
 //   GET /api/kanban-ov                 -> o QUADRO (09/11/2026): as OVs em aberto
-//                                         de qualquer data + as com nota HOJE
+//                                         de qualquer data + as com nota HOJE + as
+//                                         faturadas com a carga Carregado (10/11/26:
+//                                         o Faturado sem data)
 //   GET /api/kanban-ov?de=2026-11-01&ate=2026-11-09
-//                                      -> o quadro com o período de Faturado,
-//                                         Rejeitada, Pallet e Expedição (máx. 366 dias)
+//                                      -> o quadro com o período de Rejeitada,
+//                                         Pallet e Expedição (máx. 366 dias)
 //   GET /api/kanban-ov?data=2026-11-05 -> o mesmo que de=ate=essa data
 //   GET /api/kanban-ov?modo=dia&data=… -> o modo antigo: as OVs CRIADAS no dia
 //   GET /api/kanban-ov?atualizar=1     -> ignora o cache de 15 s
