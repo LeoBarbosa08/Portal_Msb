@@ -199,9 +199,13 @@ const COL_TRAB = {
 // depósito da OV (OV -> trabalho -> carga). Descoberta como as outras extras
 // (candidatas + "outboundload"/"loadheader" no service document; env
 // KANBAN_ENT_CARGA, KANBAN_COL_CARGA_ID, KANBAN_COL_CARGA_STATUS).
+// 10/11/26 (dono): "work você ainda vai pegar o trabalho, porém da carga você vai
+// pegar as info dessa entidade, WHSOutboundLoadHeaderEntity" — SÓ ela: os nomes
+// públicos que ela pode ter no OData (OutboundLoadHeaders é o padrão do D365) e,
+// do service document, só os com "outboundloadheader" no nome. Nada de outras
+// entidades de carga (uma qualquer com "load" no nome já sumiu com as cargas).
 const ENT_CARGA = envLista('KANBAN_ENT_CARGA', []).concat([
-  'WHSOutboundLoadHeaderEntities', 'WHSOutboundLoadHeaderEntity', 'WHSOutboundLoadHeaders',
-  'OutboundLoadHeaders', 'OutboundLoads', 'WarehouseOutboundLoadHeaders', 'WHSLoadTables'
+  'WHSOutboundLoadHeaderEntities', 'WHSOutboundLoadHeaderEntity', 'OutboundLoadHeaders', 'WHSOutboundLoadHeaders'
 ]).filter((v, i, a) => a.indexOf(v) === i);
 const COL_CARGA = {
   numero:         envLista('KANBAN_COL_CARGA_ID', ['LoadId']),
@@ -408,7 +412,7 @@ const CFG_TRABALHO = {
   erroCol: (p) => 'sem a coluna ' + COL_TRAB[p].join('/')
 };
 const CFG_CARGA = {
-  chave: 'carga', candidatas: ENT_CARGA, reNome: /outboundload|loadheader/i, pedaco: 'outboundload',
+  chave: 'carga', candidatas: ENT_CARGA, reNome: /outboundloadheader/i, pedaco: 'outboundloadheader',
   cols: COL_CARGA, obrig: ['numero'], prefer: ['cotacao', 'pallet', 'status'],
   // na 2ª rodada (outras entidades com "load" no nome), só troca de entidade se a
   // nova tiver a COTAÇÃO ou o PALLET que falta na original
@@ -417,9 +421,8 @@ const CFG_CARGA = {
   // (09/11/26: apertado — "pallet" sozinho pegaria PalletQuantity e afins, e o
   // campo do pallet é GRAVADO pelo botão; "quotation" sozinho pegaria QuotationId)
   reCols: { cotacao: /quotation.?performed|cota[cç][aã]o.?realizad|cotacaorealizad/i, pallet: /enviar.?pallet/i },
-  // sem as preferidas na melhor candidata: testa também as outras entidades do
-  // service document com "load" no nome (menos as de linhas)
-  reNomeExtra: /load/i, reNomeExtraNao: /line|linha/i,
+  // (10/11/26: SEM a 2ª rodada em outras entidades com "load" no nome — a carga é
+  // só a WHSOutboundLoadHeaderEntity, pedido do dono)
   erroCol: (p) => 'sem a coluna ' + COL_CARGA[p].join('/')
 };
 const CFG_NOTA = {
@@ -857,6 +860,7 @@ async function montar(opts, modo) {
   const CARGA = idsCarga.length
     ? await cargasPorId(idsCarga, token, ate, diag).catch(e => ({ E: null, por: {}, erro: String(e.message || e).slice(0, 160) }))
     : { E: null, por: {}, semIds: true };
+  if (CARGA.E) diag.push({ etapa: 'carga:colunas', entidade: CARGA.E.entidade, colunas: CARGA.E.colunas || [] });
   if (CARGA.E) fontes.push({ entidade: CARGA.E.entidade, papel: 'carga', colunas: CARGA.E.numero + (CARGA.E.status ? ' + ' + CARGA.E.status : ''), cargas: Object.keys(CARGA.por).length });
   if (TRAB.E) fontes.push({ entidade: TRAB.E.entidade, papel: 'trabalho', colunas: TRAB.E.numero + ' + ' + TRAB.E.status, trabalhos: Object.keys(TRAB.por).reduce((s2, k) => s2 + TRAB.por[k].lista.length, 0) });
   if (CRED.E) fontes.push({ entidade: CRED.E.entidade, papel: 'crédito', colunas: CRED.E.numero + ' + ' + CRED.E.ativo, registros: Object.keys(CRED.por).reduce((s2, k) => s2 + CRED.por[k].n, 0) });

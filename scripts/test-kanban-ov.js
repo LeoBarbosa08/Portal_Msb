@@ -539,7 +539,7 @@ const bio = (n, st, lib) => ({ dataAreaId: 'msb', SalesOrderNumber: n, StatusPed
   SERVICO = SERVICO.filter(x => x !== 'OutboundLoadHeaders');
   K._limparCache(); r = await K.ordensDoDia({ data: DIA });
 
-  console.log('8c) a cotação numa entidade de cargas fora das candidatas; "pallet" sozinho não serve');
+  console.log('8c) carga SÓ da WHSOutboundLoadHeaderEntity; "pallet" sozinho não serve');
   K._limparCache();
   const base8c = CEN.WHSOutboundLoadHeaderEntities.linhas;
   // a candidata (OutboundLoadHeaders) sem a cotação, e com um campo QUALQUER de pallet (não pode ser usado)
@@ -549,8 +549,9 @@ const bio = (n, st, lib) => ({ dataAreaId: 'msb', SalesOrderNumber: n, StatusPed
   const guarda = CEN.WHSOutboundLoadHeaderEntities; delete CEN.WHSOutboundLoadHeaderEntities;
   SERVICO = ['BIOSalesOrderHeaderV1', 'SalesOrderHeadersV2', 'SalesOrderLines', 'WHSWorkTableBiEntities', 'SalesInvoiceHeadersV2', 'FiscalDocuments', 'OutboundLoadHeaders', 'InoveLoadTables', 'OutboundLoadLines'];
   r = await K.ordensDoDia({ data: DIA });
-  t('acha a entidade com QuotationPerformed_InoveProjects fora das candidatas', r.fontes.some(f => f.papel === 'carga' && f.entidade === 'InoveLoadTables'), r.fontes.filter(f => f.papel === 'carga'));
-  t('as regras continuam (Cotação, Aguardando, Pallet)', r.ovs.find(o => o.numero === 'OV019003').etapa === 'cotacao' && r.ovs.find(o => o.numero === 'OV019004').etapa === 'aguardando' && r.ovs.find(o => o.numero === 'OV019006').etapa === 'pallet', r.ovs.map(o => o.numero + ':' + o.etapa));
+  t('fica na OutboundLoadHeaders (a WHSOutboundLoadHeaderEntity), mesmo com outra entidade de "load" com os campos', r.fontes.some(f => f.papel === 'carga' && f.entidade === 'OutboundLoadHeaders') && !chamadas.some(c => c.ent === 'InoveLoadTables'), r.fontes.filter(f => f.papel === 'carga'));
+  const dcol = r.diagnostico.find(d => d.etapa === 'carga:colunas');
+  t('o Diagnóstico lista TODOS os campos da entidade de cargas', dcol && dcol.entidade === 'OutboundLoadHeaders' && ['LoadId', 'LoadStatus', 'PalletQuantity', 'QuotationId'].every(c => dcol.colunas.indexOf(c) >= 0), dcol);
   // só a candidata sem os campos: o PalletQuantity e o QuotationId NÃO podem virar pallet / cotação
   K._limparCache();
   delete CEN.InoveLoadTables;

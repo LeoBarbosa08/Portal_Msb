@@ -1340,6 +1340,26 @@ na entidade de cargas para ler status, cotação e pallet.
   e nenhuma carga era achada; agora fica a `OutboundLoadHeaders`. `sw.js` — cache
   `bm-comest-v61`.
 
+### Kanban · a carga só da WHSOutboundLoadHeaderEntity (10/11/2026)
+
+Pedido do dono: "work você ainda vai pegar o trabalho, porém da carga você vai
+pegar as info dessa entidade, WHSOutboundLoadHeaderEntity".
+
+- **Só ela**: `ENT_CARGA` ficou com os nomes públicos que a
+  `WHSOutboundLoadHeaderEntity` pode ter no OData (`WHSOutboundLoadHeaderEntities`,
+  `WHSOutboundLoadHeaderEntity`, `OutboundLoadHeaders` — o padrão do D365 —,
+  `WHSOutboundLoadHeaders`) e, do service document, só os com
+  **"outboundloadheader"** no nome. Saiu a 2ª rodada em outras entidades com
+  "load" no nome (`reNomeExtra`) — foi ela que sumiu com as cargas. O trabalho
+  continua vindo da `WHSWorkTableBiEntity` (a ligação OV → trabalho → `LoadId`).
+- **Diagnóstico**: a etapa `carga:colunas` lista TODOS os campos da entidade de
+  cargas escolhida — para achar o nome do status, da cotação
+  (`QuotationPerformed_InoveProjects`) e do pallet (`ENVIARPALLET_CUSTOM`). Se
+  eles não estiverem lá, é a TI acrescentá-los à entidade no D365 (extensão da
+  `WHSOutboundLoadHeaderEntity`) para o OData publicar.
+- Testes: a carga fica na `OutboundLoadHeaders` mesmo com outra entidade de "load"
+  tendo os campos; o Diagnóstico com as colunas. `sw.js` — cache `bm-comest-v62`.
+
 ## Como colocar no ar
 
 1. **Repositório no GitHub** — crie um repositório **privado e vazio** (sem
