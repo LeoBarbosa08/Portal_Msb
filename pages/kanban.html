@@ -1145,7 +1145,7 @@
       h += secDados(o);
       h += secCrus(o, abertos.crus);
       h += '<details class="kb-dw-card kb-dw-mais" data-k="regra"' + (abertos.regra ? ' open' : '') + '><summary><h5>Como a etapa é decidida</h5></summary>'
-        + '<p class="kb-dw-p">As regras valem para cada <b>linha</b> da OV: as linhas que caem em etapas diferentes viram cartões diferentes. Antes delas, a OV pode virar <b>mais de um cartão</b> também assim: os itens em aberto <b>sem lote</b> (<code>ItemBatchNumber</code> vazio) vão para <b>Pendência</b> num cartão próprio' + (o.etapa === 'pendencia' ? ' <b>← este</b>' : '') + '; e, com trabalho <b>Abrir</b> junto de trabalho já fechado ou em processo, os abertos ficam em <b>Separação</b> e os outros seguem as regras abaixo, só com as cargas deles. Depois do Faturado, não divide.</p>'
+        + '<p class="kb-dw-p">As regras valem para cada <b>linha</b> da OV: as linhas que caem em etapas diferentes viram cartões diferentes. E, com trabalho <b>Abrir</b> junto de trabalho já fechado ou em processo, os abertos ficam em <b>Separação</b> e os outros seguem as regras abaixo, só com as cargas deles. A <b>Pendência</b> está sem regra por enquanto (em análise).</p>'
         + '<p class="kb-dw-p">Do mais adiantado para o menos — vale a primeira regra que bater:</p>'
         + '<ol class="kb-dw-ol" style="margin-top:6px;">'
         + '<li class="' + (o.etapa === 'rejeitada' ? 'on' : '') + '">Nota fiscal mais recente <b>Rejeitada</b> (ou cancelada/descartada) → <b>Rejeitada</b>.</li>'
@@ -1364,7 +1364,7 @@
       // 10/11/26: o lote dos itens (Pendência)
       var lt = o.parte ? (o.parte.inteira ? 'nenhum com lote' : o.parte.id === 'semlote' ? itensTxt(o.parte.n) + ' sem lote' : itensTxt(o.parte.n) + ' com lote')
         : o.semLinhas ? 'sem linha' : o.lotes ? (o.lotes.semLote ? o.lotes.semLote + ' sem lote' : 'todos com lote') : '';
-      var tileLote = lt ? '<div class="' + (decide === 'lote' ? 'decide' : '') + '"><div class="k">Lote dos itens</div><div class="v">' + esc(lt) + '</div>'
+      var tileLote = lt && decide === 'lote' ? '<div class="' + (decide === 'lote' ? 'decide' : '') + '"><div class="k">Lote dos itens</div><div class="v">' + esc(lt) + '</div>'
         + '<code>ItemBatchNumber' + (o.lotes ? ' · ' + esc(o.lotes.linhas) + ' em aberto' : '') + '</code>' + (decide === 'lote' ? '<span class="dc">decidiu a etapa</span>' : '') + '</div>' : '';
       // 11/11/26: o status das linhas (Cotação / Aguardando / Faturado)
       var lsR = resumoLinhasSt(o.linhasSt);
@@ -1489,7 +1489,7 @@
           n++;
           var meta = [l.item ? 'cód. ' + l.item : '', l.deposito && l.deposito !== o.deposito ? l.deposito : ''].filter(Boolean).join(' · ');
           var loteH = !temLote ? '' : l.lote ? '<span class="kb-lt" title="Lote (ItemBatchNumber)">lote ' + esc(l.lote) + '</span>'
-            : aberta(l) ? '<span class="kb-lt sem" title="Item em aberto sem lote: vai para Pendência">sem lote</span>' : '<span class="kb-lt">sem lote</span>';
+            : aberta(l) ? '<span class="kb-lt sem" title="Item em aberto sem lote">sem lote</span>' : '<span class="kb-lt">sem lote</span>';
           var atras = l.entrega && l.entrega < hoje && chaveEnum(l.status) === 'backorder';
           var entTxt = l.entrega ? 'entrega ' + fDM(l.entrega) + (atras ? ' · passou' : '') : 'sem data de entrega';
           var conf = l.confirmada && l.confirmada !== l.entrega ? ' · confirmada ' + fDM(l.confirmada) : '';

@@ -1517,6 +1517,18 @@ do jeito que está". Substitui a regra provisória da linha Entregue (logo acima
   Faturada → 3 cartões; carga em processamento → Conferência, um cartão; a linha
   automática do teste segue a situação da OV. `sw.js` — cache `bm-comest-v67`.
 
+### Kanban · a Pendência de lado, vazia (11/11/2026)
+
+O dono: "deixa a Pendência de lado por enquanto, deixa ela sem nada que depois
+vamos analisar com calma, ignora o status dela". A coluna fica no quadro, VAZIA e
+à espera (`pendente: true` — "aguardando os campos da fase"); a regra do lote
+(linha em aberto sem lote → Pendência) fica DESLIGADA — religa com
+`KANBAN_PENDENCIA_LOTE=1`. O lote continua lido e aparece em cada linha da ficha
+(só informação); o aviso de "linhas sem a coluna do lote" e o tile "Lote dos
+itens" só voltam com a regra ligada. Testes: por padrão ninguém em Pendência e a
+OV com item sem lote fica inteira; os da regra do lote rodam com ela ligada.
+`sw.js` — cache `bm-comest-v68`.
+
 ## Como colocar no ar
 
 1. **Repositório no GitHub** — crie um repositório **privado e vazio** (sem

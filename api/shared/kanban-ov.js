@@ -113,9 +113,10 @@ const VAZIOS = /^(|0|1900-01-01T00:00:00Z|00000000-0000-0000-0000-000000000000|N
 //     dono mandar os campos — nenhuma OV cai nelas por enquanto.
 const ETAPAS = [
   // 09/11/2026 (dono): "insira antes de Criada o card PENDÊNCIA"; 10/11/2026: a
-  // regra — SÓ o lote: as linhas EM ABERTO sem lote (partesPorLote, mais abaixo);
-  // OV sem linha nenhuma fica em Criada
-  { id: 'pendencia',   nome: 'Pendência' },
+  // regra do lote (linhas em aberto sem lote); 11/11/2026 (dono): "deixa a
+  // Pendência de lado por enquanto, sem nada — ignora o status dela": a coluna
+  // fica VAZIA, à espera (a regra do lote só com KANBAN_PENDENCIA_LOTE=1)
+  { id: 'pendencia',   nome: 'Pendência', pendente: true },
   { id: 'criada',      nome: 'Criada' },
   { id: 'credito',     nome: 'Gerenciamento de Crédito' },
   { id: 'liberado',    nome: 'Separação' },
@@ -672,6 +673,8 @@ const statusLinha = (st) => {
   return 'aberta';
 };
 const POS_NOTA = ['faturado', 'rejeitada', 'pallet', 'expedicao', 'cancelada'];
+// 11/11/26 (dono): a Pendência pelo lote fica DESLIGADA até ser analisada com calma
+const pendenciaPorLote = () => process.env.KANBAN_PENDENCIA_LOTE === '1';
 function partesPorLinhas(o, ls, lida, comLote, comStatus) {
   o.chave = o.numero; o.valorOv = o.valor; o.itensOv = o.itens; o._abertas = true;
   if (!ls || !ls.length) {
@@ -690,7 +693,7 @@ function partesPorLinhas(o, ls, lida, comLote, comStatus) {
     const s2 = st(l);
     let e = etapaDaLinha(s2), semlote = false, destino = null;
     // a linha em aberto sem lote vai para Pendência (antes do faturamento)
-    if (comLote && (s2 === 'aberta' || s2 == null) && !l.lote && POS_NOTA.indexOf(e) < 0) { destino = e; e = 'pendencia'; semlote = true; }
+    if (comLote && pendenciaPorLote() && (s2 === 'aberta' || s2 == null) && !l.lote && POS_NOTA.indexOf(e) < 0) { destino = e; e = 'pendencia'; semlote = true; }
     if (!grupos.has(e)) grupos.set(e, { etapa: e, ls: [], status: [], semlote, destino });
     const g = grupos.get(e); g.ls.push(l); if (s2 && g.status.indexOf(s2) < 0) g.status.push(s2);
   });
@@ -1271,7 +1274,7 @@ async function montar(opts, modo) {
     const g = porNum[n]; if (g.length < 2) return;
     g.forEach(p => { p.irmas = g.filter(x => x !== p).map(x => ({ chave: x.chave, etapa: x.etapa, valor: x.valor })); });
   });
-  if (!colLote && Object.keys(porLinha).length) {
+  if (!colLote && pendenciaPorLote() && Object.keys(porLinha).length) {
     avisos.push('As linhas da OV (' + (_entLinhas || 'SalesOrderLines') + ') não trazem o lote (' + COL_LOTE.join(' / ') + '): a Pendência por item sem lote fica desligada. Fixe o nome em KANBAN_COL_LOTE.');
   }
   // quadro: as colunas DATADAS (Rejeitada, Pallet, Expedição) só com a

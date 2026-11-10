@@ -176,13 +176,13 @@ const bio = (n, st, lib) => ({ dataAreaId: 'msb', SalesOrderNumber: n, StatusPed
   t('cancelada fora do quadro', et.OV017515 === 'cancelada' && r.canceladas === 1, et);
   const ids = r.etapas.map(e => e.id), col = (id) => r.etapas.find(e => e.id === id);
   t('11 colunas na ordem do fluxo', ids.join(',') === 'pendencia,criada,credito,liberado,conferencia,cotacao,aguardando,faturado,rejeitada,pallet,expedicao', ids);
-  t('Pendência antes de Criada, com regra (o lote) e vazia aqui', ids[0] === 'pendencia' && !col('pendencia').pendente && col('pendencia').qtd === 0 && col('pendencia').nome === 'Pendência', col('pendencia'));
+  t('Pendência antes de Criada, vazia e à espera (11/11/26: deixada de lado)', ids[0] === 'pendencia' && col('pendencia').pendente === true && col('pendencia').qtd === 0 && col('pendencia').nome === 'Pendência', col('pendencia'));
   t('Aguardando Faturamento logo depois da Cotação', ids.indexOf('aguardando') === ids.indexOf('cotacao') + 1 && col('aguardando').nome === 'Aguardando Faturamento' && !col('aguardando').pendente, col('aguardando'));
   t('Rejeitada logo depois do Faturado, com regra', ids.indexOf('rejeitada') === ids.indexOf('faturado') + 1 && !col('rejeitada').pendente, col('rejeitada'));
   t('Pallet logo depois da Rejeitada, com regra', ids.indexOf('pallet') === ids.indexOf('rejeitada') + 1 && !col('pallet').pendente, col('pallet'));
   t('Expedição no fim, com regra', ids[ids.length - 1] === 'expedicao' && !col('expedicao').pendente, col('expedicao'));
-  t('nenhuma coluna à espera de campos', !r.etapas.some(e => e.pendente), r.etapas.filter(e => e.pendente));
-  t('linhas sem a coluna do lote: aviso e nada dividido', r.avisos.some(a => /não trazem o lote/.test(a)) && !r.ovs.some(o => o.parte), r.avisos);
+  t('só a Pendência está à espera', r.etapas.filter(e => e.pendente).map(e => e.id).join() === 'pendencia', r.etapas.filter(e => e.pendente));
+  t('Pendência desligada: sem aviso do lote e nada dividido', !r.avisos.some(a => /lote/.test(a)) && !r.ovs.some(o => o.parte), r.avisos);
   t('nomes das 11 colunas', r.etapas.map(e => e.nome).join('|') === 'Pendência|Criada|Gerenciamento de Crédito|Separação|Conferência|Cotação|Aguardando Faturamento|Faturado|Rejeitada|Pallet|Expedição', r.etapas.map(e => e.nome));
   t('contagem e valor por coluna', r.etapas.find(e => e.id === 'faturado').qtd === 1 && r.etapas.find(e => e.id === 'faturado').valor === 1000 && r.etapas.find(e => e.id === 'aguardando').qtd === 1 && r.etapas.find(e => e.id === 'credito').valor === 50, r.etapas);
   t('regra vem com os campos e a origem', r.ovs.find(o => o.numero === 'OV017517').regra.salesStatusCol === 'BIOSalesOrderHeaderV1.SalesStatus', r.ovs.find(o => o.numero === 'OV017517').regra);
@@ -613,7 +613,15 @@ const bio = (n, st, lib) => ({ dataAreaId: 'msb', SalesOrderNumber: n, StatusPed
     FiscalDocuments: { linhas: [fd('000030104', 'Approved', '2026-11-05')] }
   };
   r = await K.quadro({ de: DE, ate: ATE });
-  const pc = (ch) => r.ovs.find(o => o.chave === ch);
+  let pc = (ch) => r.ovs.find(o => o.chave === ch);
+  // 11/11/26 (dono): "deixa a Pendência de lado por enquanto" — por padrão nada vai para ela
+  t('Pendência desligada: ninguém nela; a OV com item sem lote fica inteira', !r.ovs.some(o => o.etapa === 'pendencia') && pc('OV018101') && pc('OV018101').etapa === 'liberado' && !pc('OV018101').parte
+    && r.etapas.find(e => e.id === 'pendencia').pendente === true, r.ovs.filter(o => /OV01810[12]/.test(o.numero)).map(o => o.chave + '=' + o.etapa));
+  t('o lote continua lido (a ficha mostra)', pc('OV018101').lotes && pc('OV018101').lotes.semLote === 1, pc('OV018101').lotes);
+  // a regra do lote, ligada (KANBAN_PENDENCIA_LOTE=1)
+  process.env.KANBAN_PENDENCIA_LOTE = '1';
+  K._limparCache(); chamadas.length = 0;
+  r = await K.quadro({ de: DE, ate: ATE });
   const p1 = pc('OV018101~semlote'), p2 = pc('OV018101~liberado');
   t('OV com 1 linha sem lote vira 2 cartões', p1 && p2 && r.ovs.filter(o => o.numero === 'OV018101').length === 2, r.ovs.filter(o => o.numero === 'OV018101').map(o => o.chave));
   t('a parte sem lote em Pendência, com o valor e os itens só dela', p1 && p1.etapa === 'pendencia' && p1.valor === 40 && p1.itens === 1 && p1.parte.id === 'semlote' && p1.parte.linhas.join() === '2' && p1.parte.n === 1 && p1.parte.de === 3, p1 && { e: p1.etapa, v: p1.valor, parte: p1.parte });
@@ -645,6 +653,7 @@ const bio = (n, st, lib) => ({ dataAreaId: 'msb', SalesOrderNumber: n, StatusPed
   r = await K.quadro({ de: DE, ate: ATE });
   t('linhas não lidas: a OV sem linha segue a etapa dela', pc('OV018107') && pc('OV018107').etapa === 'liberado' && !pc('OV018107').semLinhas && pc('OV018101') && pc('OV018101').etapa === 'liberado', pc('OV018107') && pc('OV018107').etapa);
   CEN.SalesOrderLines = lin7c;
+  delete process.env.KANBAN_PENDENCIA_LOTE;
 
   console.log('8) as regras do dono pela carga e pela nota (Separação … Expedição)');
   K._limparCache(); chamadas.length = 0;
