@@ -205,7 +205,9 @@ const ENT_CARGA = envLista('KANBAN_ENT_CARGA', []).concat([
 ]).filter((v, i, a) => a.indexOf(v) === i);
 const COL_CARGA = {
   numero:         envLista('KANBAN_COL_CARGA_ID', ['LoadId']),
-  status:         envLista('KANBAN_COL_CARGA_STATUS', ['LoadStatus', 'Status']),
+  // 10/11/26: só LoadStatus — o "Status" genérico fazia uma entidade qualquer com
+  // "load" no nome ganhar da de cargas (e as cargas da OV sumiam)
+  status:         envLista('KANBAN_COL_CARGA_STATUS', ['LoadStatus']),
   transportadora: ['CarrierCode', 'ShippingCarrierId', 'CarrierId'],
   servico:        ['CarrierServiceCode', 'ModeCode', 'DeliveryModeCode', 'TransportationModeCode'],
   envio:          ['ScheduledShippingDateTime', 'LoadSchedShipUTCDateTime', 'ScheduledLoadShippingDateTime', 'ScheduledShipDateTime'],
@@ -408,6 +410,9 @@ const CFG_TRABALHO = {
 const CFG_CARGA = {
   chave: 'carga', candidatas: ENT_CARGA, reNome: /outboundload|loadheader/i, pedaco: 'outboundload',
   cols: COL_CARGA, obrig: ['numero'], prefer: ['cotacao', 'pallet', 'status'],
+  // na 2ª rodada (outras entidades com "load" no nome), só troca de entidade se a
+  // nova tiver a COTAÇÃO ou o PALLET que falta na original
+  preferChave: ['cotacao', 'pallet'],
   // os campos _CUSTOM: se o nome exato não bater, o pedaço do nome
   // (09/11/26: apertado — "pallet" sozinho pegaria PalletQuantity e afins, e o
   // campo do pallet é GRAVADO pelo botão; "quotation" sozinho pegaria QuotationId)
@@ -461,13 +466,21 @@ async function entidadeExtra(cfg, token, ate, diag) {
   const melhor = () => sondas.filter(x => x.serve).sort((a, b) => pontos(b) - pontos(a))[0] || false;
   // 09/11/26: a melhor não tem todas as preferidas (ex.: OutboundLoadHeaders sem o
   // QuotationPerformed_InoveProjects) -> testa as outras com "load" no nome
-  if (cfg.prefer && cfg.reNomeExtra && servico.length && (!melhor() || pontos(melhor()) < cfg.prefer.length)) {
+  let escolhida = melhor();
+  if (cfg.prefer && cfg.reNomeExtra && servico.length && (!escolhida || pontos(escolhida) < cfg.prefer.length)) {
     const ja = {}; alvos.forEach(n => { ja[n.toLowerCase()] = 1; });
     const extras = servico.filter(n => cfg.reNomeExtra.test(n) && !ja[n.toLowerCase()] && !(cfg.reNomeExtraNao && cfg.reNomeExtraNao.test(n))).slice(0, 10);
     if (extras.length) {
       diag.push({ etapa: cfg.chave + ':candidatas-extra', alvos: extras });
-      sondas = sondas.concat(await sondar(extras));
+      const novas = await sondar(extras);
+      sondas = sondas.concat(novas);
       alvos = alvos.concat(extras);
+      // 10/11/26: a extra só ganha se trouxer um campo-chave que FALTA na escolhida
+      // (antes ganhava por qualquer coluna — uma entidade de "load" sem as cargas da OV)
+      const chave = cfg.preferChave || cfg.prefer;
+      const resolve = novas.filter(x => x.serve && chave.some(papel => x[papel] && !(escolhida && escolhida[papel])))
+        .sort((a, b) => pontos(b) - pontos(a))[0];
+      if (resolve || !escolhida) escolhida = resolve || melhor();
     }
   }
   sondas.forEach(x => {
@@ -478,7 +491,7 @@ async function entidadeExtra(cfg, token, ate, diag) {
   // entre as que servem, a que tem MAIS das colunas preferidas (cfg.prefer) —
   // 09/11/26: o D365 pode publicar mais de uma entidade de cargas; a que tem os
   // campos _CUSTOM (COTACAOREALIZADA_CUSTOM, ENVIARPALLET_CUSTOM) é a que vale
-  const E = melhor();
+  const E = escolhida || false;
   const motivo = E ? '' : !alvos.length
     ? 'nenhuma entidade com "' + cfg.pedaco + '" no nome está publicada no OData'
     : sondas.map(x => x.entidade + ': ' + (x.erro || 'não serve')).join('; ').slice(0, 300);
@@ -1021,6 +1034,11 @@ async function montar(opts, modo) {
         (!CARGA.E.cotacao ? ' Carga Carregado fica em Cotação.' : '') + (!CARGA.E.pallet ? ' O botão "Enviar para o Pallet" não aparece.' : '') +
         (parecidos.length ? ' Campos parecidos nessa entidade: ' + parecidos.join(', ') + '.' : '') +
         ' Fixe os nomes em KANBAN_COL_CARGA_STATUS / KANBAN_COL_CARGA_COTACAO / KANBAN_COL_CARGA_PALLET.');
+    }
+    if (CARGA.E && idsCarga.length) {
+      const naoAchadas = idsCarga.filter(id => !CARGA.por[id.toUpperCase()]);
+      if (naoAchadas.length) avisos.push(naoAchadas.length + ' de ' + idsCarga.length + ' carga(s) dos trabalhos de depósito não estão na entidade de cargas ' + CARGA.E.entidade +
+        ' (ex.: ' + naoAchadas.slice(0, 3).join(', ') + '): sem o status delas, essas OVs não entram em Conferência, Cotação, Pallet nem Expedição.');
     }
     if (!CARGA.E && !CARGA.semIds) {
       avisos.push('A entidade de cargas (WHSOutboundLoadHeaderEntity) não respondeu no OData' + (CARGA.erro ? ' (' + CARGA.erro + ')' : '') +

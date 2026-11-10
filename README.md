@@ -1315,6 +1315,31 @@ cargas escolhida (`OutboundLoadHeaders`) não tem o `QuotationPerformed_InovePro
   `QuotationId` não usados; o aviso com os campos parecidos. `sw.js` — cache
   `bm-comest-v58`.
 
+### Kanban · a entidade de cargas certa de volta (10/11/2026)
+
+O dono mandou a ficha com as cargas "não encontradas na entidade de cargas" e
+perguntou de onde elas vinham. As cargas vêm do **trabalho de depósito** da OV
+(`LoadId` de cada trabalho na `WHSWorkTableBiEntity`); o portal procura cada uma
+na entidade de cargas para ler status, cotação e pallet.
+
+- **A causa** (da mudança de 09/11): na `OutboundLoadHeaders` o portal não acha
+  nenhum dos campos preferidos (status, `QuotationPerformed_InoveProjects`,
+  `ENVIARPALLET_CUSTOM`) — o "enviada ao Pallet: Não" de antes vinha da busca
+  solta por "pallet", que pegava OUTRO campo (e o botão gravaria nele). Com a
+  busca apertada, ela ficou com 0 pontos, e a 2ª rodada (outras entidades com
+  "load" no nome) escolheu uma qualquer com `LoadId` e um `Status` genérico —
+  onde as cargas da OV não existem.
+- **A correção**: o status da carga só pelo nome `LoadStatus` (sem o `Status`
+  genérico); na 2ª rodada, a outra entidade só ganha se trouxer a **cotação** ou o
+  **pallet** que falta na original (`preferChave`). E um aviso novo: "N de M
+  cargas dos trabalhos não estão na entidade de cargas X (ex.: …)".
+- O aviso dos campos que faltam (com os "campos parecidos" da entidade) continua:
+  é por ele que o dono aponta os nomes certos — ou a TI publica os campos na
+  entidade de cargas.
+- Teste (8d) reproduz o print: na versão anterior a entidade errada era escolhida
+  e nenhuma carga era achada; agora fica a `OutboundLoadHeaders`. `sw.js` — cache
+  `bm-comest-v61`.
+
 ## Como colocar no ar
 
 1. **Repositório no GitHub** — crie um repositório **privado e vazio** (sem

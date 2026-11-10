@@ -563,6 +563,29 @@ const bio = (n, st, lib) => ({ dataAreaId: 'msb', SalesOrderNumber: n, StatusPed
   SERVICO = ['BIOSalesOrderHeaderV1', 'SalesOrderHeadersV2', 'SalesOrderLines', 'WHSWorkTableBiEntities', 'WHSOutboundLoadHeaderEntities', 'SalesInvoiceHeadersV2', 'FiscalDocuments'];
   K._limparCache(); r = await K.ordensDoDia({ data: DIA });
 
+  console.log('8d) uma entidade qualquer com "load" e "Status" não ganha da de cargas');
+  K._limparCache();
+  const base8d = CEN.WHSOutboundLoadHeaderEntities.linhas;
+  const guarda8d = CEN.WHSOutboundLoadHeaderEntities; delete CEN.WHSOutboundLoadHeaderEntities;
+  // a de cargas (OutboundLoadHeaders) como no print do dono: as cargas da OV, mas
+  // NENHUM dos campos preferidos (sem LoadStatus, sem cotação, sem ENVIARPALLET_CUSTOM)
+  CEN.OutboundLoadHeaders = { linhas: base8d.map(x => ({ dataAreaId: 'msb', LoadId: x.LoadId, LoadPalletCount: 2 })) };
+  // outra com "load" no nome, LoadId e um Status genérico — mas sem as cargas da OV
+  CEN.TMSLoadBuildStrategies = { linhas: [{ dataAreaId: 'msb', LoadId: 'OUTRA-1', Status: 'Active' }] };
+  SERVICO = ['BIOSalesOrderHeaderV1', 'SalesOrderHeadersV2', 'SalesOrderLines', 'WHSWorkTableBiEntities', 'SalesInvoiceHeadersV2', 'FiscalDocuments', 'OutboundLoadHeaders', 'TMSLoadBuildStrategies'];
+  r = await K.ordensDoDia({ data: DIA });
+  t('fica com a OutboundLoadHeaders (o "Status" genérico da outra não conta)', r.fontes.some(f => f.papel === 'carga' && f.entidade === 'OutboundLoadHeaders'), r.fontes.filter(f => f.papel === 'carga'));
+  t('as cargas da OV são encontradas', !r.ovs.some(o => (o.cargas || []).some(c => c.naoAchada)), r.ovs.map(o => (o.cargas || []).map(c => c.id + (c.naoAchada ? '?' : '')).join()));
+  t('sem aviso de carga não encontrada', !r.avisos.some(a => /não estão na entidade de cargas/.test(a)), r.avisos);
+  // e quando a carga do trabalho não está na entidade: aviso
+  K._limparCache();
+  CEN.OutboundLoadHeaders.linhas = CEN.OutboundLoadHeaders.linhas.filter(x => x.LoadId !== 'LD-2');
+  r = await K.ordensDoDia({ data: DIA });
+  t('carga do trabalho fora da entidade: aviso com o nº', r.avisos.some(a => /1 de \d+ carga\(s\) dos trabalhos de depósito não estão na entidade de cargas OutboundLoadHeaders \(ex\.: LD-2\)/.test(a)), r.avisos);
+  delete CEN.OutboundLoadHeaders; delete CEN.TMSLoadBuildStrategies; CEN.WHSOutboundLoadHeaderEntities = guarda8d;
+  SERVICO = ['BIOSalesOrderHeaderV1', 'SalesOrderHeadersV2', 'SalesOrderLines', 'WHSWorkTableBiEntities', 'WHSOutboundLoadHeaderEntities', 'SalesInvoiceHeadersV2', 'FiscalDocuments'];
+  K._limparCache(); r = await K.ordensDoDia({ data: DIA });
+
   console.log('9) "Enviar para o Pallet": grava ENVIARPALLET_CUSTOM = Sim no D365');
   chamadas.length = 0;
   let rp = await K.enviarParaPallet('LD-4');
