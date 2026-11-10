@@ -112,9 +112,9 @@ const VAZIOS = /^(|0|1900-01-01T00:00:00Z|00000000-0000-0000-0000-000000000000|N
 //   • Conferência e Cotação entram no quadro VAZIAS (pendente: true) até o
 //     dono mandar os campos — nenhuma OV cai nelas por enquanto.
 const ETAPAS = [
-  // 09/11/2026 (dono): "insira antes de Criada o card PENDÊNCIA" — VAZIA
-  // (pendente) até o dono mandar os campos
-  { id: 'pendencia',   nome: 'Pendência', pendente: true },
+  // 09/11/2026 (dono): "insira antes de Criada o card PENDÊNCIA"; 10/11/2026: a
+  // regra — as linhas EM ABERTO sem lote (partesPorLote, mais abaixo)
+  { id: 'pendencia',   nome: 'Pendência' },
   { id: 'criada',      nome: 'Criada' },
   { id: 'credito',     nome: 'Gerenciamento de Crédito' },
   { id: 'liberado',    nome: 'Separação' },
@@ -632,6 +632,34 @@ function addCarga(por, E, r) {
   return true;
 }
 
+// a OV em PARTES pelo lote: as linhas EM ABERTO sem lote -> parte em Pendência;
+// as outras -> a parte que segue a etapa da OV. Cada parte = um cartão, com o
+// valor e os itens só dela (chave própria: OV~semlote / OV~comlote). Sem lote em
+// todas -> a OV inteira em Pendência. Não divide depois do faturamento.
+const NAO_DIVIDE = ['faturado', 'rejeitada', 'pallet', 'expedicao', 'cancelada'];
+const linhaAberta = (st) => { const n = normV(st).replace(/ /g, ''); return !n || /^(backorder|emaberto|ordememaberto|open|none|nenhum)$/.test(n); };
+const linhaCancelada = (st) => /^cancel/.test(normV(st));
+function partesPorLote(o, ls) {
+  o.chave = o.numero; o.valorOv = o.valor; o.itensOv = o.itens;
+  if (!ls || !ls.length) return [o];
+  const abertas = ls.filter(l => linhaAberta(l.status) && !linhaCancelada(l.status));
+  const semLote = abertas.filter(l => !l.lote);
+  o.lotes = { linhas: abertas.length, semLote: semLote.length };
+  if (!semLote.length || NAO_DIVIDE.indexOf(o.etapa) >= 0) return [o];
+  const comLote = ls.filter(l => semLote.indexOf(l) < 0 && !linhaCancelada(l.status));
+  const soma = (arr) => Math.round(arr.reduce((t, l) => t + (l.valor || 0), 0) * 100) / 100;
+  const ident = (l) => l.linha != null ? l.linha : l.item;
+  const total = semLote.length + comLote.length;
+  const pend = Object.assign({}, o, { chave: o.numero + '~semlote', etapaOv: o.etapa, etapa: 'pendencia', valor: soma(semLote), itens: semLote.length,
+    parte: { id: 'semlote', linhas: semLote.map(ident), n: semLote.length, de: total } });
+  if (!comLote.length) { pend.chave = o.numero; pend.parte.inteira = true; return [pend]; }
+  const resto = Object.assign({}, o, { chave: o.numero + '~comlote', valor: soma(comLote), itens: comLote.length,
+    parte: { id: 'comlote', linhas: comLote.map(ident), n: comLote.length, de: total } });
+  pend.parte.outra = { chave: resto.chave, etapa: resto.etapa };
+  resto.parte.outra = { chave: pend.chave, etapa: 'pendencia' };
+  return [pend, resto];
+}
+
 // ── leituras ─────────────────────────────────────────────────────
 async function ovsDoDia(E, dia, token, ate, diag) {
   const c = E.criadaEm;
@@ -748,19 +776,43 @@ async function porNumeros(ent, colNum, numeros, token, ate, diag, etapa, select,
   return out;
 }
 
-// valor e nº de itens pelas linhas da OV
+// ── O LOTE DAS LINHAS -> PENDÊNCIA (10/11/2026) ───────────────────
+// Dono: "você vai trazer o lote dos itens aqui também, o InventBatch; caso algum
+// dos itens não tenha lote, parte dessa OV tem que estar em Pendência enquanto a
+// outra vai andando". O lote é a dimensão de lote da LINHA da OV (ItemBatchNumber
+// na SalesOrderLines = o InventBatchId). As colunas da entidade de linhas saem de
+// uma linha de amostra (o nome do lote varia); sem a coluna, a regra fica
+// desligada, com aviso. Env: KANBAN_COL_LOTE.
+const COL_LOTE = envLista('KANBAN_COL_LOTE', ['ItemBatchNumber', 'InventBatchId', 'BatchNumber', 'BatchId']);
+let _colsLinhas = null;
+async function colunasLinhas(ent, token, ate) {
+  if (_colsLinhas && _colsLinhas.ent === ent) return _colsLinhas;
+  const rows = await D.odataGetComPrazo(ent, { top: 1, crossCompany: true, filter: "dataAreaId eq '" + D.odataStr(EMPRESA) + "'" }, token, prazo(ate, PROVA_MS));
+  const cols = rows.length ? colunasDe(rows[0]) : [];
+  const C = { ent, lote: achaCol(cols, COL_LOTE), linha: achaCol(cols, COLS_LINHA.linha), item: achaCol(cols, COLS_LINHA.item),
+    qtd: achaCol(cols, COLS_LINHA.qtd), status: achaCol(cols, COLS_LINHA.status), amostra: rows.length > 0 };
+  // sem linha de amostra não dá para saber as colunas: não guarda (tenta de novo)
+  if (C.amostra) _colsLinhas = C;
+  return C;
+}
+// valor, nº de itens e as linhas (lote, status) da OV
 let _entLinhas = null;
 async function linhas(numeros, token, ate, diag) {
   const alvos = _entLinhas ? [_entLinhas] : ENT_LINHAS;
   for (const ent of alvos) {
     try {
-      const rows = await porNumeros(ent, 'SalesOrderNumber', numeros, token, ate, diag, 'ov:linhas', 'SalesOrderNumber,LineAmount,dataAreaId');
+      const C = await colunasLinhas(ent, token, ate);
+      const sel = ['SalesOrderNumber', 'LineAmount', 'dataAreaId'].concat([C.lote, C.linha, C.item, C.qtd, C.status].filter(Boolean));
+      const rows = await porNumeros(ent, 'SalesOrderNumber', numeros, token, ate, diag, 'ov:linhas', Array.from(new Set(sel)).join(','));
       _entLinhas = ent;
       const por = {};
       rows.forEach(r => {
         const k = chaveOv(r.SalesOrderNumber);
-        const o = por[k] || (por[k] = { valor: 0, itens: 0 });
+        const o = por[k] || (por[k] = { valor: 0, itens: 0, linhas: [] });
         o.itens++; o.valor += Number(r.LineAmount) || 0;
+        const lt = C.lote ? txt(r[C.lote]) : '';
+        o.linhas.push({ linha: C.linha ? num(r[C.linha]) : null, item: C.item ? txt(r[C.item]) : '', valor: Math.round((Number(r.LineAmount) || 0) * 100) / 100,
+          qtd: C.qtd ? num(r[C.qtd]) : null, lote: VAZIOS.test(lt) ? '' : lt, status: C.status ? txt(r[C.status]) : '' });
       });
       Object.keys(por).forEach(k => { por[k].valor = Math.round(por[k].valor * 100) / 100; });
       return por;
@@ -1031,10 +1083,17 @@ async function montar(opts, modo) {
       status, campos
     };
   }).sort((a, b) => b.criadaEm.localeCompare(a.criadaEm) || b.numero.localeCompare(a.numero));
+  // 10/11/26: a OV em partes pelo lote das linhas (Pendência x o resto)
+  const colLote = _colsLinhas && _colsLinhas.lote;
+  const partes = [];
+  todas.forEach(o => partesPorLote(o, colLote ? (porLinha[o.numero] || {}).linhas : null).forEach(p => partes.push(p)));
+  if (!colLote && Object.keys(porLinha).length) {
+    avisos.push('As linhas da OV (' + (_entLinhas || 'SalesOrderLines') + ') não trazem o lote (' + COL_LOTE.join(' / ') + '): a Pendência por item sem lote fica desligada. Fixe o nome em KANBAN_COL_LOTE.');
+  }
   // quadro: as colunas DATADAS (Faturado, Rejeitada, Pallet, Expedição) só com a
   // OV do período — pela data da nota mais recente; sem nota, a de criação
   let foraPeriodo = 0;
-  const ovs = !modo.quadro ? todas : todas.filter(o => {
+  const ovs = !modo.quadro ? partes : partes.filter(o => {
     if (DATADAS.indexOf(o.etapa) < 0) return true;
     const d = (o.notas && o.notas[0] && o.notas[0].data) || diaDe(o.criadaEm, principal.criadaEm) || '';
     o.dataPeriodo = d || null;
@@ -1118,7 +1177,8 @@ const COLS_LINHA = {
   status:     ['SalesOrderLineStatus', 'LineStatus', 'SalesStatus'],
   entrega:    ['RequestedShippingDate', 'RequestedReceiptDate'],
   confirmada: ['ConfirmedShippingDate', 'ConfirmedReceiptDate'],
-  deposito:   ['ShippingWarehouseId', 'InventLocationId']
+  deposito:   ['ShippingWarehouseId', 'InventLocationId'],
+  lote:       ['ItemBatchNumber', 'InventBatchId', 'BatchNumber', 'BatchId']
 };
 // data "vazia" do F&O (1900-01-01, em qualquer hora) = sem data
 const dataLinha = (v) => { const s = txt(v); return /^\d{4}-\d{2}-\d{2}/.test(s) && !/^1900-01-01/.test(s) ? s.slice(0, 10) : null; };
@@ -1153,7 +1213,8 @@ async function linhasDaOv(numero, opts) {
       linha: num(pk(r, 'linha')), item: s('item'), produto: s('produto'),
       qtd: num(pk(r, 'qtd')), un: s('un'), preco: num(pk(r, 'preco')),
       desconto: num(pk(r, 'desconto')), descPct: num(pk(r, 'descPct')), valor: num(pk(r, 'valor')),
-      status: s('status'), entrega: dataLinha(pk(r, 'entrega')), confirmada: dataLinha(pk(r, 'confirmada')), deposito: s('deposito')
+      status: s('status'), entrega: dataLinha(pk(r, 'entrega')), confirmada: dataLinha(pk(r, 'confirmada')), deposito: s('deposito'),
+      lote: s('lote'), temLote: !!D.pick(r, COLS_LINHA.lote) || Object.keys(r).some(k => COLS_LINHA.lote.some(n => n.toLowerCase() === k.toLowerCase()))
     };
   }).sort((a, b) => (a.linha == null ? 1e9 : a.linha) - (b.linha == null ? 1e9 : b.linha));
   const r = Object.assign(base, { entidade, linhas });
@@ -1285,6 +1346,6 @@ async function enviarParaPallet(loadId) {
   return { ok: true, carga: id, entidade: usada.entidade, coluna: usada.pallet, valor };
 }
 
-function _limparCache() { _cache.clear(); _cacheLinhas.clear(); _ents = null; _entsTs = 0; _servico = null; _servicoTs = 0; _entLinhas = null; Object.keys(_extras).forEach(k => { delete _extras[k]; }); ST_NOTA._limparCache(); }
+function _limparCache() { _cache.clear(); _cacheLinhas.clear(); _ents = null; _entsTs = 0; _servico = null; _servicoTs = 0; _entLinhas = null; Object.keys(_extras).forEach(k => { delete _extras[k]; }); ST_NOTA._limparCache(); _colsLinhas = null; }
 
 module.exports = { ordensDoDia, quadro, linhasDaOv, enviarParaPallet, operacoesDasOvs, hojeSP, EMPRESA, CONFIGURED: D.CONFIGURED, ETAPAS, _limparCache, _interno: { diaDe, RE_STATUS, RE_NAO_STATUS, etapaDe } };

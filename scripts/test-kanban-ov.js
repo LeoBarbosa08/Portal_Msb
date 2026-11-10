@@ -161,12 +161,13 @@ const bio = (n, st, lib) => ({ dataAreaId: 'msb', SalesOrderNumber: n, StatusPed
   t('cancelada fora do quadro', et.OV017515 === 'cancelada' && r.canceladas === 1, et);
   const ids = r.etapas.map(e => e.id), col = (id) => r.etapas.find(e => e.id === id);
   t('11 colunas na ordem do fluxo', ids.join(',') === 'pendencia,criada,credito,liberado,conferencia,cotacao,aguardando,faturado,rejeitada,pallet,expedicao', ids);
-  t('Pendência antes de Criada, vazia e à espera dos campos', ids[0] === 'pendencia' && col('pendencia').pendente === true && col('pendencia').qtd === 0 && col('pendencia').nome === 'Pendência', col('pendencia'));
+  t('Pendência antes de Criada, com regra (o lote) e vazia aqui', ids[0] === 'pendencia' && !col('pendencia').pendente && col('pendencia').qtd === 0 && col('pendencia').nome === 'Pendência', col('pendencia'));
   t('Aguardando Faturamento logo depois da Cotação', ids.indexOf('aguardando') === ids.indexOf('cotacao') + 1 && col('aguardando').nome === 'Aguardando Faturamento' && !col('aguardando').pendente, col('aguardando'));
   t('Rejeitada logo depois do Faturado, com regra', ids.indexOf('rejeitada') === ids.indexOf('faturado') + 1 && !col('rejeitada').pendente, col('rejeitada'));
   t('Pallet logo depois da Rejeitada, com regra', ids.indexOf('pallet') === ids.indexOf('rejeitada') + 1 && !col('pallet').pendente, col('pallet'));
   t('Expedição no fim, com regra', ids[ids.length - 1] === 'expedicao' && !col('expedicao').pendente, col('expedicao'));
-  t('só a Pendência está pendente', r.etapas.filter(e => e.pendente).map(e => e.id).join() === 'pendencia', r.etapas.filter(e => e.pendente));
+  t('nenhuma coluna à espera de campos', !r.etapas.some(e => e.pendente), r.etapas.filter(e => e.pendente));
+  t('linhas sem a coluna do lote: aviso e nada dividido', r.avisos.some(a => /não trazem o lote/.test(a)) && !r.ovs.some(o => o.parte), r.avisos);
   t('nomes das 11 colunas', r.etapas.map(e => e.nome).join('|') === 'Pendência|Criada|Gerenciamento de Crédito|Separação|Conferência|Cotação|Aguardando Faturamento|Faturado|Rejeitada|Pallet|Expedição', r.etapas.map(e => e.nome));
   t('contagem e valor por coluna', r.etapas.find(e => e.id === 'faturado').qtd === 2 && r.etapas.find(e => e.id === 'faturado').valor === 1000 && r.etapas.find(e => e.id === 'credito').valor === 50, r.etapas);
   t('regra vem com os campos e a origem', r.ovs.find(o => o.numero === 'OV017517').regra.salesStatusCol === 'BIOSalesOrderHeaderV1.SalesStatus', r.ovs.find(o => o.numero === 'OV017517').regra);
@@ -479,6 +480,49 @@ const bio = (n, st, lib) => ({ dataAreaId: 'msb', SalesOrderNumber: n, StatusPed
   t('o diagnóstico diz a forma usada', r.diagnostico.some(d => d.etapa === 'ov:abertas' && d.forma === 'texto' && d.linhas >= 1), r.diagnostico.filter(d => d.etapa === 'ov:abertas'));
   delete CEN.SalesOrderHeadersV2.recusaEnum;
 
+  console.log('7c) o lote das linhas (10/11/2026): item SEM lote -> essa parte da OV em Pendência, o resto anda');
+  K._limparCache(); chamadas.length = 0;
+  const lnL = (ov, n, item, valor, lote, st) => ({ dataAreaId: 'msb', SalesOrderNumber: ov, LineNumber: n, ItemNumber: item, LineAmount: valor,
+    OrderedSalesQuantity: 2, ItemBatchNumber: lote, SalesOrderLineStatus: st || 'Backorder' });
+  CEN = {
+    SalesOrderHeadersV2: { linhas: [
+      v2('OV018101', '2026-11-03T13:00:00Z', 'Backorder'),   // 3 linhas, 1 sem lote -> 2 cartões
+      v2('OV018102', '2026-11-03T14:00:00Z', 'Backorder'),   // nenhuma com lote -> a OV inteira em Pendência
+      v2('OV018103', '2026-11-03T15:00:00Z', 'Backorder'),   // todas com lote -> não divide
+      v2('OV018104', '2026-11-01T13:00:00Z', 'Invoiced'),    // faturada (nota no período) -> não divide
+      v2('OV018105', '2026-11-03T16:00:00Z', 'Backorder'),   // a sem lote está cancelada -> não divide
+      v2('OV018106', '2026-11-03T17:00:00Z', 'Backorder')    // a sem lote já foi entregue -> não divide
+    ] },
+    BIOSalesOrderHeaderV1: { linhas: ['OV018101', 'OV018102', 'OV018103', 'OV018105', 'OV018106'].map(n => b4(n, 'Backorder', 'Released', 'No')).concat([b4('OV018104', 'Invoiced', 'Released', 'No')]) },
+    SalesOrderLines: { linhas: [
+      lnL('OV018101', 1, 'IT-A', 100, 'LT-A1'), lnL('OV018101', 2, 'IT-B', 40, ''), lnL('OV018101', 3, 'IT-C', 60, 'LT-C3'),
+      lnL('OV018102', 1, 'IT-A', 70, ''), lnL('OV018102', 2, 'IT-B', 30, ''),
+      lnL('OV018103', 1, 'IT-A', 500, 'LT-A9'),
+      lnL('OV018104', 1, 'IT-A', 900, '', 'Invoiced'),
+      lnL('OV018105', 1, 'IT-A', 10, 'LT-1'), lnL('OV018105', 2, 'IT-B', 20, '', 'Canceled'),
+      lnL('OV018106', 1, 'IT-A', 10, 'LT-1'), lnL('OV018106', 2, 'IT-B', 20, '', 'Delivered')
+    ] },
+    SalesInvoiceHeadersV2: { linhas: [nf('OV018104', '000030104', '2026-11-05')] },
+    FiscalDocuments: { linhas: [fd('000030104', 'Approved', '2026-11-05')] }
+  };
+  r = await K.quadro({ de: DE, ate: ATE });
+  const pc = (ch) => r.ovs.find(o => o.chave === ch);
+  const p1 = pc('OV018101~semlote'), p2 = pc('OV018101~comlote');
+  t('OV com 1 linha sem lote vira 2 cartões', p1 && p2 && r.ovs.filter(o => o.numero === 'OV018101').length === 2, r.ovs.filter(o => o.numero === 'OV018101').map(o => o.chave));
+  t('a parte sem lote em Pendência, com o valor e os itens só dela', p1 && p1.etapa === 'pendencia' && p1.valor === 40 && p1.itens === 1 && p1.parte.id === 'semlote' && p1.parte.linhas.join() === '2' && p1.parte.n === 1 && p1.parte.de === 3, p1 && { e: p1.etapa, v: p1.valor, parte: p1.parte });
+  t('a outra parte segue a etapa da OV (Separação), com o resto', p2 && p2.etapa === 'liberado' && p2.valor === 160 && p2.itens === 2 && p2.parte.linhas.join() === '1,3', p2 && { e: p2.etapa, v: p2.valor, parte: p2.parte });
+  t('cada parte aponta a outra e guarda o total da OV', p1 && p2 && p1.parte.outra.chave === p2.chave && p1.parte.outra.etapa === 'liberado' && p2.parte.outra.chave === p1.chave && p1.valorOv === 200 && p2.valorOv === 200 && p1.etapaOv === 'liberado', p1 && { o1: p1.parte.outra, o2: p2.parte.outra, vOv: p1.valorOv });
+  const p3 = pc('OV018102');
+  t('nenhuma linha com lote: a OV INTEIRA em Pendência (1 cartão, chave = número)', p3 && p3.etapa === 'pendencia' && p3.parte && p3.parte.inteira === true && p3.valor === 100 && r.ovs.filter(o => o.numero === 'OV018102').length === 1, p3 && { e: p3.etapa, parte: p3.parte });
+  t('todas com lote: não divide', pc('OV018103') && pc('OV018103').etapa === 'liberado' && !pc('OV018103').parte && pc('OV018103').lotes.semLote === 0, pc('OV018103'));
+  t('faturada: não divide (a nota já saiu)', pc('OV018104') && pc('OV018104').etapa === 'faturado' && !pc('OV018104').parte, pc('OV018104') && pc('OV018104').etapa);
+  t('linha sem lote cancelada ou já entregue: não divide', pc('OV018105') && !pc('OV018105').parte && pc('OV018106') && !pc('OV018106').parte && pc('OV018105').etapa === 'liberado', [pc('OV018105'), pc('OV018106')].map(o => o && o.etapa));
+  const cPend = r.etapas.find(e => e.id === 'pendencia'), cSep = r.etapas.find(e => e.id === 'liberado');
+  t('colunas somam as PARTES (Pendência = 40 + 100; Separação = 160 + 500 + 30 + 30, a OV não dividida com o valor de sempre)', cPend.qtd === 2 && cPend.valor === 140 && cSep.qtd === 4 && cSep.valor === 720, { pend: cPend, sep: cSep });
+  const lsel = chamadas.find(c => c.ent === 'SalesOrderLines' && c.q.select);
+  t('as linhas pedem o lote (ItemBatchNumber), o status e o número da linha', lsel && /ItemBatchNumber/.test(lsel.q.select) && /SalesOrderLineStatus/.test(lsel.q.select) && /LineNumber/.test(lsel.q.select), lsel && lsel.q.select);
+  t('sem aviso do lote', !r.avisos.some(a => /lote/.test(a)), r.avisos);
+
   console.log('8) as regras do dono pela carga e pela nota (Separação … Expedição)');
   K._limparCache(); chamadas.length = 0;
   SERVICO = ['BIOSalesOrderHeaderV1', 'SalesOrderHeadersV2', 'SalesOrderLines', 'WHSWorkTableBiEntities', 'WHSOutboundLoadHeaderEntities', 'SalesInvoiceHeadersV2', 'FiscalDocuments'];
@@ -663,9 +707,9 @@ const bio = (n, st, lib) => ({ dataAreaId: 'msb', SalesOrderNumber: n, StatusPed
     SalesOrderLines: { linhas: [
       { dataAreaId: 'msb', SalesOrderNumber: 'OV017525', LineNumber: 2, ItemNumber: '73172', LineDescription: 'CAT BALAO 8MM', OrderedSalesQuantity: 2, SalesUnitSymbol: 'UN',
         SalesPrice: 400, LineDiscountAmount: 0, LineAmount: 800, SalesOrderLineStatus: 'Backorder', RequestedShippingDate: '2026-11-10T12:00:00Z',
-        ConfirmedShippingDate: '1900-01-01T12:00:00Z', ShippingWarehouseId: 'RETCONSIGV' },
+        ConfirmedShippingDate: '1900-01-01T12:00:00Z', ShippingWarehouseId: 'RETCONSIGV', ItemBatchNumber: 'LT-77' },
       { dataAreaId: 'msb', SalesOrderNumber: 'OV017525', LineNumber: 1, ItemNumber: '73171', LineDescription: 'CAT BALAO 7MM', OrderedSalesQuantity: 5, SalesUnitSymbol: 'UN',
-        SalesPrice: 365, LineAmount: 1825, SalesOrderLineStatus: 'Backorder', ShippingWarehouseId: 'RETCONSIGV' },
+        SalesPrice: 365, LineAmount: 1825, SalesOrderLineStatus: 'Backorder', ShippingWarehouseId: 'RETCONSIGV', ItemBatchNumber: '' },
       { dataAreaId: 'msb', SalesOrderNumber: 'OV099999', LineNumber: 1, ItemNumber: 'X', LineAmount: 1 }
     ] }
   };
@@ -674,6 +718,7 @@ const bio = (n, st, lib) => ({ dataAreaId: 'msb', SalesOrderNumber: n, StatusPed
   const l2 = r.linhas[1];
   t('produto, qtd × preço, valor e status', l2.produto === 'CAT BALAO 8MM' && l2.qtd === 2 && l2.preco === 400 && l2.valor === 800 && l2.status === 'Backorder' && l2.un === 'UN', l2);
   t('entrega pela data; 1900 = sem data', l2.entrega === '2026-11-10' && l2.confirmada === null, l2);
+  t('o lote de cada linha (e se a entidade traz o lote)', l2.lote === 'LT-77' && r.linhas[0].lote === '' && l2.temLote && r.linhas[0].temLote, r.linhas.map(x => [x.lote, x.temLote]));
   t('entidade e número normalizado', r.entidade === 'SalesOrderLines' && r.numero === 'OV017525', r);
   const cl = chamadas.find(c => c.ent === 'SalesOrderLines');
   t('filtra a MSB e o número, sem $select', cl && /dataAreaId eq 'msb' and SalesOrderNumber eq 'OV017525'/.test(cl.q.filter) && !cl.q.select, cl && cl.q);
