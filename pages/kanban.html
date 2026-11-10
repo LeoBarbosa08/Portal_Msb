@@ -712,7 +712,7 @@
     var ROT_NF = { approved: 'Aprovada', authorized: 'Autorizada', rejected: 'Rejeitada', cancelled: 'Cancelada', canceled: 'Cancelada',
                    discarded: 'Descartada', denied: 'Denegada', pending: 'Pendente', created: 'Criada', sent: 'Enviada', none: 'Sem status' };
     function rotNF(v) { return v ? (ROT_NF[chaveEnum(v)] || String(v)) : 'Sem status'; }
-    // carga (WHSOutboundLoadHeaderEntity, 09/11/26): o LoadStatus em português
+    // carga (WHSLoadTableBiEntity / WHSOutboundLoadHeaderEntity): o LoadStatus em português
     var ROT_CARGA = { open: 'Aberto', posted: 'Lançado', waved: 'Em onda', inprocess: 'Em processamento', inpacking: 'Em embalagem',
                       loaded: 'Carregado', shipped: 'Remetido', received: 'Recebido' };
     var simNao = function (v) { return v == null || v === '' ? '—' : /^(yes|sim|true|1)$/i.test(String(v)) ? 'Sim' : /^(no|nao|não|false|0)$/i.test(String(v)) ? 'Não' : String(v); };
@@ -1192,7 +1192,7 @@
         +   (decide === 'trab' ? '<span class="dc">decidiu a etapa</span>' : '') + '</div>'
         + '<div class="' + (decide === 'carga' ? 'decide' : '') + '"><div class="k">Carga</div>'
         +   '<div class="v' + (cg1 || o.cargaFonte ? '' : ' z') + '">' + esc(cg1 ? rotCarga(cg1.status) : o.cargaFonte ? 'Sem carga' : 'não veio') + '</div>'
-        +   '<code>' + esc(cg1 ? cg1.id + (cg1.status ? ' · ' + (ccol.status || 'LoadStatus') + ' = ' + cg1.status : '') + ' · cotação: ' + simNao(cg1.cotacao) + ' · pallet: ' + simNao(cg1.pallet) : 'WHSOutboundLoadHeaderEntity') + '</code>'
+        +   '<code>' + esc(cg1 ? cg1.id + (cg1.status ? ' · ' + (ccol.status || 'LoadStatus') + ' = ' + cg1.status : '') + ' · cotação: ' + simNao(cg1.cotacao) + ' · pallet: ' + simNao(cg1.pallet) : 'WHSLoadTableBiEntity') + '</code>'
         +   (decide === 'carga' ? '<span class="dc">decidiu a etapa</span>' : '') + '</div>'
         + '<div class="' + (decide === 'nota' ? 'decide' : '') + '"><div class="k">Nota fiscal</div>'
         +   '<div class="v' + (o.nota || o.notaFonte ? '' : ' z') + '">' + esc(o.nota ? rotNF(o.nota.status) : o.notaFonte ? 'Sem nota' : 'não veio') + '</div>'
@@ -1220,7 +1220,7 @@
 
     // trabalho no depósito: cada trabalho da OV (WHSWorkTableBiEntity), com
     // status, quem, início/fim, onda e carga — o material para analisar a fase
-    // carga da OV (WHSOutboundLoadHeaderEntity): Conferência, Cotação, Pallet e Expedição.
+    // carga da OV (WHSLoadTableBiEntity; reserva WHSOutboundLoadHeaderEntity): Conferência, Cotação, Pallet e Expedição.
     // Ligada pelos LoadId dos trabalhos de depósito da OV.
     function secCarga(o) {
       var cs = o.cargas || [], tt = 'Carga', t = (o.regra || {}).trabalho;

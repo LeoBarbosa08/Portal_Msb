@@ -204,9 +204,13 @@ const COL_TRAB = {
 // públicos que ela pode ter no OData (OutboundLoadHeaders é o padrão do D365) e,
 // do service document, só os com "outboundloadheader" no nome. Nada de outras
 // entidades de carga (uma qualquer com "load" no nome já sumiu com as cargas).
-const ENT_CARGA = envLista('KANBAN_ENT_CARGA', []).concat([
-  'WHSOutboundLoadHeaderEntities', 'WHSOutboundLoadHeaderEntity', 'OutboundLoadHeaders', 'WHSOutboundLoadHeaders'
-]).filter((v, i, a) => a.indexOf(v) === i);
+// 10/11/26, depois (dono): "na verdade a entidade acho que é essa, WHSLoadTableBiEntity"
+// — a BI da tabela de cargas (como a WHSWorkTableBiEntity do trabalho, que funciona)
+// vem PRIMEIRO; a WHSOutboundLoadHeaderEntity fica de reserva. Entre as duas, vale
+// a que tiver os campos (status, cotação, pallet).
+const ENT_CARGA_BI = ['WHSLoadTableBiEntities', 'WHSLoadTableBiEntity', 'WHSLoadTableBis', 'WHSLoadTableBi'];
+const ENT_CARGA_CAB = ['WHSOutboundLoadHeaderEntities', 'WHSOutboundLoadHeaderEntity', 'OutboundLoadHeaders', 'WHSOutboundLoadHeaders'];
+const ENT_CARGA = envLista('KANBAN_ENT_CARGA', []).concat(ENT_CARGA_BI, ENT_CARGA_CAB).filter((v, i, a) => a.indexOf(v) === i);
 const COL_CARGA = {
   numero:         envLista('KANBAN_COL_CARGA_ID', ['LoadId']),
   // 10/11/26: só LoadStatus — o "Status" genérico fazia uma entidade qualquer com
@@ -412,7 +416,7 @@ const CFG_TRABALHO = {
   erroCol: (p) => 'sem a coluna ' + COL_TRAB[p].join('/')
 };
 const CFG_CARGA = {
-  chave: 'carga', candidatas: ENT_CARGA, reNome: /outboundloadheader/i, pedaco: 'outboundloadheader',
+  chave: 'carga', candidatas: ENT_CARGA, reNome: /loadtablebi|outboundloadheader/i, pedaco: 'loadtablebi / outboundloadheader',
   cols: COL_CARGA, obrig: ['numero'], prefer: ['cotacao', 'pallet', 'status'],
   // na 2ª rodada (outras entidades com "load" no nome), só troca de entidade se a
   // nova tiver a COTAÇÃO ou o PALLET que falta na original
@@ -1045,7 +1049,7 @@ async function montar(opts, modo) {
         ' (ex.: ' + naoAchadas.slice(0, 3).join(', ') + '): sem o status delas, essas OVs não entram em Conferência, Cotação, Pallet nem Expedição.');
     }
     if (!CARGA.E && !CARGA.semIds) {
-      avisos.push('A entidade de cargas (WHSOutboundLoadHeaderEntity) não respondeu no OData' + (CARGA.erro ? ' (' + CARGA.erro + ')' : '') +
+      avisos.push('A entidade de cargas (WHSLoadTableBiEntity / WHSOutboundLoadHeaderEntity) não respondeu no OData' + (CARGA.erro ? ' (' + CARGA.erro + ')' : '') +
         '. As cargas não aparecem na ficha — e a Cotação vai depender dela. Se a entidade não for pública no OData, é preciso publicá-la (ou fixar o nome em KANBAN_ENT_CARGA).');
     }
     if (!CRED.E) {
@@ -1206,11 +1210,29 @@ async function enviarParaPallet(loadId) {
   // o valor no formato da coluna: enum NoYes ("Yes"), booleano ou número
   const atual = r[E.pallet];
   const valor = typeof atual === 'boolean' ? true : typeof atual === 'number' ? 1 : 'Yes';
-  const chave = (E.temEmpresa ? "dataAreaId='" + D.odataStr(txt(r.dataAreaId) || EMPRESA) + "'," : '') + E.numero + "='" + D.odataStr(id) + "'";
-  const corpo = {}; corpo[E.pallet] = valor;
-  await D.odataEnviar('PATCH', E.entidade + '(' + chave + ')?cross-company=true', corpo, token, 20000);
+  const gravar = (Ent, dataArea) => {
+    const chave = (Ent.temEmpresa ? "dataAreaId='" + D.odataStr(dataArea || EMPRESA) + "'," : '') + Ent.numero + "='" + D.odataStr(id) + "'";
+    const corpo = {}; corpo[Ent.pallet] = valor;
+    return D.odataEnviar('PATCH', Ent.entidade + '(' + chave + ')?cross-company=true', corpo, token, 20000);
+  };
+  let usada = E;
+  try {
+    await gravar(E, txt(r.dataAreaId));
+  } catch (e1) {
+    // a BI (WHSLoadTableBiEntity) costuma ser SÓ LEITURA: grava pela
+    // WHSOutboundLoadHeaderEntity (a mesma carga, pelo LoadId), se ela tiver o campo
+    let alt = null;
+    for (const nome of ENT_CARGA_CAB.filter(n => n.toLowerCase() !== E.entidade.toLowerCase())) {
+      if (restante(ate) < FOLGA_MS + 3000) break;
+      const sd = await sondarExtra(CFG_CARGA, nome, token, ate).catch(() => null);
+      if (sd && sd.serve && sd.pallet) { alt = sd; break; }
+    }
+    if (!alt) throw e1;
+    try { await gravar(alt, txt(r.dataAreaId)); usada = alt; }
+    catch (e2) { e2.message = 'na ' + E.entidade + ': ' + String(e1.message).slice(0, 160) + ' · na ' + alt.entidade + ': ' + String(e2.message).slice(0, 160); throw e2; }
+  }
   _cache.clear();   // a próxima leitura do quadro já vem com a carga no Pallet
-  return { ok: true, carga: id, entidade: E.entidade, coluna: E.pallet, valor };
+  return { ok: true, carga: id, entidade: usada.entidade, coluna: usada.pallet, valor };
 }
 
 function _limparCache() { _cache.clear(); _cacheLinhas.clear(); _ents = null; _entsTs = 0; _servico = null; _servicoTs = 0; _entLinhas = null; Object.keys(_extras).forEach(k => { delete _extras[k]; }); ST_NOTA._limparCache(); }

@@ -33,6 +33,7 @@ global.fetch = async (url, opts) => {
     const corpoReq = JSON.parse(opts.body || '{}');
     chamadas.push({ ent: m && m[1], metodo: 'PATCH', chave, corpo: corpoReq, cross: u.searchParams.get('cross-company') });
     const E = m && CEN[m[1]];
+    if (E && E.somenteLeitura) return corpo({ error: { message: 'The entity is read-only' } }, 405);
     const alvo = E && E.linhas.find(r => Object.keys(chave).every(k => String(r[k]) === chave[k]));
     if (!alvo) return corpo({ error: { message: 'not found' } }, 404);
     Object.assign(alvo, corpoReq);
@@ -584,6 +585,30 @@ const bio = (n, st, lib) => ({ dataAreaId: 'msb', SalesOrderNumber: n, StatusPed
   r = await K.ordensDoDia({ data: DIA });
   t('carga do trabalho fora da entidade: aviso com o nº', r.avisos.some(a => /1 de \d+ carga\(s\) dos trabalhos de depósito não estão na entidade de cargas OutboundLoadHeaders \(ex\.: LD-2\)/.test(a)), r.avisos);
   delete CEN.OutboundLoadHeaders; delete CEN.TMSLoadBuildStrategies; CEN.WHSOutboundLoadHeaderEntities = guarda8d;
+  SERVICO = ['BIOSalesOrderHeaderV1', 'SalesOrderHeadersV2', 'SalesOrderLines', 'WHSWorkTableBiEntities', 'WHSOutboundLoadHeaderEntities', 'SalesInvoiceHeadersV2', 'FiscalDocuments'];
+  K._limparCache(); r = await K.ordensDoDia({ data: DIA });
+
+  console.log('8e) WHSLoadTableBiEntity primeiro; a gravação cai na WHSOutboundLoadHeaderEntity se a BI recusar');
+  K._limparCache(); chamadas.length = 0;
+  const base8e = CEN.WHSOutboundLoadHeaderEntities.linhas;
+  const guarda8e = CEN.WHSOutboundLoadHeaderEntities; delete CEN.WHSOutboundLoadHeaderEntities;
+  // a BI com tudo (status, cotação, pallet) — só leitura; a de cabeçalho só com o pallet
+  CEN.WHSLoadTableBiEntities = { linhas: base8e.map(x => Object.assign({}, x)), somenteLeitura: true };
+  CEN.OutboundLoadHeaders = { linhas: base8e.map(x => ({ dataAreaId: 'msb', LoadId: x.LoadId, ENVIARPALLET_CUSTOM: x.ENVIARPALLET_CUSTOM })) };
+  SERVICO = ['BIOSalesOrderHeaderV1', 'SalesOrderHeadersV2', 'SalesOrderLines', 'WHSWorkTableBiEntities', 'SalesInvoiceHeadersV2', 'FiscalDocuments', 'WHSLoadTableBiEntities', 'OutboundLoadHeaders'];
+  r = await K.ordensDoDia({ data: DIA });
+  t('lê a carga da WHSLoadTableBiEntities (a que tem os campos)', r.fontes.some(f => f.papel === 'carga' && f.entidade === 'WHSLoadTableBiEntities'), r.fontes.filter(f => f.papel === 'carga'));
+  t('regras pela BI (Aguardando, Pallet, Expedição)', r.ovs.find(o => o.numero === 'OV019004').etapa === 'aguardando' && r.ovs.find(o => o.numero === 'OV019006').etapa === 'pallet' && r.ovs.find(o => o.numero === 'OV019007').etapa === 'expedicao');
+  chamadas.length = 0;
+  let r8e = await K.enviarParaPallet('LD-4');
+  const pts = chamadas.filter(c => c.metodo === 'PATCH');
+  t('a BI recusa a gravação e ela vai para a OutboundLoadHeaders', pts.length === 2 && pts[0].ent === 'WHSLoadTableBiEntities' && pts[1].ent === 'OutboundLoadHeaders' && r8e.entidade === 'OutboundLoadHeaders'
+    && CEN.OutboundLoadHeaders.linhas.find(x => x.LoadId === 'LD-4').ENVIARPALLET_CUSTOM === 'Yes', { pts: pts.map(p => p.ent), r8e });
+  // sem entidade para gravar: o erro do Dynamics volta
+  CEN.OutboundLoadHeaders.somenteLeitura = true;
+  let e8e = null; try { await K.enviarParaPallet('LD-5'); } catch (e) { e8e = e; }
+  t('as duas recusam: o erro diz as duas entidades', e8e && /WHSLoadTableBiEntities/.test(e8e.message) && /OutboundLoadHeaders/.test(e8e.message), e8e && e8e.message);
+  delete CEN.WHSLoadTableBiEntities; delete CEN.OutboundLoadHeaders; CEN.WHSOutboundLoadHeaderEntities = guarda8e;
   SERVICO = ['BIOSalesOrderHeaderV1', 'SalesOrderHeadersV2', 'SalesOrderLines', 'WHSWorkTableBiEntities', 'WHSOutboundLoadHeaderEntities', 'SalesInvoiceHeadersV2', 'FiscalDocuments'];
   K._limparCache(); r = await K.ordensDoDia({ data: DIA });
 

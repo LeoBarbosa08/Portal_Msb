@@ -1360,6 +1360,23 @@ pegar as info dessa entidade, WHSOutboundLoadHeaderEntity".
 - Testes: a carga fica na `OutboundLoadHeaders` mesmo com outra entidade de "load"
   tendo os campos; o Diagnóstico com as colunas. `sw.js` — cache `bm-comest-v62`.
 
+### Kanban · a carga pela WHSLoadTableBiEntity (10/11/2026)
+
+O dono: "na verdade a entidade acho que é essa, WHSLoadTableBiEntity" — a BI da
+tabela de cargas, como a `WHSWorkTableBiEntity` do trabalho (que funciona).
+
+- **Leitura**: `ENT_CARGA` = a BI primeiro (`WHSLoadTableBiEntities`,
+  `WHSLoadTableBiEntity`…) e a `WHSOutboundLoadHeaderEntity` de reserva
+  (`OutboundLoadHeaders`…); do service document, só os nomes com "loadtablebi" ou
+  "outboundloadheader". Entre elas, vale a que tiver mais dos campos (status,
+  `QuotationPerformed_InoveProjects`, `ENVIARPALLET_CUSTOM`).
+- **Gravação do "Enviar para o Pallet"**: entidade BI costuma ser só leitura —
+  se a escolhida recusar o PATCH, a gravação vai pela `WHSOutboundLoadHeaderEntity`
+  (a mesma carga, pelo `LoadId`), se ela tiver o `ENVIARPALLET_CUSTOM`; se as duas
+  recusarem, o erro diz as duas.
+- Testes (8e): a BI com os campos é a lida; a BI recusa a gravação e ela cai na
+  `OutboundLoadHeaders`; as duas recusando. `sw.js` — cache `bm-comest-v63`.
+
 ## Como colocar no ar
 
 1. **Repositório no GitHub** — crie um repositório **privado e vazio** (sem
