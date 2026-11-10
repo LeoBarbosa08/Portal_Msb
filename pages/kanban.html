@@ -534,6 +534,13 @@
       return n + ' trabalho' + pl + (fase === 'aberto' ? ' aberto' + pl : fase === 'fechado' ? ' fechado' + pl : fase === 'processo' ? ' em processo' : ' fora da separação');
     }
     function ehParte(o) { return !!((o.parte && !o.parte.inteira) || o.parteTrab); }
+    // o status das linhas de um cartão, em palavras ("em aberto", "entregues", "faturado")
+    var ROT_LST = { aberta: ['em aberto', 'em aberto'], entregue: ['entregue', 'entregues'], faturada: ['faturado', 'faturados'] };
+    function stLinhasTxt(sts, n) { return (sts || []).map(function (x) { return (ROT_LST[x] || [x, x])[n === 1 ? 0 : 1]; }).join(' / '); }
+    function resumoLinhasSt(c) {
+      if (!c) return '';
+      return ['aberta', 'entregue', 'faturada'].filter(function (k) { return c[k]; }).map(function (k) { return c[k] + ' ' + ROT_LST[k][c[k] === 1 ? 0 : 1]; }).join(' · ');
+    }
     // onde estão os OUTROS cartões da mesma OV ("Separação e Aguardando Faturamento")
     function ondeIrmas(o) {
       var ns = []; (o.irmas || []).forEach(function (x) { var n = nomeEt(x.etapa); if (ns.indexOf(n) < 0) ns.push(n); });
@@ -548,7 +555,7 @@
       if (x.parte) {
         var pid = x.parte.id;
         d.push(x.parte.inteira ? (pid === 'entregue' ? 'todas as linhas entregues' : 'nenhum item com lote')
-          : itensTxt(x.parte.n) + (pid === 'semlote' ? ' sem lote' : pid === 'entregue' ? (x.parte.n === 1 ? ' entregue' : ' entregues') : pid === 'comlote' ? ' com lote' : ' (o restante)'));
+          : itensTxt(x.parte.n) + (pid === 'semlote' ? ' sem lote' : pid === 'linhas' ? ' ' + stLinhasTxt(x.parte.status, x.parte.n) : pid === 'entregue' ? (x.parte.n === 1 ? ' entregue' : ' entregues') : pid === 'comlote' ? ' com lote' : ' (o restante)'));
         if (!x.parte.inteira && (x.parte.linhas || []).length) sub.push('linha' + (x.parte.linhas.length === 1 ? ' ' : 's ') + x.parte.linhas.join(', '));
       }
       if (x.parteTrab) {
@@ -565,6 +572,7 @@
       if (p && p.inteira && p.id === 'entregue') h += chip('kb-parte', 'Todas as linhas estão Entregue (sem nota): a OV inteira está em Aguardando Faturamento', 'entregue');
       else if (p && p.inteira) h += chip('kb-lote', 'Nenhum item em aberto tem lote: a OV inteira está em Pendência', 'sem lote');
       else if (p && p.id === 'entregue') h += chip('kb-parte', 'Este cartão é só a parte ENTREGUE (sem nota): ' + itensTxt(p.n) + ' de ' + p.de + (ondeIrmas(o) ? '. O resto está em ' + ondeIrmas(o) : ''), 'entregue · ' + p.n + '/' + p.de);
+      else if (p && p.id === 'linhas') h += chip('kb-parte', 'Este cartão é só a parte da OV com as linhas ' + stLinhasTxt(p.status, 2) + ': ' + itensTxt(p.n) + ' de ' + p.de + (ondeIrmas(o) ? '. O resto está em ' + ondeIrmas(o) : ''), (stLinhasTxt(p.status, p.n) || 'parte') + ' · ' + p.n + '/' + p.de);
       else if (p && p.id === 'resto') h += chip('kb-parte', 'Este cartão é só o restante da OV: ' + itensTxt(p.n) + ' de ' + p.de + (ondeIrmas(o) ? '. O resto está em ' + ondeIrmas(o) : ''), 'parte · ' + p.n + '/' + p.de);
       else if (p && p.id === 'semlote') h += chip('kb-lote', 'Este cartão é só a parte SEM lote: ' + itensTxt(p.n) + ' de ' + p.de + (ondeIrmas(o) ? '. O resto está em ' + ondeIrmas(o) : ''), 'sem lote · ' + p.n + '/' + p.de);
       else if (p && p.id === 'comlote') h += chip('kb-parte', 'Este cartão é só a parte COM lote: ' + itensTxt(p.n) + ' de ' + p.de + (p.outra ? '. ' + itensTxt(p.outra.n) + ' sem lote em Pendência' : ''), 'com lote · ' + p.n + '/' + p.de);
@@ -1060,7 +1068,7 @@
       if (estado.mudou[idOv(o)] === 'nova') tags.push('<span class="kb-dw-tag nv">nova</span>');
       else if (estado.mudou[idOv(o)] === 'status') tags.push('<span class="kb-dw-tag nv">mudou de etapa</span>');
       if (o.parte && o.parte.inteira) tags.push('<span class="kb-dw-tag al">' + (o.parte.id === 'entregue' ? 'todas entregues' : 'sem lote') + '</span>');
-      else if (o.parte) tags.push('<span class="kb-dw-tag al">' + ({ semlote: 'parte sem lote', comlote: 'parte com lote', entregue: 'parte entregue', resto: 'parte' }[o.parte.id] || 'parte') + ' · ' + esc(o.parte.n + ' de ' + o.parte.de) + ' itens</span>');
+      else if (o.parte) tags.push('<span class="kb-dw-tag al">' + ((o.parte.id === 'linhas' ? (o.parte.n === 1 ? 'linha ' : 'linhas ') + stLinhasTxt(o.parte.status, o.parte.n) : { semlote: 'parte sem lote', comlote: 'parte com lote', entregue: 'parte entregue', resto: 'parte' }[o.parte.id]) || 'parte') + ' · ' + esc(o.parte.n + ' de ' + o.parte.de) + ' itens</span>');
       if (o.parteTrab) tags.push('<span class="kb-dw-tag al">' + (o.parteTrab.id === 'abrir' ? 'trabalho aberto' : 'trabalho fora da separação') + ' · ' + esc(o.parteTrab.n + ' de ' + o.parteTrab.de) + '</span>');
       if (o.semLinhas) tags.push('<span class="kb-dw-tag al">sem linha</span>');
       if (depDiferente(o.deposito)) tags.push('<span class="kb-dw-tag az" title="Depósito">' + esc(o.deposito) + '</span>');
@@ -1137,15 +1145,15 @@
       h += secDados(o);
       h += secCrus(o, abertos.crus);
       h += '<details class="kb-dw-card kb-dw-mais" data-k="regra"' + (abertos.regra ? ' open' : '') + '><summary><h5>Como a etapa é decidida</h5></summary>'
-        + '<p class="kb-dw-p">Antes das regras, a OV pode virar <b>mais de um cartão</b>: os itens em aberto <b>sem lote</b> (<code>ItemBatchNumber</code> vazio) vão para <b>Pendência</b> num cartão próprio' + (o.etapa === 'pendencia' ? ' <b>← este</b>' : '') + '; e, com trabalho <b>Abrir</b> junto de trabalho já fechado ou em processo, os abertos ficam em <b>Separação</b> e os outros seguem as regras abaixo, só com as cargas deles. Depois do Faturado, não divide.</p>'
+        + '<p class="kb-dw-p">As regras valem para cada <b>linha</b> da OV: as linhas que caem em etapas diferentes viram cartões diferentes. Antes delas, a OV pode virar <b>mais de um cartão</b> também assim: os itens em aberto <b>sem lote</b> (<code>ItemBatchNumber</code> vazio) vão para <b>Pendência</b> num cartão próprio' + (o.etapa === 'pendencia' ? ' <b>← este</b>' : '') + '; e, com trabalho <b>Abrir</b> junto de trabalho já fechado ou em processo, os abertos ficam em <b>Separação</b> e os outros seguem as regras abaixo, só com as cargas deles. Depois do Faturado, não divide.</p>'
         + '<p class="kb-dw-p">Do mais adiantado para o menos — vale a primeira regra que bater:</p>'
         + '<ol class="kb-dw-ol" style="margin-top:6px;">'
         + '<li class="' + (o.etapa === 'rejeitada' ? 'on' : '') + '">Nota fiscal mais recente <b>Rejeitada</b> (ou cancelada/descartada) → <b>Rejeitada</b>.</li>'
         + '<li class="' + (o.etapa === 'expedicao' ? 'on' : '') + '">Status da carga = <b>Remetido</b> → <b>Expedição</b>.</li>'
         + '<li class="' + (o.etapa === 'pallet' ? 'on' : '') + '"><code>ENVIARPALLET_CUSTOM</code> = Sim (o botão <b>Enviar para o Pallet</b>, que aparece com a carga Carregado e a cotação realizada) → <b>Pallet</b>.</li>'
-        + '<li class="' + (o.etapa === 'faturado' ? 'on' : '') + '">Nota fiscal <b>Aprovada</b> → <b>Faturado</b>.</li>'
-        + '<li class="' + (o.etapa === 'aguardando' ? 'on' : '') + '">Status da carga = <b>Carregado</b> e cotação realizada = <b>Sim</b> (<code>QuotationPerformed_InoveProjects</code>) → <b>Aguardando Faturamento</b>. Provisório: linha da OV com status <b>Entregue</b> (sem nota) também — essas linhas viram um cartão próprio.</li>'
-        + '<li class="' + (o.etapa === 'cotacao' ? 'on' : '') + '">Status da carga = <b>Carregado</b> e cotação realizada = Não → <b>Cotação</b>.</li>'
+        + '<li class="' + (o.etapa === 'faturado' ? 'on' : '') + '">Status da linha = <b>Faturado</b> → <b>Faturado</b>.</li>'
+        + '<li class="' + (o.etapa === 'aguardando' ? 'on' : '') + '">Status da carga = <b>Carregado</b> e status da linha = <b>Entregue</b> → <b>Aguardando Faturamento</b>.</li>'
+        + '<li class="' + (o.etapa === 'cotacao' ? 'on' : '') + '">Status da carga = <b>Carregado</b> e status da linha = <b>Ordem em aberto</b> → <b>Cotação</b>.</li>'
         + '<li class="' + (o.etapa === 'conferencia' ? 'on' : '') + '">Status da carga = <b>Em processamento</b> → <b>Conferência</b> (também o trabalho já fechado ou em processo, com a carga ainda sem fase).</li>'
         + '<li class="' + (o.etapa === 'credito' ? 'on' : '') + '">Registro <b>ativo</b> na tabela de gerenciamento de crédito (<code>ACTIVE</code>, pelo <code>SALESID</code>) → <b>Gerenciamento de Crédito</b>.</li>'
         + '<li class="' + (o.etapa === 'liberado' ? 'on' : '') + '">Status do trabalho = <b>Abrir</b> → <b>Separação</b> (só isso).</li>'
@@ -1175,7 +1183,7 @@
       var irmas = (o.irmas || []).map(function (x) { return { ref: x, o: cartaoExato(x.chave) }; });
       var todos = [o].concat(irmas.map(function (x) { return x.o; }).filter(Boolean));
       var porLote = todos.some(function (x) { return x.parte && !x.parte.inteira && (x.parte.id === 'semlote' || x.parte.id === 'comlote'); }), porTrab = todos.some(function (x) { return x.parteTrab; });
-      var porEntrega = todos.some(function (x) { return x.parte && x.parte.id === 'entregue'; });
+      var porEntrega = todos.some(function (x) { return x.parte && (x.parte.id === 'entregue' || x.parte.id === 'linhas'); });
       var linha = function (on, k, d, etapa, valor, chave) {
         var c = corEtapa(etapa);
         return '<div class="kb-pt-l' + (on ? ' on' : '') + '" style="--c-bg:' + c[0] + ';--c-bd:' + c[1] + ';--c-ink:' + c[2] + '">'
@@ -1186,7 +1194,7 @@
       var h = '<section class="kb-dw-card"><h5>Este cartão é uma parte da OV <small>' + esc(fQtd(1 + irmas.length)) + ' cartões</small></h5>';
       var porque = [];
       if (porLote) porque.push('pelo <b>lote</b> dos itens — os itens em aberto <b>sem lote</b> ficam em Pendência até receberem lote');
-      if (porEntrega) porque.push('pelo <b>status das linhas</b> — as linhas <b>Entregue</b> (romaneio, sem nota) ficam em Aguardando Faturamento');
+      if (porEntrega) porque.push('pelo <b>status das linhas</b> — com a carga Carregado, a linha em aberto vai para Cotação, a Entregue para Aguardando Faturamento; a Faturada, para Faturado');
       if (porTrab) porque.push('pelos <b>trabalhos</b> — a Separação fica só com o trabalho <b>aberto</b>; o outro segue a carga dele e a nota');
       h += '<p class="kb-pt-p">A OV <b>' + esc(o.numero) + '</b> está em mais de um lugar do quadro, dividida ' + porque.join('; e ') + '.</p>';
       h += linha(true, 'Este cartão', descParte(o), o.etapa, o.valor, null);
@@ -1265,24 +1273,24 @@
       else if (pos > 3) p.push({ cls: 'feito', tt: 'Conferência', ds: '' });
       else p.push({ cls: 'depois', tt: 'Conferência', ds: 'Quando a carga da OV entrar em processamento (<b>Status da carga = Em processamento</b>), vem para esta etapa.' });
       // cotação: carga "Carregado" e cotação realizada = Não
-      if (pos === 4) p.push({ cls: 'agora', tt: 'Agora: Cotação', ds: 'Carga ' + cgT + ' <b>carregada</b> e a cotação <b>ainda não realizada</b>. Quando a cotação for realizada, vai para Aguardando Faturamento.' });
+      var lsT = resumoLinhasSt(o.linhasSt);
+      if (pos === 4) p.push({ cls: 'agora', tt: 'Agora: Cotação', ds: 'Carga ' + cgT + ' <b>Carregado</b> e linha' + (lsT ? 's: <b>' + esc(lsT) + '</b>' : ' em aberto') + ' (Ordem em aberto). Quando a linha ficar <b>Entregue</b>, vai para Aguardando Faturamento.' });
       else if (pos > 4) p.push({ cls: 'feito', tt: 'Cotação', ds: '' });
-      else p.push({ cls: 'depois', tt: 'Cotação', ds: 'Quando a carga ficar <b>Carregado</b>, vem para esta etapa até a cotação ser realizada.' });
+      else p.push({ cls: 'depois', tt: 'Cotação', ds: 'Com a carga <b>Carregado</b> e a linha <b>em aberto</b>, vem para esta etapa.' });
       // aguardando faturamento: carga "Carregado" e cotação realizada = Sim (09/11/26)
-      var ptE = o.parte && o.parte.id === 'entregue' ? o.parte : null;
       if (pos === 5) p.push({ cls: 'agora', tt: 'Agora: Aguardando Faturamento',
-        ds: ptE || chaveEnum(rg.salesStatus) === 'delivered'
-          ? (ptE ? '<b>' + esc(plural(ptE.n, 'linha', 'linhas')) + '</b> com status <b>Entregue</b>' : 'A OV está <b>Entregue</b>') + ' (romaneio emitido) e ainda sem nota fiscal aprovada — regra provisória.'
-          : 'Carga ' + cgT + ' carregada e com a <b>cotação realizada</b>; falta a nota fiscal ser aprovada' + (o.podePallet ? ' — já pode ser enviada para o Pallet.' : '.') });
+        ds: (o.cargaFase === 'cotacao' || o.cargaFase === 'cotado' ? 'Carga ' + cgT + ' <b>Carregado</b> e ' : 'Sem carga carregada; ') + 'linha' + (lsT ? 's: <b>' + esc(lsT) + '</b>' : ' <b>Entregue</b>')
+          + '. Quando a linha ficar <b>Faturado</b>, vai para Faturado' + (o.podePallet ? ' — já pode ser enviada para o Pallet.' : '.') });
       else if (pos > 5) p.push({ cls: 'feito', tt: 'Aguardando Faturamento', ds: '' });
-      else p.push({ cls: 'depois', tt: 'Aguardando Faturamento', ds: 'Com a carga <b>Carregado</b> e a <b>cotação realizada = Sim</b>, vem para esta etapa até a nota fiscal ser aprovada.' });
+      else p.push({ cls: 'depois', tt: 'Aguardando Faturamento', ds: 'Com a carga <b>Carregado</b> e a linha <b>Entregue</b>, vem para esta etapa.' });
       // faturado (com a nota fiscal) e, se for o caso, a nota rejeitada
       var nt = o.nota, ntTxt = nt ? ' Nota fiscal <b>' + esc(nt.numero) + '</b>' + (nt.status ? ' (' + esc(rotNF(nt.status)) + ')' : '') + '.' : '';
       var ntData = nt && (o.notas || [])[0] && o.notas[0].data ? fDM(o.notas[0].data) : '';
       if (pos === POS_FAT) {
         var sit = rot(rg.salesStatus);
         p.push({ cls: 'feito fim', tt: 'Agora: Faturado', dt: ntData,
-          ds: (nt && nt.aprovada ? 'Nota fiscal <b>' + esc(nt.numero) + '</b> <b>aprovada</b>.' : 'A OV não está mais em aberto: situação <b>' + esc(sit || '—') + '</b> (' + cod(cSit, rg.salesStatus) + ').' + ntTxt)
+          ds: (o.linhasSt && o.linhasSt.faturada ? 'Linha' + (lsT ? 's: <b>' + esc(lsT) + '</b>' : ' <b>Faturado</b>') + '.' + ntTxt
+              : nt && nt.aprovada ? 'Nota fiscal <b>' + esc(nt.numero) + '</b> <b>aprovada</b> (as linhas não foram lidas).' : 'A OV não está mais em aberto: situação <b>' + esc(sit || '—') + '</b> (' + cod(cSit, rg.salesStatus) + ').' + ntTxt)
             + (o.podePallet ? ' A carga está carregada e com a cotação realizada: pode ir para o Pallet.' : '') });
       } else if (pos > POS_FAT) {
         p.push({ cls: 'feito', tt: 'Faturado', dt: ntData, ds: nt ? 'Nota fiscal <b>' + esc(nt.numero) + '</b> emitida.' : '' });
@@ -1292,7 +1300,7 @@
             ds: 'A nota fiscal <b>' + esc(nt ? nt.numero : '—') + '</b> está <b>' + esc(rotNF(nt && nt.status)) + '</b> (<code>' + esc(colNF) + ' = ' + esc(nt ? nt.status : '') + '</code>): a OV fica aqui até sair uma nota aprovada.' });
         }
       } else {
-        p.push({ cls: 'depois', tt: 'Faturado', ds: 'Quando a nota fiscal for <b>aprovada</b>, vem para esta etapa.' });
+        p.push({ cls: 'depois', tt: 'Faturado', ds: 'Quando a linha ficar com status <b>Faturado</b>, vem para esta etapa.' });
       }
       // pallet: ENVIARPALLET_CUSTOM = Sim (o botão "Enviar para o Pallet")
       if (pos === ORDEM_ETAPA.pallet) p.push({ cls: 'agora', tt: 'Agora: Pallet',
@@ -1316,9 +1324,9 @@
       var rg = o.regra || {}, et = o.etapa;
       var libRel = /^(released|liberado|liberada)$/.test(chaveEnum(rg.releaseStatus));
       var ti = trabInfo(o);
-      var decide = et === 'rejeitada' ? 'nota' : et === 'faturado' ? (o.nota && o.nota.aprovada ? 'nota' : 'sit') : et === 'cancelada' ? 'sit'
+      var decide = et === 'rejeitada' ? 'nota' : et === 'faturado' && !(o.linhasSt && o.linhasSt.faturada) ? (o.nota && o.nota.aprovada ? 'nota' : 'sit') : et === 'cancelada' ? 'sit'
         : et === 'pendencia' ? 'lote'
-        : et === 'aguardando' && ((o.parte && o.parte.id === 'entregue') || chaveEnum(rg.salesStatus) === 'delivered') ? 'sit'
+        : et === 'faturado' && o.linhasSt && o.linhasSt.faturada ? 'linha'
         : et === 'conferencia' ? (o.cargaFase === 'processando' ? 'carga' : 'trab')
         : (et === 'expedicao' || et === 'pallet' || et === 'aguardando' || et === 'cotacao') ? 'carga'
         : et === 'credito' ? 'cred' : et === 'liberado' ? (ti.fase ? 'trab' : 'lib') : '';
@@ -1343,11 +1351,10 @@
           : 'A entidade de trabalho não respondeu: a OV liberada para o depósito (<code>ReleaseStatus = Released</code>) fica em <b>Separação</b> até o trabalho voltar a ser lido.',
         conferencia: o.cargaFase === 'processando' ? 'A carga está <b>em processamento</b> (Status da carga = Em processamento): fica em <b>Conferência</b> até ficar Carregado.'
           : 'O trabalho de separação já saiu de <b>Abrir</b> (' + esc(ti.fase === 'fechado' ? 'fechado' : 'em processo') + ') e a carga ainda não está Em processamento: fica em <b>Conferência</b>.',
-        cotacao: 'A carga está <b>Carregado</b> e a cotação <b>ainda não foi realizada</b>: fica em <b>Cotação</b>.',
-        aguardando: o.parte && o.parte.id === 'entregue' ? (o.parte.inteira ? 'Todas as linhas da OV' : 'As linhas deste cartão') + ' estão com status <b>Entregue</b> (romaneio emitido, sem nota): ficam em <b>Aguardando Faturamento</b> até a nota ser aprovada — regra provisória.'
-          : chaveEnum(rg.salesStatus) === 'delivered' ? 'A OV está <b>Entregue</b> (romaneio emitido, sem nota): fica em <b>Aguardando Faturamento</b> — regra provisória.'
-          : 'A carga está <b>Carregado</b> e a <b>cotação realizada = Sim</b>: fica em <b>Aguardando Faturamento</b> até a nota fiscal ser aprovada.',
-        faturado: o.nota && o.nota.aprovada ? 'A nota fiscal <b>' + esc(o.nota.numero) + '</b> está <b>Aprovada</b>: fica em <b>Faturado</b>.'
+        cotacao: 'A carga está <b>Carregado</b> e a linha está <b>em aberto</b> (Ordem em aberto): fica em <b>Cotação</b> até a linha ficar Entregue.',
+        aguardando: (o.cargaFase === 'cotacao' || o.cargaFase === 'cotado' ? 'A carga está <b>Carregado</b> e a' : 'A OV não tem carga carregada e a') + ' linha está <b>Entregue</b>: fica em <b>Aguardando Faturamento</b> até a linha ficar Faturado.',
+        faturado: o.linhasSt && o.linhasSt.faturada ? 'A linha está com status <b>Faturado</b>: fica em <b>Faturado</b>.' + (o.nota ? ' Nota fiscal <b>' + esc(o.nota.numero) + '</b>.' : '')
+          : o.nota && o.nota.aprovada ? 'A nota fiscal <b>' + esc(o.nota.numero) + '</b> está <b>Aprovada</b> (as linhas não foram lidas): fica em <b>Faturado</b>.'
           : 'A situação não é mais “Ordem em aberto” e não há status de nota para conferir: fica em <b>Faturado</b>.' + (o.nota ? ' Nota fiscal <b>' + esc(o.nota.numero) + '</b>.' : ''),
         pallet: 'A carga foi enviada para o Pallet (<code>' + esc(ccol.pallet || 'ENVIARPALLET_CUSTOM') + ' = Sim</code>): fica em <b>Pallet</b> até ser remetida.',
         expedicao: 'A carga está <b>Remetido</b>: fica em <b>Expedição</b>.',
@@ -1359,8 +1366,13 @@
         : o.semLinhas ? 'sem linha' : o.lotes ? (o.lotes.semLote ? o.lotes.semLote + ' sem lote' : 'todos com lote') : '';
       var tileLote = lt ? '<div class="' + (decide === 'lote' ? 'decide' : '') + '"><div class="k">Lote dos itens</div><div class="v">' + esc(lt) + '</div>'
         + '<code>ItemBatchNumber' + (o.lotes ? ' · ' + esc(o.lotes.linhas) + ' em aberto' : '') + '</code>' + (decide === 'lote' ? '<span class="dc">decidiu a etapa</span>' : '') + '</div>' : '';
+      // 11/11/26: o status das linhas (Cotação / Aguardando / Faturado)
+      var lsR = resumoLinhasSt(o.linhasSt);
+      var decLin = decide === 'linha' || et === 'cotacao' || et === 'aguardando';
+      var tileLin = lsR ? '<div class="' + (decLin ? 'decide' : '') + '"><div class="k">Status da linha</div><div class="v">' + esc(lsR) + '</div><code>SalesOrderLineStatus</code>'
+        + (decLin ? '<span class="dc">decidiu a etapa</span>' : '') + '</div>' : '';
       return '<section class="kb-dw-card"><h5>Por que está em ' + esc(et === 'cancelada' ? 'Cancelada' : (NOME_ETAPA[et] || et)) + '</h5><div class="kb-rg">'
-        + tileLote
+        + tileLin + tileLote
         + tile('sit', 'Situação da OV', rg.salesStatus, rg.salesStatusCol, 'SalesStatus', rot)
         + tile('lib', 'Liberação', rg.releaseStatus, rg.releaseStatusCol, 'ReleaseStatus', rotLib)
         + '<div class="' + (decide === 'cred' ? 'decide' : '') + '"><div class="k">Crédito' + (ci.fonte === 'tabela' ? ' · tabela' : ci.fonte === 'cabecalho' ? ' · cabeçalho' : '') + '</div>'

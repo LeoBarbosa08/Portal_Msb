@@ -301,19 +301,26 @@ const marcadoV = (v) => v === true || /^(yes|sim|true|1|noyes yes)$/.test(normV(
 // carga = a fase da carga da OV (faseCarga) ou null (sem carga)
 // Do mais adiantado para o menos (09/11/2026, as regras do dono acima); onde
 // as regras do dono não falam, as anteriores ficam de reserva.
-function etapaDe(sales, release, credito, trabalho, nota, carga) {
+// linha = o status da LINHA da OV ('aberta' = Ordem em aberto | 'entregue' |
+// 'faturada' | null = as linhas não foram lidas -> vale a situação da OV)
+function etapaDe(sales, release, credito, trabalho, nota, carga, linha) {
   const sit = situacaoOv(sales);
   if (sit === 'cancelada') return 'cancelada';
   if (nota === 'rejeitada') return 'rejeitada';
   if (carga === 'remetido') return 'expedicao';
   if (carga === 'pallet') return 'pallet';
-  if (nota === 'aprovada') return 'faturado';
-  // 11/11/26 (dono, provisório): Entregue (romaneio, sem nota) -> Aguardando Faturamento
-  if (sit === 'entregue') return 'aguardando';
-  // reserva: a OV saiu do aberto e não há status de nota para conferir
-  if (sit === 'outra' && nota !== 'outra') return 'faturado';
-  if (carga === 'cotado') return 'aguardando';     // Carregado + cotação realizada Sim
-  if (carga === 'cotacao') return 'cotacao';       // Carregado + cotação realizada Não
+  // 11/11/26 (dono): "o FATURADO é o status da linha Faturado"
+  if (linha === 'faturada') return 'faturado';
+  // sem as linhas: a nota aprovada / a OV fora do aberto e do entregue (reserva)
+  if (linha == null && (nota === 'aprovada' || (sit === 'outra' && nota !== 'outra'))) return 'faturado';
+  const lin = linha || (sit === 'entregue' ? 'entregue' : sit === 'aberta' ? 'aberta' : null);
+  // 11/11/26 (dono): Cotação = carga Carregado E linha "Ordem em aberto";
+  // Aguardando Faturamento = carga Carregado E linha "Entregue"
+  const carregado = carga === 'cotacao' || carga === 'cotado';
+  if (carregado && lin === 'entregue') return 'aguardando';
+  if (carregado && lin === 'aberta') return 'cotacao';
+  // reserva: linha Entregue e a OV sem carga nenhuma (sem depósito/WMS)
+  if (lin === 'entregue' && !carga) return 'aguardando';
   if (carga === 'processando') return 'conferencia';
   if (marcadoV(credito)) return 'credito';
   // 10/11/26 (dono): "a Separação só pode abranger o trabalho = Abrir! somente
@@ -651,45 +658,61 @@ function addCarga(por, E, r) {
 const NAO_DIVIDE = ['faturado', 'rejeitada', 'pallet', 'expedicao', 'cancelada'];
 const linhaAberta = (st) => { const n = normV(st).replace(/ /g, ''); return !n || /^(backorder|emaberto|ordememaberto|open|none|nenhum)$/.test(n); };
 const linhaCancelada = (st) => /^cancel/.test(normV(st));
-// 11/11/2026 (dono, provisório): "coloca AGUARDANDO FATURAMENTO onde o status da
-// linha da OV é Entregue, por enquanto" — as linhas Entregue (romaneio, sem nota)
-// viram um cartão em Aguardando Faturamento (OV~entregue); todas entregues -> a
-// OV inteira. Não vale com a nota rejeitada nem na OV cancelada.
-const linhaEntregue = (st) => /^(delivered|entregue)$/.test(normV(st).replace(/ /g, ''));
-function partesPorLote(o, ls, lida, comCol) {
-  o.chave = o.numero; o.valorOv = o.valor; o.itensOv = o.itens;
-  const naoDivide = NAO_DIVIDE.indexOf(o.etapa) >= 0;
+// 11/11/2026 (dono): "Cotação = carga Carregado E status da linha = Ordem em
+// aberto; Aguardando Faturamento = carga Carregado E status da linha = Entregue;
+// Faturado = status da linha Faturado". O status é da LINHA: cada linha ganha a
+// sua etapa (etapaDe com o status dela) e as linhas com a mesma etapa ficam no
+// mesmo cartão (chave OV~<etapa>; a parte sem lote: OV~semlote). Uma etapa só:
+// a OV inteira, um cartão. As linhas canceladas não contam.
+const statusLinha = (st) => {
+  const n = normV(st).replace(/ /g, '');
+  if (/^cancel/.test(n)) return 'cancelada';
+  if (/^(invoiced|faturad)/.test(n)) return 'faturada';
+  if (/^(delivered|entregue)$/.test(n)) return 'entregue';
+  return 'aberta';
+};
+const POS_NOTA = ['faturado', 'rejeitada', 'pallet', 'expedicao', 'cancelada'];
+function partesPorLinhas(o, ls, lida, comLote, comStatus) {
+  o.chave = o.numero; o.valorOv = o.valor; o.itensOv = o.itens; o._abertas = true;
   if (!ls || !ls.length) {
-    if (lida && !naoDivide) { o.etapaOv = o.etapa; o.etapa = 'criada'; o.semLinhas = true; }
+    if (lida && NAO_DIVIDE.indexOf(o.etapa) < 0) { o.etapaOv = o.etapa; o.etapa = 'criada'; o.semLinhas = true; }
     return [o];
   }
-  const vivas = ls.filter(l => !linhaCancelada(l.status));
-  const abertas = vivas.filter(l => linhaAberta(l.status));
-  if (comCol) o.lotes = { linhas: abertas.length, semLote: abertas.filter(l => !l.lote).length };
-  const semLote = comCol && !naoDivide ? abertas.filter(l => !l.lote) : [];
-  const entregues = o.etapa === 'rejeitada' || o.etapa === 'cancelada' ? [] : vivas.filter(l => linhaEntregue(l.status));
-  const resto = vivas.filter(l => semLote.indexOf(l) < 0 && entregues.indexOf(l) < 0);
+  const c = o._ctx;
+  const st = (l) => comStatus ? statusLinha(l.status) : null;
+  const vivas = ls.filter(l => st(l) !== 'cancelada');
+  if (!vivas.length) return [o];
+  const abertas = vivas.filter(l => st(l) === 'aberta' || st(l) == null);
+  if (comLote) o.lotes = { linhas: abertas.length, semLote: abertas.filter(l => !l.lote).length };
+  const etapaDaLinha = (s2) => c ? etapaDe(c.sa, c.re, c.cr, c.trab, c.nota, c.carga, s2) : o.etapa;
+  const grupos = new Map();
+  vivas.forEach(l => {
+    const s2 = st(l);
+    let e = etapaDaLinha(s2), semlote = false, destino = null;
+    // a linha em aberto sem lote vai para Pendência (antes do faturamento)
+    if (comLote && (s2 === 'aberta' || s2 == null) && !l.lote && POS_NOTA.indexOf(e) < 0) { destino = e; e = 'pendencia'; semlote = true; }
+    if (!grupos.has(e)) grupos.set(e, { etapa: e, ls: [], status: [], semlote, destino });
+    const g = grupos.get(e); g.ls.push(l); if (s2 && g.status.indexOf(s2) < 0) g.status.push(s2);
+  });
+  const gs = Array.from(grupos.values());
   const soma = (arr) => Math.round(arr.reduce((t, l) => t + (l.valor || 0), 0) * 100) / 100;
   const ident = (l) => l.linha != null ? l.linha : l.item;
-  const grupos = [];
-  if (semLote.length) grupos.push({ id: 'semlote', etapa: 'pendencia', ls: semLote });
-  if (entregues.length) grupos.push({ id: 'entregue', etapa: 'aguardando', ls: entregues });
-  if (resto.length) grupos.push({ id: semLote.length ? 'comlote' : 'resto', etapa: o.etapa, ls: resto });
-  if (!grupos.length || (grupos.length === 1 && grupos[0].etapa === o.etapa && !grupos[0].ls.some(l => semLote.indexOf(l) >= 0 || entregues.indexOf(l) >= 0))) return [o];
-  const total = grupos.reduce((t, g) => t + g.ls.length, 0);
-  // um grupo só (todas sem lote / todas entregues): a OV inteira, um cartão
-  if (grupos.length === 1) {
-    const g = grupos[0];
-    return [Object.assign(o, { etapaOv: o.etapa, etapa: g.etapa, podePallet: g.id === 'semlote' ? false : o.podePallet,
-      parte: { id: g.id, inteira: true, linhas: g.ls.map(ident), n: g.ls.length, de: total } })];
+  const total = vivas.length;
+  const parteDe = (g) => ({ id: g.semlote ? 'semlote' : 'linhas', status: g.status, linhas: g.ls.map(ident), n: g.ls.length, de: total });
+  const temAberta = (g) => g.ls.some(l => st(l) === 'aberta' || st(l) == null) && !g.semlote;
+  // as linhas por status (a ficha mostra quantas em aberto / entregues / faturadas)
+  const contar = (arr) => { const x = {}; arr.forEach(l => { const k = st(l) || '?'; x[k] = (x[k] || 0) + 1; }); return x; };
+  if (gs.length === 1) {
+    const g = gs[0];
+    if (g.etapa !== o.etapa) o.etapaOv = o.etapa;
+    o.etapa = g.etapa; o.linhasSt = contar(g.ls); o._abertas = temAberta(g) || !comStatus;
+    if (g.semlote) { o.parte = Object.assign(parteDe(g), { inteira: true }); o.podePallet = false; o.etapaOv = g.destino; }
+    return [o];
   }
-  const ps = grupos.map(g => Object.assign({}, o, { chave: o.numero + '~' + g.id, etapa: g.etapa, valor: soma(g.ls), itens: g.ls.length,
-    // a parte em Pendência / entregue não leva o botão do Pallet (fica na parte que anda)
-    podePallet: g.id === 'semlote' || g.id === 'entregue' ? false : o.podePallet,
-    parte: { id: g.id, linhas: g.ls.map(ident), n: g.ls.length, de: total } }, g.etapa !== o.etapa ? { etapaOv: o.etapa } : {}));
-  // (compat.) a "outra" parte: a primeira das outras
-  ps.forEach(p => { const x = ps.find(q => q !== p); p.parte.outra = { chave: x.chave, etapa: x.etapa, n: x.parte.n, valor: x.valor }; });
-  return ps;
+  return gs.map(g => Object.assign({}, o, {
+    chave: o.numero + '~' + (g.semlote ? 'semlote' : g.etapa), etapa: g.etapa, valor: soma(g.ls), itens: g.ls.length,
+    podePallet: g.semlote ? false : o.podePallet, parte: parteDe(g), linhasSt: contar(g.ls), _abertas: temAberta(g)
+  }, g.semlote ? { etapaOv: g.destino } : {}));
 }
 
 // ── A OV EM PARTES PELOS TRABALHOS (10/11/2026) ───────────────────
@@ -1180,7 +1203,7 @@ async function montar(opts, modo) {
     const faseOv = faseCargasDe(cargasDe(outrosW));
     const notaFase = nVale ? (nVale.rejeitada ? 'rejeitada' : nVale.aprovada ? 'aprovada' : 'outra') : null;
     const trabFase = TRAB.E ? faseTrabDe(misto ? outrosW : validos) : null;
-    const etapa = etapaDe(sa && sa.valor, re && re.valor, crAtivo, trabFase, notaFase, faseOv);
+    const etapa = etapaDe(sa && sa.valor, re && re.valor, crAtivo, trabFase, notaFase, faseOv, null);
     const status = {};
     statusCols.forEach(s => { const r = reg[k][s.entidade]; status[s.chave] = r ? (txt(r[s.coluna]) || '(vazio)') : null; });
     const campos = {};
@@ -1223,7 +1246,9 @@ async function montar(opts, modo) {
       podePallet: cargasOv.some(c => c.podePallet),
       status, campos,
       // para a divisão pelos trabalhos (sai antes da resposta)
-      _trab: { abertos: abertosW, outros: outrosW, misto }
+      _trab: { abertos: abertosW, outros: outrosW, misto },
+      // para a etapa de cada LINHA (partesPorLinhas)
+      _ctx: { sa: sa && sa.valor, re: re && re.valor, cr: crAtivo, trab: trabFase, nota: notaFase, carga: faseOv }
     };
   }).sort((a, b) => b.criadaEm.localeCompare(a.criadaEm) || b.numero.localeCompare(a.numero));
   // 10/11/26: a OV em partes pelo lote das linhas (Pendência x o resto)
@@ -1232,11 +1257,13 @@ async function montar(opts, modo) {
   const lidas = porLinha._lidas || new Set();
   // 1º o lote (a parte sem lote vai para Pendência); 2º os trabalhos, na parte
   // que anda (trabalho aberto = Separação; os outros, onde a carga mandar)
-  todas.forEach(o => partesPorLote(o, (porLinha[o.numero] || {}).linhas || null, lidas.has(o.numero), !!colLote).forEach(p => {
-    if (p.parte && (p.parte.id === 'semlote' || p.parte.id === 'entregue')) partes.push(p);
+  const colStatus = _colsLinhas && _colsLinhas.status;
+  todas.forEach(o => partesPorLinhas(o, (porLinha[o.numero] || {}).linhas || null, lidas.has(o.numero), !!colLote, !!colStatus).forEach(p => {
+    // os trabalhos só dividem a parte com linhas em aberto (a do trabalho aberto)
+    if (!p._abertas) partes.push(p);
     else partesPorTrabalho(p, cargasDe, faseCargasDe).forEach(q => partes.push(q));
   }));
-  partes.forEach(p => { delete p._trab; });
+  partes.forEach(p => { delete p._trab; delete p._ctx; delete p._abertas; });
   // os outros cartões da mesma OV (a ficha lista todos e leva de um ao outro)
   const porNum = {};
   partes.forEach(p => { (porNum[p.numero] = porNum[p.numero] || []).push(p); });

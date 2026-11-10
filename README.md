@@ -1491,6 +1491,32 @@ por enquanto; depois vamos revisar isso, porém deixa assim".
   cartão próprio; todas entregues → a OV inteira; as somas das colunas.
   `sw.js` — cache `bm-comest-v66`.
 
+### Kanban · Cotação, Aguardando e Faturado pelo status da LINHA (11/11/2026)
+
+O dono: "Cotação vai ser Status da carga = Carregado E status da linha = Ordem em
+aberto; Aguardando Faturamento vai ser Status da carga = Carregado E status da
+linha = Entregue; e o Faturado é o status da linha Faturado; o resto pode deixar
+do jeito que está". Substitui a regra provisória da linha Entregue (logo acima).
+
+- **`etapaDe` com o status da linha** (`aberta` / `entregue` / `faturada`):
+  linha Faturado → **Faturado**; carga Carregado + linha Entregue → **Aguardando
+  Faturamento**; carga Carregado + linha em aberto → **Cotação**. A "Cotação
+  realizada" não decide mais Cotação x Aguardando (segue só no botão do Pallet).
+  Reservas: linha Entregue sem carga nenhuma → Aguardando; sem as linhas lidas,
+  vale a situação da OV (e a nota aprovada → Faturado, como antes).
+- **A OV em partes pelas linhas** (`partesPorLinhas`, no lugar do
+  `partesPorLote`): cada linha ganha a sua etapa; as linhas com a mesma etapa
+  ficam no mesmo cartão (`OV~<etapa>`; a parte sem lote continua `OV~semlote`),
+  com o valor e os itens delas e a contagem por status (`linhasSt`). Uma etapa só:
+  a OV inteira. Os trabalhos (Separação só Abrir) dividem só a parte com linhas
+  em aberto.
+- Tela: selos "em aberto · 1/3", "entregue · 1/3", "faturado · 1/3"; na ficha, a
+  divisão "pelo status das linhas", o tile "Status da linha", a linha do tempo e
+  "Como a etapa é decidida" com as regras novas.
+- Testes (8g e os ajustados): carga Carregado com linhas em aberto / Entregue /
+  Faturada → 3 cartões; carga em processamento → Conferência, um cartão; a linha
+  automática do teste segue a situação da OV. `sw.js` — cache `bm-comest-v67`.
+
 ## Como colocar no ar
 
 1. **Repositório no GitHub** — crie um repositório **privado e vazio** (sem
