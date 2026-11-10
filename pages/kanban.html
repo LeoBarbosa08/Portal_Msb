@@ -146,6 +146,34 @@
             .kb-tbl tr{cursor:pointer;}
             .kb-tbl tr:hover td{background:var(--surface-2);}
             .kb-tbl .num{text-align:right;font-variant-numeric:tabular-nums;}
+            .kb-tbl th{z-index:2;}
+            /* 10/11/26 (dono: "agrupar nas respectivas fases, de Pendência até Expedido;
+               clica na setinha da fase e abre todas as ordens que estão nela"): a lista
+               em GRUPOS por etapa, na ordem do quadro, recolhidos de saída. Cada grupo
+               é um <tbody> com a cor da coluna do quadro (--kb-bg/--kb-bd/--kb-ink). */
+            .kb-lista-top{display:flex;align-items:center;justify-content:flex-end;gap:4px;margin:0 2px 6px;}
+            .kb-lnk{border:none;background:none;padding:3px 6px;border-radius:6px;font:inherit;font-size:12px;font-weight:600;color:#1E5BD8;cursor:pointer;}
+            .kb-lnk:hover{background:var(--surface-2);}
+            .kb-lnk:focus-visible{outline:2px solid #1E5BD8;outline-offset:1px;}
+            html[data-tema="escuro"] .kb-lnk{color:#8DB3F5;}
+            .kb-tbl tr.kb-grp-h{cursor:default;}
+            .kb-tbl tr.kb-grp-h td,.kb-tbl tr.kb-grp-h:hover td{padding:0;background:var(--kb-bg);border-top:1px solid var(--kb-bd);color:var(--kb-ink);}
+            .kb-grp-b{display:block;width:100%;padding:0;border:none;background:transparent;font:inherit;color:inherit;text-align:left;cursor:pointer;}
+            .kb-grp-b:hover:not(:disabled){background:rgba(16,50,62,.045);}
+            html[data-tema="escuro"] .kb-grp-b:hover:not(:disabled){background:rgba(255,255,255,.05);}
+            .kb-grp-b:disabled{cursor:default;}
+            .kb-grp-b:focus-visible{outline:2px solid #1E5BD8;outline-offset:-2px;}
+            /* o conteúdo do cabeçalho fica parado à esquerda quando a lista rola de lado */
+            .kb-grp-in{position:sticky;left:0;display:inline-flex;align-items:center;gap:10px;padding:9px 12px;}
+            .kb-grp-seta{display:inline-grid;place-items:center;width:18px;height:18px;transition:transform .15s ease;}
+            .kb-grp-b[aria-expanded="true"] .kb-grp-seta{transform:rotate(90deg);}
+            .kb-grp-b:disabled .kb-grp-seta{opacity:.35;}
+            .kb-grp-n{font-size:13px;font-weight:800;}
+            .kb-grp-v{font-size:12px;font-weight:700;}
+            .kb-grp-p{font-size:11px;font-weight:600;opacity:.72;}
+            .kb-grp.vazio .kb-grp-n,.kb-grp.vazio .kb-cnt{opacity:.6;}
+            .kb-grp.on tr[data-ov] td:first-child{box-shadow:inset 3px 0 0 var(--kb-bd);}
+            @media (prefers-reduced-motion: reduce){.kb-grp-seta{transition:none;}}
 
             .kb-card.is-aberta{border-color:#287A8E;box-shadow:0 0 0 2px rgba(40,122,142,.32);}
             .kb-tbl tr.is-aberta td{background:#EEF6F9;}
@@ -515,17 +543,87 @@
       }).join('') + '</div>';
     }
 
+    // ── LISTA AGRUPADA POR ETAPA (10/11/26) ─────────────────────────
+    // Dono: "agrupar nas respectivas fases, começando de Pendência até Expedido;
+    // clica na setinha da fase e ele abre todas as ordens que estão nela".
+    // Os grupos seguem a ordem das colunas do quadro (r.etapas); a Cancelada
+    // (fora do quadro) entra no fim. Recolhidos de saída; o que a pessoa abriu
+    // fica guardado (localStorage). Com busca, os grupos com resultado abrem
+    // sozinhos (a setinha ainda recolhe) e os vazios somem.
+    var LS_GRUPOS = 'kb-lista-grupos';
+    var NCOLS_LISTA = 11;
+    var IC_SETA = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="9 18 15 12 9 6"/></svg>';
+    estado.grupos = (function () { try { var a = JSON.parse(lsGet(LS_GRUPOS) || '[]'), m = {}; (Array.isArray(a) ? a : []).forEach(function (id) { m[id] = true; }); return m; } catch (e) { return {}; } })();
+    estado.gruposBusca = {};
+    function salvarGrupos() { lsSet(LS_GRUPOS, JSON.stringify(Object.keys(estado.grupos).filter(function (k) { return estado.grupos[k]; }))); }
+    function grupoAberto(id) { return estado.busca ? estado.gruposBusca[id] !== false : !!estado.grupos[id]; }
+    function marcarGrupo(id, ab) { if (estado.busca) estado.gruposBusca[id] = ab; else estado.grupos[id] = ab; }
+    function gruposLista(ovs) {
+      var etapas = (estado.r && estado.r.etapas) || [];
+      var ids = etapas.map(function (e) { return e.id; });
+      var gs = etapas.map(function (e) { return { id: e.id, nome: e.nome, pendente: !!e.pendente, ovs: ovs.filter(function (o) { return o.etapa === e.id; }) }; });
+      var canc = ovs.filter(function (o) { return o.etapa === 'cancelada'; });
+      if (canc.length) gs.push({ id: 'cancelada', nome: NOME_ETAPA.cancelada, fora: true, ovs: canc });
+      // etapa que o quadro não conhece (não deveria haver): não some da lista
+      var outras = ovs.filter(function (o) { return o.etapa !== 'cancelada' && ids.indexOf(o.etapa) < 0; });
+      if (outras.length) gs.push({ id: '_outras', nome: 'Sem etapa', ovs: outras });
+      return gs;
+    }
+    function alternarGrupo(id) {
+      marcarGrupo(id, !grupoAberto(id));
+      if (!estado.busca) salvarGrupos();
+      render();
+      var b = document.querySelector('#kb-quadro [data-grp="' + id + '"]');
+      if (b) { try { b.focus({ preventScroll: true }); } catch (e) {} }
+    }
+    function todosGrupos(ab) {
+      gruposLista(filtradas()).forEach(function (g) { if (g.ovs.length) marcarGrupo(g.id, ab); });
+      if (!estado.busca) salvarGrupos();
+      render();
+    }
+
+    function linhaLista(o) {
+      var g = function (k) { return (o.regra && o.regra[k]) || ''; };
+      return '<tr tabindex="0" data-ov="' + esc(o.numero) + '"' + (estado.aberta === o.numero ? ' class="is-aberta"' : '') + '><td><b>' + esc(o.numero) + '</b></td><td>' + esc(o.cliente || o.conta) + '</td><td>' + esc(quandoCriada(o)) + '</td><td>' + esc(o.oc) + '</td>'
+        + '<td>' + esc(g('salesStatus')) + '</td><td>' + esc(g('releaseStatus')) + '</td><td>' + esc(credInfo(o.regra).veio ? credInfo(o.regra).rotulo : '') + '</td><td>' + esc(trabInfo(o).veio ? trabInfo(o).rotulo : '') + '</td><td>' + (o.nota ? esc(o.nota.numero) + (o.nota.status ? ' · ' + esc(rotNF(o.nota.status)) : '') : '') + '</td>'
+        + '<td class="num">' + (o.itens == null ? '' : o.itens) + '</td><td class="num">' + esc(o.valor == null ? '—' : fBRL(o.valor)) + '</td></tr>';
+    }
+
     function renderLista(ovs) {
       var r = estado.r;
       if (!ovs.length) { $('kb-quadro').innerHTML = '<div class="kb-vazio">' + ((r.ovs || []).length ? 'Nenhuma OV com essa busca.' : 'Nenhuma ordem de venda da MSB' + (depTexto() ? ' do ' + depTexto() : '') + ' em aberto, nem faturada no período.') + '</div>'; return; }
-      var g = function (o, k) { return (o.regra && o.regra[k]) || ''; };
-      $('kb-quadro').innerHTML = '<div class="kb-lista"><table class="kb-tbl"><thead><tr><th>OV</th><th>Cliente</th><th>Criada</th><th>OC</th><th>Etapa</th>'
-        + '<th>SalesStatus</th><th>ReleaseStatus</th><th>Crédito</th><th>Trabalho</th><th>NF</th><th class="num">Itens</th><th class="num">Valor</th></tr></thead><tbody>'
-        + ovs.map(function (o) {
-          return '<tr tabindex="0" data-ov="' + esc(o.numero) + '"' + (estado.aberta === o.numero ? ' class="is-aberta"' : '') + '><td><b>' + esc(o.numero) + '</b></td><td>' + esc(o.cliente || o.conta) + '</td><td>' + esc(quandoCriada(o)) + '</td><td>' + esc(o.oc) + '</td>'
-            + '<td><b>' + esc(NOME_ETAPA[o.etapa] || o.etapa) + '</b></td><td>' + esc(g(o, 'salesStatus')) + '</td><td>' + esc(g(o, 'releaseStatus')) + '</td><td>' + esc(credInfo(o.regra).veio ? credInfo(o.regra).rotulo : '') + '</td><td>' + esc(trabInfo(o).veio ? trabInfo(o).rotulo : '') + '</td><td>' + (o.nota ? esc(o.nota.numero) + (o.nota.status ? ' · ' + esc(rotNF(o.nota.status)) : '') : '') + '</td>'
-            + '<td class="num">' + (o.itens == null ? '' : o.itens) + '</td><td class="num">' + esc(o.valor == null ? '—' : fBRL(o.valor)) + '</td></tr>';
-        }).join('') + '</tbody></table></div>';
+      // a releitura de 60 s não pode jogar a lista para o topo nem tirar o foco
+      var velha = document.querySelector('#kb-quadro .kb-lista');
+      var rolou = velha ? [velha.scrollTop, velha.scrollLeft] : null;
+      var ativo = document.activeElement, foco = null;
+      if (ativo && velha && velha.contains(ativo)) foco = ativo.getAttribute('data-grp') ? ['data-grp', ativo.getAttribute('data-grp')] : ativo.getAttribute('data-ov') ? ['data-ov', ativo.getAttribute('data-ov')] : null;
+
+      var gs = gruposLista(ovs);
+      if (estado.busca) gs = gs.filter(function (g) { return g.ovs.length; });
+      var algumFechado = gs.some(function (g) { return g.ovs.length && !grupoAberto(g.id); });
+      var algumAberto = gs.some(function (g) { return g.ovs.length && grupoAberto(g.id); });
+      var datadas = r.datadas || [];
+      $('kb-quadro').innerHTML = '<div class="kb-lista-top">'
+        + (algumFechado ? '<button type="button" class="kb-lnk" data-grp-todos="1">Abrir todas</button>' : '')
+        + (algumAberto ? '<button type="button" class="kb-lnk" data-grp-todos="0">Recolher todas</button>' : '') + '</div>'
+        + '<div class="kb-lista"><table class="kb-tbl"><thead><tr><th>OV</th><th>Cliente</th><th>Criada</th><th>OC</th>'
+        + '<th>SalesStatus</th><th>ReleaseStatus</th><th>Crédito</th><th>Trabalho</th><th>NF</th><th class="num">Itens</th><th class="num">Valor</th></tr></thead>'
+        + gs.map(function (g) {
+          var n = g.ovs.length, ab = n > 0 && grupoAberto(g.id);
+          var soma = g.ovs.reduce(function (s, o) { return s + (o.valor || 0); }, 0);
+          var temValor = g.ovs.some(function (o) { return o.valor != null; });
+          var nota = g.fora ? 'fora do quadro' : (g.pendente && !n) ? 'aguardando os campos da fase' : datadas.indexOf(g.id) >= 0 ? textoPeriodo(r) : '';
+          return '<tbody class="kb-grp' + (ab ? ' on' : '') + (n ? '' : ' vazio') + '" style="' + tom(TOM_ETAPA[g.id] != null ? TOM_ETAPA[g.id] : 2) + '">'
+            + '<tr class="kb-grp-h"><td colspan="' + NCOLS_LISTA + '"><button type="button" class="kb-grp-b" data-grp="' + esc(g.id) + '" aria-expanded="' + ab + '"' + (n ? '' : ' disabled') + ' title="' + esc(n ? (ab ? 'Recolher ' : 'Abrir ') + g.nome : g.nome + ': nenhuma OV') + '">'
+            + '<span class="kb-grp-in"><span class="kb-grp-seta">' + IC_SETA + '</span><span class="kb-grp-n">' + esc(g.nome) + '</span><span class="kb-cnt">' + n + '</span>'
+            + (temValor ? '<span class="kb-grp-v">' + esc(fK(soma)) + '</span>' : '')
+            + (nota ? '<span class="kb-grp-p">' + esc(nota) + '</span>' : '') + '</span></button></td></tr>'
+            + (ab ? g.ovs.map(linhaLista).join('') : '') + '</tbody>';
+        }).join('') + '</table></div>';
+
+      var nova = document.querySelector('#kb-quadro .kb-lista');
+      if (rolou && nova) { nova.scrollTop = rolou[0]; nova.scrollLeft = rolou[1]; }
+      if (foco) { var f = document.querySelector('#kb-quadro [' + foco[0] + '="' + foco[1].replace(/"/g, '\\"') + '"]'); if (f) { try { f.focus({ preventScroll: true }); } catch (e) {} } }
     }
 
     // ══════════════════════════════════════════════════════════════
@@ -718,10 +816,15 @@
       else if (!e.shiftKey && (document.activeElement === z || !DW.el.contains(document.activeElement))) { e.preventDefault(); a.focus(); }
     }
     function acharOv(num) { return (estado.r && (estado.r.ovs || []).find(function (x) { return x.numero === num; })) || null; }
-    // a ordem em que a tela mostra as OVs: no quadro, coluna a coluna; na lista, a lista
+    // a ordem em que a tela mostra as OVs: no quadro, coluna a coluna; na lista,
+    // grupo a grupo (só os grupos abertos — o que está recolhido não aparece)
     function ordemVisivel() {
       var ovs = filtradas();
-      if (estado.vis === 'lista') return ovs.map(function (o) { return o.numero; });
+      if (estado.vis === 'lista') {
+        var vis = [];
+        gruposLista(ovs).forEach(function (g) { if (grupoAberto(g.id)) g.ovs.forEach(function (o) { vis.push(o.numero); }); });
+        return vis;
+      }
       var out = [];
       ((estado.r && estado.r.etapas) || []).forEach(function (e) { ovs.forEach(function (o) { if (o.etapa === e.id) out.push(o.numero); }); });
       return out;
@@ -1375,7 +1478,7 @@
     $('kb-7d').addEventListener('click', function () { porPeriodo(somaDias(hojeSP(), -6), hojeSP()); });
     $('kb-mes').addEventListener('click', function () { porPeriodo(hojeSP().slice(0, 8) + '01', hojeSP()); });
     $('kb-atualizar').addEventListener('click', function () { carregar(true); });
-    $('kb-busca').addEventListener('input', function (e) { estado.busca = e.target.value.trim(); render(); });
+    $('kb-busca').addEventListener('input', function (e) { var q = e.target.value.trim(); if (q !== estado.busca) estado.gruposBusca = {}; estado.busca = q; render(); });
     Array.prototype.forEach.call(document.querySelectorAll('.kb-seg button'), function (b) {
       b.addEventListener('click', function () {
         estado.vis = b.getAttribute('data-vis');
@@ -1383,7 +1486,15 @@
         render();
       });
     });
-    $('kb-quadro').addEventListener('click', function (e) { var el = e.target.closest && e.target.closest('[data-ov]'); if (el) abrir(el.getAttribute('data-ov'), el); });
+    $('kb-quadro').addEventListener('click', function (e) {
+      if (!e.target.closest) return;
+      // lista: a setinha da etapa abre/recolhe o grupo; "Abrir/Recolher todas"
+      var gb = e.target.closest('[data-grp]');
+      if (gb) { if (!gb.disabled) alternarGrupo(gb.getAttribute('data-grp')); return; }
+      var tb = e.target.closest('[data-grp-todos]');
+      if (tb) { todosGrupos(tb.getAttribute('data-grp-todos') === '1'); return; }
+      var el = e.target.closest('[data-ov]'); if (el) abrir(el.getAttribute('data-ov'), el);
+    });
     // a linha da lista abre a ficha pelo teclado também (o cartão já é botão)
     $('kb-quadro').addEventListener('keydown', function (e) {
       if (e.key !== 'Enter' && e.key !== ' ') return;
