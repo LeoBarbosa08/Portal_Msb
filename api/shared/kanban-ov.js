@@ -502,7 +502,10 @@ async function entidadeExtra(cfg, token, ate, diag) {
   const motivo = E ? '' : !alvos.length
     ? 'nenhuma entidade com "' + cfg.pedaco + '" no nome está publicada no OData'
     : sondas.map(x => x.entidade + ': ' + (x.erro || 'não serve')).join('; ').slice(0, 300);
-  _extras[cfg.chave] = { E, ts: Date.now(), motivo };
+  // todas as que servem, a escolhida primeiro (as cargas: a que não trouxer
+  // uma carga, a próxima procura — 10/11/26)
+  const todas = E ? [E].concat(sondas.filter(x => x.serve && x !== E).sort((a, b) => pontos(b) - pontos(a))) : [];
+  _extras[cfg.chave] = { E, todas, ts: Date.now(), motivo };
   return _extras[cfg.chave];
 }
 // crédito, por OV: quantos registros, se algum está ATIVO e o registro que
@@ -575,34 +578,58 @@ async function notasDasOvs(numeros, token, ate, diag) {
   return { E, por };
 }
 
-// cargas pelos LoadId (os dos trabalhos das OVs): LoadId -> { carga, row }
+// cargas pelos LoadId (os dos trabalhos das OVs): LoadId -> { carga, row, E }
+// 10/11/26 (dono: "as cargas sumiram"): com a WHSLoadTableBiEntity na frente as
+// cargas não vinham — a carga que uma entidade não trouxer (ou se ela falhar) é
+// procurada na próxima que serve (a WHSOutboundLoadHeaderEntity). Cada carga
+// guarda a entidade de onde veio; os campos de cotação/pallet são opcionais.
 async function cargasPorId(ids, token, ate, diag) {
   const x = await entidadeExtra(CFG_CARGA, token, ate, diag), E = x.E;
   if (!E) return { E: null, por: {}, erro: x.motivo };
-  const rows = await porNumeros(E.entidade, E.numero, ids, token, ate, diag, 'ov:carga', null, !E.temEmpresa);
-  const por = {};
-  const v = (r, papel) => { const col = E[papel] || achaCol(colunasDe(r), COL_CARGA[papel]); return col ? r[col] : null; };
-  rows.forEach(r => {
-    const id = txt(r[E.numero]); if (!id || por[id.toUpperCase()]) return;
-    const cot = v(r, 'cotacao'), pal = v(r, 'pallet');
-    const carga = {
-      id, status: txt(v(r, 'status')), transportadora: txt(v(r, 'transportadora')), servico: txt(v(r, 'servico')),
-      envio: dataHora(v(r, 'envio')), expedido: dataHora(v(r, 'expedido')), deposito: txt(v(r, 'deposito')), modelo: txt(v(r, 'modelo')),
-      cotacao: cot == null ? null : txt(cot), cotacaoSim: marcadoV(cot), pallet: pal == null ? null : txt(pal), palletSim: marcadoV(pal)
-    };
-    carga.fase = faseCarga(carga);
-    // o botão "Enviar para o Pallet": carga Carregado E cotação realizada = Sim (e ainda não enviada)
-    carga.podePallet = carga.fase === 'cotado' && !!E.pallet;
-    // e o porquê de NÃO poder (a ficha mostra o botão desativado com o motivo)
-    carga.motivoPallet = carga.podePallet ? '' : !E.pallet ? 'não achei o campo ' + COL_CARGA.pallet[0] + ' na carga'
-      : carga.palletSim ? 'a carga já foi enviada para o Pallet'
-      : carga.fase === 'remetido' ? 'a carga já foi remetida'
-      : !/^(loaded|carregad)/.test(normV(carga.status).replace(/ /g, '')) ? 'a carga está "' + (carga.status || 'sem status') + '" — precisa estar Carregado'
-      : !E.cotacao ? 'não achei o campo ' + COL_CARGA.cotacao[0] + ' na carga'
-      : 'a cotação realizada está "' + simNaoV(carga.cotacao) + '" — precisa estar Sim';
-    por[id.toUpperCase()] = { row: r, carga };
-  });
-  return { E, por };
+  const lista = x.todas && x.todas.length ? x.todas : [E];
+  const por = {}, usadas = [];
+  let falta = ids.slice(), erro = null;
+  for (const Ei of lista) {
+    if (!falta.length) break;
+    if (usadas.length && restante(ate) < FOLGA_MS + 3000) break;
+    let rows;
+    try { rows = await porNumeros(Ei.entidade, Ei.numero, falta, token, ate, diag, 'ov:carga', null, !Ei.temEmpresa); }
+    catch (e) { erro = Ei.entidade + ': ' + String(e.message || e).slice(0, 160); usadas.push({ entidade: Ei.entidade, cargas: 0, erro }); continue; }
+    let n = 0;
+    rows.forEach(r => { if (addCarga(por, Ei, r)) n++; });
+    usadas.push({ entidade: Ei.entidade, cargas: n });
+    diag.push({ etapa: 'ov:carga:fonte', entidade: Ei.entidade, procuradas: falta.length, achadas: n });
+    falta = falta.filter(id => !por[id.toUpperCase()]);
+  }
+  // nenhuma entidade respondeu: é falha de leitura (vira aviso), não "sem carga"
+  if (!usadas.some(u => !u.erro)) { const e = new Error(erro || 'a leitura das cargas falhou'); throw e; }
+  // a "principal" = a que trouxe mais cargas (as colunas da ficha e dos avisos)
+  const principal = usadas.filter(u => u.cargas).sort((a, b) => b.cargas - a.cargas)[0];
+  const Ep = principal ? lista.find(L => L.entidade === principal.entidade) : E;
+  return { E: Ep, por, usadas, lista, erro };
+}
+function addCarga(por, E, r) {
+  const v = (papel) => { const col = E[papel] || achaCol(colunasDe(r), COL_CARGA[papel]); return col ? r[col] : null; };
+  const id = txt(r[E.numero]); if (!id || por[id.toUpperCase()]) return false;
+  const cot = v('cotacao'), pal = v('pallet');
+  const carga = {
+    id, status: txt(v('status')), transportadora: txt(v('transportadora')), servico: txt(v('servico')),
+    envio: dataHora(v('envio')), expedido: dataHora(v('expedido')), deposito: txt(v('deposito')), modelo: txt(v('modelo')),
+    cotacao: cot == null ? null : txt(cot), cotacaoSim: marcadoV(cot), pallet: pal == null ? null : txt(pal), palletSim: marcadoV(pal),
+    fonte: E.entidade
+  };
+  carga.fase = faseCarga(carga);
+  // o botão "Enviar para o Pallet": carga Carregado E cotação realizada = Sim (e ainda não enviada)
+  carga.podePallet = carga.fase === 'cotado' && !!E.pallet;
+  // e o porquê de NÃO poder (a ficha mostra o botão desativado com o motivo)
+  carga.motivoPallet = carga.podePallet ? '' : !E.pallet ? 'não achei o campo ' + COL_CARGA.pallet[0] + ' na carga'
+    : carga.palletSim ? 'a carga já foi enviada para o Pallet'
+    : carga.fase === 'remetido' ? 'a carga já foi remetida'
+    : !/^(loaded|carregad)/.test(normV(carga.status).replace(/ /g, '')) ? 'a carga está "' + (carga.status || 'sem status') + '" — precisa estar Carregado'
+    : !E.cotacao ? 'não achei o campo ' + COL_CARGA.cotacao[0] + ' na carga'
+    : 'a cotação realizada está "' + simNaoV(carga.cotacao) + '" — precisa estar Sim';
+  por[id.toUpperCase()] = { row: r, carga, E };
+  return true;
 }
 
 // ── leituras ─────────────────────────────────────────────────────
@@ -865,7 +892,10 @@ async function montar(opts, modo) {
     ? await cargasPorId(idsCarga, token, ate, diag).catch(e => ({ E: null, por: {}, erro: String(e.message || e).slice(0, 160) }))
     : { E: null, por: {}, semIds: true };
   if (CARGA.E) diag.push({ etapa: 'carga:colunas', entidade: CARGA.E.entidade, colunas: CARGA.E.colunas || [] });
-  if (CARGA.E) fontes.push({ entidade: CARGA.E.entidade, papel: 'carga', colunas: CARGA.E.numero + (CARGA.E.status ? ' + ' + CARGA.E.status : ''), cargas: Object.keys(CARGA.por).length });
+  if (CARGA.E) (CARGA.usadas || [{ entidade: CARGA.E.entidade, cargas: Object.keys(CARGA.por).length }]).forEach(u => {
+    const Eu = (CARGA.lista || []).find(L => L.entidade === u.entidade) || CARGA.E;
+    fontes.push({ entidade: u.entidade, papel: 'carga', colunas: Eu.numero + (Eu.status ? ' + ' + Eu.status : ''), cargas: u.cargas, erro: u.erro || undefined });
+  });
   if (TRAB.E) fontes.push({ entidade: TRAB.E.entidade, papel: 'trabalho', colunas: TRAB.E.numero + ' + ' + TRAB.E.status, trabalhos: Object.keys(TRAB.por).reduce((s2, k) => s2 + TRAB.por[k].lista.length, 0) });
   if (CRED.E) fontes.push({ entidade: CRED.E.entidade, papel: 'crédito', colunas: CRED.E.numero + ' + ' + CRED.E.ativo, registros: Object.keys(CRED.por).reduce((s2, k) => s2 + CRED.por[k].n, 0) });
   compl.forEach(({ E, rows: rs }) => {
@@ -965,7 +995,9 @@ async function montar(opts, modo) {
     if (cd && cd.row) campos[CRED.E.entidade] = crus(cd.row);
     if (tb && tb.row) campos[TRAB.E.entidade] = crus(tb.row);
     // o registro da carga nos campos crus
-    if (CARGA.E && idsOv.length && CARGA.por[idsOv[0].toUpperCase()]) campos[CARGA.E.entidade] = crus(CARGA.por[idsOv[0].toUpperCase()].row);
+    const cg0 = idsOv.map(id => CARGA.por[id.toUpperCase()]).filter(Boolean)[0] || null;
+    const EC = cg0 ? cg0.E : CARGA.E;   // a entidade de onde veio a carga da OV
+    if (cg0) campos[EC.entidade] = crus(cg0.row);
     const l = porLinha[k] || null;
     return {
       numero: k,
@@ -992,10 +1024,10 @@ async function montar(opts, modo) {
       notas: nts, nota: nts.length ? { numero: (nVale || nts[0]).numero, status: nVale ? nVale.status : '', rejeitada: !!(nVale && nVale.rejeitada),
         aprovada: !!(nVale && nVale.aprovada), fonte: nVale ? nVale.statusFonte : '' } : null, notaFonte: NOTAS.E ? NOTAS.E.entidade : null,
       // cargas (WHSOutboundLoadHeaderEntity): Conferência, Cotação, Pallet e Expedição
-      cargas: cargasOv, cargaFase: faseOv, cargaFonte: CARGA.E ? CARGA.E.entidade + (CARGA.E.status ? '.' + CARGA.E.status : '') : null,
-      cargaCols: CARGA.E ? { status: CARGA.E.status || null, cotacao: CARGA.E.cotacao || null, pallet: CARGA.E.pallet || null } : null,
+      cargas: cargasOv, cargaFase: faseOv, cargaFonte: EC ? EC.entidade + (EC.status ? '.' + EC.status : '') : null,
+      cargaCols: EC ? { status: EC.status || null, cotacao: EC.cotacao || null, pallet: EC.pallet || null } : null,
       // pode enviar para o Pallet: alguma carga Carregado + cotação Sim, ainda não enviada
-      podePallet: cargasOv.some(c => c.podePallet) && !!(CARGA.E && CARGA.E.pallet),
+      podePallet: cargasOv.some(c => c.podePallet),
       status, campos
     };
   }).sort((a, b) => b.criadaEm.localeCompare(a.criadaEm) || b.numero.localeCompare(a.numero));
@@ -1045,7 +1077,7 @@ async function montar(opts, modo) {
     }
     if (CARGA.E && idsCarga.length) {
       const naoAchadas = idsCarga.filter(id => !CARGA.por[id.toUpperCase()]);
-      if (naoAchadas.length) avisos.push(naoAchadas.length + ' de ' + idsCarga.length + ' carga(s) dos trabalhos de depósito não estão na entidade de cargas ' + CARGA.E.entidade +
+      if (naoAchadas.length) avisos.push(naoAchadas.length + ' de ' + idsCarga.length + ' carga(s) dos trabalhos de depósito não estão na' + ((CARGA.lista || []).length > 1 ? 's entidades de cargas ' + CARGA.lista.map(L => L.entidade).join(' / ') : ' entidade de cargas ' + CARGA.E.entidade) +
         ' (ex.: ' + naoAchadas.slice(0, 3).join(', ') + '): sem o status delas, essas OVs não entram em Conferência, Cotação, Pallet nem Expedição.');
     }
     if (!CARGA.E && !CARGA.semIds) {
@@ -1194,42 +1226,60 @@ async function enviarParaPallet(loadId) {
   if (!/^[A-Za-z0-9._\-\/]{1,40}$/.test(id)) throw erroStatus('Número de carga inválido.', 400);
   const ate = Date.now() + 25000, diag = [];
   const token = await D.getToken();
-  const x = await entidadeExtra(CFG_CARGA, token, ate, diag), E = x.E;
-  if (!E) throw erroStatus('A entidade de cargas não respondeu no OData' + (x.motivo ? ' (' + x.motivo + ')' : '') + '.', 409);
-  if (!E.pallet) throw erroStatus('Não achei a coluna ' + COL_CARGA.pallet[0] + ' na ' + E.entidade + ' (fixe o nome em KANBAN_COL_CARGA_PALLET).', 409);
-  const rows = await D.odataGetComPrazo(E.entidade, { crossCompany: true, top: 2,
-    filter: (E.temEmpresa ? "dataAreaId eq '" + D.odataStr(EMPRESA) + "' and " : '') + E.numero + " eq '" + D.odataStr(id) + "'" }, token, prazo(ate, 12000));
-  if (!rows.length) throw erroStatus('A carga ' + id + ' não foi encontrada no Dynamics.', 404);
-  const r = rows[0];
-  const c = { status: E.status ? txt(r[E.status]) : '', cotacaoSim: E.cotacao ? marcadoV(r[E.cotacao]) : false, palletSim: marcadoV(r[E.pallet]) };
+  const x = await entidadeExtra(CFG_CARGA, token, ate, diag);
+  if (!x.E) throw erroStatus('A entidade de cargas não respondeu no OData' + (x.motivo ? ' (' + x.motivo + ')' : '') + '.', 409);
+  // 10/11/26: a carga pode estar só numa das entidades (a BI não traz todas) —
+  // procura em cada uma que serve, na ordem
+  const lista = x.todas && x.todas.length ? x.todas : [x.E];
+  let E = null, r = null;
+  for (const Ei of lista) {
+    const rows = await D.odataGetComPrazo(Ei.entidade, { crossCompany: true, top: 2,
+      filter: (Ei.temEmpresa ? "dataAreaId eq '" + D.odataStr(EMPRESA) + "' and " : '') + Ei.numero + " eq '" + D.odataStr(id) + "'" }, token, prazo(ate, 12000)).catch(() => []);
+    if (rows.length) { E = Ei; r = rows[0]; break; }
+  }
+  if (!r) throw erroStatus('A carga ' + id + ' não foi encontrada no Dynamics.', 404);
+  const c = { status: E.status ? txt(r[E.status]) : '', cotacaoSim: E.cotacao ? marcadoV(r[E.cotacao]) : false, palletSim: E.pallet ? marcadoV(r[E.pallet]) : false };
   if (c.palletSim) return { ok: true, ja: true, carga: id, entidade: E.entidade, coluna: E.pallet };
   if (faseCarga(c) !== 'cotado') {
     throw erroStatus('A carga ' + id + ' não está "Carregado" com a cotação realizada (status: ' + (c.status || '—') + ', cotação realizada: ' +
       (E.cotacao ? simNaoV(r[E.cotacao]) : 'coluna não encontrada') + ').', 409);
   }
   // o valor no formato da coluna: enum NoYes ("Yes"), booleano ou número
-  const atual = r[E.pallet];
+  const atual = E.pallet ? r[E.pallet] : null;
   const valor = typeof atual === 'boolean' ? true : typeof atual === 'number' ? 1 : 'Yes';
   const gravar = (Ent, dataArea) => {
     const chave = (Ent.temEmpresa ? "dataAreaId='" + D.odataStr(dataArea || EMPRESA) + "'," : '') + Ent.numero + "='" + D.odataStr(id) + "'";
     const corpo = {}; corpo[Ent.pallet] = valor;
     return D.odataEnviar('PATCH', Ent.entidade + '(' + chave + ')?cross-company=true', corpo, token, 20000);
   };
-  let usada = E;
-  try {
-    await gravar(E, txt(r.dataAreaId));
-  } catch (e1) {
-    // a BI (WHSLoadTableBiEntity) costuma ser SÓ LEITURA: grava pela
-    // WHSOutboundLoadHeaderEntity (a mesma carga, pelo LoadId), se ela tiver o campo
-    let alt = null;
-    for (const nome of ENT_CARGA_CAB.filter(n => n.toLowerCase() !== E.entidade.toLowerCase())) {
-      if (restante(ate) < FOLGA_MS + 3000) break;
-      const sd = await sondarExtra(CFG_CARGA, nome, token, ate).catch(() => null);
-      if (sd && sd.serve && sd.pallet) { alt = sd; break; }
+  // onde gravar: a entidade da carga (se tiver o campo); depois as outras que
+  // servem com o campo; depois a WHSOutboundLoadHeaderEntity (a BI costuma ser
+  // SÓ LEITURA)
+  const alvos = [E].concat(lista.filter(L => L !== E)).filter(L => L.pallet);
+  const ja = (n) => alvos.some(L => L.entidade.toLowerCase() === n.toLowerCase());
+  const erros = [];
+  let usada = null;
+  for (let k = 0; !usada; k++) {
+    if (k >= alvos.length) {
+      // sem mais alvos conhecidos: sonda a de cabeçalho (só uma vez)
+      if (alvos._sondou) break;
+      alvos._sondou = true;
+      for (const nome of ENT_CARGA_CAB.filter(n => !ja(n))) {
+        if (restante(ate) < FOLGA_MS + 3000) break;
+        const sd = await sondarExtra(CFG_CARGA, nome, token, ate).catch(() => null);
+        if (sd && sd.serve && sd.pallet) { alvos.push(sd); break; }
+      }
+      if (k >= alvos.length) break;
     }
-    if (!alt) throw e1;
-    try { await gravar(alt, txt(r.dataAreaId)); usada = alt; }
-    catch (e2) { e2.message = 'na ' + E.entidade + ': ' + String(e1.message).slice(0, 160) + ' · na ' + alt.entidade + ': ' + String(e2.message).slice(0, 160); throw e2; }
+    const Ent = alvos[k];
+    try { await gravar(Ent, txt(r.dataAreaId)); usada = Ent; }
+    catch (e) { erros.push({ ent: Ent.entidade, e }); }
+  }
+  if (!usada) {
+    if (!erros.length) throw erroStatus('Não achei a coluna ' + COL_CARGA.pallet[0] + ' nas entidades de cargas (' + lista.map(L => L.entidade).join(', ') + '): fixe o nome em KANBAN_COL_CARGA_PALLET.', 409);
+    const ult = erros[erros.length - 1].e;
+    if (erros.length > 1) ult.message = erros.map(x2 => 'na ' + x2.ent + ': ' + String(x2.e.message).slice(0, 160)).join(' · ');
+    throw ult;
   }
   _cache.clear();   // a próxima leitura do quadro já vem com a carga no Pallet
   return { ok: true, carga: id, entidade: usada.entidade, coluna: usada.pallet, valor };

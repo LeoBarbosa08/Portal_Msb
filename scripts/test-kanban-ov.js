@@ -612,6 +612,33 @@ const bio = (n, st, lib) => ({ dataAreaId: 'msb', SalesOrderNumber: n, StatusPed
   SERVICO = ['BIOSalesOrderHeaderV1', 'SalesOrderHeadersV2', 'SalesOrderLines', 'WHSWorkTableBiEntities', 'WHSOutboundLoadHeaderEntities', 'SalesInvoiceHeadersV2', 'FiscalDocuments'];
   K._limparCache(); r = await K.ordensDoDia({ data: DIA });
 
+  console.log('8f) 10/11/26 "as cargas sumiram / parte existe, parte não": a BI traz só parte; o resto vem da de cabeçalho');
+  K._limparCache(); chamadas.length = 0;
+  const guarda8f = CEN.WHSOutboundLoadHeaderEntities;
+  CEN.WHSOutboundLoadHeaderEntities = { linhas: guarda8f.linhas.map(x => Object.assign({}, x)) };
+  // a BI com os MESMOS campos (ganha no empate), mas só com 2 das 10 cargas
+  CEN.WHSLoadTableBiEntities = { linhas: guarda8f.linhas.filter(x => x.LoadId === 'LD-2' || x.LoadId === 'LD-3').map(x => Object.assign({}, x)), somenteLeitura: true };
+  SERVICO = ['BIOSalesOrderHeaderV1', 'SalesOrderHeadersV2', 'SalesOrderLines', 'WHSWorkTableBiEntities', 'WHSLoadTableBiEntities', 'WHSOutboundLoadHeaderEntities', 'SalesInvoiceHeadersV2', 'FiscalDocuments'];
+  r = await K.ordensDoDia({ data: DIA });
+  const e8f = {}; r.ovs.forEach(o => { e8f[o.numero] = o.etapa; });
+  t('as etapas de sempre (nenhuma carga sumiu)', e8f.OV019002 === 'conferencia' && e8f.OV019003 === 'cotacao' && e8f.OV019004 === 'aguardando' && e8f.OV019006 === 'pallet' && e8f.OV019007 === 'expedicao' && e8f.OV019009 === 'conferencia', e8f);
+  const o8f = (n) => r.ovs.find(o => o.numero === n);
+  t('cada carga diz de onde veio', o8f('OV019002').cargas[0].fonte === 'WHSLoadTableBiEntities' && o8f('OV019004').cargas[0].fonte === 'WHSOutboundLoadHeaderEntities' && !o8f('OV019004').cargas[0].naoAchada, o8f('OV019004').cargas);
+  t('a ficha mostra a entidade da carga da OV', /^WHSOutboundLoadHeaderEntities/.test(o8f('OV019004').cargaFonte) && /^WHSLoadTableBiEntities/.test(o8f('OV019002').cargaFonte), [o8f('OV019004').cargaFonte, o8f('OV019002').cargaFonte]);
+  t('o botão do Pallet vale para a carga que veio da de cabeçalho', o8f('OV019004').podePallet === true, o8f('OV019004').podePallet);
+  const fc8f = r.fontes.filter(f => f.papel === 'carga');
+  t('as duas entidades nas fontes, com quantas cargas cada', fc8f.length === 2 && fc8f.find(f => f.entidade === 'WHSLoadTableBiEntities').cargas === 2 && fc8f.find(f => f.entidade === 'WHSOutboundLoadHeaderEntities').cargas === 8, fc8f);
+  const pc8f = chamadas.filter(c => c.ent === 'WHSOutboundLoadHeaderEntities' && /LoadId eq/.test(c.q.filter || ''));
+  t('na de cabeçalho só as que faltaram', pc8f.length && !pc8f.some(c => /LD-2'|LD-3'/.test(c.q.filter)), pc8f.map(c => c.q.filter));
+  t('sem aviso de carga não encontrada', !r.avisos.some(a => /não estão na/.test(a)), r.avisos);
+  chamadas.length = 0;
+  const r8f = await K.enviarParaPallet('LD-4');
+  const pt8f = chamadas.filter(c => c.metodo === 'PATCH');
+  t('"Enviar para o Pallet" acha a carga na de cabeçalho e grava lá', r8f.ok && pt8f.length === 1 && pt8f[0].ent === 'WHSOutboundLoadHeaderEntities' && CEN.WHSOutboundLoadHeaderEntities.linhas.find(x => x.LoadId === 'LD-4').ENVIARPALLET_CUSTOM === 'Yes', { r8f, pts: pt8f.map(p => p.ent) });
+  delete CEN.WHSLoadTableBiEntities; CEN.WHSOutboundLoadHeaderEntities = guarda8f;
+  SERVICO = ['BIOSalesOrderHeaderV1', 'SalesOrderHeadersV2', 'SalesOrderLines', 'WHSWorkTableBiEntities', 'WHSOutboundLoadHeaderEntities', 'SalesInvoiceHeadersV2', 'FiscalDocuments'];
+  K._limparCache(); r = await K.ordensDoDia({ data: DIA });
+
   console.log('9) "Enviar para o Pallet": grava ENVIARPALLET_CUSTOM = Sim no D365');
   chamadas.length = 0;
   let rp = await K.enviarParaPallet('LD-4');

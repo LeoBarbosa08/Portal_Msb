@@ -1377,6 +1377,31 @@ tabela de cargas, como a `WHSWorkTableBiEntity` do trabalho (que funciona).
 - Testes (8e): a BI com os campos é a lida; a BI recusa a gravação e ela cai na
   `OutboundLoadHeaders`; as duas recusando. `sw.js` — cache `bm-comest-v63`.
 
+### Kanban · as cargas de volta: a BI não traz todas (10/11/2026)
+
+O dono: "as cargas sumiram" / "não entendi por que parte existe e parte não".
+Com a `WHSLoadTableBiEntity` na frente, só PARTE das cargas dos trabalhos vinha:
+a BI é uma visão de relatório (o D365 monta essas entidades com junções e
+filtros próprios), e a carga que fica fora dela não aparecia — a OV perdia
+Conferência, Cotação, Pallet e Expedição.
+
+- **Leitura**: as cargas são procuradas em TODAS as entidades de cargas que
+  servem, na ordem (a escolhida primeiro): a que uma não trouxer — ou se ela
+  falhar — vai para a próxima (a `WHSOutboundLoadHeaderEntity`). Só as que
+  faltaram são pedidas de novo. Cada carga guarda a entidade de onde veio
+  (`fonte`); a ficha mostra a da carga da OV, e as colunas (status, cotação,
+  pallet) são as dessa entidade. Os campos de cotação/pallet seguem opcionais.
+- **Fontes / Diagnóstico**: uma linha por entidade de cargas, com quantas cargas
+  cada uma trouxe (`ov:carga:fonte` = procuradas × achadas). O aviso de carga
+  não encontrada só sai se ela não estiver em NENHUMA delas.
+- **"Enviar para o Pallet"**: relê a carga em cada entidade até achar; grava na
+  entidade da carga (se tiver o campo), senão nas outras com o
+  `ENVIARPALLET_CUSTOM`, por fim na `WHSOutboundLoadHeaderEntity`.
+- Testes (8f): a BI com só 2 das 10 cargas — as etapas de sempre, cada carga com
+  a sua fonte, o botão do Pallet para a carga da de cabeçalho, só as que
+  faltaram pedidas de novo, sem aviso; o envio grava na de cabeçalho. Só o
+  servidor mudou (sem `sw.js`).
+
 ## Como colocar no ar
 
 1. **Repositório no GitHub** — crie um repositório **privado e vazio** (sem
