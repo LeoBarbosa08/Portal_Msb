@@ -1426,6 +1426,49 @@ Pallet e Expedição**; o rótulo virou "Período de … até".
   aí; trabalho de transferência na mesma carga não vira OV. `sw.js` — cache
   `bm-comest-v64`.
 
+### Kanban · a OV em partes: Pendência pelo lote e Separação só com trabalho Abrir (10/11/2026)
+
+O dono: "traga o lote dos itens (o InventBatch); caso algum item não tenha lote,
+parte dessa OV tem que estar em Pendência enquanto a outra vai andando — divida
+isso muito bem no modal"; "Pendência é só a condição do lote; se não tiver linha
+vai para Criada"; "a Separação só pode abranger o trabalho = Abrir; com 1 Abrir e
+1 Fechado, faça um split no card: a OV na Separação e também em outro lugar com
+base no outro trabalho ou na carga".
+
+- **O lote**: as linhas da OV vêm com o lote (`ItemBatchNumber` na
+  `SalesOrderLines` = o InventBatchId; `KANBAN_COL_LOTE` troca o nome; as colunas
+  saem de uma linha de amostra). A ficha mostra o lote de cada linha ("lote X" /
+  "sem lote").
+- **Pendência** (`partesPorLote`): as linhas EM ABERTO sem lote viram um cartão
+  em Pendência, com o valor e os itens só delas (`OV~semlote`); as outras seguem
+  a etapa da OV (`OV~comlote`). Sem lote em nenhuma: a OV inteira em Pendência
+  (um cartão só). Não divide depois do Faturado. Sem a coluna do lote: a regra
+  fica desligada, com aviso.
+- **OV sem linha** (lida e sem nenhuma): **Criada**. Se as linhas não foram lidas
+  (entidade fora do ar / sem tempo), não muda nada — `porNumeros` diz quais OVs
+  foram de fato consultadas.
+- **Separação = só trabalho Abrir** (`etapaDe`). Trabalho em processo/fechado com
+  a carga ainda sem fase → Conferência; liberada sem trabalho → Criada (sem a
+  entidade de trabalho no OData, a liberação ainda leva para Separação). A fase
+  da carga vem só das cargas dos trabalhos que NÃO estão abertos.
+- **Split pelos trabalhos** (`partesPorTrabalho`): com trabalho Abrir junto de
+  trabalho em processo/fechado, dois cartões — `~abrir` em Separação e `~outros`
+  na etapa que as cargas DELES e a nota decidem. Cada um leva só os seus
+  trabalhos e cargas (o botão do Pallet só no que tem a carga pronta); o valor
+  da parte pelo trabalho não vem do Dynamics (vazio; a ficha mostra o da OV).
+  O lote vem antes: a parte sem lote não se divide pelos trabalhos.
+- Cada cartão traz `irmas` (os outros cartões da mesma OV: chave, etapa, valor).
+- **Tela**: o cartão de uma parte tem borda tracejada e selos ("sem lote · 1/3",
+  "com lote · 2/3", "trab. aberto · 1/2", "sem linha"). Na ficha, "Este cartão é
+  uma parte da OV": por que a OV se dividiu, este cartão destacado na cor da
+  etapa e os outros com "Ver o cartão ›"; o valor desta parte; nas linhas, "Neste
+  cartão" e "Nos outros cartões" (apagadas); a linha do tempo e o "Por que está
+  aqui" com a Pendência e o tile "Lote dos itens". A identidade do cartão é a
+  chave da parte; as linhas, o "Copiar nº" e o Pallet seguem pelo número da OV.
+- Testes (7c, 4f, 4f2…): divisão pelo lote, OV sem linha → Criada, linhas não
+  lidas não mudam nada, Separação só Abrir, split pelos trabalhos (com nota
+  aprovada, na mesma carga), as irmãs. `sw.js` — cache `bm-comest-v65`.
+
 ## Como colocar no ar
 
 1. **Repositório no GitHub** — crie um repositório **privado e vazio** (sem

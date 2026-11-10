@@ -44,6 +44,14 @@ global.fetch = async (url, opts) => {
   chamadas.push({ ent, q });
   const E = CEN[ent];
   if (!E) return corpo({ error: { message: 'not found' } }, 404);
+  // linhas automáticas (10/11/26: OV sem linha vai para Criada): cada OV pedida
+  // sem linha no cenário ganha 1 linha com lote, valor 0
+  if (E.auto) {
+    if (q.top === '1') return corpo({ value: E.linhas.length ? E.linhas.slice(0, 1) : [linhaAuto('OV000000')] });
+    const pedidas = (q.filter.match(/SalesOrderNumber eq '[^']*'/g) || []).map(x => /'([^']*)'/.exec(x)[1]);
+    const reais = E.linhas.filter(r => avalia(q.filter, r)), tem = new Set(reais.map(r => r.SalesOrderNumber));
+    return corpo({ value: reais.concat(pedidas.filter(n => !tem.has(n)).map(linhaAuto)) });
+  }
   if (q.top === '1') return corpo({ value: E.linhas.slice(0, 1) });
   // a entidade que não aceita o filtro de enum do OData (para testar a reserva)
   if (E.recusaEnum && /Microsoft\.Dynamics/.test(q.filter)) return corpo({ error: { message: 'enum' } }, 400);
@@ -51,6 +59,7 @@ global.fetch = async (url, opts) => {
   if (q.filter) return corpo({ value: E.linhas.filter(r => avalia(q.filter, r)) });
   return corpo({ value: E.linhas });
 };
+const linhaAuto = (n) => ({ dataAreaId: 'msb', SalesOrderNumber: n, LineNumber: 1, ItemNumber: 'IT-AUTO', LineAmount: 0, ItemBatchNumber: 'LT-AUTO', SalesOrderLineStatus: 'Backorder' });
 function divide(s, sep) {
   const out = []; let nivel = 0, ini = 0;
   for (let i = 0; i < s.length; i++) {
@@ -148,7 +157,7 @@ const bio = (n, st, lib) => ({ dataAreaId: 'msb', SalesOrderNumber: n, StatusPed
       b4('OV017515', 'Canceled', 'Open', 'No'),           // cancelada -> fora do quadro
       b4('OV017514', 'Ordem em aberto', 'Liberado', 'Não') // rótulos em português -> Separação
     ] },
-    SalesOrderLines: { linhas: [{ dataAreaId: 'msb', SalesOrderNumber: 'OV017517', LineAmount: 1000 }, { dataAreaId: 'msb', SalesOrderNumber: 'OV017519', LineAmount: 50 }] }
+    SalesOrderLines: { linhas: [{ dataAreaId: 'msb', SalesOrderNumber: 'OV017517', LineAmount: 1000 }, { dataAreaId: 'msb', SalesOrderNumber: 'OV017519', LineAmount: 50 }], auto: true }
   };
   r = await K.ordensDoDia({ data: DIA });
   const et = {}; r.ovs.forEach(o => { et[o.numero] = o.etapa; });
@@ -184,7 +193,7 @@ const bio = (n, st, lib) => ({ dataAreaId: 'msb', SalesOrderNumber: n, StatusPed
       v2('OV017533', DIA + 'T16:00:00Z', 'Backorder', { DefaultShippingWarehouseId: 'almox-pa' })    // caixa baixa -> fica
     ] },
     BIOSalesOrderHeaderV1: { linhas: [] },
-    SalesOrderLines: { linhas: [{ dataAreaId: 'msb', SalesOrderNumber: 'OV017530', LineAmount: 100 }, { dataAreaId: 'msb', SalesOrderNumber: 'OV017531', LineAmount: 900 }] }
+    SalesOrderLines: { linhas: [{ dataAreaId: 'msb', SalesOrderNumber: 'OV017530', LineAmount: 100 }, { dataAreaId: 'msb', SalesOrderNumber: 'OV017531', LineAmount: 900 }], auto: true }
   };
   r = await K.ordensDoDia({ data: DIA });
   t('só as OVs do ALMOX-PA', r.ovs.map(o => o.numero).sort().join(',') === 'OV017530,OV017533', r.ovs.map(o => o.numero));
@@ -212,7 +221,7 @@ const bio = (n, st, lib) => ({ dataAreaId: 'msb', SalesOrderNumber: n, StatusPed
       b4('OV017543', 'Backorder', 'Open', 'No'),         // 2 registros, um ativo -> crédito
       b4('OV017544', 'Invoiced', 'Released', 'No')       // faturada: a situação vale antes do crédito
     ] },
-    SalesOrderLines: { linhas: [] },
+    SalesOrderLines: { linhas: [], auto: true },
     BioCredManTableV1Publica: { linhas: [cm('OV017540', 'Yes'), cm('OV017541', 'No'), cm('OV017543', 'No'), cm('OV017543', 'Yes'), cm('OV017544', 'Yes')] }
   };
   r = await K.ordensDoDia({ data: DIA });
@@ -259,35 +268,39 @@ const bio = (n, st, lib) => ({ dataAreaId: 'msb', SalesOrderNumber: n, StatusPed
   CEN = {
     SalesOrderHeadersV2: { linhas: ovsW.map((n, i) => v2(n, DIA + 'T1' + i + ':00:00Z', 'Backorder')) },
     BIOSalesOrderHeaderV1: { linhas: [
-      b4('OV017550', 'Backorder', 'Released', 'No'),        // trabalho em processo -> Separação
+      b4('OV017550', 'Backorder', 'Released', 'No'),        // trabalho em processo -> Conferência (10/11: Separação é só Abrir)
       b4('OV017551', 'Backorder', 'Released', 'No'),        // trabalho fechado -> Conferência
       b4('OV017552', 'Backorder', 'Released', 'No'),        // fechado + cancelado -> Conferência (cancelado não conta)
-      b4('OV017553', 'Backorder', 'Released', 'No'),        // fechado + aberto -> Separação (parcial)
+      b4('OV017553', 'Backorder', 'Released', 'No'),        // fechado + aberto -> 2 cartões: Separação + Conferência
       b4('OV017554', 'Backorder', 'Open', 'No'),            // não liberada, sem trabalho -> Criada
       b4('OV017555', 'Invoiced', 'Released', 'No'),         // faturada -> Faturado (mesmo com trabalho fechado)
       b4('OV017556', 'Backorder', 'Released', 'Yes'),       // crédito marcado -> Crédito (antes do trabalho)
-      b4('OV017557', 'Backorder', 'Released', 'No'),        // liberada, sem trabalho ainda -> Separação
+      b4('OV017557', 'Backorder', 'Released', 'No'),        // liberada, sem trabalho ainda -> Criada (10/11)
       b4('OV017558', 'Backorder', 'PartialReleased', 'No')  // parcialmente liberada, trabalho aberto -> Separação
     ] },
-    SalesOrderLines: { linhas: [] },
+    SalesOrderLines: { linhas: [], auto: true },
     WHSWorkTableBiEntities: { linhas: [
       w('OV017550', 'W1', 'InProcess'), w('OV017551', 'W2', 'Closed'), w('OV017552', 'W3', 'Closed'), w('OV017552', 'W4', 'Cancelled'),
       w('OV017553', 'W5', 'Closed'), w('OV017553', 'W6', 'Open'), w('OV017555', 'W7', 'Closed'), w('OV017556', 'W8', 'Closed'), w('OV017558', 'W9', 'Open')
     ] }
   };
   r = await K.ordensDoDia({ data: DIA });
-  const ew = {}; r.ovs.forEach(o => { ew[o.numero] = o.etapa; });
-  t('em processo -> Separação', ew.OV017550 === 'liberado', ew);
-  t('trabalho fechado SEM carga em processamento -> Separação (Conferência é só pela carga)', ew.OV017551 === 'liberado', ew);
-  t('fechado + cancelado, sem carga -> Separação', ew.OV017552 === 'liberado', ew);
-  t('parcial (fechado + aberto) -> Separação', ew.OV017553 === 'liberado', ew);
+  const ew = {}; r.ovs.forEach(o => { ew[o.chave || o.numero] = o.etapa; });
+  // 10/11/26 (dono): "a Separação só pode abranger o trabalho = Abrir"
+  t('em processo -> já não é Separação: Conferência', ew.OV017550 === 'conferencia', ew);
+  t('trabalho fechado, carga sem fase -> Conferência', ew.OV017551 === 'conferencia', ew);
+  t('fechado + cancelado, sem carga -> Conferência', ew.OV017552 === 'conferencia', ew);
+  t('fechado + aberto -> 2 cartões: Separação (o aberto) e Conferência (o fechado)', ew['OV017553~abrir'] === 'liberado' && ew['OV017553~outros'] === 'conferencia' && !ew.OV017553, ew);
   t('não liberada, sem trabalho -> Criada', ew.OV017554 === 'criada', ew);
   t('faturada vale antes do trabalho', ew.OV017555 === 'faturado', ew);
   t('crédito vale antes do trabalho', ew.OV017556 === 'credito', ew);
-  t('liberada sem trabalho -> Separação', ew.OV017557 === 'liberado', ew);
+  t('liberada SEM trabalho -> Criada (Separação é só trabalho Abrir)', ew.OV017557 === 'criada', ew);
   t('parcialmente liberada com trabalho aberto -> Separação', ew.OV017558 === 'liberado', ew);
-  const o53 = r.ovs.find(o => o.numero === 'OV017553'), o52 = r.ovs.find(o => o.numero === 'OV017552');
-  t('regra traz a fase e a contagem', o53.regra.trabalho.fase === 'processo' && o53.regra.trabalho.total === 2 && o53.regra.trabalho.fechados === 1 && o53.regra.trabalho.abertos === 1 && o53.regra.trabalho.coluna === 'WHSWorkTableBiEntities.WorkStatus', o53.regra.trabalho);
+  const o53a = r.ovs.find(o => o.chave === 'OV017553~abrir'), o53b = r.ovs.find(o => o.chave === 'OV017553~outros'), o52 = r.ovs.find(o => o.numero === 'OV017552');
+  t('cada cartão com SÓ os seus trabalhos e a contagem deles', o53a.trabalhos.map(x => x.id).join() === 'W6' && o53b.trabalhos.map(x => x.id).join() === 'W5'
+    && o53a.regra.trabalho.fase === 'aberto' && o53a.regra.trabalho.abertos === 1 && o53b.regra.trabalho.fase === 'fechado' && o53b.regra.trabalho.fechados === 1 && o53b.regra.trabalho.coluna === 'WHSWorkTableBiEntities.WorkStatus', [o53a.regra.trabalho, o53b.regra.trabalho]);
+  t('as partes se apontam; valor da parte vazio (o da OV fica)', o53a.parteTrab.outra.chave === 'OV017553~outros' && o53a.parteTrab.outra.etapa === 'conferencia' && o53b.parteTrab.outra.etapa === 'liberado'
+    && o53a.parteTrab.n === 1 && o53a.parteTrab.de === 2 && o53a.valor === null && o53a.valorOv === 0 && o53a.podePallet === false, o53a.parteTrab);
   t('cancelado contado à parte', o52.regra.trabalho.total === 1 && o52.regra.trabalho.ignorados === 1 && o52.regra.trabalho.fase === 'fechado', o52.regra.trabalho);
   const tw = r.ovs.find(o => o.numero === 'OV017551').trabalhos[0];
   t('lista de trabalhos da OV: id, status, quem, início/fim, onda, carga', tw.id === 'W2' && tw.status === 'Closed' && tw.usuario === 'joao' && tw.inicio === '2026-11-06T14:00:00Z' && tw.fim === '2026-11-06T15:00:00Z' && tw.onda === 'WAV1' && tw.carga === 'LD1', tw);
@@ -298,7 +311,41 @@ const bio = (n, st, lib) => ({ dataAreaId: 'msb', SalesOrderNumber: n, StatusPed
   const lw = chamadas.find(c => c.ent === 'WHSWorkTableBiEntities' && /OrderNum eq/.test(c.q.filter));
   t('lê pelo OrderNum, só a MSB', lw && /dataAreaId eq 'msb'/.test(lw.q.filter), lw && lw.q.filter);
   t('sem aviso de trabalho', !r.avisos.some(a => /trabalho de depósito/.test(a)), r.avisos);
-  t('sem carga, ninguém em Conferência', r.etapas.find(e => e.id === 'conferencia').qtd === 0, r.etapas);
+  t('Conferência: os 3 sem trabalho aberto + a parte fechada da OV017553', r.etapas.find(e => e.id === 'conferencia').qtd === 4 && r.etapas.find(e => e.id === 'liberado').qtd === 2, r.etapas.filter(e => e.qtd))
+
+  console.log('4f2) 10/11/26 o split pelos trabalhos: 1 Abrir + 1 fechado já faturado / carregado');
+  K._limparCache(); chamadas.length = 0;
+  const guarda4f2 = CEN, serv4f2 = SERVICO;
+  SERVICO = ['BIOSalesOrderHeaderV1', 'SalesOrderHeadersV2', 'SalesOrderLines', 'WHSWorkTableBiEntities', 'WHSOutboundLoadHeaderEntities', 'SalesInvoiceHeadersV2', 'FiscalDocuments'];
+  const nf2 = (ov, n) => ({ dataAreaId: 'msb', SalesOrderNumber: ov, InvoiceNumber: n, InvoiceDate: DIA + 'T12:00:00Z', TotalInvoiceAmount: 100 });
+  const fd2 = (n, st) => ({ dataAreaId: 'msb', FiscalDocumentNumber: n, Status: st, FiscalDocumentDate: DIA + 'T12:00:00Z' });
+  CEN = {
+    SalesOrderHeadersV2: { linhas: ['OV017570', 'OV017571', 'OV017572'].map((n, i) => v2(n, DIA + 'T1' + i + ':00:00Z', 'Backorder')) },
+    BIOSalesOrderHeaderV1: { linhas: ['OV017570', 'OV017571', 'OV017572'].map(n => b4(n, 'Backorder', 'Released', 'No')) },
+    SalesOrderLines: { linhas: [], auto: true },
+    WHSWorkTableBiEntities: { linhas: [
+      w('OV017570', 'W70A', 'Open', { LoadId: 'LD-70A' }), w('OV017570', 'W70B', 'Closed', { LoadId: 'LD-70B' }),   // 1 aberto + 1 fechado (carga Carregado + cotação Sim, NF aprovada)
+      w('OV017571', 'W71A', 'Open', { LoadId: 'LD-71' }), w('OV017571', 'W71B', 'Closed', { LoadId: 'LD-71' }),    // os dois na MESMA carga, Em processamento
+      w('OV017572', 'W72', 'Open', { LoadId: 'LD-71' })                                                           // só aberto, carga já em processamento (por outra OV)
+    ] },
+    WHSOutboundLoadHeaderEntities: { linhas: [
+      { dataAreaId: 'msb', LoadId: 'LD-70A', LoadStatus: 'Waved', QuotationPerformed_InoveProjects: 'No', ENVIARPALLET_CUSTOM: 'No' },
+      { dataAreaId: 'msb', LoadId: 'LD-70B', LoadStatus: 'Loaded', QuotationPerformed_InoveProjects: 'Yes', ENVIARPALLET_CUSTOM: 'No' },
+      { dataAreaId: 'msb', LoadId: 'LD-71', LoadStatus: 'InProcess', QuotationPerformed_InoveProjects: 'No', ENVIARPALLET_CUSTOM: 'No' }
+    ] },
+    SalesInvoiceHeadersV2: { linhas: [nf2('OV017570', '000077001')] },
+    FiscalDocuments: { linhas: [fd2('000077001', 'Approved')] }
+  };
+  r = await K.ordensDoDia({ data: DIA });
+  const e2 = {}; r.ovs.forEach(o => { e2[o.chave] = o; });
+  t('1 Abrir + 1 fechado faturado: Separação + Faturado', e2['OV017570~abrir'] && e2['OV017570~abrir'].etapa === 'liberado' && e2['OV017570~outros'] && e2['OV017570~outros'].etapa === 'faturado', Object.keys(e2).map(k => k + '=' + e2[k].etapa));
+  t('cada parte com as suas cargas; o Pallet só na parte carregada', e2['OV017570~abrir'].cargas.map(c => c.id).join() === 'LD-70A' && e2['OV017570~outros'].cargas.map(c => c.id).join() === 'LD-70B'
+    && e2['OV017570~abrir'].podePallet === false && e2['OV017570~outros'].podePallet === true, [e2['OV017570~abrir'].cargas, e2['OV017570~outros'].podePallet]);
+  t('a mesma carga em processamento: Separação (o aberto) + Conferência (o fechado)', e2['OV017571~abrir'].etapa === 'liberado' && e2['OV017571~outros'].etapa === 'conferencia', [e2['OV017571~abrir'].etapa, e2['OV017571~outros'].etapa]);
+  t('só trabalho aberto, mesmo com a carga em processamento: Separação, 1 cartão', e2.OV017572 && e2.OV017572.etapa === 'liberado' && !e2.OV017572.parteTrab, e2.OV017572 && e2.OV017572.etapa);
+  t('o campo interno da divisão não vai na resposta', !r.ovs.some(o => '_trab' in o));
+  t('cada cartão lista os outros cartões da OV', e2['OV017570~abrir'].irmas.length === 1 && e2['OV017570~abrir'].irmas[0].chave === 'OV017570~outros' && e2['OV017570~abrir'].irmas[0].etapa === 'faturado' && !e2.OV017572.irmas, e2['OV017570~abrir'].irmas);
+  CEN = guarda4f2; SERVICO = serv4f2;
 
   console.log('4g) entidade de trabalho fora do OData: Separação pelo ReleaseStatus, com aviso');
   K._limparCache();
@@ -316,7 +363,7 @@ const bio = (n, st, lib) => ({ dataAreaId: 'msb', SalesOrderNumber: n, StatusPed
   CEN = {
     SalesOrderHeadersV2: { linhas: ['OV017560', 'OV017561', 'OV017562'].map((n, i) => v2(n, DIA + 'T1' + i + ':00:00Z', 'Backorder')) },
     BIOSalesOrderHeaderV1: { linhas: [b4('OV017560', 'Backorder', 'Released', 'No'), b4('OV017561', 'Backorder', 'Released', 'No'), b4('OV017562', 'Backorder', 'Released', 'No')] },
-    SalesOrderLines: { linhas: [] },
+    SalesOrderLines: { linhas: [], auto: true },
     WHSWorkTableBiEntities: { linhas: [
       w('OV017560', 'W1', 'Closed', { LoadId: 'LD-100' }), w('OV017560', 'W2', 'Closed', { LoadId: 'LD-100' }),   // a mesma carga, 2 trabalhos
       w('OV017561', 'W3', 'InProcess', { LoadId: 'LD-200' }),
@@ -337,7 +384,7 @@ const bio = (n, st, lib) => ({ dataAreaId: 'msb', SalesOrderNumber: n, StatusPed
   t('fonte da carga e na lista de fontes', c60.cargaFonte === 'WHSOutboundLoadHeaderEntities.LoadStatus' && r.fontes.some(f => f.papel === 'carga' && f.cargas === 2), r.fontes);
   const lcg = chamadas.find(c => c.ent === 'WHSOutboundLoadHeaderEntities' && /LoadId eq/.test(c.q.filter));
   t('lê as cargas pelo LoadId, só a MSB, de uma vez', lcg && /dataAreaId eq 'msb'/.test(lcg.q.filter) && /LD-100/.test(lcg.q.filter) && /LD-200/.test(lcg.q.filter), lcg && lcg.q.filter);
-  t('carga Carregado (sem a coluna de cotação) -> Cotação; carga Aberta -> segue o trabalho', c60.etapa === 'cotacao' && c61.etapa === 'liberado', { c60: c60.etapa, c61: c61.etapa });
+  t('carga Carregado (sem a coluna de cotação) -> Cotação; trabalho em processo com a carga Aberta -> Conferência (não é mais Separação)', c60.etapa === 'cotacao' && c61.etapa === 'conferencia' && c62.etapa === 'liberado', { c60: c60.etapa, c61: c61.etapa, c62: c62.etapa });
   t('aviso: sem as colunas de cotação e de pallet', r.avisos.some(a => /não achei "Cotação realizada".*ENVIARPALLET_CUSTOM/.test(a)), r.avisos);
   t('sem o botão do pallet (sem a coluna)', c60.podePallet === false, c60.podePallet);
 
@@ -370,7 +417,7 @@ const bio = (n, st, lib) => ({ dataAreaId: 'msb', SalesOrderNumber: n, StatusPed
       b4('OV017575', 'Invoiced', 'Released', 'No'),   // nota sem status no documento fiscal -> Faturado
       b4('OV017576', 'Canceled', 'Open', 'No')        // OV cancelada: fica cancelada (fora do quadro)
     ] },
-    SalesOrderLines: { linhas: [] },
+    SalesOrderLines: { linhas: [], auto: true },
     SalesInvoiceHeadersV2: { linhas: [
       nf('OV017570', '000021470', DIA), nf('OV017571', '000021471', DIA), nf('OV017572', '000021472', DIA), nf('OV017573', '000021473', DIA),
       nf('OV017574', '000021474', DIA), nf('OV017574', '000021480', DIA.slice(0, 8) + '07'), nf('OV017575', '000021475', DIA), nf('OV017576', '000021476', DIA)
@@ -416,7 +463,7 @@ const bio = (n, st, lib) => ({ dataAreaId: 'msb', SalesOrderNumber: n, StatusPed
   CEN = {
     SalesOrderHeadersV2: { linhas: [v2('OV017526', DIA + 'T13:00:00Z', 'Backorder')] },
     BIOSalesOrderHeaderV1: { linhas: [b4('OV017526', 'Invoiced', 'Released', 'No')] },
-    SalesOrderLines: { linhas: [] },
+    SalesOrderLines: { linhas: [], auto: true },
     SalesInvoiceHeadersV2: { linhas: [nf('OV017526', '000021497', DIA)] },
     // a FiscalDocuments só tem um documento de 2023 com o mesmo número (não vale: data longe)
     FiscalDocuments: { linhas: [fd('000021497', 'Cancelled', '2023-03-01')] },
@@ -447,7 +494,7 @@ const bio = (n, st, lib) => ({ dataAreaId: 'msb', SalesOrderNumber: n, StatusPed
       b4('OV018001', 'Backorder', 'Open', 'No'), b4('OV018002', 'Backorder', 'Released', 'No'), b4('OV018004', 'Invoiced', 'Released', 'No'),
       b4('OV018006', 'Backorder', 'Released', 'No'), b4('OV018007', 'Backorder', 'Released', 'No')
     ] },
-    SalesOrderLines: { linhas: [] },
+    SalesOrderLines: { linhas: [], auto: true },
     SalesInvoiceHeadersV2: { linhas: [nf('OV018004', '000030004', '2026-11-05'), nf('OV018005', '000030005', '2026-10-15'), nf('OV018006', '000030006', '2026-11-03'), nf('OV018007', '000030007', '2026-10-01')] },
     FiscalDocuments: { linhas: [fd('000030004', 'Approved', '2026-11-05'), fd('000030005', 'Approved', '2026-10-15'), fd('000030006', 'Rejected', '2026-11-03'), fd('000030007', 'Rejected', '2026-10-01')] }
   };
@@ -487,7 +534,7 @@ const bio = (n, st, lib) => ({ dataAreaId: 'msb', SalesOrderNumber: n, StatusPed
     ] },
     BIOSalesOrderHeaderV1: { linhas: [b4('OV018301', 'Invoiced', 'Released', 'No'), b4('OV018302', 'Invoiced', 'Released', 'No'), b4('OV018303', 'Invoiced', 'Released', 'No'),
       b4('OV018304', 'Backorder', 'Released', 'No'), b4('OV018305', 'Backorder', 'Released', 'No')] },
-    SalesOrderLines: { linhas: [] },
+    SalesOrderLines: { linhas: [], auto: true },
     WHSWorkTableBiEntities: { linhas: [
       w('OV018301', 'WF1', 'Closed', { LoadId: 'LD-F1' }), w('OV018302', 'WF2', 'Closed', { LoadId: 'LD-F2' }), w('OV018303', 'WF3', 'Closed', { LoadId: 'LD-F3' }),
       w('OV018305', 'WF5', 'Closed', { LoadId: 'LD-F5' }), w('TR000777', 'WF9', 'Closed', { LoadId: 'LD-F1', WorkTransType: 'TransferIssue' })
@@ -532,9 +579,10 @@ const bio = (n, st, lib) => ({ dataAreaId: 'msb', SalesOrderNumber: n, StatusPed
       v2('OV018103', '2026-11-03T15:00:00Z', 'Backorder'),   // todas com lote -> não divide
       v2('OV018104', '2026-11-01T13:00:00Z', 'Invoiced'),    // faturada (nota no período) -> não divide
       v2('OV018105', '2026-11-03T16:00:00Z', 'Backorder'),   // a sem lote está cancelada -> não divide
-      v2('OV018106', '2026-11-03T17:00:00Z', 'Backorder')    // a sem lote já foi entregue -> não divide
+      v2('OV018106', '2026-11-03T17:00:00Z', 'Backorder'),   // a sem lote já foi entregue -> não divide
+      v2('OV018107', '2026-11-03T18:00:00Z', 'Backorder')    // liberada, mas SEM linha nenhuma -> Criada
     ] },
-    BIOSalesOrderHeaderV1: { linhas: ['OV018101', 'OV018102', 'OV018103', 'OV018105', 'OV018106'].map(n => b4(n, 'Backorder', 'Released', 'No')).concat([b4('OV018104', 'Invoiced', 'Released', 'No')]) },
+    BIOSalesOrderHeaderV1: { linhas: ['OV018101', 'OV018102', 'OV018103', 'OV018105', 'OV018106', 'OV018107'].map(n => b4(n, 'Backorder', 'Released', 'No')).concat([b4('OV018104', 'Invoiced', 'Released', 'No')]) },
     SalesOrderLines: { linhas: [
       lnL('OV018101', 1, 'IT-A', 100, 'LT-A1'), lnL('OV018101', 2, 'IT-B', 40, ''), lnL('OV018101', 3, 'IT-C', 60, 'LT-C3'),
       lnL('OV018102', 1, 'IT-A', 70, ''), lnL('OV018102', 2, 'IT-B', 30, ''),
@@ -563,6 +611,14 @@ const bio = (n, st, lib) => ({ dataAreaId: 'msb', SalesOrderNumber: n, StatusPed
   const lsel = chamadas.find(c => c.ent === 'SalesOrderLines' && c.q.select);
   t('as linhas pedem o lote (ItemBatchNumber), o status e o número da linha', lsel && /ItemBatchNumber/.test(lsel.q.select) && /SalesOrderLineStatus/.test(lsel.q.select) && /LineNumber/.test(lsel.q.select), lsel && lsel.q.select);
   t('sem aviso do lote', !r.avisos.some(a => /lote/.test(a)), r.avisos);
+  const p7 = pc('OV018107');
+  t('OV SEM linha nenhuma -> Criada (não Pendência), guardando a etapa de antes', p7 && p7.etapa === 'criada' && p7.semLinhas === true && p7.etapaOv === 'liberado' && !p7.parte, p7 && { e: p7.etapa, sem: p7.semLinhas, antes: p7.etapaOv });
+  // as linhas não foram lidas (entidade fora do ar): ninguém vai para Criada por "falta de linha"
+  K._limparCache(); chamadas.length = 0;
+  const lin7c = CEN.SalesOrderLines; delete CEN.SalesOrderLines;
+  r = await K.quadro({ de: DE, ate: ATE });
+  t('linhas não lidas: a OV sem linha segue a etapa dela', pc('OV018107') && pc('OV018107').etapa === 'liberado' && !pc('OV018107').semLinhas && pc('OV018101') && pc('OV018101').etapa === 'liberado', pc('OV018107') && pc('OV018107').etapa);
+  CEN.SalesOrderLines = lin7c;
 
   console.log('8) as regras do dono pela carga e pela nota (Separação … Expedição)');
   K._limparCache(); chamadas.length = 0;
@@ -572,7 +628,7 @@ const bio = (n, st, lib) => ({ dataAreaId: 'msb', SalesOrderNumber: n, StatusPed
   CEN = {
     SalesOrderHeadersV2: { linhas: ovs8.map((n, i) => v2(n, DIA + 'T1' + i + ':00:00Z', 'Backorder')) },
     BIOSalesOrderHeaderV1: { linhas: ovs8.map(n => b4(n, 'Backorder', 'Released', 'No')) },
-    SalesOrderLines: { linhas: [] },
+    SalesOrderLines: { linhas: [], auto: true },
     WHSWorkTableBiEntities: { linhas: [
       w('OV019001', 'W1', 'Open', { LoadId: '' }),                 // trabalho Abrir, sem carga -> Separação
       w('OV019002', 'W2', 'Closed', { LoadId: 'LD-2' }),           // carga Em processamento -> Conferência
@@ -583,7 +639,7 @@ const bio = (n, st, lib) => ({ dataAreaId: 'msb', SalesOrderNumber: n, StatusPed
       w('OV019007', 'W7', 'Closed', { LoadId: 'LD-7' }),           // Remetido -> Expedição
       w('OV019008', 'W8', 'Closed', { LoadId: 'LD-8' }),           // nota Rejeitada vale antes da carga -> Rejeitada
       w('OV019009', 'W9', 'Closed', { LoadId: 'LD-9A' }), w('OV019009', 'W9B', 'Closed', { LoadId: 'LD-9B' }),  // 2 cargas: a menos adiantada
-      w('OV019010', 'W10', 'InProcess', { LoadId: 'LD-10' })       // trabalho em processo, carga em onda -> Separação
+      w('OV019010', 'W10', 'InProcess', { LoadId: 'LD-10' })       // trabalho em processo, carga em onda -> Conferência (10/11: Separação é só Abrir)
     ] },
     WHSOutboundLoadHeaderEntities: { linhas: [
       ld('LD-2', 'InProcess', 'No', 'No'), ld('LD-3', 'Loaded', 'No', 'No'), ld('LD-4', 'Loaded', 'Yes', 'No'), ld('LD-5', 'Loaded', 'Yes', 'No'),
@@ -605,7 +661,7 @@ const bio = (n, st, lib) => ({ dataAreaId: 'msb', SalesOrderNumber: n, StatusPed
   t('Expedição = carga "Remetido"', e8.OV019007 === 'expedicao', e8);
   t('Rejeitada vale antes da carga', e8.OV019008 === 'rejeitada', e8);
   t('2 cargas: vale a menos adiantada', e8.OV019009 === 'conferencia', e8);
-  t('trabalho em processo, carga em onda -> Separação', e8.OV019010 === 'liberado', e8);
+  t('trabalho em processo, carga em onda -> Conferência (Separação é só trabalho Abrir)', e8.OV019010 === 'conferencia', e8);
   t('colunas da carga achadas: QuotationPerformed_InoveProjects e ENVIARPALLET_CUSTOM', o8('OV019004').cargaCols.cotacao === 'QuotationPerformed_InoveProjects' && o8('OV019004').cargaCols.pallet === 'ENVIARPALLET_CUSTOM', o8('OV019004').cargaCols);
   t('sem aviso das colunas da carga', !r.avisos.some(a => /Cotação realizada/.test(a)), r.avisos);
 

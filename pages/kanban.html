@@ -303,6 +303,28 @@
             .kb-acao-msg.ok{color:#22794C;} .kb-acao-msg.erro{color:#A8541F;}
             .kb-chip.kb-nf{font-variant-numeric:tabular-nums;}
             .kb-chip.kb-nf-rej{border-color:#F3C9D2;background:#FCE8EC;color:#8E2440;}
+            /* 10/11/26: a OV em partes — itens sem lote (Pendência) e trabalho aberto x os outros */
+            .kb-chip.kb-lote{border-color:#F2D7A6;background:#FFF6E5;color:#8A5A00;}
+            .kb-chip.kb-parte{border-color:#C9D9E8;background:#EEF4FA;color:#2A5577;}
+            .kb-card.parte{border-style:dashed;border-color:#AFC0CB;}
+            .kb-pt-p{margin:0 0 10px;font-size:12px;line-height:1.55;color:var(--dw-body);}
+            .kb-pt-l{display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:center;gap:2px 12px;padding:9px 11px;border:1px solid var(--dw-bd);border-radius:10px;background:#fff;}
+            .kb-pt-l+.kb-pt-l{margin-top:7px;}
+            .kb-pt-l.on{border-color:var(--c-bd);background:var(--c-bg);box-shadow:inset 3px 0 0 var(--c-ink);}
+            .kb-pt-k{grid-column:1;font-size:9.5px;font-weight:800;letter-spacing:.07em;text-transform:uppercase;color:var(--dw-mut2);}
+            .kb-pt-l.on .kb-pt-k{color:var(--c-ink);}
+            .kb-pt-t{grid-column:1;font-size:12.5px;font-weight:700;color:var(--dw-ink);}
+            .kb-pt-s{grid-column:1;font-size:11px;font-weight:600;color:var(--dw-mut2);}
+            .kb-pt-r{grid-column:2;grid-row:1 / span 3;display:flex;flex-direction:column;align-items:flex-end;gap:5px;}
+            .kb-pt-r b{font-size:12.5px;font-weight:800;color:var(--dw-ink);font-variant-numeric:tabular-nums;white-space:nowrap;}
+            .kb-pt-e{display:inline-flex;align-items:center;padding:2px 9px;border-radius:999px;font-size:10.5px;font-weight:700;background:var(--c-bg);color:var(--c-ink);border:1px solid var(--c-bd);white-space:nowrap;}
+            .kb-pt-b{padding:4px 10px;border-radius:8px;border:1px solid var(--dw-bd);background:#fff;color:var(--dw-blue);font:inherit;font-size:11.5px;font-weight:700;cursor:pointer;white-space:nowrap;}
+            .kb-pt-b:hover{border-color:#C4D3DA;background:#F7FAFD;}
+            .kb-pt-b:focus-visible{outline:2px solid var(--dw-blue);outline-offset:1px;}
+            .kb-pt-tot{margin-top:9px;font-size:11px;font-weight:600;color:var(--dw-mut2);}
+            .kb-lt{display:inline-block;margin-left:6px;padding:0 6px;border-radius:5px;font-size:10px;font-weight:700;background:#EEF4FA;color:#2A5577;}
+            .kb-lt.sem{background:#FFF6E5;color:#8A5A00;}
+            .kb-it.fora{opacity:.5;}
             .kb-rg>div{border:1px solid var(--dw-bd);border-radius:10px;padding:9px 10px;min-width:0;background:#FAFCFD;}
             .kb-rg>div.decide{border-color:#9DC5D2;background:#F0F7FA;box-shadow:inset 3px 0 0 var(--dw-blue);}
             .kb-rg .k{font-size:9px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:var(--dw-mut3);}
@@ -497,6 +519,58 @@
     function msgs(lista) { $('kb-msgs').innerHTML = lista.map(function (m) { return '<div class="kb-msg ' + m[0] + '">' + m[1] + '</div>'; }).join(''); }
     function rotuloCol(s) { return s.coluna + ' · ' + s.entidade; }
 
+    // ── a OV em PARTES (10/11/26) ──
+    // Uma OV pode virar mais de um cartão: os itens em aberto SEM lote vão para
+    // Pendência (o.parte) e, com trabalho Abrir junto de trabalho já fechado /
+    // em processo, os abertos ficam em Separação e os outros seguem a carga
+    // (o.parteTrab). A identidade do cartão é a chave da PARTE (OV~semlote,
+    // OV~abrir…); as linhas, o "Copiar nº" e o Pallet continuam pelo número.
+    function idOv(o) { return o.chave || o.numero; }
+    function numAberta() { var o = acharOv(estado.aberta); return o ? o.numero : null; }
+    function nomeEt(id) { return NOME_ETAPA[id] || id || '—'; }
+    function itensTxt(n) { return n + ' ite' + (n === 1 ? 'm' : 'ns'); }
+    function trabTxt(n, fase) {
+      var pl = n === 1 ? '' : 's';
+      return n + ' trabalho' + pl + (fase === 'aberto' ? ' aberto' + pl : fase === 'fechado' ? ' fechado' + pl : fase === 'processo' ? ' em processo' : ' fora da separação');
+    }
+    function ehParte(o) { return !!((o.parte && !o.parte.inteira) || o.parteTrab); }
+    // onde estão os OUTROS cartões da mesma OV ("Separação e Aguardando Faturamento")
+    function ondeIrmas(o) {
+      var ns = []; (o.irmas || []).forEach(function (x) { var n = nomeEt(x.etapa); if (ns.indexOf(n) < 0) ns.push(n); });
+      return ns.length > 1 ? ns.slice(0, -1).join(', ') + ' e ' + ns[ns.length - 1] : ns.join('');
+    }
+    // para onde vão os itens sem lote quando receberem lote
+    function destinoPend(o) { return !o.irmas || !o.irmas.length ? nomeEt(o.etapaOv) : o.irmas.length === 1 ? nomeEt(o.irmas[0].etapa) : ''; }
+    function cartaoExato(ch) { return ((estado.r && estado.r.ovs) || []).find(function (x) { return idOv(x) === ch; }) || null; }
+    // o que um cartão é da OV, em palavras ("1 item sem lote", "2 itens com lote · 1 trabalho aberto")
+    function descParte(x) {
+      var d = [], sub = [];
+      if (x.parte) {
+        d.push(x.parte.inteira ? 'nenhum item com lote' : itensTxt(x.parte.n) + (x.parte.id === 'semlote' ? ' sem lote' : ' com lote'));
+        if (!x.parte.inteira && (x.parte.linhas || []).length) sub.push('linha' + (x.parte.linhas.length === 1 ? ' ' : 's ') + x.parte.linhas.join(', '));
+      }
+      if (x.parteTrab) {
+        d.push(trabTxt(x.parteTrab.n, x.parteTrab.id === 'abrir' ? 'aberto' : ((x.regra || {}).trabalho || {}).fase));
+        var ids = (x.trabalhos || []).map(function (w) { return w.id; }).filter(Boolean);
+        if (ids.length) sub.push((ids.length === 1 ? 'trabalho ' : 'trabalhos ') + ids.join(', '));
+      }
+      return { t: d.join(' · ') || 'a OV', s: sub.join(' · ') };
+    }
+    function chipsParte(o) {
+      var h = '', p = o.parte, t = o.parteTrab;
+      var chip = function (cls, tt, txt) { return '<span class="kb-chip ' + cls + '" title="' + esc(tt) + '">' + esc(txt) + '</span>'; };
+      if (o.semLinhas) h += chip('kb-lote', 'A OV não tem nenhuma linha no Dynamics: fica em Criada', 'sem linha');
+      if (p && p.inteira) h += chip('kb-lote', 'Nenhum item em aberto tem lote: a OV inteira está em Pendência', 'sem lote');
+      else if (p && p.id === 'semlote') h += chip('kb-lote', 'Este cartão é só a parte SEM lote: ' + itensTxt(p.n) + ' de ' + p.de + (ondeIrmas(o) ? '. O resto está em ' + ondeIrmas(o) : ''), 'sem lote · ' + p.n + '/' + p.de);
+      else if (p && p.id === 'comlote') h += chip('kb-parte', 'Este cartão é só a parte COM lote: ' + itensTxt(p.n) + ' de ' + p.de + (p.outra ? '. ' + itensTxt(p.outra.n) + ' sem lote em Pendência' : ''), 'com lote · ' + p.n + '/' + p.de);
+      if (t) {
+        var f = t.id === 'abrir' ? 'aberto' : ((o.regra || {}).trabalho || {}).fase;
+        h += chip('kb-parte', 'Este cartão é só ' + (t.n === 1 ? 'o ' : 'os ') + trabTxt(t.n, f) + ' (de ' + t.de + ')' + (ondeIrmas(o) ? '. Os outros cartões da OV: ' + ondeIrmas(o) : ''),
+          (t.id === 'abrir' ? 'trab. aberto' : f === 'fechado' ? 'trab. fechado' : 'trab. em processo') + ' · ' + t.n + '/' + t.de);
+      }
+      return h;
+    }
+
     function filtradas() {
       var r = estado.r; if (!r) return [];
       var q = estado.busca.toLowerCase();
@@ -504,10 +578,10 @@
     }
 
     function cardHtml(o) {
-      var novo = estado.mudou[o.numero] === 'nova';
-      return '<button type="button" class="kb-card' + (estado.mudou[o.numero] ? ' mudou' : '') + (estado.aberta === o.numero ? ' is-aberta' : '') + '" data-ov="' + esc(o.numero) + '">'
+      var id = idOv(o), novo = estado.mudou[id] === 'nova';
+      return '<button type="button" class="kb-card' + (estado.mudou[id] ? ' mudou' : '') + (estado.aberta === id ? ' is-aberta' : '') + (ehParte(o) ? ' parte' : '') + '" data-ov="' + esc(id) + '">'
         + '<div class="kb-l1"><span class="kb-ov">' + esc(o.numero) + '</span><span class="kb-cli" title="' + esc(o.cliente) + '">' + esc(o.cliente || o.conta) + '</span></div>'
-        + '<div class="kb-l2">' + (novo ? '<span class="kb-chip kb-nova">nova</span>' : '')
+        + '<div class="kb-l2">' + (novo ? '<span class="kb-chip kb-nova">nova</span>' : '') + chipsParte(o)
         + (o.podePallet ? '<span class="kb-chip kb-pal" title="Carga Carregado e cotação realizada: pode ser enviada para o Pallet (na ficha)">p/ Pallet</span>' : '')
         // a nota fiscal da OV (09/11/26: "preciso saber qual a nota fiscal")
         + (o.nota ? '<span class="kb-chip kb-nf' + (o.nota.rejeitada ? ' kb-nf-rej' : '') + '" title="Nota fiscal' + (o.nota.status ? ' · ' + esc(rotNF(o.nota.status)) : '') + ((o.notas || []).length > 1 ? ' · ' + o.notas.length + ' notas' : '') + '">NF ' + esc(o.nota.numero) + '</span>' + (o.nota.rejeitada ? '<span class="kb-chip kb-nf-rej">' + esc(rotNF(o.nota.status)) + '</span>' : '') : '')
@@ -585,7 +659,8 @@
 
     function linhaLista(o) {
       var g = function (k) { return (o.regra && o.regra[k]) || ''; };
-      return '<tr tabindex="0" data-ov="' + esc(o.numero) + '"' + (estado.aberta === o.numero ? ' class="is-aberta"' : '') + '><td><b>' + esc(o.numero) + '</b></td><td>' + esc(o.cliente || o.conta) + '</td><td>' + esc(quandoCriada(o)) + '</td><td>' + esc(o.oc) + '</td>'
+      var id = idOv(o);
+      return '<tr tabindex="0" data-ov="' + esc(id) + '"' + (estado.aberta === id ? ' class="is-aberta"' : '') + '><td><b>' + esc(o.numero) + '</b>' + (chipsParte(o) ? ' ' + chipsParte(o) : '') + '</td><td>' + esc(o.cliente || o.conta) + '</td><td>' + esc(quandoCriada(o)) + '</td><td>' + esc(o.oc) + '</td>'
         + '<td>' + esc(g('salesStatus')) + '</td><td>' + esc(g('releaseStatus')) + '</td><td>' + esc(credInfo(o.regra).veio ? credInfo(o.regra).rotulo : '') + '</td><td>' + esc(trabInfo(o).veio ? trabInfo(o).rotulo : '') + '</td><td>' + (o.nota ? esc(o.nota.numero) + (o.nota.status ? ' · ' + esc(rotNF(o.nota.status)) : '') : '') + '</td>'
         + '<td class="num">' + (o.itens == null ? '' : o.itens) + '</td><td class="num">' + esc(o.valor == null ? '—' : fBRL(o.valor)) + '</td></tr>';
     }
@@ -792,8 +867,9 @@
         else if (a === 'ant') andar(-1);
         else if (a === 'prox') andar(1);
         else if (a === 'copiar') copiar();
-        else if (a === 'tentar' && estado.aberta) carregarLinhas(estado.aberta, true);
+        else if (a === 'tentar' && estado.aberta) carregarLinhas(numAberta(), true);
         else if (a === 'pallet') enviarPallet();
+        else if (a === 'ir') irPara(b.getAttribute('data-chave'));
       });
       // filtro dos campos crus: esconde as linhas que não casam (campo ou valor)
       DW.el.addEventListener('input', function (e) {
@@ -816,18 +892,22 @@
       if (e.shiftKey && (document.activeElement === a || !DW.el.contains(document.activeElement))) { e.preventDefault(); z.focus(); }
       else if (!e.shiftKey && (document.activeElement === z || !DW.el.contains(document.activeElement))) { e.preventDefault(); a.focus(); }
     }
-    function acharOv(num) { return (estado.r && (estado.r.ovs || []).find(function (x) { return x.numero === num; })) || null; }
+    // pela chave do cartão; se não houver (a OV se dividiu desde a última leitura), a 1ª parte da OV
+    function acharOv(id) {
+      var ovs = (estado.r && estado.r.ovs) || [];
+      return ovs.find(function (x) { return idOv(x) === id; }) || ovs.find(function (x) { return x.numero === id || (id && String(id).split('~')[0] === x.numero); }) || null;
+    }
     // a ordem em que a tela mostra as OVs: no quadro, coluna a coluna; na lista,
     // grupo a grupo (só os grupos abertos — o que está recolhido não aparece)
     function ordemVisivel() {
       var ovs = filtradas();
       if (estado.vis === 'lista') {
         var vis = [];
-        gruposLista(ovs).forEach(function (g) { if (grupoAberto(g.id)) g.ovs.forEach(function (o) { vis.push(o.numero); }); });
+        gruposLista(ovs).forEach(function (g) { if (grupoAberto(g.id)) g.ovs.forEach(function (o) { vis.push(idOv(o)); }); });
         return vis;
       }
       var out = [];
-      ((estado.r && estado.r.etapas) || []).forEach(function (e) { ovs.forEach(function (o) { if (o.etapa === e.id) out.push(o.numero); }); });
+      ((estado.r && estado.r.etapas) || []).forEach(function (e) { ovs.forEach(function (o) { if (o.etapa === e.id) out.push(idOv(o)); }); });
       return out;
     }
     function noQuadro(num) {
@@ -842,7 +922,8 @@
       return el;
     }
     function abrir(num, origem) {
-      if (!acharOv(num)) return;
+      var oA = acharOv(num); if (!oA) return;
+      num = idOv(oA);
       montarFicha();
       estado.aberta = num; DW.volta = origem || document.activeElement;
       estado.filtroCampos = '';
@@ -851,7 +932,15 @@
       marcarAberta();
       pintarFicha(true);
       setTimeout(function () { try { DW.el.querySelector('.kb-dw-x').focus(); } catch (e) {} }, 40);
-      carregarLinhas(num, false);
+      carregarLinhas(oA.numero, false);
+    }
+    // o outro cartão da mesma OV (o botão "Ver cartão" da ficha): as linhas são as mesmas
+    function irPara(ch) {
+      if (!ch || !acharOv(ch)) return;
+      estado.aberta = idOv(acharOv(ch)); estado.filtroCampos = '';
+      var el = marcarAberta();
+      if (el && el.scrollIntoView) { try { el.scrollIntoView({ block: 'nearest' }); } catch (e) {} }
+      pintarFicha(true);
     }
     function fechar() {
       if (!DW.el || !DW.el.classList.contains('open')) { estado.aberta = null; return; }
@@ -870,10 +959,10 @@
       var el = marcarAberta();
       if (el && el.scrollIntoView) { try { el.scrollIntoView({ block: 'nearest' }); } catch (e) {} }
       pintarFicha(true);
-      carregarLinhas(nx, false);
+      carregarLinhas(numAberta() || nx, false);
     }
     function copiar() {
-      var num = estado.aberta; if (!num) return;
+      var num = numAberta(); if (!num) return;
       var b = DW.el.querySelector('.kb-dw-cp'), t = $('kb-dw-cpt');
       var ok = function () {
         b.classList.add('ok'); t.textContent = 'Copiado';
@@ -922,7 +1011,7 @@
       if (!forcar && e && e.st === 'ok' && Date.now() - e.ts < LINHAS_TTL) return;
       // recarga com as linhas já na tela: mantém o que há até chegar o novo
       if (e && e.st === 'ok') e.recarregando = true;
-      else { LINHAS.set(num, { st: 'carregando' }); if (estado.aberta === num) pintarFicha(); }
+      else { LINHAS.set(num, { st: 'carregando' }); if (numAberta() === num) pintarFicha(); }
       fetch('/api/kanban-ov?ov=' + encodeURIComponent(num) + (forcar ? '&atualizar=1' : ''), { cache: 'no-store' })
         .then(function (res) {
           return res.json().catch(function () { return null; }).then(function (j) {
@@ -940,7 +1029,7 @@
         })
         .then(function () {
           if (LINHAS.size > 150) LINHAS.delete(LINHAS.keys().next().value);
-          if (estado.aberta === num) pintarFicha();
+          if (numAberta() === num) pintarFicha();
         });
     }
 
@@ -951,24 +1040,29 @@
     }
     function pintarFicha(nova) {
       var o = acharOv(estado.aberta); if (!o || !DW.el) return;
+      estado.aberta = idOv(o);
       var body = $('kb-dw-body');
       // a releitura de 30 s não fecha o que estava aberto nem pula o scroll
       var abertos = {};
       if (!nova) Array.prototype.forEach.call(body.querySelectorAll('details[data-k]'), function (d) { abertos[d.getAttribute('data-k')] = d.open; });
       var topo = nova ? 0 : body.scrollTop;
       var cor = corEtapa(o.etapa), nomeEt = NOME_ETAPA[o.etapa] || o.etapa;
-      $('kb-dw-k').textContent = 'Ordem de venda · ' + (o.etapa === 'cancelada' ? 'cancelada · fora do quadro' : nomeEt);
+      $('kb-dw-k').textContent = 'Ordem de venda · ' + (o.etapa === 'cancelada' ? 'cancelada · fora do quadro' : nomeEt) + (ehParte(o) ? ' · parte da OV' : '');
       $('kb-dw-tt').textContent = o.numero;
       var cid = vOv(o, ['DeliveryAddressCity']), uf = vOv(o, ['DeliveryAddressStateId', 'DeliveryAddressState']);
       $('kb-dw-sub').textContent = [o.cliente, o.conta, [cid, uf].filter(Boolean).join('/')].filter(Boolean).join(' · ');
       var tags = ['<span class="kb-dw-tag" style="--c:' + cor[2] + ';background:' + cor[0] + ';color:' + cor[2] + '"><i></i>' + esc(nomeEt) + '</span>'];
-      if (estado.mudou[o.numero] === 'nova') tags.push('<span class="kb-dw-tag nv">nova</span>');
-      else if (estado.mudou[o.numero] === 'status') tags.push('<span class="kb-dw-tag nv">mudou de etapa</span>');
+      if (estado.mudou[idOv(o)] === 'nova') tags.push('<span class="kb-dw-tag nv">nova</span>');
+      else if (estado.mudou[idOv(o)] === 'status') tags.push('<span class="kb-dw-tag nv">mudou de etapa</span>');
+      if (o.parte && o.parte.inteira) tags.push('<span class="kb-dw-tag al">sem lote</span>');
+      else if (o.parte) tags.push('<span class="kb-dw-tag al">' + (o.parte.id === 'semlote' ? 'parte sem lote' : 'parte com lote') + ' · ' + esc(o.parte.n + ' de ' + o.parte.de) + ' itens</span>');
+      if (o.parteTrab) tags.push('<span class="kb-dw-tag al">' + (o.parteTrab.id === 'abrir' ? 'trabalho aberto' : 'trabalho fora da separação') + ' · ' + esc(o.parteTrab.n + ' de ' + o.parteTrab.de) + '</span>');
+      if (o.semLinhas) tags.push('<span class="kb-dw-tag al">sem linha</span>');
       if (depDiferente(o.deposito)) tags.push('<span class="kb-dw-tag az" title="Depósito">' + esc(o.deposito) + '</span>');
       if (o.oc) tags.push('<span class="kb-dw-tag" title="OC do cliente">OC ' + esc(o.oc) + '</span>');
       if (o.pool) tags.push('<span class="kb-dw-tag" title="Pool">' + esc(o.pool) + '</span>');
       $('kb-dw-tags').innerHTML = tags.join('');
-      var lista = ordemVisivel(), i = lista.indexOf(o.numero);
+      var lista = ordemVisivel(), i = lista.indexOf(idOv(o));
       DW.el.querySelector('[data-kb-dw="ant"]').disabled = i <= 0;
       DW.el.querySelector('[data-kb-dw="prox"]').disabled = i < 0 || i >= lista.length - 1;
       var lido = estado.r && estado.r.geradoEm ? new Date(estado.r.geradoEm).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }) : '';
@@ -987,7 +1081,11 @@
       var subV = [o.itens != null ? plural(o.itens, 'item', 'itens') : '', o.valor != null && totDia > 0 && o.etapa !== 'cancelada' && noDia.length > 1 ? fPct(o.valor / totDia) + ' do valor do quadro' : ''].filter(Boolean).join(' · ');
       var diaC = diaSP(o.criadaEm), ent = isoData(o.entrega), late = ent && ent < hoje && pos >= 0 && pos < POS_FAT;
       var h = '<div class="kb-dw-kpis">'
-        + kp('Valor da OV', o.valor != null ? esc(fBRL(o.valor)) : '—', subV ? esc(subV) : (o.valor == null ? 'linhas não lidas no quadro' : ''), 'destaque')
+        + (ehParte(o) && o.valor != null
+            ? kp('Valor desta parte', esc(fBRL(o.valor)), esc([o.itens != null ? plural(o.itens, 'item', 'itens') : '', o.valorOv != null ? 'de ' + fBRL(o.valorOv) + ' da OV' : ''].filter(Boolean).join(' · ')), 'destaque')
+          : ehParte(o)
+            ? kp('Valor da OV', o.valorOv != null ? esc(fBRL(o.valorOv)) : '—', 'o cartão é parte da OV (pelos trabalhos)', 'destaque')
+            : kp('Valor da OV', o.valor != null ? esc(fBRL(o.valor)) : '—', subV ? esc(subV) : (o.valor == null ? 'linhas não lidas no quadro' : ''), 'destaque'))
         + (diaC === hoje
             ? kp('Criada às', esc(fHora(o.criadaEm) || '—'), esc('hoje · ' + haQuanto(o.criadaEm)), '', '', 'hoje')
             : kp('Criada em', diaC ? esc(fDia(diaC)) : '—', diaC ? esc(diaSem(diaC) + ' · ' + fHora(o.criadaEm)) : 'sem data no ERP', '', diaC ? '' : 'z'))
@@ -995,6 +1093,9 @@
             ent ? esc(late ? 'passou · ' + relDia(ent) : diaSem(ent) + ' · ' + relDia(ent)) : 'sem data no ERP',
             '', ent ? (late ? 'warn' : '') : 'z', late ? 'warn' : (ent === hoje ? 'hoje' : ''))
         + '</div>';
+
+      // 10/11/26: o que ESTE cartão representa da OV
+      h += secParte(o);
 
       // "Enviar para o Pallet" (09/11/26): carga Carregado + cotação realizada = Sim
       var env = estado.enviadas[o.numero];
@@ -1030,6 +1131,7 @@
       h += secDados(o);
       h += secCrus(o, abertos.crus);
       h += '<details class="kb-dw-card kb-dw-mais" data-k="regra"' + (abertos.regra ? ' open' : '') + '><summary><h5>Como a etapa é decidida</h5></summary>'
+        + '<p class="kb-dw-p">Antes das regras, a OV pode virar <b>mais de um cartão</b>: os itens em aberto <b>sem lote</b> (<code>ItemBatchNumber</code> vazio) vão para <b>Pendência</b> num cartão próprio' + (o.etapa === 'pendencia' ? ' <b>← este</b>' : '') + '; e, com trabalho <b>Abrir</b> junto de trabalho já fechado ou em processo, os abertos ficam em <b>Separação</b> e os outros seguem as regras abaixo, só com as cargas deles. Depois do Faturado, não divide.</p>'
         + '<p class="kb-dw-p">Do mais adiantado para o menos — vale a primeira regra que bater:</p>'
         + '<ol class="kb-dw-ol" style="margin-top:6px;">'
         + '<li class="' + (o.etapa === 'rejeitada' ? 'on' : '') + '">Nota fiscal mais recente <b>Rejeitada</b> (ou cancelada/descartada) → <b>Rejeitada</b>.</li>'
@@ -1038,13 +1140,51 @@
         + '<li class="' + (o.etapa === 'faturado' ? 'on' : '') + '">Nota fiscal <b>Aprovada</b> → <b>Faturado</b>.</li>'
         + '<li class="' + (o.etapa === 'aguardando' ? 'on' : '') + '">Status da carga = <b>Carregado</b> e cotação realizada = <b>Sim</b> (<code>QuotationPerformed_InoveProjects</code>) → <b>Aguardando Faturamento</b>.</li>'
         + '<li class="' + (o.etapa === 'cotacao' ? 'on' : '') + '">Status da carga = <b>Carregado</b> e cotação realizada = Não → <b>Cotação</b>.</li>'
-        + '<li class="' + (o.etapa === 'conferencia' ? 'on' : '') + '">Status da carga = <b>Em processamento</b> → <b>Conferência</b>.</li>'
+        + '<li class="' + (o.etapa === 'conferencia' ? 'on' : '') + '">Status da carga = <b>Em processamento</b> → <b>Conferência</b> (também o trabalho já fechado ou em processo, com a carga ainda sem fase).</li>'
         + '<li class="' + (o.etapa === 'credito' ? 'on' : '') + '">Registro <b>ativo</b> na tabela de gerenciamento de crédito (<code>ACTIVE</code>, pelo <code>SALESID</code>) → <b>Gerenciamento de Crédito</b>.</li>'
-        + '<li class="' + (o.etapa === 'liberado' ? 'on' : '') + '">Status do trabalho = <b>Abrir</b> (ou em processo), ou a OV liberada para o depósito → <b>Separação</b>.</li>'
-        + '<li class="' + (o.etapa === 'criada' ? 'on' : '') + '">Nenhuma das anteriores → <b>Criada</b>.</li></ol>'
-        + '<p class="kb-dw-p" style="margin-top:8px;">Onde as regras não falam, vale a de antes: OV que saiu do aberto sem status de nota → Faturado; trabalho fechado com a carga ainda não em processamento → segue em Separação.</p>'
+        + '<li class="' + (o.etapa === 'liberado' ? 'on' : '') + '">Status do trabalho = <b>Abrir</b> → <b>Separação</b> (só isso).</li>'
+        + '<li class="' + (o.etapa === 'criada' ? 'on' : '') + '">Nenhuma das anteriores (inclusive a OV sem nenhuma linha) → <b>Criada</b>.</li></ol>'
+        + '<p class="kb-dw-p" style="margin-top:8px;">Onde as regras não falam, vale a de antes: OV que saiu do aberto sem status de nota → Faturado; sem a entidade de trabalho no OData, a OV liberada (<code>ReleaseStatus</code>) → Separação.</p>'
         + '<p class="kb-dw-p" style="margin-top:8px;">Entram as OVs da <b>MSB</b>' + (depTexto() ? ' do depósito <b>' + esc(depTexto()) + '</b>' : '') + '. <b>Criada, Crédito, Separação, Conferência, Cotação e Aguardando Faturamento</b>: todas as OVs <b>em aberto</b>, de qualquer data. <b>Faturado</b>: toda OV que está nele agora, de qualquer data (as em aberto com nota aprovada e as faturadas com a carga ainda Carregado). <b>Rejeitada, Pallet e Expedição</b>: só as do <b>período escolhido</b> lá em cima (pela data da nota fiscal; sem nota, a de criação). O quadro relê o Dynamics a cada 60 s; as linhas desta ficha são lidas quando ela abre.</p></details>';
       return h;
+    }
+
+    // ── o que ESTE cartão representa (10/11/26) ──
+    // Dono: "lembre de dividir isso muito bem no modal para saber naquele card o
+    // que ele está representando". Uma linha para este cartão (destacada, na cor
+    // da etapa) e uma para a outra parte da OV, com o botão para ir até ela.
+    function secParte(o) {
+      var p = o.parte;
+      if (o.semLinhas) return '<section class="kb-dw-card"><h5>Este cartão</h5><p class="kb-pt-p" style="margin:0;">A OV não tem <b>nenhuma linha</b> no Dynamics: fica em <b>Criada</b> até as linhas serem lançadas.</p></section>';
+      if (p && p.inteira) {
+        return '<section class="kb-dw-card"><h5>Este cartão</h5><p class="kb-pt-p" style="margin:0;">Nenhum dos <b>' + esc(itensTxt(p.n)) + '</b> em aberto tem <b>lote</b>: a OV inteira está em <b>Pendência</b>. '
+          + 'Quando os itens receberem lote, ela segue para <b>' + esc(nomeEt(o.etapaOv)) + '</b>.</p></section>';
+      }
+      if (!ehParte(o)) return '';
+      // este cartão + os outros cartões da mesma OV (os que estão no quadro agora)
+      var irmas = (o.irmas || []).map(function (x) { return { ref: x, o: cartaoExato(x.chave) }; });
+      var todos = [o].concat(irmas.map(function (x) { return x.o; }).filter(Boolean));
+      var porLote = todos.some(function (x) { return x.parte && !x.parte.inteira; }), porTrab = todos.some(function (x) { return x.parteTrab; });
+      var linha = function (on, k, d, etapa, valor, chave) {
+        var c = corEtapa(etapa);
+        return '<div class="kb-pt-l' + (on ? ' on' : '') + '" style="--c-bg:' + c[0] + ';--c-bd:' + c[1] + ';--c-ink:' + c[2] + '">'
+          + '<span class="kb-pt-k">' + esc(k) + '</span><span class="kb-pt-t">' + esc(d.t) + '</span>' + (d.s ? '<span class="kb-pt-s">' + esc(d.s) + '</span>' : '')
+          + '<span class="kb-pt-r"><span class="kb-pt-e">' + esc(nomeEt(etapa)) + '</span>' + (valor != null ? '<b>' + esc(fBRL(valor)) + '</b>' : '')
+          + (chave ? '<button type="button" class="kb-pt-b" data-kb-dw="ir" data-chave="' + esc(chave) + '">Ver o cartão ›</button>' : '') + '</span></div>';
+      };
+      var h = '<section class="kb-dw-card"><h5>Este cartão é uma parte da OV <small>' + esc(fQtd(1 + irmas.length)) + ' cartões</small></h5>';
+      var porque = [];
+      if (porLote) porque.push('pelo <b>lote</b> dos itens — os itens em aberto <b>sem lote</b> ficam em Pendência até receberem lote');
+      if (porTrab) porque.push('pelos <b>trabalhos</b> — a Separação fica só com o trabalho <b>aberto</b>; o outro segue a carga dele e a nota');
+      h += '<p class="kb-pt-p">A OV <b>' + esc(o.numero) + '</b> está em mais de um lugar do quadro, dividida ' + porque.join('; e ') + '.</p>';
+      h += linha(true, 'Este cartão', descParte(o), o.etapa, o.valor, null);
+      irmas.forEach(function (x) {
+        h += x.o ? linha(false, 'Outro cartão', descParte(x.o), x.o.etapa, x.o.valor, idOv(x.o))
+                 : linha(false, 'Outro cartão', { t: 'fora do período escolhido', s: '' }, x.ref.etapa, x.ref.valor, null);
+      });
+      var tot = [o.itensOv != null ? itensTxt(o.itensOv) : '', o.valorOv != null ? fBRL(o.valorOv) : ''].filter(Boolean).join(' · ');
+      if (tot) h += '<div class="kb-pt-tot">A OV inteira: ' + esc(tot) + (porTrab ? ' · o valor da parte pelos trabalhos não vem do Dynamics' : '') + '</div>';
+      return h + '</section>';
     }
 
     // as etapas do quadro como linha do tempo (+ a entrega solicitada)
@@ -1060,9 +1200,17 @@
       var p = [];
       if (pos === 0) {
         p.push({ cls: 'agora', tt: 'Agora: Criada', dt: dtC,
-          ds: 'Registrada no Dynamics' + porQuem + '. Ainda não foi liberada para o depósito' + (libVeio ? ' (' + cod(cLib, rg.releaseStatus) + ')' : '') + (credVeio ? ' e não está retida no crédito.' : '.') });
+          ds: o.semLinhas ? 'Registrada no Dynamics' + porQuem + ', mas <b>sem nenhuma linha</b>: fica em Criada até as linhas serem lançadas.'
+            : 'Registrada no Dynamics' + porQuem + '. Ainda sem trabalho de separação aberto' + (libVeio ? ' (' + cod(cLib, rg.releaseStatus) + ')' : '') + (credVeio ? ' e não está retida no crédito.' : '.') });
       } else {
         p.push({ cls: 'feito', tt: 'Ordem criada', dt: dtC, ds: 'Registrada no Dynamics' + porQuem + '.' });
+      }
+      // 10/11/26: itens em aberto sem lote -> Pendência (este cartão ou a OV inteira)
+      if (o.etapa === 'pendencia') {
+        var pp = o.parte || { n: 0, linhas: [] };
+        p.push({ cls: 'agora alerta', tt: 'Agora: Pendência', dt: '',
+          ds: (pp.inteira ? 'Nenhum dos <b>' + esc(itensTxt(pp.n)) + '</b> em aberto tem lote' : '<b>' + esc(itensTxt(pp.n)) + '</b> em aberto <b>sem lote</b>' + ((pp.linhas || []).length ? ' (linha' + (pp.linhas.length === 1 ? ' ' : 's ') + esc(pp.linhas.join(', ')) + ')' : ''))
+            + '. Quando receberem lote, segue' + (pp.inteira ? '' : 'm') + (destinoPend(o) ? ' para <b>' + esc(destinoPend(o)) + '</b>.' : ' com o resto da OV (' + esc(ondeIrmas(o)) + ').') });
       }
       if (o.etapa === 'cancelada') {
         p.push({ cls: 'agora alerta', tt: 'Agora: Cancelada', dt: '', ds: 'A OV foi cancelada no Dynamics (' + cod(cSit, rg.salesStatus) + ') e fica fora do quadro.' });
@@ -1099,7 +1247,9 @@
       }
       // conferência: carga "Em processamento"
       if (pos === 3) p.push({ cls: 'agora', tt: 'Agora: Conferência', dt: ti.fim ? quando(ti.fim) : '',
-        ds: 'Carga ' + (o.cargas || []).map(function (c) { return '<b>' + esc(c.id) + '</b>'; }).join(', ') + ' com <b>Status da carga = Em processamento</b>. Quando ficar Carregado, vai para Cotação.' });
+        ds: o.cargaFase === 'processando'
+          ? 'Carga ' + (o.cargas || []).map(function (c) { return '<b>' + esc(c.id) + '</b>'; }).join(', ') + ' com <b>Status da carga = Em processamento</b>. Quando ficar Carregado, vai para Cotação.'
+          : 'O trabalho de separação já saiu de <b>Abrir</b> (' + esc(ti.fase === 'fechado' ? 'fechado' : 'em processo') + ')' + porQuemT + '; a carga ainda não está Em processamento. Quando a carga ficar Carregado, vai para Cotação.' });
       else if (pos > 3) p.push({ cls: 'feito', tt: 'Conferência', ds: '' });
       else p.push({ cls: 'depois', tt: 'Conferência', ds: 'Quando a carga da OV entrar em processamento (<b>Status da carga = Em processamento</b>), vem para esta etapa.' });
       // cotação: carga "Carregado" e cotação realizada = Não
@@ -1152,7 +1302,9 @@
       var libRel = /^(released|liberado|liberada)$/.test(chaveEnum(rg.releaseStatus));
       var ti = trabInfo(o);
       var decide = et === 'rejeitada' ? 'nota' : et === 'faturado' ? (o.nota && o.nota.aprovada ? 'nota' : 'sit') : et === 'cancelada' ? 'sit'
-        : (et === 'expedicao' || et === 'pallet' || et === 'aguardando' || et === 'cotacao' || et === 'conferencia') ? 'carga'
+        : et === 'pendencia' ? 'lote'
+        : et === 'conferencia' ? (o.cargaFase === 'processando' ? 'carga' : 'trab')
+        : (et === 'expedicao' || et === 'pallet' || et === 'aguardando' || et === 'cotacao') ? 'carga'
         : et === 'credito' ? 'cred' : et === 'liberado' ? (ti.fase ? 'trab' : 'lib') : '';
       var cg1 = (o.cargas || [])[0] || null, ccol = o.cargaCols || {};
       var tile = function (id, k, cru, col, padrao, fmt) {
@@ -1164,13 +1316,17 @@
       };
       var ci = credInfo(rg), credVeio = ci.veio;
       var porque = {
-        criada: 'Ordem em aberto' + (credVeio ? ', sem crédito ativo' : '') + ' e ainda não liberada para o depósito: fica em <b>Criada</b>.' + (credVeio ? '' : ' O crédito não veio do Dynamics.'),
+        pendencia: (o.parte && o.parte.inteira ? 'Nenhum item em aberto da OV tem <b>lote</b>' : 'Este cartão é a parte da OV com os itens em aberto <b>sem lote</b>')
+          + ': fica em <b>Pendência</b> até os itens receberem lote' + (destinoPend(o) ? ' — depois segue para <b>' + esc(destinoPend(o)) + '</b>' : '') + '.'
+          + (ondeIrmas(o) ? ' Os itens com lote estão em <b>' + esc(ondeIrmas(o)) + '</b>.' : ''),
+        criada: o.semLinhas ? 'A OV não tem <b>nenhuma linha</b> no Dynamics: fica em <b>Criada</b> até as linhas serem lançadas.'
+          : 'Ordem em aberto' + (credVeio ? ', sem crédito ativo' : '') + ' e sem trabalho de separação aberto: fica em <b>Criada</b>.' + (credVeio ? '' : ' O crédito não veio do Dynamics.'),
         credito: (ci.fonte === 'tabela' ? 'O registro <b>ativo</b> na tabela de gerenciamento de crédito decide' : 'O crédito marcado decide') + ': a OV fica em <b>Gerenciamento de Crédito</b> até o crédito aprovar, qualquer que seja a liberação.',
-        liberado: ti.fase === 'processo' ? 'Liberada para o depósito e com o trabalho de separação <b>em processo</b>: fica em <b>Separação</b> até a carga entrar em processamento.'
-          : ti.fase === 'aberto' ? 'Trabalho de separação <b>aberto</b> (Status do trabalho = Abrir): fica em <b>Separação</b>.'
-          : ti.fase === 'fechado' ? 'Trabalho de separação <b>fechado</b>, mas a carga ainda não entrou em processamento: fica em <b>Separação</b> até a carga ficar Em processamento.'
-          : 'Ordem em aberto, sem crédito ativo e liberada para o depósito (<code>ReleaseStatus = Released</code>): fica em <b>Separação</b>.' + (ti.veio ? ' Ainda sem trabalho de depósito.' : ''),
-        conferencia: 'A carga está <b>em processamento</b> (Status da carga = Em processamento): fica em <b>Conferência</b> até ficar Carregado.',
+        liberado: ti.veio ? 'Trabalho de separação <b>aberto</b> (Status do trabalho = Abrir): fica em <b>Separação</b> — só o trabalho aberto conta.'
+            + (o.parteTrab && ondeIrmas(o) ? ' O resto da OV está em <b>' + esc(ondeIrmas(o)) + '</b>.' : '')
+          : 'A entidade de trabalho não respondeu: a OV liberada para o depósito (<code>ReleaseStatus = Released</code>) fica em <b>Separação</b> até o trabalho voltar a ser lido.',
+        conferencia: o.cargaFase === 'processando' ? 'A carga está <b>em processamento</b> (Status da carga = Em processamento): fica em <b>Conferência</b> até ficar Carregado.'
+          : 'O trabalho de separação já saiu de <b>Abrir</b> (' + esc(ti.fase === 'fechado' ? 'fechado' : 'em processo') + ') e a carga ainda não está Em processamento: fica em <b>Conferência</b>.',
         cotacao: 'A carga está <b>Carregado</b> e a cotação <b>ainda não foi realizada</b>: fica em <b>Cotação</b>.',
         aguardando: 'A carga está <b>Carregado</b> e a <b>cotação realizada = Sim</b>: fica em <b>Aguardando Faturamento</b> até a nota fiscal ser aprovada.',
         faturado: o.nota && o.nota.aprovada ? 'A nota fiscal <b>' + esc(o.nota.numero) + '</b> está <b>Aprovada</b>: fica em <b>Faturado</b>.'
@@ -1180,7 +1336,13 @@
         rejeitada: 'A nota fiscal mais recente da OV (<b>' + esc(o.nota ? o.nota.numero : '—') + '</b>) está <b>' + esc(rotNF(o.nota && o.nota.status)) + '</b>: fica em <b>Rejeitada</b> até sair uma nota aprovada — vale antes das outras regras.',
         cancelada: 'Situação <b>Cancelada</b>: a OV fica fora do quadro (só aparece na lista).'
       }[et] || '';
+      // 10/11/26: o lote dos itens (Pendência)
+      var lt = o.parte ? (o.parte.inteira ? 'nenhum com lote' : o.parte.id === 'semlote' ? itensTxt(o.parte.n) + ' sem lote' : itensTxt(o.parte.n) + ' com lote')
+        : o.semLinhas ? 'sem linha' : o.lotes ? (o.lotes.semLote ? o.lotes.semLote + ' sem lote' : 'todos com lote') : '';
+      var tileLote = lt ? '<div class="' + (decide === 'lote' ? 'decide' : '') + '"><div class="k">Lote dos itens</div><div class="v">' + esc(lt) + '</div>'
+        + '<code>ItemBatchNumber' + (o.lotes ? ' · ' + esc(o.lotes.linhas) + ' em aberto' : '') + '</code>' + (decide === 'lote' ? '<span class="dc">decidiu a etapa</span>' : '') + '</div>' : '';
       return '<section class="kb-dw-card"><h5>Por que está em ' + esc(et === 'cancelada' ? 'Cancelada' : (NOME_ETAPA[et] || et)) + '</h5><div class="kb-rg">'
+        + tileLote
         + tile('sit', 'Situação da OV', rg.salesStatus, rg.salesStatusCol, 'SalesStatus', rot)
         + tile('lib', 'Liberação', rg.releaseStatus, rg.releaseStatusCol, 'ReleaseStatus', rotLib)
         + '<div class="' + (decide === 'cred' ? 'decide' : '') + '"><div class="k">Crédito' + (ci.fonte === 'tabela' ? ' · tabela' : ci.fonte === 'cabecalho' ? ' · cabeçalho' : '') + '</div>'
@@ -1265,38 +1427,55 @@
       var ls = e.linhas || [];
       if (!ls.length) return '<section class="kb-dw-card"><h5>' + tt + '</h5><div class="kb-dw-nada">O Dynamics não trouxe linhas para esta OV.</div></section>';
       var hoje = hojeSP(), tv = 0, tq = 0, temQ = false, grupos = [], porSt = {};
+      // 10/11/26: o lote de cada linha; no cartão que é PARTE da OV pelo lote, as
+      // linhas em 2 grupos — as deste cartão e as da outra parte (apagadas)
+      var temLote = ls.some(function (l) { return l.temLote; });
+      var aberta = function (l) { var k = chaveEnum(l.status); return !k || k === 'backorder' || k === 'open' || k === 'none'; };
+      var nSem = temLote ? ls.filter(function (l) { return !l.lote && aberta(l); }).length : 0;
+      var pt = o.parte && !o.parte.inteira ? o.parte : null;
+      var ident = function (l) { return l.linha != null ? l.linha : l.item; };
+      var grupoDe = function (l) {
+        if (!pt) return { k: rot(l.status) || 'sem status', t: rot(l.status) || 'sem status' };
+        if (pt.linhas.indexOf(ident(l)) >= 0) return { k: '1', t: 'Neste cartão · ' + nomeEt(o.etapa), on: true };
+        if (/^cancel/.test(chaveEnum(l.status))) return { k: '3', t: 'Canceladas' };
+        return { k: '2', t: 'Nos outros cartões' + (ondeIrmas(o) ? ' · ' + ondeIrmas(o) : ''), fora: true };
+      };
       ls.forEach(function (l) {
         tv += l.valor || 0;
         if (l.qtd != null && isFinite(l.qtd)) { tq += l.qtd; temQ = true; }
-        var k = rot(l.status) || 'sem status';
-        if (!porSt[k]) { porSt[k] = { st: k, n: 0, v: 0, rows: [] }; grupos.push(porSt[k]); }
+        var gd = grupoDe(l), k = gd.k;
+        if (!porSt[k]) { porSt[k] = { st: gd.t, n: 0, v: 0, rows: [], on: gd.on, fora: gd.fora, ord: k }; grupos.push(porSt[k]); }
         porSt[k].n++; porSt[k].v += l.valor || 0; porSt[k].rows.push(l);
       });
+      if (pt) grupos.sort(function (a, b) { return a.ord < b.ord ? -1 : a.ord > b.ord ? 1 : 0; });
       var h = '<section class="kb-dw-card"><h5>' + tt + ' <small>' + esc(fQtd(ls.length)) + '</small></h5>'
         + '<div class="kb-its-r"><span>Total da OV <b>' + esc(fBRL(Math.round(tv * 100) / 100)) + '</b></span>'
+        + (temLote ? '<span>' + (nSem ? '<b>' + esc(fQtd(nSem)) + '</b> em aberto sem lote' : 'todas com lote') + '</span>' : '')
         + (temQ ? '<span><b>' + esc(fQtd(tq)) + '</b> ' + (tq === 1 ? 'unidade' : 'unidades') + '</span>' : '') + '</div><div class="kb-its">';
-      var multi = grupos.length > 1, n = 0;
+      var multi = grupos.length > 1 || !!pt, n = 0;
       grupos.forEach(function (g) {
-        if (multi) h += '<div class="kb-lin-g"><span class="kb-dw-tag">' + esc(g.st) + '</span><span>' + esc(plural(g.n, 'linha', 'linhas')) + ' · <b>' + esc(fBRL(Math.round(g.v * 100) / 100)) + '</b></span></div>';
+        if (multi) h += '<div class="kb-lin-g"><span class="kb-dw-tag' + (g.on ? ' al' : '') + '">' + esc(g.st) + '</span><span>' + esc(plural(g.n, 'linha', 'linhas')) + ' · <b>' + esc(fBRL(Math.round(g.v * 100) / 100)) + '</b></span></div>';
         g.rows.forEach(function (l) {
           n++;
           var meta = [l.item ? 'cód. ' + l.item : '', l.deposito && l.deposito !== o.deposito ? l.deposito : ''].filter(Boolean).join(' · ');
-          var aberta = chaveEnum(l.status) === 'backorder';
-          var atras = l.entrega && l.entrega < hoje && aberta;
+          var loteH = !temLote ? '' : l.lote ? '<span class="kb-lt" title="Lote (ItemBatchNumber)">lote ' + esc(l.lote) + '</span>'
+            : aberta(l) ? '<span class="kb-lt sem" title="Item em aberto sem lote: vai para Pendência">sem lote</span>' : '<span class="kb-lt">sem lote</span>';
+          var atras = l.entrega && l.entrega < hoje && chaveEnum(l.status) === 'backorder';
           var entTxt = l.entrega ? 'entrega ' + fDM(l.entrega) + (atras ? ' · passou' : '') : 'sem data de entrega';
           var conf = l.confirmada && l.confirmada !== l.entrega ? ' · confirmada ' + fDM(l.confirmada) : '';
-          var lg = (!multi && l.status ? esc(rotLinha(l.status)) + ' · ' : '') + '<span class="' + (atras ? 'warn' : '') + '">' + esc(entTxt) + '</span>' + esc(conf);
+          var lg = ((!multi || pt) && l.status ? esc(rotLinha(l.status)) + ' · ' : '') + '<span class="' + (atras ? 'warn' : '') + '">' + esc(entTxt) + '</span>' + esc(conf);
           var un = l.un ? ' ' + l.un.toLowerCase() : '';
           var qx = l.qtd != null && isFinite(l.qtd) ? fQtd(l.qtd) + un + (l.preco != null && isFinite(l.preco) ? ' × ' + fBRL(l.preco) : '') : '';
           var desc = l.descPct ? 'desc. ' + fQtd(l.descPct) + '%' : (l.desconto ? 'desc. ' + fBRL(l.desconto) : '');
-          h += '<div class="kb-it"><div class="n">' + n + '</div><div class="c"><div class="t">' + esc(l.produto || l.item || 'Produto sem nome') + '</div>'
-            + (meta ? '<div class="s">' + esc(meta) + '</div>' : '') + '<div class="s lg">' + lg + '</div></div>'
+          h += '<div class="kb-it' + (g.fora ? ' fora' : '') + '"><div class="n">' + n + '</div><div class="c"><div class="t">' + esc(l.produto || l.item || 'Produto sem nome') + '</div>'
+            + (meta || loteH ? '<div class="s">' + esc(meta) + loteH + '</div>' : '') + '<div class="s lg">' + lg + '</div></div>'
             + '<div class="v"><b>' + esc(l.valor != null ? fBRL(l.valor) : '—') + '</b>' + (qx ? '<span>' + esc(qx) + '</span>' : '') + (desc ? '<span>' + esc(desc) + '</span>' : '') + '</div></div>';
         });
       });
       h += '</div>';
-      if (o.valor != null && Math.abs(tv - o.valor) > 0.05) {
-        h += '<div class="kb-dw-nada" style="margin-top:8px;">As linhas somam ' + esc(fBRL(Math.round(tv * 100) / 100)) + ' e o quadro mostra ' + esc(fBRL(o.valor)) + ': a OV mudou entre as leituras — o quadro acerta na próxima atualização.</div>';
+      var vRef = o.valorOv != null ? o.valorOv : o.valor;
+      if (vRef != null && Math.abs(tv - vRef) > 0.05) {
+        h += '<div class="kb-dw-nada" style="margin-top:8px;">As linhas somam ' + esc(fBRL(Math.round(tv * 100) / 100)) + ' e o quadro mostra ' + esc(fBRL(vRef)) + ': a OV mudou entre as leituras — o quadro acerta na próxima atualização.</div>';
       }
       return h + '</section>';
     }
@@ -1389,12 +1568,13 @@
       var antes = estado.antes; estado.mudou = {};
       if (!antes) return;
       (novo.ovs || []).forEach(function (o) {
-        var a = antes[o.numero];
-        if (!a) estado.mudou[o.numero] = 'nova';
-        else if (a !== o.etapa) estado.mudou[o.numero] = 'status';
+        var id = idOv(o), a = antes[id];
+        // cartão novo de uma OV que já estava no quadro (ela se dividiu) = mudou, não "nova"
+        if (!a) estado.mudou[id] = antes['#' + o.numero] ? 'status' : 'nova';
+        else if (a !== o.etapa) estado.mudou[id] = 'status';
       });
     }
-    function lembrar(r) { estado.antes = {}; (r.ovs || []).forEach(function (o) { estado.antes[o.numero] = o.etapa; }); }
+    function lembrar(r) { estado.antes = {}; (r.ovs || []).forEach(function (o) { estado.antes[idOv(o)] = o.etapa; estado.antes['#' + o.numero] = 1; }); }
 
     // ── período de Rejeitada, Pallet e Expedição (09/11/26; o Faturado saiu em 10/11/26) ──
     function somaDias(iso, n) { var d = new Date(iso + 'T12:00:00Z'); d.setUTCDate(d.getUTCDate() + n); return d.toISOString().slice(0, 10); }
@@ -1447,7 +1627,7 @@
         // mudou de etapa relê as linhas; a que sumiu (outro dia) fecha a ficha
         if (estado.aberta) {
           if (!acharOv(estado.aberta)) fechar();
-          else { pintarFicha(); if (estado.mudou[estado.aberta] === 'status') carregarLinhas(estado.aberta, true); }
+          else { pintarFicha(); if (estado.mudou[estado.aberta] === 'status') carregarLinhas(numAberta(), true); }
         }
         var hora = new Date(j.geradoEm || Date.now()).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
         var n = Object.keys(estado.mudou).length;

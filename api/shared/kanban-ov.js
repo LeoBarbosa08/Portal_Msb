@@ -113,7 +113,8 @@ const VAZIOS = /^(|0|1900-01-01T00:00:00Z|00000000-0000-0000-0000-000000000000|N
 //     dono mandar os campos — nenhuma OV cai nelas por enquanto.
 const ETAPAS = [
   // 09/11/2026 (dono): "insira antes de Criada o card PENDÊNCIA"; 10/11/2026: a
-  // regra — as linhas EM ABERTO sem lote (partesPorLote, mais abaixo)
+  // regra — SÓ o lote: as linhas EM ABERTO sem lote (partesPorLote, mais abaixo);
+  // OV sem linha nenhuma fica em Criada
   { id: 'pendencia',   nome: 'Pendência' },
   { id: 'criada',      nome: 'Criada' },
   { id: 'credito',     nome: 'Gerenciamento de Crédito' },
@@ -293,7 +294,7 @@ function situacaoOv(v) {
 const liberadoV = (v) => /^(released|liberado|liberada)$/.test(normV(v));
 const marcadoV = (v) => v === true || /^(yes|sim|true|1|noyes yes)$/.test(normV(v));
 // trabalho = fase do trabalho de depósito da OV ('fechado' | 'processo' |
-// 'aberto' | null = sem trabalho / sem a entidade)
+// 'aberto' | 'nenhum' = sem trabalho | null = sem a entidade no OData)
 // nota  = a nota mais recente da OV com status: 'rejeitada' | 'aprovada' |
 //         'outra' (status que não é nenhum dos dois) | null (sem nota/status)
 // carga = a fase da carga da OV (faseCarga) ou null (sem carga)
@@ -312,9 +313,15 @@ function etapaDe(sales, release, credito, trabalho, nota, carga) {
   if (carga === 'cotacao') return 'cotacao';       // Carregado + cotação realizada Não
   if (carga === 'processando') return 'conferencia';
   if (marcadoV(credito)) return 'credito';
-  // 09/11/26 (dono): Conferência é SÓ a carga "Em processamento" — o trabalho
-  // fechado (sem a carga em processamento) segue em Separação
-  if (trabalho === 'aberto' || trabalho === 'processo' || trabalho === 'fechado' || liberadoV(release)) return 'liberado';
+  // 10/11/26 (dono): "a Separação só pode abranger o trabalho = Abrir! somente
+  // isso" — a OV com trabalho aberto E trabalho não aberto vira 2 cartões
+  // (partesPorTrabalho); aqui chega a fase de UM grupo de trabalhos
+  if (trabalho === 'aberto') return 'liberado';
+  // trabalho em processo / fechado e a carga ainda sem fase das regras: já saiu
+  // da Separação — fica na Conferência (a próxima)
+  if (trabalho === 'processo' || trabalho === 'fechado') return 'conferencia';
+  // reserva: sem a entidade de trabalho no OData (trabalho null), a liberação
+  if (trabalho == null && liberadoV(release)) return 'liberado';
   return 'criada';
 }
 
@@ -636,28 +643,74 @@ function addCarga(por, E, r) {
 // as outras -> a parte que segue a etapa da OV. Cada parte = um cartão, com o
 // valor e os itens só dela (chave própria: OV~semlote / OV~comlote). Sem lote em
 // todas -> a OV inteira em Pendência. Não divide depois do faturamento.
+// 10/11/26 (dono): "se não tiver linha vai para Criada" — a OV cujas linhas
+// foram lidas e não tem nenhuma fica em Criada (antes do faturamento).
 const NAO_DIVIDE = ['faturado', 'rejeitada', 'pallet', 'expedicao', 'cancelada'];
 const linhaAberta = (st) => { const n = normV(st).replace(/ /g, ''); return !n || /^(backorder|emaberto|ordememaberto|open|none|nenhum)$/.test(n); };
 const linhaCancelada = (st) => /^cancel/.test(normV(st));
-function partesPorLote(o, ls) {
+function partesPorLote(o, ls, lida, comCol) {
   o.chave = o.numero; o.valorOv = o.valor; o.itensOv = o.itens;
-  if (!ls || !ls.length) return [o];
+  const naoDivide = NAO_DIVIDE.indexOf(o.etapa) >= 0;
+  if (!ls || !ls.length) {
+    if (lida && !naoDivide) { o.etapaOv = o.etapa; o.etapa = 'criada'; o.semLinhas = true; }
+    return [o];
+  }
+  if (!comCol) return [o];
   const abertas = ls.filter(l => linhaAberta(l.status) && !linhaCancelada(l.status));
   const semLote = abertas.filter(l => !l.lote);
   o.lotes = { linhas: abertas.length, semLote: semLote.length };
-  if (!semLote.length || NAO_DIVIDE.indexOf(o.etapa) >= 0) return [o];
+  if (!semLote.length || naoDivide) return [o];
   const comLote = ls.filter(l => semLote.indexOf(l) < 0 && !linhaCancelada(l.status));
   const soma = (arr) => Math.round(arr.reduce((t, l) => t + (l.valor || 0), 0) * 100) / 100;
   const ident = (l) => l.linha != null ? l.linha : l.item;
   const total = semLote.length + comLote.length;
-  const pend = Object.assign({}, o, { chave: o.numero + '~semlote', etapaOv: o.etapa, etapa: 'pendencia', valor: soma(semLote), itens: semLote.length,
+  // a parte em Pendência não leva o botão do Pallet (fica na parte que anda)
+  const pend = Object.assign({}, o, { chave: o.numero + '~semlote', etapaOv: o.etapa, etapa: 'pendencia', valor: soma(semLote), itens: semLote.length, podePallet: false,
     parte: { id: 'semlote', linhas: semLote.map(ident), n: semLote.length, de: total } });
   if (!comLote.length) { pend.chave = o.numero; pend.parte.inteira = true; return [pend]; }
   const resto = Object.assign({}, o, { chave: o.numero + '~comlote', valor: soma(comLote), itens: comLote.length,
     parte: { id: 'comlote', linhas: comLote.map(ident), n: comLote.length, de: total } });
-  pend.parte.outra = { chave: resto.chave, etapa: resto.etapa };
-  resto.parte.outra = { chave: pend.chave, etapa: 'pendencia' };
+  pend.parte.outra = { chave: resto.chave, etapa: resto.etapa, n: resto.parte.n, valor: resto.valor };
+  resto.parte.outra = { chave: pend.chave, etapa: 'pendencia', n: pend.parte.n, valor: pend.valor };
   return [pend, resto];
+}
+
+// ── A OV EM PARTES PELOS TRABALHOS (10/11/2026) ───────────────────
+// Dono: "a Separação só pode abranger o trabalho = Abrir; se tiver dois
+// trabalhos, 1 Abrir e 1 Fechado, tem que fazer um split no card: inserir essa
+// OV na Separação e também em outro lugar com base no outro trabalho ou na
+// carga". Os trabalhos válidos (sem cancelado/combinado) em 2 grupos: os
+// ABERTOS -> um cartão em Separação; os outros (em processo / fechado) -> um
+// cartão na etapa que as cargas DELES (e a nota) decidem. Cada cartão leva só
+// os seus trabalhos e cargas; o valor da parte não se sabe pelo trabalho (vai
+// vazio; a ficha mostra o da OV). Chaves: <chave>~abrir / <chave>~outros.
+function faseTrabDe(ws) {
+  if (!ws.length) return 'nenhum';
+  if (ws.every(w => w.fase === 'fechado')) return 'fechado';
+  if (ws.every(w => w.fase === 'aberto')) return 'aberto';
+  return 'processo';
+}
+function resumoTrab(ws, base) {
+  if (!base) return base;
+  return Object.assign({}, base, { fase: ws.length ? faseTrabDe(ws) : null, total: ws.length, fechados: ws.filter(w => w.fase === 'fechado').length,
+    processo: ws.filter(w => w.fase === 'processo').length, abertos: ws.filter(w => w.fase === 'aberto').length, ignorados: 0 });
+}
+function partesPorTrabalho(p, cargasDe, faseCargasDe) {
+  const t = p._trab;
+  if (!t || !t.misto || p.etapa === 'cancelada') return [p];
+  const de = t.abertos.length + t.outros.length;
+  const mk = (ws, id, etapa) => {
+    const cs = cargasDe(ws);
+    return Object.assign({}, p, { chave: p.chave + '~' + id, etapa, valor: null, itens: null,
+      trabalhos: ws, cargas: cs, cargaFase: faseCargasDe(cs), podePallet: cs.some(c => c.podePallet),
+      regra: Object.assign({}, p.regra, { trabalho: resumoTrab(ws, p.regra.trabalho) }),
+      parteTrab: { id, trabalhos: ws.map(w => w.id), n: ws.length, de } });
+  };
+  const sep = mk(t.abertos, 'abrir', 'liberado'), resto = mk(t.outros, 'outros', p.etapa);
+  sep.podePallet = false;
+  sep.parteTrab.outra = { chave: resto.chave, etapa: resto.etapa, n: resto.parteTrab.n };
+  resto.parteTrab.outra = { chave: sep.chave, etapa: 'liberado', n: sep.parteTrab.n };
+  return [sep, resto];
 }
 
 // ── leituras ─────────────────────────────────────────────────────
@@ -821,6 +874,10 @@ async function porNumeros(ent, colNum, numeros, token, ate, diag, etapa, select,
   if (semTempo) diag.push({ etapa, entidade: ent, erro: 'sem tempo: ' + semTempo + ' OV(s) sem ' + etapa.split(':')[1] });
   const out = [].concat.apply([], res.filter(Boolean));
   diag.push({ etapa, entidade: ent, linhas: out.length });
+  // os números que foram de fato consultados (lote sem tempo fica de fora):
+  // "sem linha" só vale para a OV cujas linhas foram lidas
+  out.cobertos = new Set();
+  lotes.forEach((l, i) => { if (res[i]) l.forEach(n => out.cobertos.add(n)); });
   return out;
 }
 
@@ -863,6 +920,8 @@ async function linhas(numeros, token, ate, diag) {
           qtd: C.qtd ? num(r[C.qtd]) : null, lote: VAZIOS.test(lt) ? '' : lt, status: C.status ? txt(r[C.status]) : '' });
       });
       Object.keys(por).forEach(k => { por[k].valor = Math.round(por[k].valor * 100) / 100; });
+      // as OVs cujas linhas foram lidas (com ou sem linha)
+      Object.defineProperty(por, '_lidas', { value: rows.cobertos || new Set(), enumerable: false });
       return por;
     } catch (e) {
       if (!/\b(400|404)\b/.test(String(e.message))) return {};
@@ -1068,6 +1127,10 @@ async function montar(opts, modo) {
     return null;
   };
   const achou = { sales: 0, release: 0, credito: 0 };
+  // as cargas de uma lista de trabalhos e a fase delas (a menos adiantada)
+  const cargasDe = (ws) => Array.from(new Set(ws.map(w => w.carga).filter(Boolean)))
+    .map(id => CARGA.por[id.toUpperCase()] ? CARGA.por[id.toUpperCase()].carga : { id, status: '', naoAchada: !!CARGA.E });
+  const faseCargasDe = (cs) => { const c = cs.filter(x => x.fase); return c.length ? c.reduce((m, x) => RANK_CARGA[x.fase] < RANK_CARGA[m] ? x.fase : m, 'remetido') : null; };
   const todas = Object.keys(reg).map(k => {
     const sa = cru(k, COL_SALES), re = cru(k, COL_RELEASE);
     // crédito: a tabela da Bio decide (registro ATIVO pelo SALESID); sem a
@@ -1088,11 +1151,18 @@ async function montar(opts, modo) {
     const nVale = nts.find(n => n.status) || null;
     // cargas da OV (pelos LoadId dos trabalhos dela) e a fase: a menos adiantada
     const idsOv = tb ? Array.from(new Set(tb.lista.map(w => w.carga).filter(Boolean))) : [];
-    const cargasOv = idsOv.map(id => CARGA.por[id.toUpperCase()] ? CARGA.por[id.toUpperCase()].carga : { id, status: '', naoAchada: !!CARGA.E });
-    const comFase = cargasOv.filter(c => c.fase);
-    const faseOv = comFase.length ? comFase.reduce((m, c) => RANK_CARGA[c.fase] < RANK_CARGA[m] ? c.fase : m, 'remetido') : null;
+    const cargasOv = cargasDe(tb ? tb.lista : []);
+    // 10/11/26: trabalho ABERTO = Separação; os outros (em processo / fechado)
+    // seguem a carga deles. Com os dois tipos, a OV vira 2 cartões (abaixo).
+    const validos = tb ? tb.lista.filter(w => w.fase !== 'ignora') : [];
+    const abertosW = validos.filter(w => w.fase === 'aberto'), outrosW = validos.filter(w => w.fase !== 'aberto');
+    const misto = abertosW.length > 0 && outrosW.length > 0;
+    // a fase da carga: só a das cargas dos trabalhos que NÃO estão abertos (a do
+    // trabalho aberto é a Separação, mesmo com a carga já em processamento)
+    const faseOv = faseCargasDe(cargasDe(outrosW));
     const notaFase = nVale ? (nVale.rejeitada ? 'rejeitada' : nVale.aprovada ? 'aprovada' : 'outra') : null;
-    const etapa = etapaDe(sa && sa.valor, re && re.valor, crAtivo, tb ? tb.fase : null, notaFase, faseOv);
+    const trabFase = TRAB.E ? faseTrabDe(misto ? outrosW : validos) : null;
+    const etapa = etapaDe(sa && sa.valor, re && re.valor, crAtivo, trabFase, notaFase, faseOv);
     const status = {};
     statusCols.forEach(s => { const r = reg[k][s.entidade]; status[s.chave] = r ? (txt(r[s.coluna]) || '(vazio)') : null; });
     const campos = {};
@@ -1133,13 +1203,29 @@ async function montar(opts, modo) {
       cargaCols: EC ? { status: EC.status || null, cotacao: EC.cotacao || null, pallet: EC.pallet || null } : null,
       // pode enviar para o Pallet: alguma carga Carregado + cotação Sim, ainda não enviada
       podePallet: cargasOv.some(c => c.podePallet),
-      status, campos
+      status, campos,
+      // para a divisão pelos trabalhos (sai antes da resposta)
+      _trab: { abertos: abertosW, outros: outrosW, misto }
     };
   }).sort((a, b) => b.criadaEm.localeCompare(a.criadaEm) || b.numero.localeCompare(a.numero));
   // 10/11/26: a OV em partes pelo lote das linhas (Pendência x o resto)
   const colLote = _colsLinhas && _colsLinhas.lote;
   const partes = [];
-  todas.forEach(o => partesPorLote(o, colLote ? (porLinha[o.numero] || {}).linhas : null).forEach(p => partes.push(p)));
+  const lidas = porLinha._lidas || new Set();
+  // 1º o lote (a parte sem lote vai para Pendência); 2º os trabalhos, na parte
+  // que anda (trabalho aberto = Separação; os outros, onde a carga mandar)
+  todas.forEach(o => partesPorLote(o, (porLinha[o.numero] || {}).linhas || null, lidas.has(o.numero), !!colLote).forEach(p => {
+    if (p.parte && p.parte.id === 'semlote') partes.push(p);
+    else partesPorTrabalho(p, cargasDe, faseCargasDe).forEach(q => partes.push(q));
+  }));
+  partes.forEach(p => { delete p._trab; });
+  // os outros cartões da mesma OV (a ficha lista todos e leva de um ao outro)
+  const porNum = {};
+  partes.forEach(p => { (porNum[p.numero] = porNum[p.numero] || []).push(p); });
+  Object.keys(porNum).forEach(n => {
+    const g = porNum[n]; if (g.length < 2) return;
+    g.forEach(p => { p.irmas = g.filter(x => x !== p).map(x => ({ chave: x.chave, etapa: x.etapa, valor: x.valor })); });
+  });
   if (!colLote && Object.keys(porLinha).length) {
     avisos.push('As linhas da OV (' + (_entLinhas || 'SalesOrderLines') + ') não trazem o lote (' + COL_LOTE.join(' / ') + '): a Pendência por item sem lote fica desligada. Fixe o nome em KANBAN_COL_LOTE.');
   }
