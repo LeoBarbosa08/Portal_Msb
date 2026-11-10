@@ -289,6 +289,7 @@ function situacaoOv(v) {
   if (!n) return null;
   if (/^(backorder|ordem em aberto|em aberto|aberta|aberto|1)$/.test(n)) return 'aberta';
   if (/^(canceled|cancelled|cancelado|cancelada|4)$/.test(n)) return 'cancelada';
+  if (/^(delivered|entregue|2)$/.test(n)) return 'entregue';
   return 'outra';
 }
 const liberadoV = (v) => /^(released|liberado|liberada)$/.test(normV(v));
@@ -307,6 +308,8 @@ function etapaDe(sales, release, credito, trabalho, nota, carga) {
   if (carga === 'remetido') return 'expedicao';
   if (carga === 'pallet') return 'pallet';
   if (nota === 'aprovada') return 'faturado';
+  // 11/11/26 (dono, provisório): Entregue (romaneio, sem nota) -> Aguardando Faturamento
+  if (sit === 'entregue') return 'aguardando';
   // reserva: a OV saiu do aberto e não há status de nota para conferir
   if (sit === 'outra' && nota !== 'outra') return 'faturado';
   if (carga === 'cotado') return 'aguardando';     // Carregado + cotação realizada Sim
@@ -648,6 +651,11 @@ function addCarga(por, E, r) {
 const NAO_DIVIDE = ['faturado', 'rejeitada', 'pallet', 'expedicao', 'cancelada'];
 const linhaAberta = (st) => { const n = normV(st).replace(/ /g, ''); return !n || /^(backorder|emaberto|ordememaberto|open|none|nenhum)$/.test(n); };
 const linhaCancelada = (st) => /^cancel/.test(normV(st));
+// 11/11/2026 (dono, provisório): "coloca AGUARDANDO FATURAMENTO onde o status da
+// linha da OV é Entregue, por enquanto" — as linhas Entregue (romaneio, sem nota)
+// viram um cartão em Aguardando Faturamento (OV~entregue); todas entregues -> a
+// OV inteira. Não vale com a nota rejeitada nem na OV cancelada.
+const linhaEntregue = (st) => /^(delivered|entregue)$/.test(normV(st).replace(/ /g, ''));
 function partesPorLote(o, ls, lida, comCol) {
   o.chave = o.numero; o.valorOv = o.valor; o.itensOv = o.itens;
   const naoDivide = NAO_DIVIDE.indexOf(o.etapa) >= 0;
@@ -655,24 +663,33 @@ function partesPorLote(o, ls, lida, comCol) {
     if (lida && !naoDivide) { o.etapaOv = o.etapa; o.etapa = 'criada'; o.semLinhas = true; }
     return [o];
   }
-  if (!comCol) return [o];
-  const abertas = ls.filter(l => linhaAberta(l.status) && !linhaCancelada(l.status));
-  const semLote = abertas.filter(l => !l.lote);
-  o.lotes = { linhas: abertas.length, semLote: semLote.length };
-  if (!semLote.length || naoDivide) return [o];
-  const comLote = ls.filter(l => semLote.indexOf(l) < 0 && !linhaCancelada(l.status));
+  const vivas = ls.filter(l => !linhaCancelada(l.status));
+  const abertas = vivas.filter(l => linhaAberta(l.status));
+  if (comCol) o.lotes = { linhas: abertas.length, semLote: abertas.filter(l => !l.lote).length };
+  const semLote = comCol && !naoDivide ? abertas.filter(l => !l.lote) : [];
+  const entregues = o.etapa === 'rejeitada' || o.etapa === 'cancelada' ? [] : vivas.filter(l => linhaEntregue(l.status));
+  const resto = vivas.filter(l => semLote.indexOf(l) < 0 && entregues.indexOf(l) < 0);
   const soma = (arr) => Math.round(arr.reduce((t, l) => t + (l.valor || 0), 0) * 100) / 100;
   const ident = (l) => l.linha != null ? l.linha : l.item;
-  const total = semLote.length + comLote.length;
-  // a parte em Pendência não leva o botão do Pallet (fica na parte que anda)
-  const pend = Object.assign({}, o, { chave: o.numero + '~semlote', etapaOv: o.etapa, etapa: 'pendencia', valor: soma(semLote), itens: semLote.length, podePallet: false,
-    parte: { id: 'semlote', linhas: semLote.map(ident), n: semLote.length, de: total } });
-  if (!comLote.length) { pend.chave = o.numero; pend.parte.inteira = true; return [pend]; }
-  const resto = Object.assign({}, o, { chave: o.numero + '~comlote', valor: soma(comLote), itens: comLote.length,
-    parte: { id: 'comlote', linhas: comLote.map(ident), n: comLote.length, de: total } });
-  pend.parte.outra = { chave: resto.chave, etapa: resto.etapa, n: resto.parte.n, valor: resto.valor };
-  resto.parte.outra = { chave: pend.chave, etapa: 'pendencia', n: pend.parte.n, valor: pend.valor };
-  return [pend, resto];
+  const grupos = [];
+  if (semLote.length) grupos.push({ id: 'semlote', etapa: 'pendencia', ls: semLote });
+  if (entregues.length) grupos.push({ id: 'entregue', etapa: 'aguardando', ls: entregues });
+  if (resto.length) grupos.push({ id: semLote.length ? 'comlote' : 'resto', etapa: o.etapa, ls: resto });
+  if (!grupos.length || (grupos.length === 1 && grupos[0].etapa === o.etapa && !grupos[0].ls.some(l => semLote.indexOf(l) >= 0 || entregues.indexOf(l) >= 0))) return [o];
+  const total = grupos.reduce((t, g) => t + g.ls.length, 0);
+  // um grupo só (todas sem lote / todas entregues): a OV inteira, um cartão
+  if (grupos.length === 1) {
+    const g = grupos[0];
+    return [Object.assign(o, { etapaOv: o.etapa, etapa: g.etapa, podePallet: g.id === 'semlote' ? false : o.podePallet,
+      parte: { id: g.id, inteira: true, linhas: g.ls.map(ident), n: g.ls.length, de: total } })];
+  }
+  const ps = grupos.map(g => Object.assign({}, o, { chave: o.numero + '~' + g.id, etapa: g.etapa, valor: soma(g.ls), itens: g.ls.length,
+    // a parte em Pendência / entregue não leva o botão do Pallet (fica na parte que anda)
+    podePallet: g.id === 'semlote' || g.id === 'entregue' ? false : o.podePallet,
+    parte: { id: g.id, linhas: g.ls.map(ident), n: g.ls.length, de: total } }, g.etapa !== o.etapa ? { etapaOv: o.etapa } : {}));
+  // (compat.) a "outra" parte: a primeira das outras
+  ps.forEach(p => { const x = ps.find(q => q !== p); p.parte.outra = { chave: x.chave, etapa: x.etapa, n: x.parte.n, valor: x.valor }; });
+  return ps;
 }
 
 // ── A OV EM PARTES PELOS TRABALHOS (10/11/2026) ───────────────────
@@ -759,15 +776,16 @@ async function ovsAbertas(E, token, ate, diag, avisos) {
   // o depósito já no filtro, quando a principal tem a coluna (menos linhas do F&O)
   const dep = !TODOS_DEPOSITOS && cDep ? '(' + DEPOSITOS.map(d => cDep + " eq '" + D.odataStr(d) + "'").join(' or ') + ') and ' : '';
   const formas = cSt ? [
-    { f: cSt + " eq Microsoft.Dynamics.DataEntities.SalesStatus'Backorder'", rot: 'enum' },
-    { f: cSt + " eq 'Backorder'", rot: 'texto' }
+    // 11/11/26: + as Entregues (romaneio sem nota) -> Aguardando Faturamento
+    { f: '(' + cSt + " eq Microsoft.Dynamics.DataEntities.SalesStatus'Backorder' or " + cSt + " eq Microsoft.Dynamics.DataEntities.SalesStatus'Delivered')", rot: 'enum' },
+    { f: '(' + cSt + " eq 'Backorder' or " + cSt + " eq 'Delivered')", rot: 'texto' }
   ] : [];
   for (const fo of formas) {
     if (restante(ate) < FOLGA_MS + 2000) break;
     try {
       const rows = await D.odataGetComPrazo(E.entidade, { crossCompany: true, filter: emp + dep + fo.f }, token, prazo(ate, PRAZO_MS));
       diag.push({ etapa: 'ov:abertas', entidade: E.entidade, coluna: cSt, forma: fo.rot, deposito: !!dep, linhas: rows.length });
-      return rows.filter(r => situacaoOv(r[cSt]) === 'aberta');
+      return rows.filter(r => situacaoOv(r[cSt]) === 'aberta' || situacaoOv(r[cSt]) === 'entregue');
     } catch (e) {
       diag.push({ etapa: 'ov:abertas', entidade: E.entidade, coluna: cSt, forma: fo.rot, erro: String(e.message || e).slice(0, 220) });
       if (!/\b400\b/.test(String(e.message))) break;
@@ -779,7 +797,7 @@ async function ovsAbertas(E, token, ate, diag, avisos) {
   const c = E.criadaEm, hoje = hojeSP(), ini = maisDias(hoje, -JANELA_DIAS);
   const rows = await D.odataGetComPrazo(E.entidade, { crossCompany: true, filter: emp + dep + c + ' ge ' + ini + 'T00:00:00Z' }, token, prazo(ate, PRAZO_MS));
   diag.push({ etapa: 'ov:abertas', entidade: E.entidade, forma: 'janela ' + JANELA_DIAS + ' dias', linhas: rows.length });
-  return rows.filter(r => !cSt || situacaoOv(r[cSt]) === 'aberta');
+  return rows.filter(r => !cSt || situacaoOv(r[cSt]) === 'aberta' || situacaoOv(r[cSt]) === 'entregue');
 }
 // OVs com nota no período [de, ateDia]: pelo diário de faturas (InvoiceDate)
 async function ovsComNotaNoPeriodo(de, ateDia, token, ate, diag) {
@@ -1215,7 +1233,7 @@ async function montar(opts, modo) {
   // 1º o lote (a parte sem lote vai para Pendência); 2º os trabalhos, na parte
   // que anda (trabalho aberto = Separação; os outros, onde a carga mandar)
   todas.forEach(o => partesPorLote(o, (porLinha[o.numero] || {}).linhas || null, lidas.has(o.numero), !!colLote).forEach(p => {
-    if (p.parte && p.parte.id === 'semlote') partes.push(p);
+    if (p.parte && (p.parte.id === 'semlote' || p.parte.id === 'entregue')) partes.push(p);
     else partesPorTrabalho(p, cargasDe, faseCargasDe).forEach(q => partes.push(q));
   }));
   partes.forEach(p => { delete p._trab; });

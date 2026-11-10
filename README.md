@@ -1469,6 +1469,28 @@ base no outro trabalho ou na carga".
   lidas não mudam nada, Separação só Abrir, split pelos trabalhos (com nota
   aprovada, na mesma carga), as irmãs. `sw.js` — cache `bm-comest-v65`.
 
+### Kanban · linha Entregue em Aguardando Faturamento — provisório (11/11/2026)
+
+O dono: "coloca AGUARDANDO FATURAMENTO onde o status da linha da OV é Entregue,
+por enquanto; depois vamos revisar isso, porém deixa assim".
+
+- **Pelas linhas** (`partesPorLote`, que agora divide pelo lote E pela entrega):
+  as linhas com status **Entregue** (`SalesOrderLineStatus = Delivered`:
+  romaneio emitido, sem nota) viram um cartão em **Aguardando Faturamento**
+  (`OV~entregue`, com o valor e os itens só delas); o resto segue (`OV~resto`,
+  ou `OV~comlote` quando também há a parte sem lote). Todas entregues: a OV
+  inteira, um cartão. Não vale com a nota Rejeitada nem na OV cancelada; a parte
+  entregue não se divide pelos trabalhos nem leva o botão do Pallet.
+- **A OV Entregue entra no quadro**: o "em aberto" agora lê `SalesStatus =
+  Backorder OU Delivered` (enum; se recusar, texto). Em `etapaDe`, a OV Entregue
+  sem nota aprovada → Aguardando Faturamento (antes caía em Faturado pela regra
+  de reserva).
+- Tela: selos "entregue · 1/2" / "entregue"; na ficha, a divisão "pelo status
+  das linhas", a linha do tempo e o "Por que está aqui" com a regra provisória.
+- Testes (4, 7c): OV Entregue → Aguardando; linha Entregue (mesmo sem lote) vira
+  cartão próprio; todas entregues → a OV inteira; as somas das colunas.
+  `sw.js` — cache `bm-comest-v66`.
+
 ## Como colocar no ar
 
 1. **Repositório no GitHub** — crie um repositório **privado e vazio** (sem

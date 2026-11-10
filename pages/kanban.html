@@ -546,7 +546,9 @@
     function descParte(x) {
       var d = [], sub = [];
       if (x.parte) {
-        d.push(x.parte.inteira ? 'nenhum item com lote' : itensTxt(x.parte.n) + (x.parte.id === 'semlote' ? ' sem lote' : ' com lote'));
+        var pid = x.parte.id;
+        d.push(x.parte.inteira ? (pid === 'entregue' ? 'todas as linhas entregues' : 'nenhum item com lote')
+          : itensTxt(x.parte.n) + (pid === 'semlote' ? ' sem lote' : pid === 'entregue' ? (x.parte.n === 1 ? ' entregue' : ' entregues') : pid === 'comlote' ? ' com lote' : ' (o restante)'));
         if (!x.parte.inteira && (x.parte.linhas || []).length) sub.push('linha' + (x.parte.linhas.length === 1 ? ' ' : 's ') + x.parte.linhas.join(', '));
       }
       if (x.parteTrab) {
@@ -560,7 +562,10 @@
       var h = '', p = o.parte, t = o.parteTrab;
       var chip = function (cls, tt, txt) { return '<span class="kb-chip ' + cls + '" title="' + esc(tt) + '">' + esc(txt) + '</span>'; };
       if (o.semLinhas) h += chip('kb-lote', 'A OV não tem nenhuma linha no Dynamics: fica em Criada', 'sem linha');
-      if (p && p.inteira) h += chip('kb-lote', 'Nenhum item em aberto tem lote: a OV inteira está em Pendência', 'sem lote');
+      if (p && p.inteira && p.id === 'entregue') h += chip('kb-parte', 'Todas as linhas estão Entregue (sem nota): a OV inteira está em Aguardando Faturamento', 'entregue');
+      else if (p && p.inteira) h += chip('kb-lote', 'Nenhum item em aberto tem lote: a OV inteira está em Pendência', 'sem lote');
+      else if (p && p.id === 'entregue') h += chip('kb-parte', 'Este cartão é só a parte ENTREGUE (sem nota): ' + itensTxt(p.n) + ' de ' + p.de + (ondeIrmas(o) ? '. O resto está em ' + ondeIrmas(o) : ''), 'entregue · ' + p.n + '/' + p.de);
+      else if (p && p.id === 'resto') h += chip('kb-parte', 'Este cartão é só o restante da OV: ' + itensTxt(p.n) + ' de ' + p.de + (ondeIrmas(o) ? '. O resto está em ' + ondeIrmas(o) : ''), 'parte · ' + p.n + '/' + p.de);
       else if (p && p.id === 'semlote') h += chip('kb-lote', 'Este cartão é só a parte SEM lote: ' + itensTxt(p.n) + ' de ' + p.de + (ondeIrmas(o) ? '. O resto está em ' + ondeIrmas(o) : ''), 'sem lote · ' + p.n + '/' + p.de);
       else if (p && p.id === 'comlote') h += chip('kb-parte', 'Este cartão é só a parte COM lote: ' + itensTxt(p.n) + ' de ' + p.de + (p.outra ? '. ' + itensTxt(p.outra.n) + ' sem lote em Pendência' : ''), 'com lote · ' + p.n + '/' + p.de);
       if (t) {
@@ -1054,8 +1059,8 @@
       var tags = ['<span class="kb-dw-tag" style="--c:' + cor[2] + ';background:' + cor[0] + ';color:' + cor[2] + '"><i></i>' + esc(nomeEt) + '</span>'];
       if (estado.mudou[idOv(o)] === 'nova') tags.push('<span class="kb-dw-tag nv">nova</span>');
       else if (estado.mudou[idOv(o)] === 'status') tags.push('<span class="kb-dw-tag nv">mudou de etapa</span>');
-      if (o.parte && o.parte.inteira) tags.push('<span class="kb-dw-tag al">sem lote</span>');
-      else if (o.parte) tags.push('<span class="kb-dw-tag al">' + (o.parte.id === 'semlote' ? 'parte sem lote' : 'parte com lote') + ' · ' + esc(o.parte.n + ' de ' + o.parte.de) + ' itens</span>');
+      if (o.parte && o.parte.inteira) tags.push('<span class="kb-dw-tag al">' + (o.parte.id === 'entregue' ? 'todas entregues' : 'sem lote') + '</span>');
+      else if (o.parte) tags.push('<span class="kb-dw-tag al">' + ({ semlote: 'parte sem lote', comlote: 'parte com lote', entregue: 'parte entregue', resto: 'parte' }[o.parte.id] || 'parte') + ' · ' + esc(o.parte.n + ' de ' + o.parte.de) + ' itens</span>');
       if (o.parteTrab) tags.push('<span class="kb-dw-tag al">' + (o.parteTrab.id === 'abrir' ? 'trabalho aberto' : 'trabalho fora da separação') + ' · ' + esc(o.parteTrab.n + ' de ' + o.parteTrab.de) + '</span>');
       if (o.semLinhas) tags.push('<span class="kb-dw-tag al">sem linha</span>');
       if (depDiferente(o.deposito)) tags.push('<span class="kb-dw-tag az" title="Depósito">' + esc(o.deposito) + '</span>');
@@ -1107,7 +1112,8 @@
                  : '<button type="button" class="kb-acao-b" data-kb-dw="pallet">Enviar para o Pallet</button><div class="kb-acao-msg" id="kb-acao-msg"></div>') + '</section>';
       } else if (env) {
         h += '<section class="kb-dw-card kb-acao"><div class="kb-acao-t"><b>Enviada para o Pallet</b>Carga ' + esc(env.carga) + ' enviada às ' + esc(env.hora) + '.</div></section>';
-      } else if ((o.cargas || []).length && ['conferencia', 'cotacao', 'aguardando', 'faturado', 'liberado'].indexOf(o.etapa) >= 0) {
+      } else if ((o.cargas || []).length && ['conferencia', 'cotacao', 'aguardando', 'faturado', 'liberado'].indexOf(o.etapa) >= 0
+        && !(o.parte && !o.parte.inteira && (o.parte.id === 'entregue' || o.parte.id === 'semlote'))) {
         // 09/11/26 ("onde está esse botão?"): com carga, o botão aparece DESATIVADO
         // e diz por que ainda não dá para enviar
         var cgM = (o.cargas || [])[0];
@@ -1138,7 +1144,7 @@
         + '<li class="' + (o.etapa === 'expedicao' ? 'on' : '') + '">Status da carga = <b>Remetido</b> → <b>Expedição</b>.</li>'
         + '<li class="' + (o.etapa === 'pallet' ? 'on' : '') + '"><code>ENVIARPALLET_CUSTOM</code> = Sim (o botão <b>Enviar para o Pallet</b>, que aparece com a carga Carregado e a cotação realizada) → <b>Pallet</b>.</li>'
         + '<li class="' + (o.etapa === 'faturado' ? 'on' : '') + '">Nota fiscal <b>Aprovada</b> → <b>Faturado</b>.</li>'
-        + '<li class="' + (o.etapa === 'aguardando' ? 'on' : '') + '">Status da carga = <b>Carregado</b> e cotação realizada = <b>Sim</b> (<code>QuotationPerformed_InoveProjects</code>) → <b>Aguardando Faturamento</b>.</li>'
+        + '<li class="' + (o.etapa === 'aguardando' ? 'on' : '') + '">Status da carga = <b>Carregado</b> e cotação realizada = <b>Sim</b> (<code>QuotationPerformed_InoveProjects</code>) → <b>Aguardando Faturamento</b>. Provisório: linha da OV com status <b>Entregue</b> (sem nota) também — essas linhas viram um cartão próprio.</li>'
         + '<li class="' + (o.etapa === 'cotacao' ? 'on' : '') + '">Status da carga = <b>Carregado</b> e cotação realizada = Não → <b>Cotação</b>.</li>'
         + '<li class="' + (o.etapa === 'conferencia' ? 'on' : '') + '">Status da carga = <b>Em processamento</b> → <b>Conferência</b> (também o trabalho já fechado ou em processo, com a carga ainda sem fase).</li>'
         + '<li class="' + (o.etapa === 'credito' ? 'on' : '') + '">Registro <b>ativo</b> na tabela de gerenciamento de crédito (<code>ACTIVE</code>, pelo <code>SALESID</code>) → <b>Gerenciamento de Crédito</b>.</li>'
@@ -1156,6 +1162,10 @@
     function secParte(o) {
       var p = o.parte;
       if (o.semLinhas) return '<section class="kb-dw-card"><h5>Este cartão</h5><p class="kb-pt-p" style="margin:0;">A OV não tem <b>nenhuma linha</b> no Dynamics: fica em <b>Criada</b> até as linhas serem lançadas.</p></section>';
+      if (p && p.inteira && p.id === 'entregue') {
+        return '<section class="kb-dw-card"><h5>Este cartão</h5><p class="kb-pt-p" style="margin:0;">' + (p.n === 1 ? 'A <b>única linha</b> da OV está' : 'As <b>' + esc(plural(p.n, 'linha', 'linhas')) + '</b> da OV estão') + ' com status <b>Entregue</b> (romaneio emitido, sem nota fiscal): '
+          + 'a OV inteira está em <b>Aguardando Faturamento</b> — regra provisória.</p></section>';
+      }
       if (p && p.inteira) {
         return '<section class="kb-dw-card"><h5>Este cartão</h5><p class="kb-pt-p" style="margin:0;">Nenhum dos <b>' + esc(itensTxt(p.n)) + '</b> em aberto tem <b>lote</b>: a OV inteira está em <b>Pendência</b>. '
           + 'Quando os itens receberem lote, ela segue para <b>' + esc(nomeEt(o.etapaOv)) + '</b>.</p></section>';
@@ -1164,7 +1174,8 @@
       // este cartão + os outros cartões da mesma OV (os que estão no quadro agora)
       var irmas = (o.irmas || []).map(function (x) { return { ref: x, o: cartaoExato(x.chave) }; });
       var todos = [o].concat(irmas.map(function (x) { return x.o; }).filter(Boolean));
-      var porLote = todos.some(function (x) { return x.parte && !x.parte.inteira; }), porTrab = todos.some(function (x) { return x.parteTrab; });
+      var porLote = todos.some(function (x) { return x.parte && !x.parte.inteira && (x.parte.id === 'semlote' || x.parte.id === 'comlote'); }), porTrab = todos.some(function (x) { return x.parteTrab; });
+      var porEntrega = todos.some(function (x) { return x.parte && x.parte.id === 'entregue'; });
       var linha = function (on, k, d, etapa, valor, chave) {
         var c = corEtapa(etapa);
         return '<div class="kb-pt-l' + (on ? ' on' : '') + '" style="--c-bg:' + c[0] + ';--c-bd:' + c[1] + ';--c-ink:' + c[2] + '">'
@@ -1175,6 +1186,7 @@
       var h = '<section class="kb-dw-card"><h5>Este cartão é uma parte da OV <small>' + esc(fQtd(1 + irmas.length)) + ' cartões</small></h5>';
       var porque = [];
       if (porLote) porque.push('pelo <b>lote</b> dos itens — os itens em aberto <b>sem lote</b> ficam em Pendência até receberem lote');
+      if (porEntrega) porque.push('pelo <b>status das linhas</b> — as linhas <b>Entregue</b> (romaneio, sem nota) ficam em Aguardando Faturamento');
       if (porTrab) porque.push('pelos <b>trabalhos</b> — a Separação fica só com o trabalho <b>aberto</b>; o outro segue a carga dele e a nota');
       h += '<p class="kb-pt-p">A OV <b>' + esc(o.numero) + '</b> está em mais de um lugar do quadro, dividida ' + porque.join('; e ') + '.</p>';
       h += linha(true, 'Este cartão', descParte(o), o.etapa, o.valor, null);
@@ -1257,8 +1269,11 @@
       else if (pos > 4) p.push({ cls: 'feito', tt: 'Cotação', ds: '' });
       else p.push({ cls: 'depois', tt: 'Cotação', ds: 'Quando a carga ficar <b>Carregado</b>, vem para esta etapa até a cotação ser realizada.' });
       // aguardando faturamento: carga "Carregado" e cotação realizada = Sim (09/11/26)
+      var ptE = o.parte && o.parte.id === 'entregue' ? o.parte : null;
       if (pos === 5) p.push({ cls: 'agora', tt: 'Agora: Aguardando Faturamento',
-        ds: 'Carga ' + cgT + ' carregada e com a <b>cotação realizada</b>; falta a nota fiscal ser aprovada' + (o.podePallet ? ' — já pode ser enviada para o Pallet.' : '.') });
+        ds: ptE || chaveEnum(rg.salesStatus) === 'delivered'
+          ? (ptE ? '<b>' + esc(plural(ptE.n, 'linha', 'linhas')) + '</b> com status <b>Entregue</b>' : 'A OV está <b>Entregue</b>') + ' (romaneio emitido) e ainda sem nota fiscal aprovada — regra provisória.'
+          : 'Carga ' + cgT + ' carregada e com a <b>cotação realizada</b>; falta a nota fiscal ser aprovada' + (o.podePallet ? ' — já pode ser enviada para o Pallet.' : '.') });
       else if (pos > 5) p.push({ cls: 'feito', tt: 'Aguardando Faturamento', ds: '' });
       else p.push({ cls: 'depois', tt: 'Aguardando Faturamento', ds: 'Com a carga <b>Carregado</b> e a <b>cotação realizada = Sim</b>, vem para esta etapa até a nota fiscal ser aprovada.' });
       // faturado (com a nota fiscal) e, se for o caso, a nota rejeitada
@@ -1303,6 +1318,7 @@
       var ti = trabInfo(o);
       var decide = et === 'rejeitada' ? 'nota' : et === 'faturado' ? (o.nota && o.nota.aprovada ? 'nota' : 'sit') : et === 'cancelada' ? 'sit'
         : et === 'pendencia' ? 'lote'
+        : et === 'aguardando' && ((o.parte && o.parte.id === 'entregue') || chaveEnum(rg.salesStatus) === 'delivered') ? 'sit'
         : et === 'conferencia' ? (o.cargaFase === 'processando' ? 'carga' : 'trab')
         : (et === 'expedicao' || et === 'pallet' || et === 'aguardando' || et === 'cotacao') ? 'carga'
         : et === 'credito' ? 'cred' : et === 'liberado' ? (ti.fase ? 'trab' : 'lib') : '';
@@ -1328,7 +1344,9 @@
         conferencia: o.cargaFase === 'processando' ? 'A carga está <b>em processamento</b> (Status da carga = Em processamento): fica em <b>Conferência</b> até ficar Carregado.'
           : 'O trabalho de separação já saiu de <b>Abrir</b> (' + esc(ti.fase === 'fechado' ? 'fechado' : 'em processo') + ') e a carga ainda não está Em processamento: fica em <b>Conferência</b>.',
         cotacao: 'A carga está <b>Carregado</b> e a cotação <b>ainda não foi realizada</b>: fica em <b>Cotação</b>.',
-        aguardando: 'A carga está <b>Carregado</b> e a <b>cotação realizada = Sim</b>: fica em <b>Aguardando Faturamento</b> até a nota fiscal ser aprovada.',
+        aguardando: o.parte && o.parte.id === 'entregue' ? (o.parte.inteira ? 'Todas as linhas da OV' : 'As linhas deste cartão') + ' estão com status <b>Entregue</b> (romaneio emitido, sem nota): ficam em <b>Aguardando Faturamento</b> até a nota ser aprovada — regra provisória.'
+          : chaveEnum(rg.salesStatus) === 'delivered' ? 'A OV está <b>Entregue</b> (romaneio emitido, sem nota): fica em <b>Aguardando Faturamento</b> — regra provisória.'
+          : 'A carga está <b>Carregado</b> e a <b>cotação realizada = Sim</b>: fica em <b>Aguardando Faturamento</b> até a nota fiscal ser aprovada.',
         faturado: o.nota && o.nota.aprovada ? 'A nota fiscal <b>' + esc(o.nota.numero) + '</b> está <b>Aprovada</b>: fica em <b>Faturado</b>.'
           : 'A situação não é mais “Ordem em aberto” e não há status de nota para conferir: fica em <b>Faturado</b>.' + (o.nota ? ' Nota fiscal <b>' + esc(o.nota.numero) + '</b>.' : ''),
         pallet: 'A carga foi enviada para o Pallet (<code>' + esc(ccol.pallet || 'ENVIARPALLET_CUSTOM') + ' = Sim</code>): fica em <b>Pallet</b> até ser remetida.',

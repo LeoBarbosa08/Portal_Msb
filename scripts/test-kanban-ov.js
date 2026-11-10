@@ -166,7 +166,7 @@ const bio = (n, st, lib) => ({ dataAreaId: 'msb', SalesOrderNumber: n, StatusPed
   t('Separação (liberada)', et.OV017520 === 'liberado' && et.OV017514 === 'liberado', et);
   t('a coluna se chama Separação', r.etapas.find(e => e.id === 'liberado').nome === 'Separação', r.etapas);
   t('faturada + liberada = Faturado (OV017517)', et.OV017517 === 'faturado', et);
-  t('entregue = Faturado', et.OV017516 === 'faturado', et);
+  t('entregue (romaneio, sem nota) = Aguardando Faturamento (11/11/26, provisório)', et.OV017516 === 'aguardando', et);
   t('cancelada fora do quadro', et.OV017515 === 'cancelada' && r.canceladas === 1, et);
   const ids = r.etapas.map(e => e.id), col = (id) => r.etapas.find(e => e.id === id);
   t('11 colunas na ordem do fluxo', ids.join(',') === 'pendencia,criada,credito,liberado,conferencia,cotacao,aguardando,faturado,rejeitada,pallet,expedicao', ids);
@@ -178,7 +178,7 @@ const bio = (n, st, lib) => ({ dataAreaId: 'msb', SalesOrderNumber: n, StatusPed
   t('nenhuma coluna à espera de campos', !r.etapas.some(e => e.pendente), r.etapas.filter(e => e.pendente));
   t('linhas sem a coluna do lote: aviso e nada dividido', r.avisos.some(a => /não trazem o lote/.test(a)) && !r.ovs.some(o => o.parte), r.avisos);
   t('nomes das 11 colunas', r.etapas.map(e => e.nome).join('|') === 'Pendência|Criada|Gerenciamento de Crédito|Separação|Conferência|Cotação|Aguardando Faturamento|Faturado|Rejeitada|Pallet|Expedição', r.etapas.map(e => e.nome));
-  t('contagem e valor por coluna', r.etapas.find(e => e.id === 'faturado').qtd === 2 && r.etapas.find(e => e.id === 'faturado').valor === 1000 && r.etapas.find(e => e.id === 'credito').valor === 50, r.etapas);
+  t('contagem e valor por coluna', r.etapas.find(e => e.id === 'faturado').qtd === 1 && r.etapas.find(e => e.id === 'faturado').valor === 1000 && r.etapas.find(e => e.id === 'aguardando').qtd === 1 && r.etapas.find(e => e.id === 'credito').valor === 50, r.etapas);
   t('regra vem com os campos e a origem', r.ovs.find(o => o.numero === 'OV017517').regra.salesStatusCol === 'BIOSalesOrderHeaderV1.SalesStatus', r.ovs.find(o => o.numero === 'OV017517').regra);
   t('sem aviso de campo faltando', !r.avisos.some(a => /Não achei/.test(a)), r.avisos);
 
@@ -580,16 +580,18 @@ const bio = (n, st, lib) => ({ dataAreaId: 'msb', SalesOrderNumber: n, StatusPed
       v2('OV018104', '2026-11-01T13:00:00Z', 'Invoiced'),    // faturada (nota no período) -> não divide
       v2('OV018105', '2026-11-03T16:00:00Z', 'Backorder'),   // a sem lote está cancelada -> não divide
       v2('OV018106', '2026-11-03T17:00:00Z', 'Backorder'),   // a sem lote já foi entregue -> não divide
-      v2('OV018107', '2026-11-03T18:00:00Z', 'Backorder')    // liberada, mas SEM linha nenhuma -> Criada
+      v2('OV018107', '2026-11-03T18:00:00Z', 'Backorder'),   // liberada, mas SEM linha nenhuma -> Criada
+      v2('OV018108', '2026-10-20T18:00:00Z', 'Delivered')    // entregue (romaneio, sem nota) -> Aguardando Faturamento
     ] },
-    BIOSalesOrderHeaderV1: { linhas: ['OV018101', 'OV018102', 'OV018103', 'OV018105', 'OV018106', 'OV018107'].map(n => b4(n, 'Backorder', 'Released', 'No')).concat([b4('OV018104', 'Invoiced', 'Released', 'No')]) },
+    BIOSalesOrderHeaderV1: { linhas: ['OV018101', 'OV018102', 'OV018103', 'OV018105', 'OV018106', 'OV018107'].map(n => b4(n, 'Backorder', 'Released', 'No')).concat([b4('OV018104', 'Invoiced', 'Released', 'No'), b4('OV018108', 'Delivered', 'Released', 'No')]) },
     SalesOrderLines: { linhas: [
       lnL('OV018101', 1, 'IT-A', 100, 'LT-A1'), lnL('OV018101', 2, 'IT-B', 40, ''), lnL('OV018101', 3, 'IT-C', 60, 'LT-C3'),
       lnL('OV018102', 1, 'IT-A', 70, ''), lnL('OV018102', 2, 'IT-B', 30, ''),
       lnL('OV018103', 1, 'IT-A', 500, 'LT-A9'),
       lnL('OV018104', 1, 'IT-A', 900, '', 'Invoiced'),
       lnL('OV018105', 1, 'IT-A', 10, 'LT-1'), lnL('OV018105', 2, 'IT-B', 20, '', 'Canceled'),
-      lnL('OV018106', 1, 'IT-A', 10, 'LT-1'), lnL('OV018106', 2, 'IT-B', 20, '', 'Delivered')
+      lnL('OV018106', 1, 'IT-A', 10, 'LT-1'), lnL('OV018106', 2, 'IT-B', 20, '', 'Delivered'),
+      lnL('OV018108', 1, 'IT-A', 100, 'LT-8', 'Delivered'), lnL('OV018108', 2, 'IT-C', 200, 'LT-9', 'Delivered')
     ] },
     SalesInvoiceHeadersV2: { linhas: [nf('OV018104', '000030104', '2026-11-05')] },
     FiscalDocuments: { linhas: [fd('000030104', 'Approved', '2026-11-05')] }
@@ -605,9 +607,16 @@ const bio = (n, st, lib) => ({ dataAreaId: 'msb', SalesOrderNumber: n, StatusPed
   t('nenhuma linha com lote: a OV INTEIRA em Pendência (1 cartão, chave = número)', p3 && p3.etapa === 'pendencia' && p3.parte && p3.parte.inteira === true && p3.valor === 100 && r.ovs.filter(o => o.numero === 'OV018102').length === 1, p3 && { e: p3.etapa, parte: p3.parte });
   t('todas com lote: não divide', pc('OV018103') && pc('OV018103').etapa === 'liberado' && !pc('OV018103').parte && pc('OV018103').lotes.semLote === 0, pc('OV018103'));
   t('faturada: não divide (a nota já saiu)', pc('OV018104') && pc('OV018104').etapa === 'faturado' && !pc('OV018104').parte, pc('OV018104') && pc('OV018104').etapa);
-  t('linha sem lote cancelada ou já entregue: não divide', pc('OV018105') && !pc('OV018105').parte && pc('OV018106') && !pc('OV018106').parte && pc('OV018105').etapa === 'liberado', [pc('OV018105'), pc('OV018106')].map(o => o && o.etapa));
+  t('linha sem lote cancelada: não divide', pc('OV018105') && !pc('OV018105').parte && pc('OV018105').etapa === 'liberado', pc('OV018105') && pc('OV018105').etapa);
+  // 11/11/26 (dono, provisório): linha ENTREGUE -> Aguardando Faturamento
+  const e6 = pc('OV018106~entregue'), r6 = pc('OV018106~resto');
+  t('linha Entregue (mesmo sem lote) vira um cartão em Aguardando Faturamento; o resto anda', e6 && e6.etapa === 'aguardando' && e6.valor === 20 && e6.parte.id === 'entregue' && e6.podePallet === false
+    && r6 && r6.etapa === 'liberado' && r6.valor === 10 && e6.irmas && e6.irmas[0].chave === 'OV018106~resto', [e6 && e6.etapa, r6 && r6.etapa]);
+  const p8 = pc('OV018108');
+  t('OV Entregue (todas as linhas): entra no quadro e vai inteira para Aguardando Faturamento', p8 && p8.etapa === 'aguardando' && p8.parte && p8.parte.inteira && p8.parte.id === 'entregue' && p8.valor === 300, p8 && { e: p8.etapa, parte: p8.parte });
   const cPend = r.etapas.find(e => e.id === 'pendencia'), cSep = r.etapas.find(e => e.id === 'liberado');
-  t('colunas somam as PARTES (Pendência = 40 + 100; Separação = 160 + 500 + 30 + 30, a OV não dividida com o valor de sempre)', cPend.qtd === 2 && cPend.valor === 140 && cSep.qtd === 4 && cSep.valor === 720, { pend: cPend, sep: cSep });
+  const cAg = r.etapas.find(e => e.id === 'aguardando');
+  t('colunas somam as PARTES (Pendência = 40 + 100; Separação = 160 + 500 + 30 + 10; Aguardando = 20 + 300)', cPend.qtd === 2 && cPend.valor === 140 && cSep.qtd === 4 && cSep.valor === 700 && cAg.qtd === 2 && cAg.valor === 320, { pend: cPend, sep: cSep, ag: cAg });
   const lsel = chamadas.find(c => c.ent === 'SalesOrderLines' && c.q.select);
   t('as linhas pedem o lote (ItemBatchNumber), o status e o número da linha', lsel && /ItemBatchNumber/.test(lsel.q.select) && /SalesOrderLineStatus/.test(lsel.q.select) && /LineNumber/.test(lsel.q.select), lsel && lsel.q.select);
   t('sem aviso do lote', !r.avisos.some(a => /lote/.test(a)), r.avisos);
