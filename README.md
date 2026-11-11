@@ -1623,7 +1623,7 @@ o CNPJ e trazer as informações". Em `pedido-inteligente.js`
   ficava no cartão "Cliente encontrado" e entrava no campo vazio.)
 - não segura o Continuar: a linha embaixo aparece quando o Dynamics responder.
 - `pedido-inteligente.js?v=39` (v=41 na versão "só informação"); `sw.js` —
-  cache `bm-comest-v70` (v72).
+  cache `bm-comest-v70` (v73 na versão "só informação"; a v72 foi a do selo do Kanban).
 
 ### PI · Pedido: o PDF vai para o site Pedidos MSB (11/11/2026)
 
