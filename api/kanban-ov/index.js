@@ -11,8 +11,9 @@
 //                                         faturadas com a carga Carregado (10/11/26:
 //                                         o Faturado sem data)
 //   GET /api/kanban-ov?de=2026-11-01&ate=2026-11-09
-//                                      -> o quadro com o período de Rejeitada,
-//                                         Pallet e Expedição (máx. 366 dias)
+//                                      -> o quadro com o período de Rejeitada
+//                                         e Expedição (máx. 366 dias; 11/11/26: o
+//                                         Pallet saiu — mostra todas, como o Faturado)
 //   GET /api/kanban-ov?data=2026-11-05 -> o mesmo que de=ate=essa data
 //   GET /api/kanban-ov?modo=dia&data=… -> o modo antigo: as OVs CRIADAS no dia
 //   GET /api/kanban-ov?atualizar=1     -> ignora o cache de 15 s
@@ -23,7 +24,8 @@
 //        avisos, diagnostico }
 //   POST /api/kanban-ov { acao: 'enviar-pallet', carga: 'LD-…', ov: 'OV…' }
 //                                      -> grava ENVIARPALLET_CUSTOM = Sim na carga
-//                                         (exige o login VALIDADO; fica no log)
+//                                         (exige o login VALIDADO; fica no log) e
+//                                         relê para conferir: { confirmado, leitura, aviso }
 //   GET /api/kanban-ov?ov=OV017525     -> as linhas da OV (a ficha do painel)
 //   -> { ok, configured, numero, entidade, linhas:[{ linha, item, produto,
 //        qtd, un, preco, desconto, descPct, valor, status, entrega,
@@ -59,7 +61,7 @@ module.exports = async function (context, req) {
       const email = String((base.user && base.user.email) || '').toLowerCase();
       try {
         const r = await K.enviarParaPallet(b.carga);
-        context.log('[kanban-ov] enviar-pallet', JSON.stringify({ por: email, carga: r.carga, ov: String(b.ov || '').slice(0, 40), ja: !!r.ja, coluna: r.coluna }));
+        context.log('[kanban-ov] enviar-pallet', JSON.stringify({ por: email, carga: r.carga, ov: String(b.ov || '').slice(0, 40), ja: !!r.ja, entidade: r.entidade, coluna: r.coluna, confirmado: r.confirmado, leitura: r.leitura }));
         json(200, r);
       } catch (e) {
         context.log('[kanban-ov] enviar-pallet recusado', JSON.stringify({ por: email, carga: String(b.carga || '').slice(0, 40), erro: String(e.message || e).slice(0, 300) }));

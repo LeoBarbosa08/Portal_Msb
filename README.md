@@ -1551,6 +1551,35 @@ fases". A regra do lote (`partesPorLinhas`) está **LIGADA por padrão** de novo
 - Testes (1, 7c): Pendência com regra; `=0` desliga; sem env, ligada.
   `sw.js` — cache `bm-comest-v74`.
 
+### Kanban · "mandei para o Pallet, porém não atualizou" (11/11/2026)
+
+Três causas no caminho do botão "Enviar para o Pallet":
+
+- **O Pallet era coluna DATADA** (só a OV com nota — ou, sem nota, a criação —
+  no período, padrão hoje). Depois do botão, a OV faturada antes do período, ou
+  a em Cotação/Aguardando criada antes, **sumia do quadro** (e a ficha fechava);
+  e a carga já no Pallet nem era lida (`ovsDeCargasCarregadas` deixava de fora
+  as com `ENVIARPALLET_CUSTOM = Sim`). Agora o Pallet sai das datadas, como o
+  Faturado em 10/11: as cargas **Carregado** entram com ou sem o Pallet, e a
+  coluna mostra toda OV que está nela agora, de qualquer data; sai quando a
+  carga é Remetida (Expedição). O período fica só para Rejeitada e Expedição.
+- **OV com mais de uma carga pronta**: o botão mandava só a 1ª e travava em
+  "Enviada… aguardando o Dynamics" — a OV só vai para o Pallet com todas as
+  cargas lá (vale a menos adiantada). Agora envia todas, uma de cada vez
+  ("Enviar as N cargas"); a que faltar, o botão continua oferecendo.
+- **Conferência depois de gravar** (`conferirPallet`): o servidor relê a carga na
+  entidade de onde o QUADRO a lê (a 1ª que tem a carga: `WHSLoadTableBiEntity`,
+  depois `WHSOutboundLoadHeaderEntity`) e devolve `confirmado` (true / false /
+  null), `leitura` ({ entidade, coluna, valor }) e `aviso`. Se gravou numa e a
+  leitura não mostra Sim, a ficha diz onde gravou e o que a leitura mostra, em
+  vez de "aguardando" para sempre. O log da gravação leva `entidade`,
+  `confirmado` e `leitura`.
+- Testes (7, 7a, 8e, 9): Pallet fora das datadas; a OV faturada antes do período
+  vai para o Pallet pelo botão (antes sumia); a releitura confirma; gravou na de
+  cabeçalho e a BI não mostra Sim → `confirmado: false` com o aviso. Conferido
+  no navegador com a API simulada (2 cargas, uma não confirmada).
+  `sw.js` — cache `bm-comest-v75`.
+
 ### Kanban · selo "PI Pedidos" pela Área Demandante (11/11/2026)
 
 O dono: "quando o pedido tiver AREADEMANDANTE (areademandante_Custom), sinalizar

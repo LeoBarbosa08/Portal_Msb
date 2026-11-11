@@ -801,7 +801,12 @@ async function ovsDoDia(E, dia, token, ate, diag) {
 // 10/11/2026 (dono: "o HOJE não precisa ter no card Faturado, pode deixar
 // histórico que nem os demais"): Faturado SAIU das datadas — mostra toda OV que
 // está em Faturado agora, de qualquer data (ovsDeCargasCarregadas, abaixo).
-const DATADAS = ['rejeitada', 'pallet', 'expedicao', 'cancelada'];
+// 11/11/2026 (dono: "mandei para o pallet porém ele não atualizou"): o Pallet
+// também SAIU das datadas. Datado, a OV enviada ao Pallet sumia do quadro quando
+// a nota (ou a criação) não era do período — com o período padrão (hoje), quase
+// sempre. Agora mostra toda OV que está no Pallet agora (carga ainda Carregado
+// com ENVIARPALLET_CUSTOM = Sim), de qualquer data; sai quando a carga é Remetida.
+const DATADAS = ['rejeitada', 'expedicao', 'cancelada'];
 const JANELA_DIAS = Number(process.env.KANBAN_JANELA_DIAS || 365);  // reserva, se o filtro pelo status não passar
 const MAX_COMPL_QUADRO = Number(process.env.KANBAN_MAX_COMPL || 3); // complementos no quadro (V3, V2, SalesOrderHeaders)
 async function ovsAbertas(E, token, ate, diag, avisos) {
@@ -859,13 +864,14 @@ async function ovsComNotaNoPeriodo(de, ateDia, token, ate, diag) {
   return { numeros: [], erro: String((ultimo && ultimo.message) || ultimo || 'sem tempo').slice(0, 160) };
 }
 
-// ── FATURADO SEM DATA (10/11/2026) ───────────────────────────────
+// ── FATURADO E PALLET SEM DATA (10/11 e 11/11/2026) ────────────────
 // A OV totalmente faturada sai do "em aberto" (SalesStatus = Faturado), e ler o
 // diário de faturas da vida toda não cabe no tempo. Mas a faturada fica com a
-// carga CARREGADO até ir para o Pallet (regras do dono) — então: as cargas
-// Carregado ainda não enviadas ao Pallet (em todas as entidades de cargas) ->
-// os trabalhos dessas cargas -> as OVs. Junto com as em aberto e as com nota no
-// período, a coluna Faturado fica com toda OV que está nela agora.
+// carga CARREGADO até ser Remetida (regras do dono) — então: as cargas Carregado
+// (em todas as entidades de cargas) -> os trabalhos dessas cargas -> as OVs.
+// 11/11/26: COM as já enviadas ao Pallet (antes ficavam de fora e a OV sumia do
+// quadro depois do botão). Junto com as em aberto e as com nota no período, as
+// colunas Faturado e Pallet ficam com toda OV que está nelas agora.
 const MAX_CARGAS_FAT = Number(process.env.KANBAN_MAX_CARGAS_FAT || 400);
 async function ovsDeCargasCarregadas(token, ate, diag) {
   const [xc, xt] = await Promise.all([entidadeExtra(CFG_CARGA, token, ate, diag), entidadeExtra(CFG_TRABALHO, token, ate, diag)]);
@@ -873,7 +879,7 @@ async function ovsDeCargasCarregadas(token, ate, diag) {
   const ids = {};
   for (const E of (xc.todas && xc.todas.length ? xc.todas : [xc.E]).filter(L => L.status)) {
     const emp = E.temEmpresa ? "dataAreaId eq '" + D.odataStr(EMPRESA) + "' and " : '';
-    const sel = [E.numero, E.status].concat(E.pallet ? [E.pallet] : []).join(',');
+    const sel = [E.numero, E.status].join(',');
     const formas = [{ f: E.status + " eq Microsoft.Dynamics.DataEntities.WHSLoadStatus'Loaded'", rot: 'enum' }, { f: E.status + " eq 'Loaded'", rot: 'texto' }];
     for (const fo of formas) {
       if (restante(ate) < FOLGA_MS + 2000) break;
@@ -882,7 +888,7 @@ async function ovsDeCargasCarregadas(token, ate, diag) {
         let n = 0;
         rows.forEach(r => {
           const id = txt(r[E.numero]);
-          if (!id || !/^(loaded|carregad)/.test(normV(r[E.status]).replace(/ /g, '')) || (E.pallet && marcadoV(r[E.pallet]))) return;
+          if (!id || !/^(loaded|carregad)/.test(normV(r[E.status]).replace(/ /g, ''))) return;
           ids[id.toUpperCase()] = id; n++;
         });
         diag.push({ etapa: 'fat:cargas', entidade: E.entidade, forma: fo.rot, linhas: rows.length, carregadas: n });
@@ -1045,8 +1051,8 @@ async function montar(opts, modo) {
       ovsComNotaNoPeriodo(modo.de, modo.ateDia, token, ate, diag).catch(e => ({ numeros: [], erro: String(e.message || e).slice(0, 160) })),
       ovsDeCargasCarregadas(token, ate, diag).catch(e => ({ numeros: [], erro: String(e.message || e).slice(0, 160) }))
     ]);
-    if (per.erro) avisos.push('Não deu para ler as notas do período no diário de faturas (' + per.erro + '): Rejeitada, Pallet e Expedição podem ficar incompletos.');
-    if (fat.erro) avisos.push('Não deu para ler as cargas Carregado (' + fat.erro + '): no Faturado, as OVs faturadas antes do período podem faltar.');
+    if (per.erro) avisos.push('Não deu para ler as notas do período no diário de faturas (' + per.erro + '): Rejeitada e Expedição podem ficar incompletas.');
+    if (fat.erro) avisos.push('Não deu para ler as cargas Carregado (' + fat.erro + '): no Faturado e no Pallet, as OVs faturadas antes do período podem faltar.');
     if (fat.corte) avisos.push(fat.corte + ' cargas Carregado no Dynamics: o Faturado olhou só ' + MAX_CARGAS_FAT + ' delas (KANBAN_MAX_CARGAS_FAT).');
     diag.push({ etapa: 'fat:ovs', cargas: fat.cargas || 0, ovs: (fat.numeros || []).length });
     const ja = {}; abertas.forEach(r => { ja[chaveOv(r[principal.numero])] = 1; });
@@ -1307,7 +1313,7 @@ async function montar(opts, modo) {
   if (!colLote && pendenciaPorLote() && Object.keys(porLinha).length) {
     avisos.push('As linhas da OV (' + (_entLinhas || 'SalesOrderLines') + ') não trazem o lote (' + COL_LOTE.join(' / ') + '): a Pendência por item sem lote fica desligada. Fixe o nome em KANBAN_COL_LOTE.');
   }
-  // quadro: as colunas DATADAS (Rejeitada, Pallet, Expedição) só com a
+  // quadro: as colunas DATADAS (Rejeitada, Expedição) só com a
   // OV do período — pela data da nota mais recente; sem nota, a de criação
   let foraPeriodo = 0;
   const ovs = !modo.quadro ? partes : partes.filter(o => {
@@ -1560,7 +1566,33 @@ async function enviarParaPallet(loadId) {
     throw ult;
   }
   _cache.clear();   // a próxima leitura do quadro já vem com a carga no Pallet
-  return { ok: true, carga: id, entidade: usada.entidade, coluna: usada.pallet, valor };
+  // 11/11/26 (dono: "mandei para o pallet porém ele não atualizou"): relê a carga
+  // na entidade de onde o QUADRO a lê (E) e confere se ela já mostra Sim — se não,
+  // a tela diz onde gravou e o que a leitura mostra, em vez de esperar à toa
+  const conf = await conferirPallet(E, usada, id, token, ate);
+  return Object.assign({ ok: true, carga: id, entidade: usada.entidade, coluna: usada.pallet, valor }, conf);
+}
+async function conferirPallet(E, usada, id, token, ate) {
+  const leitura = { entidade: E.entidade, coluna: E.pallet || null, valor: null };
+  const mesma = usada.entidade === E.entidade;
+  const gravou = 'O Dynamics aceitou a gravação na ' + usada.entidade;
+  if (!E.pallet) {
+    return { confirmado: false, leitura, aviso: gravou + ', mas o quadro lê a carga ' + id + ' na ' + E.entidade + ', que não tem o campo ' + COL_CARGA.pallet[0] +
+      ': o cartão não vai para o Pallet. Fixe a entidade das cargas em KANBAN_ENT_CARGA.' };
+  }
+  const releitura = mesma ? 'a releitura' : 'a releitura na ' + E.entidade + ' (de onde o quadro lê a carga)';
+  try {
+    const rows = await D.odataGetComPrazo(E.entidade, { crossCompany: true, top: 2,
+      filter: (E.temEmpresa ? "dataAreaId eq '" + D.odataStr(EMPRESA) + "' and " : '') + E.numero + " eq '" + D.odataStr(id) + "'" }, token, prazo(ate, 8000));
+    if (!rows.length) return { confirmado: null, leitura, aviso: gravou + ', mas ' + releitura + ' não achou a carga ' + id + ' para conferir.' };
+    const v = rows[0][E.pallet];
+    leitura.valor = v == null ? null : txt(v);
+    if (marcadoV(v)) return { confirmado: true, leitura };
+    return { confirmado: false, leitura, aviso: gravou + ', mas ' + releitura + ' ainda mostra ' + E.pallet + ' = "' + simNaoV(v) +
+      '": o cartão não vai para o Pallet. Confira a carga ' + id + ' no Dynamics.' };
+  } catch (e) {
+    return { confirmado: null, leitura, aviso: gravou + ', mas ' + releitura + ' falhou (' + String(e.message || e).slice(0, 120) + ').' };
+  }
 }
 
 function _limparCache() { _cache.clear(); _cacheLinhas.clear(); _ents = null; _entsTs = 0; _servico = null; _servicoTs = 0; _entLinhas = null; Object.keys(_extras).forEach(k => { delete _extras[k]; }); ST_NOTA._limparCache(); _colsLinhas = null; }

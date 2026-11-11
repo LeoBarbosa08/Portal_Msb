@@ -61,7 +61,7 @@
           <!-- ═══════════ KANBAN · ORDENS DO DIA ═══════════
                As ordens de venda da MSB (ALMOX-PA), AO VIVO do Dynamics (/api/kanban-ov).
                09/11/26: em aberto de QUALQUER data + Rejeitada/Pallet/Expedição no
-               período escolhido (10/11/26: o Faturado sem data — todo o histórico). Colunas pelas regras do dono (api/shared/kanban-ov.js,
+               período escolhido (10/11/26: o Faturado sem data — todo o histórico; 11/11/26: o Pallet também). Colunas pelas regras do dono (api/shared/kanban-ov.js,
                etapaDe): Criada → Crédito (BioCredManTableV1) → Separação (trabalho "Abrir")
                → Conferência (carga "Em processamento") → Cotação (carga "Carregado" +
                cotação não realizada) → Faturado (nota "Aprovada") → Rejeitada (nota
@@ -418,10 +418,10 @@
             </div>
             <div class="kb-acoes">
               <!-- 09/11/26: o período vale SÓ para Rejeitada, Pallet e Expedição
-                   (10/11/26: o Faturado saiu — mostra todo o histórico, como as
-                   outras colunas) -->
-              <div class="kb-periodo" role="group" aria-label="Período de Rejeitada, Pallet e Expedição"
-                   title="O período vale só para Rejeitada, Pallet e Expedição (pela data da nota fiscal). As outras colunas, Faturado incluído, mostram todas as OVs que estão nelas agora, de qualquer data.">
+                   (10/11/26: o Faturado saiu; 11/11/26: o Pallet saiu — mostram
+                   todo o histórico, como as outras colunas) -->
+              <div class="kb-periodo" role="group" aria-label="Período de Rejeitada e Expedição"
+                   title="O período vale só para Rejeitada e Expedição (pela data da nota fiscal). As outras colunas, Faturado e Pallet incluídos, mostram todas as OVs que estão nelas agora, de qualquer data.">
                 <span class="kb-per-r">Período de</span>
                 <input type="date" class="kb-in" id="kb-de" aria-label="Período de">
                 <span class="kb-per-r">até</span>
@@ -996,30 +996,60 @@
     }
 
     // ── "Enviar para o Pallet": a única escrita do Kanban (POST /api/kanban-ov) ──
-    function enviarPallet() {
-      var o = acharOv(estado.aberta); if (!o || !o.podePallet) return;
-      var cg = (o.cargas || []).filter(function (c) { return c.podePallet; })[0]; if (!cg) return;
-      if (!window.confirm('Enviar a carga ' + cg.id + ' (' + o.numero + ') para o Pallet?\n\nIsso grava ' + ((o.cargaCols && o.cargaCols.pallet) || 'ENVIARPALLET_CUSTOM') + ' = Sim no Dynamics.')) return;
-      var b = DW.el.querySelector('[data-kb-dw="pallet"]'), m = $('kb-acao-msg');
-      if (b) { b.disabled = true; b.textContent = 'Gravando no Dynamics…'; }
-      fetch('/api/kanban-ov', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ acao: 'enviar-pallet', carga: cg.id, ov: o.numero }) })
+    // 11/11/26 (dono: "mandei para o pallet porém ele não atualizou"): envia TODAS
+    // as cargas prontas do cartão (a OV só vai para o Pallet com todas as cargas
+    // dela lá — antes ia só a 1ª e o botão travava), e o servidor relê a carga
+    // depois de gravar: se o Dynamics não mostrar Sim, a ficha diz por quê.
+    function cargasPallet(o) {
+      var env = estado.enviadas[o.numero], ja = (env && env.cargas) || [];
+      return (o.cargas || []).filter(function (c) { return c.podePallet && ja.indexOf(c.id) < 0; });
+    }
+    function postPallet(cg, o) {
+      return fetch('/api/kanban-ov', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ acao: 'enviar-pallet', carga: cg.id, ov: o.numero }) })
         .then(function (res) {
           return res.json().catch(function () { return null; }).then(function (j) {
             if (!res.ok || !j || j.ok === false) throw new Error((j && (j.error || j.detalhe)) || ('HTTP ' + res.status));
             return j;
           });
-        })
-        .then(function (j) {
-          // fica guardado: a ficha continua dizendo "enviada" depois que o quadro recarrega
-          estado.enviadas[o.numero] = { carga: cg.id, hora: new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }) };
-          if (m) { m.className = 'kb-acao-msg ok'; m.textContent = j.ja ? 'A carga já estava no Pallet.' : 'Enviada para o Pallet. Atualizando o quadro…'; }
-          if (b) b.textContent = 'Enviada';
-          carregar(true);
-        })
-        .catch(function (e) {
-          if (m) { m.className = 'kb-acao-msg erro'; m.textContent = 'Não deu para enviar: ' + e.message; }
-          if (b) { b.disabled = false; b.textContent = 'Enviar para o Pallet'; }
         });
+    }
+    function enviarPallet() {
+      var o = acharOv(estado.aberta); if (!o || !o.podePallet) return;
+      var cs = cargasPallet(o); if (!cs.length) return;
+      var ids = cs.map(function (c) { return c.id; });
+      if (!window.confirm((ids.length > 1 ? 'Enviar as cargas ' + ids.join(', ') : 'Enviar a carga ' + ids[0]) + ' (' + o.numero + ') para o Pallet?\n\nIsso grava '
+        + ((o.cargaCols && o.cargaCols.pallet) || 'ENVIARPALLET_CUSTOM') + ' = Sim no Dynamics.')) return;
+      var b = DW.el.querySelector('[data-kb-dw="pallet"]'), m = $('kb-acao-msg');
+      if (b) { b.disabled = true; b.textContent = 'Gravando no Dynamics…'; }
+      var feitas = [], avisos = [], ja = 0;
+      // uma carga de cada vez
+      cs.reduce(function (p, cg) {
+        return p.then(function () {
+          return postPallet(cg, o).then(function (j) {
+            feitas.push(cg.id); if (j.ja) ja++;
+            if (j.aviso) avisos.push((cs.length > 1 ? cg.id + ': ' : '') + j.aviso);
+          });
+        });
+      }, Promise.resolve()).then(function () { fim(null); }, fim);
+      function fim(e) {
+        if (feitas.length) {
+          var env = estado.enviadas[o.numero] || { cargas: [], avisos: [] };
+          env.cargas = env.cargas.concat(feitas); env.avisos = avisos;
+          env.hora = new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+          estado.enviadas[o.numero] = env;
+        }
+        m = $('kb-acao-msg'); b = DW.el.querySelector('[data-kb-dw="pallet"]');
+        if (e) {
+          if (m) { m.className = 'kb-acao-msg erro'; m.textContent = 'Não deu para enviar' + (feitas.length ? ' todas (' + feitas.join(', ') + ' foi enviada)' : '') + ': ' + e.message; }
+          if (b) { b.disabled = false; b.textContent = 'Enviar para o Pallet'; }
+        } else if (m) {
+          m.className = 'kb-acao-msg ' + (avisos.length ? 'erro' : 'ok');
+          m.textContent = avisos.length ? avisos.join(' · ') : ja === feitas.length ? (feitas.length > 1 ? 'As cargas já estavam no Pallet.' : 'A carga já estava no Pallet.')
+            : 'Enviada para o Pallet e conferida no Dynamics. Atualizando o quadro…';
+          if (b) b.textContent = 'Enviada';
+        }
+        if (feitas.length) carregar(true);
+      }
     }
 
     // ── as linhas da OV: lidas no Dynamics quando a ficha abre ──
@@ -1118,14 +1148,23 @@
 
       // "Enviar para o Pallet" (09/11/26): carga Carregado + cotação realizada = Sim
       var env = estado.enviadas[o.numero];
+      var avEnv = env && env.avisos && env.avisos.length ? env.avisos.join(' · ') : '';
       if (o.podePallet) {
-        var cgP = (o.cargas || []).filter(function (c) { return c.podePallet; })[0];
-        h += '<section class="kb-dw-card kb-acao"><div class="kb-acao-t"><b>Pronta para o Pallet</b>Carga ' + esc(cgP ? cgP.id : '') + ' carregada e com a cotação realizada. '
-          + 'Enviar grava <code>' + esc((o.cargaCols && o.cargaCols.pallet) || 'ENVIARPALLET_CUSTOM') + ' = Sim</code> no Dynamics.</div>'
-          + (env ? '<button type="button" class="kb-acao-b" disabled>Enviada</button><div class="kb-acao-msg ok" id="kb-acao-msg">Enviada para o Pallet às ' + esc(env.hora) + '. Aguardando o Dynamics atualizar o quadro…</div>'
-                 : '<button type="button" class="kb-acao-b" data-kb-dw="pallet">Enviar para o Pallet</button><div class="kb-acao-msg" id="kb-acao-msg"></div>') + '</section>';
+        // 11/11/26: todas as cargas prontas (a OV só vai para o Pallet com todas lá)
+        var prontas = (o.cargas || []).filter(function (c) { return c.podePallet; }), faltamP = cargasPallet(o);
+        var idsP = prontas.map(function (c) { return c.id; }).join(', ');
+        h += '<section class="kb-dw-card kb-acao"><div class="kb-acao-t"><b>Pronta para o Pallet</b>' + (prontas.length > 1 ? 'Cargas ' + esc(idsP) + ' carregadas' : 'Carga ' + esc(idsP) + ' carregada')
+          + ' e com a cotação realizada. Enviar grava <code>' + esc((o.cargaCols && o.cargaCols.pallet) || 'ENVIARPALLET_CUSTOM') + ' = Sim</code> no Dynamics'
+          + (prontas.length > 1 ? ' em todas — a OV só vai para o Pallet com todas as cargas dela lá' : '') + '.</div>'
+          + (faltamP.length
+            ? '<button type="button" class="kb-acao-b" data-kb-dw="pallet">' + (faltamP.length > 1 ? 'Enviar as ' + faltamP.length + ' cargas' : 'Enviar para o Pallet') + '</button>'
+              + '<div class="kb-acao-msg' + (avEnv ? ' erro' : '') + '" id="kb-acao-msg">' + esc(avEnv) + '</div>'
+            : '<button type="button" class="kb-acao-b" disabled>Enviada</button><div class="kb-acao-msg erro" id="kb-acao-msg">Enviada às ' + esc(env.hora) + '. '
+              + esc(avEnv || 'O Dynamics ainda mostra a carga sem o Pallet. O quadro relê a cada 60 s; se não mudar, confira a carga no Dynamics.') + '</div>')
+          + '</section>';
       } else if (env) {
-        h += '<section class="kb-dw-card kb-acao"><div class="kb-acao-t"><b>Enviada para o Pallet</b>Carga ' + esc(env.carga) + ' enviada às ' + esc(env.hora) + '.</div></section>';
+        h += '<section class="kb-dw-card kb-acao"><div class="kb-acao-t"><b>Enviada para o Pallet</b>' + (env.cargas.length > 1 ? 'Cargas ' : 'Carga ') + esc(env.cargas.join(', ')) + ' enviada' + (env.cargas.length > 1 ? 's' : '') + ' às ' + esc(env.hora) + '.</div>'
+          + (avEnv ? '<div class="kb-acao-msg erro">' + esc(avEnv) + '</div>' : '') + '</section>';
       } else if ((o.cargas || []).length && ['conferencia', 'cotacao', 'aguardando', 'faturado', 'liberado'].indexOf(o.etapa) >= 0
         && !(o.parte && !o.parte.inteira && (o.parte.id === 'entregue' || o.parte.id === 'semlote'))) {
         // 09/11/26 ("onde está esse botão?"): com carga, o botão aparece DESATIVADO
@@ -1165,7 +1204,7 @@
         + '<li class="' + (o.etapa === 'liberado' ? 'on' : '') + '">Status do trabalho = <b>Abrir</b> → <b>Separação</b> (só isso).</li>'
         + '<li class="' + (o.etapa === 'criada' ? 'on' : '') + '">Nenhuma das anteriores (inclusive a OV sem nenhuma linha) → <b>Criada</b>.</li></ol>'
         + '<p class="kb-dw-p" style="margin-top:8px;">Onde as regras não falam, vale a de antes: OV que saiu do aberto sem status de nota → Faturado; sem a entidade de trabalho no OData, a OV liberada (<code>ReleaseStatus</code>) → Separação.</p>'
-        + '<p class="kb-dw-p" style="margin-top:8px;">Entram as OVs da <b>MSB</b>' + (depTexto() ? ' do depósito <b>' + esc(depTexto()) + '</b>' : '') + '. <b>Criada, Crédito, Separação, Conferência, Cotação e Aguardando Faturamento</b>: todas as OVs <b>em aberto</b>, de qualquer data. <b>Faturado</b>: toda OV que está nele agora, de qualquer data (as em aberto com nota aprovada e as faturadas com a carga ainda Carregado). <b>Rejeitada, Pallet e Expedição</b>: só as do <b>período escolhido</b> lá em cima (pela data da nota fiscal; sem nota, a de criação). O quadro relê o Dynamics a cada 60 s; as linhas desta ficha são lidas quando ela abre.</p></details>';
+        + '<p class="kb-dw-p" style="margin-top:8px;">Entram as OVs da <b>MSB</b>' + (depTexto() ? ' do depósito <b>' + esc(depTexto()) + '</b>' : '') + '. <b>Criada, Crédito, Separação, Conferência, Cotação e Aguardando Faturamento</b>: todas as OVs <b>em aberto</b>, de qualquer data. <b>Faturado</b> e <b>Pallet</b>: toda OV que está neles agora, de qualquer data (as em aberto e as faturadas com a carga ainda Carregado). <b>Rejeitada e Expedição</b>: só as do <b>período escolhido</b> lá em cima (pela data da nota fiscal; sem nota, a de criação). O quadro relê o Dynamics a cada 60 s; as linhas desta ficha são lidas quando ela abre.</p></details>';
       return h;
     }
 
@@ -1613,7 +1652,7 @@
     }
     function lembrar(r) { estado.antes = {}; (r.ovs || []).forEach(function (o) { estado.antes[idOv(o)] = o.etapa; estado.antes['#' + o.numero] = 1; }); }
 
-    // ── período de Rejeitada, Pallet e Expedição (09/11/26; o Faturado saiu em 10/11/26) ──
+    // ── período de Rejeitada e Expedição (09/11/26; o Faturado saiu em 10/11/26 e o Pallet em 11/11/26) ──
     function somaDias(iso, n) { var d = new Date(iso + 'T12:00:00Z'); d.setUTCDate(d.getUTCDate() + n); return d.toISOString().slice(0, 10); }
     function periodo() {
       var de = $('kb-de').value || hojeSP(), ate = $('kb-ate').value || de;
