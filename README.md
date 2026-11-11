@@ -1551,6 +1551,37 @@ fases". A regra do lote (`partesPorLinhas`) está **LIGADA por padrão** de novo
 - Testes (1, 7c): Pendência com regra; `=0` desliga; sem env, ligada.
   `sw.js` — cache `bm-comest-v74`.
 
+### Kanban · Pallet = as OVs que foram para o Pallet HOJE (11/11/2026)
+
+O dono: "a mudança para o Pallet é mostrar somente as que mudaram no DIA para o
+PALLET, não importando a data da OV" — "não no dia escolhido, e sim NA DATA
+ATUAL: se eu tenho uma OV de 4 semanas atrás e ela mudou hoje para o Pallet, ela
+tem que aparecer no Pallet". (Substitui o "Pallet sem data" da entrada abaixo.)
+
+- **A coluna Pallet** mostra só as OVs cuja carga foi para o Pallet **hoje**
+  (Brasília), de OV de qualquer data, e **não segue o período** da tela (que
+  fica para Rejeitada e Expedição). Cabeçalho "mudaram hoje"; a resposta traz
+  `palletDia`, `palletSemData` e `palletOutroDia`.
+- **A data da mudança** (`datarPallet` / `palletEmDe`; a da OV é a da última
+  carga dela que foi): 1º um campo de data do Pallet na carga, se o D365 tiver
+  (`KANBAN_COL_CARGA_PALLET_DATA`, ou o pedaço do nome "pallet…data"); 2º **o
+  registro do botão** — o D365 só grava `ENVIARPALLET_CUSTOM = Sim`, sem data,
+  então o `/api/kanban-ov` (POST) anota cada envio num append blob mensal
+  (`api/shared/kanban-pallet-log.js`, `kanban-pallet-AAAA-MM.jsonl`: carga, OV,
+  quem, quando); 3º a data de **alteração** da carga (`ModifiedDateTime`), se a
+  entidade expuser — aproximada, para a marcada direto no Dynamics.
+- **Configuração**: `KANBAN_BLOB_URL` = SAS de CONTAINER (`sr=c`, Read + Create
+  + Write); sem ela, usa o container do log de acessos (`LOG_PORTAL_BLOB_URL`).
+  Sem as duas (e sem campo de data na carga), o botão grava no Dynamics mas
+  avisa que a data não foi anotada, e o quadro avisa no topo.
+- Na ficha, o passo "Agora: Pallet" diz quando foi e de onde veio a data. OV no
+  Pallet sem data nenhuma fica fora da coluna, com aviso.
+- Testes (7a, 9): com um Azure Blob falso — a OV de setembro enviada hoje
+  aparece no Pallet com o período sem hoje; o registro (1 linha); o botão vale
+  mais que a alteração; sem registro, a alteração de hoje vale e a de 3 dias
+  atrás não; sem `KANBAN_BLOB_URL`, grava e avisa. `sw.js` — cache
+  `bm-comest-v76`.
+
 ### Kanban · "mandei para o Pallet, porém não atualizou" (11/11/2026)
 
 Três causas no caminho do botão "Enviar para o Pallet":

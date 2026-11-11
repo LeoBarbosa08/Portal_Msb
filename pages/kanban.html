@@ -61,7 +61,7 @@
           <!-- ═══════════ KANBAN · ORDENS DO DIA ═══════════
                As ordens de venda da MSB (ALMOX-PA), AO VIVO do Dynamics (/api/kanban-ov).
                09/11/26: em aberto de QUALQUER data + Rejeitada/Pallet/Expedição no
-               período escolhido (10/11/26: o Faturado sem data — todo o histórico; 11/11/26: o Pallet também). Colunas pelas regras do dono (api/shared/kanban-ov.js,
+               período escolhido (10/11/26: o Faturado sem data — todo o histórico; 11/11/26: o Pallet = as que foram para o Pallet hoje). Colunas pelas regras do dono (api/shared/kanban-ov.js,
                etapaDe): Criada → Crédito (BioCredManTableV1) → Separação (trabalho "Abrir")
                → Conferência (carga "Em processamento") → Cotação (carga "Carregado" +
                cotação não realizada) → Faturado (nota "Aprovada") → Rejeitada (nota
@@ -418,10 +418,10 @@
             </div>
             <div class="kb-acoes">
               <!-- 09/11/26: o período vale SÓ para Rejeitada, Pallet e Expedição
-                   (10/11/26: o Faturado saiu; 11/11/26: o Pallet saiu — mostram
-                   todo o histórico, como as outras colunas) -->
+                   (10/11/26: o Faturado saiu — todo o histórico; 11/11/26: o Pallet
+                   saiu — mostra as que foram para o Pallet HOJE) -->
               <div class="kb-periodo" role="group" aria-label="Período de Rejeitada e Expedição"
-                   title="O período vale só para Rejeitada e Expedição (pela data da nota fiscal). As outras colunas, Faturado e Pallet incluídos, mostram todas as OVs que estão nelas agora, de qualquer data.">
+                   title="O período vale só para Rejeitada e Expedição (pela data da nota fiscal). O Pallet mostra as OVs que foram para o Pallet hoje, de qualquer data. As outras colunas, Faturado incluído, mostram todas as OVs que estão nelas agora, de qualquer data.">
                 <span class="kb-per-r">Período de</span>
                 <input type="date" class="kb-in" id="kb-de" aria-label="Período de">
                 <span class="kb-per-r">até</span>
@@ -631,7 +631,9 @@
         var temValor = lista.some(function (o) { return o.valor != null; });
         return '<section class="kb-col' + (lista.length ? '' : ' vazia') + '" style="' + tom(TOM_ETAPA[e.id] || 0) + '"' + (e.pendente && !lista.length ? ' title="' + esc(e.nome) + ': aguardando os campos da fase"' : '') + '><div class="kb-col-h"><div class="kb-col-t"><span class="nome" title="' + esc(e.nome) + '">' + (NOME_CURTO[e.id] ? '<span class="kb-longo">' + esc(e.nome) + '</span><span class="kb-curto">' + esc(NOME_CURTO[e.id]) + '</span>' : esc(e.nome)) + '</span><span class="kb-cnt">' + lista.length + '</span></div>'
           + '<div class="kb-col-v">' + (temValor ? esc(fK(soma)) : '&nbsp;') + '</div>'
-          + ((r.datadas || []).indexOf(e.id) >= 0 ? '<div class="kb-col-p" title="Só as do período escolhido (data da nota fiscal)">' + esc(textoPeriodo(r)) + '</div>' : '') + '</div>'
+          + ((r.datadas || []).indexOf(e.id) >= 0 ? '<div class="kb-col-p" title="Só as do período escolhido (data da nota fiscal)">' + esc(textoPeriodo(r)) + '</div>'
+            // 11/11/26 (dono): o Pallet é sempre HOJE — as OVs que foram para o Pallet hoje, de qualquer data
+            : e.id === 'pallet' && r.palletDia ? '<div class="kb-col-p" title="Só as OVs que foram para o Pallet hoje, de qualquer data (não segue o período)">mudaram hoje</div>' : '') + '</div>'
           + '<div class="kb-cards">' + (lista.length ? lista.map(cardHtml).join('') : e.pendente ? '<div class="kb-vazio pend" title="aguardando os campos da fase"><span class="kb-longo">aguardando os campos da fase</span><span class="kb-curto">a definir</span></div>' : '<div class="kb-vazio">—</div>') + '</div></section>';
       }).join('') + '</div>';
     }
@@ -706,7 +708,7 @@
           var n = g.ovs.length, ab = n > 0 && grupoAberto(g.id);
           var soma = g.ovs.reduce(function (s, o) { return s + (o.valor || 0); }, 0);
           var temValor = g.ovs.some(function (o) { return o.valor != null; });
-          var nota = g.fora ? 'fora do quadro' : (g.pendente && !n) ? 'aguardando os campos da fase' : datadas.indexOf(g.id) >= 0 ? textoPeriodo(r) : '';
+          var nota = g.fora ? 'fora do quadro' : (g.pendente && !n) ? 'aguardando os campos da fase' : datadas.indexOf(g.id) >= 0 ? textoPeriodo(r) : g.id === 'pallet' && r.palletDia ? 'mudaram hoje' : '';
           return '<tbody class="kb-grp' + (ab ? ' on' : '') + (n ? '' : ' vazio') + '" style="' + tom(TOM_ETAPA[g.id] != null ? TOM_ETAPA[g.id] : 2) + '">'
             + '<tr class="kb-grp-h"><td colspan="' + NCOLS_LISTA + '"><button type="button" class="kb-grp-b" data-grp="' + esc(g.id) + '" aria-expanded="' + ab + '"' + (n ? '' : ' disabled') + ' title="' + esc(n ? (ab ? 'Recolher ' : 'Abrir ') + g.nome : g.nome + ': nenhuma OV') + '">'
             + '<span class="kb-grp-in"><span class="kb-grp-seta">' + IC_SETA + '</span><span class="kb-grp-n">' + esc(g.nome) + '</span><span class="kb-cnt">' + n + '</span>'
@@ -1204,7 +1206,7 @@
         + '<li class="' + (o.etapa === 'liberado' ? 'on' : '') + '">Status do trabalho = <b>Abrir</b> → <b>Separação</b> (só isso).</li>'
         + '<li class="' + (o.etapa === 'criada' ? 'on' : '') + '">Nenhuma das anteriores (inclusive a OV sem nenhuma linha) → <b>Criada</b>.</li></ol>'
         + '<p class="kb-dw-p" style="margin-top:8px;">Onde as regras não falam, vale a de antes: OV que saiu do aberto sem status de nota → Faturado; sem a entidade de trabalho no OData, a OV liberada (<code>ReleaseStatus</code>) → Separação.</p>'
-        + '<p class="kb-dw-p" style="margin-top:8px;">Entram as OVs da <b>MSB</b>' + (depTexto() ? ' do depósito <b>' + esc(depTexto()) + '</b>' : '') + '. <b>Criada, Crédito, Separação, Conferência, Cotação e Aguardando Faturamento</b>: todas as OVs <b>em aberto</b>, de qualquer data. <b>Faturado</b> e <b>Pallet</b>: toda OV que está neles agora, de qualquer data (as em aberto e as faturadas com a carga ainda Carregado). <b>Rejeitada e Expedição</b>: só as do <b>período escolhido</b> lá em cima (pela data da nota fiscal; sem nota, a de criação). O quadro relê o Dynamics a cada 60 s; as linhas desta ficha são lidas quando ela abre.</p></details>';
+        + '<p class="kb-dw-p" style="margin-top:8px;">Entram as OVs da <b>MSB</b>' + (depTexto() ? ' do depósito <b>' + esc(depTexto()) + '</b>' : '') + '. <b>Criada, Crédito, Separação, Conferência, Cotação e Aguardando Faturamento</b>: todas as OVs <b>em aberto</b>, de qualquer data. <b>Faturado</b>: toda OV que está nele agora, de qualquer data (as em aberto e as faturadas com a carga ainda Carregado). <b>Pallet</b>: só as que <b>foram para o Pallet hoje</b>, de OV de qualquer data (pela data do envio, que o botão anota; sem ela, a data de alteração da carga) — não segue o período. <b>Rejeitada e Expedição</b>: só as do <b>período escolhido</b> lá em cima (pela data da nota fiscal; sem nota, a de criação). O quadro relê o Dynamics a cada 60 s; as linhas desta ficha são lidas quando ela abre.</p></details>';
       return h;
     }
 
@@ -1348,8 +1350,14 @@
         p.push({ cls: 'depois', tt: 'Faturado', ds: 'Quando a linha ficar com status <b>Faturado</b>, vem para esta etapa.' });
       }
       // pallet: ENVIARPALLET_CUSTOM = Sim (o botão "Enviar para o Pallet")
-      if (pos === ORDEM_ETAPA.pallet) p.push({ cls: 'agora', tt: 'Agora: Pallet',
-        ds: 'Enviada para o Pallet (<code>' + esc((o.cargaCols && o.cargaCols.pallet) || 'ENVIARPALLET_CUSTOM') + ' = Sim</code>)' + (cgT ? ' — carga ' + cgT : '') + '. Quando a carga for remetida, vai para Expedição.' });
+      // 11/11/26: QUANDO foi para o Pallet (o botão do portal anota; sem ele, o
+      // campo de data da carga ou a data de alteração dela, aproximada)
+      var FONTE_PAL = { campo: 'pelo campo ' + ((o.cargaCols && o.cargaCols.palletData) || 'de data do Pallet') + ' da carga', portal: 'anotada pelo botão do portal',
+        alteracao: 'pela data de alteração da carga no Dynamics (aproximada)' };
+      if (pos === ORDEM_ETAPA.pallet) p.push({ cls: 'agora', tt: 'Agora: Pallet', dt: o.palletEm ? fDM(diaSP(o.palletEm)) + ' ' + fHora(o.palletEm) : '',
+        ds: 'Enviada para o Pallet (<code>' + esc((o.cargaCols && o.cargaCols.pallet) || 'ENVIARPALLET_CUSTOM') + ' = Sim</code>)' + (cgT ? ' — carga ' + cgT : '')
+          + (o.palletEm ? ' em <b>' + esc(fDia(diaSP(o.palletEm)) + ' ' + fHora(o.palletEm)) + '</b>, ' + esc(FONTE_PAL[o.palletEmFonte] || '') : ' — sem a data do envio')
+          + '. Quando a carga for remetida, vai para Expedição.' });
       else if (pos > ORDEM_ETAPA.pallet) p.push({ cls: 'feito', tt: 'Pallet', ds: '' });
       else p.push({ cls: 'depois', tt: 'Pallet', ds: o.podePallet ? 'Pronta: carga carregada e com a cotação realizada — use <b>Enviar para o Pallet</b> no alto da ficha.'
         : 'Com a carga Carregado e a cotação realizada, o botão <b>Enviar para o Pallet</b> grava no Dynamics e a OV vem para esta etapa.' });
@@ -1652,7 +1660,7 @@
     }
     function lembrar(r) { estado.antes = {}; (r.ovs || []).forEach(function (o) { estado.antes[idOv(o)] = o.etapa; estado.antes['#' + o.numero] = 1; }); }
 
-    // ── período de Rejeitada e Expedição (09/11/26; o Faturado saiu em 10/11/26 e o Pallet em 11/11/26) ──
+    // ── período de Rejeitada e Expedição (09/11/26; o Faturado saiu em 10/11/26; o Pallet, em 11/11/26, é sempre hoje) ──
     function somaDias(iso, n) { var d = new Date(iso + 'T12:00:00Z'); d.setUTCDate(d.getUTCDate() + n); return d.toISOString().slice(0, 10); }
     function periodo() {
       var de = $('kb-de').value || hojeSP(), ate = $('kb-ate').value || de;
