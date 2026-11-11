@@ -1227,11 +1227,16 @@
   }
 
   // ── Upload do PDF no SharePoint (Graph, token do usuário) ───────
-  // Sobe pra pasta "Ordens de Compra PDF" e devolve { id, name, listItemId,
-  // webUrl } — o flow usa o ID + nome pra buscar o arquivo e enviar por e-mail.
+  // Sobe pra pasta "PDF PI" e devolve { id, name, listItemId, webUrl } — o
+  // flow usa o ID + nome pra buscar o arquivo e enviar por e-mail.
+  // 11/11/2026 (pedido do dono): o PDF do PI · Pedido da MSB vai para o site
+  // Pedidos MSB, biblioteca Documentos (Shared Documents), pasta "PDF PI"
+  // (antes: site EquipeIntelignciaeDados, pasta "Ordens de Compra PDF" — o
+  // PI · Consignação segue lá). O flow do PEDIDO_FLOW_URL busca o arquivo
+  // NESTE site: a ação do SharePoint dele precisa apontar para o PedidosMSB.
   var SP_HOST = 'tibiomedical.sharepoint.com';
-  var SP_PATH = '/sites/EquipeIntelignciaeDados';
-  var SP_FOLDER = 'Ordens de Compra PDF';
+  var SP_PATH = '/sites/PedidosMSB';
+  var SP_FOLDER = 'PDF PI';
   var SP_SCOPE = 'https://graph.microsoft.com/Sites.ReadWrite.All';
   var _spSiteId = null;
 
@@ -1267,10 +1272,10 @@
       if (g.ok) { var gj = await g.json(); sp.listItemId = (gj.sharepointIds && gj.sharepointIds.listItemId) || null; sp.webUrl = gj.webUrl || sp.webUrl; }
     } catch (e) {}
     // caminho do arquivo p/ o conector do SharePoint (Get file content using path):
-    //  pathSite = relativo ao SITE  (/Shared Documents/Ordens de Compra PDF/<nome>)
-    //  pathLib  = relativo à BIBLIOTECA (/Ordens de Compra PDF/<nome>)
+    //  pathSite = relativo ao SITE  (/Shared Documents/PDF PI/<nome>)
+    //  pathLib  = relativo à BIBLIOTECA (/PDF PI/<nome>)
     try {
-      var full = decodeURIComponent(new URL(sp.webUrl).pathname);   // /sites/EquipeIntelignciaeDados/Shared Documents/.../<nome>
+      var full = decodeURIComponent(new URL(sp.webUrl).pathname);   // /sites/PedidosMSB/Shared Documents/PDF PI/<nome>
       sp.pathSite = full.replace(SP_PATH, '') || full;
     } catch (e) { sp.pathSite = '/Shared Documents/' + SP_FOLDER + '/' + (sp.name || S.pdf.filename); }
     sp.pathLib = '/' + SP_FOLDER + '/' + (sp.name || S.pdf.filename);

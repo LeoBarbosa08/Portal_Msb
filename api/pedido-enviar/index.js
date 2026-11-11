@@ -59,8 +59,8 @@ function dataISO(v) {
 
 // identificador de arquivo do conector SharePoint (Power Automate):
 // caminho relativo ao site -> barra vira %252f e espaço vira %2b
-// ex.: /Shared Documents/Ordens de Compra PDF/OC 113221 (1).pdf
-//   -> %252fShared%2bDocuments%252fOrdens%2bde%2bCompra%2bPDF%252fOC%2b113221%2b(1).pdf
+// ex.: /Shared Documents/PDF PI/OC 113221 (1).pdf   (site PedidosMSB, desde 11/11/26)
+//   -> %252fShared%2bDocuments%252fPDF%2bPI%252fOC%2b113221%2b(1).pdf
 function spFileId(pathSite) {
   if (!pathSite) return '';
   return String(pathSite).replace(/\//g, '%252f').replace(/ /g, '%2b');

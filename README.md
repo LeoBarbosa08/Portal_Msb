@@ -1603,6 +1603,25 @@ o CNPJ e trazer as informações". Em `pedido-inteligente.js`
 - não segura o Continuar: o campo é preenchido quando o Dynamics responder.
 - `pedido-inteligente.js?v=39`; `sw.js` — cache `bm-comest-v70`.
 
+### PI · Pedido: o PDF vai para o site Pedidos MSB (11/11/2026)
+
+Pedido do dono: o PI · Pedido salva o PDF que vai no fluxo na pasta
+**PDF PI** do site **Pedidos MSB** (`/sites/PedidosMSB`, biblioteca
+Documentos = `Shared Documents`). Antes ia para o site
+`EquipeIntelignciaeDados`, pasta `Ordens de Compra PDF`.
+
+- `pedido-inteligente.js` — `SP_PATH = '/sites/PedidosMSB'`,
+  `SP_FOLDER = 'PDF PI'`. O identificador que vai para o flow passa a ser
+  `/Shared Documents/PDF PI/<nome>` (relativo ao site novo).
+- **O flow precisa acompanhar**: a ação do SharePoint do flow do
+  `PEDIDO_FLOW_URL` ("Obter conteúdo do arquivo") tem o endereço do site fixo —
+  tem que apontar para `https://tibiomedical.sharepoint.com/sites/PedidosMSB`.
+- **Permissão**: o upload usa o login de quem está no PI (Graph, token
+  delegado). Quem usa o PI precisa poder **editar** a biblioteca do Pedidos MSB;
+  sem isso o upload falha e o pedido **não** é enviado (a tela diz o motivo).
+- O PI · Consignação (`pi-consignacao.js`) segue na pasta antiga.
+- `pedido-inteligente.js?v=40`; `sw.js` — cache `bm-comest-v71`.
+
 ## Como colocar no ar
 
 1. **Repositório no GitHub** — crie um repositório **privado e vazio** (sem
