@@ -197,6 +197,13 @@ const GRUPO_AREAS = {
   '2afd6d96-9493-4b6b-b2b8-01e6e7f71758': ['comercial', 'estoque'],
   'e62e21f7-66cc-4b14-a185-376a19b9a3fd': ['comercial', 'estoque'],
   'bae8fb21-9050-4131-95c1-aee79b358368': ['comercial'], // Equipe Comercial - Assistentes Venda Recorrente — Estoque só por módulo (GRUPO_MODULOS)
+  // Equipe Comercial - Supervisora MSB (11/11/2026, pedido do dono: "libera a
+  // área comercial para ela e também no PI Pedidos"): o Comercial inteiro — o
+  // PI · Pedido vem junto (a página e o /api/pedido-* exigem a área Comercial).
+  // Mapeado pelo NOME do grupo (displayName), que o transitiveMemberOf traz:
+  // o Object ID não estava à mão. Ao ter o ID, trocar a chave por ele — o
+  // plano B do Graph (getMemberGroups) devolve só IDs e não casa com nome.
+  'Equipe Comercial - Supervisora MSB': ['comercial'],
   'caf0c909-2196-425d-91f4-9b184ce2b39c': ['comercial', 'estoque'],
   '27a1c6b0-e0c5-486f-9062-59db653a243e': ['comercial', 'estoque'],
   'e2665a93-db91-4c16-ae10-e99fce715aec': ['comercial', 'estoque'],

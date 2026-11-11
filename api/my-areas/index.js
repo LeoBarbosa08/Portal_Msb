@@ -24,7 +24,7 @@ const auth = require('../shared/auth');
 const http = require('../shared/http');
 const acessoLog = require('../shared/acesso-log');
 
-const FN_VERSION = '2026-10-14b-lider-indicadores-area-compras';
+const FN_VERSION = '2026-11-11-supervisora-msb-comercial';
 
 module.exports = async function (context, req) {
   if (req.method === 'OPTIONS') { context.res = http.preflight(req); return; }
