@@ -19,7 +19,7 @@ Venda Recorrente".
 | Área | Páginas |
 |---|---|
 | Comercial | Visão geral · Sales Report (6 abas) · CRM › Venda Recorrente (Funil, Analítico, Gestão, Quadro, Histórico, Nova oportunidade) · Negociações + Analítico · FCA · Sales Playbook · Materiais · Tabela de Preços |
-| Comercial · agentes | Dossiê de Visita · PI · Pedido (no menu, só para o dono — ver "PI · Pedido de volta") · PI · Consignação · PI · Consignação (INCOMPLETO, em testes) · Agente Comercial (o Agente de Cotações virou o "Nova oportunidade" do CRM) |
+| Comercial · agentes | Dossiê de Visita · PI · Pedido (liberado para o Comercial em 11/11 — ver "PI · Pedido liberado") · PI · Consignação · PI · Consignação (INCOMPLETO, em testes) · Agente Comercial (o Agente de Cotações virou o "Nova oportunidade" do CRM) |
 | Estoque | Visão geral · Gestão de Estoque (Saldo, Ruptura, Validade Curta, Movimentações) · Gestão de Consignação (Saldo Consignado, Saldo por Nota, Devoluções, Rastreabilidade, GMROI) · Perdas · Consignado |
 | Estoque · agentes | Agente de Estoque |
 | Contábil | Visão geral · Gestão de Custos SG&A (só a MSB) |
@@ -236,7 +236,8 @@ Pedido do dono: trazer o PI · Pedido do portal completo (`LeoBarbosa08/Claude.r
   Envs próprias, para não herdar as da BIO: `ESTOQUE_MSB_EMPRESA`,
   `ESTOQUE_MSB_DEPOSITO`, `ESTOQUE_MSB_LOCALIZACAO` (vazia = sem filtro). A
   conexão é a mesma da BIO (`D365_*`). Se a consulta falhar, a etapa Produtos
-  avisa uma vez com o motivo e o 2º clique segue sem estoque.
+  avisa uma vez com o motivo e o 2º clique segue sem estoque. **11/11: a conta
+  do lote mudou** — ver "PI · Pedido: a conta do lote".
 - **Códigos do PI na MSB** (04/11): o recorte MSB do `pbi-throttle.js` sumia
   com produto do cadastro (`'Produtos'[Cód. produto]`, modelo Comercial) — o
   51200 existe na MSB e voltava "não encontrado". O que sobra da conferência é
@@ -359,7 +360,8 @@ e Venda Consultiva (os outros dois submódulos do CRM de lá) não vieram.
   então troca a página). Anexar o PDF do pedido — no cartão ("Anexar o PDF do
   pedido"/"Trocar o PDF") ou no "Virou pedido" com PDF — também leva ao PI
   depois de registrar (com a leitura pronta; se a leitura falhar, o PI lê o
-  PDF). O PI da MSB segue só do dono (ver "PI · Pedido de volta").
+  PDF). O PI da MSB segue só do dono (ver "PI · Pedido de volta"; liberado
+  para o Comercial em 11/11 — ver "PI · Pedido liberado").
 - **Sem a coluna Un (05/11/2026, pedido do dono)** — saiu a coluna da unidade
   das tabelas de itens (Nova oportunidade, edição e leitura na Gestão). A
   unidade que a leitura do PDF trouxer fica no item e sai na proposta ao lado
@@ -396,6 +398,7 @@ e Venda Consultiva (os outros dois submódulos do CRM de lá) não vieram.
   no guia (`script.js`) e na home (`index.html`).
 - O botão de mandar o pedido ao **PI · Pedido** leva a uma página que, na MSB,
   ainda é só do dono (ver "PI · Pedido de volta"): para a equipe, abrir o PI.
+  (11/11: aberto — ver "PI · Pedido liberado".)
 - `nav-sidebar.js?v=82` (a `v=79` foi a da poda do PI, da master), `customer-service.css?v=4`,
   `licitacao-funil-vendas.css?v=19` em todas as páginas; `sw.js` — cache
   `bm-comest-v16`.
@@ -1546,7 +1549,97 @@ entidades de OV que lê (principal + complementos: `SalesOrderHeadersV2`,
   pedido; a busca acha por "pi" e pela área.
 - Sem o campo em nenhuma entidade lida: aviso no topo (o selo não aparece).
 - Testes (4a): com a área → PI (e a coluna); vazia → não; sem o campo → aviso.
+  `sw.js` — cache `bm-comest-v72` (a v69–v71 foram do PI, em paralelo).
+
+### PI · Pedido liberado para o Comercial (11/11/2026)
+
+Pedido do dono: "libera o PI PEDIDOS para todo mundo". O PI · Pedido
+(`pages/pedido-inteligente.html`) deixa de ser só das duas contas do dono e
+abre para quem tem a **área Comercial**, como os outros módulos do Comercial:
+
+- `nav-sidebar.js` — `pedido-inteligente` saiu do gate por e-mail
+  (`RESTRICTED`) e do `SO_DONO`: o link na seção AGENTES do menu, o cartão
+  "Agentes de IA" da visão geral do Comercial e a página valem para todos com
+  a área. O `SO_DONO` fica só com `comercial-faturamento-dono` (o selo e a
+  sonda do Faturamento do Dia seguem do dono).
+- `api/pedido-enviar` — saiu o `exigirDono` (`DONOS_PI`): o lançamento no
+  Dynamics exige `requireArea(['comercial', 'estoque'])`, como o
+  `/api/pedido-extrair` e o `/api/pedido-lotes`.
+- `portal-catalogo.js` — o PI entrou no `MSB_VISIVEIS` (a busca da home).
+- `nav-sidebar.js?v=88` em todas as páginas, `portal-catalogo.js?v=25`;
   `sw.js` — cache `bm-comest-v69`.
+
+### PI · Pedido: a conta do lote (11/11/2026)
+
+Pedido do dono: "vai continuar considerando o ALMOX-PA, vai pegar o estoque
+físico do lote, PhysicalInvent, e analisar a localização que começa com 'PA.',
+wMSLocationId, menos a reserva física do lote, ReservPhysical, que não tem
+localização". No `/api/pedido-lotes`, por lote (`InventBatchId`), na empresa
+`msb` e no depósito `ALMOX-PA`:
+
+```
+saldo do lote = Σ PhysicalInvent  das linhas com wMSLocationId começando com "PA."
+              − Σ ReservPhysical  das linhas do mesmo lote SEM localização
+```
+
+- Saiu o `AvailPhysical` (Qtd. física disponível). Físico em localização fora
+  de `PA.` não soma; reserva física de linha **com** localização não desconta.
+- **Linha `PA.` toda reservada** (11/11, pedido do dono): se numa localização
+  `PA.` o `PhysicalInvent` do lote é **igual** ao `ReservPhysical`, a linha fica
+  fora da conta (o físico dela não soma). Lote que só tem linha assim nem
+  aparece; se o lote tiver outra localização `PA.` com saldo livre, só ela
+  conta (ex.: `PA.06` 4 = 4 fora, `PA.07` 2 livre → lote com 2).
+- A consulta à `BioInventSums` traz as linhas com `PhysicalInvent ne 0 or
+  ReservPhysical ne 0` (antes `AvailPhysical ne 0`).
+- Só lote com saldo **maior que zero** vai para a etapa Lotes (e para o Auto
+  FEFO). O **disponível do produto** é a soma dos saldos positivos dos lotes: um
+  lote com reserva maior que o físico em `PA.` fica em 0 e não desconta dos
+  outros — assim o disponível bate com o que a etapa Lotes deixa alocar.
+- Cada lote da resposta traz também `fisico` e `reserva` (a conta aberta).
+- `ESTOQUE_MSB_LOCALIZACAO` agora é o prefixo da conta (padrão `PA.`; vazia
+  também vale `PA.`). Se a `BioInventSums` não trouxer a Localização, o item
+  volta com erro e a etapa Produtos avisa com o motivo (o 2º clique segue).
+- A revalidação na hora de enviar usa a mesma API, então segue a mesma conta.
+- `scripts/test-pedido-lotes.js` — a conta contra um F&O simulado (físico fora
+  de `PA.`, reserva com localização, lote zerado e negativo, FEFO, filtro, tabela
+  sem Localização). Só servidor: sem mudança de tela nem de cache.
+
+### PI · Pedido: o endereço cadastrado do cliente (11/11/2026)
+
+Pedido do dono: "trazer o endereço cadastrado do cliente igual do CRM; quando
+o endereço não tá preenchido coloca NÃO INFORMADO — por enquanto quando digitar
+o CNPJ e trazer as informações". Em `pedido-inteligente.js`
+(`enderecoDoCadastro`), quando o CNPJ é validado:
+
+- o PI consulta o cliente no Dynamics pela **mesma** rota do CRM (Nova
+  oportunidade): `/api/cot-casos?cliente=<CNPJ>` (`shared/cot-erp.js`), e monta
+  o endereço igual a ele: `endereço - bairro`;
+- o endereço aparece no cartão "Cliente encontrado" e vai para o **Endereço de
+  Entrega** do cabeçalho se ele estiver **vazio** — o endereço lido do PDF e o
+  da cotação ficam; o que este preenchimento pôs é trocado se o CNPJ mudar;
+- cadastro sem endereço, cliente que o Dynamics não achou ou consulta que
+  falhou: **NAO INFORMADO** (o motivo aparece no cartão);
+- não segura o Continuar: o campo é preenchido quando o Dynamics responder.
+- `pedido-inteligente.js?v=39`; `sw.js` — cache `bm-comest-v70`.
+
+### PI · Pedido: o PDF vai para o site Pedidos MSB (11/11/2026)
+
+Pedido do dono: o PI · Pedido salva o PDF que vai no fluxo na pasta
+**PDF PI** do site **Pedidos MSB** (`/sites/PedidosMSB`, biblioteca
+Documentos = `Shared Documents`). Antes ia para o site
+`EquipeIntelignciaeDados`, pasta `Ordens de Compra PDF`.
+
+- `pedido-inteligente.js` — `SP_PATH = '/sites/PedidosMSB'`,
+  `SP_FOLDER = 'PDF PI'`. O identificador que vai para o flow passa a ser
+  `/Shared Documents/PDF PI/<nome>` (relativo ao site novo).
+- **O flow precisa acompanhar**: a ação do SharePoint do flow do
+  `PEDIDO_FLOW_URL` ("Obter conteúdo do arquivo") tem o endereço do site fixo —
+  tem que apontar para `https://tibiomedical.sharepoint.com/sites/PedidosMSB`.
+- **Permissão**: o upload usa o login de quem está no PI (Graph, token
+  delegado). Quem usa o PI precisa poder **editar** a biblioteca do Pedidos MSB;
+  sem isso o upload falha e o pedido **não** é enviado (a tela diz o motivo).
+- O PI · Consignação (`pi-consignacao.js`) segue na pasta antiga.
+- `pedido-inteligente.js?v=40`; `sw.js` — cache `bm-comest-v71`.
 
 ## Como colocar no ar
 

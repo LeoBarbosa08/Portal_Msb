@@ -471,10 +471,53 @@
         '<div><strong>Nome:</strong> ' + esc(S.cliente.nome || '—') + '</div>' +
         (cols.tipo ? '<div><strong>Tipo:</strong> ' + esc(S.cliente.tipo || '—') + '</div>' : '');
       $('cli-continuar').disabled = false;
+      enderecoDoCadastro(dig);   // o endereço cadastrado no Dynamics (não segura o Continuar)
     } catch (e) {
       console.error('[pedido] validarCNPJ:', e);
       msg('cli', 'Erro ao consultar o BI: ' + esc(e.message || e), 'err');
     }
+  }
+
+  // 11/11/2026 (pedido do dono): o ENDEREÇO CADASTRADO do cliente no Dynamics,
+  // igual ao CRM (Nova oportunidade) — a mesma consulta (/api/cot-casos?cliente=,
+  // shared/cot-erp.js) e a mesma montagem ("endereço - bairro"). Vai para o
+  // Endereço de Entrega só se ele estiver VAZIO (o endereço do PDF e o da
+  // cotação ficam) ou se foi este preenchimento que o pôs (trocou o CNPJ).
+  // Cadastro sem endereço — ou cliente que o Dynamics não achou — vira
+  // NAO INFORMADO. Não segura o Continuar: chega quando o Dynamics responder.
+  function enderecoDoCadastro(dig) {
+    var linha = document.createElement('div');
+    linha.id = 'cli-end';
+    linha.innerHTML = '<strong>Endereço:</strong> <span class="pi-prod-dim">consultando o Dynamics…</span>';
+    $('cli-res').appendChild(linha);
+    function aplica(end, nota) {
+      if (String(S.cliente.cnpj || '').replace(/\D/g, '') !== dig) return;   // trocou o CNPJ enquanto isso
+      S.cliente.endereco = end;
+      var el = $('cab-endereco'), atual = el ? el.value.trim() : '';
+      if (el && (!atual || atual === 'NAO INFORMADO' || (S.enderecoErp && atual === S.enderecoErp))) {
+        el.value = end || 'NAO INFORMADO';
+        S.enderecoErp = el.value;
+      }
+      var l = $('cli-end');
+      if (l) l.innerHTML = '<strong>Endereço:</strong> ' + esc(end || 'NAO INFORMADO') + (nota ? ' <span class="pi-prod-dim">(' + esc(nota) + ')</span>' : '');
+    }
+    fetch('/api/cot-casos?cliente=' + encodeURIComponent(dig))
+      .then(function (r) {
+        return r.json().catch(function () { return {}; }).then(function (j) {
+          if (!r.ok) throw new Error((j && (j.error || j.erro)) || ('HTTP ' + r.status));
+          return j;
+        });
+      })
+      .then(function (j) {
+        var v = (j && j.erp) || {};
+        if (v.achou) {
+          var end = [v.endereco, v.bairro].filter(Boolean).join(' - ').trim();
+          aplica(end, end ? 'cadastro do Dynamics' : 'sem endereço no cadastro do Dynamics');
+        } else {
+          aplica('', v.erro ? 'Dynamics: ' + v.erro : v.desligado ? 'consulta ao Dynamics desligada' : 'cliente não encontrado no Dynamics');
+        }
+      })
+      .catch(function (e) { console.warn('[pedido] endereço do cadastro:', e); aplica('', 'Dynamics: ' + (e.message || e)); });
   }
 
   // ── Etapa 3 · Cabeçalho ─────────────────────────────────────────
@@ -1184,11 +1227,16 @@
   }
 
   // ── Upload do PDF no SharePoint (Graph, token do usuário) ───────
-  // Sobe pra pasta "Ordens de Compra PDF" e devolve { id, name, listItemId,
-  // webUrl } — o flow usa o ID + nome pra buscar o arquivo e enviar por e-mail.
+  // Sobe pra pasta "PDF PI" e devolve { id, name, listItemId, webUrl } — o
+  // flow usa o ID + nome pra buscar o arquivo e enviar por e-mail.
+  // 11/11/2026 (pedido do dono): o PDF do PI · Pedido da MSB vai para o site
+  // Pedidos MSB, biblioteca Documentos (Shared Documents), pasta "PDF PI"
+  // (antes: site EquipeIntelignciaeDados, pasta "Ordens de Compra PDF" — o
+  // PI · Consignação segue lá). O flow do PEDIDO_FLOW_URL busca o arquivo
+  // NESTE site: a ação do SharePoint dele precisa apontar para o PedidosMSB.
   var SP_HOST = 'tibiomedical.sharepoint.com';
-  var SP_PATH = '/sites/EquipeIntelignciaeDados';
-  var SP_FOLDER = 'Ordens de Compra PDF';
+  var SP_PATH = '/sites/PedidosMSB';
+  var SP_FOLDER = 'PDF PI';
   var SP_SCOPE = 'https://graph.microsoft.com/Sites.ReadWrite.All';
   var _spSiteId = null;
 
@@ -1224,10 +1272,10 @@
       if (g.ok) { var gj = await g.json(); sp.listItemId = (gj.sharepointIds && gj.sharepointIds.listItemId) || null; sp.webUrl = gj.webUrl || sp.webUrl; }
     } catch (e) {}
     // caminho do arquivo p/ o conector do SharePoint (Get file content using path):
-    //  pathSite = relativo ao SITE  (/Shared Documents/Ordens de Compra PDF/<nome>)
-    //  pathLib  = relativo à BIBLIOTECA (/Ordens de Compra PDF/<nome>)
+    //  pathSite = relativo ao SITE  (/Shared Documents/PDF PI/<nome>)
+    //  pathLib  = relativo à BIBLIOTECA (/PDF PI/<nome>)
     try {
-      var full = decodeURIComponent(new URL(sp.webUrl).pathname);   // /sites/EquipeIntelignciaeDados/Shared Documents/.../<nome>
+      var full = decodeURIComponent(new URL(sp.webUrl).pathname);   // /sites/PedidosMSB/Shared Documents/PDF PI/<nome>
       sp.pathSite = full.replace(SP_PATH, '') || full;
     } catch (e) { sp.pathSite = '/Shared Documents/' + SP_FOLDER + '/' + (sp.name || S.pdf.filename); }
     sp.pathLib = '/' + SP_FOLDER + '/' + (sp.name || S.pdf.filename);
