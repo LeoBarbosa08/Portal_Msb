@@ -8,8 +8,9 @@
 //   saldo do lote = PhysicalInvent das localizações "PA."
 //                 − ReservPhysical das linhas do lote SEM localização
 // Cobre: físico fora de "PA." não soma; reserva com localização não desconta;
-// lote zerado/negativo fora da lista e sem comer o total; FEFO; o filtro
-// OData; e a tabela sem a Localização vira aviso.
+// lote zerado/negativo fora da lista e sem comer o total; linha "PA." com
+// físico = reserva física fora da conta; FEFO; o filtro OData; e a tabela sem
+// a Localização vira aviso.
 // ================================================================
 
 process.env.D365_TENANT_ID = 't'; process.env.D365_CLIENT_ID = 'c'; process.env.D365_CLIENT_SECRET = 's';
@@ -62,6 +63,13 @@ const em = (dias) => new Date(Date.now() + dias * 86400000).toISOString();
       L({ InventBatchId: 'LOTE-C', wMSLocationId: '', ReservPhysical: 2 }),
       // LOTE-D: vence antes do A (FEFO)
       L({ InventBatchId: 'LOTE-D', wMSLocationId: 'PA.09', PhysicalInvent: 4 }),
+      // LOTE-E: só uma linha em PA. com físico 3 = reserva 3 -> fora, nem aparece
+      L({ InventBatchId: 'LOTE-E', wMSLocationId: 'PA.05', PhysicalInvent: 3, ReservPhysical: 3 }),
+      // LOTE-F: PA.06 toda reservada (4 = 4) fica fora; PA.07 com 2 livre conta
+      L({ InventBatchId: 'LOTE-F', wMSLocationId: 'PA.06', PhysicalInvent: 4, ReservPhysical: 4 }),
+      L({ InventBatchId: 'LOTE-F', wMSLocationId: 'PA.07', PhysicalInvent: 2 }),
+      // LOTE-G: físico = reserva FORA de PA. não muda nada (já não somava)
+      L({ InventBatchId: 'LOTE-G', wMSLocationId: 'RECEB', PhysicalInvent: 7, ReservPhysical: 7 }),
     ],
     BioInventItemBatchV3: [
       { dataAreaId: 'msb', itemId: 'P1', inventBatchId: 'LOTE-A', expDate: em(400) },
@@ -76,8 +84,11 @@ const em = (dias) => new Date(Date.now() + dias * 86400000).toISOString();
   t('LOTE-A mostra físico 8 e reserva 2', lote('LOTE-A') && lote('LOTE-A').fisico === 8 && lote('LOTE-A').reserva === 2, lote('LOTE-A'));
   t('LOTE-B (1 − 1 = 0) fora da lista', !lote('LOTE-B'), p1.lotes);
   t('LOTE-C (0 − 2) fora da lista', !lote('LOTE-C'), p1.lotes);
-  t('total = 6 + 4 = 10 (o −2 do LOTE-C não desconta)', p1.disponivel === 10, p1.disponivel);
-  t('FEFO: LOTE-D (60 d) antes do LOTE-A (400 d)', p1.lotes.map(l => l.batch).join(',') === 'LOTE-D,LOTE-A', p1.lotes.map(l => l.batch));
+  t('LOTE-E (PA. com físico 3 = reserva 3) nem aparece', !lote('LOTE-E'), p1.lotes);
+  t('LOTE-F = só os 2 livres da PA.07 (a PA.06 4 = 4 fica fora)', lote('LOTE-F') && lote('LOTE-F').disponivel === 2, lote('LOTE-F'));
+  t('LOTE-G (fora de PA.) nem aparece', !lote('LOTE-G'), p1.lotes);
+  t('total = 6 + 4 + 2 = 12 (o −2 do LOTE-C não desconta; E e G fora)', p1.disponivel === 12, p1.disponivel);
+  t('FEFO: LOTE-D (60 d) antes do LOTE-A (400 d); sem validade no fim', p1.lotes.map(l => l.batch).join(',') === 'LOTE-D,LOTE-A,LOTE-F', p1.lotes.map(l => l.batch));
   const fs = filtros.find(x => x.ent === 'BioInventSums');
   t('filtro: msb, ALMOX-PA, PhysicalInvent ou ReservPhysical',
     fs && /dataAreaId eq 'msb'/.test(fs.f) && /InventLocationId eq 'ALMOX-PA'/.test(fs.f) && /\(PhysicalInvent ne 0 or ReservPhysical ne 0\)/.test(fs.f), fs);

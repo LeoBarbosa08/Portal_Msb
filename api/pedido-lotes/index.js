@@ -5,6 +5,7 @@
 // direto, sem Power Automate):
 //   1) BioInventSums        -> saldo de cada lote (InventBatchId) =
 //        PhysicalInvent das localizações "PA."  −  ReservPhysical sem localização
+//        (linha "PA." com físico = reserva física fica fora)
 //   2) BioInventItemBatchV3 -> validade (expDate) de cada lote
 // Classifica cada lote pela proximidade do vencimento e devolve a lista
 // ordenada por validade (FEFO: vence primeiro, sai primeiro).
@@ -44,6 +45,9 @@ const LOCATION   = String(process.env.ESTOQUE_MSB_DEPOSITO || 'ALMOX-PA').trim()
 // Saiu o AvailPhysical (Qtd. física disponível). As outras localizações
 // (fora de "PA.") não somam físico, e a reserva que tem localização não
 // entra. ESTOQUE_MSB_LOCALIZACAO troca o prefixo (padrão "PA.").
+//   11/11/2026 (pedido do dono): linha em "PA." com PhysicalInvent IGUAL ao
+//   ReservPhysical (tudo reservado naquela localização) fica FORA da conta —
+//   o físico dela não soma. Se o lote só tem linha assim, ele nem aparece.
 const PREFIXO_LOC = String(process.env.ESTOQUE_MSB_LOCALIZACAO || 'PA.').trim().toUpperCase();
 const ENT_SUM    = process.env.D365_ENTITY || 'BioInventSums';
 const ENT_BATCH  = process.env.D365_BATCH_ENTITY || 'BioInventItemBatchV3';
@@ -99,7 +103,11 @@ async function itemDados(codigo, location, token) {
     var b = String(D.pick(r, ['InventBatchId', 'inventBatchId']) || '');
     var loc = String(r[campo] == null ? '' : r[campo]).trim().toUpperCase();
     var g = porLote[b] || (porLote[b] = { fisico: 0, reserva: 0 });
-    if (loc && loc.indexOf(PREFIXO_LOC) === 0) g.fisico += numero(r, ['PhysicalInvent']);
+    if (loc && loc.indexOf(PREFIXO_LOC) === 0) {
+      var fis = numero(r, ['PhysicalInvent']), res = numero(r, ['ReservPhysical']);
+      if (Math.abs(fis - res) < 1e-9) return;   // tudo reservado nesta localização: fora da conta
+      g.fisico += fis;
+    }
     else if (!loc) g.reserva += numero(r, ['ReservPhysical']);
   });
   Object.keys(porLote).forEach(function (b) { porLote[b].saldo = porLote[b].fisico - porLote[b].reserva; });

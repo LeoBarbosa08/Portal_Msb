@@ -1565,6 +1565,11 @@ saldo do lote = Σ PhysicalInvent  das linhas com wMSLocationId começando com "
 
 - Saiu o `AvailPhysical` (Qtd. física disponível). Físico em localização fora
   de `PA.` não soma; reserva física de linha **com** localização não desconta.
+- **Linha `PA.` toda reservada** (11/11, pedido do dono): se numa localização
+  `PA.` o `PhysicalInvent` do lote é **igual** ao `ReservPhysical`, a linha fica
+  fora da conta (o físico dela não soma). Lote que só tem linha assim nem
+  aparece; se o lote tiver outra localização `PA.` com saldo livre, só ela
+  conta (ex.: `PA.06` 4 = 4 fora, `PA.07` 2 livre → lote com 2).
 - A consulta à `BioInventSums` traz as linhas com `PhysicalInvent ne 0 or
   ReservPhysical ne 0` (antes `AvailPhysical ne 0`).
 - Só lote com saldo **maior que zero** vai para a etapa Lotes (e para o Auto
