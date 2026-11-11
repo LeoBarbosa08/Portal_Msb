@@ -479,27 +479,28 @@
   }
 
   // 11/11/2026 (pedido do dono): o ENDEREÇO CADASTRADO do cliente no Dynamics,
-  // igual ao CRM (Nova oportunidade) — a mesma consulta (/api/cot-casos?cliente=,
-  // shared/cot-erp.js) e a mesma montagem ("endereço - bairro"). Vai para o
-  // Endereço de Entrega só se ele estiver VAZIO (o endereço do PDF e o da
-  // cotação ficam) ou se foi este preenchimento que o pôs (trocou o CNPJ).
-  // Cadastro sem endereço — ou cliente que o Dynamics não achou — vira
-  // NAO INFORMADO. Não segura o Continuar: chega quando o Dynamics responder.
+  // pela mesma consulta do CRM (/api/cot-casos?cliente=, shared/cot-erp.js) e
+  // com a mesma montagem ("endereço - bairro"). É SÓ INFORMAÇÃO para quem
+  // preenche (o dono: "você tem que se basear no PDF, isso aqui é apenas uma
+  // informação para ele"): aparece EMBAIXO do Endereço de Entrega do
+  // cabeçalho e nunca entra no campo. O campo é o do PDF (ou o da cotação);
+  // sem endereço, ele vai como NAO INFORMADO. Não segura o Continuar.
+  function dicaEndereco(html) {
+    var el = $('cab-endereco'); if (!el) return;
+    var d = $('cab-endereco-dica');
+    if (!d) { d = document.createElement('div'); d.className = 'pi-dica'; d.id = 'cab-endereco-dica'; el.insertAdjacentElement('afterend', d); }
+    d.innerHTML = html || '';
+    d.hidden = !html;
+  }
   function enderecoDoCadastro(dig) {
-    var linha = document.createElement('div');
-    linha.id = 'cli-end';
-    linha.innerHTML = '<strong>Endereço:</strong> <span class="pi-prod-dim">consultando o Dynamics…</span>';
-    $('cli-res').appendChild(linha);
+    var el = $('cab-endereco');
+    if (el && !el.value.trim()) el.value = 'NAO INFORMADO';   // o PDF não trouxe endereço
+    var rot = 'Endereço no cadastro do Dynamics: ';
+    dicaEndereco(rot + '<span class="pi-prod-dim">consultando…</span>');
     function aplica(end, nota) {
       if (String(S.cliente.cnpj || '').replace(/\D/g, '') !== dig) return;   // trocou o CNPJ enquanto isso
       S.cliente.endereco = end;
-      var el = $('cab-endereco'), atual = el ? el.value.trim() : '';
-      if (el && (!atual || atual === 'NAO INFORMADO' || (S.enderecoErp && atual === S.enderecoErp))) {
-        el.value = end || 'NAO INFORMADO';
-        S.enderecoErp = el.value;
-      }
-      var l = $('cli-end');
-      if (l) l.innerHTML = '<strong>Endereço:</strong> ' + esc(end || 'NAO INFORMADO') + (nota ? ' <span class="pi-prod-dim">(' + esc(nota) + ')</span>' : '');
+      dicaEndereco(rot + '<strong>' + esc(end || 'NAO INFORMADO') + '</strong>' + (end ? '' : ' <span class="pi-prod-dim">(' + esc(nota) + ')</span>'));
     }
     fetch('/api/cot-casos?cliente=' + encodeURIComponent(dig))
       .then(function (r) {
@@ -512,7 +513,7 @@
         var v = (j && j.erp) || {};
         if (v.achou) {
           var end = [v.endereco, v.bairro].filter(Boolean).join(' - ').trim();
-          aplica(end, end ? 'cadastro do Dynamics' : 'sem endereço no cadastro do Dynamics');
+          aplica(end, 'sem endereço no cadastro');
         } else {
           aplica('', v.erro ? 'Dynamics: ' + v.erro : v.desligado ? 'consulta ao Dynamics desligada' : 'cliente não encontrado no Dynamics');
         }
