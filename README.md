@@ -1678,6 +1678,26 @@ no RMS:
   `pi-pdf-texto.js` entrega à IA, e os casos que não podem juntar. Vale para
   os três perfis do extrator (pedido, consignado e cotação).
 
+### Equipe Comercial - Supervisora MSB: Comercial e PI · Pedido (11/11/2026)
+
+Pedido do dono: "Equipe Comercial - Supervisora MSB: libera a área comercial
+para ela e também no PI Pedidos". O grupo do Entra entrou no `GRUPO_AREAS`
+(`api/shared/auth.js`) com a área **Comercial**:
+
+- o Comercial inteiro (visão geral, Sales Report, CRM, Negociações, FCA,
+  Materiais, Tabela de Preços…) e o **PI · Pedido** — a página
+  (`EXTRA['pedido-inteligente']` no `area-access.js`) e o `/api/pedido-extrair`,
+  `/api/pedido-lotes` e `/api/pedido-enviar` só pedem a área Comercial
+  (ou Estoque). O Estoque não veio junto — não foi pedido.
+- Mapeado pelo **nome** do grupo (`'Equipe Comercial - Supervisora MSB'`),
+  que o `transitiveMemberOf` do Graph devolve: o Object ID não estava à mão.
+  O nome precisa bater exatamente com o do Entra. Ao ter o ID, trocar a
+  chave por ele — o plano B do Graph (`getMemberGroups`) devolve só IDs e
+  não casa com nome.
+- `/api/my-areas` — `FN_VERSION` `2026-11-11-supervisora-msb-comercial`
+  (para conferir no diagnóstico que a Function nova está no ar). Nenhum
+  arquivo do front mudou: sem troca de `?v=` nem de cache do `sw.js`.
+
 ## Como colocar no ar
 
 1. **Repositório no GitHub** — crie um repositório **privado e vazio** (sem
