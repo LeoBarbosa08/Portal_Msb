@@ -19,7 +19,7 @@ Venda Recorrente".
 | Área | Páginas |
 |---|---|
 | Comercial | Visão geral · Sales Report (6 abas) · CRM › Venda Recorrente (Funil, Analítico, Gestão, Quadro, Histórico, Nova oportunidade) · Negociações + Analítico · FCA · Sales Playbook · Materiais · Tabela de Preços |
-| Comercial · agentes | Dossiê de Visita · PI · Pedido (no menu, só para o dono — ver "PI · Pedido de volta") · PI · Consignação · PI · Consignação (INCOMPLETO, em testes) · Agente Comercial (o Agente de Cotações virou o "Nova oportunidade" do CRM) |
+| Comercial · agentes | Dossiê de Visita · PI · Pedido (liberado para o Comercial em 11/11 — ver "PI · Pedido liberado") · PI · Consignação · PI · Consignação (INCOMPLETO, em testes) · Agente Comercial (o Agente de Cotações virou o "Nova oportunidade" do CRM) |
 | Estoque | Visão geral · Gestão de Estoque (Saldo, Ruptura, Validade Curta, Movimentações) · Gestão de Consignação (Saldo Consignado, Saldo por Nota, Devoluções, Rastreabilidade, GMROI) · Perdas · Consignado |
 | Estoque · agentes | Agente de Estoque |
 | Contábil | Visão geral · Gestão de Custos SG&A (só a MSB) |
@@ -359,7 +359,8 @@ e Venda Consultiva (os outros dois submódulos do CRM de lá) não vieram.
   então troca a página). Anexar o PDF do pedido — no cartão ("Anexar o PDF do
   pedido"/"Trocar o PDF") ou no "Virou pedido" com PDF — também leva ao PI
   depois de registrar (com a leitura pronta; se a leitura falhar, o PI lê o
-  PDF). O PI da MSB segue só do dono (ver "PI · Pedido de volta").
+  PDF). O PI da MSB segue só do dono (ver "PI · Pedido de volta"; liberado
+  para o Comercial em 11/11 — ver "PI · Pedido liberado").
 - **Sem a coluna Un (05/11/2026, pedido do dono)** — saiu a coluna da unidade
   das tabelas de itens (Nova oportunidade, edição e leitura na Gestão). A
   unidade que a leitura do PDF trouxer fica no item e sai na proposta ao lado
@@ -396,6 +397,7 @@ e Venda Consultiva (os outros dois submódulos do CRM de lá) não vieram.
   no guia (`script.js`) e na home (`index.html`).
 - O botão de mandar o pedido ao **PI · Pedido** leva a uma página que, na MSB,
   ainda é só do dono (ver "PI · Pedido de volta"): para a equipe, abrir o PI.
+  (11/11: aberto — ver "PI · Pedido liberado".)
 - `nav-sidebar.js?v=82` (a `v=79` foi a da poda do PI, da master), `customer-service.css?v=4`,
   `licitacao-funil-vendas.css?v=19` em todas as páginas; `sw.js` — cache
   `bm-comest-v16`.
@@ -1528,6 +1530,24 @@ vamos analisar com calma, ignora o status dela". A coluna fica no quadro, VAZIA 
 itens" só voltam com a regra ligada. Testes: por padrão ninguém em Pendência e a
 OV com item sem lote fica inteira; os da regra do lote rodam com ela ligada.
 `sw.js` — cache `bm-comest-v68`.
+
+### PI · Pedido liberado para o Comercial (11/11/2026)
+
+Pedido do dono: "libera o PI PEDIDOS para todo mundo". O PI · Pedido
+(`pages/pedido-inteligente.html`) deixa de ser só das duas contas do dono e
+abre para quem tem a **área Comercial**, como os outros módulos do Comercial:
+
+- `nav-sidebar.js` — `pedido-inteligente` saiu do gate por e-mail
+  (`RESTRICTED`) e do `SO_DONO`: o link na seção AGENTES do menu, o cartão
+  "Agentes de IA" da visão geral do Comercial e a página valem para todos com
+  a área. O `SO_DONO` fica só com `comercial-faturamento-dono` (o selo e a
+  sonda do Faturamento do Dia seguem do dono).
+- `api/pedido-enviar` — saiu o `exigirDono` (`DONOS_PI`): o lançamento no
+  Dynamics exige `requireArea(['comercial', 'estoque'])`, como o
+  `/api/pedido-extrair` e o `/api/pedido-lotes`.
+- `portal-catalogo.js` — o PI entrou no `MSB_VISIVEIS` (a busca da home).
+- `nav-sidebar.js?v=88` em todas as páginas, `portal-catalogo.js?v=25`;
+  `sw.js` — cache `bm-comest-v69`.
 
 ## Como colocar no ar
 

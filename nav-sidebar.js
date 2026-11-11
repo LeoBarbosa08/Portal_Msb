@@ -140,7 +140,11 @@ if (!window._bmPerfilSheetLoaded && !window._bmPerfilSheetInjected) {
     //   O lançamento no Dynamics (/api/pedido-enviar) também só aceita essas
     //   contas. Para abrir para a equipe: tirar daqui, de SO_DONO e do
     //   DONOS_PI do api/pedido-enviar/index.js.
-    'pedido-inteligente',
+    //   11/11/26 (pedido do dono: "libera o PI PEDIDOS para todo mundo"): SAIU
+    //   deste gate e do SO_DONO — abre para quem tem a área Comercial (o
+    //   controle por área, /api/my-areas), com o link no menu, o cartão de
+    //   agente na visão geral e a busca da home. O /api/pedido-enviar exige a
+    //   área (comercial/estoque), sem a lista do dono.
     // 06/11/26 — Comercial › Sales Report › Faturamento do Dia (as notas da
     //   MSB faturadas no dia, ao vivo do Dynamics) nasce SÓ PARA O DONO
     //   (pedido dele: "oculta para todo mundo menos para mim"): as mesmas
@@ -161,7 +165,7 @@ if (!window._bmPerfilSheetLoaded && !window._bmPerfilSheetInjected) {
   ].forEach(function (id) { RESTRICTED[id] = 1; });
   // módulo restrito com lista própria de contas (o resto usa só o ALLOWED)
   var DONO_PI = ['leonardo.barbosa@biomedical.com.br', 'ia@biomedical.com.br'];
-  var SO_DONO = { 'pedido-inteligente': DONO_PI, 'comercial-faturamento-dono': DONO_PI };
+  var SO_DONO = { 'comercial-faturamento-dono': DONO_PI };
 
   function fileOf(href){ return String(href||'').split('/').pop().split('#')[0].split('?')[0].replace(/\.html$/i,'').toLowerCase(); }
   function email(){ return ((window._portalUser && window._portalUser.email) || '').trim().toLowerCase(); }
@@ -924,11 +928,10 @@ if (!window._bmPerfilSheetLoaded && !window._bmPerfilSheetInjected) {
         {id:'comercial-tabela-precos', label:'Tabela de Preços', href:'comercial-tabela-precos.html', icon:I.dollar},
       ],
       auto:[],
-      // 04/11/26: PI · Pedido voltou, SÓ PARA O DONO (gate SO_DONO no topo
-      // deste arquivo): para os outros o link, o cartão de agente da visão
-      // geral do Comercial e a seção AGENTES somem. Fica FORA da busca
-      // (MSB_VISIVEIS do portal-catalogo.js) — a busca da home não conhece o
-      // gate por e-mail e mostraria o nome para todo mundo.
+      // 04/11/26: PI · Pedido voltou, só para o dono. 11/11/26 (pedido do
+      // dono): liberado para quem tem a área Comercial — saiu do gate SO_DONO
+      // no topo deste arquivo e entrou na busca (MSB_VISIVEIS do
+      // portal-catalogo.js).
       agen:[{l:'PI · Pedido',h:'pedido-inteligente.html'}],
       atal:[]
     },

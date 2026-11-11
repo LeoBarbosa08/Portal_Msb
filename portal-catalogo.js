@@ -313,6 +313,8 @@ window.PORTAL_CATALOGO = (function () {
     'comercial-cot-funil.html', 'comercial-cot-analitico.html',
     'comercial-cot-casos.html', 'comercial-cot-casos.html#quadro', 'comercial-cot-casos.html#historico',
     'comercial-cot-nova.html',
+    // 11/11/26: o PI · Pedido, liberado para o Comercial (saiu do SO_DONO do nav-sidebar.js)
+    'pedido-inteligente.html',
     'contabil-custos-sgna.html'
   ];
   var AREAS_RECORTADAS = { comercial: 'Sales Report, CRM (Venda Recorrente) e Tabela de Preços.', contabil: 'Gestão de custos SG&A da MSB.' };
