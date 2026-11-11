@@ -5,7 +5,7 @@
 // direto, sem Power Automate):
 //   1) BioInventSums        -> saldo de cada lote (InventBatchId) =
 //        PhysicalInvent das localizações "PA."  −  ReservPhysical sem localização
-//        (linha "PA." com físico = reserva física fica fora)
+//        (linha "PA." com físico = reserva física fica fora; só status Aprovado)
 //   2) BioInventItemBatchV3 -> validade (expDate) de cada lote
 // Classifica cada lote pela proximidade do vencimento e devolve a lista
 // ordenada por validade (FEFO: vence primeiro, sai primeiro).
@@ -49,6 +49,17 @@ const LOCATION   = String(process.env.ESTOQUE_MSB_DEPOSITO || 'ALMOX-PA').trim()
 //   ReservPhysical (tudo reservado naquela localização) fica FORA da conta —
 //   o físico dela não soma. Se o lote só tem linha assim, ele nem aparece.
 const PREFIXO_LOC = String(process.env.ESTOQUE_MSB_LOCALIZACAO || 'PA.').trim().toUpperCase();
+// 11/11/2026 (pedido do dono): "InventStatusId tem que estar aprovado na
+// hora de verificar o estoque". Só entram na conta (físico E reserva) as
+// linhas com o status do estoque APROVADO — quarentena, bloqueado, avariado…
+// ficam fora. Compara sem maiúscula nem acento e pelo começo ("Aprovado",
+// "APROVADO", "Aprov"); ESTOQUE_MSB_STATUS troca o status (padrão "aprov").
+function semAcento(s) { return String(s == null ? '' : s).normalize('NFD').replace(/[\u0300-\u036f]/g, '').trim().toLowerCase(); }
+const STATUS_OK = semAcento(process.env.ESTOQUE_MSB_STATUS || 'aprov');
+// o campo do status na linha (InventStatusId; o nome é descoberto na linha)
+function campoStatus(row) {
+  return Object.keys(row || {}).find(function (k) { return /^inventstatus(id)?$/i.test(k); }) || null;
+}
 const ENT_SUM    = process.env.D365_ENTITY || 'BioInventSums';
 const ENT_BATCH  = process.env.D365_BATCH_ENTITY || 'BioInventItemBatchV3';
 
@@ -96,10 +107,21 @@ async function itemDados(codigo, location, token) {
     throw e;
   }
 
+  // sem o status na linha não dá para ficar só com o estoque aprovado
+  var campoSt = sums.length ? campoStatus(sums[0]) : null;
+  if (sums.length && !campoSt) {
+    var e2 = new Error('a tabela ' + ENT_SUM + ' do Dynamics não traz o status do estoque (InventStatusId), então não dá para ficar só com o estoque aprovado');
+    e2.semStatus = true;
+    throw e2;
+  }
+
   // por lote: físico das localizações PREFIXO_LOC e reserva física sem localização
-  // (linha sem lote fica no grupo '' — entra no total, não vira lote alocável)
-  var porLote = {};
+  // (linha sem lote fica no grupo '' — entra no total, não vira lote alocável).
+  // Só linha com status APROVADO entra (as outras ficam em foraDoStatus)
+  var porLote = {}, foraDoStatus = {};
   sums.forEach(function (r) {
+    var st = String(r[campoSt] == null ? '' : r[campoSt]).trim();
+    if (semAcento(st).indexOf(STATUS_OK) !== 0) { foraDoStatus[st || '(vazio)'] = 1; return; }
     var b = String(D.pick(r, ['InventBatchId', 'inventBatchId']) || '');
     var loc = String(r[campo] == null ? '' : r[campo]).trim().toUpperCase();
     var g = porLote[b] || (porLote[b] = { fisico: 0, reserva: 0 });
@@ -122,7 +144,8 @@ async function itemDados(codigo, location, token) {
     .filter(function (b) { return b && porLote[b].saldo > 0; })
     .map(function (b) { return { batch: b, disponivel: porLote[b].saldo, fisico: porLote[b].fisico, reserva: porLote[b].reserva }; });
 
-  if (!lotes.length) return { disponivel: disponivelTotal, lotes: [] };
+  var fora = Object.keys(foraDoStatus);   // os status que ficaram fora (diagnóstico)
+  if (!lotes.length) return { disponivel: disponivelTotal, lotes: [], foraDoStatus: fora };
 
   // 2) validade por lote (uma consulta por item)
   var expMap = {};
@@ -156,7 +179,7 @@ async function itemDados(codigo, location, token) {
     return a.dias - b.dias;
   });
 
-  return { disponivel: disponivelTotal, lotes: lotes };
+  return { disponivel: disponivelTotal, lotes: lotes, foraDoStatus: fora };
 }
 
 module.exports = async function (context, req) {
@@ -187,7 +210,7 @@ module.exports = async function (context, req) {
     const aviso = comErro.length ? (comErro.length + ' de ' + arr.length + ' produto(s) sem consulta: ' + comErro[0].erro) : '';
 
     context.res = { status: 200, headers: Object.assign({ 'Content-Type': 'application/json' }, cors),
-      body: { configured: true, location: location, deposito: location, localizacao: PREFIXO_LOC ? PREFIXO_LOC + '*' : '', empresa: EMPRESA, aviso: aviso, itens: itens } };
+      body: { configured: true, location: location, deposito: location, localizacao: PREFIXO_LOC ? PREFIXO_LOC + '*' : '', status: process.env.ESTOQUE_MSB_STATUS || 'Aprovado', empresa: EMPRESA, aviso: aviso, itens: itens } };
   } catch (err) {
     http.sendError(context, req, 'pedido-lotes', err);
   }

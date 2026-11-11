@@ -1584,6 +1584,14 @@ saldo do lote = Σ PhysicalInvent  das linhas com wMSLocationId começando com "
 
 - Saiu o `AvailPhysical` (Qtd. física disponível). Físico em localização fora
   de `PA.` não soma; reserva física de linha **com** localização não desconta.
+- **Só estoque APROVADO** (11/11, pedido do dono: "InventStatusId tem que
+  estar aprovado na hora de verificar o estoque"): só entram na conta — físico
+  e reserva — as linhas com o status do estoque (`InventStatusId`) Aprovado.
+  Quarentena, bloqueado, avariado, reprovado e status vazio ficam fora (cada
+  item da resposta lista os ignorados em `foraDoStatus`). Compara sem
+  maiúscula/acento e pelo começo (`ESTOQUE_MSB_STATUS`, padrão `aprov`). O
+  filtro é no portal, não no OData; se a `BioInventSums` não trouxer o
+  `InventStatusId`, o item volta com erro e a etapa Produtos avisa.
 - **Linha `PA.` toda reservada** (11/11, pedido do dono): se numa localização
   `PA.` o `PhysicalInvent` do lote é **igual** ao `ReservPhysical`, a linha fica
   fora da conta (o físico dela não soma). Lote que só tem linha assim nem

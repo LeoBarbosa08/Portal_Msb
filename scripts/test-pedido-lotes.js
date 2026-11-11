@@ -10,7 +10,8 @@
 // Cobre: físico fora de "PA." não soma; reserva com localização não desconta;
 // lote zerado/negativo fora da lista e sem comer o total; linha "PA." com
 // físico = reserva física fora da conta; FEFO; o filtro OData; e a tabela sem
-// a Localização vira aviso.
+// a Localização vira aviso. 11/11: só linha com status do estoque
+// (InventStatusId) APROVADO entra — físico e reserva.
 // ================================================================
 
 process.env.D365_TENANT_ID = 't'; process.env.D365_CLIENT_ID = 'c'; process.env.D365_CLIENT_SECRET = 's';
@@ -42,7 +43,7 @@ async function chama(codigos) {
   await fn(ctx, { method: 'POST', headers: {}, body: { codigos } });
   return ctx.res.body;
 }
-const L = (o) => Object.assign({ dataAreaId: 'msb', InventLocationId: 'ALMOX-PA', ItemId: 'P1', InventBatchId: '', wMSLocationId: '', PhysicalInvent: 0, ReservPhysical: 0 }, o);
+const L = (o) => Object.assign({ dataAreaId: 'msb', InventLocationId: 'ALMOX-PA', ItemId: 'P1', InventBatchId: '', wMSLocationId: '', InventStatusId: 'Aprovado', PhysicalInvent: 0, ReservPhysical: 0 }, o);
 const em = (dias) => new Date(Date.now() + dias * 86400000).toISOString();
 
 (async () => {
@@ -101,9 +102,39 @@ const em = (dias) => new Date(Date.now() + dias * 86400000).toISOString();
   t('P3 sem linhas: disponível 0, sem lotes', r.itens.P3.disponivel === 0 && r.itens.P3.lotes.length === 0, r.itens.P3);
 
   console.log('3) tabela sem a Localização');
-  CEN.BioInventSums = [{ dataAreaId: 'msb', InventLocationId: 'ALMOX-PA', ItemId: 'P4', InventBatchId: 'Y', PhysicalInvent: 5, ReservPhysical: 0 }];
+  CEN.BioInventSums = [{ dataAreaId: 'msb', InventLocationId: 'ALMOX-PA', ItemId: 'P4', InventBatchId: 'Y', InventStatusId: 'Aprovado', PhysicalInvent: 5, ReservPhysical: 0 }];
   r = await chama(['P4']);
   t('vira erro do item e aviso para a tela', r.itens.P4.disponivel === null && /Localiza/.test(r.itens.P4.erro || '') && /Localiza/.test(r.aviso || ''), r);
+
+  console.log('4) só o status do estoque APROVADO (InventStatusId)');
+  CEN.BioInventSums = [
+    // LOTE-S1: 5 aprovado + 3 em quarentena em PA.; reserva sem localização 1 aprovada e 2 bloqueadas
+    L({ ItemId: 'P5', InventBatchId: 'LOTE-S1', wMSLocationId: 'PA.01', PhysicalInvent: 5 }),
+    L({ ItemId: 'P5', InventBatchId: 'LOTE-S1', wMSLocationId: 'PA.02', InventStatusId: 'Quarentena', PhysicalInvent: 3 }),
+    L({ ItemId: 'P5', InventBatchId: 'LOTE-S1', wMSLocationId: '', ReservPhysical: 1 }),
+    L({ ItemId: 'P5', InventBatchId: 'LOTE-S1', wMSLocationId: '', InventStatusId: 'Bloqueado', ReservPhysical: 2 }),
+    // LOTE-S2: só estoque avariado -> nem aparece
+    L({ ItemId: 'P5', InventBatchId: 'LOTE-S2', wMSLocationId: 'PA.03', InventStatusId: 'Avariado', PhysicalInvent: 9 }),
+    // LOTE-S3: "APROVADO" maiúsculo e "aprovado" contam; status vazio não
+    L({ ItemId: 'P5', InventBatchId: 'LOTE-S3', wMSLocationId: 'PA.04', InventStatusId: 'APROVADO', PhysicalInvent: 2 }),
+    L({ ItemId: 'P5', InventBatchId: 'LOTE-S3', wMSLocationId: 'PA.05', InventStatusId: 'aprovado', PhysicalInvent: 1 }),
+    L({ ItemId: 'P5', InventBatchId: 'LOTE-S3', wMSLocationId: 'PA.06', InventStatusId: '', PhysicalInvent: 4 }),
+    // "Reprovado" não é aprovado
+    L({ ItemId: 'P5', InventBatchId: 'LOTE-S4', wMSLocationId: 'PA.07', InventStatusId: 'Reprovado', PhysicalInvent: 6 }),
+  ];
+  r = await chama(['P5']);
+  const p5 = r.itens.P5, l5 = (b) => p5.lotes.find(l => l.batch === b);
+  t('LOTE-S1 = 5 aprovado − 1 reserva aprovada = 4 (quarentena e reserva bloqueada fora)', l5('LOTE-S1') && l5('LOTE-S1').disponivel === 4, l5('LOTE-S1'));
+  t('LOTE-S2 (só avariado) nem aparece', !l5('LOTE-S2'), p5.lotes);
+  t('LOTE-S3 = 2 (APROVADO) + 1 (aprovado); o sem status fica fora', l5('LOTE-S3') && l5('LOTE-S3').disponivel === 3, l5('LOTE-S3'));
+  t('LOTE-S4 (Reprovado) nem aparece', !l5('LOTE-S4'), p5.lotes);
+  t('total = 4 + 3 = 7', p5.disponivel === 7, p5.disponivel);
+  t('foraDoStatus lista os status ignorados', ['Quarentena', 'Bloqueado', 'Avariado', '(vazio)', 'Reprovado'].every(x => p5.foraDoStatus.indexOf(x) >= 0), p5.foraDoStatus);
+
+  console.log('5) tabela sem o status do estoque');
+  CEN.BioInventSums = [{ dataAreaId: 'msb', InventLocationId: 'ALMOX-PA', ItemId: 'P6', InventBatchId: 'Z', wMSLocationId: 'PA.01', PhysicalInvent: 5, ReservPhysical: 0 }];
+  r = await chama(['P6']);
+  t('vira erro do item e aviso para a tela', r.itens.P6.disponivel === null && /status do estoque/.test(r.itens.P6.erro || '') && /status do estoque/.test(r.aviso || ''), r);
 
   console.log(falhas ? '\n' + falhas + ' FALHA(S)' : '\nTudo certo.');
   process.exit(falhas ? 1 : 0);
