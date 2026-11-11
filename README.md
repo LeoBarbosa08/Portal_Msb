@@ -1595,13 +1595,16 @@ o CNPJ e trazer as informações". Em `pedido-inteligente.js`
 - o PI consulta o cliente no Dynamics pela **mesma** rota do CRM (Nova
   oportunidade): `/api/cot-casos?cliente=<CNPJ>` (`shared/cot-erp.js`), e monta
   o endereço igual a ele: `endereço - bairro`;
-- o endereço aparece no cartão "Cliente encontrado" e vai para o **Endereço de
-  Entrega** do cabeçalho se ele estiver **vazio** — o endereço lido do PDF e o
-  da cotação ficam; o que este preenchimento pôs é trocado se o CNPJ mudar;
-- cadastro sem endereço, cliente que o Dynamics não achou ou consulta que
-  falhou: **NAO INFORMADO** (o motivo aparece no cartão);
-- não segura o Continuar: o campo é preenchido quando o Dynamics responder.
-- `pedido-inteligente.js?v=39`; `sw.js` — cache `bm-comest-v70`.
+- **é só informação** (11/11, o dono: "você tem que se basear no PDF, isso aqui
+  é apenas uma informação para ele"): aparece **embaixo do Endereço de
+  Entrega** do cabeçalho ("Endereço no cadastro do Dynamics: …") e nunca entra
+  no campo. O campo é o do PDF (ou o da cotação); sem endereço no PDF, vai
+  **NAO INFORMADO**. Cadastro sem endereço ou consulta que falhou: a linha
+  embaixo diz NAO INFORMADO e o motivo. (Na 1ª versão, do mesmo dia, o endereço
+  ficava no cartão "Cliente encontrado" e entrava no campo vazio.)
+- não segura o Continuar: a linha embaixo aparece quando o Dynamics responder.
+- `pedido-inteligente.js?v=39` (v=41 na versão "só informação"); `sw.js` —
+  cache `bm-comest-v70` (v72).
 
 ### PI · Pedido: o PDF vai para o site Pedidos MSB (11/11/2026)
 
@@ -1621,6 +1624,32 @@ Documentos = `Shared Documents`). Antes ia para o site
   sem isso o upload falha e o pedido **não** é enviado (a tela diz o motivo).
 - O PI · Consignação (`pi-consignacao.js`) segue na pasta antiga.
 - `pedido-inteligente.js?v=40`; `sw.js` — cache `bm-comest-v71`.
+
+### PI · Pedido: o código que quebra em duas linhas no PDF (11/11/2026)
+
+O dono, com a OC 0003511 (Endotech): "o PI Pedido está trazendo o item pela
+metade, pois houve quebra de linha". A coluna "Codigo Material" é estreita e
+o código continua na linha de baixo, na mesma coluna — `UFGH-035` / `150RHS`,
+`USDJ-472` / `6` —, e a IA devolvia só o pedaço de cima. Duas camadas, como
+no RMS:
+
+- **Regra para a IA** (`api/pedido-extrair`, `REGRAS_CODIGO` item 5): o pedaço
+  da linha de baixo, na coluna do código, se junta sem espaço
+  (`UFGH-035150RHS`, `USDJ-4726`); o da coluna da descrição continua a
+  descrição.
+- **Conferência contra o texto** (`api/shared/pedido-revisar.js`,
+  `juntarCodigosQuebrados`, passo 4 do `revisar`): se a IA devolver o código
+  pela metade, junta quando o código está numa linha de item, a linha de baixo
+  só tem espaço antes da coluna dele e começa ali (±1) um pedaço com cara de
+  código, que termina antes da coluna da descrição, e a linha de baixo não tem
+  quantidade nem valor. Cada junção gera o aviso "o código estava quebrado em
+  duas linhas no PDF (… + …) — juntei. Confira." na etapa Produtos.
+- Não junta: continuação da descrição, item novo logo abaixo (tabela sem
+  coluna de nº, com ou sem vírgula nos números), código que a IA já devolveu
+  inteiro. O código juntado ainda passa pela validação no Power BI.
+- `scripts/test-pedido-revisar.js` — a tabela da OC 0003511 exatamente como o
+  `pi-pdf-texto.js` entrega à IA, e os casos que não podem juntar. Vale para
+  os três perfis do extrator (pedido, consignado e cotação).
 
 ## Como colocar no ar
 
