@@ -400,6 +400,69 @@ function conferirCodigos(lista, linhas, texto, opts) {
   return { produtos: out, avisos: avisos };
 }
 
+// ── O CÓDIGO QUE QUEBROU EM DUAS LINHAS (11/11/2026) ──────────────
+// Coluna de código estreita: o código não cabe e continua na linha de
+// baixo, na MESMA coluna (OC 0003511 da Endotech) —
+//
+//     3 UFGH-035    FIO GUIA MSB HYDRO 0.035"X150CM RETO     UN   70,00 …
+//       150RHS      HIDROFILICO STANDARD
+//     4 USDJ-472    SONDA URETERAL DUPLO J 4.7X26            UN   10,00 …
+//       6
+//
+// — e a IA devolvia só o pedaço de cima ("UFGH-035", "USDJ-472"). Junta,
+// sem espaço, quando TUDO isto vale:
+//   . o código da IA está numa linha de item (2+ números), como palavra;
+//   . a linha de baixo só tem espaço ANTES da coluna do código (não é um
+//     item novo, que teria o nº do item ou o próprio código ali) e começa,
+//     nessa coluna (±1), um pedaço com cara de código;
+//   . o pedaço termina antes da coluna seguinte (a da descrição) e a linha
+//     de baixo não tem quantidade nem valor (número com vírgula/ponto, ou
+//     dois números ou mais depois do pedaço).
+// Código que a IA já devolveu inteiro não casa como palavra: não mexe.
+function posPalavra(linha, cod) {
+  var L = linha.toUpperCase(), c = cod.toUpperCase(), de = 0, i;
+  while ((i = L.indexOf(c, de)) >= 0) {
+    var antes = i === 0 ? ' ' : L.charAt(i - 1), depois = L.charAt(i + c.length) || ' ';
+    if (/\s/.test(antes) && /\s/.test(depois)) return i;
+    de = i + 1;
+  }
+  return -1;
+}
+var RE_PEDACO_COD = /^[A-Za-z0-9][A-Za-z0-9.\-\/_]{0,14}$/;
+var RE_NUM_DECIMAL = /\d[.,]\d/;
+function juntarCodigosQuebrados(lista, linhas) {
+  var avisos = [], usadas = {};
+  var out = lista.map(function (p, idx) {
+    var prod = Object.assign({}, p);
+    var cod = String(prod.codigo || '').trim();
+    if (cod.length < 3 || /\s/.test(cod)) return prod;
+    for (var i = 0; i < linhas.length - 1; i++) {
+      if (usadas[i]) continue;
+      var L = linhas[i], col = posPalavra(L, cod);
+      if (col < 0 || numerosDaLinha(L).length < 2) continue;
+      var resto = L.slice(col + cod.length).search(/\S/);
+      var limite = resto < 0 ? Infinity : col + cod.length + resto;   // onde começa a coluna seguinte
+      var B = linhas[i + 1] || '';
+      var ini = -1;
+      for (var s = Math.max(0, col - 1); s <= col + 1; s++) {
+        if (B.charAt(s) && /\S/.test(B.charAt(s)) && !B.slice(0, s).trim()) { ini = s; break; }
+      }
+      if (ini < 0) continue;
+      var pedaco = (/^\S+/.exec(B.slice(ini)) || [''])[0];
+      var depois = B.slice(ini + pedaco.length);
+      if (!RE_PEDACO_COD.test(pedaco) || ini + pedaco.length > limite) continue;
+      if (RE_NUM_DECIMAL.test(depois) || numerosDaLinha(depois).length >= 2) continue;   // linha de baixo é item (qtd/valor)
+      usadas[i] = true;
+      prod.codigo = cod + pedaco;
+      avisos.push({ item: idx, tipo: 'codigo-quebrado', corrigido: true,
+        texto: prod.codigo + ': o código estava quebrado em duas linhas no PDF (' + cod + ' + ' + pedaco + ') — juntei. Confira.' });
+      break;
+    }
+    return prod;
+  });
+  return { produtos: out, avisos: avisos };
+}
+
 // ================================================================
 // revisar(produtos, texto, opts) -> { produtos, avisos }
 // ================================================================
@@ -491,6 +554,14 @@ function revisar(produtos, texto, opts) {
     return prod;
   });
 
+  // ── 4. o código que quebrou em duas linhas (depois das conferências
+  //       acima, que acham a linha do item pelo código como a IA leu) ──
+  try {
+    var jq = juntarCodigosQuebrados(out, linhas);
+    out = jq.produtos;
+    avisos = avisos.concat(jq.avisos);
+  } catch (e) { /* conferir nunca derruba a leitura */ }
+
   return { produtos: out, avisos: avisos };
 }
 
@@ -503,5 +574,6 @@ module.exports = {
   linhaDoItem: linhaDoItem,
   rmsDoCodigo: rmsDoCodigo,
   cabecalhosDoRms: cabecalhosDoRms,
-  conferirCodigos: conferirCodigos
+  conferirCodigos: conferirCodigos,
+  juntarCodigosQuebrados: juntarCodigosQuebrados
 };
