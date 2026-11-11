@@ -821,6 +821,8 @@ async function ovsDoDia(E, dia, token, ate, diag) {
 const DATADAS = ['rejeitada', 'pallet', 'expedicao', 'cancelada'];
 // quando a carga foi para o Pallet: o campo de data do D365 > o registro do botão
 // do portal > a data de alteração da carga (aproximada). Só a carga no Pallet.
+// (11/11/26: o botão saiu da ficha — os envios que ele anotou continuam valendo;
+// os novos, marcados no Dynamics, vêm do campo de data ou da data de alteração)
 function datarPallet(c, plog) {
   if (!c || !c.palletSim) return;
   const log = plog && plog.por ? plog.por[String(c.id).toUpperCase()] : null;
@@ -1379,10 +1381,11 @@ async function montar(opts, modo) {
   });
   if (modo.quadro) {
     const temCampo = !!(CARGA.E && CARGA.E.palletData);
-    if (palletSemData) avisos.push(palletSemData + ' OV(s) no Pallet sem a data em que foram para o Pallet (enviadas antes de o portal anotar a data, ou marcadas direto no Dynamics): ficam fora da coluna Pallet, que mostra só as que mudaram hoje.');
-    if (!PALLET_LOG.configured() && !temCampo) {
-      avisos.push('O registro do botão do Pallet não está configurado (KANBAN_BLOB_URL ou LOG_PORTAL_BLOB_URL) e a carga não traz uma data do Pallet: ' +
-        (CARGA.E && CARGA.E.alterada ? 'a coluna Pallet usa a data de alteração da carga (' + CARGA.E.alterada + '), aproximada.' : 'a coluna Pallet não tem como saber o dia da mudança e fica vazia.'));
+    if (palletSemData) avisos.push(palletSemData + ' OV(s) no Pallet sem a data em que foram para o Pallet (a carga não traz a data): ficam fora da coluna Pallet, que mostra só as que mudaram hoje.');
+    // 11/11/26: sem o botão (que anotava a data), o dia da mudança sai da carga:
+    // um campo de data do Pallet ou a data de alteração dela
+    if (!temCampo && CARGA.E && !CARGA.E.alterada) {
+      avisos.push('A carga (' + CARGA.E.entidade + ') não traz uma data do Pallet nem a data de alteração: a coluna Pallet não tem como saber o dia da mudança e fica vazia. Crie um campo de data do Pallet na carga e informe o nome em KANBAN_COL_CARGA_PALLET_DATA.');
     }
     if (PLOG && PLOG.erro) avisos.push('Não deu para ler o registro do botão do Pallet (' + PLOG.erro + '): a coluna Pallet pode ficar incompleta.');
   }

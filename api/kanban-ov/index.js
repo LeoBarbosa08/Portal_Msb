@@ -24,7 +24,9 @@
 //        statusPadrao, ovs:[{ …, etapa, regra:{ …, credito*, trabalho }, trabalhos:[…] }],
 //        avisos, diagnostico }
 //   POST /api/kanban-ov { acao: 'enviar-pallet', carga: 'LD-…', ov: 'OV…' }
-//                                      -> grava ENVIARPALLET_CUSTOM = Sim na carga
+//                                      -> 11/11/26: DESLIGADO (410) — o botão saiu da
+//                                         ficha; KANBAN_PALLET_BOTAO=1 religa. Ligado:
+//                                         grava ENVIARPALLET_CUSTOM = Sim na carga
 //                                         (exige o login VALIDADO; fica no log) e
 //                                         relê para conferir: { confirmado, leitura, aviso };
 //                                         anota a data do envio (registrado)
@@ -57,6 +59,13 @@ module.exports = async function (context, req) {
       if (typeof b === 'string') { try { b = JSON.parse(b); } catch (e) { b = {}; } }
       b = b || {};
       if (String(b.acao || '') !== 'enviar-pallet') throw http.badRequest('Ação desconhecida.');
+      // 11/11/26 (dono: "retira o BOTÃO ENVIAR PARA O PALLET"): a ficha não tem mais o
+      // botão e o Kanban não grava no Dynamics — o envio fica DESLIGADO
+      // (KANBAN_PALLET_BOTAO=1 religa, junto com o botão de volta na tela)
+      if (String(process.env.KANBAN_PALLET_BOTAO || '').trim() !== '1') {
+        json(410, { ok: false, error: 'O envio ao Pallet pelo portal foi desativado: marque ' + 'ENVIARPALLET_CUSTOM = Sim na carga, no Dynamics.' });
+        return;
+      }
       // gravar no Dynamics só com o login VALIDADO (com o enforce desligado a
       // identidade vem de cabeçalho e qualquer um forjaria o e-mail)
       if (!base.validated) { const e = new Error('Para gravar no Dynamics é preciso o login validado. Saia e entre de novo no portal.'); e.status = 403; e.publicMessage = e.message; throw e; }

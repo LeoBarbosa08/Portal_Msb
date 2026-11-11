@@ -982,6 +982,13 @@ const bio = (n, st, lib) => ({ dataAreaId: 'msb', SalesOrderNumber: n, StatusPed
   CEN = { WHSOutboundLoadHeaderEntities: { linhas: [{ dataAreaId: 'msb', LoadId: 'LD-50', LoadStatus: 'Loaded', QuotationPerformed_InoveProjects: 'Yes', ENVIARPALLET_CUSTOM: 'No' }] } };
   SERVICO = ['WHSOutboundLoadHeaderEntities'];
   const logs = []; const ctxL = { log: Object.assign((...a) => logs.push(a.join(' ')), { error() {} }) };
+  // 11/11/26 (dono: "retira o BOTÃO ENVIAR PARA O PALLET"): por padrão o envio está DESLIGADO
+  auth.requireArea = async () => ({ user: { email: 'fulano@biomedical.com.br' }, validated: true });
+  await fn(ctxL, { method: 'POST', headers: {}, query: {}, body: { acao: 'enviar-pallet', carga: 'LD-50', ov: 'OV1' } });
+  t('envio ao Pallet desligado (padrão): 410 e não grava no Dynamics', ctxL.res.status === 410 && /desativado/.test(ctxL.res.body.error) && CEN.WHSOutboundLoadHeaderEntities.linhas[0].ENVIARPALLET_CUSTOM === 'No'
+    && !chamadas.some(c => c.metodo === 'PATCH' && c.chave.LoadId === 'LD-50'), { st: ctxL.res.status, body: ctxL.res.body });
+  // religado (KANBAN_PALLET_BOTAO=1): as regras de antes
+  process.env.KANBAN_PALLET_BOTAO = '1';
   auth.requireArea = async () => ({ user: { email: 'fulano@biomedical.com.br' }, validated: false });
   await fn(ctxL, { method: 'POST', headers: {}, query: {}, body: { acao: 'enviar-pallet', carga: 'LD-50', ov: 'OV1' } });
   t('POST sem o login validado -> 403 e não grava', ctxL.res.status === 403 && CEN.WHSOutboundLoadHeaderEntities.linhas[0].ENVIARPALLET_CUSTOM === 'No', ctxL.res.status);
@@ -990,6 +997,7 @@ const bio = (n, st, lib) => ({ dataAreaId: 'msb', SalesOrderNumber: n, StatusPed
   t('POST validado -> 200, grava e fica no log com quem fez', ctxL.res.status === 200 && CEN.WHSOutboundLoadHeaderEntities.linhas[0].ENVIARPALLET_CUSTOM === 'Yes' && logs.some(l => /enviar-pallet/.test(l) && /fulano@/.test(l) && /LD-50/.test(l)), { st: ctxL.res.status, logs });
   await fn(ctxL, { method: 'POST', headers: {}, query: {}, body: { acao: 'apagar-tudo' } });
   t('POST com outra ação -> 400', ctxL.res.status === 400, ctxL.res.status);
+  delete process.env.KANBAN_PALLET_BOTAO;
   await fn(ctx, { method: 'GET', headers: {}, query: { de: '2025-01-01', ate: '2026-11-06' } });
   t('período de mais de 1 ano -> 400', ctx.res.status === 400, ctx.res.status);
   await fn(ctx, { method: 'GET', headers: {}, query: { de: '01/11/2026' } });

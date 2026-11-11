@@ -1551,6 +1551,29 @@ fases". A regra do lote (`partesPorLinhas`) está **LIGADA por padrão** de novo
 - Testes (1, 7c): Pendência com regra; `=0` desliga; sem env, ligada.
   `sw.js` — cache `bm-comest-v74`.
 
+### Kanban · sem o botão "Enviar para o Pallet" (11/11/2026)
+
+O dono: "retira o BOTÃO ENVIAR PARA O PALLET". O Pallet passa a ser marcado só
+no Dynamics (`ENVIARPALLET_CUSTOM = Sim` na carga) e o Kanban volta a ser SÓ
+LEITURA:
+
+- **Tela** (`pages/kanban.html`): saiu a seção do botão da ficha (pronta /
+  enviada / ainda não dá), as funções `enviarPallet`/`postPallet`/
+  `cargasPallet`, o `estado.enviadas` e o CSS `.kb-acao*`. O selo "p/ Pallet" do
+  cartão fica (carga Carregado + cotação realizada), agora dizendo para marcar
+  no Dynamics; o passo Pallet da ficha e "Como a etapa é decidida" também.
+- **Servidor** (`api/kanban-ov`): o POST `enviar-pallet` responde **410**
+  ("desativado") e não grava nada; `KANBAN_PALLET_BOTAO=1` religa (com o botão de
+  volta na tela). O `enviarParaPallet` do motor fica, sem uso.
+- **A data da mudança** para a coluna Pallet ("mudaram hoje"): os envios que o
+  botão anotou continuam valendo; os novos, marcados no Dynamics, vêm de um campo
+  de data do Pallet na carga (`KANBAN_COL_CARGA_PALLET_DATA`) ou da data de
+  **alteração** da carga (`ModifiedDateTime`, aproximada). Sem nenhum dos dois na
+  entidade de cargas, aviso no topo: a coluna Pallet fica vazia. Saiu o aviso do
+  `KANBAN_BLOB_URL` (só o botão escrevia no registro).
+- Testes (6): POST desligado → 410 sem gravar; religado, as regras de antes.
+  `sw.js` — cache `bm-comest-v77`.
+
 ### Kanban · Pallet = as OVs que foram para o Pallet HOJE (11/11/2026)
 
 O dono: "a mudança para o Pallet é mostrar somente as que mudaram no DIA para o
