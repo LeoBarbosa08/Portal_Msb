@@ -3,7 +3,8 @@
 //
 // Para cada código de produto, cruza DUAS entidades do D365 F&O (OData
 // direto, sem Power Automate):
-//   1) BioInventSums        -> lotes (InventBatchId) com AvailPhysical > 0
+//   1) BioInventSums        -> saldo de cada lote (InventBatchId) =
+//        PhysicalInvent das localizações "PA."  −  ReservPhysical sem localização
 //   2) BioInventItemBatchV3 -> validade (expDate) de cada lote
 // Classifica cada lote pela proximidade do vencimento e devolve a lista
 // ordenada por validade (FEFO: vence primeiro, sai primeiro).
@@ -16,7 +17,7 @@
 // Env vars: as do shared/d365.js (D365_TENANT_ID/CLIENT_ID/CLIENT_SECRET,
 //   D365_RESOURCE_URL) + D365_ENTITY (BioInventSums), D365_BATCH_ENTITY
 //   (BioInventItemBatchV3). Na MSB: ESTOQUE_MSB_EMPRESA (msb),
-//   ESTOQUE_MSB_DEPOSITO (ALMOX-PA), ESTOQUE_MSB_LOCALIZACAO (vazia) — ver abaixo.
+//   ESTOQUE_MSB_DEPOSITO (ALMOX-PA), ESTOQUE_MSB_LOCALIZACAO (PA.) — ver abaixo.
 // ================================================================
 
 const D = require('../shared/d365');
@@ -24,20 +25,26 @@ const auth = require('../shared/auth');
 const http = require('../shared/http');
 
 // RECORTE MSB (04/11/2026, pedido do dono): o estoque do PI da MSB é o da
-// empresa MSB, depósito ALMOX-PA, SÓ nas localizações que começam com "PA."
-// — o mesmo campo de sempre (Quantidade física disponível = AvailPhysical),
-// somado por lote. As envs são PRÓPRIAS (ESTOQUE_MSB_*) de propósito: se
-// alguém copiar do portal da BIO o ESTOQUE_EMPRESA (bio) ou o
-// ESTOQUE_LOCATION (BCD), o estoque da MSB não muda.
+// empresa MSB, depósito ALMOX-PA (a conta do lote, desde 11/11, logo abaixo).
+// As envs são PRÓPRIAS (ESTOQUE_MSB_*) de propósito: se alguém copiar do
+// portal da BIO o ESTOQUE_EMPRESA (bio) ou o ESTOQUE_LOCATION (BCD), o
+// estoque da MSB não muda.
 const EMPRESA    = String(process.env.ESTOQUE_MSB_EMPRESA || 'msb').trim();
 const LOCATION   = String(process.env.ESTOQUE_MSB_DEPOSITO || 'ALMOX-PA').trim();
-// 05/11/2026 (pedido do dono): SEM filtro de localização por padrão. A
-// RESERVA no Dynamics entra numa linha do depósito SEM localização (Qtd.
-// física disponível -1, Reserva física 1) — com o filtro "PA." ela ficava de
-// fora e o saldo mostrava 1 onde o certo é 0. O depósito ALMOX-PA inteiro,
-// somado por lote, dá o saldo líquido certo. ESTOQUE_MSB_LOCALIZACAO volta o
-// filtro, se um dia precisar.
-const PREFIXO_LOC = String(process.env.ESTOQUE_MSB_LOCALIZACAO || '').trim().toUpperCase();
+// 05/11/2026 (pedido do dono): SEM filtro de localização. A RESERVA no
+// Dynamics entra numa linha do depósito SEM localização (Qtd. física
+// disponível -1, Reserva física 1) — com o filtro "PA." ela ficava de fora e o
+// saldo mostrava 1 onde o certo é 0.
+//
+// 11/11/2026 (pedido do dono) — A CONTA DO LOTE, campo a campo:
+//   saldo do lote = PhysicalInvent (estoque físico) das linhas do ALMOX-PA cuja
+//                   localização (wMSLocationId) começa com "PA."
+//                 − ReservPhysical (reserva física) das linhas do MESMO lote
+//                   SEM localização.
+// Saiu o AvailPhysical (Qtd. física disponível). As outras localizações
+// (fora de "PA.") não somam físico, e a reserva que tem localização não
+// entra. ESTOQUE_MSB_LOCALIZACAO troca o prefixo (padrão "PA.").
+const PREFIXO_LOC = String(process.env.ESTOQUE_MSB_LOCALIZACAO || 'PA.').trim().toUpperCase();
 const ENT_SUM    = process.env.D365_ENTITY || 'BioInventSums';
 const ENT_BATCH  = process.env.D365_BATCH_ENTITY || 'BioInventItemBatchV3';
 
@@ -65,45 +72,47 @@ function campoLocalizacao(row) {
          ks.find(function (k) { return /wms.*location/i.test(k) && !/^inventlocation/i.test(k); }) || null;
 }
 
+function numero(r, nomes) { var n = Number(D.pick(r, nomes)); return isNaN(n) ? 0 : n; }
+
 async function itemDados(codigo, location, token) {
-  // 1) saldos por lote. Filtro AvailPhysical NE 0 (traz linhas positivas E
-  //    negativas — ex.: baixa de lote gera linha negativa). O saldo real é a
-  //    SOMA de todas as linhas por lote (net), senão o saldo "não atualiza".
+  // 1) as linhas do item no depósito com físico OU reserva física (as duas
+  //    pernas da conta do lote — ver PREFIXO_LOC acima)
   var fSum = [];
   if (EMPRESA)  fSum.push("dataAreaId eq '" + D.odataStr(EMPRESA) + "'");
   if (location) fSum.push("InventLocationId eq '" + D.odataStr(location) + "'");
   fSum.push("ItemId eq '" + D.odataStr(codigo) + "'");
-  fSum.push('AvailPhysical ne 0');
+  fSum.push('(PhysicalInvent ne 0 or ReservPhysical ne 0)');
   var sums = await D.odataGet(ENT_SUM, { filter: fSum.join(' and '), crossCompany: true }, token);
 
-  // RECORTE MSB: só as localizações que começam com PREFIXO_LOC (desligado por padrão)
-  if (PREFIXO_LOC && sums.length) {
-    var campo = campoLocalizacao(sums[0]);
-    if (!campo) {
-      var e = new Error('a tabela ' + ENT_SUM + ' do Dynamics não traz a Localização (wMSLocationId), então não dá para ficar só com "' + PREFIXO_LOC + '"');
-      e.semLocalizacao = true;
-      throw e;
-    }
-    sums = sums.filter(function (r) { return String(r[campo] == null ? '' : r[campo]).trim().toUpperCase().indexOf(PREFIXO_LOC) === 0; });
+  // sem a Localização na linha não dá para separar "PA." de "sem localização"
+  var campo = sums.length ? campoLocalizacao(sums[0]) : null;
+  if (sums.length && !campo) {
+    var e = new Error('a tabela ' + ENT_SUM + ' do Dynamics não traz a Localização (wMSLocationId), então não dá para fazer a conta "' + PREFIXO_LOC + '" menos a reserva sem localização');
+    e.semLocalizacao = true;
+    throw e;
   }
 
-  // total = soma de TODAS as linhas (positivas + negativas) = saldo líquido
-  var disponivelTotal = sums.reduce(function (s, r) { var n = Number(D.pick(r, ['AvailPhysical'])); return s + (isNaN(n) ? 0 : n); }, 0);
-
-  // agrega por lote (net por InventBatchId) — junta linhas +/- do mesmo lote
-  var netPorLote = {};
+  // por lote: físico das localizações PREFIXO_LOC e reserva física sem localização
+  // (linha sem lote fica no grupo '' — entra no total, não vira lote alocável)
+  var porLote = {};
   sums.forEach(function (r) {
-    var b = D.pick(r, ['InventBatchId', 'inventBatchId']);
-    if (!b) return;
-    b = String(b);
-    var n = Number(D.pick(r, ['AvailPhysical'])); if (isNaN(n)) n = 0;
-    netPorLote[b] = (netPorLote[b] || 0) + n;
+    var b = String(D.pick(r, ['InventBatchId', 'inventBatchId']) || '');
+    var loc = String(r[campo] == null ? '' : r[campo]).trim().toUpperCase();
+    var g = porLote[b] || (porLote[b] = { fisico: 0, reserva: 0 });
+    if (loc && loc.indexOf(PREFIXO_LOC) === 0) g.fisico += numero(r, ['PhysicalInvent']);
+    else if (!loc) g.reserva += numero(r, ['ReservPhysical']);
   });
+  Object.keys(porLote).forEach(function (b) { porLote[b].saldo = porLote[b].fisico - porLote[b].reserva; });
 
-  // só lotes com saldo líquido POSITIVO podem ser alocados
-  var lotes = Object.keys(netPorLote)
-    .filter(function (b) { return netPorLote[b] > 0; })
-    .map(function (b) { return { batch: b, disponivel: netPorLote[b] }; });
+  // total = soma dos saldos POSITIVOS (lote com reserva maior que o físico em
+  // PA. fica em 0 — não come o saldo dos outros lotes); bate com o que a
+  // etapa Lotes deixa alocar
+  var disponivelTotal = Object.keys(porLote).reduce(function (s, b) { return s + Math.max(0, porLote[b].saldo); }, 0);
+
+  // só lotes com saldo POSITIVO podem ser alocados
+  var lotes = Object.keys(porLote)
+    .filter(function (b) { return b && porLote[b].saldo > 0; })
+    .map(function (b) { return { batch: b, disponivel: porLote[b].saldo, fisico: porLote[b].fisico, reserva: porLote[b].reserva }; });
 
   if (!lotes.length) return { disponivel: disponivelTotal, lotes: [] };
 

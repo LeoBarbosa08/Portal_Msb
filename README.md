@@ -236,7 +236,8 @@ Pedido do dono: trazer o PI · Pedido do portal completo (`LeoBarbosa08/Claude.r
   Envs próprias, para não herdar as da BIO: `ESTOQUE_MSB_EMPRESA`,
   `ESTOQUE_MSB_DEPOSITO`, `ESTOQUE_MSB_LOCALIZACAO` (vazia = sem filtro). A
   conexão é a mesma da BIO (`D365_*`). Se a consulta falhar, a etapa Produtos
-  avisa uma vez com o motivo e o 2º clique segue sem estoque.
+  avisa uma vez com o motivo e o 2º clique segue sem estoque. **11/11: a conta
+  do lote mudou** — ver "PI · Pedido: a conta do lote".
 - **Códigos do PI na MSB** (04/11): o recorte MSB do `pbi-throttle.js` sumia
   com produto do cadastro (`'Produtos'[Cód. produto]`, modelo Comercial) — o
   51200 existe na MSB e voltava "não encontrado". O que sobra da conferência é
@@ -1548,6 +1549,36 @@ abre para quem tem a **área Comercial**, como os outros módulos do Comercial:
 - `portal-catalogo.js` — o PI entrou no `MSB_VISIVEIS` (a busca da home).
 - `nav-sidebar.js?v=88` em todas as páginas, `portal-catalogo.js?v=25`;
   `sw.js` — cache `bm-comest-v69`.
+
+### PI · Pedido: a conta do lote (11/11/2026)
+
+Pedido do dono: "vai continuar considerando o ALMOX-PA, vai pegar o estoque
+físico do lote, PhysicalInvent, e analisar a localização que começa com 'PA.',
+wMSLocationId, menos a reserva física do lote, ReservPhysical, que não tem
+localização". No `/api/pedido-lotes`, por lote (`InventBatchId`), na empresa
+`msb` e no depósito `ALMOX-PA`:
+
+```
+saldo do lote = Σ PhysicalInvent  das linhas com wMSLocationId começando com "PA."
+              − Σ ReservPhysical  das linhas do mesmo lote SEM localização
+```
+
+- Saiu o `AvailPhysical` (Qtd. física disponível). Físico em localização fora
+  de `PA.` não soma; reserva física de linha **com** localização não desconta.
+- A consulta à `BioInventSums` traz as linhas com `PhysicalInvent ne 0 or
+  ReservPhysical ne 0` (antes `AvailPhysical ne 0`).
+- Só lote com saldo **maior que zero** vai para a etapa Lotes (e para o Auto
+  FEFO). O **disponível do produto** é a soma dos saldos positivos dos lotes: um
+  lote com reserva maior que o físico em `PA.` fica em 0 e não desconta dos
+  outros — assim o disponível bate com o que a etapa Lotes deixa alocar.
+- Cada lote da resposta traz também `fisico` e `reserva` (a conta aberta).
+- `ESTOQUE_MSB_LOCALIZACAO` agora é o prefixo da conta (padrão `PA.`; vazia
+  também vale `PA.`). Se a `BioInventSums` não trouxer a Localização, o item
+  volta com erro e a etapa Produtos avisa com o motivo (o 2º clique segue).
+- A revalidação na hora de enviar usa a mesma API, então segue a mesma conta.
+- `scripts/test-pedido-lotes.js` — a conta contra um F&O simulado (físico fora
+  de `PA.`, reserva com localização, lote zerado e negativo, FEFO, filtro, tabela
+  sem Localização). Só servidor: sem mudança de tela nem de cache.
 
 ## Como colocar no ar
 
