@@ -73,8 +73,15 @@ const COLS = {
   entrega:  ['RequestedShippingDate', 'ShippingDateRequested', 'RequestedReceiptDate', 'DeliveryDate'],
   deposito: ['DefaultShippingWarehouseId', 'InventLocationId', 'ShippingWarehouseId'],
   pool:     ['SalesOrderPoolId', 'SalesPoolId'],
-  criadoPor:['OrderTakerPersonnelNumber', 'CreatedBy', 'CREATEDBY', 'OrderResponsiblePersonnelNumber']
+  criadoPor:['OrderTakerPersonnelNumber', 'CreatedBy', 'CREATEDBY', 'OrderResponsiblePersonnelNumber'],
+  // 11/11/2026 (dono): "quando o pedido tiver AREADEMANDANTE (areademandante_Custom),
+  // sinalizar que veio do PI Pedidos" — o PI grava a Área Demandante na OV
+  // (api/pedido-enviar · Areademandante). Nome exato (sem caixa) ou o pedaço do nome.
+  area:     envLista('KANBAN_COL_AREA', ['areademandante_Custom', 'AreaDemandante_Custom', 'AreaDemandante', 'Areademandante'])
 };
+const RE_AREA = /area_?demandante/i;
+const COL_AREA_TXT = () => COLS.area[0];
+function colArea(row) { const cols = colunasDe(row); return achaCol(cols, COLS.area) || cols.find(c => RE_AREA.test(c)) || null; }
 // SÓ O DEPÓSITO ALMOX-PA (09/11/2026, pedido do dono: "depósito somente o que
 // for ALMOX-PA, não precisa do restante"): a OV de outro depósito — ou sem
 // depósito — fica fora do quadro. Pelo depósito do CABEÇALHO da OV (COLS.deposito).
@@ -1111,6 +1118,19 @@ async function montar(opts, modo) {
     rs.forEach(r => { const k = chaveOv(r[E.numero]); if (reg[k]) reg[k][E.entidade] = r; });
   });
 
+  // a Área Demandante (PI Pedidos): em qualquer entidade de OV lida; viuColArea =
+  // alguma delas tem o campo (sem ele em nenhuma: aviso)
+  let viuColArea = false;
+  const pegaArea = (k) => {
+    for (const ent of Object.keys(reg[k])) {
+      const row = reg[k][ent], col = colArea(row);
+      if (!col) continue;
+      viuColArea = true;
+      const v = txt(row[col]);
+      if (v && !VAZIOS.test(v)) return { valor: v, coluna: ent + '.' + col };
+    }
+    return null;
+  };
   const pega = (k, campo) => {
     for (const ent of Object.keys(reg[k])) { const col = achaCol(colunasDe(reg[k][ent]), COLS[campo]); if (col && txt(reg[k][ent][col]) && !VAZIOS.test(txt(reg[k][ent][col]))) return txt(reg[k][ent][col]); }
     return '';
@@ -1218,8 +1238,11 @@ async function montar(opts, modo) {
     const EC = cg0 ? cg0.E : CARGA.E;   // a entidade de onde veio a carga da OV
     if (cg0) campos[EC.entidade] = crus(cg0.row);
     const l = porLinha[k] || null;
+    const area = pegaArea(k);
     return {
       numero: k,
+      // 11/11/26: veio do PI Pedidos (a OV tem a Área Demandante)
+      origemPi: !!area, areaDemandante: area ? area.valor : null, areaCol: area ? area.coluna : null,
       cliente: pega(k, 'nome'), conta: pega(k, 'conta'), oc: pega(k, 'oc'),
       criadaEm: txt(reg[k][principal.entidade][principal.criadaEm]),
       entrega: pega(k, 'entrega'), deposito: pega(k, 'deposito'), pool: pega(k, 'pool'), criadoPor: pega(k, 'criadoPor'),
@@ -1274,6 +1297,11 @@ async function montar(opts, modo) {
     const g = porNum[n]; if (g.length < 2) return;
     g.forEach(p => { p.irmas = g.filter(x => x !== p).map(x => ({ chave: x.chave, etapa: x.etapa, valor: x.valor })); });
   });
+  if (todas.length && !viuColArea) {
+    avisos.push('O campo da Área Demandante (' + COL_AREA_TXT() + ') não está em nenhuma das entidades de OV lidas (' +
+      fontes.filter(f => f.papel === 'principal' || f.papel === 'complemento').map(f => f.entidade).join(', ') +
+      '): o selo "PI Pedidos" não aparece. Se o campo estiver em outra entidade, ela precisa estar entre as lidas (ou fixe o nome em KANBAN_COL_AREA).');
+  }
   if (!colLote && pendenciaPorLote() && Object.keys(porLinha).length) {
     avisos.push('As linhas da OV (' + (_entLinhas || 'SalesOrderLines') + ') não trazem o lote (' + COL_LOTE.join(' / ') + '): a Pendência por item sem lote fica desligada. Fixe o nome em KANBAN_COL_LOTE.');
   }

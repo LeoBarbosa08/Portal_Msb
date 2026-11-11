@@ -1529,6 +1529,25 @@ itens" só voltam com a regra ligada. Testes: por padrão ninguém em Pendência
 OV com item sem lote fica inteira; os da regra do lote rodam com ela ligada.
 `sw.js` — cache `bm-comest-v68`.
 
+### Kanban · selo "PI Pedidos" pela Área Demandante (11/11/2026)
+
+O dono: "quando o pedido tiver AREADEMANDANTE (areademandante_Custom), sinalizar
+que veio do PI Pedidos". O PI grava a Área Demandante na OV
+(`api/pedido-enviar` · `Areademandante`); o Kanban procura o campo em todas as
+entidades de OV que lê (principal + complementos: `SalesOrderHeadersV2`,
+`BIOSalesOrderHeaderV1`…) — pelo nome sem caixa (`areademandante_Custom`,
+`AreaDemandante_Custom`…, `KANBAN_COL_AREA`) ou pelo pedaço do nome
+("area…demandante").
+
+- Preenchido → `origemPi: true`, `areaDemandante` (o valor) e `areaCol`
+  (entidade.coluna). Vazio → não é do PI.
+- Tela: selo verde **PI Pedidos** no cartão e na lista (o título traz a área); na
+  ficha, a etiqueta "Veio do PI Pedidos" e a "Área demandante" nos dados do
+  pedido; a busca acha por "pi" e pela área.
+- Sem o campo em nenhuma entidade lida: aviso no topo (o selo não aparece).
+- Testes (4a): com a área → PI (e a coluna); vazia → não; sem o campo → aviso.
+  `sw.js` — cache `bm-comest-v69`.
+
 ## Como colocar no ar
 
 1. **Repositório no GitHub** — crie um repositório **privado e vazio** (sem

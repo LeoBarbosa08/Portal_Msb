@@ -188,6 +188,30 @@ const bio = (n, st, lib) => ({ dataAreaId: 'msb', SalesOrderNumber: n, StatusPed
   t('regra vem com os campos e a origem', r.ovs.find(o => o.numero === 'OV017517').regra.salesStatusCol === 'BIOSalesOrderHeaderV1.SalesStatus', r.ovs.find(o => o.numero === 'OV017517').regra);
   t('sem aviso de campo faltando', !r.avisos.some(a => /Não achei/.test(a)), r.avisos);
 
+  console.log('4a) 11/11/26 veio do PI Pedidos: a OV com a Área Demandante (areademandante_Custom)');
+  K._limparCache(); chamadas.length = 0;
+  const guarda4a = CEN, serv4a = SERVICO;
+  SERVICO = ['BIOSalesOrderHeaderV1', 'SalesOrderHeadersV2', 'SalesOrderLines'];
+  CEN = {
+    SalesOrderHeadersV2: { linhas: [v2('OV017601', DIA + 'T10:00:00Z', 'Backorder'), v2('OV017602', DIA + 'T11:00:00Z', 'Backorder'), v2('OV017603', DIA + 'T12:00:00Z', 'Backorder')] },
+    BIOSalesOrderHeaderV1: { linhas: [
+      Object.assign(b4('OV017601', 'Backorder', 'Open', 'No'), { AREADEMANDANTE_Custom: 'PEDIDOINTELIGENTE (VENDA RECORRENTE)' }),   // do PI (o nome sem caixa)
+      Object.assign(b4('OV017602', 'Backorder', 'Open', 'No'), { AREADEMANDANTE_Custom: '' }),                                      // vazio: não é do PI
+      Object.assign(b4('OV017603', 'Backorder', 'Open', 'No'), { AREADEMANDANTE_Custom: 'LICITACAO' })
+    ] },
+    SalesOrderLines: { linhas: [], auto: true }
+  };
+  r = await K.ordensDoDia({ data: DIA });
+  const a4 = (n) => r.ovs.find(o => o.numero === n);
+  t('com a Área Demandante -> veio do PI Pedidos, com o valor e a coluna', a4('OV017601').origemPi === true && a4('OV017601').areaDemandante === 'PEDIDOINTELIGENTE (VENDA RECORRENTE)'
+    && a4('OV017601').areaCol === 'BIOSalesOrderHeaderV1.AREADEMANDANTE_Custom' && a4('OV017603').origemPi === true, a4('OV017601'));
+  t('vazia -> não veio do PI', a4('OV017602').origemPi === false && a4('OV017602').areaDemandante === null, a4('OV017602').origemPi);
+  t('com o campo nas entidades: sem aviso', !r.avisos.some(a => /Área Demandante/.test(a)), r.avisos);
+  CEN.BIOSalesOrderHeaderV1.linhas.forEach(x => { delete x.AREADEMANDANTE_Custom; });
+  K._limparCache(); r = await K.ordensDoDia({ data: DIA });
+  t('sem o campo em nenhuma entidade: aviso, e ninguém marcado', r.avisos.some(a => /Área Demandante \(areademandante_Custom\) não está/.test(a)) && !r.ovs.some(o => o.origemPi), r.avisos);
+  CEN = guarda4a; SERVICO = serv4a;
+
   console.log('4b) só o depósito ALMOX-PA');
   K._limparCache(); chamadas.length = 0;
   SERVICO = ['BIOSalesOrderHeaderV1', 'SalesOrderHeadersV2', 'SalesOrderLines'];

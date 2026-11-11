@@ -306,6 +306,9 @@
             /* 10/11/26: a OV em partes — itens sem lote (Pendência) e trabalho aberto x os outros */
             .kb-chip.kb-lote{border-color:#F2D7A6;background:#FFF6E5;color:#8A5A00;}
             .kb-chip.kb-parte{border-color:#C9D9E8;background:#EEF4FA;color:#2A5577;}
+            /* 11/11/26: veio do PI Pedidos (a OV tem a Área Demandante) */
+            .kb-chip.kb-pi{border-color:#BFE3D3;background:#E7F6EF;color:#156B4C;font-weight:700;}
+            .kb-dw-tag.pi{background:#E7F6EF;color:#156B4C;}
             .kb-card.parte{border-style:dashed;border-color:#AFC0CB;}
             .kb-pt-p{margin:0 0 10px;font-size:12px;line-height:1.55;color:var(--dw-body);}
             .kb-pt-l{display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:center;gap:2px 12px;padding:9px 11px;border:1px solid var(--dw-bd);border-radius:10px;background:#fff;}
@@ -435,7 +438,7 @@
           </div>
 
           <div class="kb-bar">
-            <input type="search" class="kb-in kb-busca" id="kb-busca" placeholder="Buscar OV, cliente ou OC…">
+            <input type="search" class="kb-in kb-busca" id="kb-busca" placeholder="Buscar OV, cliente, OC ou “PI”…">
             <div class="kb-seg" role="group" aria-label="Visualização">
               <button type="button" class="on" data-vis="kanban">Kanban</button>
               <button type="button" data-vis="lista">Lista</button>
@@ -565,6 +568,8 @@
       }
       return { t: d.join(' · ') || 'a OV', s: sub.join(' · ') };
     }
+    // 11/11/26 (dono): "quando o pedido tiver a Área Demandante, sinalizar que veio do PI Pedidos"
+    function chipPi(o) { return o.origemPi ? '<span class="kb-chip kb-pi" title="' + esc('Veio do PI Pedidos · Área demandante: ' + o.areaDemandante) + '">PI Pedidos</span>' : ''; }
     function chipsParte(o) {
       var h = '', p = o.parte, t = o.parteTrab;
       var chip = function (cls, tt, txt) { return '<span class="kb-chip ' + cls + '" title="' + esc(tt) + '">' + esc(txt) + '</span>'; };
@@ -587,14 +592,14 @@
     function filtradas() {
       var r = estado.r; if (!r) return [];
       var q = estado.busca.toLowerCase();
-      return (r.ovs || []).filter(function (o) { return !q || [o.numero, o.cliente, o.conta, o.oc].join(' ').toLowerCase().indexOf(q) >= 0; });
+      return (r.ovs || []).filter(function (o) { return !q || [o.numero, o.cliente, o.conta, o.oc, o.areaDemandante, o.origemPi ? 'pi pedidos' : ''].join(' ').toLowerCase().indexOf(q) >= 0; });
     }
 
     function cardHtml(o) {
       var id = idOv(o), novo = estado.mudou[id] === 'nova';
       return '<button type="button" class="kb-card' + (estado.mudou[id] ? ' mudou' : '') + (estado.aberta === id ? ' is-aberta' : '') + (ehParte(o) ? ' parte' : '') + '" data-ov="' + esc(id) + '">'
         + '<div class="kb-l1"><span class="kb-ov">' + esc(o.numero) + '</span><span class="kb-cli" title="' + esc(o.cliente) + '">' + esc(o.cliente || o.conta) + '</span></div>'
-        + '<div class="kb-l2">' + (novo ? '<span class="kb-chip kb-nova">nova</span>' : '') + chipsParte(o)
+        + '<div class="kb-l2">' + (novo ? '<span class="kb-chip kb-nova">nova</span>' : '') + chipPi(o) + chipsParte(o)
         + (o.podePallet ? '<span class="kb-chip kb-pal" title="Carga Carregado e cotação realizada: pode ser enviada para o Pallet (na ficha)">p/ Pallet</span>' : '')
         // a nota fiscal da OV (09/11/26: "preciso saber qual a nota fiscal")
         + (o.nota ? '<span class="kb-chip kb-nf' + (o.nota.rejeitada ? ' kb-nf-rej' : '') + '" title="Nota fiscal' + (o.nota.status ? ' · ' + esc(rotNF(o.nota.status)) : '') + ((o.notas || []).length > 1 ? ' · ' + o.notas.length + ' notas' : '') + '">NF ' + esc(o.nota.numero) + '</span>' + (o.nota.rejeitada ? '<span class="kb-chip kb-nf-rej">' + esc(rotNF(o.nota.status)) + '</span>' : '') : '')
@@ -673,7 +678,7 @@
     function linhaLista(o) {
       var g = function (k) { return (o.regra && o.regra[k]) || ''; };
       var id = idOv(o);
-      return '<tr tabindex="0" data-ov="' + esc(id) + '"' + (estado.aberta === id ? ' class="is-aberta"' : '') + '><td><b>' + esc(o.numero) + '</b>' + (chipsParte(o) ? ' ' + chipsParte(o) : '') + '</td><td>' + esc(o.cliente || o.conta) + '</td><td>' + esc(quandoCriada(o)) + '</td><td>' + esc(o.oc) + '</td>'
+      return '<tr tabindex="0" data-ov="' + esc(id) + '"' + (estado.aberta === id ? ' class="is-aberta"' : '') + '><td><b>' + esc(o.numero) + '</b>' + (chipPi(o) + chipsParte(o) ? ' ' + chipPi(o) + chipsParte(o) : '') + '</td><td>' + esc(o.cliente || o.conta) + '</td><td>' + esc(quandoCriada(o)) + '</td><td>' + esc(o.oc) + '</td>'
         + '<td>' + esc(g('salesStatus')) + '</td><td>' + esc(g('releaseStatus')) + '</td><td>' + esc(credInfo(o.regra).veio ? credInfo(o.regra).rotulo : '') + '</td><td>' + esc(trabInfo(o).veio ? trabInfo(o).rotulo : '') + '</td><td>' + (o.nota ? esc(o.nota.numero) + (o.nota.status ? ' · ' + esc(rotNF(o.nota.status)) : '') : '') + '</td>'
         + '<td class="num">' + (o.itens == null ? '' : o.itens) + '</td><td class="num">' + esc(o.valor == null ? '—' : fBRL(o.valor)) + '</td></tr>';
     }
@@ -1071,6 +1076,7 @@
       else if (o.parte) tags.push('<span class="kb-dw-tag al">' + ((o.parte.id === 'linhas' ? (o.parte.n === 1 ? 'linha ' : 'linhas ') + stLinhasTxt(o.parte.status, o.parte.n) : { semlote: 'parte sem lote', comlote: 'parte com lote', entregue: 'parte entregue', resto: 'parte' }[o.parte.id]) || 'parte') + ' · ' + esc(o.parte.n + ' de ' + o.parte.de) + ' itens</span>');
       if (o.parteTrab) tags.push('<span class="kb-dw-tag al">' + (o.parteTrab.id === 'abrir' ? 'trabalho aberto' : 'trabalho fora da separação') + ' · ' + esc(o.parteTrab.n + ' de ' + o.parteTrab.de) + '</span>');
       if (o.semLinhas) tags.push('<span class="kb-dw-tag al">sem linha</span>');
+      if (o.origemPi) tags.push('<span class="kb-dw-tag pi" title="' + esc('Área demandante: ' + o.areaDemandante) + '">Veio do PI Pedidos</span>');
       if (depDiferente(o.deposito)) tags.push('<span class="kb-dw-tag az" title="Depósito">' + esc(o.deposito) + '</span>');
       if (o.oc) tags.push('<span class="kb-dw-tag" title="OC do cliente">OC ' + esc(o.oc) + '</span>');
       if (o.pool) tags.push('<span class="kb-dw-tag" title="Pool">' + esc(o.pool) + '</span>');
@@ -1537,6 +1543,7 @@
     ];
     function secDados(o) {
       var pares = [], ciD = credInfo(o.regra);
+      if (o.areaDemandante) pares.push(['Área demandante', esc(o.areaDemandante) + '<small>veio do PI Pedidos · ' + esc(o.areaCol || 'areademandante_Custom') + '</small>', '']);
       if (ciD.fonte === 'tabela') pares.push(['Gerenciamento de crédito', esc(ciD.rotulo) + '<small>' + esc(ciD.tabela) + '</small>', '']);
       DADOS.forEach(function (d) {
         var x = campoOv(o, d[1]); if (!x) return;
