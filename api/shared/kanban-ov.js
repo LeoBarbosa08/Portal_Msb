@@ -121,9 +121,10 @@ const VAZIOS = /^(|0|1900-01-01T00:00:00Z|00000000-0000-0000-0000-000000000000|N
 const ETAPAS = [
   // 09/11/2026 (dono): "insira antes de Criada o card PENDÊNCIA"; 10/11/2026: a
   // regra do lote (linhas em aberto sem lote); 11/11/2026 (dono): "deixa a
-  // Pendência de lado por enquanto, sem nada — ignora o status dela": a coluna
-  // fica VAZIA, à espera (a regra do lote só com KANBAN_PENDENCIA_LOTE=1)
-  { id: 'pendencia',   nome: 'Pendência', pendente: true },
+  // Pendência de lado por enquanto" — e, no mesmo dia, "volte para a Pendência
+  // tudo que não tiver LOTE na linha, seguindo a lei do SPLIT": a regra do lote
+  // LIGADA de novo (partesPorLinhas; KANBAN_PENDENCIA_LOTE=0 desliga)
+  { id: 'pendencia',   nome: 'Pendência' },
   { id: 'criada',      nome: 'Criada' },
   { id: 'credito',     nome: 'Gerenciamento de Crédito' },
   { id: 'liberado',    nome: 'Separação' },
@@ -680,8 +681,9 @@ const statusLinha = (st) => {
   return 'aberta';
 };
 const POS_NOTA = ['faturado', 'rejeitada', 'pallet', 'expedicao', 'cancelada'];
-// 11/11/26 (dono): a Pendência pelo lote fica DESLIGADA até ser analisada com calma
-const pendenciaPorLote = () => process.env.KANBAN_PENDENCIA_LOTE === '1';
+// 11/11/26 (dono): "volte para a Pendência tudo que não tiver LOTE na linha" — a
+// regra do lote LIGADA de novo; KANBAN_PENDENCIA_LOTE=0 desliga
+const pendenciaPorLote = () => String(process.env.KANBAN_PENDENCIA_LOTE || '').trim() !== '0';
 function partesPorLinhas(o, ls, lida, comLote, comStatus) {
   o.chave = o.numero; o.valorOv = o.valor; o.itensOv = o.itens; o._abertas = true;
   if (!ls || !ls.length) {

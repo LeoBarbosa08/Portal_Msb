@@ -1532,6 +1532,25 @@ itens" só voltam com a regra ligada. Testes: por padrão ninguém em Pendência
 OV com item sem lote fica inteira; os da regra do lote rodam com ela ligada.
 `sw.js` — cache `bm-comest-v68`.
 
+### Kanban · a Pendência de volta: item sem lote (11/11/2026)
+
+O dono, à tarde: "volte para a Pendência tudo que não tiver LOTE na linha,
+seguindo a lei do SPLIT — parte dela vai estar em Pendência e parte nas outras
+fases". A regra do lote (`partesPorLinhas`) está **LIGADA por padrão** de novo
+(`KANBAN_PENDENCIA_LOTE=0` desliga) e a Pendência saiu do `pendente: true`:
+
+- As linhas **em aberto** sem lote (`ItemBatchNumber` vazio) vão para um cartão
+  em Pendência (`OV~semlote`), com o valor e os itens só delas; as outras linhas
+  seguem as regras de sempre (Criada … Cotação, Aguardando, pelo status da
+  linha). Nenhuma com lote: a OV inteira em Pendência. A linha Entregue ou
+  Faturada, e a OV já em Faturado/Rejeitada/Pallet/Expedição, não volta para a
+  Pendência; linha cancelada não conta.
+- Sem a coluna do lote nas linhas: aviso no topo e nada dividido.
+- Tela: "Como a etapa é decidida" com a Pendência pelo lote, o tile "Lote dos
+  itens" e o "sem lote → vai para Pendência" nas linhas da ficha de volta.
+- Testes (1, 7c): Pendência com regra; `=0` desliga; sem env, ligada.
+  `sw.js` — cache `bm-comest-v74`.
+
 ### Kanban · selo "PI Pedidos" pela Área Demandante (11/11/2026)
 
 O dono: "quando o pedido tiver AREADEMANDANTE (areademandante_Custom), sinalizar
