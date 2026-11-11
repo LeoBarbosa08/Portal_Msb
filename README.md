@@ -1551,6 +1551,25 @@ fases". A regra do lote (`partesPorLinhas`) está **LIGADA por padrão** de novo
 - Testes (1, 7c): Pendência com regra; `=0` desliga; sem env, ligada.
   `sw.js` — cache `bm-comest-v74`.
 
+### Kanban · Pallet sem data: TODAS as OVs no Pallet (11/11/2026)
+
+O dono: "NÃO PRECISA DE DATA DO PALLET, pode trazer TUDO". Substitui o "Pallet =
+as que foram para o Pallet hoje" e a parte de data da entrada do botão (abaixo):
+
+- A coluna **Pallet** mostra toda OV que está no Pallet agora (carga Carregado
+  com `ENVIARPALLET_CUSTOM = Sim`), **de qualquer data**, como o Faturado; sai
+  quando a carga é Remetida (Expedição). O período fica só para Rejeitada e
+  Expedição (`DATADAS`). As cargas Carregado entram com ou sem o Pallet
+  (`ovsDeCargasCarregadas`), então a OV no Pallet é lida mesmo antiga.
+- Saiu toda a data do Pallet: `api/shared/kanban-pallet-log.js` (o registro do
+  botão no blob — `KANBAN_BLOB_URL` não é mais usado), `datarPallet`/
+  `palletEmDe`, as colunas `palletData`/`alterada` da carga, os campos
+  `palletDia`/`palletSemData`/`palletOutroDia` da resposta, os avisos, o
+  "mudaram hoje" da coluna e a data no passo "Agora: Pallet" da ficha.
+- Testes (7a): a OV no Pallet com nota antes do período aparece no Pallet; a
+  faturada antes do período, gravada no Pallet, também. `sw.js` — cache
+  `bm-comest-v78`.
+
 ### Kanban · sem o botão "Enviar para o Pallet" (11/11/2026)
 
 O dono: "retira o BOTÃO ENVIAR PARA O PALLET". O Pallet passa a ser marcado só

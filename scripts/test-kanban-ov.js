@@ -13,17 +13,6 @@
 
 process.env.D365_TENANT_ID = 't'; process.env.D365_CLIENT_ID = 'c'; process.env.D365_CLIENT_SECRET = 's';
 process.env.D365_RESOURCE_URL = 'https://fo.teste';
-// 11/11/26: o registro da data do Pallet (append blob) num Azure Blob falso
-process.env.KANBAN_BLOB_URL = 'https://blob.teste/kanban?sv=1&sig=x';
-const BLOBS = {};
-function blobFalso(u, opts) {
-  const nome = u.pathname.replace(/^\/kanban\//, ''), metodo = (opts && opts.method) || 'GET', h = (opts && opts.headers) || {};
-  const resp = (st, txt) => ({ ok: st < 400, status: st, text: async () => txt || '', json: async () => null });
-  if (metodo === 'GET') return BLOBS[nome] == null ? resp(404) : resp(200, BLOBS[nome]);
-  if (u.searchParams.get('comp') === 'appendblock') { if (BLOBS[nome] == null) return resp(404); BLOBS[nome] += opts.body; return resp(201); }
-  if (h['x-ms-blob-type'] === 'AppendBlob') { if (BLOBS[nome] != null) return resp(409); BLOBS[nome] = ''; return resp(201); }
-  return resp(400);
-}
 
 let falhas = 0;
 function t(nome, ok, extra) { console.log((ok ? '  ok  ' : '  FALHOU ') + nome + (ok || extra === undefined ? '' : ' -> ' + JSON.stringify(extra))); if (!ok) falhas++; }
@@ -36,7 +25,6 @@ global.fetch = async (url, opts) => {
   url = String(url);
   if (/login\.microsoftonline/.test(url)) return corpo({ access_token: 'tok', expires_in: 3600 });
   const u = new URL(url);
-  if (u.hostname === 'blob.teste') return blobFalso(u, opts);
   if (u.pathname === '/data') return corpo({ value: SERVICO.map(n => ({ name: n, url: n })) });
   // escrita: PATCH Entidade(chave='x',...) -> grava no cenário
   if (opts && opts.method === 'PATCH') {
@@ -571,8 +559,7 @@ const bio = (n, st, lib) => ({ dataAreaId: 'msb', SalesOrderNumber: n, StatusPed
   console.log('7a) 10/11/26 Faturado SEM data: as faturadas com a carga Carregado, de qualquer data');
   K._limparCache(); chamadas.length = 0;
   const guarda7a = CEN, serv7a = SERVICO;
-  const ldF = (id, st, cot, pal, mod) => ({ dataAreaId: 'msb', LoadId: id, LoadStatus: st, QuotationPerformed_InoveProjects: cot, ENVIARPALLET_CUSTOM: pal, ModifiedDateTime: mod || '1900-01-01T00:00:00Z' });
-  const ha3dias = new Date(Date.now() - 3 * 86400000).toISOString(), agora = () => new Date().toISOString();
+  const ldF = (id, st, cot, pal) => ({ dataAreaId: 'msb', LoadId: id, LoadStatus: st, QuotationPerformed_InoveProjects: cot, ENVIARPALLET_CUSTOM: pal });
   SERVICO = ['BIOSalesOrderHeaderV1', 'SalesOrderHeadersV2', 'SalesOrderLines', 'SalesInvoiceHeadersV2', 'FiscalDocuments', 'WHSWorkTableBiEntities', 'WHSOutboundLoadHeaderEntities'];
   CEN = {
     SalesOrderHeadersV2: { linhas: [
@@ -592,8 +579,7 @@ const bio = (n, st, lib) => ({ dataAreaId: 'msb', SalesOrderNumber: n, StatusPed
       w('OV018301', 'WF1', 'Closed', { LoadId: 'LD-F1' }), w('OV018302', 'WF2', 'Closed', { LoadId: 'LD-F2' }), w('OV018303', 'WF3', 'Closed', { LoadId: 'LD-F3' }),
       w('OV018305', 'WF5', 'Closed', { LoadId: 'LD-F5' }), w('TR000777', 'WF9', 'Closed', { LoadId: 'LD-F1', WorkTransType: 'TransferIssue' })
     ] },
-    // LD-F1 alterada há 3 dias; LD-F2 já no Pallet, sem data nenhuma (antes do registro)
-    WHSOutboundLoadHeaderEntities: { linhas: [ldF('LD-F1', 'Loaded', 'Yes', 'No', ha3dias), ldF('LD-F2', 'Loaded', 'Yes', 'Yes'), ldF('LD-F3', 'Shipped', 'Yes', 'Yes'), ldF('LD-F5', 'Loaded', 'No', 'No')] },
+    WHSOutboundLoadHeaderEntities: { linhas: [ldF('LD-F1', 'Loaded', 'Yes', 'No'), ldF('LD-F2', 'Loaded', 'Yes', 'Yes'), ldF('LD-F3', 'Shipped', 'Yes', 'Yes'), ldF('LD-F5', 'Loaded', 'No', 'No')] },
     SalesInvoiceHeadersV2: { linhas: [nf('OV018301', '000038301', '2026-10-20'), nf('OV018302', '000038302', '2026-10-21'), nf('OV018303', '000038303', '2026-10-22'), nf('OV018304', '000038304', '2026-10-01')] },
     FiscalDocuments: { linhas: [fd('000038301', 'Approved', '2026-10-20'), fd('000038302', 'Approved', '2026-10-21'), fd('000038303', 'Approved', '2026-10-22'), fd('000038304', 'Approved', '2026-10-01')] }
   };
@@ -603,8 +589,9 @@ const bio = (n, st, lib) => ({ dataAreaId: 'msb', SalesOrderNumber: n, StatusPed
   t('faturada ANTES do período, carga Carregado -> Faturado', e7a.OV018301 === 'faturado', e7a);
   t('em aberto com 1 linha Faturada (parcial) -> essa parte em Faturado (não some mais); o resto segue', e7a['OV018304~faturado'] === 'faturado' && e7a['OV018304~criada'] === 'criada', e7a);
   // 11/11/26 ("mandei para o pallet porém ele não atualizou"): o Pallet também sem data
-  t('o Pallet não segue o período: é HOJE (palletDia)', r.datadas.indexOf('pallet') < 0 && r.palletDia === K.hojeSP(), { datadas: r.datadas, dia: r.palletDia });
-  t('no Pallet sem a data da mudança: fora da coluna, contada e com aviso', !e7a.OV018302 && r.palletSemData === 1 && r.avisos.some(a => /1 OV\(s\) no Pallet sem a data/.test(a)), { e: e7a.OV018302, n: r.palletSemData });
+  // 11/11/26 (dono: "não precisa de data do Pallet, pode trazer tudo")
+  t('Pallet não é coluna datada', r.datadas.indexOf('pallet') < 0, r.datadas);
+  t('carga Carregado + Pallet, nota ANTES do período -> Pallet (todas, sem data)', e7a.OV018302 === 'pallet', e7a);
   t('carga Remetido: não vem pelas cargas Carregado (o período decide a Expedição)', !e7a.OV018303, e7a);
   t('em aberto com a carga Carregado segue em Cotação', e7a.OV018305 === 'cotacao', e7a);
   const lc7a = chamadas.find(c => c.ent === 'WHSOutboundLoadHeaderEntities' && /LoadStatus eq/.test(c.q.filter || ''));
@@ -615,27 +602,12 @@ const bio = (n, st, lib) => ({ dataAreaId: 'msb', SalesOrderNumber: n, StatusPed
   const d7a = r.diagnostico.find(d => d.etapa === 'fat:ovs');
   t('o diagnóstico diz quantas cargas e OVs', d7a && d7a.cargas === 3 && d7a.ovs === 3, d7a);
   t('sem aviso do Faturado', !r.avisos.some(a => /Carregado/.test(a)), r.avisos);
-  // o caso do dono: "uma OV de 4 semanas atrás que mudou HOJE para o Pallet tem que
-  // aparecer no Pallet" — a OV018301 é de setembro, com a nota de outubro
-  const rp7a = await K.enviarParaPallet('LD-F1', { por: 'teste@exemplo.com', ov: 'OV018301' });
-  t('o botão grava, confere no Dynamics e anota a data (registrado)', rp7a.ok && rp7a.confirmado === true && rp7a.registrado === true && !rp7a.aviso && rp7a.leitura.valor === 'Yes', rp7a);
-  const arq7a = 'kanban-pallet-' + new Date().toISOString().slice(0, 7) + '.jsonl', lin7a = (BLOBS[arq7a] || '').trim().split('\n').map(l => JSON.parse(l));
-  t('o registro: uma linha com a carga, a OV, quem e quando', lin7a.length === 1 && lin7a[0].carga === 'LD-F1' && lin7a[0].ov === 'OV018301' && lin7a[0].por === 'teste@exemplo.com' && Date.now() - Date.parse(lin7a[0].ts) < 60000, lin7a);
+  // a OV faturada antes do período, no Faturado, vai para o Pallet (gravado no D365)
+  const rp7a = await K.enviarParaPallet('LD-F1');
+  t('a gravação confere no Dynamics (confirmado)', rp7a.ok && rp7a.confirmado === true && !rp7a.aviso && rp7a.leitura.valor === 'Yes', rp7a);
   r = await K.quadro({ de: DE, ate: ATE });
-  const p7b = r.ovs.find(o => o.numero === 'OV018301');
-  t('mudou HOJE para o Pallet: aparece no Pallet, OV de setembro e período sem hoje', p7b && p7b.etapa === 'pallet' && p7b.palletEmFonte === 'portal' && p7b.dataPeriodo === K.hojeSP() && r.etapas.find(e => e.id === 'pallet').qtd === 1, p7b && { e: p7b.etapa, em: p7b.palletEm, f: p7b.palletEmFonte });
-  t('o registro do botão vale mais que a alteração da carga (de 3 dias atrás)', p7b && p7b.palletEm === lin7a[0].ts, p7b && p7b.palletEm);
-  // marcada direto no Dynamics: vale a data de ALTERAÇÃO da carga (aproximada)
-  K._limparCache();
-  CEN.WHSOutboundLoadHeaderEntities.linhas.find(x => x.LoadId === 'LD-F2').ModifiedDateTime = agora();
-  r = await K.quadro({ de: DE, ate: ATE });
-  const p7c = r.ovs.find(o => o.numero === 'OV018302');
-  t('sem o registro do botão, a carga alterada HOJE: no Pallet pela data de alteração', p7c && p7c.etapa === 'pallet' && p7c.palletEmFonte === 'alteracao' && r.palletSemData === 0, p7c && { e: p7c.etapa, f: p7c.palletEmFonte });
-  K._limparCache();
-  CEN.WHSOutboundLoadHeaderEntities.linhas.find(x => x.LoadId === 'LD-F2').ModifiedDateTime = ha3dias;
-  r = await K.quadro({ de: DE, ate: K.hojeSP() });
-  t('foi para o Pallet há 3 dias: fora, mesmo com o período cobrindo o dia', !r.ovs.some(o => o.numero === 'OV018302') && r.palletOutroDia === 1, { n: r.palletOutroDia });
-  t('a de hoje continua no Pallet', r.ovs.some(o => o.numero === 'OV018301' && o.etapa === 'pallet'), r.ovs.map(o => o.chave + '=' + o.etapa));
+  const e7b = {}; r.ovs.forEach(o => { e7b[o.chave] = o.etapa; });
+  t('depois, a OV faturada antes do período aparece no Pallet (não some do quadro)', e7b.OV018301 === 'pallet' && r.etapas.find(e => e.id === 'pallet').qtd === 2, e7b);
   CEN = guarda7a; SERVICO = serv7a;
 
   console.log('7b) o F&O recusa o filtro de enum: vai pelo texto');
@@ -918,12 +890,7 @@ const bio = (n, st, lib) => ({ dataAreaId: 'msb', SalesOrderNumber: n, StatusPed
   t('grava na carga, pela chave dataAreaId + LoadId, cross-company', patch && patch.ent === 'WHSOutboundLoadHeaderEntities' && patch.chave.dataAreaId === 'msb' && patch.chave.LoadId === 'LD-4' && patch.cross === 'true', patch);
   t('ENVIARPALLET_CUSTOM = "Yes"', patch && patch.corpo.ENVIARPALLET_CUSTOM === 'Yes' && Object.keys(patch.corpo).length === 1 && rp.ok && rp.coluna === 'ENVIARPALLET_CUSTOM', patch && patch.corpo);
   t('relê a carga depois de gravar: confirmado, sem aviso', rp.confirmado === true && !rp.aviso && rp.leitura.entidade === 'WHSOutboundLoadHeaderEntities', rp);
-  t('anota a data do envio', rp.registrado === true, rp);
-  // sem o container do registro: grava no Dynamics, mas avisa que a data não foi anotada
-  const blob9 = process.env.KANBAN_BLOB_URL; delete process.env.KANBAN_BLOB_URL;
-  const rp9 = await K.enviarParaPallet('LD-5');
-  t('sem KANBAN_BLOB_URL: grava, não anota e avisa', rp9.ok && rp9.confirmado === true && rp9.registrado === false && /falta configurar KANBAN_BLOB_URL/.test(rp9.aviso || ''), rp9);
-  process.env.KANBAN_BLOB_URL = blob9;
+
   r = await K.ordensDoDia({ data: DIA });
   t('depois de gravar, a OV vai para o Pallet (o cache foi limpo)', r.ovs.find(o => o.numero === 'OV019004').etapa === 'pallet', r.ovs.find(o => o.numero === 'OV019004').etapa);
   chamadas.length = 0;

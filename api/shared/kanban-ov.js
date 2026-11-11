@@ -38,7 +38,6 @@
 
 const D = require('./d365');
 const ST_NOTA = require('./fatdia-status');   // status da nota (documento fiscal / NF-e), pelo número
-const PALLET_LOG = require('./kanban-pallet-log');   // 11/11/26: QUANDO a carga foi para o Pallet (o botão anota)
 
 const EMPRESA   = String(process.env.KANBAN_EMPRESA || process.env.ESTOQUE_MSB_EMPRESA || 'msb').trim().toLowerCase();
 const TTL_MS    = Number(process.env.KANBAN_TTL_MS || 15000);        // cache do dia: 15 s (a tela consulta a cada 30 s)
@@ -237,14 +236,7 @@ const COL_CARGA = {
   // próprios da carga; nomes trocáveis por env (e procurados pelo pedaço do nome)
   // 09/11/26 (dono): "cotação realizada é esse campo aqui, QuotationPerformed_InoveProjects"
   cotacao:        envLista('KANBAN_COL_CARGA_COTACAO', ['QuotationPerformed_InoveProjects', 'COTACAOREALIZADA_CUSTOM', 'CotacaoRealizada_Custom', 'CotacaoRealizada', 'QuotationDone_Custom']),
-  pallet:         envLista('KANBAN_COL_CARGA_PALLET', ['ENVIARPALLET_CUSTOM', 'EnviarPallet_Custom', 'EnviarPallet']),
-  // 11/11/2026 (dono: "mostrar somente as que mudaram no DIA para o Pallet"): a
-  // DATA da mudança para o Pallet. 1º um campo de data do Pallet na carga, se o
-  // D365 tiver (KANBAN_COL_CARGA_PALLET_DATA, ou o pedaço do nome "pallet…data");
-  // 2º o registro do botão do portal (kanban-pallet-log.js); 3º a data de
-  // ALTERAÇÃO da carga, se a entidade expuser (aproximada)
-  palletData:     envLista('KANBAN_COL_CARGA_PALLET_DATA', ['DATAENVIOPALLET_CUSTOM', 'DataEnvioPallet_Custom', 'DataPallet_Custom', 'PalletDate_Custom']),
-  alterada:       envLista('KANBAN_COL_CARGA_ALTERADA', ['ModifiedDateTime', 'ModifiedDateTime1', 'ModifiedOn'])
+  pallet:         envLista('KANBAN_COL_CARGA_PALLET', ['ENVIARPALLET_CUSTOM', 'EnviarPallet_Custom', 'EnviarPallet'])
 };
 // ── AS REGRAS DO DONO PELA CARGA E PELA NOTA (09/11/2026) ─────────
 //   Separação   = status do TRABALHO = "Abrir" (Open)
@@ -458,9 +450,7 @@ const CFG_CARGA = {
   // os campos _CUSTOM: se o nome exato não bater, o pedaço do nome
   // (09/11/26: apertado — "pallet" sozinho pegaria PalletQuantity e afins, e o
   // campo do pallet é GRAVADO pelo botão; "quotation" sozinho pegaria QuotationId)
-  // (11/11/26: o do pallet não pega um campo de DATA do pallet, que é o palletData)
-  reCols: { cotacao: /quotation.?performed|cota[cç][aã]o.?realizad|cotacaorealizad/i, pallet: /enviar.?pallet(?!.*(data|date))/i,
-    palletData: /pallet.{0,12}(data|date)|(data|date).{0,12}pallet/i },
+  reCols: { cotacao: /quotation.?performed|cota[cç][aã]o.?realizad|cotacaorealizad/i, pallet: /enviar.?pallet/i },
   // (10/11/26: SEM a 2ª rodada em outras entidades com "load" no nome — a carga é
   // só a WHSOutboundLoadHeaderEntity, pedido do dono)
   erroCol: (p) => 'sem a coluna ' + COL_CARGA[p].join('/')
@@ -652,7 +642,6 @@ function addCarga(por, E, r) {
     id, status: txt(v('status')), transportadora: txt(v('transportadora')), servico: txt(v('servico')),
     envio: dataHora(v('envio')), expedido: dataHora(v('expedido')), deposito: txt(v('deposito')), modelo: txt(v('modelo')),
     cotacao: cot == null ? null : txt(cot), cotacaoSim: marcadoV(cot), pallet: pal == null ? null : txt(pal), palletSim: marcadoV(pal),
-    palletData: dataHora(v('palletData')), alterada: dataHora(v('alterada')),
     fonte: E.entidade
   };
   carga.fase = faseCarga(carga);
@@ -812,34 +801,11 @@ async function ovsDoDia(E, dia, token, ate, diag) {
 // 10/11/2026 (dono: "o HOJE não precisa ter no card Faturado, pode deixar
 // histórico que nem os demais"): Faturado SAIU das datadas — mostra toda OV que
 // está em Faturado agora, de qualquer data (ovsDeCargasCarregadas, abaixo).
-// 11/11/2026 (dono: "a mudança para o Pallet é mostrar somente as que mudaram no
-// DIA para o PALLET, não importando a data da OV" — "não no dia escolhido, e sim
-// NA DATA ATUAL: uma OV de 4 semanas atrás que mudou hoje para o Pallet tem que
-// aparecer no Pallet"): o Pallet mostra as OVs que foram para o Pallet HOJE (pela
-// DATA DA MUDANÇA, palletEmDe, abaixo), de OV de qualquer data, e NÃO segue o
-// período da tela. Rejeitada e Expedição seguem o período, pela data da nota.
-const DATADAS = ['rejeitada', 'pallet', 'expedicao', 'cancelada'];
-// quando a carga foi para o Pallet: o campo de data do D365 > o registro do botão
-// do portal > a data de alteração da carga (aproximada). Só a carga no Pallet.
-// (11/11/26: o botão saiu da ficha — os envios que ele anotou continuam valendo;
-// os novos, marcados no Dynamics, vêm do campo de data ou da data de alteração)
-function datarPallet(c, plog) {
-  if (!c || !c.palletSim) return;
-  const log = plog && plog.por ? plog.por[String(c.id).toUpperCase()] : null;
-  if (c.palletData) { c.palletEm = c.palletData; c.palletEmFonte = 'campo'; }
-  else if (log) { c.palletEm = log; c.palletEmFonte = 'portal'; }
-  else if (c.alterada) { c.palletEm = c.alterada; c.palletEmFonte = 'alteracao'; }
-}
-// a data da OV no Pallet = a da ÚLTIMA carga dela que foi (a OV só vai para o
-// Pallet com todas as cargas lá); null = nenhuma carga com data
-function palletEmDe(cargas) {
-  const cs = (cargas || []).filter(c => c.palletSim && c.palletEm);
-  if (!cs.length) return null;
-  const c = cs.reduce((m, x) => x.palletEm > m.palletEm ? x : m);
-  return { em: c.palletEm, fonte: c.palletEmFonte, carga: c.id };
-}
-// o dia em Brasília (UTC-3) de uma data-hora UTC
-function diaSP(iso) { const t = Date.parse(iso); return isNaN(t) ? null : new Date(t - FUSO_H * 3600000).toISOString().slice(0, 10); }
+// 11/11/2026 (dono, depois de pedir o Pallet "só as que mudaram hoje": "NÃO
+// PRECISA DE DATA DO PALLET, pode trazer TUDO"): o Pallet também SAIU das
+// datadas — mostra toda OV que está no Pallet agora (carga ainda Carregado com
+// ENVIARPALLET_CUSTOM = Sim), de qualquer data; sai quando a carga é Remetida.
+const DATADAS = ['rejeitada', 'expedicao', 'cancelada'];
 const JANELA_DIAS = Number(process.env.KANBAN_JANELA_DIAS || 365);  // reserva, se o filtro pelo status não passar
 const MAX_COMPL_QUADRO = Number(process.env.KANBAN_MAX_COMPL || 3); // complementos no quadro (V3, V2, SalesOrderHeaders)
 async function ovsAbertas(E, token, ate, diag, avisos) {
@@ -902,10 +868,9 @@ async function ovsComNotaNoPeriodo(de, ateDia, token, ate, diag) {
 // diário de faturas da vida toda não cabe no tempo. Mas a faturada fica com a
 // carga CARREGADO até ser Remetida (regras do dono) — então: as cargas Carregado
 // (em todas as entidades de cargas) -> os trabalhos dessas cargas -> as OVs.
-// 11/11/26: COM as já enviadas ao Pallet (antes ficavam de fora e a OV sumia do
-// quadro depois do botão): o Pallet vale pela data da MUDANÇA, de OV de qualquer
-// data. Junto com as em aberto e as com nota no período, o Faturado fica com
-// toda OV que está nele agora.
+// 11/11/26: COM as já no Pallet (antes ficavam de fora e a OV sumia do quadro).
+// Junto com as em aberto e as com nota no período, as colunas Faturado e Pallet
+// ficam com toda OV que está nelas agora, de qualquer data.
 const MAX_CARGAS_FAT = Number(process.env.KANBAN_MAX_CARGAS_FAT || 400);
 async function ovsDeCargasCarregadas(token, ate, diag) {
   const [xc, xt] = await Promise.all([entidadeExtra(CFG_CARGA, token, ate, diag), entidadeExtra(CFG_TRABALHO, token, ate, diag)]);
@@ -1063,8 +1028,7 @@ async function montar(opts, modo) {
   const token = await D.getToken();
   const ents = await entidades(token, ate, diag, !!opts.diag);
   const base = { ok: true, configured: true, empresa: EMPRESA, data: dia, hoje: hojeSP(), geradoEm: new Date().toISOString() };
-  // (11/11/26: o Pallet não segue o período — é "hoje", à parte em palletDia)
-  if (modo.quadro) Object.assign(base, { modo: 'quadro', de: modo.de, ate: modo.ateDia, datadas: DATADAS.filter(x => x !== 'cancelada' && x !== 'pallet') });
+  if (modo.quadro) Object.assign(base, { modo: 'quadro', de: modo.de, ate: modo.ateDia, datadas: DATADAS.filter(x => x !== 'cancelada') });
   if (!ents.length) {
     return Object.assign(base, { fontes: [], etapas: ETAPAS.map(e => Object.assign({ qtd: 0, valor: 0 }, e)), canceladas: 0, statusCols: [], statusPadrao: null, ovs: [],
       avisos: ['Nenhuma entidade de ordem de venda respondeu no Dynamics (testadas: ' + CANDIDATAS.join(', ') + '). Veja o diagnóstico.'], diagnostico: diag });
@@ -1146,15 +1110,9 @@ async function montar(opts, modo) {
   if (NOTAS.E) fontes.push({ entidade: NOTAS.E.entidade, papel: 'notas', colunas: NOTAS.E.numero + ' + ' + NOTAS.E.nota, notas: nfs.length, status: STN.fontes || [] });
   // cargas: só se a entidade de trabalho respondeu e algum trabalho tem LoadId
   const idsCarga = TRAB.E ? Array.from(new Set([].concat.apply([], Object.keys(TRAB.por).map(k => TRAB.por[k].lista.map(w => w.carga))).filter(Boolean))) : [];
-  // 11/11/26: junto, o registro do botão do Pallet (a data da mudança, no quadro)
-  const [CARGA, PLOG] = await Promise.all([
-    idsCarga.length
-      ? cargasPorId(idsCarga, token, ate, diag).catch(e => ({ E: null, por: {}, erro: String(e.message || e).slice(0, 160) }))
-      : Promise.resolve({ E: null, por: {}, semIds: true }),
-    modo.quadro ? PALLET_LOG.lerPeriodo(hojeSP(), hojeSP()).catch(e => ({ por: {}, erro: String(e.message || e).slice(0, 120) })) : Promise.resolve(null)
-  ]);
-  Object.keys(CARGA.por).forEach(k => datarPallet(CARGA.por[k].carga, PLOG));
-  if (PLOG) diag.push({ etapa: 'pallet:registro', cargas: Object.keys(PLOG.por || {}).length, erro: PLOG.erro || null });
+  const CARGA = idsCarga.length
+    ? await cargasPorId(idsCarga, token, ate, diag).catch(e => ({ E: null, por: {}, erro: String(e.message || e).slice(0, 160) }))
+    : { E: null, por: {}, semIds: true };
   if (CARGA.E) diag.push({ etapa: 'carga:colunas', entidade: CARGA.E.entidade, colunas: CARGA.E.colunas || [] });
   if (CARGA.E) (CARGA.usadas || [{ entidade: CARGA.E.entidade, cargas: Object.keys(CARGA.por).length }]).forEach(u => {
     const Eu = (CARGA.lista || []).find(L => L.entidade === u.entidade) || CARGA.E;
@@ -1316,7 +1274,7 @@ async function montar(opts, modo) {
         aprovada: !!(nVale && nVale.aprovada), fonte: nVale ? nVale.statusFonte : '' } : null, notaFonte: NOTAS.E ? NOTAS.E.entidade : null,
       // cargas (WHSOutboundLoadHeaderEntity): Conferência, Cotação, Pallet e Expedição
       cargas: cargasOv, cargaFase: faseOv, cargaFonte: EC ? EC.entidade + (EC.status ? '.' + EC.status : '') : null,
-      cargaCols: EC ? { status: EC.status || null, cotacao: EC.cotacao || null, pallet: EC.pallet || null, palletData: EC.palletData || null, alterada: EC.alterada || null } : null,
+      cargaCols: EC ? { status: EC.status || null, cotacao: EC.cotacao || null, pallet: EC.pallet || null } : null,
       // pode enviar para o Pallet: alguma carga Carregado + cotação Sim, ainda não enviada
       podePallet: cargasOv.some(c => c.podePallet),
       status, campos,
@@ -1354,41 +1312,17 @@ async function montar(opts, modo) {
   if (!colLote && pendenciaPorLote() && Object.keys(porLinha).length) {
     avisos.push('As linhas da OV (' + (_entLinhas || 'SalesOrderLines') + ') não trazem o lote (' + COL_LOTE.join(' / ') + '): a Pendência por item sem lote fica desligada. Fixe o nome em KANBAN_COL_LOTE.');
   }
-  // 11/11/26: a data da mudança para o Pallet (a ficha mostra; o quadro filtra)
-  partes.forEach(o => {
-    if (o.etapa !== 'pallet') return;
-    const pe = palletEmDe(o.cargas);
-    o.palletEm = pe ? pe.em : null; o.palletEmFonte = pe ? pe.fonte : null;
-  });
-  // quadro: as colunas DATADAS só com a OV do período — Rejeitada e Expedição
-  // pela data da nota mais recente (sem nota, a de criação). O PALLET (11/11/26)
-  // só com a OV que foi para o Pallet HOJE, de qualquer data, fora do período
-  const hoje = hojeSP();
-  let foraPeriodo = 0, palletSemData = 0, palletOutroDia = 0;
+  // quadro: as colunas DATADAS (Rejeitada, Expedição) só com a OV do período —
+  // pela data da nota mais recente; sem nota, a de criação
+  let foraPeriodo = 0;
   const ovs = !modo.quadro ? partes : partes.filter(o => {
     if (DATADAS.indexOf(o.etapa) < 0) return true;
-    if (o.etapa === 'pallet') {
-      if (!o.palletEm) { palletSemData++; return false; }
-      o.dataPeriodo = diaSP(o.palletEm);
-      if (o.dataPeriodo !== hoje) { palletOutroDia++; return false; }
-      return true;
-    }
     const d = (o.notas && o.notas[0] && o.notas[0].data) || diaDe(o.criadaEm, principal.criadaEm) || '';
     o.dataPeriodo = d || null;
     const dentro = d >= modo.de && d <= modo.ateDia;
     if (!dentro) foraPeriodo++;
     return dentro;
   });
-  if (modo.quadro) {
-    const temCampo = !!(CARGA.E && CARGA.E.palletData);
-    if (palletSemData) avisos.push(palletSemData + ' OV(s) no Pallet sem a data em que foram para o Pallet (a carga não traz a data): ficam fora da coluna Pallet, que mostra só as que mudaram hoje.');
-    // 11/11/26: sem o botão (que anotava a data), o dia da mudança sai da carga:
-    // um campo de data do Pallet ou a data de alteração dela
-    if (!temCampo && CARGA.E && !CARGA.E.alterada) {
-      avisos.push('A carga (' + CARGA.E.entidade + ') não traz uma data do Pallet nem a data de alteração: a coluna Pallet não tem como saber o dia da mudança e fica vazia. Crie um campo de data do Pallet na carga e informe o nome em KANBAN_COL_CARGA_PALLET_DATA.');
-    }
-    if (PLOG && PLOG.erro) avisos.push('Não deu para ler o registro do botão do Pallet (' + PLOG.erro + '): a coluna Pallet pode ficar incompleta.');
-  }
 
   // as 4 colunas, na ordem do fluxo, com contagem e valor
   const etapas = ETAPAS.map(e => {
@@ -1440,7 +1374,7 @@ async function montar(opts, modo) {
     if (falta.length) avisos.push('Não achei ' + falta.join(', ') + ' nas entidades lidas (' + fontes.map(f => f.entidade).join(', ') + '): as etapas dependem desses campos. Veja os campos de cada OV no painel.');
     else if (achou.sales < ovs.length) avisos.push((ovs.length - achou.sales) + ' OV(s) sem SalesStatus: ficaram em Criada, Gerenciamento de Crédito ou Separação pelos outros campos.');
   }
-  const r = Object.assign(base, { fontes, etapas, canceladas, depositos: TODOS_DEPOSITOS ? null : DEPOSITOS, foraDeposito, foraPeriodo, palletSemData, palletOutroDia, palletDia: modo.quadro ? hoje : undefined, statusCols, statusPadrao, ovs, avisos, diagnostico: diag });
+  const r = Object.assign(base, { fontes, etapas, canceladas, depositos: TODOS_DEPOSITOS ? null : DEPOSITOS, foraDeposito, foraPeriodo, statusCols, statusPadrao, ovs, avisos, diagnostico: diag });
   if (!opts.diag) _cache.set(modo.chave, { ts: Date.now(), r });
   return r;
 }
@@ -1570,8 +1504,7 @@ async function operacoesDasOvs(numeros, ate) {
 // só então grava ENVIARPALLET_CUSTOM = Sim (PATCH na entidade de cargas, pela
 // chave dataAreaId + LoadId). Já enviada = ok sem gravar de novo.
 function erroStatus(msg, status) { const e = new Error(msg); e.status = status; e.publicMessage = msg; return e; }
-async function enviarParaPallet(loadId, quem) {
-  quem = quem || {};
+async function enviarParaPallet(loadId) {
   const id = txt(loadId);
   if (!/^[A-Za-z0-9._\-\/]{1,40}$/.test(id)) throw erroStatus('Número de carga inválido.', 400);
   const ate = Date.now() + 25000, diag = [];
@@ -1635,21 +1568,8 @@ async function enviarParaPallet(loadId, quem) {
   // 11/11/26 (dono: "mandei para o pallet porém ele não atualizou"): relê a carga
   // na entidade de onde o QUADRO a lê (E) e confere se ela já mostra Sim — se não,
   // a tela diz onde gravou e o que a leitura mostra, em vez de esperar à toa
-  // 11/11/26 (dono: "mostrar no Pallet as que mudaram HOJE"): o D365 não guarda
-  // a data da mudança — o portal anota (kanban-pallet-log.js). Junto da releitura.
-  const [conf, registrado] = await Promise.all([
-    conferirPallet(E, usada, id, token, ate),
-    PALLET_LOG.registrar({ carga: id, ov: quem.ov, por: quem.por, entidade: usada.entidade })
-  ]);
-  const out = Object.assign({ ok: true, carga: id, entidade: usada.entidade, coluna: usada.pallet, valor, registrado }, conf);
-  // sem a data anotada (e sem um campo de data do Pallet na carga), a OV pode não
-  // aparecer no Pallet de hoje: a ficha avisa
-  if (!registrado && !E.palletData && !(lista.some(L => L.palletData))) {
-    const semData = 'A data do envio não foi anotada (' + (PALLET_LOG.configured() ? 'o registro falhou' : 'falta configurar KANBAN_BLOB_URL') +
-      '): a OV pode não aparecer na coluna Pallet de hoje' + (E.alterada ? ' (vale a data de alteração da carga)' : '') + '.';
-    out.aviso = out.aviso ? out.aviso + ' ' + semData : semData;
-  }
-  return out;
+  const conf = await conferirPallet(E, usada, id, token, ate);
+  return Object.assign({ ok: true, carga: id, entidade: usada.entidade, coluna: usada.pallet, valor }, conf);
 }
 async function conferirPallet(E, usada, id, token, ate) {
   const leitura = { entidade: E.entidade, coluna: E.pallet || null, valor: null };

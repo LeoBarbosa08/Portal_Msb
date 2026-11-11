@@ -13,8 +13,7 @@
 //   GET /api/kanban-ov?de=2026-11-01&ate=2026-11-09
 //                                      -> o quadro com o período de Rejeitada
 //                                         e Expedição (máx. 366 dias; 11/11/26: o
-//                                         Pallet não segue o período — são as OVs
-//                                         que foram para o Pallet HOJE)
+//                                         Pallet saiu — mostra todas, como o Faturado)
 //   GET /api/kanban-ov?data=2026-11-05 -> o mesmo que de=ate=essa data
 //   GET /api/kanban-ov?modo=dia&data=… -> o modo antigo: as OVs CRIADAS no dia
 //   GET /api/kanban-ov?atualizar=1     -> ignora o cache de 15 s
@@ -28,8 +27,7 @@
 //                                         ficha; KANBAN_PALLET_BOTAO=1 religa. Ligado:
 //                                         grava ENVIARPALLET_CUSTOM = Sim na carga
 //                                         (exige o login VALIDADO; fica no log) e
-//                                         relê para conferir: { confirmado, leitura, aviso };
-//                                         anota a data do envio (registrado)
+//                                         relê para conferir: { confirmado, leitura, aviso }
 //   GET /api/kanban-ov?ov=OV017525     -> as linhas da OV (a ficha do painel)
 //   -> { ok, configured, numero, entidade, linhas:[{ linha, item, produto,
 //        qtd, un, preco, desconto, descPct, valor, status, entrega,
@@ -71,9 +69,8 @@ module.exports = async function (context, req) {
       if (!base.validated) { const e = new Error('Para gravar no Dynamics é preciso o login validado. Saia e entre de novo no portal.'); e.status = 403; e.publicMessage = e.message; throw e; }
       const email = String((base.user && base.user.email) || '').toLowerCase();
       try {
-        // 11/11/26: quem e a OV vão para o registro da data do Pallet
-        const r = await K.enviarParaPallet(b.carga, { por: email, ov: String(b.ov || '').slice(0, 40) });
-        context.log('[kanban-ov] enviar-pallet', JSON.stringify({ por: email, carga: r.carga, ov: String(b.ov || '').slice(0, 40), ja: !!r.ja, entidade: r.entidade, coluna: r.coluna, confirmado: r.confirmado, leitura: r.leitura, registrado: r.registrado }));
+        const r = await K.enviarParaPallet(b.carga);
+        context.log('[kanban-ov] enviar-pallet', JSON.stringify({ por: email, carga: r.carga, ov: String(b.ov || '').slice(0, 40), ja: !!r.ja, entidade: r.entidade, coluna: r.coluna, confirmado: r.confirmado, leitura: r.leitura }));
         json(200, r);
       } catch (e) {
         context.log('[kanban-ov] enviar-pallet recusado', JSON.stringify({ por: email, carga: String(b.carga || '').slice(0, 40), erro: String(e.message || e).slice(0, 300) }));
