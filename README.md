@@ -1585,6 +1585,24 @@ saldo do lote = Σ PhysicalInvent  das linhas com wMSLocationId começando com "
   de `PA.`, reserva com localização, lote zerado e negativo, FEFO, filtro, tabela
   sem Localização). Só servidor: sem mudança de tela nem de cache.
 
+### PI · Pedido: o endereço cadastrado do cliente (11/11/2026)
+
+Pedido do dono: "trazer o endereço cadastrado do cliente igual do CRM; quando
+o endereço não tá preenchido coloca NÃO INFORMADO — por enquanto quando digitar
+o CNPJ e trazer as informações". Em `pedido-inteligente.js`
+(`enderecoDoCadastro`), quando o CNPJ é validado:
+
+- o PI consulta o cliente no Dynamics pela **mesma** rota do CRM (Nova
+  oportunidade): `/api/cot-casos?cliente=<CNPJ>` (`shared/cot-erp.js`), e monta
+  o endereço igual a ele: `endereço - bairro`;
+- o endereço aparece no cartão "Cliente encontrado" e vai para o **Endereço de
+  Entrega** do cabeçalho se ele estiver **vazio** — o endereço lido do PDF e o
+  da cotação ficam; o que este preenchimento pôs é trocado se o CNPJ mudar;
+- cadastro sem endereço, cliente que o Dynamics não achou ou consulta que
+  falhou: **NAO INFORMADO** (o motivo aparece no cartão);
+- não segura o Continuar: o campo é preenchido quando o Dynamics responder.
+- `pedido-inteligente.js?v=39`; `sw.js` — cache `bm-comest-v70`.
+
 ## Como colocar no ar
 
 1. **Repositório no GitHub** — crie um repositório **privado e vazio** (sem
