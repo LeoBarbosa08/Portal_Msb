@@ -61,7 +61,7 @@
           <!-- ═══════════ KANBAN · ORDENS DO DIA ═══════════
                As ordens de venda da MSB (ALMOX-PA), AO VIVO do Dynamics (/api/kanban-ov).
                09/11/26: em aberto de QUALQUER data + Rejeitada/Pallet/Expedição no
-               período escolhido (10/11/26: o Faturado sem data — todo o histórico; 11/11/26: o Pallet também). Colunas pelas regras do dono (api/shared/kanban-ov.js,
+               período escolhido (10/11/26: o Faturado sem data — todo o histórico; 11/11/26: o Pallet também; 12/11/26: a Expedição = envio da carga confirmado hoje). Colunas pelas regras do dono (api/shared/kanban-ov.js,
                etapaDe): Criada → Crédito (BioCredManTableV1) → Separação (trabalho "Abrir")
                → Conferência (carga "Em processamento") → Cotação (carga "Carregado" +
                cotação não realizada) → Faturado (nota "Aprovada") → Rejeitada (nota
@@ -409,9 +409,10 @@
             <div class="kb-acoes">
               <!-- 09/11/26: o período vale SÓ para Rejeitada, Pallet e Expedição
                    (10/11/26: o Faturado saiu e 11/11/26 o Pallet — mostram todo o
-                   histórico, como as outras colunas) -->
-              <div class="kb-periodo" role="group" aria-label="Período de Rejeitada e Expedição"
-                   title="O período vale só para Rejeitada e Expedição (pela data da nota fiscal). As outras colunas, Faturado e Pallet incluídos, mostram todas as OVs que estão nelas agora, de qualquer data.">
+                   histórico, como as outras colunas; 12/11/26: a Expedição saiu —
+                   mostra as cargas com o envio confirmado HOJE) -->
+              <div class="kb-periodo" role="group" aria-label="Período da Rejeitada"
+                   title="O período vale só para a Rejeitada (pela data da nota fiscal). A Expedição mostra as cargas com o envio confirmado hoje. As outras colunas, Faturado e Pallet incluídos, mostram todas as OVs que estão nelas agora, de qualquer data.">
                 <span class="kb-per-r">Período de</span>
                 <input type="date" class="kb-in" id="kb-de" aria-label="Período de">
                 <span class="kb-per-r">até</span>
@@ -621,7 +622,9 @@
         var temValor = lista.some(function (o) { return o.valor != null; });
         return '<section class="kb-col' + (lista.length ? '' : ' vazia') + '" style="' + tom(TOM_ETAPA[e.id] || 0) + '"' + (e.pendente && !lista.length ? ' title="' + esc(e.nome) + ': aguardando os campos da fase"' : '') + '><div class="kb-col-h"><div class="kb-col-t"><span class="nome" title="' + esc(e.nome) + '">' + (NOME_CURTO[e.id] ? '<span class="kb-longo">' + esc(e.nome) + '</span><span class="kb-curto">' + esc(NOME_CURTO[e.id]) + '</span>' : esc(e.nome)) + '</span><span class="kb-cnt">' + lista.length + '</span></div>'
           + '<div class="kb-col-v">' + (temValor ? esc(fK(soma)) : '&nbsp;') + '</div>'
-          + ((r.datadas || []).indexOf(e.id) >= 0 ? '<div class="kb-col-p" title="Só as do período escolhido (data da nota fiscal)">' + esc(textoPeriodo(r)) + '</div>' : '') + '</div>'
+          + ((r.datadas || []).indexOf(e.id) >= 0 ? '<div class="kb-col-p" title="Só as do período escolhido (data da nota fiscal)">' + esc(textoPeriodo(r)) + '</div>'
+            // 12/11/26 (dono): a Expedição é sempre HOJE — o envio da carga confirmado hoje
+            : e.id === 'expedicao' && r.expedicaoDia ? '<div class="kb-col-p" title="Só as OVs com o envio da carga confirmado hoje (LoadShipConfirmUTCDateTime), de qualquer data">expedidas hoje</div>' : '') + '</div>'
           + '<div class="kb-cards">' + (lista.length ? lista.map(cardHtml).join('') : e.pendente ? '<div class="kb-vazio pend" title="aguardando os campos da fase"><span class="kb-longo">aguardando os campos da fase</span><span class="kb-curto">a definir</span></div>' : '<div class="kb-vazio">—</div>') + '</div></section>';
       }).join('') + '</div>';
     }
@@ -696,7 +699,7 @@
           var n = g.ovs.length, ab = n > 0 && grupoAberto(g.id);
           var soma = g.ovs.reduce(function (s, o) { return s + (o.valor || 0); }, 0);
           var temValor = g.ovs.some(function (o) { return o.valor != null; });
-          var nota = g.fora ? 'fora do quadro' : (g.pendente && !n) ? 'aguardando os campos da fase' : datadas.indexOf(g.id) >= 0 ? textoPeriodo(r) : '';
+          var nota = g.fora ? 'fora do quadro' : (g.pendente && !n) ? 'aguardando os campos da fase' : datadas.indexOf(g.id) >= 0 ? textoPeriodo(r) : g.id === 'expedicao' && r.expedicaoDia ? 'expedidas hoje' : '';
           return '<tbody class="kb-grp' + (ab ? ' on' : '') + (n ? '' : ' vazio') + '" style="' + tom(TOM_ETAPA[g.id] != null ? TOM_ETAPA[g.id] : 2) + '">'
             + '<tr class="kb-grp-h"><td colspan="' + NCOLS_LISTA + '"><button type="button" class="kb-grp-b" data-grp="' + esc(g.id) + '" aria-expanded="' + ab + '"' + (n ? '' : ' disabled') + ' title="' + esc(n ? (ab ? 'Recolher ' : 'Abrir ') + g.nome : g.nome + ': nenhuma OV') + '">'
             + '<span class="kb-grp-in"><span class="kb-grp-seta">' + IC_SETA + '</span><span class="kb-grp-n">' + esc(g.nome) + '</span><span class="kb-cnt">' + n + '</span>'
@@ -1099,7 +1102,7 @@
         + '<p class="kb-dw-p">Do mais adiantado para o menos — vale a primeira regra que bater:</p>'
         + '<ol class="kb-dw-ol" style="margin-top:6px;">'
         + '<li class="' + (o.etapa === 'rejeitada' ? 'on' : '') + '">Nota fiscal mais recente <b>Rejeitada</b> (ou cancelada/descartada) → <b>Rejeitada</b>.</li>'
-        + '<li class="' + (o.etapa === 'expedicao' ? 'on' : '') + '">Status da carga = <b>Remetido</b> → <b>Expedição</b>.</li>'
+        + '<li class="' + (o.etapa === 'expedicao' ? 'on' : '') + '">Envio da carga <b>confirmado</b> (<code>' + esc((o.cargaCols && o.cargaCols.envioConfirmado) || 'LoadShipConfirmUTCDateTime') + '</code>) ou status da carga = <b>Remetido</b> → <b>Expedição</b>; o quadro mostra só as com o envio confirmado <b>hoje</b>.</li>'
         + '<li class="' + (o.etapa === 'pallet' ? 'on' : '') + '"><code>ENVIARPALLET_CUSTOM</code> = Sim na carga (marcado no Dynamics) → <b>Pallet</b>.</li>'
         + '<li class="' + (o.etapa === 'faturado' ? 'on' : '') + '">Status da linha = <b>Faturado</b> → <b>Faturado</b>.</li>'
         + '<li class="' + (o.etapa === 'aguardando' ? 'on' : '') + '">Status da carga = <b>Carregado</b> e status da linha = <b>Entregue</b> → <b>Aguardando Faturamento</b>.</li>'
@@ -1109,7 +1112,7 @@
         + '<li class="' + (o.etapa === 'liberado' ? 'on' : '') + '">Status do trabalho = <b>Abrir</b> → <b>Separação</b> (só isso).</li>'
         + '<li class="' + (o.etapa === 'criada' ? 'on' : '') + '">Nenhuma das anteriores (inclusive a OV sem nenhuma linha) → <b>Criada</b>.</li></ol>'
         + '<p class="kb-dw-p" style="margin-top:8px;">Onde as regras não falam, vale a de antes: OV que saiu do aberto sem status de nota → Faturado; sem a entidade de trabalho no OData, a OV liberada (<code>ReleaseStatus</code>) → Separação.</p>'
-        + '<p class="kb-dw-p" style="margin-top:8px;">Entram as OVs da <b>MSB</b>' + (depTexto() ? ' do depósito <b>' + esc(depTexto()) + '</b>' : '') + '. <b>Criada, Crédito, Separação, Conferência, Cotação e Aguardando Faturamento</b>: todas as OVs <b>em aberto</b>, de qualquer data. <b>Faturado</b> e <b>Pallet</b>: toda OV que está neles agora, de qualquer data (as em aberto e as faturadas com a carga ainda Carregado). <b>Rejeitada e Expedição</b>: só as do <b>período escolhido</b> lá em cima (pela data da nota fiscal; sem nota, a de criação). O quadro relê o Dynamics a cada 60 s; as linhas desta ficha são lidas quando ela abre.</p></details>';
+        + '<p class="kb-dw-p" style="margin-top:8px;">Entram as OVs da <b>MSB</b>' + (depTexto() ? ' do depósito <b>' + esc(depTexto()) + '</b>' : '') + '. <b>Criada, Crédito, Separação, Conferência, Cotação e Aguardando Faturamento</b>: todas as OVs <b>em aberto</b>, de qualquer data. <b>Faturado</b> e <b>Pallet</b>: toda OV que está neles agora, de qualquer data (as em aberto e as faturadas com a carga ainda Carregado). <b>Expedição</b>: só as com o envio da carga <b>confirmado hoje</b>, de OV de qualquer data. <b>Rejeitada</b>: só as do <b>período escolhido</b> lá em cima (pela data da nota fiscal; sem nota, a de criação). O quadro relê o Dynamics a cada 60 s; as linhas desta ficha são lidas quando ela abre.</p></details>';
       return h;
     }
 
@@ -1258,9 +1261,11 @@
       else if (pos > ORDEM_ETAPA.pallet) p.push({ cls: 'feito', tt: 'Pallet', ds: '' });
       else p.push({ cls: 'depois', tt: 'Pallet', ds: o.podePallet ? 'Pronta: carga carregada e com a cotação realizada — falta marcar <code>' + esc((o.cargaCols && o.cargaCols.pallet) || 'ENVIARPALLET_CUSTOM') + ' = Sim</code> no Dynamics.'
         : 'Com a carga Carregado e a cotação realizada, quando <code>' + esc((o.cargaCols && o.cargaCols.pallet) || 'ENVIARPALLET_CUSTOM') + ' = Sim</code> no Dynamics, a OV vem para esta etapa.' });
-      // expedição: carga "Remetido"
-      if (pos === ORDEM_ETAPA.expedicao) p.push({ cls: 'feito fim', tt: 'Agora: Expedição', ds: 'Carga ' + cgT + ' <b>remetida</b> (Status da carga = Remetido).' });
-      else p.push({ cls: 'depois', tt: 'Expedição', ds: 'Quando a carga for remetida (<b>Status da carga = Remetido</b>), vem para esta etapa.' });
+      // expedição: o envio da carga confirmado (12/11/26: LoadShipConfirmUTCDateTime)
+      var colConf = (o.cargaCols && o.cargaCols.envioConfirmado) || 'LoadShipConfirmUTCDateTime';
+      if (pos === ORDEM_ETAPA.expedicao) p.push({ cls: 'feito fim', tt: 'Agora: Expedição', dt: o.expedidaEm ? quando(o.expedidaEm) : '',
+        ds: 'Carga ' + cgT + ' <b>expedida</b>' + (o.expedidaEm ? ': envio confirmado em <b>' + esc(fDia(diaSP(o.expedidaEm)) + ' ' + fHora(o.expedidaEm)) + '</b> (<code>' + esc(colConf) + '</code>).' : ' (Status da carga = Remetido).') });
+      else p.push({ cls: 'depois', tt: 'Expedição', ds: 'Quando o envio da carga for confirmado (<code>' + esc(colConf) + '</code>), vem para esta etapa.' });
       // entrega solicitada
       var ent = isoData(o.entrega), late = ent && ent < hoje && pos < POS_FAT;
       p.push({ cls: 'depois', tt: 'Entrega solicitada', dt: ent ? fDia(ent) : 'sem data', z: !ent, warn: late,
@@ -1375,7 +1380,7 @@
       }
       return '<section class="kb-dw-card"><h5>' + tt + ' <small>' + esc(fQtd(cs.length)) + '</small></h5><div class="kb-its">' + cs.map(function (c, i) {
         var meta = [c.transportadora ? 'transportadora ' + c.transportadora : '', c.servico ? c.servico : '', c.deposito ? c.deposito : '', c.modelo ? 'modelo ' + c.modelo : ''].filter(Boolean).join(' · ');
-        var datas = [c.envio ? 'envio previsto ' + quando(c.envio) : '', c.expedido ? 'remetida ' + quando(c.expedido) : ''].filter(Boolean).join(' · ');
+        var datas = [c.envio ? 'envio previsto ' + quando(c.envio) : '', c.expedido ? 'remetida ' + quando(c.expedido) : '', c.envioConfirmado ? 'envio confirmado ' + quando(c.envioConfirmado) : ''].filter(Boolean).join(' · ');
         var campos = o.cargaFonte ? 'cotação realizada: ' + simNao(c.cotacao) + ' · enviada ao Pallet: ' + simNao(c.pallet) : '';
         return '<div class="kb-it"><div class="n">' + (i + 1) + '</div><div class="c"><div class="t">Carga ' + esc(c.id) + '</div>'
           + (meta ? '<div class="s">' + esc(meta) + '</div>' : '') + (datas ? '<div class="s lg">' + esc(datas) + '</div>' : '')
@@ -1557,7 +1562,7 @@
     }
     function lembrar(r) { estado.antes = {}; (r.ovs || []).forEach(function (o) { estado.antes[idOv(o)] = o.etapa; estado.antes['#' + o.numero] = 1; }); }
 
-    // ── período de Rejeitada e Expedição (09/11/26; o Faturado saiu em 10/11/26 e o Pallet em 11/11/26) ──
+    // ── período da Rejeitada (09/11/26; o Faturado saiu em 10/11/26, o Pallet em 11/11/26 e a Expedição — sempre hoje — em 12/11/26) ──
     function somaDias(iso, n) { var d = new Date(iso + 'T12:00:00Z'); d.setUTCDate(d.getUTCDate() + n); return d.toISOString().slice(0, 10); }
     function periodo() {
       var de = $('kb-de').value || hojeSP(), ate = $('kb-ate').value || de;

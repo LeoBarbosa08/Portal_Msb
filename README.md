@@ -1551,6 +1551,36 @@ fases". A regra do lote (`partesPorLinhas`) está **LIGADA por padrão** de novo
 - Testes (1, 7c): Pendência com regra; `=0` desliga; sem env, ligada.
   `sw.js` — cache `bm-comest-v74`.
 
+### Kanban · Expedição = envio da carga confirmado HOJE (12/11/2026)
+
+O dono: "na fase EXPEDIÇÃO, a entidade WHSLoadTableBiEntities tem um campo
+chamado LoadShipConfirmUTCDateTime que você vai ter que levar para Expedição se
+a data desse campo for hoje".
+
+- **Regra** (`faseCarga`): carga com `LoadShipConfirmUTCDateTime` preenchido
+  (ou `LoadStatus` = Remetido, como antes) → fase `remetido` → **Expedição**.
+  Coluna da carga: `COL_CARGA.envioConfirmado` (`KANBAN_COL_CARGA_ENVIO_CONFIRMADO`
+  troca o nome).
+- **A coluna Expedição** mostra só as OVs cuja carga teve o envio confirmado
+  **hoje** (dia de Brasília), de OV de qualquer data, e **não segue o período**
+  da tela — que fica só para a Rejeitada (`DATADAS`). A data da OV é a
+  confirmação mais recente das cargas remetidas dela (`expedidaEmDe`); confirmada
+  em outro dia ou remetida sem a data → fora, contadas em `expedicaoOutroDia` /
+  `expedicaoSemData`; `expedicaoDia` = hoje. Sem o campo na entidade de cargas:
+  aviso no topo (a Expedição fica vazia).
+- **Leitura** (`ovsDeCargasCarregadas`): além das cargas Carregado, as cargas
+  com `LoadShipConfirmUTCDateTime` de hoje (`ge` hoje 03:00Z e `lt` amanhã
+  03:00Z) → os trabalhos → as OVs, para a faturada há semanas aparecer na
+  Expedição no dia em que sai. Diagnóstico `exp:cargas`.
+- **Tela**: "expedidas hoje" no cabeçalho da coluna (e na lista); o passo
+  "Agora: Expedição" da ficha com a data e a hora da confirmação; "envio
+  confirmado" nas datas de cada carga; "Como a etapa é decidida" e o título do
+  período atualizados.
+- Testes (7d): confirmada hoje (OV de setembro, nota de outubro, período sem
+  hoje) → Expedição; confirmada há 2 dias e remetida sem data → fora, contadas;
+  o filtro pelo dia de Brasília; sem o campo → aviso. `sw.js` — cache
+  `bm-comest-v79`.
+
 ### Kanban · Pallet sem data: TODAS as OVs no Pallet (11/11/2026)
 
 O dono: "NÃO PRECISA DE DATA DO PALLET, pode trazer TUDO". Substitui o "Pallet =
