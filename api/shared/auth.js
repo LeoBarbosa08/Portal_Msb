@@ -255,6 +255,10 @@ const GRUPO_AREAS = {
   '1911242e-25dc-4a98-8088-882af6a6411a': ['logistica'],
   '91323a5c-bd04-474a-88aa-4ca18daddd61': ['logistica'],
   'cee2b759-3d29-4f81-b872-bc0fec0df259': ['logistica'],
+  // Equipe Logística - MSB (12/11/2026, pedido do dono: "libere o acesso do
+  // portal a esse pessoal, somente a parte do Kanban") — SÓ o Kanban. Sem esta
+  // linha o grupo caía no fail-open no_group_match e via o portal inteiro.
+  '2a2eeb08-99e5-407e-a68f-d67b011296ad': ['kanban'],
   '2b708ffe-34c5-4417-abb2-ba65b124ddd3': ['marketing'],
   '0d864abf-a728-4f1a-9828-564d21e79685': ['marketing'],
   '45cea106-e77d-4017-99a7-4ea52e31856d': ['marketing'],
