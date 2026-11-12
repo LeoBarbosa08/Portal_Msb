@@ -15,7 +15,8 @@
 // Schema enviado ao flow (top-level + Produtos[].Lotes[]):
 //   Empresa, CNPJ, CondicaoPagamento, DataVencimentoPagamento, UsaDataVencimento,
 //   PagamentoAntecipado (boolean, false quando não vem),
-//   Frete, Observacao, Condicaodeentrega,
+//   Frete, Transportadora (opcional, "" quando não escolhida — 12/11/2026),
+//   Observacao, Condicaodeentrega,
 //   EnderecoEntrega, OrdemdeCompra, Tipovenda, Operador, ValorTotal,
 //   Quantidade, NomeCliente, Areademandante, Vendedor, Email, Caso, Portal,
 //   PoliticaCredito, OBSERVACAONOTA,
@@ -82,7 +83,11 @@ function montarSchema(cab, produtos, totalGeral, sp) {
     UsaDataVencimento:       usaVenc,
     PagamentoAntecipado:     flag(cab.pagamentoAntecipado),
     Frete:             cab.frete || '',
-    Observacao:        cab.observacao || '',
+    // 12/11/2026 (pedido do dono): o NOME da transportadora (CarrierName da
+    // SalesCarrierEntity, lida por /api/pedido-transportadoras). Opcional:
+    // vazio = o operador não escolheu.
+    Transportadora:    String(cab.transportadora || '').trim(),
+    Observacao:       cab.observacao || '',
     Condicaodeentrega: cab.condicaoEntrega || '',
     EnderecoEntrega:   cab.enderecoEntrega || '',
     OrdemdeCompra:     cab.ordemDeCompra || '',

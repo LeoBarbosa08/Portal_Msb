@@ -532,6 +532,46 @@
       }).join('');
   }
 
+  // 12/11/2026 (pedido do dono): TRANSPORTADORA, campo OPCIONAL do cabeçalho.
+  // Os nomes vêm da SalesCarrierEntity do Dynamics (CarrierName), pelo
+  // /api/pedido-transportadoras. Carrega no init sem segurar a tela; se o
+  // Dynamics falhar, o motivo aparece embaixo do campo e o pedido segue sem
+  // transportadora (vai "" para o flow).
+  function dicaTransp(html) {
+    var d = $('cab-transp-dica');
+    if (!d) return;
+    d.innerHTML = html || '';
+    d.hidden = !html;
+  }
+  function carregarTransportadoras() {
+    var sel = $('cab-transp');
+    if (!sel) return;
+    popularSelect('cab-transp', [], 'Carregando transportadoras…');
+    sel.disabled = true;
+    function falhou(motivo) {
+      popularSelect('cab-transp', [], 'Não informar');
+      sel.disabled = false;
+      dicaTransp('Não consegui carregar as transportadoras do Dynamics' + (motivo ? ' <span class="pi-prod-dim">(' + esc(motivo) + ')</span>' : '') + '. O campo é opcional: o pedido segue sem transportadora.');
+    }
+    fetch('/api/pedido-transportadoras')
+      .then(function (r) {
+        return r.json().catch(function () { return {}; }).then(function (j) {
+          if (!r.ok) throw new Error((j && (j.error || j.erro)) || ('HTTP ' + r.status));
+          return j;
+        });
+      })
+      .then(function (j) {
+        if (!j || !j.configured) { falhou('consulta ao Dynamics desligada'); return; }
+        if (j.erro) { falhou(j.erro); return; }
+        var nomes = (j.transportadoras || []).map(function (t) { return t && t.nome; }).filter(Boolean);
+        if (!nomes.length) { falhou('nenhuma transportadora cadastrada na empresa ' + (j.empresa || '')); return; }
+        popularSelect('cab-transp', nomes, 'Não informar');
+        sel.disabled = false;
+        dicaTransp('');
+      })
+      .catch(function (e) { console.warn('[pedido] transportadoras:', e); falhou(e.message || String(e)); });
+  }
+
   // RECORTE MSB (04/11/2026): campo obrigatório que faltou fica em vermelho
   // (rótulo e caixa) e a tela vai até o primeiro; preencher tira a marca
   // (o ouvinte no init). ids = os campos que faltam (os outros perdem a marca).
@@ -580,6 +620,7 @@
       usaDataVencimento: usaVenc,
       pagamentoAntecipado: $('cab-pagant').checked,
       frete:           $('cab-frete').value,
+      transportadora:  ($('cab-transp') && $('cab-transp').value) || '',   // opcional (12/11/26)
       condicaoEntrega: $('cab-condent').value,
       tipoVenda:       TIPO_FIXO,
       areaDemandante:  AREA_FIXA,
@@ -1168,7 +1209,8 @@
       ['Condição de Pagamento', c.usaDataVencimento ? '—' : c.condicaoPagamento],
       ['Data de Vencimento do Pagamento', c.usaDataVencimento ? fmtData(c.dataVencimento) : '—'],
       ['Pagamento Antecipado', c.pagamentoAntecipado ? 'Sim' : 'Não'],
-      ['Frete', c.frete], ['Condição de Entrega', c.condicaoEntrega],
+      ['Frete', c.frete], ['Transportadora', c.transportadora || '—'],
+      ['Condição de Entrega', c.condicaoEntrega],
       ['Tipo de Venda', c.tipoVenda], ['Área Demandante', c.areaDemandante],
       ['Vendedor', c.vendedor],
       ['Observação', c.observacao || '—'], ['Observação na Nota', c.observacaoNota || '—'],
@@ -1203,6 +1245,7 @@
     out.push('E-mail: ' + (c.email || 'N/D'));
     out.push('Cond. Pagamento: ' + (c.usaDataVencimento ? 'vencimento em ' + fmtData(c.dataVencimento) : c.condicaoPagamento) +
       ' | Frete: ' + c.frete + ' | Entrega: ' + c.condicaoEntrega);
+    out.push('Transportadora: ' + (c.transportadora || 'N/D'));
     out.push('Pagamento Antecipado: ' + (c.pagamentoAntecipado ? 'Sim' : 'Não'));
     out.push('Tipo de Venda: ' + c.tipoVenda + ' | Área: ' + c.areaDemandante + ' | Vendedor: ' + c.vendedor);
     out.push('Caso: ' + c.caso + ' | Portal: ' + c.portal);
@@ -1513,6 +1556,7 @@
     popularSelect('cab-area',      [AREA_FIXA],    'Escolha a área demandante');
     popularSelect('cab-portal',    PORTAIS,        'Escolha o portal');
     popularSelect('cab-vendedor',  VENDEDORES,     'Escolha o vendedor');
+    carregarTransportadoras();   // opcional; não segura a tela
     $('cab-caso').value = 'N/D';
     $('cab-obsnota').value = '';
     // RECORTE MSB: empresa e área fixas (aparecem, mas não se escolhe) e o

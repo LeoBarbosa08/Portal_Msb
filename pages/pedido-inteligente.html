@@ -452,6 +452,8 @@
                     <div class="pi-field"><label for="cab-pagant" id="cab-pagant-lbl">Pagamento Antecipado</label><label class="pi-switch"><input type="checkbox" id="cab-pagant" role="switch" aria-labelledby="cab-pagant-lbl" autocomplete="off"><span id="cab-pagant-txt">Não</span></label></div>
                     <div class="pi-field"><label for="cab-frete">Frete <span class="req">*</span></label><select id="cab-frete"></select></div>
                     <div class="pi-field"><label for="cab-condent">Condição de Entrega <span class="req">*</span></label><select id="cab-condent"></select></div>
+                    <!-- 12/11/2026: Transportadora (opcional) — os nomes vêm da SalesCarrierEntity do Dynamics (/api/pedido-transportadoras) -->
+                    <div class="pi-field"><label for="cab-transp">Transportadora</label><select id="cab-transp" aria-describedby="cab-transp-dica"></select><div class="pi-dica" id="cab-transp-dica" hidden></div></div>
                     <div class="pi-field"><label for="cab-tipovenda">Tipo de Venda <span class="req">*</span></label><select id="cab-tipovenda"></select></div>
                     <div class="pi-field"><label for="cab-area">Área Demandante <span class="req">*</span></label><select id="cab-area"></select></div>
                     <div class="pi-field" id="cab-vendedor-wrap" style="display:none;"><label for="cab-vendedor">Vendedor <span class="req">*</span></label><select id="cab-vendedor"></select></div>
@@ -588,6 +590,6 @@
   <script src="../voz-pbi.js?v=3"></script>
   <script src="../pi-pdf-texto.js?v=1"></script>
   <script src="../customer-service-pi.js?v=2"></script>
-  <script src="../pedido-inteligente.js?v=41"></script>
+  <script src="../pedido-inteligente.js?v=42"></script>
 </body>
 </html>

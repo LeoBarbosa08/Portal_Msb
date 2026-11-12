@@ -130,6 +130,8 @@ deployment ou um deployment separado para a LICI.
 | `D365_BATCH_ENTITY` | entidade de validade `BioInventItemBatchV3` (default) | opcional |
 | `ESTOQUE_LOCATION` | depósito padrão consultado (default `BCD`) | opcional |
 | `ESTOQUE_EMPRESA` | empresa/dataAreaId (default `bio`; vazio = todas) | opcional |
+| `D365_TRANSPORTADORA_ENTITY` | entidade OData das transportadoras, se não for `SalesCarrierEntity` nem `SalesCarriers` | opcional |
+| `TRANSPORTADORA_EMPRESA` | empresa (dataAreaId) das transportadoras (default `msb`) | opcional |
 
 Sem `AOAI_*`: a página avisa e oferece preenchimento manual (o resto funciona).
 Sem `PEDIDO_FLOW_URL`: tudo funciona até a revisão; o envio retorna erro claro.
@@ -153,6 +155,7 @@ O `/api/pedido-enviar` faz POST deste corpo no `PEDIDO_FLOW_URL`:
     "dataVencimento": "",
     "usaDataVencimento": false,
     "frete": "CIF - SEM VALOR",
+    "transportadora": "JADLOG",
     "condicaoEntrega": "PADRÃO",
     "tipoVenda": "VENDA DIRETA",
     "areaDemandante": "PEDIDOINTELIGENTE (VENDA RECORRENTE)",
@@ -181,6 +184,15 @@ como uma entrada em `Lotes[]` com `Lote: ""`. Cada lote tem **preço próprio**
 esse preço vai em `PrecoLote`, e o `ValorTotal` do pedido é recalculado como a soma
 de `quantidade × PrecoLote` de todos os lotes. `Quantidade` (top-level) = soma das
 quantidades; `PoliticaCredito`/`ID` = "" (não coletados ainda).
+
+### Transportadora (opcional, 12/11/2026)
+
+O cabeçalho tem o select **Transportadora**, que **não é obrigatório**. Os nomes vêm
+do Dynamics, da entidade **`SalesCarrierEntity`** (campo `CarrierName`), da empresa
+`msb`, por `GET /api/pedido-transportadoras` (cache de 10 min; `?atualizar=1` ignora).
+No JSON do flow vai em **`Transportadora`** (o nome escolhido) ou `""` (não escolhida).
+Se o Dynamics falhar, o motivo aparece embaixo do campo e o pedido segue sem
+transportadora. Teste: `node scripts/test-pedido-transportadoras.js`.
 
 ### Data de Vencimento do Pagamento (flag)
 

@@ -29,7 +29,7 @@ Venda Recorrente".
 `directline-token`, `chat`, `transcrever`, `comercial-funil`, `cot-casos`,
 `cot-config`, `cot-ov-retorno`, `fca`, `pedido-extrair`, `pedido-enviar`, `pedido-lotes`,
 `consig-lote`, `consig-faturar`, `consig-processo`, `dossie-cliente`,
-`dossie-ganchos`, `dossie-agenda`.
+`dossie-ganchos`, `dossie-agenda` (+ `pedido-transportadoras`, de 12/11/2026).
 
 ## O que mudou em relação ao portal completo
 
@@ -1798,6 +1798,38 @@ no RMS:
 - `scripts/test-pedido-revisar.js` — a tabela da OC 0003511 exatamente como o
   `pi-pdf-texto.js` entrega à IA, e os casos que não podem juntar. Vale para
   os três perfis do extrator (pedido, consignado e cotação).
+
+### PI · Pedido: o campo Transportadora (12/11/2026)
+
+Pedido do dono: "um campo novo no PI chamado TRANSPORTADORA, que puxa os dados
+da tabela SalesCarrierEntity e pega o nome da transportadora — não é
+obrigatório".
+
+- **Tela** (`pages/pedido-inteligente.html`): o select **Transportadora** no
+  cabeçalho, depois de Condição de Entrega, **sem** asterisco — fica fora da
+  conferência do Continuar. A 1ª opção é "Não informar". A revisão e o resumo
+  mostram a transportadora (— / N/D quando vazia).
+- **Lista** (`api/pedido-transportadoras`, novo, `GET`): lê a
+  **`SalesCarrierEntity`** do Dynamics F&O (OData, as mesmas credenciais
+  `D365_*`) na empresa `msb` e devolve o **nome** (`CarrierName`), sem
+  repetidos, em ordem alfabética (traz também `CnpjOrCpf` e `Vendor`). Cache de
+  10 min; `?atualizar=1` ignora. Mesmo acesso do envio: área Comercial ou
+  Estoque.
+  - O nome da entidade no OData é o "public collection name": tenta
+    `SalesCarrierEntity` e depois `SalesCarriers` (404 = tenta a próxima).
+    Se for outro, informar em `D365_TRANSPORTADORA_ENTITY`. Empresa:
+    `TRANSPORTADORA_EMPRESA` (padrão `msb`); entidade sem `dataAreaId` é lida
+    inteira, com aviso.
+  - Se o Dynamics falhar, a resposta é 200 com `erro` e a tela mostra o motivo
+    embaixo do campo; o pedido segue sem transportadora.
+- **Flow** (`api/pedido-enviar`): campo novo **`Transportadora`** no JSON = o
+  nome escolhido, ou `""` quando não escolhida. **O flow do `PEDIDO_FLOW_URL`
+  precisa ler o campo** (`triggerBody()?['Transportadora']`) e gravá-lo na OV;
+  enquanto não ler, o valor chega e é ignorado.
+- `scripts/test-pedido-transportadoras.js` — contra um F&O simulado: nomes da
+  msb em ordem, sem repetidos; entidade que não existe cai na próxima; entidade
+  sem `dataAreaId`; cache; erros; e a `Transportadora` no JSON do flow.
+- `pedido-inteligente.js?v=42`; `sw.js` — cache `bm-comest-v79`.
 
 ## Como colocar no ar
 
