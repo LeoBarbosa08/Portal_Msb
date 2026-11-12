@@ -1551,6 +1551,23 @@ fases". A regra do lote (`partesPorLinhas`) está **LIGADA por padrão** de novo
 - Testes (1, 7c): Pendência com regra; `=0` desliga; sem env, ligada.
   `sw.js` — cache `bm-comest-v74`.
 
+### Kanban · Pendência só quando nenhuma outra fase é atendida (12/11/2026)
+
+O dono: "a fase PENDÊNCIA: só vão as ordens para ela se NENHUMA das outras fases
+for atendida — se está sem lote está em Pendência, porém se tiver trabalho ou carga
+que atende os outros status, ela tem que ir para a outra fase".
+
+- `partesPorLinhas`: a linha em aberto sem lote só vai para Pendência quando a
+  etapa dela seria **Criada** (a de quando nada mais bate). Com crédito ativo,
+  trabalho (Separação/Conferência) ou carga (Cotação, Aguardando, Faturado,
+  Pallet, Expedição), a linha vai para essa fase mesmo sem lote — e a OV não se
+  divide por causa do lote. Saiu o `POS_NOTA` (sem uso).
+- Ficha: "Como a etapa é decidida" — a última regra virou "Nenhuma das
+  anteriores: itens em aberto sem lote → Pendência; os outros → Criada".
+- Testes (7c): a OV não liberada com item sem lote divide (Pendência + Criada); a
+  liberada (Separação) com item sem lote fica inteira em Separação. `sw.js` —
+  cache `bm-comest-v90`.
+
 ### Kanban · Faturado, Rejeitada e Pallet só de 11/11/2026 em diante (12/11/2026)
 
 O dono: "as fases FATURADO, REJEITADO e PALLET, quero somente que seja do dia

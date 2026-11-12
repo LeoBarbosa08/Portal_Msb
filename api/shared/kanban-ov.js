@@ -749,7 +749,6 @@ const statusLinha = (st) => {
   if (/^(delivered|entregue)$/.test(n)) return 'entregue';
   return 'aberta';
 };
-const POS_NOTA = ['faturado', 'rejeitada', 'pallet', 'expedicao', 'cancelada'];
 // 11/11/26 (dono): "volte para a Pendência tudo que não tiver LOTE na linha" — a
 // regra do lote LIGADA de novo; KANBAN_PENDENCIA_LOTE=0 desliga
 const pendenciaPorLote = () => String(process.env.KANBAN_PENDENCIA_LOTE || '').trim() !== '0';
@@ -770,8 +769,11 @@ function partesPorLinhas(o, ls, lida, comLote, comStatus) {
   vivas.forEach(l => {
     const s2 = st(l);
     let e = etapaDaLinha(s2), semlote = false, destino = null;
-    // a linha em aberto sem lote vai para Pendência (antes do faturamento)
-    if (comLote && pendenciaPorLote() && (s2 === 'aberta' || s2 == null) && !l.lote && POS_NOTA.indexOf(e) < 0) { destino = e; e = 'pendencia'; semlote = true; }
+    // a linha em aberto sem lote vai para Pendência — 12/11/26 (dono): "SÓ vai para a
+    // Pendência se NENHUMA das outras fases for atendida; se tiver trabalho ou carga
+    // que atende os outros status, vai para a outra fase": só quando a linha cairia
+    // em Criada (a fase de quando nada mais bate)
+    if (comLote && pendenciaPorLote() && (s2 === 'aberta' || s2 == null) && !l.lote && e === 'criada') { destino = e; e = 'pendencia'; semlote = true; }
     if (!grupos.has(e)) grupos.set(e, { etapa: e, ls: [], status: [], semlote, destino });
     const g = grupos.get(e); g.ls.push(l); if (s2 && g.status.indexOf(s2) < 0) g.status.push(s2);
   });

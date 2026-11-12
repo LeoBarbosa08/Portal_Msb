@@ -1118,7 +1118,7 @@
       h += secDados(o);
       h += secCrus(o, abertos.crus);
       h += '<details class="kb-dw-card kb-dw-mais" data-k="regra"' + (abertos.regra ? ' open' : '') + '><summary><h5>Como a etapa é decidida</h5></summary>'
-        + '<p class="kb-dw-p">As regras valem para cada <b>linha</b> da OV: as linhas que caem em etapas diferentes viram cartões diferentes. Antes delas, os itens em aberto <b>sem lote</b> (<code>ItemBatchNumber</code> vazio) vão para <b>Pendência</b> num cartão próprio' + (o.etapa === 'pendencia' ? ' <b>← este</b>' : '') + ', e o resto da OV segue as regras abaixo. E, com trabalho <b>Abrir</b> junto de trabalho já fechado ou em processo, os abertos ficam em <b>Separação</b> e os outros seguem as regras abaixo, só com as cargas deles. Depois do Faturado, não divide.</p>'
+        + '<p class="kb-dw-p">As regras valem para cada <b>linha</b> da OV: as linhas que caem em etapas diferentes viram cartões diferentes. Os itens em aberto <b>sem lote</b> (<code>ItemBatchNumber</code> vazio) vão para <b>Pendência</b>' + (o.etapa === 'pendencia' ? ' <b>← este</b>' : '') + ' <b>só se nenhuma outra fase for atendida</b> (cairiam em Criada); com crédito, trabalho ou carga que leve a outra fase, vão para ela. E, com trabalho <b>Abrir</b> junto de trabalho já fechado ou em processo, os abertos ficam em <b>Separação</b> e os outros seguem as regras abaixo, só com as cargas deles. Depois do Faturado, não divide.</p>'
         + '<p class="kb-dw-p">Do mais adiantado para o menos — vale a primeira regra que bater:</p>'
         + '<ol class="kb-dw-ol" style="margin-top:6px;">'
         + '<li class="' + (o.etapa === 'rejeitada' ? 'on' : '') + '">Nota fiscal mais recente <b>Rejeitada</b> (ou cancelada/descartada) → <b>Rejeitada</b>.</li>'
@@ -1130,7 +1130,7 @@
         + '<li class="' + (o.etapa === 'conferencia' ? 'on' : '') + '">Status da carga = <b>Em processamento</b> → <b>Conferência</b> (também o trabalho já fechado ou em processo, com a carga ainda sem fase).</li>'
         + '<li class="' + (o.etapa === 'credito' ? 'on' : '') + '">Registro <b>ativo</b> na tabela de gerenciamento de crédito (<code>ACTIVE</code>, pelo <code>SALESID</code>) → <b>Gerenciamento de Crédito</b>.</li>'
         + '<li class="' + (o.etapa === 'liberado' ? 'on' : '') + '">Status do trabalho = <b>Abrir</b> → <b>Separação</b> (só isso).</li>'
-        + '<li class="' + (o.etapa === 'criada' ? 'on' : '') + '">Nenhuma das anteriores (inclusive a OV sem nenhuma linha) → <b>Criada</b>.</li></ol>'
+        + '<li class="' + (o.etapa === 'criada' || o.etapa === 'pendencia' ? 'on' : '') + '">Nenhuma das anteriores: itens em aberto <b>sem lote</b> → <b>Pendência</b>; os outros (inclusive a OV sem nenhuma linha) → <b>Criada</b>.</li></ol>'
         + '<p class="kb-dw-p" style="margin-top:8px;">Onde as regras não falam, vale a de antes: OV que saiu do aberto sem status de nota → Faturado; sem a entidade de trabalho no OData, a OV liberada (<code>ReleaseStatus</code>) → Separação.</p>'
         + '<p class="kb-dw-p" style="margin-top:8px;">Entram as OVs da <b>MSB</b>' + (depTexto() ? ' do depósito <b>' + esc(depTexto()) + '</b>' : '') + '. <b>Criada, Crédito, Separação, Conferência, Cotação e Aguardando Faturamento</b>: todas as OVs <b>em aberto</b>, de qualquer data. <b>Faturado</b>, <b>Rejeitada</b> e <b>Pallet</b>: as que estão nelas agora com a nota fiscal (sem nota, a criação) de ' + (estado.r && estado.r.desde ? esc(fDia(estado.r.desde)) : '11/11/2026') + ' em diante. <b>Expedição</b>: só as com o envio da carga <b>confirmado hoje</b>, de OV de qualquer data. O quadro relê o Dynamics a cada 60 s; as linhas desta ficha são lidas quando ela abre.</p></details>';
       return h;
@@ -1166,7 +1166,7 @@
       };
       var h = '<section class="kb-dw-card"><h5>Este cartão é uma parte da OV <small>' + esc(fQtd(1 + irmas.length)) + ' cartões</small></h5>';
       var porque = [];
-      if (porLote) porque.push('pelo <b>lote</b> dos itens — os itens em aberto <b>sem lote</b> ficam em Pendência até receberem lote');
+      if (porLote) porque.push('pelo <b>lote</b> dos itens — sem nenhuma outra fase atendida, os itens em aberto <b>sem lote</b> ficam em Pendência até receberem lote');
       if (porEntrega) porque.push('pelo <b>status das linhas</b> — com a carga Carregado, a linha em aberto vai para Cotação, a Entregue para Aguardando Faturamento; a Faturada, para Faturado');
       if (porTrab) porque.push('pelos <b>trabalhos</b> — a Separação fica só com o trabalho <b>aberto</b>; o outro segue a carga dele e a nota');
       h += '<p class="kb-pt-p">A OV <b>' + esc(o.numero) + '</b> está em mais de um lugar do quadro, dividida ' + porque.join('; e ') + '.</p>';
