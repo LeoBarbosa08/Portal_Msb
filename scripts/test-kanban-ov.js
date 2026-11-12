@@ -537,7 +537,7 @@ const bio = (n, st, lib) => ({ dataAreaId: 'msb', SalesOrderNumber: n, StatusPed
   };
   r = await K.quadro({ de: DE, ate: ATE });
   const eq = {}; r.ovs.forEach(o => { eq[o.numero] = o.etapa; });
-  t('modo quadro com o período', r.modo === 'quadro' && r.de === DE && r.ate === ATE && r.datadas.join() === 'rejeitada,expedicao', { modo: r.modo, de: r.de, ate: r.ate, datadas: r.datadas });
+  t('modo quadro com o período', r.modo === 'quadro' && r.de === DE && r.ate === ATE && r.datadas.join() === 'rejeitada', { modo: r.modo, de: r.de, ate: r.ate, datadas: r.datadas });
   t('em aberto de QUALQUER data (até de 2025)', eq.OV018001 === 'criada' && eq.OV018002 === 'liberado', eq);
   t('faturada com nota no período -> Faturado', eq.OV018004 === 'faturado', eq);
   t('rejeitada com nota no período -> Rejeitada', eq.OV018006 === 'rejeitada', eq);
@@ -609,6 +609,44 @@ const bio = (n, st, lib) => ({ dataAreaId: 'msb', SalesOrderNumber: n, StatusPed
   const e7b = {}; r.ovs.forEach(o => { e7b[o.chave] = o.etapa; });
   t('depois, a OV faturada antes do período aparece no Pallet (não some do quadro)', e7b.OV018301 === 'pallet' && r.etapas.find(e => e.id === 'pallet').qtd === 2, e7b);
   CEN = guarda7a; SERVICO = serv7a;
+
+  console.log('7d) 12/11/26 a EXPEDIÇÃO: as cargas com o envio confirmado HOJE (LoadShipConfirmUTCDateTime), de qualquer data');
+  K._limparCache(); chamadas.length = 0;
+  const guarda7d = CEN, serv7d = SERVICO;
+  const ldE = (id, conf) => ({ dataAreaId: 'msb', LoadId: id, LoadStatus: 'Shipped', QuotationPerformed_InoveProjects: 'Yes', ENVIARPALLET_CUSTOM: 'Yes', LoadShipConfirmUTCDateTime: conf });
+  const confHoje = new Date().toISOString(), conf2dias = new Date(Date.now() - 2 * 86400000).toISOString();
+  SERVICO = ['BIOSalesOrderHeaderV1', 'SalesOrderHeadersV2', 'SalesOrderLines', 'SalesInvoiceHeadersV2', 'FiscalDocuments', 'WHSWorkTableBiEntities', 'WHSLoadTableBiEntities'];
+  CEN = {
+    SalesOrderHeadersV2: { linhas: [
+      v2('OV018401', '2026-09-01T13:00:00Z', 'Invoiced'),    // faturada em outubro, envio confirmado HOJE -> Expedição
+      v2('OV018402', '2026-09-02T13:00:00Z', 'Delivered'),   // entregue (lida de qualquer data), envio confirmado há 2 dias -> fora
+      v2('OV018403', '2026-10-01T13:00:00Z', 'Delivered')    // remetida, sem a data de confirmação -> fora
+    ] },
+    BIOSalesOrderHeaderV1: { linhas: [b4('OV018401', 'Invoiced', 'Released', 'No'), b4('OV018402', 'Delivered', 'Released', 'No'), b4('OV018403', 'Delivered', 'Released', 'No')] },
+    SalesOrderLines: { linhas: [], auto: true },
+    WHSWorkTableBiEntities: { linhas: [w('OV018401', 'WE1', 'Closed', { LoadId: 'LD-E1' }), w('OV018402', 'WE2', 'Closed', { LoadId: 'LD-E2' }), w('OV018403', 'WE3', 'Closed', { LoadId: 'LD-E3' })] },
+    WHSLoadTableBiEntities: { linhas: [ldE('LD-E1', confHoje), ldE('LD-E2', conf2dias), ldE('LD-E3', '1900-01-01T00:00:00Z')] },
+    SalesInvoiceHeadersV2: { linhas: [nf('OV018401', '000038401', '2026-10-15')] },
+    FiscalDocuments: { linhas: [fd('000038401', 'Approved', '2026-10-15')] }
+  };
+  r = await K.quadro({ de: DE, ate: ATE });
+  const p7d = r.ovs.find(o => o.numero === 'OV018401');
+  t('a Expedição não segue o período (é hoje)', r.datadas.indexOf('expedicao') < 0 && r.expedicaoDia === K.hojeSP(), { datadas: r.datadas, dia: r.expedicaoDia });
+  t('envio confirmado HOJE: na Expedição, OV de setembro com a nota de outubro e o período sem hoje', p7d && p7d.etapa === 'expedicao' && p7d.expedidaEm === confHoje && p7d.dataPeriodo === K.hojeSP(), p7d && { e: p7d.etapa, em: p7d.expedidaEm });
+  t('envio confirmado há 2 dias: fora (contada)', !r.ovs.some(o => o.numero === 'OV018402') && r.expedicaoOutroDia === 1, { n: r.expedicaoOutroDia });
+  t('remetida sem a data de confirmação: fora (contada)', !r.ovs.some(o => o.numero === 'OV018403') && r.expedicaoSemData === 1, { n: r.expedicaoSemData });
+  t('a coluna Expedição conta só a de hoje', r.etapas.find(e => e.id === 'expedicao').qtd === 1, r.etapas.find(e => e.id === 'expedicao'));
+  const lc7d = chamadas.find(c => c.ent === 'WHSLoadTableBiEntities' && /LoadShipConfirmUTCDateTime ge/.test(c.q.filter || ''));
+  t('lê as cargas com o envio confirmado hoje (dia de Brasília, 03:00Z)', lc7d && new RegExp('LoadShipConfirmUTCDateTime ge ' + K.hojeSP() + 'T03:00:00Z').test(lc7d.q.filter), lc7d && lc7d.q.filter);
+  const d7d = r.diagnostico.find(d => d.etapa === 'exp:cargas');
+  t('o diagnóstico diz quantas cargas expedidas hoje', d7d && d7d.hoje === 1, d7d);
+  t('sem aviso do campo de confirmação', !r.avisos.some(a => /LoadShipConfirmUTCDateTime/.test(a)), r.avisos);
+  // a entidade de cargas sem o campo: aviso
+  K._limparCache();
+  CEN.WHSLoadTableBiEntities.linhas.forEach(x => { delete x.LoadShipConfirmUTCDateTime; });
+  r = await K.quadro({ de: DE, ate: ATE });
+  t('sem o campo na carga: aviso e a Expedição vazia', r.avisos.some(a => /Não achei o campo LoadShipConfirmUTCDateTime/.test(a)) && !r.ovs.some(o => o.etapa === 'expedicao'), r.avisos);
+  CEN = guarda7d; SERVICO = serv7d;
 
   console.log('7b) o F&O recusa o filtro de enum: vai pelo texto');
   K._limparCache(); chamadas.length = 0;
