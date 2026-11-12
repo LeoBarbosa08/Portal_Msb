@@ -15,6 +15,8 @@ process.env.D365_TENANT_ID = 't'; process.env.D365_CLIENT_ID = 'c'; process.env.
 process.env.D365_RESOURCE_URL = 'https://fo.teste';
 // 12/11/26: o e-mail da Cotação — o segredo do app (Graph) e um Azure Blob / Graph falsos
 process.env.PORTAL_CLIENT_SECRET = 'segredo-teste';
+// 12/11/26: o corte de 11/11/2026 (Faturado/Rejeitada/Pallet) fica desligado nos cenários antigos; o 7e liga
+process.env.KANBAN_DESDE = '0';
 const BLOBS = {}, EMAILS = [];
 function blobFalso(u, opts) {
   const nome = decodeURIComponent(u.pathname.replace(/^\/kanban\//, '')), metodo = (opts && opts.method) || 'GET', h = (opts && opts.headers) || {};
@@ -646,6 +648,45 @@ const bio = (n, st, lib) => ({ dataAreaId: 'msb', SalesOrderNumber: n, StatusPed
   const e7b = {}; r.ovs.forEach(o => { e7b[o.chave] = o.etapa; });
   t('depois, a OV faturada antes do período aparece no Pallet (não some do quadro)', e7b.OV018301 === 'pallet' && r.etapas.find(e => e.id === 'pallet').qtd === 2, e7b);
   CEN = guarda7a; SERVICO = serv7a;
+
+  console.log('7e) 12/11/26 Faturado, Rejeitada e Pallet só de 11/11/2026 em diante (pela nota)');
+  K._limparCache(); chamadas.length = 0;
+  const guarda7e = CEN, serv7e = SERVICO;
+  SERVICO = ['BIOSalesOrderHeaderV1', 'SalesOrderHeadersV2', 'SalesOrderLines', 'SalesInvoiceHeadersV2', 'FiscalDocuments', 'WHSWorkTableBiEntities', 'WHSLoadTableBiEntities'];
+  const ld7e = (id, cot, pal) => ({ dataAreaId: 'msb', LoadId: id, LoadStatus: 'Loaded', QuotationPerformed_InoveProjects: cot, ENVIARPALLET_CUSTOM: pal });
+  CEN = {
+    SalesOrderHeadersV2: { linhas: [
+      v2('OV018501', '2026-11-09T13:00:00Z', 'Invoiced'),   // criada 09/11, nota 11/11 -> Faturado (fica)
+      v2('OV018502', '2026-10-01T13:00:00Z', 'Invoiced'),   // nota 30/10 -> Faturado, antes do corte (sai)
+      v2('OV018503', '2025-05-06T13:00:00Z', 'Invoiced'),   // nota de 2025, no Pallet (sai)
+      v2('OV018504', '2026-11-11T13:00:00Z', 'Invoiced'),   // nota 12/11, no Pallet (fica)
+      v2('OV018505', '2026-11-02T13:00:00Z', 'Backorder'),  // nota rejeitada em 03/11 (sai)
+      v2('OV018506', '2026-11-10T13:00:00Z', 'Backorder'),  // nota rejeitada em 11/11 (fica)
+      v2('OV018507', '2025-03-10T13:00:00Z', 'Backorder')   // em aberto de 2025 -> Criada (o corte não vale)
+    ] },
+    BIOSalesOrderHeaderV1: { linhas: [b4('OV018501', 'Invoiced', 'Released', 'No'), b4('OV018502', 'Invoiced', 'Released', 'No'), b4('OV018503', 'Invoiced', 'Released', 'No'),
+      b4('OV018504', 'Invoiced', 'Released', 'No'), b4('OV018505', 'Backorder', 'Released', 'No'), b4('OV018506', 'Backorder', 'Released', 'No'), b4('OV018507', 'Backorder', 'Open', 'No')] },
+    SalesOrderLines: { linhas: [], auto: true },
+    WHSWorkTableBiEntities: { linhas: [w('OV018501', 'WE51', 'Closed', { LoadId: 'LD-751' }), w('OV018502', 'WE52', 'Closed', { LoadId: 'LD-752' }), w('OV018503', 'WE53', 'Closed', { LoadId: 'LD-753' }), w('OV018504', 'WE54', 'Closed', { LoadId: 'LD-754' })] },
+    WHSLoadTableBiEntities: { linhas: [ld7e('LD-751', 'Yes', 'No'), ld7e('LD-752', 'Yes', 'No'), ld7e('LD-753', 'Yes', 'Yes'), ld7e('LD-754', 'Yes', 'Yes')] },
+    SalesInvoiceHeadersV2: { linhas: [nf('OV018501', '000040501', '2026-11-11'), nf('OV018502', '000040502', '2026-10-30'), nf('OV018503', '000040503', '2025-05-06'), nf('OV018504', '000040504', '2026-11-12'),
+      nf('OV018505', '000040505', '2026-11-03'), nf('OV018506', '000040506', '2026-11-11')] },
+    FiscalDocuments: { linhas: [fd('000040501', 'Approved', '2026-11-11'), fd('000040502', 'Approved', '2026-10-30'), fd('000040503', 'Approved', '2025-05-06'), fd('000040504', 'Approved', '2026-11-12'),
+      fd('000040505', 'Rejected', '2026-11-03'), fd('000040506', 'Rejected', '2026-11-11')] }
+  };
+  process.env.KANBAN_DESDE = '';   // o padrão: 2026-11-11
+  r = await K.quadro({});
+  const e7e = {}; r.ovs.forEach(o => { e7e[o.numero] = o.etapa; });
+  t('o corte padrão é 11/11/2026, nas colunas Faturado, Rejeitada e Pallet', r.desde === '2026-11-11' && r.desdeEtapas.join() === 'faturado,rejeitada,pallet', { desde: r.desde, etapas: r.desdeEtapas });
+  t('Faturado: a nota de 11/11 fica (mesmo criada em 09/11); a de 30/10 sai', e7e.OV018501 === 'faturado' && !e7e.OV018502, e7e);
+  t('Pallet: a nota de 12/11 fica; a de 2025 sai', e7e.OV018504 === 'pallet' && !e7e.OV018503, e7e);
+  t('Rejeitada: a de 11/11 fica; a de 03/11 sai', e7e.OV018506 === 'rejeitada' && !e7e.OV018505, e7e);
+  t('as outras colunas não têm corte (a em aberto de 2025 fica em Criada)', e7e.OV018507 === 'criada', e7e);
+  t('as que saíram pelo corte são contadas', r.antesDoCorte === 3, r.antesDoCorte);
+  K._limparCache(); process.env.KANBAN_DESDE = '0';
+  r = await K.quadro({});
+  t('KANBAN_DESDE=0 desliga o corte', r.desde === null && r.ovs.some(o => o.numero === 'OV018503') && r.ovs.some(o => o.numero === 'OV018505'), { desde: r.desde, n: r.ovs.length });
+  CEN = guarda7e; SERVICO = serv7e;
 
   console.log('7d) 12/11/26 a EXPEDIÇÃO: as cargas com o envio confirmado HOJE (LoadShipConfirmUTCDateTime), de qualquer data');
   K._limparCache(); chamadas.length = 0;

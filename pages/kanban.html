@@ -616,7 +616,9 @@
         return '<section class="kb-col' + (lista.length ? '' : ' vazia') + '" style="' + tom(TOM_ETAPA[e.id] || 0) + '"' + (e.pendente && !lista.length ? ' title="' + esc(e.nome) + ': aguardando os campos da fase"' : '') + '><div class="kb-col-h"><div class="kb-col-t"><span class="nome" title="' + esc(e.nome) + '">' + (NOME_CURTO[e.id] ? '<span class="kb-longo">' + esc(e.nome) + '</span><span class="kb-curto">' + esc(NOME_CURTO[e.id]) + '</span>' : esc(e.nome)) + '</span><span class="kb-cnt">' + lista.length + '</span></div>'
           + '<div class="kb-col-v">' + (temValor ? esc(fK(soma)) : '&nbsp;') + '</div>'
             // 12/11/26 (dono): a Expedição é sempre HOJE — o envio da carga confirmado hoje
-          + (e.id === 'expedicao' && r.expedicaoDia ? '<div class="kb-col-p" title="Só as OVs com o envio da carga confirmado hoje (LoadShipConfirmUTCDateTime), de qualquer data">expedidas hoje</div>' : '') + '</div>'
+          + (e.id === 'expedicao' && r.expedicaoDia ? '<div class="kb-col-p" title="Só as OVs com o envio da carga confirmado hoje (LoadShipConfirmUTCDateTime), de qualquer data">expedidas hoje</div>'
+            // 12/11/26 (dono): Faturado, Rejeitada e Pallet só de 11/11/2026 em diante
+            : r.desde && (r.desdeEtapas || []).indexOf(e.id) >= 0 ? '<div class="kb-col-p" title="Só as OVs com a nota fiscal (sem nota, a criação) de ' + esc(fDia(r.desde)) + ' em diante">desde ' + esc(fDM(r.desde)) + '</div>' : '') + '</div>'
           + '<div class="kb-cards">' + (lista.length ? lista.map(cardHtml).join('') : e.pendente ? '<div class="kb-vazio pend" title="aguardando os campos da fase"><span class="kb-longo">aguardando os campos da fase</span><span class="kb-curto">a definir</span></div>' : '<div class="kb-vazio">—</div>') + '</div></section>';
       }).join('') + '</div>';
     }
@@ -691,7 +693,7 @@
           var n = g.ovs.length, ab = n > 0 && grupoAberto(g.id);
           var soma = g.ovs.reduce(function (s, o) { return s + (o.valor || 0); }, 0);
           var temValor = g.ovs.some(function (o) { return o.valor != null; });
-          var nota = g.fora ? 'fora do quadro' : (g.pendente && !n) ? 'aguardando os campos da fase' : g.id === 'expedicao' && r.expedicaoDia ? 'expedidas hoje' : '';
+          var nota = g.fora ? 'fora do quadro' : (g.pendente && !n) ? 'aguardando os campos da fase' : g.id === 'expedicao' && r.expedicaoDia ? 'expedidas hoje' : r.desde && (r.desdeEtapas || []).indexOf(g.id) >= 0 ? 'desde ' + fDM(r.desde) : '';
           return '<tbody class="kb-grp' + (ab ? ' on' : '') + (n ? '' : ' vazio') + '" style="' + tom(TOM_ETAPA[g.id] != null ? TOM_ETAPA[g.id] : 2) + '">'
             + '<tr class="kb-grp-h"><td colspan="' + NCOLS_LISTA + '"><button type="button" class="kb-grp-b" data-grp="' + esc(g.id) + '" aria-expanded="' + ab + '"' + (n ? '' : ' disabled') + ' title="' + esc(n ? (ab ? 'Recolher ' : 'Abrir ') + g.nome : g.nome + ': nenhuma OV') + '">'
             + '<span class="kb-grp-in"><span class="kb-grp-seta">' + IC_SETA + '</span><span class="kb-grp-n">' + esc(g.nome) + '</span><span class="kb-cnt">' + n + '</span>'
@@ -1130,7 +1132,7 @@
         + '<li class="' + (o.etapa === 'liberado' ? 'on' : '') + '">Status do trabalho = <b>Abrir</b> → <b>Separação</b> (só isso).</li>'
         + '<li class="' + (o.etapa === 'criada' ? 'on' : '') + '">Nenhuma das anteriores (inclusive a OV sem nenhuma linha) → <b>Criada</b>.</li></ol>'
         + '<p class="kb-dw-p" style="margin-top:8px;">Onde as regras não falam, vale a de antes: OV que saiu do aberto sem status de nota → Faturado; sem a entidade de trabalho no OData, a OV liberada (<code>ReleaseStatus</code>) → Separação.</p>'
-        + '<p class="kb-dw-p" style="margin-top:8px;">Entram as OVs da <b>MSB</b>' + (depTexto() ? ' do depósito <b>' + esc(depTexto()) + '</b>' : '') + '. <b>Criada, Crédito, Separação, Conferência, Cotação e Aguardando Faturamento</b>: todas as OVs <b>em aberto</b>, de qualquer data. <b>Faturado</b> e <b>Pallet</b>: toda OV que está neles agora, de qualquer data (as em aberto e as faturadas com a carga ainda Carregado). <b>Rejeitada</b>: todas as que estão nela agora. <b>Expedição</b>: só as com o envio da carga <b>confirmado hoje</b>, de OV de qualquer data. O quadro relê o Dynamics a cada 60 s; as linhas desta ficha são lidas quando ela abre.</p></details>';
+        + '<p class="kb-dw-p" style="margin-top:8px;">Entram as OVs da <b>MSB</b>' + (depTexto() ? ' do depósito <b>' + esc(depTexto()) + '</b>' : '') + '. <b>Criada, Crédito, Separação, Conferência, Cotação e Aguardando Faturamento</b>: todas as OVs <b>em aberto</b>, de qualquer data. <b>Faturado</b>, <b>Rejeitada</b> e <b>Pallet</b>: as que estão nelas agora com a nota fiscal (sem nota, a criação) de ' + (estado.r && estado.r.desde ? esc(fDia(estado.r.desde)) : '11/11/2026') + ' em diante. <b>Expedição</b>: só as com o envio da carga <b>confirmado hoje</b>, de OV de qualquer data. O quadro relê o Dynamics a cada 60 s; as linhas desta ficha são lidas quando ela abre.</p></details>';
       return h;
     }
 

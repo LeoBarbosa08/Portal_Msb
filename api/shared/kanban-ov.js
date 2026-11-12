@@ -881,6 +881,17 @@ async function ovsDoDia(E, dia, token, ate, diag) {
 // TUDO"): SEM período — nenhuma coluna filtra por data (a Rejeitada também mostra
 // tudo); só a Expedição é "hoje", pela confirmação do envio.
 const DATADAS = [];
+// 12/11/2026, depois (dono: "as fases FATURADO, REJEITADO e PALLET, quero somente
+// que seja do dia 11/11/2026 para frente"): um CORTE fixo nessas colunas — fica
+// a OV cuja nota fiscal mais recente (sem nota, a criação) é desse dia em diante.
+// KANBAN_DESDE troca a data ("0" desliga); KANBAN_DESDE_ETAPAS, as colunas.
+const DESDE_PADRAO = '2026-11-11';
+function desde() {
+  const v = String(process.env.KANBAN_DESDE == null ? '' : process.env.KANBAN_DESDE).trim();
+  if (v === '0') return '';
+  return /^\d{4}-\d{2}-\d{2}$/.test(v) ? v : DESDE_PADRAO;
+}
+const ETAPAS_DESDE = envLista('KANBAN_DESDE_ETAPAS', ['faturado', 'rejeitada', 'pallet']);
 // quando a carga da OV foi expedida: a confirmação de envio MAIS RECENTE das
 // cargas remetidas dela (a OV só vai para a Expedição com todas lá); null = sem
 function expedidaEmDe(cargas) {
@@ -1459,9 +1470,16 @@ async function montar(opts, modo) {
   // quadro (12/11/26): sem período — só a EXPEDIÇÃO filtra, pela OV cuja carga
   // teve o envio confirmado HOJE, de qualquer data
   const hoje = hojeSP();
-  const foraPeriodo = 0;
-  let expedicaoOutroDia = 0, expedicaoSemData = 0;
+  const foraPeriodo = 0, corte = desde();
+  let expedicaoOutroDia = 0, expedicaoSemData = 0, antesDoCorte = 0;
   const ovs = !modo.quadro ? partes : partes.filter(o => {
+    // 12/11/26: Faturado, Rejeitada e Pallet só de 11/11/2026 em diante (pela nota)
+    if (corte && ETAPAS_DESDE.indexOf(o.etapa) >= 0) {
+      const d = (o.notas && o.notas[0] && o.notas[0].data) || diaDe(o.criadaEm, principal.criadaEm) || '';
+      o.dataPeriodo = d || null;
+      if (!d || d < corte) { antesDoCorte++; return false; }
+      return true;
+    }
     if (o.etapa !== 'expedicao') return true;
     if (!o.expedidaEm) { expedicaoSemData++; return false; }
     o.dataPeriodo = diaSP(o.expedidaEm);
@@ -1544,7 +1562,7 @@ async function montar(opts, modo) {
     if (falta.length) avisos.push('Não achei ' + falta.join(', ') + ' nas entidades lidas (' + fontes.map(f => f.entidade).join(', ') + '): as etapas dependem desses campos. Veja os campos de cada OV no painel.');
     else if (achou.sales < ovs.length) avisos.push((ovs.length - achou.sales) + ' OV(s) sem SalesStatus: ficaram em Criada, Gerenciamento de Crédito ou Separação pelos outros campos.');
   }
-  const r = Object.assign(base, { fontes, etapas, canceladas, depositos: TODOS_DEPOSITOS ? null : DEPOSITOS, foraDeposito, foraPeriodo, expedicaoDia: modo.quadro ? hoje : undefined, expedicaoOutroDia, expedicaoSemData, statusCols, statusPadrao, ovs, avisos, diagnostico: diag });
+  const r = Object.assign(base, { fontes, etapas, canceladas, depositos: TODOS_DEPOSITOS ? null : DEPOSITOS, foraDeposito, foraPeriodo, desde: modo.quadro ? (corte || null) : undefined, desdeEtapas: modo.quadro && corte ? ETAPAS_DESDE : undefined, antesDoCorte, expedicaoDia: modo.quadro ? hoje : undefined, expedicaoOutroDia, expedicaoSemData, statusCols, statusPadrao, ovs, avisos, diagnostico: diag });
   if (!opts.diag) _cache.set(modo.chave, { ts: Date.now(), r });
   return r;
 }

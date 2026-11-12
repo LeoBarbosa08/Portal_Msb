@@ -1551,6 +1551,24 @@ fases". A regra do lote (`partesPorLinhas`) está **LIGADA por padrão** de novo
 - Testes (1, 7c): Pendência com regra; `=0` desliga; sem env, ligada.
   `sw.js` — cache `bm-comest-v74`.
 
+### Kanban · Faturado, Rejeitada e Pallet só de 11/11/2026 em diante (12/11/2026)
+
+O dono: "as fases FATURADO, REJEITADO e PALLET, quero somente que seja do dia
+11/11/2026 para frente".
+
+- **Corte fixo** (`desde()`, no filtro do quadro): nas colunas Faturado, Rejeitada
+  e Pallet fica só a OV cuja **nota fiscal mais recente** é de 11/11/2026 em diante
+  — a data do faturamento (uma OV criada em 09/11 e faturada em 11/11 fica); sem
+  nota, a data de criação. As outras colunas não mudam (em aberto de qualquer
+  data; Expedição = envio confirmado hoje). `KANBAN_DESDE` troca a data (`0`
+  desliga); `KANBAN_DESDE_ETAPAS`, as colunas. A resposta traz `desde`,
+  `desdeEtapas` e `antesDoCorte` (quantas saíram).
+- **Tela**: "desde 11/11" no cabeçalho das 3 colunas (e na lista); "Como a etapa é
+  decidida" explica o corte.
+- Testes (7e): nota de 11/11 criada em 09/11 fica; 30/10, 2025 e 03/11 saem (nas 3
+  colunas); a em aberto de 2025 não tem corte; `KANBAN_DESDE=0` desliga. Os
+  cenários antigos rodam com o corte desligado. `sw.js` — cache `bm-comest-v89`.
+
 ### Kanban · o campo extra com nome parecido (12/11/2026)
 
 O dono: "Solicitar transportadora está Sim no Dynamics e não está sinalizando" — a
