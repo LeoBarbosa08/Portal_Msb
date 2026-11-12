@@ -1464,7 +1464,6 @@ async function montar(opts, modo) {
       diag.push({ etapa: 'email:cotacao', candidatas: cands.length, enviados: res.enviados, erro: res.erro });
       if (res.erro) avisos.push('O e-mail da Cotação não conseguiu ler o registro dos envios (' + res.erro + ').');
       if (!EMAIL.configurado()) avisos.push(cands.length + ' OV(s) em Cotação pedem o e-mail de transportadora, mas falta configurar o remetente e o destinatário (KANBAN_EMAIL_DE e KANBAN_EMAIL_PARA) no Azure.');
-      else if (!EMAIL.comRegistro()) avisos.push('O envio automático do e-mail da Cotação está desligado: falta o container do registro (KANBAN_BLOB_URL).');
     }
   }
   if (modo.quadro && CARGA.E && !(CARGA.lista || [CARGA.E]).some(L => L.envioConfirmado)) {

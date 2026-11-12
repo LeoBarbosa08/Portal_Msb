@@ -1174,6 +1174,20 @@ const bio = (n, st, lib) => ({ dataAreaId: 'msb', SalesOrderNumber: n, StatusPed
   K._limparCache(); r = await K.quadro({});
   t('na leitura seguinte, a próxima da fila', EMAILS.length === 4, EMAILS.length);
   delete process.env.KANBAN_EMAIL_DE; delete process.env.KANBAN_EMAIL_MAX;
+  // 12/11/26 (dono: "não precisa de blob ainda"): sem o registro, a memória do servidor
+  K._limparCache(); EM._limparMemoria(); delete process.env.KANBAN_BLOB_URL;
+  process.env.KANBAN_EMAIL_DE = 'remetente@empresa.teste';
+  const nb0 = EMAILS.length, nBlobs = Object.keys(BLOBS).length;
+  r = await K.quadro({});
+  const env11 = r.ovs.filter(o => o.emailCotacao && o.emailCotacao.status === 'enviado' && o.emailCotacao.memoria);
+  t('sem blob: envia (até o teto por leitura) e guarda na memória, sem gravar blob', EMAILS.length - nb0 === 5 && env11.length === 5 && Object.keys(BLOBS).length === nBlobs && !r.avisos.some(a => /KANBAN_BLOB_URL/.test(a)), { n: EMAILS.length - nb0, mem: env11.length });
+  K._limparCache(); r = await K.quadro({});
+  const nb1 = EMAILS.length;
+  t('sem blob: na leitura seguinte, as que já receberam não recebem de novo (a sem caixas segue esperando)', nb1 - nb0 === 5 && r.ovs.filter(o => o.emailCotacao && o.emailCotacao.status === 'enviado').length === 5
+    && r.ovs.find(o => o.numero === 'OV019504').emailCotacao.status === 'sem-caixas', nb1 - nb0);
+  K._limparCache(); EM._limparMemoria(); r = await K.quadro({});
+  t('sem blob: se o servidor reiniciar (memória vazia), pode reenviar — o aviso da ficha diz isso', EMAILS.length > nb1, EMAILS.length - nb1);
+  EM._limparMemoria(); delete process.env.KANBAN_EMAIL_DE;
   delete process.env.KANBAN_EMAIL_PARA; delete process.env.KANBAN_BLOB_URL;
   CEN = guarda10; SERVICO = serv10;
 

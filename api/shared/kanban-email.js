@@ -25,8 +25,11 @@
 // criada com If-None-Match:* — só UMA instância consegue criar, e só ela envia
 // (sem envio em dobro, mesmo com várias pessoas com o quadro aberto).
 // Container: KANBAN_BLOB_URL (SAS de CONTAINER, sr=c, Read + Create + Write);
-// sem ela, o do log de acessos (LOG_PORTAL_BLOB_URL). Sem nenhum dos dois, o
-// envio AUTOMÁTICO fica desligado (não há como garantir "uma vez só").
+// sem ela, o do log de acessos (LOG_PORTAL_BLOB_URL).
+// 12/11/26 (dono: "não precisa de blob ainda"): SEM nenhum dos dois, o portal
+// lembra dos envios só na MEMÓRIA do servidor (processarNaMemoria) — vale para o
+// teste; se o servidor reiniciar (ou houver mais de uma instância), a OV que
+// continuar em Cotação pode receber de novo. Para clientes: o registro em blob.
 // 12/11/26 (dono: "vai ser automática, não quero botão"): SÓ automático — sem o
 // botão da ficha e sem a "base": as OVs que já estão em Cotação com Solicitar
 // transportadora = Sim também recebem (uma vez cada, no máximo KANBAN_EMAIL_MAX
@@ -178,7 +181,7 @@ async function gravarMarca(nome, obj) {
 // Cotação com Solicitar transportadora = Sim. -> { porOv: { OV: { status, em,
 // para, erro } }, base: bool, enviados: n, erro }
 // status: 'enviado' | 'sem-caixas' | 'pendente' (fica para a próxima leitura) |
-// 'erro' | 'nao-configurado' | 'sem-registro' | 'desligado'
+// 'erro' | 'nao-configurado' | 'desligado' (memoria: true = sem o registro em blob)
 async function processar(candidatos, opts) {
   opts = opts || {};
   const porOv = {}, out = { porOv, enviados: 0, erro: null };
@@ -186,7 +189,7 @@ async function processar(candidatos, opts) {
   if (!candidatos.length) return out;
   const marca = (st) => candidatos.forEach(c => { porOv[c.ov] = { status: st }; });
   if (!configurado()) { marca('nao-configurado'); return out; }
-  if (!comRegistro()) { marca('sem-registro'); return out; }
+  if (!comRegistro()) return processarNaMemoria(candidatos, tempo, out);
   try {
     // as marcas de cada OV (o que já foi feito)
     const marcas = await Promise.all(candidatos.map(c => lerMarca(nomeOv(c.ov)).catch(() => undefined)));
@@ -217,13 +220,40 @@ async function processar(candidatos, opts) {
   return out;
 }
 
+// SEM o registro em blob (12/11/26, "não precisa de blob ainda"): a lembrança
+// dos envios fica na memória do servidor — marca ANTES de enviar (duas leituras
+// ao mesmo tempo na mesma instância não mandam dois); erro não tenta de novo
+const _memoria = new Map();
+async function processarNaMemoria(candidatos, tempo, out) {
+  const porOv = out.porOv;
+  for (const c of candidatos) {
+    const k = nomeOv(c.ov), m = _memoria.get(k);
+    if (m) { porOv[c.ov] = m; continue; }
+    if (!c.pronto) { porOv[c.ov] = { status: 'sem-caixas' }; continue; }
+    if (!AUTO()) { porOv[c.ov] = { status: 'desligado' }; continue; }
+    if (out.enviados >= MAX() || !tempo()) { porOv[c.ov] = { status: 'pendente' }; continue; }
+    _memoria.set(k, { status: 'enviando', memoria: true });
+    try {
+      const r = await enviar(c.email);
+      const reg = { status: 'enviado', em: new Date().toISOString(), para: r.para, cc: r.cc, assunto: c.email.assunto, caixas: c.email.totalCaixas, auto: true, memoria: true };
+      _memoria.set(k, reg); porOv[c.ov] = reg; out.enviados++;
+    } catch (e) {
+      const reg = { status: 'erro', em: new Date().toISOString(), erro: String(e.message || e).slice(0, 300), memoria: true };
+      _memoria.set(k, reg); porOv[c.ov] = reg;
+    }
+  }
+  if (_memoria.size > 2000) _memoria.delete(_memoria.keys().next().value);
+  return out;
+}
+
 // envio já, fora da automação (12/11/26: sem uso — a ficha não tem botão e a rota
 // recusa; fica para um reenvio manual futuro): envia e grava a marca
 async function enviarAgora(c, por) {
   const r = await enviar(c.email);
   const reg = { status: 'enviado', em: new Date().toISOString(), para: r.para, cc: r.cc, assunto: c.email.assunto, caixas: c.email.totalCaixas, manual: true, por: por || '' };
   if (comRegistro()) await gravarMarca(nomeOv(c.ov), reg).catch(() => {});
+  else _memoria.set(nomeOv(c.ov), Object.assign({ memoria: true }, reg));
   return reg;
 }
 
-module.exports = { configurado, comRegistro, montarEmail, agruparCaixas, saudacao, enviar, processar, enviarAgora, _blobUrl: blobUrl };
+module.exports = { configurado, comRegistro, montarEmail, agruparCaixas, saudacao, enviar, processar, enviarAgora, _blobUrl: blobUrl, _limparMemoria: () => _memoria.clear() };

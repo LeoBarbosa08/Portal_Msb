@@ -1582,7 +1582,11 @@ ligada à carga; Weight, Length, Width, Height."
   por OV**: uma marca `kanban-email-cotacao/<OV>.json` no blob, criada com
   `If-None-Match:*` — só uma instância consegue e só ela envia. Container:
   `KANBAN_BLOB_URL` (SAS de container, Read + Create + Write) ou, sem ela, o do log
-  de acessos (`LOG_PORTAL_BLOB_URL`); sem nenhum, o automático fica desligado. Sem
+  de acessos (`LOG_PORTAL_BLOB_URL`). **Sem nenhum** (dono: "não precisa de blob
+  ainda"), o portal lembra dos envios só na MEMÓRIA do servidor
+  (`processarNaMemoria`): serve para o teste, mas se o servidor reiniciar (ou
+  houver mais de uma instância) a OV que continuar em Cotação pode receber de novo
+  — a ficha avisa. Para mandar para clientes, configurar o registro. Sem
   caixas na carga: espera. No máximo `KANBAN_EMAIL_MAX` (5) envios por leitura — as
   outras ficam na fila para a próxima; `KANBAN_EMAIL_AUTO=0` desliga.
 - **Ficha** (OV em Cotação): "E-mail da cotação", só informativo — a situação
@@ -1592,7 +1596,8 @@ ligada à carga; Weight, Length, Width, Height."
 - Testes (10): o texto igual ao modelo, linha a linha; a que já está em Cotação
   recebe; a que cai em Cotação recebe (uma vez); só as caixas da remessa da OV;
   sem caixas espera; o teto por leitura e a fila; a prévia; a rota (410 no
-  envio); sem configuração, avisa. `sw.js` — cache `bm-comest-v86`.
+  envio); sem configuração, avisa; sem blob, na memória (não repete na leitura
+  seguinte; repete se a memória zerar). `sw.js` — cache `bm-comest-v87`.
 
 ### Kanban · o tipo de frete na ficha (12/11/2026)
 

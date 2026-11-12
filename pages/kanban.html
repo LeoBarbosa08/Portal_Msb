@@ -983,13 +983,13 @@
     // Só automático (dono: "vai ser automática, não quero botão"): o servidor envia
     // a cada leitura do quadro; a ficha só mostra a situação e a prévia.
     var ST_MAIL = {
-      enviado: function (m) { return ['ok', 'Enviado ' + (m.em ? 'em ' + fDM(diaSP(m.em)) + ' às ' + fHora(m.em) + ' ' : '') + 'para ' + ((m.para || []).join(', ') || '—') + '.']; },
+      enviado: function (m) { return ['ok', 'Enviado ' + (m.em ? 'em ' + fDM(diaSP(m.em)) + ' às ' + fHora(m.em) + ' ' : '') + 'para ' + ((m.para || []).join(', ') || '—') + '.'
+        + (m.memoria ? ' (Sem o registro em blob, o portal guarda o envio só na memória: se reiniciar, pode enviar de novo.)' : '')]; },
       'sem-caixas': function () { return ['alerta', 'Aguardando as caixas da carga: envia sozinho quando as caixas aparecerem.']; },
       pendente: function () { return ['', 'Na fila: envia na próxima leitura do quadro.']; },
       enviando: function () { return ['', 'Enviando…']; },
       erro: function (m) { return ['alerta', 'O envio falhou: ' + (m.erro || 'erro desconhecido')]; },
       'nao-configurado': function () { return ['alerta', 'Falta configurar o remetente e o destinatário no Azure (KANBAN_EMAIL_DE e KANBAN_EMAIL_PARA).']; },
-      'sem-registro': function () { return ['alerta', 'Envio automático desligado: falta o container do registro (KANBAN_BLOB_URL).']; },
       desligado: function () { return ['', 'Envio automático desligado (KANBAN_EMAIL_AUTO = 0).']; }
     };
     function solicitaTransp(o) { return (o.extras || []).some(function (e) { return /^solicitartransportadora_custom$/i.test(e.nome) && /^(yes|sim|true|1)$/i.test(String(e.valor || '').trim()); }); }
