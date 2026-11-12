@@ -1124,45 +1124,56 @@ const bio = (n, st, lib) => ({ dataAreaId: 'msb', SalesOrderNumber: n, StatusPed
   const q10 = (n) => r.ovs.find(o => o.numero === n);
   t('a OV em Cotação com Solicitar transportadora = Sim é candidata (a com Não, não)', q10('OV019501') && q10('OV019501').etapa === 'cotacao' && q10('OV019501').emailCotacao && q10('OV019503') && q10('OV019503').etapa === 'cotacao' && !q10('OV019503').emailCotacao,
     r.ovs.map(o => o.chave + '=' + o.etapa + (o.emailCotacao ? ':' + o.emailCotacao.status : '')));
-  t('1ª vez: a que JÁ estava em Cotação fica como "base", sem envio', q10('OV019501').emailCotacao.status === 'base' && EMAILS.length === 0 && BLOBS['kanban-email-cotacao/_base.json'] && JSON.parse(BLOBS['kanban-email-cotacao/OV019501.json']).status === 'base', { st: q10('OV019501').emailCotacao.status, n: EMAILS.length });
+  // 12/11/26 (dono: "vai ser automática, não quero botão"): sem a "base" — a que já está em Cotação também recebe
+  t('a OV que já está em Cotação recebe o e-mail automático (sem "base")', q10('OV019501').emailCotacao.status === 'enviado' && q10('OV019501').emailCotacao.auto === true && EMAILS.length === 1 && !BLOBS['kanban-email-cotacao/_base.json'] && JSON.parse(BLOBS['kanban-email-cotacao/OV019501.json']).status === 'enviado', { st: q10('OV019501').emailCotacao.status, n: EMAILS.length });
   t('a prévia vem pronta: só as caixas da remessa da OV (2, não 3), peso e valor', q10('OV019501').emailCotacao.caixas === 2 && q10('OV019501').emailCotacao.peso === 15.24 && /R\$ 3\.200,00/.test(q10('OV019501').emailCotacao.previa.texto) && /Brasília\/DF/.test(q10('OV019501').emailCotacao.previa.texto), q10('OV019501').emailCotacao);
   // uma OV nova CAI em Cotação
   K._limparCache();
   CEN.SalesOrderHeadersV2.linhas.push(ov10('OV019502', '12')); CEN.BIOSalesOrderHeaderV1.linhas.push(bio10('OV019502', 'Yes'));
   r = await K.quadro({});
-  t('a OV que caiu em Cotação recebe o e-mail (automático)', q10('OV019502').emailCotacao.status === 'enviado' && q10('OV019502').emailCotacao.auto === true && EMAILS.length === 1, { st: q10('OV019502').emailCotacao, n: EMAILS.length });
-  const m10 = EMAILS[0] && EMAILS[0].corpo.message;
-  t('pelo Graph: da caixa do Azure, para o destinatário do Azure, com o assunto e o HTML', EMAILS[0] && EMAILS[0].de === 'remetente@empresa.teste' && EMAILS[0].auth === 'Bearer tok' && m10.toRecipients[0].emailAddress.address === 'teste@empresa.teste'
-    && m10.subject === 'Pedido OV019502 — pronto para faturamento e coleta' && m10.body.contentType === 'HTML' && /1x Caixa Dreno/.test(m10.body.content) && EMAILS[0].corpo.saveToSentItems === true, EMAILS[0]);
+  t('a OV que caiu em Cotação recebe o e-mail (automático)', q10('OV019502').emailCotacao.status === 'enviado' && q10('OV019502').emailCotacao.auto === true && EMAILS.length === 2, { st: q10('OV019502').emailCotacao, n: EMAILS.length });
+  const m10 = EMAILS[1] && EMAILS[1].corpo.message;
+  t('pelo Graph: da caixa do Azure, para o destinatário do Azure, com o assunto e o HTML', EMAILS[1] && EMAILS[1].de === 'remetente@empresa.teste' && EMAILS[1].auth === 'Bearer tok' && m10.toRecipients[0].emailAddress.address === 'teste@empresa.teste'
+    && m10.subject === 'Pedido OV019502 — pronto para faturamento e coleta' && m10.body.contentType === 'HTML' && /1x Caixa Dreno/.test(m10.body.content) && EMAILS[1].corpo.saveToSentItems === true, EMAILS[1]);
   t('a marca grava o envio', JSON.parse(BLOBS['kanban-email-cotacao/OV019502.json']).status === 'enviado', BLOBS['kanban-email-cotacao/OV019502.json']);
-  t('a que estava na base continua sem envio', q10('OV019501').emailCotacao.status === 'base', q10('OV019501').emailCotacao.status);
+  t('a 1ª não recebe de novo', q10('OV019501').emailCotacao.status === 'enviado' && EMAILS.filter(e => /OV019501/.test(e.corpo.message.subject)).length === 1, q10('OV019501').emailCotacao.status);
   K._limparCache(); r = await K.quadro({});
-  t('na leitura seguinte não envia de novo', EMAILS.length === 1 && q10('OV019502').emailCotacao.status === 'enviado', EMAILS.length);
+  t('na leitura seguinte não envia de novo', EMAILS.length === 2 && q10('OV019502').emailCotacao.status === 'enviado', EMAILS.length);
   // sem caixas na carga: espera
   K._limparCache();
   CEN.SalesOrderHeadersV2.linhas.push(ov10('OV019504', '13')); CEN.BIOSalesOrderHeaderV1.linhas.push(bio10('OV019504', 'Yes'));
   r = await K.quadro({});
-  t('sem caixas na carga: aguarda, sem envio e sem marca', q10('OV019504').emailCotacao.status === 'sem-caixas' && EMAILS.length === 1 && !BLOBS['kanban-email-cotacao/OV019504.json'], q10('OV019504').emailCotacao.status);
-  // o botão da ficha: prévia e envio já
+  t('sem caixas na carga: aguarda, sem envio e sem marca', q10('OV019504').emailCotacao.status === 'sem-caixas' && EMAILS.length === 2 && !BLOBS['kanban-email-cotacao/OV019504.json'], q10('OV019504').emailCotacao.status);
+  // a prévia (sem enviar)
   const pv10 = await K.emailCotacao('OV019501', { enviar: false });
-  t('prévia pela ficha: o e-mail montado, sem enviar', pv10.ok && pv10.caixas === 2 && /2x Caixa Dreno — Caixa Dreno \(C 45,0 x L 43,0 x A 28,0\)/.test(pv10.texto) && /15,24 kg/.test(pv10.texto) && EMAILS.length === 1 && pv10.solicitaTransportadora === true, pv10);
-  const ev10 = await K.emailCotacao('OV019501', { enviar: true, por: 'fulano@empresa.teste' });
-  t('"Enviar e-mail agora": envia e marca como enviado (pelo botão)', ev10.enviado && ev10.enviado.status === 'enviado' && ev10.enviado.manual && EMAILS.length === 2 && JSON.parse(BLOBS['kanban-email-cotacao/OV019501.json']).manual === true, ev10.enviado);
+  t('prévia: o e-mail montado, sem enviar', pv10.ok && pv10.caixas === 2 && /2x Caixa Dreno — Caixa Dreno \(C 45,0 x L 43,0 x A 28,0\)/.test(pv10.texto) && /15,24 kg/.test(pv10.texto) && EMAILS.length === 2 && pv10.solicitaTransportadora === true, pv10);
   let e10 = null; try { await K.emailCotacao('OV099999', { enviar: false }); } catch (e) { e10 = e; }
   t('OV fora do quadro: 404', e10 && e10.status === 404, e10 && e10.message);
-  // a rota: enviar exige o login validado
+  // a rota: o envio pela ficha está desligado (só automático)
   const fn10 = require('../api/kanban-ov/index.js'), ctx10 = { log: Object.assign(() => {}, { error() {} }) };
-  auth.requireArea = async () => ({ user: { email: 'fulano@empresa.teste' }, validated: false });
+  auth.requireArea = async () => ({ user: { email: 'fulano@empresa.teste' }, validated: true });
   await fn10(ctx10, { method: 'POST', headers: {}, query: {}, body: { acao: 'email-cotacao', ov: 'OV019501', enviar: true } });
-  t('rota: enviar sem o login validado -> 403 e não envia', ctx10.res.status === 403 && EMAILS.length === 2, ctx10.res.status);
+  t('rota: enviar pela ficha -> 410 (só automático) e não envia', ctx10.res.status === 410 && /só automático/.test(ctx10.res.body.error) && EMAILS.length === 2, ctx10.res.status);
   await fn10(ctx10, { method: 'POST', headers: {}, query: {}, body: { acao: 'email-cotacao', ov: 'OV019501', enviar: false } });
-  t('rota: a prévia não precisa do login validado', ctx10.res.status === 200 && ctx10.res.body.caixas === 2, ctx10.res.status);
+  t('rota: a prévia continua', ctx10.res.status === 200 && ctx10.res.body.caixas === 2, ctx10.res.status);
   auth.requireArea = orig;
   // sem remetente/destinatário: não envia e avisa
   K._limparCache(); delete process.env.KANBAN_EMAIL_DE;
-  CEN.SalesOrderHeadersV2.linhas.push(ov10('OV019505', '14')); CEN.BIOSalesOrderHeaderV1.linhas.push(bio10('OV019505', 'Yes'));
+  CEN.SalesOrderHeadersV2.linhas.push(ov10('OV019505', '14')); CEN.BIOSalesOrderHeaderV1.linhas.push(bio10('OV019505', 'Yes')); CEN.SalesOrderLines.linhas.push(lin10('OV019505', 1, 300));
+  CEN.WHSWorkTableBiEntities.linhas.push(w('OV019505', 'W505', 'Closed', { LoadId: 'LD-505', ShipmentId: 'SH-505' })); CEN.WHSLoadTableBiEntities.linhas.push(ld10('LD-505')); CEN.BioWHSContainerV1Entities.linhas.push(cx10('CX-505', 'LD-505', 'SH-505'));
   r = await K.quadro({});
-  t('sem KANBAN_EMAIL_DE: "não configurado", sem envio e com aviso', q10('OV019502').emailCotacao.status === 'nao-configurado' && EMAILS.length === 2 && r.avisos.some(a => /KANBAN_EMAIL_DE e KANBAN_EMAIL_PARA/.test(a)), r.avisos);
+  t('sem KANBAN_EMAIL_DE: "não configurado", sem envio e com aviso', q10('OV019505').emailCotacao.status === 'nao-configurado' && EMAILS.length === 2 && r.avisos.some(a => /KANBAN_EMAIL_DE e KANBAN_EMAIL_PARA/.test(a)), r.avisos);
+  // no máximo KANBAN_EMAIL_MAX por leitura: as outras ficam na fila
+  K._limparCache(); process.env.KANBAN_EMAIL_DE = 'remetente@empresa.teste'; process.env.KANBAN_EMAIL_MAX = '1';
+  ['OV019506', 'OV019507'].forEach((n, i) => { CEN.SalesOrderHeadersV2.linhas.push(ov10(n, String(15 + i))); CEN.BIOSalesOrderHeaderV1.linhas.push(bio10(n, 'Yes')); CEN.SalesOrderLines.linhas.push(lin10(n, 1, 400));
+    CEN.WHSWorkTableBiEntities.linhas.push(w(n, 'W' + n, 'Closed', { LoadId: 'LD-' + n, ShipmentId: 'SH-' + n })); CEN.WHSLoadTableBiEntities.linhas.push(ld10('LD-' + n));
+    CEN.BioWHSContainerV1Entities.linhas.push(cx10('CX-' + n, 'LD-' + n, 'SH-' + n)); });
+  r = await K.quadro({});
+  const fila10 = ['OV019505', 'OV019506', 'OV019507'].map(n => q10(n).emailCotacao.status);
+  t('no máximo 1 envio por leitura (KANBAN_EMAIL_MAX=1): as outras ficam na fila', EMAILS.length === 3 && fila10.filter(x => x === 'enviado').length === 1 && fila10.filter(x => x === 'pendente').length === 2, fila10);
+  K._limparCache(); r = await K.quadro({});
+  t('na leitura seguinte, a próxima da fila', EMAILS.length === 4, EMAILS.length);
+  delete process.env.KANBAN_EMAIL_DE; delete process.env.KANBAN_EMAIL_MAX;
   delete process.env.KANBAN_EMAIL_PARA; delete process.env.KANBAN_BLOB_URL;
   CEN = guarda10; SERVICO = serv10;
 

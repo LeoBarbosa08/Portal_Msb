@@ -27,8 +27,10 @@
 // Container: KANBAN_BLOB_URL (SAS de CONTAINER, sr=c, Read + Create + Write);
 // sem ela, o do log de acessos (LOG_PORTAL_BLOB_URL). Sem nenhum dos dois, o
 // envio AUTOMÁTICO fica desligado (não há como garantir "uma vez só").
-// Na 1ª vez (sem a marca _base.json), as OVs que JÁ estavam em Cotação são só
-// marcadas ('base'), sem envio — "quando cair em Cotação" = a partir de agora.
+// 12/11/26 (dono: "vai ser automática, não quero botão"): SÓ automático — sem o
+// botão da ficha e sem a "base": as OVs que já estão em Cotação com Solicitar
+// transportadora = Sim também recebem (uma vez cada, no máximo KANBAN_EMAIL_MAX
+// por leitura).
 // ================================================================
 
 const auth = require('./auth');
@@ -175,12 +177,11 @@ async function gravarMarca(nome, obj) {
 // candidatos = [{ ov, pronto (tem caixas), email (montarEmail) }] — as OVs em
 // Cotação com Solicitar transportadora = Sim. -> { porOv: { OV: { status, em,
 // para, erro } }, base: bool, enviados: n, erro }
-// status: 'enviado' | 'base' (já estava em Cotação quando a automação começou) |
-// 'sem-caixas' | 'pendente' (fica para a próxima leitura) | 'erro' |
-// 'nao-configurado' | 'sem-registro' | 'desligado'
+// status: 'enviado' | 'sem-caixas' | 'pendente' (fica para a próxima leitura) |
+// 'erro' | 'nao-configurado' | 'sem-registro' | 'desligado'
 async function processar(candidatos, opts) {
   opts = opts || {};
-  const porOv = {}, out = { porOv, base: false, enviados: 0, erro: null };
+  const porOv = {}, out = { porOv, enviados: 0, erro: null };
   const tempo = typeof opts.temTempo === 'function' ? opts.temTempo : () => true;
   if (!candidatos.length) return out;
   const marca = (st) => candidatos.forEach(c => { porOv[c.ov] = { status: st }; });
@@ -189,17 +190,6 @@ async function processar(candidatos, opts) {
   try {
     // as marcas de cada OV (o que já foi feito)
     const marcas = await Promise.all(candidatos.map(c => lerMarca(nomeOv(c.ov)).catch(() => undefined)));
-    // 1ª vez: as que já estão em Cotação ficam como 'base' (sem envio)
-    const base = await lerMarca('_base');
-    if (!base) {
-      if (await reivindicar('_base', { ts: new Date().toISOString(), ovs: candidatos.map(c => c.ov) })) {
-        out.base = true;
-        await Promise.all(candidatos.map((c, i) => marcas[i] ? null : reivindicar(nomeOv(c.ov), { status: 'base', ts: new Date().toISOString() }).catch(() => false)));
-        candidatos.forEach((c, i) => { porOv[c.ov] = marcas[i] || { status: 'base' }; });
-        return out;
-      }
-      marca('pendente'); return out;   // outra instância está criando a base agora
-    }
     for (let i = 0; i < candidatos.length; i++) {
       const c = candidatos[i], m = marcas[i];
       if (m) { porOv[c.ov] = m; continue; }
@@ -227,7 +217,8 @@ async function processar(candidatos, opts) {
   return out;
 }
 
-// o envio pelo botão da ficha (teste / reenvio): envia já e grava a marca
+// envio já, fora da automação (12/11/26: sem uso — a ficha não tem botão e a rota
+// recusa; fica para um reenvio manual futuro): envia e grava a marca
 async function enviarAgora(c, por) {
   const r = await enviar(c.email);
   const reg = { status: 'enviado', em: new Date().toISOString(), para: r.para, cc: r.cc, assunto: c.email.assunto, caixas: c.email.totalCaixas, manual: true, por: por || '' };

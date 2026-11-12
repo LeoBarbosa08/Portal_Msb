@@ -26,10 +26,10 @@
 //                                         grava ENVIARPALLET_CUSTOM = Sim na carga
 //                                         (exige o login VALIDADO; fica no log) e
 //                                         relê para conferir: { confirmado, leitura, aviso }
-//   POST /api/kanban-ov { acao: 'email-cotacao', ov: 'OV…', enviar: false|true }
-//                                      -> 12/11/26: o e-mail da Cotação da OV — a prévia
-//                                         ou o envio já (login validado) para os
-//                                         destinatários do Azure (kanban-email.js)
+//   POST /api/kanban-ov { acao: 'email-cotacao', ov: 'OV…' }
+//                                      -> 12/11/26: a PRÉVIA do e-mail da Cotação da OV
+//                                         (kanban-email.js); enviar: true -> 410 — o
+//                                         envio é só automático, na leitura do quadro
 //   GET /api/kanban-ov?ov=OV017525     -> as linhas da OV (a ficha do painel)
 //   -> { ok, configured, numero, entidade, linhas:[{ linha, item, produto,
 //        qtd, un, preco, desconto, descPct, valor, status, entrega,
@@ -63,7 +63,9 @@ module.exports = async function (context, req) {
       // ninguém escolhe para quem vai. Enviar exige o login VALIDADO.
       if (String(b.acao || '') === 'email-cotacao') {
         const quem = String((base.user && base.user.email) || '').toLowerCase();
-        if (b.enviar && !base.validated) { const e = new Error('Para enviar o e-mail é preciso o login validado. Saia e entre de novo no portal.'); e.status = 403; e.publicMessage = e.message; throw e; }
+        // (12/11/26, dono: "vai ser automática, não quero botão": o envio pela rota
+        // fica DESLIGADO — só a automação do quadro envia; a prévia continua)
+        if (b.enviar) { json(410, { ok: false, error: 'O e-mail da Cotação é só automático: o envio pela ficha foi desativado.' }); return; }
         try {
           const r = await K.emailCotacao(b.ov, { enviar: !!b.enviar, por: quem });
           if (b.enviar) context.log('[kanban-ov] email-cotacao', JSON.stringify({ por: quem, ov: r.ov, para: r.enviado && r.enviado.para, caixas: r.caixas }));

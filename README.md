@@ -1576,26 +1576,23 @@ ligada à carga; Weight, Length, Width, Height."
   da caixa `KANBAN_EMAIL_DE` para `KANBAN_EMAIL_PARA` (lista; `KANBAN_EMAIL_CC`
   opcional) — **só pelas variáveis do Azure**, nunca pelo código (o repositório é
   público) nem pela tela.
-- **A automação** (`processar`, a cada leitura do quadro): as OVs em Cotação com
-  Solicitar transportadora = Sim. **Uma vez só por OV**: uma marca
-  `kanban-email-cotacao/<OV>.json` no blob, criada com `If-None-Match:*` — só uma
-  instância consegue e só ela envia. Container: `KANBAN_BLOB_URL` (SAS de
-  container, Read + Create + Write) ou, sem ela, o do log de acessos
-  (`LOG_PORTAL_BLOB_URL`); sem nenhum, o automático fica desligado. Na 1ª vez
-  (sem `_base.json`), as que JÁ estavam em Cotação só são marcadas ("base"), sem
-  envio — daí em diante, envia para as que caem em Cotação. Sem caixas na carga:
-  espera. No máximo `KANBAN_EMAIL_MAX` (5) envios por leitura; `KANBAN_EMAIL_AUTO=0`
-  desliga.
-- **Ficha** (OV em Cotação): "E-mail da cotação" com a situação (enviado em … para
-  …, base, aguardando as caixas, na fila, falhou, falta configurar), a prévia do
-  e-mail e o botão **Enviar e-mail agora** (teste / reenvio; vai para os
-  destinatários do Azure e marca como enviado). Rota: `POST /api/kanban-ov
-  { acao: 'email-cotacao', ov, enviar }` — a prévia com a área kanban; o envio
-  exige o login validado.
-- Testes (10): o texto igual ao modelo, linha a linha; a 1ª vez como base; a OV
-  que cai em Cotação recebe (uma vez); só as caixas da remessa da OV; sem caixas
-  espera; a prévia e o botão; a rota (403 sem o login validado); sem
-  configuração, avisa. `sw.js` — cache `bm-comest-v85`.
+- **A automação** (`processar`, a cada leitura do quadro) — **SÓ automática**
+  (dono: "vai ser automática, não quero botão"): as OVs em Cotação com Solicitar
+  transportadora = Sim, inclusive as que já estavam lá (sem "base"). **Uma vez só
+  por OV**: uma marca `kanban-email-cotacao/<OV>.json` no blob, criada com
+  `If-None-Match:*` — só uma instância consegue e só ela envia. Container:
+  `KANBAN_BLOB_URL` (SAS de container, Read + Create + Write) ou, sem ela, o do log
+  de acessos (`LOG_PORTAL_BLOB_URL`); sem nenhum, o automático fica desligado. Sem
+  caixas na carga: espera. No máximo `KANBAN_EMAIL_MAX` (5) envios por leitura — as
+  outras ficam na fila para a próxima; `KANBAN_EMAIL_AUTO=0` desliga.
+- **Ficha** (OV em Cotação): "E-mail da cotação", só informativo — a situação
+  (enviado em … para …, aguardando as caixas, na fila, falhou, falta configurar)
+  e a prévia do e-mail. Sem botão. Rota `POST /api/kanban-ov { acao:
+  'email-cotacao', ov }` devolve só a prévia; com `enviar: true` responde 410.
+- Testes (10): o texto igual ao modelo, linha a linha; a que já está em Cotação
+  recebe; a que cai em Cotação recebe (uma vez); só as caixas da remessa da OV;
+  sem caixas espera; o teto por leitura e a fila; a prévia; a rota (410 no
+  envio); sem configuração, avisa. `sw.js` — cache `bm-comest-v86`.
 
 ### Kanban · o tipo de frete na ficha (12/11/2026)
 
