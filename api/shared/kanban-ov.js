@@ -1209,6 +1209,14 @@ async function ovsComNotaNoPeriodo(de, ateDia, token, ate, diag) {
 // 12/11/26: + as cargas com o envio CONFIRMADO HOJE (LoadShipConfirmUTCDateTime),
 // para a Expedição trazer a OV de qualquer data (faturada há semanas, inclusive).
 const MAX_CARGAS_FAT = Number(process.env.KANBAN_MAX_CARGAS_FAT || 400);
+// 12/11/26 (dono: "só está carregando 400 ordens?" — 2055 cargas Carregado): o teto
+// fica com as cargas MAIS RECENTES. O Dynamics devolve as Carregado pela ordem do
+// LoadId (as mais antigas primeiro — cargas que ficaram Carregado e nunca foram
+// remetidas), e o Faturado/Pallet só mostram de 11/11/2026 em diante: o corte
+// jogava fora justamente as recentes. A ordem é pelo número do fim do LoadId
+// (CG013641 -> 13641), do maior para o menor.
+function seqCarga(id) { const m = /(\d+)\D*$/.exec(String(id || '')); return m ? Number(m[1]) : -1; }
+function recentePrimeiro(a, b) { return (seqCarga(b) - seqCarga(a)) || (a < b ? 1 : a > b ? -1 : 0); }
 async function ovsDeCargasCarregadas(token, ate, diag) {
   const [xc, xt] = await Promise.all([entidadeExtra(CFG_CARGA, token, ate, diag), entidadeExtra(CFG_TRABALHO, token, ate, diag)]);
   if (!xc.E || !xt.E || !xt.E.carga) return { numeros: [], semFonte: true };
@@ -1254,11 +1262,13 @@ async function ovsDeCargasCarregadas(token, ate, diag) {
     }
   }
   const hojeL = Object.keys(idsHoje).map(k => idsHoje[k]);
-  let carregadas = Object.keys(ids).filter(k => !idsHoje[k]).map(k => ids[k]);
+  // as mais recentes primeiro (o teto e o tempo cortam as do fim = as mais antigas)
+  let carregadas = Object.keys(ids).filter(k => !idsHoje[k]).map(k => ids[k]).sort(recentePrimeiro);
   if (!hojeL.length && !carregadas.length) return { numeros: [], numerosHoje: [], cargas: 0 };
   const total = carregadas.length;
   // o teto vale só para as Carregado; as confirmadas hoje vão todas, na frente
   if (carregadas.length > MAX_CARGAS_FAT) carregadas = carregadas.slice(0, MAX_CARGAS_FAT);
+  if (total > carregadas.length) diag.push({ etapa: 'fat:corte', cargas: total, lidas: carregadas.length, daMaisRecente: carregadas[0], ateA: carregadas[carregadas.length - 1] });
   const lista = hojeL.concat(carregadas);
   const T = xt.E, sel = [T.numero, T.carga].concat(T.tipo ? [T.tipo] : []).join(',');
   const rows = await porNumeros(T.entidade, T.carga, lista, token, ate, diag, 'fat:trabalho', sel, !T.temEmpresa);
@@ -1416,7 +1426,7 @@ async function montar(opts, modo) {
     ]);
     if (per.erro) avisos.push('Não deu para ler as notas de hoje no diário de faturas (' + per.erro + '): o Faturado e a Rejeitada de hoje podem ficar incompletos.');
     if (fat.erro) avisos.push('Não deu para ler as cargas Carregado e as expedidas hoje (' + fat.erro + '): no Faturado, no Pallet e na Expedição, as OVs faturadas antes do período podem faltar.');
-    if (fat.corte) avisos.push(fat.corte + ' cargas Carregado no Dynamics: o Faturado olhou só ' + MAX_CARGAS_FAT + ' delas (KANBAN_MAX_CARGAS_FAT).');
+    if (fat.corte) avisos.push(fat.corte + ' cargas Carregado no Dynamics: o Faturado e o Pallet olharam só as ' + MAX_CARGAS_FAT + ' mais recentes (KANBAN_MAX_CARGAS_FAT) — as OVs em aberto vêm todas.');
     diag.push({ etapa: 'fat:ovs', cargas: fat.cargas || 0, ovs: (fat.numeros || []).length, cargasHoje: fat.cargasHoje || 0, ovsHoje: (fat.numerosHoje || []).slice(0, 40) });
     const ja = {}; abertas.forEach(r => { ja[chaveOv(r[principal.numero])] = 1; });
     // 12/11/26: as OVs das cargas confirmadas hoje primeiro (Expedição), depois as

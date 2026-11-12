@@ -1682,6 +1682,29 @@ está na carga, "divide por quantidade".
   a parcialmente liberada manda só o que falta para a Pendência. `sw.js` — cache
   `bm-comest-v92`.
 
+### Kanban · o teto de 400 cargas fica com as MAIS RECENTES (12/11/2026)
+
+O dono: "só está carregando 400 ordens?" — o aviso dizia "2055 cargas Carregado
+no Dynamics: o Faturado olhou só 400 delas".
+
+- **Não são 400 ordens**: as OVs em aberto vêm todas. O teto
+  (`KANBAN_MAX_CARGAS_FAT`, 400) vale só para as **cargas Carregado**, de onde
+  saem as OVs já faturadas (Faturado e Pallet).
+- **O problema**: o Dynamics devolve as cargas Carregado pela ordem do `LoadId`
+  — as mais antigas primeiro (cargas que ficaram Carregado e nunca foram
+  remetidas). O corte ficava com as 400 mais velhas, e o Faturado/Pallet só
+  mostram de 11/11/2026 em diante: as cargas recentes, as que importam, eram as
+  cortadas.
+- **Agora** (`ovsDeCargasCarregadas`): as cargas Carregado são ordenadas pelo
+  número do fim do `LoadId` (CG013641 → 13641), da maior para a menor, antes do
+  teto — ficam as 400 mais recentes, e são lidas primeiro (se o tempo acabar,
+  faltam as antigas). O aviso diz "olharam só as 400 mais recentes — as OVs em
+  aberto vêm todas"; diagnóstico `fat:corte` (total, lidas, da mais recente até
+  qual).
+- Testes (7e): 450 cargas antigas na frente — a OV de 11/11 segue no Faturado e
+  a de 12/11 no Pallet, e os trabalhos das recentes são lidos primeiro (falhava
+  com o código anterior).
+
 ### Kanban · liberação parcial por linha + o frete FOB no e-mail da Cotação (12/11/2026)
 
 O dono: "lembrando que pode haver liberação parcial das linhas: parte fica em

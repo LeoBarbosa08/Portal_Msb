@@ -685,6 +685,21 @@ const bio = (n, st, lib) => ({ dataAreaId: 'msb', SalesOrderNumber: n, StatusPed
   t('Rejeitada: a de 11/11 fica; a de 03/11 sai', e7e.OV018506 === 'rejeitada' && !e7e.OV018505, e7e);
   t('as outras colunas não têm corte (a em aberto de 2025 fica em Criada)', e7e.OV018507 === 'criada', e7e);
   t('as que saíram pelo corte são contadas', r.antesDoCorte === 3, r.antesDoCorte);
+  // 12/11/26 (dono: "só está carregando 400 ordens?"): 450 cargas Carregado ANTIGAS
+  // na frente (o Dynamics devolve pela ordem do LoadId) — o teto de 400 fica com as
+  // mais recentes, e a OV de 11/11 continua no Faturado e a de 12/11 no Pallet
+  K._limparCache(); chamadas.length = 0;
+  const ld7eSo = CEN.WHSLoadTableBiEntities.linhas;
+  const antigas7e = Array.from({ length: 450 }, (_, i) => ld7e('CG' + String(i + 1).padStart(6, '0'), 'Yes', 'No'));
+  CEN.WHSLoadTableBiEntities.linhas = antigas7e.concat(ld7eSo);
+  r = await K.quadro({});
+  const e7g = {}; r.ovs.forEach(o => { e7g[o.numero] = o.etapa; });
+  t('450 cargas antigas na frente: o teto fica com as mais recentes (a de 11/11 no Faturado, a de 12/11 no Pallet)', e7g.OV018501 === 'faturado' && e7g.OV018504 === 'pallet', e7g);
+  const c7g = r.diagnostico.find(d => d.etapa === 'fat:corte');
+  t('o aviso e o diagnóstico do corte dizem que ficaram as mais recentes', c7g && c7g.cargas === 454 && c7g.lidas === 400 && c7g.daMaisRecente === 'LD-754' && r.avisos.some(a => /454 cargas Carregado.*olharam só as 400 mais recentes/.test(a)), { c7g, avisos: r.avisos });
+  const t7g = chamadas.find(c => c.ent === 'WHSWorkTableBiEntities' && /LoadId eq/.test(c.q.filter || ''));
+  t('os trabalhos das cargas mais recentes são lidos primeiro', t7g && /LoadId eq 'LD-754'/.test(t7g.q.filter) && !/CG000001/.test(t7g.q.filter), t7g && t7g.q.filter.slice(0, 120));
+  CEN.WHSLoadTableBiEntities.linhas = ld7eSo;
   K._limparCache(); process.env.KANBAN_DESDE = '0';
   r = await K.quadro({});
   t('KANBAN_DESDE=0 desliga o corte', r.desde === null && r.ovs.some(o => o.numero === 'OV018503') && r.ovs.some(o => o.numero === 'OV018505'), { desde: r.desde, n: r.ovs.length });
@@ -734,13 +749,13 @@ const bio = (n, st, lib) => ({ dataAreaId: 'msb', SalesOrderNumber: n, StatusPed
   const t7e = chamadas.find(c => c.ent === 'WHSWorkTableBiEntities' && /LoadId eq/.test(c.q.filter || ''));
   t('os trabalhos das cargas confirmadas hoje são lidos primeiro', t7e && /LoadId eq 'LD-E1'/.test(t7e.q.filter), t7e && t7e.q.filter.slice(0, 120));
   const f7e = r.diagnostico.find(d => d.etapa === 'fat:ovs');
-  t('o diagnóstico lista a OV da carga confirmada hoje', f7e && f7e.cargasHoje === 1 && f7e.ovsHoje.indexOf('OV018401') >= 0 && r.avisos.some(a => /olhou só 400/.test(a)), f7e);
+  t('o diagnóstico lista a OV da carga confirmada hoje', f7e && f7e.cargasHoje === 1 && f7e.ovsHoje.indexOf('OV018401') >= 0 && r.avisos.some(a => /olharam só as 400 mais recentes/.test(a)), f7e);
   // com o depósito na carga: as cargas lidas só do ALMOX-PA (as do EMB-SEC nem vêm)
   K._limparCache(); chamadas.length = 0;
   CEN.WHSLoadTableBiEntities.linhas.forEach(x => { x.InventLocationId = /^LD-V/.test(x.LoadId) ? 'EMB-SEC' : 'ALMOX-PA'; });
   r = await K.quadro({});
   const q7f = chamadas.filter(c => c.ent === 'WHSLoadTableBiEntities' && /LoadStatus eq|LoadShipConfirmUTCDateTime ge/.test(c.q.filter || ''));
-  t('as cargas (Carregado e confirmadas hoje) só do depósito ALMOX-PA', q7f.length >= 2 && q7f.every(c => /InventLocationId eq 'ALMOX-PA'/.test(c.q.filter)) && !r.avisos.some(a => /olhou só/.test(a))
+  t('as cargas (Carregado e confirmadas hoje) só do depósito ALMOX-PA', q7f.length >= 2 && q7f.every(c => /InventLocationId eq 'ALMOX-PA'/.test(c.q.filter)) && !r.avisos.some(a => /olharam só/.test(a))
     && r.ovs.some(o => o.numero === 'OV018401' && o.etapa === 'expedicao'), q7f.map(c => c.q.filter));
   CEN.WHSLoadTableBiEntities.linhas = so7d;
   so7d.forEach(x => { delete x.InventLocationId; });
