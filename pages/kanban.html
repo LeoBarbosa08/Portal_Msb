@@ -1477,10 +1477,23 @@
       ['Recebimento solicitado', ['RequestedReceiptDate'], 'data'],
       ['Empresa', ['dataAreaId'], 'up']
     ];
+    // 12/11/26: os rótulos dos campos extras (o servidor manda o nome da coluna)
+    var ROT_EXTRA = { solicitartransportadora_custom: 'Solicitar transportadora', carriername_inoveprojects: 'Transportadora',
+      customerordernumber_inove: 'Nº do pedido do cliente', operador_custom: 'Operador' };
     function secDados(o) {
       var pares = [], ciD = credInfo(o.regra);
       if (o.areaDemandante) pares.push(['Área demandante', esc(o.areaDemandante) + '<small>veio do PI Pedidos · ' + esc(o.areaCol || 'areademandante_Custom') + '</small>', '']);
       if (ciD.fonte === 'tabela') pares.push(['Gerenciamento de crédito', esc(ciD.rotulo) + '<small>' + esc(ciD.tabela) + '</small>', '']);
+      // 12/11/26 (dono: "insira esses campos a mais: Solicitartransportadora_Custom,
+      // CarrierName_InoveProjects, CustomerOrderNumber_Inove, Operador_Custom"): sempre
+      // aparecem — "—" quando vazios; Sim/Não no da transportadora; a coluna embaixo
+      (o.extras || []).forEach(function (x) {
+        var rotulo = ROT_EXTRA[String(x.nome).toLowerCase()] || x.nome;
+        var cru = x.valor == null ? '' : String(x.valor).trim();
+        var v = cru === '' ? '—' : /^(yes|no|sim|nao|não|true|false|noyes ?'?(yes|no)'?)$/i.test(cru) ? simNao(cru.replace(/^noyes ?'?|'$/ig, '')) : cru;
+        var de = x.coluna ? x.coluna.split('.').pop() : x.nome + ' · não veio do Dynamics';
+        pares.push([rotulo, esc(v) + '<small>' + esc(de) + '</small>', '']);
+      });
       DADOS.forEach(function (d) {
         var x = campoOv(o, d[1]); if (!x) return;
         var cru = String(x.v).trim(), v = cru, mostraCru = false;

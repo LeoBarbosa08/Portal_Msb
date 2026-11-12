@@ -80,6 +80,13 @@ const COLS = {
   area:     envLista('KANBAN_COL_AREA', ['areademandante_Custom', 'AreaDemandante_Custom', 'AreaDemandante', 'Areademandante'])
 };
 const RE_AREA = /area_?demandante/i;
+// 12/11/2026 (dono): "insira esses campos a mais nos Dados do pedido:
+// Solicitartransportadora_Custom, CarrierName_InoveProjects,
+// CustomerOrderNumber_Inove, Operador_Custom — preciso dessas informações".
+// Lidos em qualquer entidade de OV lida (nome sem caixa), com o valor COMO VIER —
+// inclusive "No" e vazio, que os campos crus (crus/VAZIOS) jogam fora. Lista
+// trocável por env: KANBAN_CAMPOS_EXTRA.
+const CAMPOS_EXTRA = envLista('KANBAN_CAMPOS_EXTRA', ['Solicitartransportadora_Custom', 'CarrierName_InoveProjects', 'CustomerOrderNumber_Inove', 'Operador_Custom']);
 const COL_AREA_TXT = () => COLS.area[0];
 function colArea(row) { const cols = colunasDe(row); return achaCol(cols, COLS.area) || cols.find(c => RE_AREA.test(c)) || null; }
 // SÓ O DEPÓSITO ALMOX-PA (09/11/2026, pedido do dono: "depósito somente o que
@@ -1185,6 +1192,19 @@ async function montar(opts, modo) {
     }
     return null;
   };
+  // 12/11/26: os campos extras do dono — o valor da 1ª entidade que o tiver
+  // preenchido; senão o da 1ª que tiver a coluna (vazio/"No"); senão nada
+  const pegaExtra = (k, nome) => {
+    let achou = null;
+    for (const ent of Object.keys(reg[k])) {
+      const row = reg[k][ent], col = achaCol(colunasDe(row), [nome]);
+      if (!col) continue;
+      const v = row[col] == null ? '' : txt(row[col]);
+      if (v) return { nome, coluna: ent + '.' + col, valor: v };
+      if (!achou) achou = { nome, coluna: ent + '.' + col, valor: '' };
+    }
+    return achou || { nome, coluna: null, valor: null };
+  };
   const pega = (k, campo) => {
     for (const ent of Object.keys(reg[k])) { const col = achaCol(colunasDe(reg[k][ent]), COLS[campo]); if (col && txt(reg[k][ent][col]) && !VAZIOS.test(txt(reg[k][ent][col]))) return txt(reg[k][ent][col]); }
     return '';
@@ -1297,6 +1317,8 @@ async function montar(opts, modo) {
       numero: k,
       // 11/11/26: veio do PI Pedidos (a OV tem a Área Demandante)
       origemPi: !!area, areaDemandante: area ? area.valor : null, areaCol: area ? area.coluna : null,
+      // 12/11/26: os campos extras pedidos pelo dono (a ficha mostra em "Dados do pedido")
+      extras: CAMPOS_EXTRA.map(nome => pegaExtra(k, nome)),
       cliente: pega(k, 'nome'), conta: pega(k, 'conta'), oc: pega(k, 'oc'),
       criadaEm: txt(reg[k][principal.entidade][principal.criadaEm]),
       entrega: pega(k, 'entrega'), deposito: pega(k, 'deposito'), pool: pega(k, 'pool'), criadoPor: pega(k, 'criadoPor'),

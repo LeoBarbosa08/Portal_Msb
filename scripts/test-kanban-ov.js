@@ -207,6 +207,19 @@ const bio = (n, st, lib) => ({ dataAreaId: 'msb', SalesOrderNumber: n, StatusPed
     && a4('OV017601').areaCol === 'BIOSalesOrderHeaderV1.AREADEMANDANTE_Custom' && a4('OV017603').origemPi === true, a4('OV017601'));
   t('vazia -> não veio do PI', a4('OV017602').origemPi === false && a4('OV017602').areaDemandante === null, a4('OV017602').origemPi);
   t('com o campo nas entidades: sem aviso', !r.avisos.some(a => /Área Demandante/.test(a)), r.avisos);
+  // 12/11/26 (dono): os campos extras dos Dados do pedido
+  K._limparCache();
+  Object.assign(CEN.BIOSalesOrderHeaderV1.linhas[0], { SolicitarTransportadora_Custom: 'Yes', CarrierName_InoveProjects: 'TRANSPORTES ABC', Operador_Custom: 'maria.souza' });
+  Object.assign(CEN.SalesOrderHeadersV2.linhas[0], { CustomerOrderNumber_Inove: 'PED-778899', CarrierName_InoveProjects: '' });
+  Object.assign(CEN.BIOSalesOrderHeaderV1.linhas[1], { SolicitarTransportadora_Custom: 'No', CarrierName_InoveProjects: '', Operador_Custom: '' });
+  r = await K.ordensDoDia({ data: DIA });
+  const ex = (n) => { const o = r.ovs.find(x => x.numero === n); const m = {}; (o.extras || []).forEach(e => { m[e.nome] = e; }); return m; };
+  const ex1 = ex('OV017601'), ex2 = ex('OV017602'), ex3 = ex('OV017603');
+  t('os 4 campos extras vêm na OV, na ordem pedida', r.ovs.find(x => x.numero === 'OV017601').extras.map(e => e.nome).join() === 'Solicitartransportadora_Custom,CarrierName_InoveProjects,CustomerOrderNumber_Inove,Operador_Custom', r.ovs.find(x => x.numero === 'OV017601').extras);
+  t('preenchidos: o valor e de onde veio (nome sem caixa; o preenchido ganha do vazio)', ex1.Solicitartransportadora_Custom.valor === 'Yes' && ex1.Solicitartransportadora_Custom.coluna === 'BIOSalesOrderHeaderV1.SolicitarTransportadora_Custom'
+    && ex1.CarrierName_InoveProjects.valor === 'TRANSPORTES ABC' && ex1.CustomerOrderNumber_Inove.valor === 'PED-778899' && ex1.CustomerOrderNumber_Inove.coluna === 'SalesOrderHeadersV2.CustomerOrderNumber_Inove' && ex1.Operador_Custom.valor === 'maria.souza', ex1);
+  t('"No" e vazio também vêm (os campos crus jogam fora)', ex2.Solicitartransportadora_Custom.valor === 'No' && ex2.Operador_Custom.valor === '' && ex2.Operador_Custom.coluna, ex2);
+  t('sem a coluna em nenhuma entidade: valor null', ex3.Operador_Custom.valor === null && ex3.Operador_Custom.coluna === null, ex3.Operador_Custom);
   CEN.BIOSalesOrderHeaderV1.linhas.forEach(x => { delete x.AREADEMANDANTE_Custom; });
   K._limparCache(); r = await K.ordensDoDia({ data: DIA });
   t('sem o campo em nenhuma entidade: aviso, e ninguém marcado', r.avisos.some(a => /Área Demandante \(areademandante_Custom\) não está/.test(a)) && !r.ovs.some(o => o.origemPi), r.avisos);

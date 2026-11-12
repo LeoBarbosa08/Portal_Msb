@@ -1551,6 +1551,24 @@ fases". A regra do lote (`partesPorLinhas`) está **LIGADA por padrão** de novo
 - Testes (1, 7c): Pendência com regra; `=0` desliga; sem env, ligada.
   `sw.js` — cache `bm-comest-v74`.
 
+### Kanban · 4 campos a mais nos "Dados do pedido" (12/11/2026)
+
+O dono: "insira esses campos a mais aqui: Solicitartransportadora_Custom,
+CarrierName_InoveProjects, CustomerOrderNumber_Inove, Operador_Custom — preciso
+dessas informações".
+
+- **Servidor** (`CAMPOS_EXTRA`, `KANBAN_CAMPOS_EXTRA` troca a lista): cada OV
+  traz `extras: [{ nome, coluna, valor }]`, procurados em todas as entidades de
+  OV lidas, pelo nome sem caixa. Vale o 1º valor preenchido; senão o da 1ª
+  entidade que tem a coluna (vazio ou "No" — que os campos crus jogam fora); sem
+  a coluna em nenhuma, `valor: null`.
+- **Ficha**: no topo de "Dados do pedido", sempre os 4 — "Solicitar
+  transportadora" (Sim/Não), "Transportadora", "Nº do pedido do cliente" e
+  "Operador" —, com o nome da coluna embaixo; "—" quando vazio, e "não veio do
+  Dynamics" quando nenhuma entidade lida tem o campo.
+- Testes (4a): preenchidos (nome sem caixa, o preenchido ganha do vazio), "No"
+  e vazio, sem a coluna. `sw.js` — cache `bm-comest-v83`.
+
 ### Kanban · sem período + a carga confirmada hoje que não aparecia (12/11/2026)
 
 O dono: "remove o período, não preciso disso, tem que mostrar tudo — olha essa
