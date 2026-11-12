@@ -229,7 +229,9 @@ const COL_CARGA = {
   transportadora: ['CarrierCode', 'ShippingCarrierId', 'CarrierId'],
   servico:        ['CarrierServiceCode', 'ModeCode', 'DeliveryModeCode', 'TransportationModeCode'],
   envio:          ['ScheduledShippingDateTime', 'LoadSchedShipUTCDateTime', 'ScheduledLoadShippingDateTime', 'ScheduledShipDateTime'],
-  expedido:       ['LoadShippedUTCDateTime', 'ShippedDateTime', 'ActualShippingDateTime'],
+  // 12/11/26: a data de expedição decide a Expedição de HOJE (a confirmação da
+  // remessa no F&O é a LoadShipConfirmUTCDateTime da WHSLoadTable)
+  expedido:       envLista('KANBAN_COL_CARGA_EXPEDIDO', ['LoadShippedUTCDateTime', 'LoadShipConfirmUTCDateTime', 'ShipConfirmUTCDateTime', 'ShipConfirmationDateTime', 'ShippedDateTime', 'ActualShippingDateTime']),
   deposito:       ['InventLocationId', 'WarehouseId', 'ShippingWarehouseId'],
   modelo:         ['LoadTemplateId'],
   // 09/11/2026 (dono): "Cotação realizada" e "ENVIARPALLET_CUSTOM" — campos
@@ -369,6 +371,11 @@ function diaDe(v, col) {
   return isNaN(t) ? null : new Date(t - FUSO_H * 3600000).toISOString().slice(0, 10);
 }
 function chaveOv(v) { return txt(v).toUpperCase(); }
+// 12/11/26: o dia (Brasília) em que a OV foi EXPEDIDA — a data de expedição mais
+// recente das cargas Remetidas dela (null se nenhuma tiver a data)
+function diaExpedida(o) {
+  return (o.cargas || []).filter(c => c.fase === 'remetido').map(c => diaDe(c.expedido, 'ShippedDateTime')).filter(Boolean).sort().pop() || null;
+}
 
 // ── descoberta: quais entidades de cabeçalho respondem (cache 30 min) ─
 let _ents = null, _entsTs = 0, _servico = null, _servicoTs = 0;
@@ -450,7 +457,9 @@ const CFG_CARGA = {
   // os campos _CUSTOM: se o nome exato não bater, o pedaço do nome
   // (09/11/26: apertado — "pallet" sozinho pegaria PalletQuantity e afins, e o
   // campo do pallet é GRAVADO pelo botão; "quotation" sozinho pegaria QuotationId)
-  reCols: { cotacao: /quotation.?performed|cota[cç][aã]o.?realizad|cotacaorealizad/i, pallet: /enviar.?pallet/i },
+  reCols: { cotacao: /quotation.?performed|cota[cç][aã]o.?realizad|cotacaorealizad/i, pallet: /enviar.?pallet/i,
+    // 12/11/26: a data de expedição com outro nome ("...ShipConfirm...DateTime")
+    expedido: /(shipped|ship.?confirm).*(date|time)/i },
   // (10/11/26: SEM a 2ª rodada em outras entidades com "load" no nome — a carga é
   // só a WHSOutboundLoadHeaderEntity, pedido do dono)
   erroCol: (p) => 'sem a coluna ' + COL_CARGA[p].join('/')
@@ -800,12 +809,18 @@ async function ovsDoDia(E, dia, token, ate, diag) {
 // (a da nota mais recente; sem nota, a de criação) cai no período.
 // 10/11/2026 (dono: "o HOJE não precisa ter no card Faturado, pode deixar
 // histórico que nem os demais"): Faturado SAIU das datadas — mostra toda OV que
-// está em Faturado agora, de qualquer data (ovsDeCargasCarregadas, abaixo).
+// está em Faturado agora, de qualquer data (ovsDeCargas, abaixo).
 // 11/11/2026 (dono, depois de pedir o Pallet "só as que mudaram hoje": "NÃO
 // PRECISA DE DATA DO PALLET, pode trazer TUDO"): o Pallet também SAIU das
 // datadas — mostra toda OV que está no Pallet agora (carga ainda Carregado com
 // ENVIARPALLET_CUSTOM = Sim), de qualquer data; sai quando a carga é Remetida.
-const DATADAS = ['rejeitada', 'expedicao', 'cancelada'];
+// 12/11/2026 (dono: "pode tirar o período, não precisa; somente o EXPEDIDO tem
+// que ser a data de hoje"): a tela não tem mais o período — o quadro é sempre
+// HOJE. A Rejeitada SAIU das datadas (mostra toda OV que está nela agora, como as
+// outras) e a Expedição fica só com o que foi EXPEDIDO hoje: pela data de
+// expedição da carga (LoadShippedUTCDateTime), e as cargas expedidas hoje entram
+// na leitura (ovsDeCargas) — a OV faturada ontem e expedida hoje não some mais.
+const DATADAS = ['expedicao', 'cancelada'];
 const JANELA_DIAS = Number(process.env.KANBAN_JANELA_DIAS || 365);  // reserva, se o filtro pelo status não passar
 const MAX_COMPL_QUADRO = Number(process.env.KANBAN_MAX_COMPL || 3); // complementos no quadro (V3, V2, SalesOrderHeaders)
 async function ovsAbertas(E, token, ate, diag, avisos) {
@@ -871,19 +886,26 @@ async function ovsComNotaNoPeriodo(de, ateDia, token, ate, diag) {
 // 11/11/26: COM as já no Pallet (antes ficavam de fora e a OV sumia do quadro).
 // Junto com as em aberto e as com nota no período, as colunas Faturado e Pallet
 // ficam com toda OV que está nelas agora, de qualquer data.
+// 12/11/26 (dono: "somente o EXPEDIDO tem que ser a data de hoje"): + as cargas
+// EXPEDIDAS no período (hoje), pela data de expedição da carga
+// (LoadShippedUTCDateTime, no dia de Brasília). Sem isso, a OV faturada ontem e
+// expedida hoje não vinha por nada (nem em aberto, nem nota de hoje, nem carga
+// Carregado). As expedidas vão na frente da lista (o corte de MAX_CARGAS_FAT
+// pega só as Carregado).
 const MAX_CARGAS_FAT = Number(process.env.KANBAN_MAX_CARGAS_FAT || 400);
-async function ovsDeCargasCarregadas(token, ate, diag) {
+async function ovsDeCargas(de, ateDia, token, ate, diag) {
   const [xc, xt] = await Promise.all([entidadeExtra(CFG_CARGA, token, ate, diag), entidadeExtra(CFG_TRABALHO, token, ate, diag)]);
   if (!xc.E || !xt.E || !xt.E.carga) return { numeros: [], semFonte: true };
-  const ids = {};
-  for (const E of (xc.todas && xc.todas.length ? xc.todas : [xc.E]).filter(L => L.status)) {
+  const ids = {}, exp = {}, semDataExp = [];
+  const todas = xc.todas && xc.todas.length ? xc.todas : [xc.E];
+  for (const E of todas) {
     const emp = E.temEmpresa ? "dataAreaId eq '" + D.odataStr(EMPRESA) + "' and " : '';
-    const sel = [E.numero, E.status].join(',');
-    const formas = [{ f: E.status + " eq Microsoft.Dynamics.DataEntities.WHSLoadStatus'Loaded'", rot: 'enum' }, { f: E.status + " eq 'Loaded'", rot: 'texto' }];
+    // as cargas Carregado (Faturado e Pallet), de qualquer data
+    const formas = !E.status ? [] : [{ f: E.status + " eq Microsoft.Dynamics.DataEntities.WHSLoadStatus'Loaded'", rot: 'enum' }, { f: E.status + " eq 'Loaded'", rot: 'texto' }];
     for (const fo of formas) {
       if (restante(ate) < FOLGA_MS + 2000) break;
       try {
-        const rows = await D.odataGetComPrazo(E.entidade, { crossCompany: true, filter: emp + fo.f, select: sel }, token, prazo(ate, PRAZO_MS));
+        const rows = await D.odataGetComPrazo(E.entidade, { crossCompany: true, filter: emp + fo.f, select: [E.numero, E.status].join(',') }, token, prazo(ate, PRAZO_MS));
         let n = 0;
         rows.forEach(r => {
           const id = txt(r[E.numero]);
@@ -897,16 +919,38 @@ async function ovsDeCargasCarregadas(token, ate, diag) {
         if (!/\b400\b/.test(String(e.message))) break;
       }
     }
+    // as cargas EXPEDIDAS no período, pela data de expedição (dia de Brasília)
+    if (!de) continue;
+    if (!E.expedido) { semDataExp.push(E.entidade); continue; }
+    if (restante(ate) < FOLGA_MS + 2000) continue;
+    const c = E.expedido, dh = ehDataHora(c);
+    const iniE = dh ? de + 'T0' + FUSO_H + ':00:00Z' : de + 'T00:00:00Z';
+    const fimE = dh ? maisDias(ateDia, 1) + 'T0' + FUSO_H + ':00:00Z' : maisDias(ateDia, 1) + 'T00:00:00Z';
+    try {
+      const rows = await D.odataGetComPrazo(E.entidade, { crossCompany: true, filter: emp + c + ' ge ' + iniE + ' and ' + c + ' lt ' + fimE, select: [E.numero, c].join(',') }, token, prazo(ate, PRAZO_MS));
+      let n = 0;
+      rows.forEach(r => {
+        const id = txt(r[E.numero]), d = diaDe(dataHora(r[c]), c);
+        if (!id || !d || d < de || d > ateDia) return;
+        exp[id.toUpperCase()] = id; n++;
+      });
+      diag.push({ etapa: 'exp:cargas', entidade: E.entidade, coluna: c, de, ate: ateDia, linhas: rows.length, expedidas: n });
+    } catch (e) {
+      diag.push({ etapa: 'exp:cargas', entidade: E.entidade, coluna: c, erro: String(e.message || e).slice(0, 200) });
+    }
   }
-  let lista = Object.keys(ids).map(k => ids[k]);
-  if (!lista.length) return { numeros: [], cargas: 0 };
+  const nExp = Object.keys(exp).length, nCarr = Object.keys(ids).length;
+  // nenhuma entidade de cargas tem a data de expedição: a Expedição fica pela nota
+  const semData = !!de && semDataExp.length === todas.length;
+  let lista = Object.keys(exp).map(k => exp[k]).concat(Object.keys(ids).filter(k => !exp[k]).map(k => ids[k]));
+  if (!lista.length) return { numeros: [], cargas: 0, expedidas: 0, semDataExp: semData };
   const total = lista.length;
   if (lista.length > MAX_CARGAS_FAT) lista = lista.slice(0, MAX_CARGAS_FAT);
   const T = xt.E, sel = [T.numero, T.carga].concat(T.tipo ? [T.tipo] : []).join(',');
   const rows = await porNumeros(T.entidade, T.carga, lista, token, ate, diag, 'fat:trabalho', sel, !T.temEmpresa);
   // só trabalho de VENDA (a carga também leva transferência)
   const nums = rows.filter(r => !T.tipo || !txt(r[T.tipo]) || /^(sales|venda)/.test(normV(r[T.tipo]))).map(r => chaveOv(r[T.numero])).filter(Boolean);
-  return { numeros: Array.from(new Set(nums)), cargas: total, corte: total > lista.length ? total : 0 };
+  return { numeros: Array.from(new Set(nums)), cargas: nCarr, expedidas: nExp, corte: total > lista.length ? total : 0, semDataExp: semData };
 }
 
 // linhas de uma entidade pelos números das OVs (em lotes; 2 lotes por vez —
@@ -1044,16 +1088,19 @@ async function montar(opts, modo) {
   let rows;
   if (modo.quadro) {
     // em aberto (qualquer data) + as com nota no período, em paralelo
-    // (10/11/26: + as faturadas com a carga ainda Carregado, de qualquer data)
+    // (10/11/26: + as faturadas com a carga ainda Carregado, de qualquer data;
+    // 12/11/26: + as das cargas expedidas no período — o período é hoje)
     const [abertas, per, fat] = await Promise.all([
       ovsAbertas(principal, token, ate, diag, avisos),
       ovsComNotaNoPeriodo(modo.de, modo.ateDia, token, ate, diag).catch(e => ({ numeros: [], erro: String(e.message || e).slice(0, 160) })),
-      ovsDeCargasCarregadas(token, ate, diag).catch(e => ({ numeros: [], erro: String(e.message || e).slice(0, 160) }))
+      ovsDeCargas(modo.de, modo.ateDia, token, ate, diag).catch(e => ({ numeros: [], erro: String(e.message || e).slice(0, 160) }))
     ]);
-    if (per.erro) avisos.push('Não deu para ler as notas do período no diário de faturas (' + per.erro + '): Rejeitada e Expedição podem ficar incompletas.');
-    if (fat.erro) avisos.push('Não deu para ler as cargas Carregado (' + fat.erro + '): no Faturado e no Pallet, as OVs faturadas antes do período podem faltar.');
+    const perTxt = modo.de === modo.ateDia && modo.de === hojeSP() ? 'de hoje' : 'do período';
+    if (per.erro) avisos.push('Não deu para ler as notas ' + perTxt + ' no diário de faturas (' + per.erro + '): Rejeitada e Expedição podem ficar incompletas.');
+    if (fat.erro) avisos.push('Não deu para ler as cargas (' + fat.erro + '): Faturado, Pallet e Expedição podem ficar incompletos.');
+    if (fat.semDataExp) avisos.push('A entidade de cargas não tem a data de expedição (' + COL_CARGA.expedido.join(' / ') + '): a Expedição ' + perTxt + ' vai pela data da nota fiscal.');
     if (fat.corte) avisos.push(fat.corte + ' cargas Carregado no Dynamics: o Faturado olhou só ' + MAX_CARGAS_FAT + ' delas (KANBAN_MAX_CARGAS_FAT).');
-    diag.push({ etapa: 'fat:ovs', cargas: fat.cargas || 0, ovs: (fat.numeros || []).length });
+    diag.push({ etapa: 'fat:ovs', cargas: fat.cargas || 0, expedidas: fat.expedidas || 0, ovs: (fat.numeros || []).length });
     const ja = {}; abertas.forEach(r => { ja[chaveOv(r[principal.numero])] = 1; });
     const faltam = Array.from(new Set(per.numeros.concat(fat.numeros || []))).filter(n => !ja[n]);
     let faturadas = [];
@@ -1312,12 +1359,13 @@ async function montar(opts, modo) {
   if (!colLote && pendenciaPorLote() && Object.keys(porLinha).length) {
     avisos.push('As linhas da OV (' + (_entLinhas || 'SalesOrderLines') + ') não trazem o lote (' + COL_LOTE.join(' / ') + '): a Pendência por item sem lote fica desligada. Fixe o nome em KANBAN_COL_LOTE.');
   }
-  // quadro: as colunas DATADAS (Rejeitada, Expedição) só com a OV do período —
-  // pela data da nota mais recente; sem nota, a de criação
+  // quadro: as colunas DATADAS (12/11/26: só a Expedição) só com a OV do
+  // período (hoje) — a Expedição pela data de expedição da carga; sem ela, pela
+  // data da nota mais recente; sem nota, a de criação
   let foraPeriodo = 0;
   const ovs = !modo.quadro ? partes : partes.filter(o => {
     if (DATADAS.indexOf(o.etapa) < 0) return true;
-    const d = (o.notas && o.notas[0] && o.notas[0].data) || diaDe(o.criadaEm, principal.criadaEm) || '';
+    const d = (o.etapa === 'expedicao' && diaExpedida(o)) || (o.notas && o.notas[0] && o.notas[0].data) || diaDe(o.criadaEm, principal.criadaEm) || '';
     o.dataPeriodo = d || null;
     const dentro = d >= modo.de && d <= modo.ateDia;
     if (!dentro) foraPeriodo++;

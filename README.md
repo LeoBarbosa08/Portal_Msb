@@ -1551,6 +1551,31 @@ fases". A regra do lote (`partesPorLinhas`) está **LIGADA por padrão** de novo
 - Testes (1, 7c): Pendência com regra; `=0` desliga; sem env, ligada.
   `sw.js` — cache `bm-comest-v74`.
 
+### Kanban · sem o período: Expedição só a expedida HOJE (12/11/2026)
+
+O dono: "pode tirar o período aqui, não precisa, aí somente o EXPEDIDO tem que
+ser a data de hoje".
+
+- **Tela**: saíram o "Período de … até" e os botões Hoje / 7 dias / Mês. A tela
+  chama `/api/kanban-ov` sem `de`/`ate` — o servidor usa **hoje** (Brasília).
+- **Rejeitada sem data**: saiu das colunas datadas (`DATADAS` = só
+  `expedicao` + `cancelada`) — mostra toda OV que está nela agora, como as
+  outras colunas (as em aberto, as com nota hoje e as com a carga Carregado).
+- **Expedição = expedida hoje**, pela **data de expedição da carga**
+  (`LoadShippedUTCDateTime` / `LoadShipConfirmUTCDateTime` / … — nome trocável
+  em `KANBAN_COL_CARGA_EXPEDIDO`), no dia de Brasília (03:00Z a 03:00Z). Sem a
+  data na carga, vale a da nota (como antes), com aviso.
+- **As cargas expedidas hoje entram na leitura** (`ovsDeCargas`, que substitui
+  `ovsDeCargasCarregadas`): carga com a data de expedição de hoje -> os trabalhos
+  -> as OVs. Antes, a OV faturada ontem e expedida hoje não vinha por nada (nem
+  em aberto, nem nota de hoje, nem carga Carregado). Diagnóstico: `exp:cargas`
+  e `fat:ovs.expedidas`.
+- `?de=&ate=` continua na API (para o diagnóstico), agora só para a Expedição.
+- Testes (7, 7a, 7d): Rejeitada antiga em aberto e com a carga Carregado fica
+  na Rejeitada; nota ontem + expedida hoje -> Expedição; nota hoje + expedida
+  ontem -> fora; a virada do dia em Brasília; sem período = hoje; aviso sem a
+  data de expedição. `sw.js` — cache `bm-comest-v79`.
+
 ### Kanban · Pallet sem data: TODAS as OVs no Pallet (11/11/2026)
 
 O dono: "NÃO PRECISA DE DATA DO PALLET, pode trazer TUDO". Substitui o "Pallet =

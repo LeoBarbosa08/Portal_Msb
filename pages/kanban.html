@@ -61,7 +61,9 @@
           <!-- ═══════════ KANBAN · ORDENS DO DIA ═══════════
                As ordens de venda da MSB (ALMOX-PA), AO VIVO do Dynamics (/api/kanban-ov).
                09/11/26: em aberto de QUALQUER data + Rejeitada/Pallet/Expedição no
-               período escolhido (10/11/26: o Faturado sem data — todo o histórico; 11/11/26: o Pallet também). Colunas pelas regras do dono (api/shared/kanban-ov.js,
+               período escolhido (10/11/26: o Faturado sem data — todo o histórico; 11/11/26: o Pallet também;
+               12/11/26: sem o período na tela — a Rejeitada também sem data, e a Expedição só a
+               expedida HOJE, pela data de expedição da carga). Colunas pelas regras do dono (api/shared/kanban-ov.js,
                etapaDe): Criada → Crédito (BioCredManTableV1) → Separação (trabalho "Abrir")
                → Conferência (carga "Em processamento") → Cotação (carga "Carregado" +
                cotação não realizada) → Faturado (nota "Aprovada") → Rejeitada (nota
@@ -76,8 +78,6 @@
             .kb-btn{display:inline-flex;align-items:center;gap:6px;padding:8px 12px;border-radius:9px;border:1px solid var(--border);background:var(--surface);font:inherit;font-size:12.5px;font-weight:600;color:var(--text-2);cursor:pointer;white-space:nowrap;}
             .kb-btn:hover{border-color:#287A8E;color:var(--text);}
             .kb-btn:disabled{opacity:.55;cursor:default;}
-            .kb-periodo{display:inline-flex;align-items:center;gap:6px;flex-wrap:wrap;}
-            .kb-per-r{font-size:12px;font-weight:600;color:var(--text-3);white-space:nowrap;}
             .kb-col-p{font-size:10.5px;font-weight:600;color:var(--kb-ink);opacity:.7;}
             .kb-in{padding:7px 10px;border-radius:9px;border:1px solid var(--border);background:var(--surface);color:var(--text);font:inherit;font-size:12.5px;}
             .kb-bar{display:flex;align-items:center;gap:10px;flex-wrap:wrap;padding:10px 12px;background:var(--surface);border:1px solid var(--border);border-radius:12px;margin-bottom:12px;}
@@ -407,19 +407,10 @@
               <h1 class="kb-title">Ordens do Dia</h1>
             </div>
             <div class="kb-acoes">
-              <!-- 09/11/26: o período vale SÓ para Rejeitada, Pallet e Expedição
-                   (10/11/26: o Faturado saiu e 11/11/26 o Pallet — mostram todo o
-                   histórico, como as outras colunas) -->
-              <div class="kb-periodo" role="group" aria-label="Período de Rejeitada e Expedição"
-                   title="O período vale só para Rejeitada e Expedição (pela data da nota fiscal). As outras colunas, Faturado e Pallet incluídos, mostram todas as OVs que estão nelas agora, de qualquer data.">
-                <span class="kb-per-r">Período de</span>
-                <input type="date" class="kb-in" id="kb-de" aria-label="Período de">
-                <span class="kb-per-r">até</span>
-                <input type="date" class="kb-in" id="kb-ate" aria-label="até">
-              </div>
-              <button type="button" class="kb-btn" id="kb-hoje">Hoje</button>
-              <button type="button" class="kb-btn" id="kb-7d">7 dias</button>
-              <button type="button" class="kb-btn" id="kb-mes">Mês</button>
+              <!-- 12/11/26 (dono: "pode tirar o período, não precisa; somente o
+                   EXPEDIDO tem que ser a data de hoje"): sem o período e sem Hoje /
+                   7 dias / Mês — todas as colunas mostram o que está nelas agora, de
+                   qualquer data, e a Expedição só o que foi expedido HOJE -->
               <button type="button" class="kb-btn" id="kb-atualizar">
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>
                 Atualizar
@@ -621,7 +612,7 @@
         var temValor = lista.some(function (o) { return o.valor != null; });
         return '<section class="kb-col' + (lista.length ? '' : ' vazia') + '" style="' + tom(TOM_ETAPA[e.id] || 0) + '"' + (e.pendente && !lista.length ? ' title="' + esc(e.nome) + ': aguardando os campos da fase"' : '') + '><div class="kb-col-h"><div class="kb-col-t"><span class="nome" title="' + esc(e.nome) + '">' + (NOME_CURTO[e.id] ? '<span class="kb-longo">' + esc(e.nome) + '</span><span class="kb-curto">' + esc(NOME_CURTO[e.id]) + '</span>' : esc(e.nome)) + '</span><span class="kb-cnt">' + lista.length + '</span></div>'
           + '<div class="kb-col-v">' + (temValor ? esc(fK(soma)) : '&nbsp;') + '</div>'
-          + ((r.datadas || []).indexOf(e.id) >= 0 ? '<div class="kb-col-p" title="Só as do período escolhido (data da nota fiscal)">' + esc(textoPeriodo(r)) + '</div>' : '') + '</div>'
+          + ((r.datadas || []).indexOf(e.id) >= 0 ? '<div class="kb-col-p" title="Só as expedidas hoje (data de expedição da carga)">' + esc(textoPeriodo(r)) + '</div>' : '') + '</div>'
           + '<div class="kb-cards">' + (lista.length ? lista.map(cardHtml).join('') : e.pendente ? '<div class="kb-vazio pend" title="aguardando os campos da fase"><span class="kb-longo">aguardando os campos da fase</span><span class="kb-curto">a definir</span></div>' : '<div class="kb-vazio">—</div>') + '</div></section>';
       }).join('') + '</div>';
     }
@@ -675,7 +666,7 @@
 
     function renderLista(ovs) {
       var r = estado.r;
-      if (!ovs.length) { $('kb-quadro').innerHTML = '<div class="kb-vazio">' + ((r.ovs || []).length ? 'Nenhuma OV com essa busca.' : 'Nenhuma ordem de venda da MSB' + (depTexto() ? ' do ' + depTexto() : '') + ' em aberto, nem faturada no período.') + '</div>'; return; }
+      if (!ovs.length) { $('kb-quadro').innerHTML = '<div class="kb-vazio">' + ((r.ovs || []).length ? 'Nenhuma OV com essa busca.' : 'Nenhuma ordem de venda da MSB' + (depTexto() ? ' do ' + depTexto() : '') + ' em aberto, nem faturada ou expedida hoje.') + '</div>'; return; }
       // a releitura de 60 s não pode jogar a lista para o topo nem tirar o foco
       var velha = document.querySelector('#kb-quadro .kb-lista');
       var rolou = velha ? [velha.scrollTop, velha.scrollLeft] : null;
@@ -1109,7 +1100,7 @@
         + '<li class="' + (o.etapa === 'liberado' ? 'on' : '') + '">Status do trabalho = <b>Abrir</b> → <b>Separação</b> (só isso).</li>'
         + '<li class="' + (o.etapa === 'criada' ? 'on' : '') + '">Nenhuma das anteriores (inclusive a OV sem nenhuma linha) → <b>Criada</b>.</li></ol>'
         + '<p class="kb-dw-p" style="margin-top:8px;">Onde as regras não falam, vale a de antes: OV que saiu do aberto sem status de nota → Faturado; sem a entidade de trabalho no OData, a OV liberada (<code>ReleaseStatus</code>) → Separação.</p>'
-        + '<p class="kb-dw-p" style="margin-top:8px;">Entram as OVs da <b>MSB</b>' + (depTexto() ? ' do depósito <b>' + esc(depTexto()) + '</b>' : '') + '. <b>Criada, Crédito, Separação, Conferência, Cotação e Aguardando Faturamento</b>: todas as OVs <b>em aberto</b>, de qualquer data. <b>Faturado</b> e <b>Pallet</b>: toda OV que está neles agora, de qualquer data (as em aberto e as faturadas com a carga ainda Carregado). <b>Rejeitada e Expedição</b>: só as do <b>período escolhido</b> lá em cima (pela data da nota fiscal; sem nota, a de criação). O quadro relê o Dynamics a cada 60 s; as linhas desta ficha são lidas quando ela abre.</p></details>';
+        + '<p class="kb-dw-p" style="margin-top:8px;">Entram as OVs da <b>MSB</b>' + (depTexto() ? ' do depósito <b>' + esc(depTexto()) + '</b>' : '') + '. <b>Criada, Crédito, Separação, Conferência, Cotação e Aguardando Faturamento</b>: todas as OVs <b>em aberto</b>, de qualquer data. <b>Faturado</b> e <b>Pallet</b>: toda OV que está neles agora, de qualquer data (as em aberto e as faturadas com a carga ainda Carregado). <b>Rejeitada</b>: toda OV que está nela agora, de qualquer data. <b>Expedição</b>: só as expedidas <b>hoje</b> (pela data de expedição da carga; sem ela, a da nota fiscal). O quadro relê o Dynamics a cada 60 s; as linhas desta ficha são lidas quando ela abre.</p></details>';
       return h;
     }
 
@@ -1150,7 +1141,7 @@
       h += linha(true, 'Este cartão', descParte(o), o.etapa, o.valor, null);
       irmas.forEach(function (x) {
         h += x.o ? linha(false, 'Outro cartão', descParte(x.o), x.o.etapa, x.o.valor, idOv(x.o))
-                 : linha(false, 'Outro cartão', { t: 'fora do período escolhido', s: '' }, x.ref.etapa, x.ref.valor, null);
+                 : linha(false, 'Outro cartão', { t: 'fora do quadro (de outro dia)', s: '' }, x.ref.etapa, x.ref.valor, null);
       });
       var tot = [o.itensOv != null ? itensTxt(o.itensOv) : '', o.valorOv != null ? fBRL(o.valorOv) : ''].filter(Boolean).join(' · ');
       if (tot) h += '<div class="kb-pt-tot">A OV inteira: ' + esc(tot) + (porTrab ? ' · o valor da parte pelos trabalhos não vem do Dynamics' : '') + '</div>';
@@ -1557,14 +1548,7 @@
     }
     function lembrar(r) { estado.antes = {}; (r.ovs || []).forEach(function (o) { estado.antes[idOv(o)] = o.etapa; estado.antes['#' + o.numero] = 1; }); }
 
-    // ── período de Rejeitada e Expedição (09/11/26; o Faturado saiu em 10/11/26 e o Pallet em 11/11/26) ──
-    function somaDias(iso, n) { var d = new Date(iso + 'T12:00:00Z'); d.setUTCDate(d.getUTCDate() + n); return d.toISOString().slice(0, 10); }
-    function periodo() {
-      var de = $('kb-de').value || hojeSP(), ate = $('kb-ate').value || de;
-      if (ate < de) { var t = de; de = ate; ate = t; }
-      return { de: de, ate: ate };
-    }
-    function porPeriodo(de, ate) { $('kb-de').value = de; $('kb-ate').value = ate; estado.r = null; estado.antes = null; carregar(false); }
+    // o rótulo da coluna datada (12/11/26: só a Expedição, e o servidor manda hoje)
     function textoPeriodo(r) {
       if (!r || !r.de) return '';
       var h = hojeSP();
@@ -1582,11 +1566,11 @@
     async function carregar(forcar) {
       if (estado.carregando) return;
       estado.carregando = true;
-      var per = periodo();
       $('kb-atualizar').disabled = true;
       status('Lendo o Dynamics…', true);
       try {
-        var res = await fetch('/api/kanban-ov?de=' + encodeURIComponent(per.de) + '&ate=' + encodeURIComponent(per.ate) + (forcar ? '&atualizar=1' : ''), { cache: 'no-store' });
+        // 12/11/26: sem período na tela — o servidor usa HOJE (a Expedição = expedidas hoje)
+        var res = await fetch('/api/kanban-ov' + (forcar ? '?atualizar=1' : ''), { cache: 'no-store' });
         var j = null; try { j = await res.json(); } catch (e) {}
         if (res.status === 401) throw new Error('Entre com a sua conta Microsoft para ver o Kanban.');
         if (res.status === 403) throw new Error('A área Kanban é de acesso restrito.');
@@ -1596,7 +1580,7 @@
         lembrar(j);
         estado.r = j;
         var avs = (j.avisos || []).map(function (a) { return ['aviso', esc(a)]; });
-        if (j.canceladas) avs.push(['aviso', j.canceladas + ' OV(s) cancelada(s) no período, fora do quadro.']);
+        if (j.canceladas) avs.push(['aviso', j.canceladas + ' OV(s) cancelada(s) hoje, fora do quadro.']);
         msgs(avs);
         // 09/11/26 (pedido do dono: "remova essa escrita"): sem a linha embaixo do
         // título (MSB · depósito · quantas OVs · valor · as entidades lidas). As
@@ -1633,12 +1617,6 @@
       if (document.visibilityState === 'visible' && estado.r && Date.now() - new Date(estado.r.geradoEm).getTime() > AUTO_MS) carregar(false);
     });
 
-    $('kb-de').value = $('kb-ate').value = hojeSP(); $('kb-de').max = $('kb-ate').max = hojeSP();
-    $('kb-de').addEventListener('change', function () { estado.r = null; estado.antes = null; carregar(false); });
-    $('kb-ate').addEventListener('change', function () { estado.r = null; estado.antes = null; carregar(false); });
-    $('kb-hoje').addEventListener('click', function () { porPeriodo(hojeSP(), hojeSP()); });
-    $('kb-7d').addEventListener('click', function () { porPeriodo(somaDias(hojeSP(), -6), hojeSP()); });
-    $('kb-mes').addEventListener('click', function () { porPeriodo(hojeSP().slice(0, 8) + '01', hojeSP()); });
     $('kb-atualizar').addEventListener('click', function () { carregar(true); });
     $('kb-busca').addEventListener('input', function (e) { var q = e.target.value.trim(); if (q !== estado.busca) estado.gruposBusca = {}; estado.busca = q; render(); });
     Array.prototype.forEach.call(document.querySelectorAll('.kb-seg button'), function (b) {

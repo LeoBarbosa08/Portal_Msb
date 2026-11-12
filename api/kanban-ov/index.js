@@ -9,11 +9,14 @@
 //   GET /api/kanban-ov                 -> o QUADRO (09/11/2026): as OVs em aberto
 //                                         de qualquer data + as com nota HOJE + as
 //                                         faturadas com a carga Carregado (10/11/26:
-//                                         o Faturado sem data)
+//                                         o Faturado sem data) + as das cargas
+//                                         EXPEDIDAS hoje. 12/11/26: é o que a tela
+//                                         pede (sem o período) — só a Expedição tem
+//                                         data: a de expedição da carga, HOJE
 //   GET /api/kanban-ov?de=2026-11-01&ate=2026-11-09
-//                                      -> o quadro com o período de Rejeitada
-//                                         e Expedição (máx. 366 dias; 11/11/26: o
-//                                         Pallet saiu — mostra todas, como o Faturado)
+//                                      -> o quadro com a Expedição nesse período
+//                                         (máx. 366 dias; a tela não usa mais —
+//                                         fica para o diagnóstico)
 //   GET /api/kanban-ov?data=2026-11-05 -> o mesmo que de=ate=essa data
 //   GET /api/kanban-ov?modo=dia&data=… -> o modo antigo: as OVs CRIADAS no dia
 //   GET /api/kanban-ov?atualizar=1     -> ignora o cache de 15 s
