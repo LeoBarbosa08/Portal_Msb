@@ -12,6 +12,8 @@
   <!-- Layout v3 (Claude Design · animado): fonte + camada visual + motor de animações -->
   <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300..900&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="../portal-v3.css?v=2">
+  <!-- a ficha da nota usa o desenho da ficha do Sales Report (.sd-dw) -->
+  <link rel="stylesheet" href="../sr-diario.css?v=2">
   <script src="../portal-motion.js?v=3" defer></script>
   <!-- Tema claro/escuro (menu do avatar): marca o <html> antes de pintar + camada escura -->
   <script>try{if(localStorage.getItem('bm-tema')==='escuro')document.documentElement.setAttribute('data-tema','escuro')}catch(e){}</script>
@@ -198,20 +200,30 @@
             .fd-tbl tr.cancel td{opacity:.5;text-decoration:line-through;}
             #fd-tbody tr[data-nota]{cursor:pointer;}
             #fd-tbody tr[data-nota]:hover td{background:var(--surface-2);}
-            /* painel com o dado CRU da nota no D365 (09/11/26) */
-            .fd-dr-bg{position:fixed;inset:0;background:rgba(16,24,30,.35);z-index:9000;display:none;}
-            .fd-dr{position:fixed;top:0;right:0;bottom:0;width:min(640px,100vw);background:var(--surface);z-index:9001;box-shadow:-20px 0 50px rgba(0,0,0,.18);display:none;flex-direction:column;}
-            .fd-dr.on,.fd-dr-bg.on{display:flex;}
-            .fd-dr-h{display:flex;align-items:flex-start;gap:10px;padding:16px 18px;border-bottom:1px solid var(--border);}
-            .fd-dr-h h3{margin:0;font-size:18px;font-weight:800;color:var(--text);}
-            .fd-dr-h .sub{font-size:12.5px;color:var(--text-3);margin-top:2px;}
-            .fd-x{border:none;background:transparent;font-size:22px;line-height:1;color:var(--text-3);cursor:pointer;padding:2px 6px;}
-            .fd-dr-b{padding:10px 18px 24px;overflow:auto;}
-            .fd-dr-b h4{margin:14px 0 6px;font-size:11px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:var(--text-3);}
-            .fd-kv{width:100%;border-collapse:collapse;font-size:12px;margin-bottom:6px;}
-            .fd-kv td{padding:4px 6px;border-top:1px solid var(--border);vertical-align:top;color:var(--text-2);word-break:break-word;}
-            .fd-kv td:first-child{width:44%;font-family:'JetBrains Mono',ui-monospace,monospace;font-size:11px;color:var(--text-3);}
-            .fd-kv tr.chave td{background:rgba(30,91,216,.06);font-weight:600;color:var(--text);}
+            #fd-tbody tr[data-nota]:focus-visible{outline:2px solid #287A8E;outline-offset:-2px;}
+            #fd-tbody tr.is-aberta td{background:#F0F7FA;}
+            html[data-tema="escuro"] #fd-tbody tr.is-aberta td{background:var(--surface-2);}
+            /* FICHA DA NOTA (12/11/26): o desenho é o da ficha do Sales Report
+               (../sr-diario.css · .sd-dw); aqui só o que é da nota */
+            .sd-dw-tag.lj{background:#FDF1E7;color:#9A4F0E;}
+            .sd-dw-tag.vm{background:#FEECEC;color:#991B1B;}
+            .sd-it .v span.ds{color:var(--sd-warn);}
+            .fd-conta{display:flex;flex-direction:column;}
+            .fd-conta>div{display:flex;justify-content:space-between;gap:12px;padding:6px 0;border-top:1px solid var(--sd-bd-soft);font-size:12px;font-weight:600;color:var(--sd-body);}
+            .fd-conta>div:first-child{border-top:none;padding-top:0;}
+            .fd-conta>div b{font-weight:800;color:var(--sd-ink);font-variant-numeric:tabular-nums;white-space:nowrap;}
+            .fd-conta>div.z,.fd-conta>div.z b{color:var(--sd-mut3);font-weight:600;}
+            .fd-conta>div.tot{border-top:1px solid var(--sd-bd);margin-top:3px;padding-top:9px;font-weight:800;color:var(--sd-ink);}
+            .fd-conta>div.tot b{font-size:13px;}
+            .fd-crus-bar{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin:0 0 4px;}
+            .fd-crus-bar .sd-dw-p{flex:1 1 220px;}
+            .fd-crus h6{margin:14px 0 6px;font-size:10px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:var(--sd-mut2);}
+            .fd-crus pre{margin:0;padding:10px;max-height:260px;overflow:auto;background:#F4F7FB;border-radius:8px;font-size:10.5px;line-height:1.45;white-space:pre-wrap;word-break:break-word;color:var(--sd-body);}
+            .fd-kv{width:100%;border-collapse:collapse;font-size:11.5px;margin-bottom:6px;}
+            .fd-kv td{padding:4px 6px;border-top:1px solid var(--sd-bd-soft);vertical-align:top;color:var(--sd-body);word-break:break-word;}
+            .fd-kv td:first-child{width:44%;font-family:'JetBrains Mono',ui-monospace,monospace;font-size:10.5px;color:var(--sd-mut2);}
+            .fd-kv tr.chave td{background:#F0F7FA;font-weight:600;color:var(--sd-ink);}
+            .fd-kv-reg{font-size:10.5px;font-weight:700;color:var(--sd-mut3);margin:8px 0 2px;}
             .fd-tbl tr.cancel td .fd-tag{text-decoration:none;}
             .fd-tag{display:inline-block;padding:2px 8px;border-radius:999px;font-size:11px;font-weight:700;white-space:nowrap;}
             .fd-tag.venda{background:#E3F7E8;color:#16702C;}
@@ -304,14 +316,23 @@
     </div><!-- /container -->
   </div><!-- /area-body -->
 
-  <div class="fd-dr-bg" id="fd-dr-bg"></div>
-  <aside class="fd-dr" id="fd-dr" role="dialog" aria-modal="true" aria-labelledby="fd-dr-tt">
-    <div class="fd-dr-h">
-      <div style="flex:1;min-width:0;"><h3 id="fd-dr-tt">—</h3><div class="sub">O que o Dynamics devolve para este número (MSB), sem tratamento</div></div>
-      <button type="button" class="fd-btn" id="fd-dr-copiar">Copiar</button>
-      <button type="button" class="fd-x" id="fd-dr-x" aria-label="Fechar">×</button>
+  <!-- FICHA DA NOTA (12/11/26) — no molde da ficha do Sales Report (../sr-diario.css · .sd-dw) -->
+  <div class="sd-dw-ov" id="fd-dw-ov"></div>
+  <aside class="sd-dw" id="fd-dw" role="dialog" aria-modal="true" aria-labelledby="fd-dw-tt">
+    <div class="sd-dw-head">
+      <div class="sd-dw-hl"><div class="sd-dw-k" id="fd-dw-k"></div><h2 class="sd-dw-tt" id="fd-dw-tt"></h2>
+        <div class="sd-dw-sub" id="fd-dw-sub"></div><div class="sd-dw-tags" id="fd-dw-tags"></div></div>
+      <div class="sd-dw-nav">
+        <button type="button" class="sd-dw-pn" data-fd-dw="ant" aria-label="Nota anterior da lista" title="Anterior da lista (←)"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="15 18 9 12 15 6"/></svg></button>
+        <button type="button" class="sd-dw-pn" data-fd-dw="prox" aria-label="Próxima nota da lista" title="Próxima da lista (→)"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="9 18 15 12 9 6"/></svg></button>
+        <button type="button" class="sd-dw-x" data-fd-dw="fechar" aria-label="Fechar a ficha" title="Fechar (Esc)"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+      </div>
     </div>
-    <div class="fd-dr-b" id="fd-dr-b"></div>
+    <div class="sd-dw-body" id="fd-dw-body"></div>
+    <div class="sd-dw-foot">
+      <button type="button" class="sd-dw-cp" data-fd-dw="copiar"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg><span id="fd-dw-cpt">Copiar nº</span></button>
+      <span class="sd-dw-lido" id="fd-dw-lido"></span><button type="button" class="sd-dw-btn" data-fd-dw="fechar">Fechar</button>
+    </div>
   </aside>
 
   <footer class="site-footer">
@@ -342,7 +363,7 @@
       rejected: 'Rejeitada', pending: 'Pendente', created: 'Criada', posted: 'Lançada', voided: 'Inutilizada', discarded: 'Inutilizada', contingency: 'Contingência' };
     var fStatus = function (s) { var k = String(s || '').trim().toLowerCase(); return STATUS[k] || s || ''; };
 
-    var estado = { r: null, tipo: '', busca: '', carregando: false, timer: null };
+    var estado = { r: null, tipo: '', busca: '', carregando: false, timer: null, vistos: [] };
 
     function hojeSP() {
       try { return new Intl.DateTimeFormat('en-CA', { timeZone: 'America/Sao_Paulo', year: 'numeric', month: '2-digit', day: '2-digit' }).format(new Date()); }
@@ -383,7 +404,8 @@
         $('fd-tbody').innerHTML = notas.map(function (n) {
           var dev = n.tipo === 'devolucao';
           var sub = [n.conta, fCnpj(n.cnpj)].filter(Boolean).join(' · ');
-          return '<tr class="' + (n.cancelada ? 'cancel' : '') + '" data-nota="' + esc(n.numero) + '" title="Clique para ver o dado desta nota no Dynamics">'
+          var aberta = DW.nota && DW.nota.numero === n.numero && fichaAberta();
+          return '<tr class="' + (n.cancelada ? 'cancel' : '') + (aberta ? ' is-aberta' : '') + '" data-nota="' + esc(n.numero) + '" tabindex="0" title="Clique para abrir a ficha da nota">'
             + '<td><span class="fd-tag ' + n.tipo + '">' + (dev ? 'Devolução' : 'Venda') + '</span>' + (n.cancelada ? '<span class="fd-tag cancel">Cancelada</span>' : '') + '</td>'
             + '<td class="nf">' + esc(n.numero) + (n.serie ? '<div class="sub">série ' + esc(n.serie) + '</div>' : '') + '</td>'
             + '<td><div class="cli">' + (esc(n.cliente) || '<span class="sub">sem razão social</span>') + '</div>' + (sub ? '<div class="sub">' + esc(sub) + '</div>' : '') + '</td>'
@@ -396,6 +418,9 @@
         notas.forEach(function (n) { if (!n.cancelada && n.valor != null) soma += n.tipo === 'devolucao' ? -n.valor : n.valor; });
         $('fd-tfoot').innerHTML = '<tr class="fd-foot"><td colspan="' + (ncol - 1) + '">Total líquido · ' + notas.filter(function (n) { return !n.cancelada; }).length + ' nota(s)</td><td class="num">' + fBRL(soma) + '</td></tr>';
       }
+      // a ficha anda (‹ ›) pela lista como está na tela; aberta, acompanha a releitura
+      estado.vistos = notas;
+      if (fichaAberta() && DW.nota) { var nn = notaDaLista(DW.nota.numero); if (nn) DW.nota = nn; pintarFicha(); }
     }
 
     function renderMeta(r) {
@@ -530,9 +555,290 @@
     }
     $('fd-excel').addEventListener('click', exportar);
 
-    // ── PAINEL: o dado CRU da nota no D365 (09/11/26) ──
-    var _det = null;
-    var CHAVES = /^(InvoiceNumber|InvoiceId|InvoiceDate|TotalInvoiceAmount|InvoiceAmount|TotalTaxAmount|TotalDiscountAmount|TotalChargeAmount|SalesOrderNumber|InvoiceCustomerAccountNumber|OrderingCustomerAccountNumber|LineAmount|InvoicedQuantity|SalesPrice|ItemNumber|ProductName|FiscalDocumentNumber|Direction|TotalAmount|OperationDescription|Status|CurrencyCode)$/i;
+    // ── FICHA DA NOTA (12/11/2026) ──
+    // Pedido do dono: "o modal do faturamento diário parecido com o do
+    // salesreport, com os campos da entidade: linha da NF, código, descrição,
+    // preço, tipo de venda…". O desenho é o da ficha do Sales Report
+    // (../sr-diario.css · .sd-dw). Cabeçalho e números-chave saem da linha da
+    // lista; itens, valores e dados da nota vêm do Dynamics ao abrir
+    // (GET ?nota=…&data=… — detalheNota em api/shared/faturamento-dia.js: a nota
+    // limpa + o dado cru, que fica recolhido em "Campos do Dynamics").
+    var DW = { nota: null, volta: null };
+    var FICHAS = new Map();   // nº|data -> { st: 'carregando'|'ok'|'erro', j, em, erro }
+    var ITEM = ['item', 'itens'], UNID = ['unidade', 'unidades'], REG = ['registro', 'registros'];
+    var DSEM = ['domingo', 'segunda', 'terça', 'quarta', 'quinta', 'sexta', 'sábado'];
+    var fInt = function (v) { return v == null ? '—' : Number(v).toLocaleString('pt-BR', { maximumFractionDigits: 0 }); };
+    var fQtd = function (v) { return v == null ? '—' : Number(v).toLocaleString('pt-BR', { maximumFractionDigits: 3 }); };
+    var fPct = function (p) { if (p == null || !isFinite(p)) return '—'; var x = p * 100; return x > 0 && x < 1 ? '<1%' : Math.round(x) + '%'; };
+    var plural = function (n, nomes) { return fInt(n) + ' ' + (Number(n) === 1 ? nomes[0] : nomes[1]); };
+    var fCep = function (s) { var d = String(s || '').replace(/\D/g, ''); return d.length === 8 ? d.slice(0, 5) + '-' + d.slice(5) : (s || ''); };
+    function diaSem(iso) { return iso ? DSEM[new Date(iso + 'T12:00:00').getDay()] : ''; }
+    function relDia(iso) {
+      if (!iso) return '';
+      var n = Math.round((Date.parse(iso + 'T12:00:00') - Date.parse(hojeSP() + 'T12:00:00')) / 86400000);
+      if (n === 0) return 'hoje'; if (n === -1) return 'ontem'; if (n === 1) return 'amanhã';
+      return n > 0 ? 'em ' + fInt(n) + ' dias' : 'há ' + fInt(-n) + ' dias';
+    }
+
+    function chaveNf(n) { return n.numero + '|' + (n.emissao || ''); }
+    function notaDaLista(num) { var ns = (estado.r && estado.r.notas) || []; for (var i = 0; i < ns.length; i++) if (ns[i].numero === num) return ns[i]; return null; }
+    function linhaDaNota(num) { return document.querySelector('#fd-tbody tr[data-nota="' + String(num).replace(/["\\]/g, '\\$&') + '"]'); }
+    function fichaAberta() { return $('fd-dw').classList.contains('open'); }
+    function posicao() {
+      var v = estado.vistos || [];
+      for (var i = 0; DW.nota && i < v.length; i++) if (v[i].numero === DW.nota.numero) return i;
+      return -1;
+    }
+    function marcarAberta() {
+      Array.prototype.forEach.call(document.querySelectorAll('#fd-tbody tr.is-aberta'), function (tr) { tr.classList.remove('is-aberta'); });
+      var tr = DW.nota && fichaAberta() ? linhaDaNota(DW.nota.numero) : null;
+      if (tr) tr.classList.add('is-aberta');
+    }
+    function abrirNota(num, origem) {
+      var n = notaDaLista(num); if (!n) return;
+      DW.nota = n; DW.volta = origem || document.activeElement;
+      $('fd-dw-ov').classList.add('open'); $('fd-dw').classList.add('open');
+      document.documentElement.classList.add('sd-dw-on');
+      marcarAberta(); pintarFicha(); $('fd-dw-body').scrollTop = 0;
+      setTimeout(function () { try { $('fd-dw').querySelector('.sd-dw-x').focus(); } catch (e) {} }, 40);
+      carregarFicha(n, false);
+    }
+    function fecharNota() {
+      if (!fichaAberta()) return;
+      $('fd-dw').classList.remove('open'); $('fd-dw-ov').classList.remove('open');
+      document.documentElement.classList.remove('sd-dw-on');
+      var n = DW.nota; DW.nota = null; marcarAberta();
+      // o foco volta para a linha da nota que estava na ficha (andou com ‹ ›?)
+      var f = (n && linhaDaNota(n.numero)) || DW.volta;
+      if (f && f.focus) { try { f.focus(); } catch (e) {} }
+    }
+    function andar(dir) {
+      var i = posicao(); if (i < 0) return;
+      var nx = estado.vistos[i + dir]; if (!nx) return;
+      DW.nota = nx; marcarAberta();
+      var tr = linhaDaNota(nx.numero);
+      if (tr && tr.scrollIntoView) { try { tr.scrollIntoView({ block: 'nearest' }); } catch (e) {} }
+      pintarFicha(); $('fd-dw-body').scrollTop = 0;
+      carregarFicha(nx, false);
+    }
+    // o foco não sai da ficha enquanto ela está aberta
+    function prender(e) {
+      var el = $('fd-dw');
+      var fs = Array.prototype.filter.call(el.querySelectorAll('button, a[href], summary, [tabindex]:not([tabindex="-1"])'), function (x) { return !x.disabled && x.offsetParent !== null; });
+      if (!fs.length) return;
+      var a = fs[0], z = fs[fs.length - 1];
+      if (e.shiftKey && (document.activeElement === a || !el.contains(document.activeElement))) { e.preventDefault(); z.focus(); }
+      else if (!e.shiftKey && (document.activeElement === z || !el.contains(document.activeElement))) { e.preventDefault(); a.focus(); }
+    }
+    function copiarTexto(t, ok) {
+      var reserva = function () {
+        try { var ta = document.createElement('textarea'); ta.value = t; ta.setAttribute('readonly', ''); ta.style.position = 'fixed'; ta.style.opacity = '0';
+          document.body.appendChild(ta); ta.select(); document.execCommand('copy'); ta.remove(); ok(); } catch (e) {}
+      };
+      if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(t).then(ok, reserva); else reserva();
+    }
+    function copiarNum() {
+      if (!DW.nota) return;
+      var b = $('fd-dw').querySelector('.sd-dw-cp'), t = $('fd-dw-cpt');
+      copiarTexto(DW.nota.numero, function () {
+        b.classList.add('ok'); t.textContent = 'Copiado';
+        clearTimeout(copiarNum._t); copiarNum._t = setTimeout(function () { b.classList.remove('ok'); t.textContent = 'Copiar nº'; }, 1600);
+      });
+    }
+    function copiarJson(b) {
+      var e = DW.nota && FICHAS.get(chaveNf(DW.nota)); if (!e || !e.j) return;
+      copiarTexto(JSON.stringify(e.j, null, 1), function () { b.textContent = 'Copiado ✓'; setTimeout(function () { b.textContent = 'Copiar tudo (JSON)'; }, 2000); });
+    }
+
+    // lê a nota no Dynamics (1 vez por nota/dia; "Tentar de novo" força)
+    function carregarFicha(n, forcar) {
+      var k = chaveNf(n), e = FICHAS.get(k);
+      if (e && !forcar && e.st !== 'erro') return;
+      FICHAS.set(k, { st: 'carregando' });
+      if (FICHAS.size > 80) FICHAS.delete(FICHAS.keys().next().value);
+      if (DW.nota && chaveNf(DW.nota) === k) pintarFicha();
+      fetch('/api/faturamento-hoje?nota=' + encodeURIComponent(n.numero) + (n.emissao ? '&data=' + encodeURIComponent(n.emissao) : ''), { cache: 'no-store' })
+        .then(function (res) {
+          return res.json().catch(function () { return null; }).then(function (j) {
+            if (!res.ok || !j || j.ok === false) throw new Error((j && (j.detalhe || j.error)) || ('HTTP ' + res.status));
+            FICHAS.set(k, { st: 'ok', j: j, em: new Date() });
+          });
+        })
+        .catch(function (err) { FICHAS.set(k, { st: 'erro', erro: String((err && err.message) || err) }); })
+        .then(function () { if (DW.nota && chaveNf(DW.nota) === k) pintarFicha(); });
+    }
+
+    // ── desenho ──
+    function kp(k, v, s, cls, vcls, scls) {
+      return '<div class="sd-dw-kp' + (cls ? ' ' + cls : '') + '"><div class="k">' + esc(k) + '</div><div class="v' + (vcls ? ' ' + vcls : '') + '">' + v + '</div>' +
+        (s ? '<div class="s' + (scls ? ' ' + scls : '') + '">' + s + '</div>' : '') + '</div>';
+    }
+    function dl(pares) {
+      return '<dl class="sd-dw-dl">' + pares.map(function (p) { return '<div' + (p[2] ? ' class="' + p[2] + '"' : '') + '><dt>' + esc(p[0]) + '</dt><dd>' + p[1] + '</dd></div>'; }).join('') + '</dl>';
+    }
+    function card(h) { return '<section class="sd-dw-card">' + h + '</section>'; }
+    function carregandoH(t) { return '<div class="sd-dw-load"><span class="sd-spin"></span>' + esc(t) + '</div>'; }
+    function erroH(t, e) { return '<div class="sd-dw-err"><span>' + esc(t) + ': <b>' + esc(e) + '</b></span><button type="button" data-fd-dw="tentar">Tentar de novo</button></div>'; }
+    function nadaH(t) { return '<div class="sd-dw-nada">' + t + '</div>'; }
+    // o "tipo de venda" da OV (SalesPurchOperationType_BR: VENDA, CONSIGNAÇÃO…)
+    function tipoVenda(j) {
+      var t = (j && j.operacao && j.operacao.todos) || {}, ks = Object.keys(t);
+      for (var i = 0; i < ks.length; i++) if (/salespurchoperationtype/i.test(ks[i])) return t[ks[i]];
+      return '';
+    }
+    function endereco(e) {
+      if (!e) return '';
+      var rua = [e.rua, e.numero].filter(Boolean).join(', ');
+      var cid = [e.cidade, e.uf].filter(Boolean).join('/');
+      return [rua, e.bairro, cid, e.cep ? 'CEP ' + fCep(e.cep) : '', e.pais && !/^(BR|BRA)$/i.test(e.pais) ? e.pais : ''].filter(Boolean).join(' · ');
+    }
+
+    function pintarFicha() {
+      var n = DW.nota; if (!n) return;
+      var body = $('fd-dw-body'), abertos = {}, topo = body.scrollTop;
+      Array.prototype.forEach.call(body.querySelectorAll('details[data-k]'), function (d) { abertos[d.getAttribute('data-k')] = d.open; });
+      var e = FICHAS.get(chaveNf(n)) || { st: 'carregando' };
+      var j = e.st === 'ok' ? e.j : null, nf = j && j.nota, cli = j && j.cliente;
+      var dev = n.tipo === 'devolucao';
+      var tv = tipoVenda(j);
+      var cidUf = nf && nf.endereco ? [nf.endereco.cidade, nf.endereco.uf].filter(Boolean).join(' · ') : '';
+
+      $('fd-dw-k').textContent = 'Nota fiscal · ' + (dev ? 'devolução' : 'venda') + (n.cancelada ? ' · cancelada' : '');
+      $('fd-dw-tt').textContent = 'NF ' + n.numero;
+      $('fd-dw-sub').textContent = [n.cliente || (cli && cli.nome) || 'cliente sem razão social', n.conta, cidUf].filter(Boolean).join(' · ');
+      var tags = ['<span class="sd-badge ' + (dev ? 'c2' : 'c3') + '"><i></i>' + (dev ? 'Devolução' : 'Venda') + '</span>'];
+      if (n.cancelada) tags.push('<span class="sd-dw-tag vm">Cancelada</span>');
+      if (n.status) tags.push('<span class="sd-dw-tag' + (/aprov|approv/i.test(n.status) ? ' vd' : '') + '" title="Status da nota no Dynamics">' + esc(fStatus(n.status)) + '</span>');
+      if (n.operacao) tags.push('<span class="sd-dw-tag az" title="Tipo de operação' + (n.operacaoFonte ? ' (' + esc(n.operacaoFonte) + ')' : '') + '">' + esc(n.operacao) + '</span>');
+      if (tv && tv !== n.operacao) tags.push('<span class="sd-dw-tag az" title="Tipo de venda da OV">' + esc(tv) + '</span>');
+      if (n.ordem) tags.push('<span class="sd-dw-tag" title="Ordem de venda">' + esc(n.ordem) + '</span>');
+      $('fd-dw-tags').innerHTML = tags.join('');
+      var i = posicao(), tot = (estado.vistos || []).length;
+      $('fd-dw').querySelector('[data-fd-dw="ant"]').disabled = i <= 0;
+      $('fd-dw').querySelector('[data-fd-dw="prox"]').disabled = i < 0 || i >= tot - 1;
+      $('fd-dw-lido').textContent = [e.em ? 'lido às ' + e.em.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }) : '', i >= 0 ? (i + 1) + ' de ' + tot : ''].filter(Boolean).join(' · ');
+
+      body.innerHTML = corpoFicha(n, e, j, nf, dev, tv);
+      Array.prototype.forEach.call(body.querySelectorAll('details[data-k]'), function (d) { var k = d.getAttribute('data-k'); if (k in abertos) d.open = abertos[k]; });
+      body.scrollTop = topo;
+    }
+
+    function corpoFicha(n, e, j, nf, dev, tv) {
+      // devolução: o Dynamics grava quantidades e valores negativos — a ficha mostra sem o sinal
+      var ab = function (v) { return v == null ? null : (dev ? Math.abs(v) : v); };
+      var its = j && j.itens;
+      var rs = (estado.r && estado.r.resumo) || { venda: {}, devolucao: {} };
+      var diaTot = dev ? rs.devolucao.valor : rs.venda.valor;
+      var share = n.cancelada ? 'cancelada · fora da soma'
+        : (n.valor != null && diaTot ? fPct(n.valor / diaTot) + (dev ? ' das devoluções do dia' : ' das vendas do dia') : '');
+      var sq = 0, temQ = false;
+      (its || []).forEach(function (it) { if (it.qtd != null) { sq += ab(it.qtd); temQ = true; } });
+      var hoje = n.emissao === hojeSP();
+
+      var h = '<div class="sd-dw-kpis">'
+        + kp(dev ? 'Valor da devolução' : 'Valor da nota', n.valor == null ? '—' : esc((dev ? '− ' : '') + fBRL(n.valor)), esc(share), 'destaque')
+        + kp('Emissão', esc(fDia(n.emissao) || '—'), n.emissao ? esc(diaSem(n.emissao) + ' · ' + relDia(n.emissao)) : '', '', '', hoje ? 'hoje' : '')
+        + (e.st === 'carregando' ? kp('Itens', '…', 'lendo o Dynamics', '', 'z')
+          : e.st === 'erro' || !its ? kp('Itens', '—', 'não deu para ler', '', 'z')
+          : kp('Itens', esc(plural(its.length, ITEM)), temQ ? esc(fQtd(sq) + ' ' + (sq === 1 ? UNID[0] : UNID[1])) : ''))
+        + '</div>';
+
+      h += secItens(n, e, j, nf, dev, ab);
+      if (nf) h += secValores(nf, its, ab);
+      h += secDados(n, e, j, nf, tv);
+      if (j) h += secCrus(j);
+      var fo = estado.r && estado.r.filtroOperacao, aceitos = (fo && fo.aceitos) || [];
+      h += '<details class="sd-dw-card sd-dw-mais" data-k="como"><summary><h5>Como entra nesta lista</h5></summary>'
+        + '<p class="sd-dw-p">Entram as notas da <b>MSB</b> emitidas no dia (horário de Brasília), lidas ao vivo do Dynamics'
+        + (estado.r && estado.r.fonte ? ' (' + esc(estado.r.fonte.entidade) + ')' : '') + '. Devolução entra negativa no líquido; cancelada fica fora da soma.</p>'
+        + (aceitos.length ? '<p class="sd-dw-p">Só contam os tipos de operação <b>' + esc(aceitos.join(', ')) + '</b> (o tipo vem da OV da nota) e as notas com status <b>Aprovado</b>. Número repetido no diário de faturas: vale o registro 1, o documento original.</p>' : '')
+        + '<p class="sd-dw-p">Esta ficha lê a nota no Dynamics quando abre: o cabeçalho e as linhas da fatura, o tipo de operação e o tipo de venda da OV. Tudo o que veio, sem tratamento, fica em <b>Campos do Dynamics</b>.</p></details>';
+      return h;
+    }
+
+    function secItens(n, e, j, nf, dev, ab) {
+      var its = j && j.itens;
+      var tt = '<h5>Itens da nota' + (its && its.length ? ' <small>' + esc(fInt(its.length)) + '</small>' : '') + '</h5>';
+      if (e.st === 'carregando') return card(tt + carregandoH('Lendo os itens no Dynamics…'));
+      if (e.st === 'erro') return card(tt + erroH('Não deu para ler a nota no Dynamics', e.erro));
+      if (!its) return card(tt + nadaH('Nenhuma entidade de linhas de fatura respondeu no Dynamics. Veja <b>Campos do Dynamics</b> lá embaixo.'));
+      if (!its.length) return card(tt + nadaH('O Dynamics não trouxe linhas para esta nota.'));
+      var sv = 0, sq = 0, temQ = false;
+      its.forEach(function (it) { sv += ab(it.valor) || 0; if (it.qtd != null) { sq += ab(it.qtd); temQ = true; } });
+      var h = '<div class="sd-its-r"><span>Total dos itens <b>' + esc(fBRL(sv)) + '</b></span>'
+        + (temQ ? '<span><b>' + esc(fQtd(sq)) + '</b> ' + (sq === 1 ? UNID[0] : UNID[1]) + '</span>' : '') + '</div><div class="sd-its">';
+      its.forEach(function (it, i) {
+        var meta = [it.codigo ? 'cód. ' + it.codigo : '', it.un, it.lote ? 'lote ' + it.lote : ''].filter(Boolean).join(' · ');
+        var q = ab(it.qtd), v = ab(it.valor);
+        var pu = it.preco != null ? Math.abs(it.preco) : (q && v != null ? v / q : null);
+        var qx = q != null ? fQtd(q) + (pu != null ? ' × ' + fBRL(pu) : ' ' + (it.un || 'un.')) : '';
+        var ds = it.desconto ? 'desc. ' + fBRL(Math.abs(it.desconto)) + (it.descPct ? ' (' + fQtd(it.descPct) + '%)' : '') : (it.descPct ? 'desc. ' + fQtd(it.descPct) + '%' : '');
+        var im = it.imposto ? 'imp. ' + fBRL(Math.abs(it.imposto)) : '';
+        h += '<div class="sd-it"><div class="n">' + (i + 1) + '</div><div class="c"><div class="t">' + esc(it.produto || it.descricao || 'Produto sem nome') + '</div>'
+          + (meta ? '<div class="s">' + esc(meta) + '</div>' : '')
+          + (it.descricao && it.produto ? '<div class="s lg">' + esc(it.descricao) + '</div>' : '')
+          + (it.ov && n.ordem && it.ov !== n.ordem ? '<div class="s lg">OV ' + esc(it.ov) + '</div>' : '')
+          + '</div><div class="v"><b>' + esc(fBRL(v)) + '</b>' + (qx ? '<span>' + esc(qx) + '</span>' : '')
+          + (ds ? '<span class="ds">' + esc(ds) + '</span>' : '') + (im ? '<span>' + esc(im) + '</span>' : '') + '</div></div>';
+      });
+      h += '</div>';
+      if (nf && nf.valor != null && Math.abs(sv - Math.abs(nf.valor)) > 0.05) {
+        h += nadaH('Os itens somam ' + esc(fBRL(sv)) + ' e a nota vale ' + esc(fBRL(Math.abs(nf.valor))) + ': a diferença são descontos, encargos ou impostos do cabeçalho (veja <b>Valores da nota</b>).');
+      }
+      return card(tt + h);
+    }
+
+    function secValores(nf, its, ab) {
+      var sv = null;
+      if (its && its.length) { sv = 0; its.forEach(function (it) { sv += ab(it.valor) || 0; }); }
+      var lin = function (rot, v, menos) {
+        var z = !v;
+        return '<div class="' + (z ? 'z' : '') + '"><span>' + esc(rot) + '</span><b>' + (v == null ? '—' : esc((menos && v ? '− ' : '') + fBRL(Math.abs(v)))) + '</b></div>';
+      };
+      // a conta tem que fechar: itens − descontos + encargos + impostos = total.
+      // Não fechou (o desconto do cabeçalho já abatido nas linhas, imposto por
+      // dentro…): diz a diferença em vez de deixar o número sem explicação
+      var tot = nf.valor == null ? null : Math.abs(nf.valor);
+      var conta = sv == null ? null : sv - Math.abs(nf.desconto || 0) + Math.abs(nf.encargos || 0) + Math.abs(nf.imposto || 0);
+      var naoFecha = conta != null && tot != null && Math.abs(conta - tot) > 0.05;
+      return card('<h5>Valores da nota</h5><div class="fd-conta">'
+        + (sv != null ? lin('Soma dos itens', sv) : '')
+        + lin('Descontos', nf.desconto, true) + lin('Encargos', nf.encargos) + lin('Impostos', nf.imposto)
+        + '<div class="tot"><span>Total da nota</span><b>' + esc(fBRL(tot)) + '</b></div></div>'
+        + (naoFecha ? nadaH('A conta dos campos acima dá ' + esc(fBRL(conta)) + ' e o Dynamics grava ' + esc(fBRL(tot)) + ' como total da nota (diferença de ' + esc(fBRL(Math.abs(conta - tot)))
+          + '): vale o total gravado. Os campos do cabeçalho estão em <b>Campos do Dynamics</b>.') : ''));
+    }
+
+    function secDados(n, e, j, nf, tv) {
+      var cli = j && j.cliente, op = j && j.operacao;
+      var p = [];
+      var add = function (rot, v, largo) { if (v) p.push([rot, v, largo || String(v).replace(/<[^>]+>/g, '').length > 46 ? 'largo' : '']); };
+      add('Ordem de venda', esc(n.ordem || (nf && nf.ordem) || ''));
+      var opv = n.operacao || (op && op.valor) || '';
+      add('Tipo de operação', opv ? esc(opv) + (n.operacaoFonte && n.operacaoFonte.indexOf('OV') === 0 ? ' <span style="color:var(--sd-mut3);font-weight:600;">· pela OV</span>' : '') : '');
+      add('Tipo de venda', esc(tv));
+      add('Status', esc(fStatus(n.status)));
+      add('Cliente', esc([n.conta || (nf && nf.conta), fCnpj(n.cnpj || (cli && cli.cnpj))].filter(Boolean).join(' · ')));
+      if (n.serie) add('Série', esc(n.serie));
+      if (nf) {
+        add('Condição de pagamento', esc(nf.pagamento));
+        add('Condição de entrega', esc([nf.entrega, nf.modoEntrega].filter(Boolean).join(' · ')));
+        add('Pedido do cliente', esc(nf.refCliente));
+        add('Responsável na OV', nf.responsavel ? esc('matrícula ' + nf.responsavel) : '');
+        add('Lançamento contábil', esc(nf.lancamento));
+        if (nf.moeda && nf.moeda !== 'BRL') add('Moeda', esc(nf.moeda));
+        add('Endereço de faturamento', esc(endereco(nf.endereco)), 'largo');
+      }
+      if (n.chave) add('Chave de acesso', esc(n.chave), 'largo');
+      var h = '<h5>Dados da nota</h5>' + (p.length ? dl(p) : '');
+      if (e.st === 'carregando') h += carregandoH('Lendo a nota no Dynamics…');
+      else if (j && !nf) h += nadaH('O diário de faturas não trouxe o cabeçalho desta nota.');
+      if (nf && nf.registros > 1) h += nadaH('Este número tem ' + esc(plural(nf.registros, REG)) + ' no diário de faturas: a ficha mostra o de ' + esc(fDia(nf.data)) + '. Os outros estão em <b>Campos do Dynamics</b>.');
+      return card(h);
+    }
+
+    // o dado CRU (o painel de 09/11/26), recolhido
+    var CHAVES = /^(InvoiceNumber|InvoiceId|InvoiceDate|TotalInvoiceAmount|InvoiceAmount|TotalTaxAmount|TotalDiscountAmount|TotalChargeAmount|SalesOrderNumber|InvoiceCustomerAccountNumber|OrderingCustomerAccountNumber|LineAmount|InvoicedQuantity|SalesPrice|ItemNumber|ProductNumber|ProductName|FiscalDocumentNumber|Direction|TotalAmount|OperationDescription|Status|CurrencyCode)$/i;
     function kv(o) {
       var ks = Object.keys(o || {});
       ks.sort(function (a, b) { return (CHAVES.test(b) - CHAVES.test(a)) || a.localeCompare(b); });
@@ -542,41 +848,47 @@
       }).join('') + '</table>';
     }
     function bloco(titulo, x) {
-      if (!x) return '<h4>' + esc(titulo) + '</h4><div class="sub">não foi possível ler (veja o diagnóstico no fim)</div>';
-      var h = '<h4>' + esc(titulo) + ' · ' + esc(x.entidade) + ' · ' + (x.linhas || []).length + ' registro(s)</h4>';
-      if (!(x.linhas || []).length) return h + '<div class="sub">nenhum registro da MSB com este número</div>';
-      return h + x.linhas.map(function (r, i) { return (x.linhas.length > 1 ? '<div class="sub">registro ' + (i + 1) + '</div>' : '') + kv(r); }).join('');
+      if (!x) return '<h6>' + esc(titulo) + '</h6>' + nadaH('não foi possível ler (veja o diagnóstico no fim)');
+      var h = '<h6>' + esc(titulo) + ' · ' + esc(x.entidade) + ' · ' + esc(plural((x.linhas || []).length, REG)) + '</h6>';
+      if (!(x.linhas || []).length) return h + nadaH('nenhum registro da MSB com este número');
+      return h + x.linhas.map(function (r, i) { return (x.linhas.length > 1 ? '<div class="fd-kv-reg">registro ' + (i + 1) + '</div>' : '') + kv(r); }).join('');
     }
-    async function abrirNota(num) {
-      $('fd-dr-tt').textContent = 'Nota ' + num;
-      $('fd-dr-b').innerHTML = '<div class="sub" style="padding:12px 0;">Lendo o Dynamics…</div>';
-      $('fd-dr').classList.add('on'); $('fd-dr-bg').classList.add('on'); $('fd-dr-x').focus();
-      try {
-        var res = await fetch('/api/faturamento-hoje?nota=' + encodeURIComponent(num), { cache: 'no-store' });
-        var j = null; try { j = await res.json(); } catch (e) {}
-        if (!res.ok || !j || j.ok === false) throw new Error((j && (j.detalhe || j.error)) || ('HTTP ' + res.status));
-        _det = j;
-        var lin = (j.linhasFatura && j.linhasFatura.linhas) || [];
-        var somaLin = lin.reduce(function (s2, r) { return s2 + (Number(r.LineAmount) || 0); }, 0);
-        $('fd-dr-b').innerHTML = (lin.length ? '<div class="fd-msg info" style="margin-top:6px;">Soma das linhas (LineAmount): <b>' + fBRL(somaLin) + '</b></div>' : '')
-          + bloco('Diário de faturas (o que a lista usa)', j.diario)
-          + bloco('Linhas da fatura', j.linhasFatura)
-          + bloco('Documento fiscal', j.fiscal)
-          + '<h4>Diagnóstico</h4><pre style="font-size:11px;white-space:pre-wrap;">' + esc(JSON.stringify({ colunasUsadas: j.colunasUsadas, diagnostico: j.diagnostico }, null, 1)) + '</pre>';
-      } catch (e) {
-        $('fd-dr-b').innerHTML = '<div class="fd-msg erro">Não foi possível ler esta nota no Dynamics: ' + esc(e.message) + '</div>';
+    function secCrus(j) {
+      var op = j.operacao;
+      return '<details class="sd-dw-card sd-dw-mais fd-crus" data-k="crus"><summary><h5>Campos do Dynamics</h5></summary>'
+        + '<div class="fd-crus-bar"><p class="sd-dw-p">Tudo o que o Dynamics devolve para este número na MSB, sem tratamento.</p>'
+        + '<button type="button" class="sd-dw-btn" data-fd-dw="json">Copiar tudo (JSON)</button></div>'
+        + bloco('Diário de faturas (o que a lista usa)', j.diario)
+        + bloco('Linhas da fatura', j.linhasFatura)
+        + bloco('Documento fiscal', j.fiscal)
+        + (op && Object.keys(op.todos || {}).length ? '<h6>Operação da OV · ' + esc(op.ordem) + '</h6>' + kv(op.todos) : '')
+        + '<h6>Diagnóstico</h6><pre>' + esc(JSON.stringify({ colunasUsadas: j.colunasUsadas, diagnostico: j.diagnostico }, null, 1)) + '</pre></details>';
+    }
+
+    // ── eventos ──
+    $('fd-tbody').addEventListener('click', function (e) { var tr = e.target.closest && e.target.closest('tr[data-nota]'); if (tr) abrirNota(tr.getAttribute('data-nota'), tr); });
+    $('fd-dw-ov').addEventListener('click', fecharNota);
+    $('fd-dw').addEventListener('click', function (e) {
+      var b = e.target.closest ? e.target.closest('[data-fd-dw]') : null; if (!b) return;
+      var a = b.getAttribute('data-fd-dw');
+      if (a === 'fechar') fecharNota();
+      else if (a === 'ant') andar(-1);
+      else if (a === 'prox') andar(1);
+      else if (a === 'copiar') copiarNum();
+      else if (a === 'json') copiarJson(b);
+      else if (a === 'tentar' && DW.nota) carregarFicha(DW.nota, true);
+    });
+    document.addEventListener('keydown', function (e) {
+      if (!fichaAberta()) {
+        // Enter/espaço na linha da lista abre a ficha
+        var t0 = e.target;
+        if ((e.key === 'Enter' || e.key === ' ') && t0 && t0.matches && t0.matches('#fd-tbody tr[data-nota]')) { e.preventDefault(); abrirNota(t0.getAttribute('data-nota'), t0); }
+        return;
       }
-    }
-    function fecharNota() { $('fd-dr').classList.remove('on'); $('fd-dr-bg').classList.remove('on'); }
-    $('fd-tbody').addEventListener('click', function (e) { var tr = e.target.closest && e.target.closest('tr[data-nota]'); if (tr) abrirNota(tr.getAttribute('data-nota')); });
-    $('fd-dr-x').addEventListener('click', fecharNota);
-    $('fd-dr-bg').addEventListener('click', fecharNota);
-    document.addEventListener('keydown', function (e) { if (e.key === 'Escape') fecharNota(); });
-    $('fd-dr-copiar').addEventListener('click', async function () {
-      if (!_det) return; var b = this, t = JSON.stringify(_det, null, 1);
-      try { await navigator.clipboard.writeText(t); b.textContent = 'Copiado ✓'; }
-      catch (e) { var ta = document.createElement('textarea'); ta.value = t; document.body.appendChild(ta); ta.select(); try { document.execCommand('copy'); b.textContent = 'Copiado ✓'; } catch (e2) { b.textContent = 'Não copiou'; } ta.remove(); }
-      setTimeout(function () { b.textContent = 'Copiar'; }, 2500);
+      if (e.key === 'Escape') { e.preventDefault(); fecharNota(); return; }
+      if (e.key === 'Tab') { prender(e); return; }
+      var t = e.target, digitando = t && /^(INPUT|SELECT|TEXTAREA)$/.test(t.tagName);
+      if (!digitando && (e.key === 'ArrowLeft' || e.key === 'ArrowRight') && !e.altKey && !e.ctrlKey && !e.metaKey) { e.preventDefault(); andar(e.key === 'ArrowLeft' ? -1 : 1); }
     });
 
     // ── SONDA do tipo de operação (09/11/26) ──

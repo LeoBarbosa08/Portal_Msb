@@ -1831,6 +1831,41 @@ obrigatório".
   sem `dataAreaId`; cache; erros; e a `Transportadora` no JSON do flow.
 - `pedido-inteligente.js?v=42`; `sw.js` — cache `bm-comest-v79`.
 
+### Faturamento do Dia · ficha da nota no molde do Sales Report (12/11/2026)
+
+Pedido do dono: "quero que o modal do faturamento diário seja parecido com o
+do salesreport, com os campos que você tem na entidade: linha da NF, código,
+descrição, preço, tipo de venda…". O painel com os campos crus virou a
+**ficha da nota**, com o MESMO desenho da ficha do Sales Report: a página
+carrega `sr-diario.css` e usa as classes `.sd-dw` (nada copiado).
+
+- **Cabeçalho**: "Nota fiscal · venda/devolução", NF, cliente · conta ·
+  cidade/UF, selos (Venda/Devolução, status, tipo de operação, tipo de venda,
+  OV); ‹ › e as setas do teclado andam pela lista como está na tela; Esc
+  fecha e o foco volta à linha. Rodapé com **Copiar nº** e "lido às · n de N".
+- **Números-chave**: valor da nota (% das vendas — ou das devoluções — do
+  dia), emissão (dia da semana · hoje/ontem) e itens/unidades.
+- **Itens da nota** (`SalesInvoiceLines`): nº, produto, código, unidade,
+  lote, descrição da linha (quando difere do produto), quantidade × preço,
+  desconto e imposto da linha, valor.
+- **Valores da nota**: soma dos itens, descontos, encargos, impostos e total;
+  se a conta não fechar com o total gravado, a ficha diz a diferença.
+- **Dados da nota**: OV, tipo de operação (FiscalDocumentOperationTypeId),
+  **tipo de venda** (`SalesPurchOperationType_BR` da OV), status, conta ·
+  CNPJ, condição de pagamento e de entrega, pedido do cliente, responsável
+  (matrícula), lançamento contábil e endereço de faturamento.
+- Recolhidos: **Campos do Dynamics** (o dado cru de antes — diário, linhas,
+  documento fiscal, operação da OV, diagnóstico — com "Copiar tudo (JSON)") e
+  **Como entra nesta lista**.
+- **API**: `GET /api/faturamento-hoje?nota=…&data=AAAA-MM-DD` — `detalheNota()`
+  em `api/shared/faturamento-dia.js` devolve, além do cru, `nota` (o registro
+  do diário do dia pedido; sem data, o registro 1), `itens`, `operacao` (as
+  colunas de operação da OV, `operacoesDasOvs` do Kanban) e `cliente`. Cada
+  campo por vários nomes (`COLS_CAB`, `COLS_ITEM`); número repetido no diário:
+  ficam só as linhas da data do registro escolhido.
+- Testes: `node scripts/test-faturamento-dia.js` (caso 6b). `sw.js` — cache
+  `bm-comest-v80` (v77–v79 foram de outras sessões no mesmo dia).
+
 ## Como colocar no ar
 
 1. **Repositório no GitHub** — crie um repositório **privado e vazio** (sem

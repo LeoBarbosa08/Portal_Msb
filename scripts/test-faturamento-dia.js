@@ -193,8 +193,45 @@ const CLIENTES = { porConta: true, amostra: { dataAreaId: 'msb', CustomerAccount
     t('nota: número inválido -> 400', res.status === 400, res.status);
     res = await chama(true, { nota: '000021098' });
     t('nota: do Comercial -> 200 com o diário', res.status === 200 && res.body.diario && res.body.diario.linhas.length === 1, res.status);
+    res = await chama(true, { nota: '000021098', data: '06/11/2026' });
+    t('nota: data inválida -> 400', res.status === 400, res.status);
     auth.requireArea = origArea;
   }
+
+  console.log('6b) a ficha da nota: cabeçalho, itens, tipo de venda da OV e cliente (12/11/2026)');
+  FD._limparCache(); require('../api/shared/kanban-ov')._limparCache(); chamadas.length = 0;
+  const cab524 = (o) => Object.assign({ dataAreaId: 'msb', InvoiceNumber: '000021524', InvoiceCustomerAccountNumber: 'C1', SalesOrderNumber: 'OV017550', CurrencyCode: 'BRL',
+    TotalChargeAmount: 0, TotalDiscountAmount: 0, TotalTaxAmount: 0, PaymentTermsName: 'CR 30', DeliveryTermsCode: 'PADRÃO', LedgerVoucher: 'MSB-10013756',
+    SalesOrderResponsiblePersonnelNumber: '00154', InvoiceAddressCity: 'Guarulhos', InvoiceAddressState: 'SP', InvoiceAddressStreet: 'Rua X', InvoiceAddressStreetNumber: '736',
+    InvoiceAddressZipCode: '07020001', InvoiceAddressCountryRegionISOCode: 'BR' }, o);
+  const lin524 = (o) => Object.assign({ dataAreaId: 'msb', InvoiceNumber: '000021524', CurrencyCode: 'BRL', SalesUnitSymbol: 'UN', ItemNumber: '' }, o);
+  CEN = {
+    FiscalDocuments: { amostra: AMOSTRA_FISCAL, linhas: [], porNumero: true },
+    SalesInvoiceHeadersV2: Object.assign(DIARIO([
+      cab524({ InvoiceDate: '2026-11-12T12:00:00Z', TotalInvoiceAmount: 28000 }),
+      cab524({ InvoiceDate: '2026-10-01T12:00:00Z', TotalInvoiceAmount: -999, SalesOrderNumber: 'OV000001' })   // registro repetido mais antigo
+    ]), { porNumero: true }),
+    SalesInvoiceLines: { porNumero: true, linhas: [
+      lin524({ InvoiceDate: '2026-11-12T12:00:00Z', LineCreationSequenceNumber: 2, ProductNumber: '51204', ProductName: 'KIT B', InvoicedQuantity: 50, SalesPrice: 160, LineAmount: 8000, LineTotalDiscountAmount: 0 }),
+      lin524({ InvoiceDate: '2026-11-12T12:00:00Z', LineCreationSequenceNumber: 1, ProductNumber: '51203', ProductName: 'KIT A', LineDescription: 'KIT A 30ML', InvoicedQuantity: 250, SalesPrice: 80, LineAmount: 20000, LineTotalDiscountAmount: 0 }),
+      lin524({ InvoiceDate: '2026-10-01T12:00:00Z', LineCreationSequenceNumber: 1, ProductNumber: '99999', ProductName: 'DO OUTRO REGISTRO', InvoicedQuantity: -1, SalesPrice: 999, LineAmount: -999 })
+    ] },
+    BIOSalesOrderHeaderV1: { amostra: { dataAreaId: 'msb', SalesOrderNumber: 'OV0', FiscalDocumentOperationTypeId: 'S.VEN.006', SalesPurchOperationType_BR: 'VENDA', CreatedDateTime: '2026-11-06T10:00:00Z' },
+      linhas: [{ dataAreaId: 'msb', SalesOrderNumber: 'OV017550', FiscalDocumentOperationTypeId: 'S.VEN.006', SalesPurchOperationType_BR: 'VENDA' }] },
+    CustomersV3: CLIENTES
+  };
+  const f = await FD.detalheNota('000021524', { data: '2026-11-12' });
+  t('cabeçalho do dia pedido (não o registro mais antigo)', f.nota && f.nota.valor === 28000 && f.nota.data === '2026-11-12' && f.nota.ordem === 'OV017550' && f.nota.registros === 2, f.nota);
+  t('cabeçalho limpo: pagamento, entrega, responsável, lançamento, endereço', f.nota.pagamento === 'CR 30' && f.nota.entrega === 'PADRÃO' && f.nota.responsavel === '00154'
+    && f.nota.lancamento === 'MSB-10013756' && f.nota.endereco.cidade === 'Guarulhos' && f.nota.endereco.uf === 'SP' && f.nota.endereco.cep === '07020001', f.nota);
+  t('itens: só os do registro do dia, na ordem da linha', f.itens && f.itens.length === 2 && f.itens[0].codigo === '51203' && f.itens[1].codigo === '51204', f.itens);
+  t('item: código (ItemNumber vazio cede ao ProductNumber), produto, qtd × preço, valor, un', f.itens[0].produto === 'KIT A' && f.itens[0].descricao === 'KIT A 30ML'
+    && f.itens[0].qtd === 250 && f.itens[0].preco === 80 && f.itens[0].valor === 20000 && f.itens[0].un === 'UN' && f.itens[1].descricao === '', f.itens[0]);
+  t('tipo de operação e tipo de venda da OV', f.operacao && f.operacao.valor === 'S.VEN.006' && Object.keys(f.operacao.todos).some(k => /SalesPurchOperationType_BR$/.test(k) && f.operacao.todos[k] === 'VENDA'), f.operacao);
+  t('cliente pelo cadastro', f.cliente && f.cliente.nome === 'HOSPITAL UM' && f.cliente.cnpj === '11', f.cliente);
+  t('o cru continua na resposta', f.diario.linhas.length === 2 && f.linhasFatura.linhas.length === 3, f.diario);
+  const f2 = await FD.detalheNota('000021524');
+  t('sem data: vale o registro 1 (o mais antigo)', f2.nota && f2.nota.valor === -999 && f2.itens.length === 1 && f2.itens[0].codigo === '99999', f2.nota);
 
   console.log('7) número repetido no diário: vale o registro 1 (o caso da 000021098)');
   const orig98 = { dataAreaId: 'msb', InvoiceNumber: '000021098', InvoiceDate: '2026-10-07T12:00:00Z', InvoiceCustomerAccountNumber: 'C006154', TotalInvoiceAmount: 18000, SalesOrderNumber: 'OV017088' };

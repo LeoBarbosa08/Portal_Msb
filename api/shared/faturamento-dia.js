@@ -607,25 +607,148 @@ async function originaisDoDiario(J, token, ate, diag) {
 // mostra o dado CRU: TODAS as linhas da MSB com esse número no diário de
 // faturas (todos os campos), as linhas da fatura e o documento fiscal.
 const ENT_LINHAS_FAT = envLista('FATDIA_ENT_LINHAS', ['SalesInvoiceLines', 'SalesInvoiceV2Lines', 'SalesInvoiceLinesV2']);
-async function detalheNota(numero) {
-  const num = txt(numero);
+
+// ── A FICHA DA NOTA (12/11/2026) ─────────────────────────────────
+// Pedido do dono: "o modal do faturamento diário parecido com o do Sales
+// Report, com os campos da entidade: linha da NF, código, descrição, preço,
+// tipo de venda…". Além do dado cru, detalheNota devolve a nota LIMPA:
+//   nota     — o cabeçalho (o registro do diário: o do dia pedido, senão o
+//              registro 1), com pagamento, entrega, endereço, totais…
+//   itens    — as linhas da fatura (SalesInvoiceLines): código, produto,
+//              quantidade × preço, desconto, imposto, valor
+//   operacao — o tipo de operação e o tipo de venda da OV da nota (as colunas
+//              de operação das entidades de OV, operacoesDasOvs do Kanban)
+//   cliente  — razão social e CNPJ pelo cadastro
+// Cada campo por vários nomes (o que a entidade não tiver fica vazio); o cru
+// segue na resposta para os "Campos do Dynamics" da ficha.
+const COLS_CAB = {
+  desconto:    ['TotalDiscountAmount'],
+  encargos:    ['TotalChargeAmount'],
+  imposto:     ['TotalTaxAmount'],
+  pagamento:   ['PaymentTermsName', 'PaymentTermsCode'],
+  entrega:     ['DeliveryTermsCode', 'DeliveryTerms'],
+  modoEntrega: ['DeliveryModeCode', 'DeliveryMode'],
+  responsavel: ['SalesOrderResponsiblePersonnelNumber', 'SalesResponsiblePersonnelNumber'],
+  lancamento:  ['LedgerVoucher', 'Voucher'],
+  refCliente:  ['CustomersOrderReference', 'CustomerRequisitionNumber', 'CustomerReference'],
+  rua:         ['InvoiceAddressStreet'],
+  numeroEnd:   ['InvoiceAddressStreetNumber'],
+  bairro:      ['InvoiceAddressDistrictName', 'InvoiceAddressDistrict'],
+  cidade:      ['InvoiceAddressCity'],
+  uf:          ['InvoiceAddressState', 'InvoiceAddressStateId'],
+  cep:         ['InvoiceAddressZipCode'],
+  pais:        ['InvoiceAddressCountryRegionISOCode', 'InvoiceAddressCountryRegionId']
+};
+const COLS_ITEM = {
+  linha:     ['LineNumber', 'InvoiceLineNumber', 'LineCreationSequenceNumber'],
+  codigo:    ['ProductNumber', 'ItemNumber', 'ItemId'],
+  produto:   ['ProductName', 'ItemName', 'LineDescription', 'Name'],
+  descricao: ['LineDescription', 'Description'],
+  qtd:       ['InvoicedQuantity', 'Quantity', 'SalesQuantity', 'Qty'],
+  un:        ['SalesUnitSymbol', 'SalesUnit', 'UnitSymbol', 'Unit'],
+  preco:     ['SalesPrice', 'UnitPrice', 'Price'],
+  desconto:  ['LineTotalDiscountAmount', 'LineDiscountAmount', 'DiscountAmount'],
+  descPct:   ['LineDiscountPercentage', 'DiscountPercentage'],
+  imposto:   ['LineTotalTaxAmount', 'LineTaxAmount', 'TaxAmount'],
+  encargos:  ['LineTotalChargesAmount', 'LineTotalChargeAmount', 'ChargeAmount'],
+  valor:     ['LineAmount', 'NetAmount'],
+  lote:      ['ItemBatchNumber', 'InventBatchId', 'BatchNumber', 'BatchId'],
+  ov:        ['SalesOrderNumber', 'SalesId'],
+  data:      ['InvoiceDate']
+};
+// o 1º valor PREENCHIDO entre os nomes (D.pick para no 1º não-nulo, e '' é não-nulo)
+function pega(r, nomes) {
+  const ks = Object.keys(r || {});
+  for (const nome of nomes) {
+    const k = ks.find(x => x.toLowerCase() === nome.toLowerCase());
+    if (k == null) continue;
+    const v = r[k];
+    if (v != null && txt(v) !== '' && !/^1900-01-01/.test(txt(v))) return v;
+  }
+  return null;
+}
+const pegaTxt = (r, nomes) => { const v = pega(r, nomes); return v == null ? '' : txt(v); };
+const pegaNum = (r, nomes) => num(pega(r, nomes));
+
+// o registro do cabeçalho: o do dia pedido (o da lista); senão o registro 1
+// (o 1º pela data — a regra das repetidas)
+function registroDaNota(rows, colData, dia) {
+  if (!rows || !rows.length) return null;
+  const ord = rows.slice().sort((a, b) => String(isoData(a[colData]) || '').localeCompare(String(isoData(b[colData]) || '')));
+  return (dia && ord.find(r => isoData(r[colData]) === dia)) || ord[0];
+}
+function cabecalhoLimpo(r, J, registros) {
+  const C = J.col, p = (k) => pegaTxt(r, COLS_CAB[k]), n = (k) => pegaNum(r, COLS_CAB[k]);
+  return {
+    numero: txt(r[C.numero]), data: isoData(r[C.data]), conta: C.conta ? txt(r[C.conta]) : '',
+    ordem: C.ordem ? txt(r[C.ordem]) : '', moeda: C.moeda ? txt(r[C.moeda]) : '',
+    valor: num(r[C.valor]), desconto: n('desconto'), encargos: n('encargos'), imposto: n('imposto'),
+    pagamento: p('pagamento'), entrega: p('entrega'), modoEntrega: p('modoEntrega'), responsavel: p('responsavel'),
+    lancamento: p('lancamento'), refCliente: p('refCliente'),
+    endereco: { rua: p('rua'), numero: p('numeroEnd'), bairro: p('bairro'), cidade: p('cidade'), uf: p('uf'), cep: p('cep'), pais: p('pais') },
+    registros
+  };
+}
+function itensLimpos(rows) {
+  return (rows || []).map((r, i) => {
+    const p = (k) => pegaTxt(r, COLS_ITEM[k]), n = (k) => pegaNum(r, COLS_ITEM[k]);
+    const produto = p('produto'), descricao = p('descricao');
+    return {
+      linha: n('linha'), ordem: i, codigo: p('codigo'), produto,
+      descricao: descricao && descricao !== produto ? descricao : '',
+      qtd: n('qtd'), un: p('un'), preco: n('preco'), desconto: n('desconto'), descPct: n('descPct'),
+      imposto: n('imposto'), encargos: n('encargos'), valor: n('valor'), lote: p('lote'), ov: p('ov'),
+      data: isoData(pega(r, COLS_ITEM.data))
+    };
+  }).sort((a, b) => ((a.linha == null ? 1e9 : a.linha) - (b.linha == null ? 1e9 : b.linha)) || (a.ordem - b.ordem));
+}
+
+async function detalheNota(numero, opts) {
+  opts = opts || {};
+  const num_ = txt(numero);
+  const dia = /^\d{4}-\d{2}-\d{2}$/.test(String(opts.data || '')) ? String(opts.data) : null;
   const ate = Date.now() + ORCAMENTO;
   const diag = [];
   const token = await D.getToken();
   const so = (r) => { const o = {}; Object.keys(r || {}).forEach(k => { if (k.charAt(0) !== '@') o[k] = r[k]; }); return o; };
   const lerPorNumero = async (ent, col) => {
     try {
-      const rows = await D.odataGetComPrazo(ent, { crossCompany: true, top: 50, filter: "dataAreaId eq '" + D.odataStr(EMPRESA) + "' and " + col + " eq '" + D.odataStr(num) + "'" }, token, prazo(ate, 12000));
+      const rows = await D.odataGetComPrazo(ent, { crossCompany: true, top: 50, filter: "dataAreaId eq '" + D.odataStr(EMPRESA) + "' and " + col + " eq '" + D.odataStr(num_) + "'" }, token, prazo(ate, 12000));
       diag.push({ entidade: ent, coluna: col, linhas: rows.length });
       return { entidade: ent, linhas: rows.map(so) };
     } catch (e) { diag.push({ entidade: ent, coluna: col, erro: String(e.message || e).slice(0, 220) }); return null; }
   };
   const [J, F] = await Promise.all([resolver('diario', token, ate, diag, false), resolver('fiscal', token, ate, diag, false)]);
+  // cabeçalho, linhas e fiscal juntos; a OV e o cliente saem do cabeçalho
+  const linP = (async () => { for (const ent of ENT_LINHAS_FAT) { const l = await lerPorNumero(ent, 'InvoiceNumber'); if (l) return l; } return null; })();
+  const fisP = F ? lerPorNumero(F.entidade, F.col.numero) : Promise.resolve(null);
   const cab = J ? await lerPorNumero(J.entidade, J.col.numero) : null;
-  let lin = null;
-  for (const ent of ENT_LINHAS_FAT) { lin = await lerPorNumero(ent, 'InvoiceNumber'); if (lin) break; }
-  const fis = F ? await lerPorNumero(F.entidade, F.col.numero) : null;
-  return { ok: true, empresa: EMPRESA, numero: num, diario: cab, linhasFatura: lin, fiscal: fis, colunasUsadas: J ? J.col : null, diagnostico: diag };
+  const reg = cab && J ? registroDaNota(cab.linhas, J.col.data, dia) : null;
+  const nota = reg ? cabecalhoLimpo(reg, J, cab.linhas.length) : null;
+  const opP = (async () => {
+    if (!nota || !nota.ordem || Date.now() > ate - 4000) return null;
+    try {
+      const o = await require('./kanban-ov').operacoesDasOvs([nota.ordem], ate);
+      o.diag.forEach(d => diag.push(d));
+      const x = o.porOv[nota.ordem.toUpperCase()];
+      return x ? { ordem: nota.ordem, valor: x.valor || '', coluna: x.coluna || '', todos: x.todos || {} } : { ordem: nota.ordem, valor: '', coluna: '', todos: {} };
+    } catch (e) { diag.push({ etapa: 'ov:operacao', erro: String(e.message || e).slice(0, 200) }); return null; }
+  })();
+  const cliP = (async () => {
+    if (!nota || !nota.conta) return null;
+    try { const c = (await clientes([nota.conta], token, ate, diag))[nota.conta]; return c && c.existe ? { nome: c.nome, cnpj: c.cnpj } : null; }
+    catch (e) { return null; }
+  })();
+  const [lin, fis, operacao, cliente] = await Promise.all([linP, fisP, opP, cliP]);
+  // número repetido no diário: as linhas dos dois registros vêm juntas — ficam
+  // as da data do registro escolhido (quando a linha traz a data)
+  let rowsItens = lin ? lin.linhas : [];
+  if (nota && nota.registros > 1 && nota.data) {
+    const doDia = rowsItens.filter(r => { const d = isoData(pega(r, COLS_ITEM.data)); return !d || d === nota.data; });
+    if (doDia.length) rowsItens = doDia;
+  }
+  return { ok: true, empresa: EMPRESA, numero: num_, nota, itens: lin ? itensLimpos(rowsItens) : null, operacao, cliente,
+    diario: cab, linhasFatura: lin, fiscal: fis, colunasUsadas: J ? J.col : null, diagnostico: diag };
 }
 
 function _limparCache() { _cache.clear(); _cli.clear(); Object.keys(_ent).forEach(k => delete _ent[k]); }

@@ -9,7 +9,8 @@
 //   GET /api/faturamento-hoje?data=2026-11-05 -> outro dia
 //   GET /api/faturamento-hoje?atualizar=1     -> ignora o cache de 1 min
 //   GET /api/faturamento-hoje?diag=1          -> + colunas das entidades
-//   GET /api/faturamento-hoje?nota=000021098  -> o dado CRU dessa nota no D365
+//   GET /api/faturamento-hoje?nota=000021098[&data=AAAA-MM-DD] -> a FICHA da
+//        nota: limpa (nota, itens, operacao, cliente) + o dado CRU do D365
 //        (diário, linhas da fatura, documento fiscal — todos os campos)
 //   GET /api/faturamento-hoje?sondar=1        -> SONDA: qual entidade do D365
 //        traz o tipo de operação das notas de 2026 (api/shared/fatdia-sonda.js)
@@ -51,7 +52,9 @@ module.exports = async function (context, req) {
     if (q.nota) {
       const n = String(q.nota).trim();
       if (!/^[0-9A-Za-z.\-\/]{1,30}$/.test(n)) throw http.badRequest('Número de nota inválido.');
-      json(200, await FD.detalheNota(n)); return;
+      const dn = String(q.data || '').trim();
+      if (dn && !/^\d{4}-\d{2}-\d{2}$/.test(dn)) throw http.badRequest('Data inválida: use AAAA-MM-DD.');
+      json(200, await FD.detalheNota(n, { data: dn })); return;
     }
     const data = String(q.data || '').trim();
     if (data && !/^\d{4}-\d{2}-\d{2}$/.test(data)) throw http.badRequest('Data inválida: use AAAA-MM-DD.');
