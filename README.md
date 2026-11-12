@@ -1551,6 +1551,31 @@ fases". A regra do lote (`partesPorLinhas`) está **LIGADA por padrão** de novo
 - Testes (1, 7c): Pendência com regra; `=0` desliga; sem env, ligada.
   `sw.js` — cache `bm-comest-v74`.
 
+### Kanban · as linhas da carga e o QtyLeftToLoad de outras entidades (12/11/2026)
+
+O dono: "não trouxe as linhas da carga (ItemId, Qty) nem o QtyLeftToLoad, que é
+das linhas da OV — e esse item com 5 restantes não está em Pendência". A entidade
+de cargas lida (`WHSLoadTableBiEntities`) e as linhas de OV padrão
+(`SalesOrderLines`) não têm esses campos.
+
+- **Linhas da carga** (`linhasDasCargas`, `CFG_CARGA_LINHA`): quando a entidade de
+  cargas não traz os itens, a entidade própria de linhas de carga — candidatas
+  (`BioWHSLoadLineV1`…, `WHSLoadLineBiEntity`…, `LoadLines`) + "loadline" no
+  service document (`KANBAN_ENT_CARGA_LINHA`) —, com `LoadId`, `ItemId`, `Qty` (e
+  `OrderNum`, `InventTransId`), lidas pelas cargas das OVs.
+- **QtyLeftToLoad** (`faltaDasLinhas`, `CFG_LINHA_FALTA`): quando as linhas de OV
+  lidas não têm a coluna, as linhas de OV da Bio (`BioSalesOrderLinesV1`…) e as
+  padrão + "salesorderline"/"salesline" no service document
+  (`KANBAN_ENT_LINHA_FALTA`), com o nº da OV e o `QtyLeftToLoad` (ou "left to
+  load" no nome) — só das OVs com trabalho (onde a liberação começou). O valor
+  entra em cada linha da OV pelo id da transação, pelo nº da linha ou pelo item.
+- Sem nenhuma delas: aviso no topo, com o motivo (as entidades testadas também
+  ficam no "Diagnóstico da leitura no Dynamics": `cargalinha:*`, `linhafalta:*`,
+  `carga:linhas:fonte`, `linhas:falta:fonte`, `linhas:colunas`).
+- Testes (7h): o QtyLeftToLoad da `BioSalesOrderLinesV1` (5 restantes → Pendência)
+  e as linhas da `BioWHSLoadLineV1` (Cotação); sem as duas, os avisos. `sw.js` —
+  cache `bm-comest-v93`.
+
 ### Kanban · a OV em partes por QUANTIDADE: trabalho, carga e o que falta carregar (12/11/2026)
 
 O dono: "preciso ter essa visão (Neste cartão / Nos outros cartões) a nível de

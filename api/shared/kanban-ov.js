@@ -540,6 +540,65 @@ const COL_CAIXA = {
   largura:     ['Width'],
   altura:      ['Height']
 };
+// ── AS LINHAS DA CARGA E O QtyLeftToLoad, ONDE ESTIVEREM (12/11/2026) ──
+// Dono: "não trouxe as linhas da carga (ItemId, Qty) nem o QtyLeftToLoad, que é das
+// linhas da OV — e esse item com 5 restantes não está em Pendência". A entidade de
+// cargas lida (WHSLoadTableBiEntities) e as linhas de OV padrão (SalesOrderLines)
+// não têm esses campos: o portal procura nas outras entidades publicadas.
+//   • linhas da carga: candidatas + "loadline" no service document (env
+//     KANBAN_ENT_CARGA_LINHA), com LoadId, ItemId e Qty;
+//   • QtyLeftToLoad: as linhas de OV da Bio e as padrão + "salesorderline" /
+//     "salesline" no service document (env KANBAN_ENT_LINHA_FALTA), com o nº da OV e
+//     a coluna QtyLeftToLoad (ou "left to load" no nome).
+const ENT_CARGA_LINHA = envLista('KANBAN_ENT_CARGA_LINHA', []).concat([
+  'BioWHSLoadLineV1', 'BioWHSLoadLinesV1', 'BioWHSLoadLineV1Entity', 'BioWHSLoadLineV1Entities',
+  'WHSLoadLineBiEntities', 'WHSLoadLineBiEntity', 'WHSLoadLinesBi', 'LoadLines', 'WHSLoadLines', 'OutboundLoadLines', 'WHSOutboundLoadLineEntities'
+]).filter((v, i, a) => a.indexOf(v) === i);
+const CFG_CARGA_LINHA = {
+  chave: 'cargalinha', candidatas: ENT_CARGA_LINHA, reNome: /loadline/i, pedaco: 'loadline',
+  cols: { carga: ['LoadId'], item: ['ItemId', 'ItemNumber'], qtd: envLista('KANBAN_COL_CARGA_QTD', ['Qty', 'Quantity', 'LoadLineQty']),
+    ov: ['OrderNum', 'SalesId', 'OrderNumber'], tid: ['InventTransId'] },
+  obrig: ['carga', 'item', 'qtd'], erroCol: (p) => 'sem a coluna ' + ({ carga: 'LoadId', item: 'ItemId', qtd: 'Qty' }[p] || p)
+};
+const ENT_LINHA_FALTA = envLista('KANBAN_ENT_LINHA_FALTA', []).concat([
+  'BioSalesOrderLinesV1', 'BioSalesOrderLineV1', 'BIOSalesOrderLinesV1', 'BIOSalesOrderLineV1', 'BioSalesLinesV1', 'BioSalesLineV1',
+  'SalesOrderLinesV3', 'SalesOrderLinesV2', 'SalesOrderLines'
+]).filter((v, i, a) => a.indexOf(v) === i);
+const CFG_LINHA_FALTA = {
+  chave: 'linhafalta', candidatas: ENT_LINHA_FALTA, reNome: /bio\w*sales\w*line|salesorderline|salesline/i, pedaco: 'salesorderline',
+  cols: { numero: ['SalesOrderNumber', 'SalesId', 'OrderNumber'], falta: envLista('KANBAN_COL_LINHA_FALTA', ['QtyLeftToLoad', 'QuantityLeftToLoad', 'RemainingQuantityToLoad']),
+    tid: ['InventoryLotId', 'InventTransId'], linha: ['LineNumber', 'LineNum'], item: ['ItemNumber', 'ItemId'] },
+  reCols: { falta: /left_?to_?load/i },
+  obrig: ['numero', 'falta'], erroCol: (p) => p === 'falta' ? 'sem o QtyLeftToLoad' : 'sem o nº da OV'
+};
+// as linhas das cargas pela entidade própria: LoadId -> [{ carga, item, qtd, ov, tid }]
+async function linhasDasCargas(ids, token, ate, diag) {
+  const x = await entidadeExtra(CFG_CARGA_LINHA, token, ate, diag), E = x.E;
+  if (!E) return { E: null, por: {}, erro: x.motivo || 'nenhuma entidade de linhas de carga respondeu' };
+  const rows = ids.length ? await porNumeros(E.entidade, E.carga, ids, token, ate, diag, 'carga:linhas', null, !E.temEmpresa) : [];
+  const por = {};
+  rows.forEach(r => {
+    const id = txt(r[E.carga]).toUpperCase(); if (!id) return;
+    (por[id] = por[id] || []).push({ carga: txt(r[E.carga]), item: txt(r[E.item]).toUpperCase(), qtd: num(r[E.qtd]),
+      ov: E.ov ? chaveOv(r[E.ov]) : '', tid: E.tid ? txt(r[E.tid]).toUpperCase() : '' });
+  });
+  return { E, por };
+}
+// o QtyLeftToLoad das linhas das OVs, de outra entidade: OV -> [{ tid, linha, item, falta }]
+async function faltaDasLinhas(numeros, token, ate, diag) {
+  const x = await entidadeExtra(CFG_LINHA_FALTA, token, ate, diag), E = x.E;
+  if (!E) return { E: null, por: {}, erro: x.motivo || 'nenhuma entidade de linhas de OV com o QtyLeftToLoad' };
+  const sel = [E.numero, E.falta, E.tid, E.linha, E.item].filter(Boolean).join(',');
+  const rows = numeros.length ? await porNumeros(E.entidade, E.numero, numeros, token, ate, diag, 'linhas:falta', sel, !E.temEmpresa) : [];
+  const por = {};
+  rows.forEach(r => {
+    const k = chaveOv(r[E.numero]); if (!k) return;
+    (por[k] = por[k] || []).push({ tid: E.tid ? txt(r[E.tid]).toUpperCase() : '', linha: E.linha ? num(r[E.linha]) : null,
+      item: E.item ? txt(r[E.item]).toUpperCase() : '', falta: num(r[E.falta]) });
+  });
+  return { E, por };
+}
+
 const CFG_CAIXA = {
   chave: 'caixa', candidatas: ENT_CAIXA, reNome: /whscontainer/i, pedaco: 'whscontainer',
   cols: COL_CAIXA, obrig: ['id', 'carga'], erroCol: (p) => 'sem a coluna ' + COL_CAIXA[p].join('/')
@@ -1244,6 +1303,7 @@ async function linhas(numeros, token, ate, diag) {
   for (const ent of alvos) {
     try {
       const C = await colunasLinhas(ent, token, ate);
+      if (C.amostra && !diag.some(d => d.etapa === 'linhas:colunas')) diag.push({ etapa: 'linhas:colunas', entidade: ent, falta: C.falta || null, tid: C.tid || null });
       const sel = ['SalesOrderNumber', 'LineAmount', 'dataAreaId'].concat([C.lote, C.linha, C.item, C.qtd, C.status, C.tid, C.falta].filter(Boolean));
       const rows = await porNumeros(ent, 'SalesOrderNumber', numeros, token, ate, diag, 'ov:linhas', Array.from(new Set(sel)).join(','));
       _entLinhas = ent;
@@ -1636,7 +1696,37 @@ async function montar(opts, modo) {
   });
   // 12/11/26: o contexto da divisão por QUANTIDADE (trabalho -> carga -> o que falta
   // carregar) e as linhas do trabalho / da carga de cada OV, para a ficha
-  const colFalta = _colsLinhas && _colsLinhas.falta;
+  // 12/11/26 ("não trouxe as linhas da carga nem o QtyLeftToLoad"): o que a leitura
+  // de sempre não trouxe vem das entidades próprias — as linhas das cargas das OVs
+  // e o QtyLeftToLoad das OVs com trabalho (onde a liberação já começou)
+  const idsCargaOv = Array.from(new Set([].concat.apply([], todas.map(o => (o.trabalhos || []).map(w => w.carga))).filter(Boolean).map(x => String(x).toUpperCase())));
+  const semLinhasCarga = idsCargaOv.length && !Object.keys(CARGA.linhas || {}).length;
+  const comTrab = todas.filter(o => (o.trabalhos || []).some(w => w.fase !== 'ignora') && ((porLinha[o.numero] || {}).linhas || []).length).map(o => o.numero);
+  const semFalta = !(_colsLinhas && _colsLinhas.falta) && comTrab.length;
+  const [LC, FL] = await Promise.all([
+    semLinhasCarga && restante(ate) > 6000 ? linhasDasCargas(idsCargaOv, token, ate, diag).catch(e => ({ E: null, por: {}, erro: String(e.message || e).slice(0, 160) })) : Promise.resolve(null),
+    semFalta && restante(ate) > 6000 ? faltaDasLinhas(comTrab, token, ate, diag).catch(e => ({ E: null, por: {}, erro: String(e.message || e).slice(0, 160) })) : Promise.resolve(null)
+  ]);
+  if (LC) {
+    diag.push({ etapa: 'carga:linhas:fonte', entidade: LC.E ? LC.E.entidade : null, cargas: Object.keys(LC.por).length, erro: LC.erro || null, colunas: LC.E ? LC.E.colunas : undefined });
+    if (LC.E) CARGA.linhas = LC.por;
+    else if (modo.quadro) avisos.push('Não achei as linhas das cargas (ItemId e Qty) — nem na ' + (CARGA.E ? CARGA.E.entidade : 'entidade de cargas') + ' nem numa entidade de linhas de carga (' + LC.erro + '): a divisão por carga não acontece. Fixe o nome em KANBAN_ENT_CARGA_LINHA.');
+  }
+  if (FL) {
+    diag.push({ etapa: 'linhas:falta:fonte', entidade: FL.E ? FL.E.entidade : null, ovs: Object.keys(FL.por).length, erro: FL.erro || null, coluna: FL.E ? FL.E.falta : null });
+    if (FL.E) {
+      // junta o QtyLeftToLoad em cada linha da OV: pelo id da transação, pelo nº da linha ou pelo item
+      Object.keys(FL.por).forEach(k => {
+        const fs = FL.por[k], ls = (porLinha[k] || {}).linhas || [];
+        ls.forEach(l => {
+          const f = (l.tid && fs.find(x => x.tid && x.tid === l.tid)) || (l.linha != null && fs.find(x => x.linha === l.linha))
+            || (l.item && fs.find(x => x.item && x.item === String(l.item).toUpperCase()));
+          if (f && f.falta != null) l.falta = f.falta;
+        });
+      });
+    } else if (modo.quadro) avisos.push('Não achei o QtyLeftToLoad nas linhas da OV (' + FL.erro + '): a Pendência por quantidade (o que falta carregar) não acontece. Fixe a entidade em KANBAN_ENT_LINHA_FALTA.');
+  }
+  const colFalta = (_colsLinhas && _colsLinhas.falta) || (FL && FL.E ? FL.E.falta : null);
   const temQtdTrab = !!(LT.E && !LT.erro && LT.E.qtd);
   todas.forEach(o => {
     const lt = LT.E && !LT.erro && precisa.has(o.numero) ? (LT.por[o.numero] || []) : null;

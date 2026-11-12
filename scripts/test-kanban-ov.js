@@ -927,6 +927,39 @@ const bio = (n, st, lib) => ({ dataAreaId: 'msb', SalesOrderNumber: n, StatusPed
   t('parcialmente liberada sem trabalho/carga lidos: os 3 que faltam em Pendência, os 5 liberados na fase da OV', /pendencia:\{"1":3\}/.test(n7('OV018704')) && /criada:\{"1":5\}|liberado:\{"1":5\}/.test(n7('OV018704')), n7('OV018704'));
   CEN = guarda7g; SERVICO = serv7g;
 
+  console.log('7h) 12/11/26 as linhas da carga e o QtyLeftToLoad em OUTRAS entidades (a de cargas e a de linhas padrão não têm)');
+  K._limparCache(); chamadas.length = 0;
+  const guarda7h = CEN, serv7h = SERVICO;
+  SERVICO = ['BIOSalesOrderHeaderV1', 'SalesOrderHeadersV2', 'SalesOrderLines', 'BioSalesOrderLinesV1', 'WHSWorkTableBiEntities', 'WHSLoadTableBiEntities', 'BioWHSLoadLineV1', 'BioWHSWorkLineV1'];
+  const ln7h = (n, item, qtd, valor, tid) => ({ dataAreaId: 'msb', SalesOrderNumber: 'OV018801', LineNumber: n, ItemNumber: item, OrderedSalesQuantity: qtd, LineAmount: valor,
+    InventoryLotId: tid, ItemBatchNumber: '', SalesOrderLineStatus: 'Backorder' });
+  CEN = {
+    SalesOrderHeadersV2: { linhas: [v2('OV018801', DIA + 'T10:00:00Z', 'Backorder')] },
+    BIOSalesOrderHeaderV1: { linhas: [b4('OV018801', 'Backorder', 'PartialReleased', 'No')] },
+    // as linhas padrão SEM o QtyLeftToLoad
+    SalesOrderLines: { linhas: [ln7h(1, '73339', 10, 1000, 'T1'), ln7h(2, '73344', 3, 300, 'T2')] },
+    // o QtyLeftToLoad na linha de OV da Bio (pelo nº da linha)
+    BioSalesOrderLinesV1: { linhas: [{ dataAreaId: 'msb', SalesOrderNumber: 'OV018801', LineNumber: 1, ItemNumber: '73339', QtyLeftToLoad: 5 }, { dataAreaId: 'msb', SalesOrderNumber: 'OV018801', LineNumber: 2, ItemNumber: '73344', QtyLeftToLoad: 0 }] },
+    WHSWorkTableBiEntities: { linhas: [w('OV018801', 'W81', 'Closed', { LoadId: 'LD-81' })] },
+    BioWHSWorkLineV1: { linhas: [{ dataAreaId: 'msb', WorkId: 'W81', LineNum: 1, OrderNum: 'OV018801', ItemId: '73339', QtyWork: 5, InventTransId: 'T1', WorkType: 'Pick', FreghtType_InoveProjects: 'Blank' }] },
+    // a de cargas SEM os itens; as linhas da carga na entidade própria
+    WHSLoadTableBiEntities: { linhas: [{ dataAreaId: 'msb', LoadId: 'LD-81', LoadStatus: 'Loaded', QuotationPerformed_InoveProjects: 'Yes', ENVIARPALLET_CUSTOM: 'No' }] },
+    BioWHSLoadLineV1: { linhas: [{ dataAreaId: 'msb', LoadId: 'LD-81', ItemId: '73339', Qty: 5, OrderNum: 'OV018801', InventTransId: 'T1' }, { dataAreaId: 'msb', LoadId: 'LD-81', ItemId: '73344', Qty: 3, OrderNum: 'OV018801', InventTransId: 'T2' }] }
+  };
+  r = await K.quadro({});
+  const g7h = {}; r.ovs.forEach(o => { g7h[o.chave] = o; });
+  t('o QtyLeftToLoad vem da BioSalesOrderLinesV1: os 5 restantes do 73339 em Pendência', g7h['OV018801~pendencia'] && g7h['OV018801~pendencia'].parte.qtds[1] === 5 && g7h['OV018801~pendencia'].valor === 500, Object.keys(g7h));
+  t('as linhas da carga vêm da BioWHSLoadLineV1: 5 do 73339 (trabalho) + 3 do 73344 (só carga) em Cotação', g7h['OV018801~cotacao'] && g7h['OV018801~cotacao'].parte.qtds[1] === 5 && g7h['OV018801~cotacao'].parte.qtds[2] === 3
+    && g7h['OV018801~cotacao'].linhasCarga.length === 2, g7h['OV018801~cotacao'] && g7h['OV018801~cotacao'].parte);
+  const d7h = r.diagnostico.find(d => d.etapa === 'linhas:falta:fonte'), d7h2 = r.diagnostico.find(d => d.etapa === 'carga:linhas:fonte');
+  t('o diagnóstico diz de onde vieram (BioSalesOrderLinesV1 · QtyLeftToLoad; BioWHSLoadLineV1)', d7h && d7h.entidade === 'BioSalesOrderLinesV1' && d7h.coluna === 'QtyLeftToLoad' && d7h2 && d7h2.entidade === 'BioWHSLoadLineV1', [d7h, d7h2]);
+  t('sem avisos de falta (achou as duas)', !r.avisos.some(a => /QtyLeftToLoad|linhas das cargas/.test(a)), r.avisos);
+  // sem nenhuma das duas: os avisos
+  K._limparCache(); SERVICO = SERVICO.filter(n => !/^Bio(SalesOrderLinesV1|WHSLoadLineV1)$/.test(n));
+  r = await K.quadro({});
+  t('sem as entidades: aviso do QtyLeftToLoad e das linhas da carga', r.avisos.some(a => /Não achei o QtyLeftToLoad/.test(a)) && r.avisos.some(a => /Não achei as linhas das cargas/.test(a)), r.avisos);
+  CEN = guarda7h; SERVICO = serv7h;
+
   console.log('8) as regras do dono pela carga e pela nota (Separação … Expedição)');
   K._limparCache(); chamadas.length = 0;
   SERVICO = ['BIOSalesOrderHeaderV1', 'SalesOrderHeadersV2', 'SalesOrderLines', 'WHSWorkTableBiEntities', 'WHSOutboundLoadHeaderEntities', 'SalesInvoiceHeadersV2', 'FiscalDocuments'];
