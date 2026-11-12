@@ -1571,7 +1571,11 @@ está na carga, "divide por quantidade".
   quantidade): trabalho Abrir → Separação; em processo/fechado → a fase da carga
   do trabalho; 2) o que está na carga e ainda sem trabalho → a fase da carga (carga
   sem fase = liberada → Separação); 3) o que falta carregar (`QtyLeftToLoad`) →
-  **Pendência** (com crédito ativo, Crédito); 4) o resto → a fase da OV. As porções
+  **Pendência** (com crédito ativo, Crédito) — **só quando a liberação da OV já
+  começou** (alguma parte em trabalho/carga, ou a OV liberada / parcialmente
+  liberada): o dono, "meu medo é tudo ir para Pendência e não para Criada" — a OV
+  que ninguém liberou tem o `QtyLeftToLoad` igual à quantidade toda e fica em
+  **Criada** (com crédito, Crédito); 4) o resto → a fase da OV. As porções
   da mesma fase viram um cartão (`OV~fase`) com a quantidade de cada linha
   (`parte.qtds`), o valor (quantidade × preço), e só os trabalhos/cargas dele;
   `trabalhosOv`/`cargasOv` guardam todos. Linha entregue/faturada: inteira, pelo
@@ -1585,8 +1589,10 @@ está na carga, "divide por quantidade".
 - Testes (7g): 10 de A (6 no trabalho fechado com a carga Carregado, 4 faltando
   carregar), 5 de B no trabalho aberto, 3 de C na carga sem trabalho → Cotação (A 6
   + C 3 = R$ 900), Pendência (A 4 = R$ 400) e Separação (B 5 = R$ 250), somando a
-  OV; o Put não conta em dobro; tudo na mesma carga → um cartão só. `sw.js` —
-  cache `bm-comest-v92`.
+  OV; o Put não conta em dobro; tudo na mesma carga → um cartão só; a OV não
+  liberada (`QtyLeftToLoad` = tudo) fica inteira em Criada (com crédito, Crédito);
+  a parcialmente liberada manda só o que falta para a Pendência. `sw.js` — cache
+  `bm-comest-v92`.
 
 ### Kanban · liberação parcial por linha + o frete FOB no e-mail da Cotação (12/11/2026)
 

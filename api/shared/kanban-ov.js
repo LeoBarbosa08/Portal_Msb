@@ -845,7 +845,11 @@ function partesPorLinhas(o, ls, lida, comLote, comStatus) {
 //      Abrir -> Separação; em processo/fechado -> a fase da carga do trabalho;
 //   2) o que está nas linhas da CARGA (Qty) e ainda sem trabalho -> a fase da carga
 //      (carga sem fase ainda = liberada -> Separação);
-//   3) o que FALTA carregar (QtyLeftToLoad > 0) -> Pendência (com crédito: Crédito);
+//   3) o que FALTA carregar (QtyLeftToLoad > 0) -> Pendência (com crédito: Crédito)
+//      — SÓ quando a liberação da OV já começou (alguma parte em trabalho/carga, ou
+//      a OV liberada / parcialmente liberada). 12/11/26 (dono: "meu medo é tudo ir
+//      para Pendência e não para Criada"): a OV que ninguém liberou tem o
+//      QtyLeftToLoad igual à quantidade toda — ela fica em CRIADA (passo 4);
 //   4) o resto -> a fase da OV (a regra de antes).
 // As porções com a mesma fase viram UM cartão (chave OV~fase), com a quantidade, o
 // valor (quantidade x preço da linha), os trabalhos e as cargas só delas. A linha
@@ -862,7 +866,7 @@ function partesPorQuantidade(o, ls, Q, cargaPor, comStatus) {
   const chaveL = (l) => String(l.tid || l.item || l.linha);
   // o que cada trabalho / carga já deu (o mesmo item em mais de uma linha da OV)
   const usadoTrab = new Map(), usadoCarga = new Map();
-  const porcoes = [];
+  const porcoes = [], restos = [];
   vivas.forEach(l => {
     const s2 = st(l), q0 = Number(l.qtd) || 0, unit = q0 ? (Number(l.valor) || 0) / q0 : 0;
     const add = (qtd, etapa, extra) => { if (qtd > 0) porcoes.push(Object.assign({ l, qtd, etapa, valor: qtd * unit }, extra || {})); };
@@ -895,9 +899,17 @@ function partesPorQuantidade(o, ls, Q, cargaPor, comStatus) {
       const e = !f || f === 'outro' ? (marcadoV(c.cr) ? 'credito' : 'liberado') : etapaDe(c.sa, c.re, c.cr, 'nenhum', c.nota, f, s2);
       add(q, e, { carga: cargaPor[k] ? cargaPor[k].carga.id : k }); resto -= q;
     });
-    // 3) o que falta carregar (QtyLeftToLoad) -> Pendência
-    if (Q.temFalta && Number(l.falta) > 0) { const q = Math.min(Number(l.falta), resto); add(q, marcadoV(c.cr) ? 'credito' : 'pendencia', { falta: true }); resto -= q; }
-    // 4) o resto: a fase da OV (a regra de antes)
+    if (resto > 0) restos.push({ l, s2, resto, add });
+  });
+  // a liberação da OV já começou? (alguma parte em trabalho/carga, ou a OV liberada /
+  // parcialmente liberada) — sem isso, nada vai para a Pendência pelo QtyLeftToLoad
+  const re = normV(c.re).replace(/ /g, '');
+  const liberou = porcoes.some(p => p.trabalho || p.carga) || liberadoV(c.re) || /partial|parcial/.test(re);
+  restos.forEach(({ l, s2, add }) => {
+    let resto = restos.find(x => x.l === l).resto;
+    // 3) o que falta carregar (QtyLeftToLoad), com a liberação já começada -> Pendência
+    if (Q.temFalta && liberou && Number(l.falta) > 0) { const q = Math.min(Number(l.falta), resto); add(q, marcadoV(c.cr) ? 'credito' : 'pendencia', { falta: true }); resto -= q; }
+    // 4) o resto: a fase da OV (a regra de antes; o lote só sem o QtyLeftToLoad)
     if (resto > 0) {
       let e = etapaDe(c.sa, c.re, c.cr, c.trab, c.nota, c.carga, s2);
       if (e === 'criada' && !Q.temFalta && !l.lote && pendenciaPorLote()) e = 'pendencia';

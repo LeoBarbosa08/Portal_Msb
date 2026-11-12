@@ -913,6 +913,18 @@ const bio = (n, st, lib) => ({ dataAreaId: 'msb', SalesOrderNumber: n, StatusPed
   r = await K.quadro({});
   const u7 = r.ovs.filter(o => o.numero === 'OV018701');
   t('tudo na mesma carga Carregado: um cartão só, em Cotação, inteiro', u7.length === 1 && u7[0].etapa === 'cotacao' && !u7[0].parte && u7[0].chave === 'OV018701', u7.map(o => o.chave + '=' + o.etapa));
+  // 12/11/26 (dono: "meu medo é tudo ir para Pendência e não para Criada"): a OV que ninguém
+  // liberou tem o QtyLeftToLoad = a quantidade toda — fica em CRIADA (com crédito, Crédito)
+  K._limparCache();
+  CEN.SalesOrderHeadersV2.linhas.push(v2('OV018702', DIA + 'T11:00:00Z', 'Backorder'), v2('OV018703', DIA + 'T12:00:00Z', 'Backorder'), v2('OV018704', DIA + 'T13:00:00Z', 'Backorder'));
+  CEN.BIOSalesOrderHeaderV1.linhas.push(b4('OV018702', 'Backorder', 'Open', 'No'), b4('OV018703', 'Backorder', 'Open', 'Yes'), b4('OV018704', 'Backorder', 'PartialReleased', 'No'));
+  ['OV018702', 'OV018703', 'OV018704'].forEach(n => CEN.SalesOrderLines.linhas.push({ dataAreaId: 'msb', SalesOrderNumber: n, LineNumber: 1, ItemNumber: 'Z', OrderedSalesQuantity: 8, LineAmount: 800,
+    QtyLeftToLoad: n === 'OV018704' ? 3 : 8, InventoryLotId: 'TZ-' + n, ItemBatchNumber: '', SalesOrderLineStatus: 'Backorder' }));
+  r = await K.quadro({});
+  const n7 = (n) => r.ovs.filter(o => o.numero === n).map(o => o.etapa + (o.parte && o.parte.qtds ? ':' + JSON.stringify(o.parte.qtds) : '')).join();
+  t('não liberada, nada carregado (QtyLeftToLoad = tudo): CRIADA, inteira — não Pendência', n7('OV018702') === 'criada', n7('OV018702'));
+  t('não liberada e com crédito ativo: Crédito, inteira', n7('OV018703') === 'credito', n7('OV018703'));
+  t('parcialmente liberada sem trabalho/carga lidos: os 3 que faltam em Pendência, os 5 liberados na fase da OV', /pendencia:\{"1":3\}/.test(n7('OV018704')) && /criada:\{"1":5\}|liberado:\{"1":5\}/.test(n7('OV018704')), n7('OV018704'));
   CEN = guarda7g; SERVICO = serv7g;
 
   console.log('8) as regras do dono pela carga e pela nota (Separação … Expedição)');
