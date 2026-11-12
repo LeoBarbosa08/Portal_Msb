@@ -1703,12 +1703,41 @@ async function montar(opts, modo) {
   const semLinhasCarga = idsCargaOv.length && !Object.keys(CARGA.linhas || {}).length;
   const comTrab = todas.filter(o => (o.trabalhos || []).some(w => w.fase !== 'ignora') && ((porLinha[o.numero] || {}).linhas || []).length).map(o => o.numero);
   const semFalta = !(_colsLinhas && _colsLinhas.falta) && comTrab.length;
+  // 12/11/26 (dono: "a WHSLoadTableBiEntity não tem?"): 1º a(s) entidade(s) de CARGAS
+  // que têm ItemId e Qty (a BI) — mesmo quando a carga foi achada primeiro na outra
+  // (a de cabeçalho, sem itens); só sem nenhuma, a entidade própria de linhas de carga
+  const linhasNaDeCargas = async () => {
+    const tentou = [];
+    for (const L of (CARGA.lista || []).filter(L => L.linhaItem && L.linhaQtd)) {
+      if (restante(ate) < 6000) break;
+      try {
+        const rows = await porNumeros(L.entidade, L.numero, idsCargaOv, token, ate, diag, 'carga:itens', null, !L.temEmpresa);
+        const por = {};
+        rows.forEach(r => {
+          const id = txt(r[L.numero]).toUpperCase(); if (!id) return;
+          (por[id] = por[id] || []).push({ carga: txt(r[L.numero]), item: txt(r[L.linhaItem]).toUpperCase(), qtd: num(r[L.linhaQtd]),
+            ov: L.linhaOv ? chaveOv(r[L.linhaOv]) : '', tid: L.linhaTid ? txt(r[L.linhaTid]).toUpperCase() : '' });
+        });
+        if (Object.keys(por).length) return { E: { entidade: L.entidade, item: L.linhaItem, qtd: L.linhaQtd, ov: L.linhaOv }, por };
+        tentou.push(L.entidade + ': sem itens nessas cargas');
+      } catch (e) { tentou.push(L.entidade + ': ' + String(e.message || e).slice(0, 100)); }
+    }
+    const semCols = (CARGA.lista || []).filter(L => !(L.linhaItem && L.linhaQtd)).map(L => L.entidade + ': sem ItemId/Qty');
+    const LC2 = await linhasDasCargas(idsCargaOv, token, ate, diag).catch(e => ({ E: null, por: {}, erro: String(e.message || e).slice(0, 160) }));
+    if (!LC2.E) LC2.erro = tentou.concat(semCols, [LC2.erro]).filter(Boolean).join(' · ');
+    return LC2;
+  };
   const [LC, FL] = await Promise.all([
-    semLinhasCarga && restante(ate) > 6000 ? linhasDasCargas(idsCargaOv, token, ate, diag).catch(e => ({ E: null, por: {}, erro: String(e.message || e).slice(0, 160) })) : Promise.resolve(null),
+    semLinhasCarga && restante(ate) > 6000 ? linhasNaDeCargas().catch(e => ({ E: null, por: {}, erro: String(e.message || e).slice(0, 160) })) : Promise.resolve(null),
     semFalta && restante(ate) > 6000 ? faltaDasLinhas(comTrab, token, ate, diag).catch(e => ({ E: null, por: {}, erro: String(e.message || e).slice(0, 160) })) : Promise.resolve(null)
   ]);
+  // de onde vieram os itens das cargas (a ficha mostra, na seção Carga)
+  let fonteItensCarga = Object.keys(CARGA.linhas || {}).length
+    ? (() => { const L = (CARGA.lista || []).find(x => x.linhaItem && x.linhaQtd) || CARGA.E || {}; return { entidade: L.entidade || null, item: L.linhaItem || null, qtd: L.linhaQtd || null, cargas: Object.keys(CARGA.linhas).length }; })()
+    : null;
   if (LC) {
     diag.push({ etapa: 'carga:linhas:fonte', entidade: LC.E ? LC.E.entidade : null, cargas: Object.keys(LC.por).length, erro: LC.erro || null, colunas: LC.E ? LC.E.colunas : undefined });
+    fonteItensCarga = LC.E ? { entidade: LC.E.entidade, item: LC.E.item || null, qtd: LC.E.qtd || null, cargas: Object.keys(LC.por).length } : { entidade: null, erro: LC.erro || 'não achei' };
     if (LC.E) CARGA.linhas = LC.por;
     else if (modo.quadro) avisos.push('Não achei as linhas das cargas (ItemId e Qty) — nem na ' + (CARGA.E ? CARGA.E.entidade : 'entidade de cargas') + ' nem numa entidade de linhas de carga (' + LC.erro + '): a divisão por carga não acontece. Fixe o nome em KANBAN_ENT_CARGA_LINHA.');
   }
@@ -1731,7 +1760,10 @@ async function montar(opts, modo) {
   todas.forEach(o => {
     const lt = LT.E && !LT.erro && precisa.has(o.numero) ? (LT.por[o.numero] || []) : null;
     const idsCg = Array.from(new Set((o.trabalhos || []).map(w => w.carga).filter(Boolean).map(x => String(x).toUpperCase())));
-    const ll = [].concat.apply([], idsCg.map(id => (CARGA.linhas || {})[id] || [])).filter(x => !x.ov || x.ov === o.numero);
+    const llTodas = [].concat.apply([], idsCg.map(id => (CARGA.linhas || {})[id] || []));
+    // pela OV (OrderNum); se o nº não casar com nenhuma (outro formato), todas as das
+    // cargas dela — o casamento com a linha da OV é pelo id da transação ou pelo item
+    const llOv = llTodas.filter(x => !x.ov || x.ov === o.numero), ll = llOv.length ? llOv : llTodas;
     o._q = { wl: temQtdTrab ? lt : null, ll, temFalta: !!colFalta };
     if (lt && lt.length) o.linhasTrab = lt.map(x => ({ trabalho: x.trabalho, item: x.item, qtd: x.qtd, tipo: x.tipo || undefined }));
     if (ll.length) o.linhasCarga = ll.map(x => ({ carga: x.carga, item: x.item, qtd: x.qtd }));
@@ -1865,7 +1897,7 @@ async function montar(opts, modo) {
     if (falta.length) avisos.push('Não achei ' + falta.join(', ') + ' nas entidades lidas (' + fontes.map(f => f.entidade).join(', ') + '): as etapas dependem desses campos. Veja os campos de cada OV no painel.');
     else if (achou.sales < ovs.length) avisos.push((ovs.length - achou.sales) + ' OV(s) sem SalesStatus: ficaram em Criada, Gerenciamento de Crédito ou Separação pelos outros campos.');
   }
-  const r = Object.assign(base, { fontes, etapas, canceladas, depositos: TODOS_DEPOSITOS ? null : DEPOSITOS, foraDeposito, foraPeriodo, desde: modo.quadro ? (corte || null) : undefined, desdeEtapas: modo.quadro && corte ? ETAPAS_DESDE : undefined, antesDoCorte, expedicaoDia: modo.quadro ? hoje : undefined, expedicaoOutroDia, expedicaoSemData, statusCols, statusPadrao, ovs, avisos, diagnostico: diag });
+  const r = Object.assign(base, { fontes, etapas, canceladas, depositos: TODOS_DEPOSITOS ? null : DEPOSITOS, foraDeposito, foraPeriodo, itensCarga: fonteItensCarga || undefined, desde: modo.quadro ? (corte || null) : undefined, desdeEtapas: modo.quadro && corte ? ETAPAS_DESDE : undefined, antesDoCorte, expedicaoDia: modo.quadro ? hoje : undefined, expedicaoOutroDia, expedicaoSemData, statusCols, statusPadrao, ovs, avisos, diagnostico: diag });
   if (!opts.diag) _cache.set(modo.chave, { ts: Date.now(), r });
   return r;
 }

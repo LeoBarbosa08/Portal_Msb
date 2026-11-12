@@ -1551,6 +1551,28 @@ fases". A regra do lote (`partesPorLinhas`) está **LIGADA por padrão** de novo
 - Testes (1, 7c): Pendência com regra; `=0` desliga; sem env, ligada.
   `sw.js` — cache `bm-comest-v74`.
 
+### Kanban · os itens da carga na WHSLoadTableBiEntity, mesmo com a carga achada na outra (12/11/2026)
+
+O dono: "a tabela WHSLoadTableBiEntity não tem? Por que ainda não apareceu?". Duas
+falhas no caminho dos itens da carga:
+
+- **A carga achada primeiro na outra entidade**: `cargasPorId` procura cada carga
+  nas entidades de cargas em ordem (a que tem mais campos — cotação, pallet,
+  status — primeiro) e só junta os itens da entidade onde a carga foi achada. Se a
+  `WHSOutboundLoadHeaderEntity` (sem itens) achou a carga, a
+  `WHSLoadTableBiEntity` nem era lida para ela. Agora, sem itens, o quadro lê os
+  itens (`ItemId`, `Qty`) das entidades de cargas que TÊM essas colunas
+  (`linhasNaDeCargas`), pelas cargas das OVs; só sem nenhuma, a entidade própria de
+  linhas de carga.
+- **O filtro pela OV**: os itens eram filtrados pelo `OrderNum` igual ao nº da OV;
+  com outro formato, sumiam todos. Agora, se nenhum casar, valem todos os itens das
+  cargas da OV (o casamento com a linha da OV é pelo id da transação ou pelo item).
+- **Ficha**: no fim da seção "Carga", de onde vieram os itens ("Itens das cargas:
+  WHSLoadTableBiEntities (ItemId · Qty)") ou por que não vieram (o motivo de cada
+  entidade). A resposta do quadro traz `itensCarga`.
+- Testes (7i): a carga achada na de cabeçalho, os itens na BI, o `OrderNum` em outro
+  formato — falhava com o código anterior. `sw.js` — cache `bm-comest-v94`.
+
 ### Kanban · as linhas da carga e o QtyLeftToLoad de outras entidades (12/11/2026)
 
 O dono: "não trouxe as linhas da carga (ItemId, Qty) nem o QtyLeftToLoad, que é

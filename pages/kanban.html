@@ -1447,6 +1447,16 @@
       });
       return ord.map(function (k) { return m[k]; });
     }
+    // 12/11/26 (dono: "a WHSLoadTableBiEntity não tem? por que não apareceu?"): de onde
+    // vieram os itens das cargas — ou por que não vieram
+    function notaItensCarga(o, cs) {
+      var ic = estado.r && estado.r.itensCarga;
+      if (!ic) return '';
+      var tem = cs.some(function (c) { return itensDaCarga(o, c.id).length; });
+      var t = ic.entidade ? 'Itens das cargas: ' + ic.entidade + ' (' + [ic.item, ic.qtd].filter(Boolean).join(' · ') + ')' + (tem ? '' : ' — nenhum item desta OV nas cargas dela')
+        : 'Os itens das cargas não vieram: ' + (ic.erro || 'nenhuma entidade com ItemId e Qty');
+      return '<div class="kb-dw-nada" style="margin-top:8px;">' + esc(t) + '</div>';
+    }
     function secCarga(o) {
       // 12/11/26: todas as cargas da OV (as deste cartão destacadas) com os itens de cada uma
       var porQtd = o.parte && o.parte.id === 'qtd', neste = {};
@@ -1468,7 +1478,7 @@
           + (campos ? '<div class="s lg">' + esc(campos) + '</div>' : '') + itensHtml(o, itensDaCarga(o, c.id))
           + (!o.cargaFonte ? '<div class="s lg">A entidade de cargas não respondeu: só o número da carga, sem os dados.</div>' : c.naoAchada ? '<div class="s lg">Carga não encontrada na entidade de cargas.</div>' : '')
           + '</div><div class="v">' + (c.status ? '<span class="kb-trab-st">' + esc(rotCarga(c.status)) + '</span><span>' + esc(c.status) + '</span>' : '') + '</div></div>';
-      }).join('') + '</div>' + dica + '</section>';
+      }).join('') + '</div>' + dica + notaItensCarga(o, cs) + '</section>';
     }
 
     function secTrabalho(o) {

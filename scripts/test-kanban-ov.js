@@ -960,6 +960,30 @@ const bio = (n, st, lib) => ({ dataAreaId: 'msb', SalesOrderNumber: n, StatusPed
   t('sem as entidades: aviso do QtyLeftToLoad e das linhas da carga', r.avisos.some(a => /Não achei o QtyLeftToLoad/.test(a)) && r.avisos.some(a => /Não achei as linhas das cargas/.test(a)), r.avisos);
   CEN = guarda7h; SERVICO = serv7h;
 
+  console.log('7i) 12/11/26 os itens na WHSLoadTableBiEntity, com a carga achada antes na de cabeçalho (sem itens) e o OrderNum em outro formato');
+  K._limparCache(); chamadas.length = 0;
+  const guarda7i = CEN, serv7i = SERVICO;
+  SERVICO = ['BIOSalesOrderHeaderV1', 'SalesOrderHeadersV2', 'SalesOrderLines', 'WHSWorkTableBiEntities', 'WHSLoadTableBiEntities', 'WHSOutboundLoadHeaderEntities', 'BioWHSWorkLineV1'];
+  const ln7i = (n, item, qtd, valor, falta, tid) => ({ dataAreaId: 'msb', SalesOrderNumber: 'OV018901', LineNumber: n, ItemNumber: item, OrderedSalesQuantity: qtd, LineAmount: valor,
+    QtyLeftToLoad: falta, InventoryLotId: tid, ItemBatchNumber: '', SalesOrderLineStatus: 'Backorder' });
+  CEN = {
+    SalesOrderHeadersV2: { linhas: [v2('OV018901', DIA + 'T10:00:00Z', 'Backorder')] },
+    BIOSalesOrderHeaderV1: { linhas: [b4('OV018901', 'Backorder', 'PartialReleased', 'No')] },
+    SalesOrderLines: { linhas: [ln7i(1, 'A', 10, 1000, 4, 'T1'), ln7i(2, 'C', 3, 300, 0, 'T3')] },
+    WHSWorkTableBiEntities: { linhas: [w('OV018901', 'W91', 'Closed', { LoadId: 'LD-91' })] },
+    BioWHSWorkLineV1: { linhas: [{ dataAreaId: 'msb', WorkId: 'W91', LineNum: 1, OrderNum: 'OV018901', ItemId: 'A', QtyWork: 6, InventTransId: 'T1', WorkType: 'Pick', FreghtType_InoveProjects: 'Blank' }] },
+    // a de cabeçalho tem mais campos (cotação, pallet): ganha e acha a carga primeiro — SEM os itens
+    WHSOutboundLoadHeaderEntities: { linhas: [{ dataAreaId: 'msb', LoadId: 'LD-91', LoadStatus: 'Loaded', QuotationPerformed_InoveProjects: 'Yes', ENVIARPALLET_CUSTOM: 'No' }] },
+    // a BI: os itens (ItemId, Qty), com o OrderNum num formato diferente do nº da OV
+    WHSLoadTableBiEntities: { linhas: [{ dataAreaId: 'msb', LoadId: 'LD-91', LoadStatus: 'Loaded', ItemId: 'A', Qty: 6, OrderNum: 'OV-018901' }, { dataAreaId: 'msb', LoadId: 'LD-91', LoadStatus: 'Loaded', ItemId: 'C', Qty: 3, OrderNum: 'OV-018901' }] }
+  };
+  r = await K.quadro({});
+  const g7i = {}; r.ovs.forEach(o => { g7i[o.chave] = o; });
+  t('a carga veio da de cabeçalho, mas os itens vêm da WHSLoadTableBiEntities', r.itensCarga && r.itensCarga.entidade === 'WHSLoadTableBiEntities' && r.itensCarga.item === 'ItemId' && r.itensCarga.qtd === 'Qty', r.itensCarga);
+  t('o OrderNum em outro formato não descarta os itens (casa pelo id/item): Cotação A 6 + C 3; Pendência A 4', g7i['OV018901~cotacao'] && g7i['OV018901~cotacao'].parte.qtds[1] === 6 && g7i['OV018901~cotacao'].parte.qtds[2] === 3
+    && g7i['OV018901~pendencia'] && g7i['OV018901~pendencia'].parte.qtds[1] === 4 && g7i['OV018901~cotacao'].linhasCarga.length === 2, Object.keys(g7i));
+  CEN = guarda7i; SERVICO = serv7i;
+
   console.log('8) as regras do dono pela carga e pela nota (Separação … Expedição)');
   K._limparCache(); chamadas.length = 0;
   SERVICO = ['BIOSalesOrderHeaderV1', 'SalesOrderHeadersV2', 'SalesOrderLines', 'WHSWorkTableBiEntities', 'WHSOutboundLoadHeaderEntities', 'SalesInvoiceHeadersV2', 'FiscalDocuments'];
