@@ -989,7 +989,7 @@
             if (res.status === 403) throw new Error('a área Kanban é de acesso restrito');
             if (!res.ok || !j || j.ok === false) throw new Error((j && (j.detalhe || j.error)) || ('HTTP ' + res.status));
             if (j.configured === false) throw new Error('o Dynamics não está configurado neste ambiente');
-            LINHAS.set(num, { st: 'ok', linhas: j.linhas || [], em: new Date(), ts: Date.now() });
+            LINHAS.set(num, { st: 'ok', linhas: j.linhas || [], frete: j.frete || null, em: new Date(), ts: Date.now() });
           });
         })
         .catch(function (err) {
@@ -1494,6 +1494,14 @@
         var de = x.coluna ? x.coluna.split('.').pop() : x.nome + ' · não veio do Dynamics';
         pares.push([rotulo, esc(v) + '<small>' + esc(de) + '</small>', '']);
       });
+      // 12/11/26 (dono: "preciso da informação de frete também: FreghtType_InoveProjects,
+      // na BioWHSWorkLineV1"): o tipo de frete das linhas do trabalho de depósito da
+      // OV — vem com as linhas da OV, lidas quando a ficha abre
+      var LF = LINHAS.get(o.numero), fr = LF && LF.st === 'ok' ? LF.frete : null;
+      var vFrete = !LF || LF.st === 'carregando' ? 'lendo…' : fr && fr.valores && fr.valores.length ? fr.valores.join(' / ') : '—';
+      var deFrete = fr && fr.entidade ? (fr.coluna || 'FreghtType_InoveProjects') + ' · ' + fr.entidade
+        : (fr && fr.erro) || (LF && LF.st === 'erro') ? 'FreghtType_InoveProjects · não veio do Dynamics' : 'FreghtType_InoveProjects';
+      pares.push(['Tipo de frete', esc(vFrete) + '<small>' + esc(deFrete) + '</small>', '']);
       DADOS.forEach(function (d) {
         var x = campoOv(o, d[1]); if (!x) return;
         var cru = String(x.v).trim(), v = cru, mostraCru = false;

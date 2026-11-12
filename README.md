@@ -1551,6 +1551,25 @@ fases". A regra do lote (`partesPorLinhas`) está **LIGADA por padrão** de novo
 - Testes (1, 7c): Pendência com regra; `=0` desliga; sem env, ligada.
   `sw.js` — cache `bm-comest-v74`.
 
+### Kanban · o tipo de frete na ficha (12/11/2026)
+
+O dono: "preciso da informação de frete também: FreghtType_InoveProjects, que
+provavelmente está nessa entidade, BioWHSWorkLineV1".
+
+- **Servidor** (`freteDaOv`, chamado por `linhasDaOv` — a leitura que a ficha
+  faz ao abrir; o quadro não fica mais pesado): as LINHAS DO TRABALHO de
+  depósito da OV na `BioWHSWorkLineV1` (nome público descoberto como as outras
+  extras: candidatas + "whsworkline" no service document; `KANBAN_ENT_FRETE`),
+  pelo nº da OV (`OrderNum`) ou, se a entidade não tiver o nº, pelos `WorkId`
+  dos trabalhos da OV. Coluna `FreghtType_InoveProjects` (`KANBAN_COL_FRETE`;
+  ou o pedaço "freight type"). A resposta de `?ov=` traz `frete: { entidade,
+  coluna, valores, linhas, erro }` — os tipos de frete sem repetir.
+- **Ficha**: "Tipo de frete" em "Dados do pedido", logo depois dos 4 campos
+  extras: "lendo…" enquanto as linhas chegam, o(s) valor(es), "—" sem valor, e
+  "não veio do Dynamics" quando a entidade não respondeu.
+- Testes (5): sem a entidade publicada; pelo `OrderNum`; pelos `WorkId` dos
+  trabalhos. `sw.js` — cache `bm-comest-v84`.
+
 ### Kanban · 4 campos a mais nos "Dados do pedido" (12/11/2026)
 
 O dono: "insira esses campos a mais aqui: Solicitartransportadora_Custom,

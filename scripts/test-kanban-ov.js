@@ -1001,6 +1001,28 @@ const bio = (n, st, lib) => ({ dataAreaId: 'msb', SalesOrderNumber: n, StatusPed
   const n1 = chamadas.length;
   r = await K.linhasDaOv('OV017525');
   t('2ª leitura vem do cache', r.cache === true && chamadas.length === n1);
+  t('sem a entidade das linhas de trabalho publicada: frete vazio, com o motivo', r.frete && r.frete.entidade === null && r.frete.valores.length === 0 && !!r.frete.erro, r.frete);
+  // 12/11/26 (dono): o frete pela BioWHSWorkLineV1 (FreghtType_InoveProjects), pelo nº da OV
+  K._limparCache(); chamadas.length = 0;
+  const serv5 = SERVICO; SERVICO = SERVICO.concat(['BioWHSWorkLinesV1', 'WHSWorkTableBiEntities']);
+  CEN.BioWHSWorkLinesV1 = { linhas: [
+    { dataAreaId: 'msb', WorkId: 'W-1', LineNum: 1, OrderNum: 'OV017525', FreghtType_InoveProjects: 'CIF' },
+    { dataAreaId: 'msb', WorkId: 'W-1', LineNum: 2, OrderNum: 'OV017525', FreghtType_InoveProjects: 'CIF' },
+    { dataAreaId: 'msb', WorkId: 'W-9', LineNum: 1, OrderNum: 'OV099999', FreghtType_InoveProjects: 'FOB' }
+  ] };
+  r = await K.linhasDaOv('OV017525');
+  t('o frete da OV pelas linhas do trabalho (BioWHSWorkLineV1 · FreghtType_InoveProjects)', r.frete && r.frete.entidade === 'BioWHSWorkLinesV1' && r.frete.coluna === 'FreghtType_InoveProjects'
+    && r.frete.valores.join() === 'CIF' && r.frete.linhas === 2 && !r.frete.erro, r.frete);
+  const cf5 = chamadas.find(c => c.ent === 'BioWHSWorkLinesV1' && /OrderNum eq/.test(c.q.filter || ''));
+  t('lê as linhas de trabalho pelo nº da OV (OrderNum)', cf5 && /OrderNum eq 'OV017525'/.test(cf5.q.filter), cf5 && cf5.q.filter);
+  t('as linhas da OV continuam iguais', r.linhas.length === 2 && r.linhas[1].item === '73172', r.linhas.length);
+  // sem o nº da OV nas linhas de trabalho: pelos WorkId dos trabalhos da OV
+  K._limparCache(); chamadas.length = 0;
+  CEN.BioWHSWorkLinesV1.linhas.forEach(x => { delete x.OrderNum; });
+  CEN.WHSWorkTableBiEntities = { linhas: [w('OV017525', 'W-1', 'Closed'), w('OV099999', 'W-9', 'Closed')] };
+  r = await K.linhasDaOv('OV017525');
+  t('sem o nº da OV nas linhas de trabalho: pelos WorkId dos trabalhos da OV', r.frete.valores.join() === 'CIF' && r.frete.linhas === 2, r.frete);
+  SERVICO = serv5; delete CEN.BioWHSWorkLinesV1; delete CEN.WHSWorkTableBiEntities;
 
   console.log('6) rota exige a área kanban (e ?ov=)');
   K._limparCache();

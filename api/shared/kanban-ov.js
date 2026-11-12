@@ -467,6 +467,27 @@ const CFG_CARGA = {
   // só a WHSOutboundLoadHeaderEntity, pedido do dono)
   erroCol: (p) => 'sem a coluna ' + COL_CARGA[p].join('/')
 };
+// ── FRETE DA OV (12/11/2026) ──────────────────────────────────────
+// Dono: "preciso da informação de frete também: FreghtType_InoveProjects, que
+// provavelmente está nessa entidade, BioWHSWorkLineV1". O tipo de frete vem das
+// LINHAS DO TRABALHO de depósito da OV — lido só quando a ficha abre (junto das
+// linhas da OV, em linhasDaOv), pelo nº da OV (OrderNum) ou, se a entidade não
+// tiver o nº, pelos WorkId dos trabalhos da OV. Nome público e colunas
+// descobertos como as outras extras (candidatas + "whsworkline" no service
+// document; env KANBAN_ENT_FRETE e KANBAN_COL_FRETE).
+const ENT_FRETE = envLista('KANBAN_ENT_FRETE', []).concat([
+  'BioWHSWorkLineV1', 'BioWHSWorkLinesV1', 'BioWHSWorkLineV1Entity', 'BioWHSWorkLineV1Entities', 'BIOWHSWorkLineV1', 'BIOWHSWorkLinesV1'
+]).filter((v, i, a) => a.indexOf(v) === i);
+const COL_FRETE = {
+  numero:   ['OrderNum', 'OrderNumber', 'SalesId', 'SalesOrderNumber'],
+  trabalho: ['WorkId'],
+  frete:    envLista('KANBAN_COL_FRETE', ['FreghtType_InoveProjects', 'FreightType_InoveProjects'])
+};
+const CFG_FRETE = {
+  chave: 'frete', candidatas: ENT_FRETE, reNome: /whsworkline/i, pedaco: 'whsworkline',
+  cols: COL_FRETE, obrig: ['frete'], reCols: { frete: /fre(i)?ght.?type/i },
+  erroCol: () => 'sem a coluna ' + COL_FRETE.frete.join('/')
+};
 const CFG_NOTA = {
   chave: 'nota', candidatas: ENT_NOTA, reNome: /salesinvoiceheader/i, pedaco: 'salesinvoiceheader',
   cols: COL_NOTA, obrig: ['numero', 'nota'],
@@ -1481,6 +1502,28 @@ const COLS_LINHA = {
 // data "vazia" do F&O (1900-01-01, em qualquer hora) = sem data
 const dataLinha = (v) => { const s = txt(v); return /^\d{4}-\d{2}-\d{2}/.test(s) && !/^1900-01-01/.test(s) ? s.slice(0, 10) : null; };
 const _cacheLinhas = new Map();
+// o frete da OV: os tipos de frete (sem repetir) das linhas dos trabalhos dela
+async function freteDaOv(n, token, ate) {
+  const x = await entidadeExtra(CFG_FRETE, token, ate, []);
+  const E = x.E;
+  if (!E) return { entidade: null, coluna: COL_FRETE.frete[0], valores: [], erro: x.motivo || 'a entidade das linhas de trabalho não respondeu' };
+  const emp = (Ent) => Ent.temEmpresa ? "dataAreaId eq '" + D.odataStr(EMPRESA) + "' and " : '';
+  let filtro;
+  if (E.numero) filtro = E.numero + " eq '" + D.odataStr(n) + "'";
+  else {
+    // sem o nº da OV nas linhas de trabalho: pelos WorkId dos trabalhos da OV
+    const xt = await entidadeExtra(CFG_TRABALHO, token, ate, []);
+    if (!xt.E || !E.trabalho) return { entidade: E.entidade, coluna: E.frete, valores: [], erro: 'a ' + E.entidade + ' não tem o nº da OV nem dá para ligar pelos trabalhos' };
+    const ws = await D.odataGetComPrazo(xt.E.entidade, { crossCompany: true, top: 200, filter: emp(xt.E) + xt.E.numero + " eq '" + D.odataStr(n) + "'" }, token, prazo(ate, 10000));
+    const ids = Array.from(new Set(ws.map(w => txt(w[xt.E.id || 'WorkId'])).filter(Boolean))).slice(0, 40);
+    if (!ids.length) return { entidade: E.entidade, coluna: E.frete, valores: [], linhas: 0 };
+    filtro = '(' + ids.map(id => E.trabalho + " eq '" + D.odataStr(id) + "'").join(' or ') + ')';
+  }
+  const rows = await D.odataGetComPrazo(E.entidade, { crossCompany: true, top: 500, filter: emp(E) + filtro }, token, prazo(ate, 12000));
+  const valores = Array.from(new Set(rows.map(r => txt(r[E.frete])).filter(v => v && !/^none$/i.test(v))));
+  return { entidade: E.entidade, coluna: E.frete, valores, linhas: rows.length };
+}
+
 async function linhasDaOv(numero, opts) {
   opts = opts || {};
   const n = chaveOv(numero);
@@ -1490,6 +1533,8 @@ async function linhasDaOv(numero, opts) {
   if (!opts.atualizar && c && Date.now() - c.ts < TTL_MS) return Object.assign({}, c.r, { cache: true });
   const ate = Date.now() + Math.min(ORCAMENTO, 25000);
   const token = await D.getToken();
+  // 12/11/26: o frete (linhas do trabalho de depósito), junto com as linhas da OV
+  const pFrete = freteDaOv(n, token, ate).catch(e => ({ entidade: null, coluna: COL_FRETE.frete[0], valores: [], erro: String(e.message || e).slice(0, 160) }));
   const alvos = _entLinhas ? [_entLinhas] : ENT_LINHAS;
   let rows = null, entidade = null, ultimo = null;
   for (const ent of alvos) {
@@ -1515,7 +1560,7 @@ async function linhasDaOv(numero, opts) {
       lote: s('lote'), temLote: !!D.pick(r, COLS_LINHA.lote) || Object.keys(r).some(k => COLS_LINHA.lote.some(n => n.toLowerCase() === k.toLowerCase()))
     };
   }).sort((a, b) => (a.linha == null ? 1e9 : a.linha) - (b.linha == null ? 1e9 : b.linha));
-  const r = Object.assign(base, { entidade, linhas });
+  const r = Object.assign(base, { entidade, linhas, frete: await pFrete });
   _cacheLinhas.set(n, { ts: Date.now(), r });
   if (_cacheLinhas.size > 200) _cacheLinhas.delete(_cacheLinhas.keys().next().value);
   return r;
