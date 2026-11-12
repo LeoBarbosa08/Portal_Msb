@@ -1551,6 +1551,43 @@ fases". A regra do lote (`partesPorLinhas`) está **LIGADA por padrão** de novo
 - Testes (1, 7c): Pendência com regra; `=0` desliga; sem env, ligada.
   `sw.js` — cache `bm-comest-v74`.
 
+### Kanban · a OV em partes por QUANTIDADE: trabalho, carga e o que falta carregar (12/11/2026)
+
+O dono: "preciso ter essa visão (Neste cartão / Nos outros cartões) a nível de
+ordem, como já tem, e também a nível de trabalho e de carga, com base em cada
+trabalho e cada carga. No trabalho: ItemId, QtyWork (e o nome do item); na carga:
+ItemId, Qty. Vai cair na Pendência se QtyLeftToLoad (da SalesLine) for > 0. Você
+tem que se basear na liberação nas linhas do trabalho, a partir disso nas linhas a
+nível da carga, antes da liberação a nível da OV"; e, quando só parte da quantidade
+está na carga, "divide por quantidade".
+
+- **Os dados**: as linhas do trabalho (`BioWHSWorkLineV1`: `ItemId`, `QtyWork`,
+  `WorkType`, `InventTransId`), lidas para toda OV com trabalho; as linhas da carga
+  (a própria `WHSLoadTableBiEntities`, uma linha por item: `ItemId`, `Qty`,
+  `OrderNum`, `InventTransId` — `cargasPorId` agora junta todas); e o
+  `QtyLeftToLoad` das linhas da OV (`COLS_LINHA.falta`, no `$select`).
+- **A divisão** (`partesPorQuantidade`): cada linha da OV em aberto vira porções,
+  nesta ordem — 1) o trabalho dela (`QtyWork`, só o Pick: o Put repete a
+  quantidade): trabalho Abrir → Separação; em processo/fechado → a fase da carga
+  do trabalho; 2) o que está na carga e ainda sem trabalho → a fase da carga (carga
+  sem fase = liberada → Separação); 3) o que falta carregar (`QtyLeftToLoad`) →
+  **Pendência** (com crédito ativo, Crédito); 4) o resto → a fase da OV. As porções
+  da mesma fase viram um cartão (`OV~fase`) com a quantidade de cada linha
+  (`parte.qtds`), o valor (quantidade × preço), e só os trabalhos/cargas dele;
+  `trabalhosOv`/`cargasOv` guardam todos. Linha entregue/faturada: inteira, pelo
+  status (como antes). Sem as quantidades do trabalho, sem itens na carga e sem o
+  `QtyLeftToLoad`: a regra de antes (por linha / lote).
+- **Ficha**: "Trabalho no depósito" e "Carga" mostram TODOS os trabalhos/cargas da
+  OV, cada um com os itens (código, nome — das linhas da OV — e quantidade),
+  marcando "neste cartão" / "outro cartão"; nas linhas da OV, "6 de 10 un neste
+  cartão", o valor da parte e "falta carregar N". O cartão da Pendência por
+  quantidade explica que é o que ainda não entrou em carga.
+- Testes (7g): 10 de A (6 no trabalho fechado com a carga Carregado, 4 faltando
+  carregar), 5 de B no trabalho aberto, 3 de C na carga sem trabalho → Cotação (A 6
+  + C 3 = R$ 900), Pendência (A 4 = R$ 400) e Separação (B 5 = R$ 250), somando a
+  OV; o Put não conta em dobro; tudo na mesma carga → um cartão só. `sw.js` —
+  cache `bm-comest-v92`.
+
 ### Kanban · liberação parcial por linha + o frete FOB no e-mail da Cotação (12/11/2026)
 
 O dono: "lembrando que pode haver liberação parcial das linhas: parte fica em

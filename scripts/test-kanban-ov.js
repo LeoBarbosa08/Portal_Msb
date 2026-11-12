@@ -872,6 +872,49 @@ const bio = (n, st, lib) => ({ dataAreaId: 'msb', SalesOrderNumber: n, StatusPed
   t('sem as linhas do trabalho no OData: sem Pendência por linha (a OV segue a fase dela)', r.ovs.some(o => o.chave === 'OV018601' && o.etapa === 'liberado') && !r.ovs.some(o => o.etapa === 'pendencia'), r.ovs.map(o => o.chave + '=' + o.etapa));
   CEN = guarda7f; SERVICO = serv7f;
 
+  console.log('7g) 12/11/26 a OV em partes POR QUANTIDADE: trabalho (QtyWork) -> carga (Qty) -> o que falta carregar (QtyLeftToLoad) -> a OV');
+  K._limparCache(); chamadas.length = 0;
+  const guarda7g = CEN, serv7g = SERVICO;
+  SERVICO = ['BIOSalesOrderHeaderV1', 'SalesOrderHeadersV2', 'SalesOrderLines', 'WHSWorkTableBiEntities', 'WHSLoadTableBiEntities', 'BioWHSWorkLineV1'];
+  const ln7g = (n, item, qtd, valor, falta, tid, st) => ({ dataAreaId: 'msb', SalesOrderNumber: 'OV018701', LineNumber: n, ItemNumber: item, OrderedSalesQuantity: qtd, LineAmount: valor,
+    QtyLeftToLoad: falta, InventoryLotId: tid, ItemBatchNumber: '', SalesOrderLineStatus: st || 'Backorder' });
+  const wl7g = (work, item, qtd, tid, tipo) => ({ dataAreaId: 'msb', WorkId: work, LineNum: 1, OrderNum: 'OV018701', ItemId: item, QtyWork: qtd, InventTransId: tid, WorkType: tipo, FreghtType_InoveProjects: 'ChargeFreight' });
+  const ld7g = (id, st, item, qtd, tid) => ({ dataAreaId: 'msb', LoadId: id, LoadStatus: st, QuotationPerformed_InoveProjects: 'Yes', ENVIARPALLET_CUSTOM: 'No', ItemId: item, Qty: qtd, OrderNum: 'OV018701', InventTransId: tid });
+  CEN = {
+    SalesOrderHeadersV2: { linhas: [v2('OV018701', DIA + 'T10:00:00Z', 'Backorder')] },
+    BIOSalesOrderHeaderV1: { linhas: [b4('OV018701', 'Backorder', 'PartialReleased', 'No')] },
+    SalesOrderLines: { linhas: [
+      ln7g(1, 'A', 10, 1000, 4, 'T1'),   // 6 no trabalho fechado (carga Carregado) + 4 que faltam carregar
+      ln7g(2, 'B', 5, 250, 0, 'T2'),     // 5 no trabalho aberto
+      ln7g(3, 'C', 3, 300, 0, 'T3')      // 3 na carga, ainda sem trabalho
+    ] },
+    WHSWorkTableBiEntities: { linhas: [w('OV018701', 'W71', 'Closed', { LoadId: 'LD-71' }), w('OV018701', 'W72', 'Open', { LoadId: 'LD-72' })] },
+    // o Pick e o Put do mesmo item: conta uma vez só
+    BioWHSWorkLineV1: { linhas: [wl7g('W71', 'A', 6, 'T1', 'Pick'), wl7g('W71', 'A', 6, 'T1', 'Put'), wl7g('W72', 'B', 5, 'T2', 'Pick'), wl7g('W72', 'B', 5, 'T2', 'Put')] },
+    WHSLoadTableBiEntities: { linhas: [ld7g('LD-71', 'Loaded', 'A', 6, 'T1'), ld7g('LD-71', 'Loaded', 'C', 3, 'T3'), ld7g('LD-72', 'Open', 'B', 5, 'T2')] }
+  };
+  r = await K.quadro({});
+  const g7g = {}; r.ovs.forEach(o => { g7g[o.chave] = o; });
+  const c7 = g7g['OV018701~cotacao'], p7g = g7g['OV018701~pendencia'], s7 = g7g['OV018701~liberado'];
+  t('3 cartões por quantidade: Cotação, Pendência e Separação', c7 && p7g && s7 && r.ovs.filter(o => o.numero === 'OV018701').length === 3, Object.keys(g7g));
+  t('Cotação: 6 de A (trabalho fechado, carga Carregado) + 3 de C (na carga, sem trabalho) = R$ 900', c7 && c7.parte.qtds[1] === 6 && c7.parte.qtds[3] === 3 && c7.valor === 900 && c7.parte.parcial === true
+    && c7.cargas.map(x => x.id).join() === 'LD-71' && c7.trabalhos.map(x => x.id).join() === 'W71', c7 && { q: c7.parte.qtds, v: c7.valor, cg: c7.cargas.map(x => x.id), w: c7.trabalhos.map(x => x.id) });
+  t('Pendência: os 4 de A que faltam carregar (QtyLeftToLoad) = R$ 400, sem trabalho nem carga', p7g && p7g.parte.qtds[1] === 4 && p7g.valor === 400 && p7g.pendPorCarga === true && !p7g.trabalhos.length && !p7g.cargas.length, p7g && { q: p7g.parte.qtds, v: p7g.valor });
+  t('Separação: os 5 de B no trabalho aberto = R$ 250 (o Put não conta em dobro)', s7 && s7.parte.qtds[2] === 5 && s7.valor === 250 && s7.trabalhos.map(x => x.id).join() === 'W72', s7 && { q: s7.parte.qtds, v: s7.valor });
+  t('as partes somam a OV (900 + 400 + 250 = 1.550)', c7 && p7g && s7 && c7.valor + p7g.valor + s7.valor === 1550 && c7.valorOv === 1550, [c7 && c7.valor, p7g && p7g.valor, s7 && s7.valor]);
+  t('a OV leva as linhas do trabalho e da carga (a visão da ficha)', c7 && c7.linhasTrab.length === 4 && c7.linhasCarga.length === 3 && c7.linhasCarga.some(x => x.carga === 'LD-71' && x.item === 'C' && x.qtd === 3), c7 && { lt: c7.linhasTrab, lc: c7.linhasCarga });
+  t('a linha da OV traz o QtyLeftToLoad no $select', chamadas.some(c => c.ent === 'SalesOrderLines' && /QtyLeftToLoad/.test(c.q.select || '')), chamadas.filter(c => c.ent === 'SalesOrderLines').map(c => c.q.select));
+  // tudo carregado e sem trabalho em aberto: um cartão só
+  K._limparCache();
+  CEN.SalesOrderLines.linhas.forEach(x => { x.QtyLeftToLoad = 0; });
+  CEN.BioWHSWorkLineV1.linhas = CEN.BioWHSWorkLineV1.linhas.filter(x => x.WorkId === 'W71');
+  CEN.WHSWorkTableBiEntities.linhas = CEN.WHSWorkTableBiEntities.linhas.filter(x => x.WorkId === 'W71');
+  CEN.WHSLoadTableBiEntities.linhas = [ld7g('LD-71', 'Loaded', 'A', 10, 'T1'), ld7g('LD-71', 'Loaded', 'B', 5, 'T2'), ld7g('LD-71', 'Loaded', 'C', 3, 'T3')];
+  r = await K.quadro({});
+  const u7 = r.ovs.filter(o => o.numero === 'OV018701');
+  t('tudo na mesma carga Carregado: um cartão só, em Cotação, inteiro', u7.length === 1 && u7[0].etapa === 'cotacao' && !u7[0].parte && u7[0].chave === 'OV018701', u7.map(o => o.chave + '=' + o.etapa));
+  CEN = guarda7g; SERVICO = serv7g;
+
   console.log('8) as regras do dono pela carga e pela nota (Separação … Expedição)');
   K._limparCache(); chamadas.length = 0;
   SERVICO = ['BIOSalesOrderHeaderV1', 'SalesOrderHeadersV2', 'SalesOrderLines', 'WHSWorkTableBiEntities', 'WHSOutboundLoadHeaderEntities', 'SalesInvoiceHeadersV2', 'FiscalDocuments'];

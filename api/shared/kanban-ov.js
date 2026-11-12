@@ -257,7 +257,13 @@ const COL_CARGA = {
   pallet:         envLista('KANBAN_COL_CARGA_PALLET', ['ENVIARPALLET_CUSTOM', 'EnviarPallet_Custom', 'EnviarPallet']),
   // 12/11/2026 (dono): "na fase EXPEDIÇÃO, a WHSLoadTableBiEntities tem um campo
   // LoadShipConfirmUTCDateTime — leve para a Expedição se a data desse campo for hoje"
-  envioConfirmado: envLista('KANBAN_COL_CARGA_ENVIO_CONFIRMADO', ['LoadShipConfirmUTCDateTime'])
+  envioConfirmado: envLista('KANBAN_COL_CARGA_ENVIO_CONFIRMADO', ['LoadShipConfirmUTCDateTime']),
+  // 12/11/26 (dono: "a visão a nível de trabalho e a nível de carga — na carga é
+  // ItemId, Qty"): a entidade de cargas traz uma linha por ITEM da carga
+  linhaItem:      ['ItemId', 'ItemNumber'],
+  linhaQtd:       envLista('KANBAN_COL_CARGA_QTD', ['Qty', 'LoadLineQty', 'Quantity']),
+  linhaOv:        ['OrderNum', 'SalesId', 'OrderNumber'],
+  linhaTid:       ['InventTransId']
 };
 // ── AS REGRAS DO DONO PELA CARGA E PELA NOTA (09/11/2026) ─────────
 //   Separação   = status do TRABALHO = "Abrir" (Open)
@@ -497,7 +503,12 @@ const COL_FRETE = {
   // pelo id da transação da linha (InventTransId = InventoryLotId da linha da OV);
   // sem ele, pelo item
   inventTrans: ['InventTransId', 'InventoryTransactionId', 'InventoryLotId'],
-  item:     ['ItemId', 'ItemNumber']
+  item:     ['ItemId', 'ItemNumber'],
+  // 12/11/26 (dono: "na tabela de trabalho os campos são ItemId, QtyWork"): a
+  // quantidade de cada linha do trabalho; o tipo (Pick/Put — a mesma quantidade
+  // aparece na separação e na colocação: conta só uma)
+  qtd:      envLista('KANBAN_COL_TRABALHO_QTD', ['QtyWork', 'WorkQty']),
+  tipo:     ['WorkType', 'WorkTypeName']
 };
 // 12/11/26 (dono: "o frete vem em inglês — ChargeFreight é FOB, Destinatário"): os
 // valores do tipo de frete que contam como FOB (o e-mail da Cotação só sai com FOB)
@@ -691,7 +702,7 @@ async function cargasPorId(ids, token, ate, diag) {
   const x = await entidadeExtra(CFG_CARGA, token, ate, diag), E = x.E;
   if (!E) return { E: null, por: {}, erro: x.motivo };
   const lista = x.todas && x.todas.length ? x.todas : [E];
-  const por = {}, usadas = [];
+  const por = {}, usadas = [], linhas = {};
   let falta = ids.slice(), erro = null;
   for (const Ei of lista) {
     if (!falta.length) break;
@@ -700,7 +711,15 @@ async function cargasPorId(ids, token, ate, diag) {
     try { rows = await porNumeros(Ei.entidade, Ei.numero, falta, token, ate, diag, 'ov:carga', null, !Ei.temEmpresa); }
     catch (e) { erro = Ei.entidade + ': ' + String(e.message || e).slice(0, 160); usadas.push({ entidade: Ei.entidade, cargas: 0, erro }); continue; }
     let n = 0;
-    rows.forEach(r => { if (addCarga(por, Ei, r)) n++; });
+    rows.forEach(r => {
+      if (addCarga(por, Ei, r)) n++;
+      // 12/11/26: as linhas (itens) da carga — só da entidade de onde a carga veio
+      const id = txt(r[Ei.numero]).toUpperCase(), reg = por[id];
+      if (reg && reg.E === Ei && Ei.linhaItem && Ei.linhaQtd) {
+        (linhas[id] = linhas[id] || []).push({ carga: txt(r[Ei.numero]), item: txt(r[Ei.linhaItem]).toUpperCase(), qtd: num(r[Ei.linhaQtd]),
+          ov: Ei.linhaOv ? chaveOv(r[Ei.linhaOv]) : '', tid: Ei.linhaTid ? txt(r[Ei.linhaTid]).toUpperCase() : '' });
+      }
+    });
     usadas.push({ entidade: Ei.entidade, cargas: n });
     diag.push({ etapa: 'ov:carga:fonte', entidade: Ei.entidade, procuradas: falta.length, achadas: n });
     falta = falta.filter(id => !por[id.toUpperCase()]);
@@ -710,7 +729,7 @@ async function cargasPorId(ids, token, ate, diag) {
   // a "principal" = a que trouxe mais cargas (as colunas da ficha e dos avisos)
   const principal = usadas.filter(u => u.cargas).sort((a, b) => b.cargas - a.cargas)[0];
   const Ep = principal ? lista.find(L => L.entidade === principal.entidade) : E;
-  return { E: Ep, por, usadas, lista, erro };
+  return { E: Ep, por, usadas, lista, erro, linhas };
 }
 function addCarga(por, E, r) {
   const v = (papel) => { const col = E[papel] || achaCol(colunasDe(r), COL_CARGA[papel]); return col ? r[col] : null; };
@@ -812,6 +831,116 @@ function partesPorLinhas(o, ls, lida, comLote, comStatus) {
     chave: o.numero + '~' + (g.semlote ? 'semlote' : g.etapa), etapa: g.etapa, valor: soma(g.ls), itens: g.ls.length,
     podePallet: g.semlote ? false : o.podePallet, parte: parteDe(g), linhasSt: contar(g.ls), _abertas: temAberta(g)
   }, g.semlote ? { etapaOv: g.destino } : {}));
+}
+
+// ── A OV EM PARTES POR QUANTIDADE: TRABALHO, CARGA, O QUE FALTA (12/11/2026) ──
+// Dono: "preciso ter essa visão a nível de ordem, de trabalho e de carga, com base
+// em cada trabalho e cada carga — no trabalho ItemId, QtyWork; na carga ItemId,
+// Qty; vai cair na Pendência se QtyLeftToLoad (da SalesLine) for > 0. Você tem que
+// se basear na liberação nas linhas do trabalho, a partir disso nas linhas a nível
+// da carga, antes da liberação a nível da OV"; e, quando só parte da quantidade
+// está na carga, "divide por quantidade".
+// Cada linha da OV em aberto vira PORÇÕES, nesta ordem:
+//   1) as linhas do TRABALHO dela (QtyWork; Pick, sem contar o Put): trabalho
+//      Abrir -> Separação; em processo/fechado -> a fase da carga do trabalho;
+//   2) o que está nas linhas da CARGA (Qty) e ainda sem trabalho -> a fase da carga
+//      (carga sem fase ainda = liberada -> Separação);
+//   3) o que FALTA carregar (QtyLeftToLoad > 0) -> Pendência (com crédito: Crédito);
+//   4) o resto -> a fase da OV (a regra de antes).
+// As porções com a mesma fase viram UM cartão (chave OV~fase), com a quantidade, o
+// valor (quantidade x preço da linha), os trabalhos e as cargas só delas. A linha
+// entregue/faturada segue o status dela (como antes), inteira.
+function partesPorQuantidade(o, ls, Q, cargaPor, comStatus) {
+  o.chave = o.numero; o.valorOv = o.valor; o.itensOv = o.itens; o._abertas = false;
+  const c = o._ctx;
+  const st = (l) => comStatus ? statusLinha(l.status) : 'aberta';
+  const vivas = ls.filter(l => st(l) !== 'cancelada');
+  if (!vivas.length || !c) return [o];
+  const trabPor = {}; (o.trabalhos || []).forEach(w => { trabPor[String(w.id).toUpperCase()] = w; });
+  const faseDaCarga = (id) => { const r = id && cargaPor[String(id).toUpperCase()]; return r ? (r.carga.fase || null) : null; };
+  const casa = (l) => (x) => (l.tid && x.tid) ? x.tid === l.tid : (!!x.item && x.item === String(l.item || '').toUpperCase());
+  const chaveL = (l) => String(l.tid || l.item || l.linha);
+  // o que cada trabalho / carga já deu (o mesmo item em mais de uma linha da OV)
+  const usadoTrab = new Map(), usadoCarga = new Map();
+  const porcoes = [];
+  vivas.forEach(l => {
+    const s2 = st(l), q0 = Number(l.qtd) || 0, unit = q0 ? (Number(l.valor) || 0) / q0 : 0;
+    const add = (qtd, etapa, extra) => { if (qtd > 0) porcoes.push(Object.assign({ l, qtd, etapa, valor: qtd * unit }, extra || {})); };
+    if (s2 !== 'aberta') { add(q0, etapaDe(c.sa, c.re, c.cr, c.trab, c.nota, c.carga, s2)); return; }
+    let resto = q0;
+    // 1) as linhas do trabalho (por trabalho; o tipo Pick, ou o maior quando o tipo não vem)
+    const porTrab = new Map();
+    (Q.wl || []).filter(casa(l)).forEach(x => {
+      const w = trabPor[String(x.trabalho).toUpperCase()]; if (!w || w.fase === 'ignora') return;
+      if (x.tipo && !/pick|separa/i.test(x.tipo)) return;
+      const k = String(w.id).toUpperCase(), cur = porTrab.get(k) || { w, qtd: 0 };
+      cur.qtd = x.tipo ? cur.qtd + (x.qtd || 0) : Math.max(cur.qtd, x.qtd || 0);
+      porTrab.set(k, cur);
+    });
+    porTrab.forEach((t, k) => {
+      const kt = k + '|' + chaveL(l), q = Math.min(t.qtd - (usadoTrab.get(kt) || 0), resto); if (q <= 0) return;
+      usadoTrab.set(kt, (usadoTrab.get(kt) || 0) + q);
+      const e = t.w.fase === 'aberto' ? etapaDe(c.sa, c.re, c.cr, 'aberto', c.nota, null, s2)
+        : etapaDe(c.sa, c.re, c.cr, t.w.fase === 'fechado' ? 'fechado' : 'processo', c.nota, faseDaCarga(t.w.carga), s2);
+      add(q, e, { trabalho: t.w.id, carga: t.w.carga || '' }); resto -= q;
+      if (t.w.carga) { const kc = String(t.w.carga).toUpperCase() + '|' + chaveL(l); usadoCarga.set(kc, (usadoCarga.get(kc) || 0) + q); }
+    });
+    // 2) o que está na carga e ainda sem trabalho
+    const porCarga = new Map();
+    (Q.ll || []).filter(casa(l)).forEach(x => { const k = String(x.carga).toUpperCase(); porCarga.set(k, (porCarga.get(k) || 0) + (x.qtd || 0)); });
+    porCarga.forEach((qc, k) => {
+      const kc = k + '|' + chaveL(l), q = Math.min(qc - (usadoCarga.get(kc) || 0), resto); if (q <= 0) return;
+      usadoCarga.set(kc, (usadoCarga.get(kc) || 0) + q);
+      const f = faseDaCarga(k);
+      const e = !f || f === 'outro' ? (marcadoV(c.cr) ? 'credito' : 'liberado') : etapaDe(c.sa, c.re, c.cr, 'nenhum', c.nota, f, s2);
+      add(q, e, { carga: cargaPor[k] ? cargaPor[k].carga.id : k }); resto -= q;
+    });
+    // 3) o que falta carregar (QtyLeftToLoad) -> Pendência
+    if (Q.temFalta && Number(l.falta) > 0) { const q = Math.min(Number(l.falta), resto); add(q, marcadoV(c.cr) ? 'credito' : 'pendencia', { falta: true }); resto -= q; }
+    // 4) o resto: a fase da OV (a regra de antes)
+    if (resto > 0) {
+      let e = etapaDe(c.sa, c.re, c.cr, c.trab, c.nota, c.carga, s2);
+      if (e === 'criada' && !Q.temFalta && !l.lote && pendenciaPorLote()) e = 'pendencia';
+      add(resto, e);
+    }
+  });
+  if (!porcoes.length) return [o];
+  const grupos = new Map();
+  porcoes.forEach(p => { if (!grupos.has(p.etapa)) grupos.set(p.etapa, []); grupos.get(p.etapa).push(p); });
+  const ident = (l) => l.linha != null ? l.linha : l.item;
+  const r2 = (v) => Math.round(v * 100) / 100;
+  const contar = (ps) => { const x = {}; const vistas = new Set(); ps.forEach(p => { const id = ident(p.l); if (vistas.has(id)) return; vistas.add(id); const k = st(p.l) || '?'; x[k] = (x[k] || 0) + 1; }); return x; };
+  const total = vivas.length;
+  const cartao = (e, ps) => {
+    const ids = Array.from(new Set(ps.map(p => ident(p.l))));
+    const qtds = {}; ps.forEach(p => { const k = ident(p.l); qtds[k] = (qtds[k] || 0) + p.qtd; });
+    const trabIds = new Set(ps.map(p => p.trabalho).filter(Boolean).map(x => String(x).toUpperCase()));
+    const cargaIds = new Set(ps.map(p => p.carga).filter(Boolean).map(x => String(x).toUpperCase()));
+    const ws = (o.trabalhos || []).filter(w => trabIds.has(String(w.id).toUpperCase()));
+    const cs = (o.cargas || []).filter(cg => cargaIds.has(String(cg.id).toUpperCase()));
+    const fs = cs.filter(x => x.fase).map(x => x.fase);
+    return { ids, qtds, ws, cs, cargaFase: fs.length ? fs.reduce((m, x) => RANK_CARGA[x] < RANK_CARGA[m] ? x : m) : null,
+      valor: r2(ps.reduce((t, p) => t + p.valor, 0)), status: Array.from(new Set(ps.map(p => st(p.l)))),
+      parcial: ps.some(p => p.qtd < (Number(p.l.qtd) || 0)), falta: ps.some(p => p.falta), linhasSt: contar(ps) };
+  };
+  if (grupos.size === 1) {
+    const [e, ps] = grupos.entries().next().value;
+    const k = cartao(e, ps);
+    if (e !== o.etapa) o.etapaOv = o.etapa;
+    o.etapa = e; o.linhasSt = k.linhasSt;
+    if (k.falta) o.pendPorCarga = true;
+    return [o];
+  }
+  return Array.from(grupos.entries()).map(([e, ps]) => {
+    const k = cartao(e, ps);
+    return Object.assign({}, o, {
+      chave: o.numero + '~' + e, etapa: e, valor: k.valor, itens: k.ids.length,
+      parte: { id: 'qtd', status: k.status, linhas: k.ids, qtds: k.qtds, n: k.ids.length, de: total, parcial: k.parcial },
+      trabalhos: k.ws, cargas: k.cs, cargaFase: k.cargaFase, linhasSt: k.linhasSt, pendPorCarga: k.falta || undefined, _abertas: false,
+      // todos os trabalhos e cargas da OV (a ficha mostra cada um, destacando os deste cartão)
+      trabalhosOv: o.trabalhos || [], cargasOv: o.cargas || []
+    });
+  });
 }
 
 // ── A OV EM PARTES PELOS TRABALHOS (10/11/2026) ───────────────────
@@ -1090,7 +1219,8 @@ async function colunasLinhas(ent, token, ate) {
   const rows = await D.odataGetComPrazo(ent, { top: 1, crossCompany: true, filter: "dataAreaId eq '" + D.odataStr(EMPRESA) + "'" }, token, prazo(ate, PROVA_MS));
   const cols = rows.length ? colunasDe(rows[0]) : [];
   const C = { ent, lote: achaCol(cols, COL_LOTE), linha: achaCol(cols, COLS_LINHA.linha), item: achaCol(cols, COLS_LINHA.item),
-    qtd: achaCol(cols, COLS_LINHA.qtd), status: achaCol(cols, COLS_LINHA.status), tid: achaCol(cols, COLS_LINHA.tid), amostra: rows.length > 0 };
+    qtd: achaCol(cols, COLS_LINHA.qtd), status: achaCol(cols, COLS_LINHA.status), tid: achaCol(cols, COLS_LINHA.tid),
+    falta: achaCol(cols, COLS_LINHA.falta) || cols.find(c => /left_?to_?load/i.test(c)) || null, amostra: rows.length > 0 };
   // sem linha de amostra não dá para saber as colunas: não guarda (tenta de novo)
   if (C.amostra) _colsLinhas = C;
   return C;
@@ -1102,7 +1232,7 @@ async function linhas(numeros, token, ate, diag) {
   for (const ent of alvos) {
     try {
       const C = await colunasLinhas(ent, token, ate);
-      const sel = ['SalesOrderNumber', 'LineAmount', 'dataAreaId'].concat([C.lote, C.linha, C.item, C.qtd, C.status, C.tid].filter(Boolean));
+      const sel = ['SalesOrderNumber', 'LineAmount', 'dataAreaId'].concat([C.lote, C.linha, C.item, C.qtd, C.status, C.tid, C.falta].filter(Boolean));
       const rows = await porNumeros(ent, 'SalesOrderNumber', numeros, token, ate, diag, 'ov:linhas', Array.from(new Set(sel)).join(','));
       _entLinhas = ent;
       const por = {};
@@ -1112,7 +1242,8 @@ async function linhas(numeros, token, ate, diag) {
         o.itens++; o.valor += Number(r.LineAmount) || 0;
         const lt = C.lote ? txt(r[C.lote]) : '';
         o.linhas.push({ linha: C.linha ? num(r[C.linha]) : null, item: C.item ? txt(r[C.item]) : '', valor: Math.round((Number(r.LineAmount) || 0) * 100) / 100,
-          qtd: C.qtd ? num(r[C.qtd]) : null, lote: VAZIOS.test(lt) ? '' : lt, status: C.status ? txt(r[C.status]) : '', tid: C.tid ? txt(r[C.tid]).toUpperCase() : '' });
+          qtd: C.qtd ? num(r[C.qtd]) : null, lote: VAZIOS.test(lt) ? '' : lt, status: C.status ? txt(r[C.status]) : '', tid: C.tid ? txt(r[C.tid]).toUpperCase() : '',
+          falta: C.falta ? num(r[C.falta]) : null });
       });
       Object.keys(por).forEach(k => { por[k].valor = Math.round(por[k].valor * 100) / 100; });
       // as OVs cujas linhas foram lidas (com ou sem linha)
@@ -1465,7 +1596,9 @@ async function montar(opts, modo) {
     const ls = (porLinha[o.numero] || {}).linhas || [];
     const semLote = !!colLote && ls.some(l => !l.lote && statusLinha(l.status) === 'aberta');
     const temTrab = (o.trabalhos || []).some(w => w.fase !== 'ignora');
-    return (semLote && temTrab) || (modo.quadro && solicitaTransp(o));
+    // 12/11/26: a visão por trabalho/carga (quantidade) precisa das linhas do
+    // trabalho de TODA OV com trabalho
+    return temTrab || semLote || (modo.quadro && solicitaTransp(o));
   }).map(o => o.numero);
   const LT = precisaLT.length && restante(ate) > 6000
     ? await linhasTrabalhoDasOvs(precisaLT, token, ate, diag).catch(e => ({ E: null, por: {}, erro: String(e.message || e).slice(0, 160) }))
@@ -1489,17 +1622,34 @@ async function montar(opts, modo) {
       return null;
     };
   });
+  // 12/11/26: o contexto da divisão por QUANTIDADE (trabalho -> carga -> o que falta
+  // carregar) e as linhas do trabalho / da carga de cada OV, para a ficha
+  const colFalta = _colsLinhas && _colsLinhas.falta;
+  const temQtdTrab = !!(LT.E && !LT.erro && LT.E.qtd);
+  todas.forEach(o => {
+    const lt = LT.E && !LT.erro && precisa.has(o.numero) ? (LT.por[o.numero] || []) : null;
+    const idsCg = Array.from(new Set((o.trabalhos || []).map(w => w.carga).filter(Boolean).map(x => String(x).toUpperCase())));
+    const ll = [].concat.apply([], idsCg.map(id => (CARGA.linhas || {})[id] || [])).filter(x => !x.ov || x.ov === o.numero);
+    o._q = { wl: temQtdTrab ? lt : null, ll, temFalta: !!colFalta };
+    if (lt && lt.length) o.linhasTrab = lt.map(x => ({ trabalho: x.trabalho, item: x.item, qtd: x.qtd, tipo: x.tipo || undefined }));
+    if (ll.length) o.linhasCarga = ll.map(x => ({ carga: x.carga, item: x.item, qtd: x.qtd }));
+  });
   const partes = [];
   const lidas = porLinha._lidas || new Set();
   // 1º o lote (a parte sem lote vai para Pendência); 2º os trabalhos, na parte
   // que anda (trabalho aberto = Separação; os outros, onde a carga mandar)
   const colStatus = _colsLinhas && _colsLinhas.status;
-  todas.forEach(o => partesPorLinhas(o, (porLinha[o.numero] || {}).linhas || null, lidas.has(o.numero), !!colLote, !!colStatus).forEach(p => {
+  todas.map(o => {
+    const ls = (porLinha[o.numero] || {}).linhas || null;
+    // 12/11/26: com as quantidades do trabalho ou o QtyLeftToLoad, a divisão por quantidade
+    const q = o._q, usaQtd = !!(ls && ls.length && q && ((q.wl && q.wl.length) || (q.ll && q.ll.length) || q.temFalta) && ls.every(l => l.qtd != null));
+    return (usaQtd ? partesPorQuantidade(o, ls, q, CARGA.por || {}, !!colStatus) : partesPorLinhas(o, ls, lidas.has(o.numero), !!colLote, !!colStatus));
+  }).forEach(ps => ps.forEach(p => {
     // os trabalhos só dividem a parte com linhas em aberto (a do trabalho aberto)
     if (!p._abertas) partes.push(p);
     else partesPorTrabalho(p, cargasDe, faseCargasDe).forEach(q => partes.push(q));
   }));
-  partes.forEach(p => { delete p._trab; delete p._ctx; delete p._abertas; delete p._trabLinha; });
+  partes.forEach(p => { delete p._trab; delete p._ctx; delete p._abertas; delete p._trabLinha; delete p._q; });
   // os outros cartões da mesma OV (a ficha lista todos e leva de um ao outro)
   const porNum = {};
   partes.forEach(p => { (porNum[p.numero] = porNum[p.numero] || []).push(p); });
@@ -1641,7 +1791,10 @@ const COLS_LINHA = {
   deposito:   ['ShippingWarehouseId', 'InventLocationId'],
   lote:       ['ItemBatchNumber', 'InventBatchId', 'BatchNumber', 'BatchId'],
   // 12/11/26: o id da transação da linha (liga a linha do trabalho à linha da OV)
-  tid:        ['InventoryLotId', 'InventTransId']
+  tid:        ['InventoryLotId', 'InventTransId'],
+  // 12/11/26 (dono: "vai cair na Pendência se QtyLeftToLoad for > 0 — o
+  // QtyLeftToLoad é na SalesLine"): a quantidade da linha que ainda não entrou em carga
+  falta:      envLista('KANBAN_COL_LINHA_FALTA', ['QtyLeftToLoad', 'QuantityLeftToLoad', 'RemainingQuantityToLoad'])
 };
 // data "vazia" do F&O (1900-01-01, em qualquer hora) = sem data
 const dataLinha = (v) => { const s = txt(v); return /^\d{4}-\d{2}-\d{2}/.test(s) && !/^1900-01-01/.test(s) ? s.slice(0, 10) : null; };
@@ -1684,7 +1837,8 @@ async function linhasTrabalhoDasOvs(numeros, token, ate, diag) {
   rows.forEach(r => {
     const k = chaveOv(r[E.numero]); if (!k) return;
     (por[k] = por[k] || []).push({ trabalho: E.trabalho ? txt(r[E.trabalho]) : '', tid: E.inventTrans ? txt(r[E.inventTrans]).toUpperCase() : '',
-      item: E.item ? txt(r[E.item]).toUpperCase() : '', frete: E.frete ? txt(r[E.frete]) : '' });
+      item: E.item ? txt(r[E.item]).toUpperCase() : '', frete: E.frete ? txt(r[E.frete]) : '',
+      qtd: E.qtd ? num(r[E.qtd]) : null, tipo: E.tipo ? txt(r[E.tipo]) : '' });
   });
   return { E, por };
 }
@@ -1744,7 +1898,9 @@ async function linhasDaOv(numero, opts) {
       qtd: num(pk(r, 'qtd')), un: s('un'), preco: num(pk(r, 'preco')),
       desconto: num(pk(r, 'desconto')), descPct: num(pk(r, 'descPct')), valor: num(pk(r, 'valor')),
       status: s('status'), entrega: dataLinha(pk(r, 'entrega')), confirmada: dataLinha(pk(r, 'confirmada')), deposito: s('deposito'),
-      lote: s('lote'), temLote: !!D.pick(r, COLS_LINHA.lote) || Object.keys(r).some(k => COLS_LINHA.lote.some(n => n.toLowerCase() === k.toLowerCase()))
+      lote: s('lote'), temLote: !!D.pick(r, COLS_LINHA.lote) || Object.keys(r).some(k => COLS_LINHA.lote.some(n => n.toLowerCase() === k.toLowerCase())),
+      // 12/11/26: o que falta carregar (QtyLeftToLoad) — a Pendência por quantidade
+      falta: num(pk(r, 'falta'))
     };
   }).sort((a, b) => (a.linha == null ? 1e9 : a.linha) - (b.linha == null ? 1e9 : b.linha));
   const r = Object.assign(base, { entidade, linhas, frete: await pFrete });

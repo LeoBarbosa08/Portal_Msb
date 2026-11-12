@@ -257,6 +257,14 @@
             .kb-dw-err button{margin-left:auto;background:none;border:none;padding:0;font-family:inherit;font-size:11.5px;font-weight:700;color:var(--dw-blue);cursor:pointer;}
             .kb-dw-err button:hover{text-decoration:underline;}
             .kb-dw-nada{font-size:12px;font-weight:600;color:var(--dw-mut3);}
+            /* 12/11/26: os itens de cada trabalho / carga (a visão por quantidade) */
+            .kb-it-its{margin-top:6px;display:grid;gap:3px;}
+            .kb-it-its div{display:flex;gap:8px;align-items:baseline;font-size:11.5px;color:var(--dw-body);}
+            .kb-it-its div b{font-weight:700;color:var(--dw-ink);white-space:nowrap;}
+            .kb-it-its div span.nm{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+            .kb-it-its div span.q{white-space:nowrap;font-weight:700;}
+            .kb-it.outro{opacity:.55;}
+            .kb-qt{display:inline-block;margin-left:6px;padding:0 6px;border-radius:999px;font-size:10.5px;font-weight:700;background:#ECF3F7;color:var(--dw-blue);}
             /* 12/11/26: o e-mail da Cotação (Solicitar transportadora = Sim) */
             .kb-mail-st{margin:0;font-size:12.5px;line-height:1.5;color:var(--dw-body);font-weight:600;}
             .kb-mail-st.ok{color:#22794C;} .kb-mail-st.alerta{color:var(--dw-warn);}
@@ -543,7 +551,10 @@
         var pid = x.parte.id;
         d.push(x.parte.inteira ? (pid === 'entregue' ? 'todas as linhas entregues' : 'nenhum item com lote')
           : itensTxt(x.parte.n) + (pid === 'semlote' ? ' sem lote' : pid === 'linhas' ? ' ' + stLinhasTxt(x.parte.status, x.parte.n) : pid === 'entregue' ? (x.parte.n === 1 ? ' entregue' : ' entregues') : pid === 'comlote' ? ' com lote' : ' (o restante)'));
-        if (!x.parte.inteira && (x.parte.linhas || []).length) sub.push('linha' + (x.parte.linhas.length === 1 ? ' ' : 's ') + x.parte.linhas.join(', '));
+        if (!x.parte.inteira && (x.parte.linhas || []).length) sub.push('linha' + (x.parte.linhas.length === 1 ? ' ' : 's ') + x.parte.linhas.map(function (k) {
+          // 12/11/26: a quantidade de cada linha no cartão (a divisão por quantidade)
+          return k + (x.parte.qtds && x.parte.qtds[k] != null ? ' (' + fQtd(x.parte.qtds[k]) + ' un)' : '');
+        }).join(', '));
       }
       if (x.parteTrab) {
         d.push(trabTxt(x.parteTrab.n, x.parteTrab.id === 'abrir' ? 'aberto' : ((x.regra || {}).trabalho || {}).fase));
@@ -563,6 +574,9 @@
       else if (p && p.id === 'entregue') h += chip('kb-parte', 'Este cartão é só a parte ENTREGUE (sem nota): ' + itensTxt(p.n) + ' de ' + p.de + (ondeIrmas(o) ? '. O resto está em ' + ondeIrmas(o) : ''), 'entregue · ' + p.n + '/' + p.de);
       else if (p && p.id === 'linhas') h += chip('kb-parte', 'Este cartão é só a parte da OV com as linhas ' + stLinhasTxt(p.status, 2) + ': ' + itensTxt(p.n) + ' de ' + p.de + (ondeIrmas(o) ? '. O resto está em ' + ondeIrmas(o) : ''), (stLinhasTxt(p.status, p.n) || 'parte') + ' · ' + p.n + '/' + p.de);
       else if (p && p.id === 'resto') h += chip('kb-parte', 'Este cartão é só o restante da OV: ' + itensTxt(p.n) + ' de ' + p.de + (ondeIrmas(o) ? '. O resto está em ' + ondeIrmas(o) : ''), 'parte · ' + p.n + '/' + p.de);
+      // 12/11/26: a OV dividida por QUANTIDADE (trabalho / carga / o que falta carregar)
+      else if (p && p.id === 'qtd') h += chip(o.pendPorCarga ? 'kb-lote' : 'kb-parte', 'Este cartão é só a parte da OV ' + (o.pendPorCarga ? 'que ainda não entrou em carga (QtyLeftToLoad)' : 'deste trabalho / desta carga')
+        + ': ' + itensTxt(p.n) + ' de ' + p.de + (p.parcial ? ', com quantidade parcial' : '') + (ondeIrmas(o) ? '. O resto está em ' + ondeIrmas(o) : ''), (o.pendPorCarga ? 'falta carregar' : 'parte') + ' · ' + p.n + '/' + p.de);
       else if (p && p.id === 'semlote') h += chip('kb-lote', 'Este cartão é só a parte SEM lote: ' + itensTxt(p.n) + ' de ' + p.de + (ondeIrmas(o) ? '. O resto está em ' + ondeIrmas(o) : ''), 'sem lote · ' + p.n + '/' + p.de);
       else if (p && p.id === 'comlote') h += chip('kb-parte', 'Este cartão é só a parte COM lote: ' + itensTxt(p.n) + ' de ' + p.de + (p.outra ? '. ' + itensTxt(p.outra.n) + ' sem lote em Pendência' : ''), 'com lote · ' + p.n + '/' + p.de);
       if (t) {
@@ -1323,7 +1337,8 @@
       };
       var ci = credInfo(rg), credVeio = ci.veio;
       var porque = {
-        pendencia: (o.parte && o.parte.inteira ? 'Nenhum item em aberto da OV tem <b>lote</b>' : 'Este cartão é a parte da OV com os itens em aberto <b>sem lote</b>')
+        pendencia: o.pendPorCarga ? 'Este cartão é a quantidade da OV que <b>ainda não entrou em carga</b> (QtyLeftToLoad &gt; 0): fica em <b>Pendência</b> até ser carregada.'
+          + (ondeIrmas(o) ? ' O resto da OV está em <b>' + esc(ondeIrmas(o)) + '</b>.' : '') : (o.parte && o.parte.inteira ? 'Nenhum item em aberto da OV tem <b>lote</b>' : 'Este cartão é a parte da OV com os itens em aberto <b>sem lote</b>')
           + ': fica em <b>Pendência</b> até os itens receberem lote' + (destinoPend(o) ? ' — depois segue para <b>' + esc(destinoPend(o)) + '</b>' : '') + '.'
           + (ondeIrmas(o) ? ' Os itens com lote estão em <b>' + esc(ondeIrmas(o)) + '</b>.' : ''),
         criada: o.semLinhas ? 'A OV não tem <b>nenhuma linha</b> no Dynamics: fica em <b>Criada</b> até as linhas serem lançadas.'
@@ -1398,8 +1413,45 @@
     // status, quem, início/fim, onda e carga — o material para analisar a fase
     // carga da OV (WHSLoadTableBiEntity; reserva WHSOutboundLoadHeaderEntity): Conferência, Cotação, Pallet e Expedição.
     // Ligada pelos LoadId dos trabalhos de depósito da OV.
+    // 12/11/26 (dono: "a visão a nível de trabalho e de carga, com base em cada um —
+    // ItemId e QtyWork no trabalho, ItemId e Qty na carga; o nome do item também"):
+    // o nome do item vem das linhas da OV (lidas quando a ficha abre)
+    function nomeItem(o, item) {
+      var e = LINHAS.get(o.numero), ls = e && e.st === 'ok' ? e.linhas || [] : [], it = String(item || '').toUpperCase();
+      for (var i = 0; i < ls.length; i++) if (String(ls[i].item || '').toUpperCase() === it) return ls[i].produto || '';
+      return '';
+    }
+    function itensHtml(o, its) {
+      if (!its.length) return '';
+      return '<div class="kb-it-its">' + its.map(function (x) {
+        return '<div><b>' + esc(x.item || '—') + '</b><span class="nm">' + esc(nomeItem(o, x.item) || '') + '</span><span class="q">' + esc(x.qtd != null ? fQtd(x.qtd) + ' un' : '—') + '</span></div>';
+      }).join('') + '</div>';
+    }
+    // os itens de um trabalho: o Pick (sem o Put, que repete a quantidade); sem o tipo, o maior por item
+    function itensDoTrabalho(o, id) {
+      var m = {}, ord = [];
+      (o.linhasTrab || []).forEach(function (x) {
+        if (String(x.trabalho).toUpperCase() !== String(id).toUpperCase()) return;
+        if (x.tipo && !/pick|separa/i.test(x.tipo)) return;
+        if (!m[x.item]) { m[x.item] = { item: x.item, qtd: 0 }; ord.push(x.item); }
+        m[x.item].qtd = x.tipo ? m[x.item].qtd + (x.qtd || 0) : Math.max(m[x.item].qtd, x.qtd || 0);
+      });
+      return ord.map(function (k) { return m[k]; });
+    }
+    function itensDaCarga(o, id) {
+      var m = {}, ord = [];
+      (o.linhasCarga || []).forEach(function (x) {
+        if (String(x.carga).toUpperCase() !== String(id).toUpperCase()) return;
+        if (!m[x.item]) { m[x.item] = { item: x.item, qtd: 0 }; ord.push(x.item); }
+        m[x.item].qtd += x.qtd || 0;
+      });
+      return ord.map(function (k) { return m[k]; });
+    }
     function secCarga(o) {
-      var cs = o.cargas || [], tt = 'Carga', t = (o.regra || {}).trabalho;
+      // 12/11/26: todas as cargas da OV (as deste cartão destacadas) com os itens de cada uma
+      var porQtd = o.parte && o.parte.id === 'qtd', neste = {};
+      (o.cargas || []).forEach(function (c) { neste[String(c.id).toUpperCase()] = 1; });
+      var cs = porQtd && o.cargasOv ? o.cargasOv : (o.cargas || []), tt = 'Carga', t = (o.regra || {}).trabalho;
       var dica = '';
       if (!cs.length) {
         return '<section class="kb-dw-card"><h5>' + tt + '</h5><div class="kb-dw-nada">'
@@ -1410,24 +1462,30 @@
         var meta = [c.transportadora ? 'transportadora ' + c.transportadora : '', c.servico ? c.servico : '', c.deposito ? c.deposito : '', c.modelo ? 'modelo ' + c.modelo : ''].filter(Boolean).join(' · ');
         var datas = [c.envio ? 'envio previsto ' + quando(c.envio) : '', c.expedido ? 'remetida ' + quando(c.expedido) : '', c.envioConfirmado ? 'envio confirmado ' + quando(c.envioConfirmado) : ''].filter(Boolean).join(' · ');
         var campos = o.cargaFonte ? 'cotação realizada: ' + simNao(c.cotacao) + ' · enviada ao Pallet: ' + simNao(c.pallet) : '';
-        return '<div class="kb-it"><div class="n">' + (i + 1) + '</div><div class="c"><div class="t">Carga ' + esc(c.id) + '</div>'
+        var aqui = !porQtd || neste[String(c.id).toUpperCase()];
+        return '<div class="kb-it' + (aqui ? '' : ' outro') + '"><div class="n">' + (i + 1) + '</div><div class="c"><div class="t">Carga ' + esc(c.id) + (porQtd ? '<span class="kb-qt">' + (aqui ? 'neste cartão' : 'outro cartão') + '</span>' : '') + '</div>'
           + (meta ? '<div class="s">' + esc(meta) + '</div>' : '') + (datas ? '<div class="s lg">' + esc(datas) + '</div>' : '')
-          + (campos ? '<div class="s lg">' + esc(campos) + '</div>' : '')
+          + (campos ? '<div class="s lg">' + esc(campos) + '</div>' : '') + itensHtml(o, itensDaCarga(o, c.id))
           + (!o.cargaFonte ? '<div class="s lg">A entidade de cargas não respondeu: só o número da carga, sem os dados.</div>' : c.naoAchada ? '<div class="s lg">Carga não encontrada na entidade de cargas.</div>' : '')
           + '</div><div class="v">' + (c.status ? '<span class="kb-trab-st">' + esc(rotCarga(c.status)) + '</span><span>' + esc(c.status) + '</span>' : '') + '</div></div>';
       }).join('') + '</div>' + dica + '</section>';
     }
 
     function secTrabalho(o) {
-      var t = (o.regra || {}).trabalho, ls = o.trabalhos || [], tt = 'Trabalho no depósito';
+      // 12/11/26: todos os trabalhos da OV (os deste cartão destacados) com os itens de cada um
+      var porQtd = o.parte && o.parte.id === 'qtd', neste = {};
+      (o.trabalhos || []).forEach(function (w) { neste[String(w.id).toUpperCase()] = 1; });
+      var t = (o.regra || {}).trabalho, ls = porQtd && o.trabalhosOv ? o.trabalhosOv : (o.trabalhos || []), tt = 'Trabalho no depósito';
       if (!t) return '<section class="kb-dw-card"><h5>' + tt + '</h5><div class="kb-dw-nada">A entidade de trabalho de depósito (WHSWorkTableBiEntity) não respondeu no OData — veja o aviso no topo do quadro.</div></section>';
       if (!ls.length) return '<section class="kb-dw-card"><h5>' + tt + '</h5><div class="kb-dw-nada">Nenhum trabalho de depósito para esta OV ainda.'
         + (o.etapa === 'liberado' ? ' Ela já está liberada: o trabalho aparece quando o depósito criar a separação.' : '') + '</div></section>';
       return '<section class="kb-dw-card"><h5>' + tt + ' <small>' + esc(fQtd(ls.length)) + '</small></h5><div class="kb-its">' + ls.map(function (w, i) {
         var meta = [w.onda ? 'onda ' + w.onda : '', w.carga ? 'carga ' + w.carga : '', w.remessa ? 'remessa ' + w.remessa : '', w.deposito ? w.deposito : ''].filter(Boolean).join(' · ');
         var tempo = [w.usuario ? 'por ' + w.usuario : '', w.inicio ? 'início ' + quando(w.inicio) : '', w.fim ? 'fim ' + quando(w.fim) : '', w.inicio && w.fim ? duracao(w.inicio, w.fim) : ''].filter(Boolean).join(' · ');
-        return '<div class="kb-it"><div class="n">' + (i + 1) + '</div><div class="c"><div class="t">' + esc(w.id ? 'Trabalho ' + w.id : 'Trabalho sem número') + '</div>'
-          + (meta ? '<div class="s">' + esc(meta) + '</div>' : '') + (tempo ? '<div class="s lg">' + esc(tempo) + '</div>' : '') + '</div>'
+        var aqui = !porQtd || neste[String(w.id).toUpperCase()];
+        return '<div class="kb-it' + (aqui ? '' : ' outro') + '"><div class="n">' + (i + 1) + '</div><div class="c"><div class="t">' + esc(w.id ? 'Trabalho ' + w.id : 'Trabalho sem número')
+          + (porQtd ? '<span class="kb-qt">' + (aqui ? 'neste cartão' : 'outro cartão') + '</span>' : '') + '</div>'
+          + (meta ? '<div class="s">' + esc(meta) + '</div>' : '') + (tempo ? '<div class="s lg">' + esc(tempo) + '</div>' : '') + itensHtml(o, itensDoTrabalho(o, w.id)) + '</div>'
           + '<div class="v"><span class="kb-trab-st ' + esc(w.fase) + '">' + esc(rotTrab(w.status)) + '</span>' + (w.tipo ? '<span>' + esc(w.tipo) + '</span>' : '') + '</div></div>';
       }).join('') + '</div></section>';
     }
@@ -1453,12 +1511,15 @@
         if (/^cancel/.test(chaveEnum(l.status))) return { k: '3', t: 'Canceladas' };
         return { k: '2', t: 'Nos outros cartões' + (ondeIrmas(o) ? ' · ' + ondeIrmas(o) : ''), fora: true };
       };
+      // 12/11/26: a OV dividida por QUANTIDADE — a parte de cada linha neste cartão
+      var qNeste = function (l) { return pt && pt.qtds ? pt.qtds[ident(l)] : null; };
+      var vNeste = function (l) { var q = qNeste(l); return q != null && l.qtd ? (l.valor || 0) * q / l.qtd : (l.valor || 0); };
       ls.forEach(function (l) {
         tv += l.valor || 0;
         if (l.qtd != null && isFinite(l.qtd)) { tq += l.qtd; temQ = true; }
         var gd = grupoDe(l), k = gd.k;
         if (!porSt[k]) { porSt[k] = { st: gd.t, n: 0, v: 0, rows: [], on: gd.on, fora: gd.fora, ord: k }; grupos.push(porSt[k]); }
-        porSt[k].n++; porSt[k].v += l.valor || 0; porSt[k].rows.push(l);
+        porSt[k].n++; porSt[k].v += gd.on ? vNeste(l) : (l.valor || 0); porSt[k].rows.push(l);
       });
       if (pt) grupos.sort(function (a, b) { return a.ord < b.ord ? -1 : a.ord > b.ord ? 1 : 0; });
       var h = '<section class="kb-dw-card"><h5>' + tt + ' <small>' + esc(fQtd(ls.length)) + '</small></h5>'
@@ -1472,7 +1533,11 @@
           n++;
           var meta = [l.item ? 'cód. ' + l.item : '', l.deposito && l.deposito !== o.deposito ? l.deposito : ''].filter(Boolean).join(' · ');
           var loteH = !temLote ? '' : l.lote ? '<span class="kb-lt" title="Lote (ItemBatchNumber)">lote ' + esc(l.lote) + '</span>'
-            : aberta(l) ? '<span class="kb-lt sem" title="Item em aberto sem lote: vai para Pendência">sem lote</span>' : '<span class="kb-lt">sem lote</span>';
+            : aberta(l) ? '<span class="kb-lt sem" title="Item em aberto sem lote">sem lote</span>' : '<span class="kb-lt">sem lote</span>';
+          // 12/11/26: o que falta carregar (QtyLeftToLoad) e a parte da linha neste cartão
+          if (l.falta > 0 && aberta(l)) loteH += '<span class="kb-lt sem" title="QtyLeftToLoad: a quantidade que ainda não entrou em carga (Pendência)">falta carregar ' + esc(fQtd(l.falta)) + '</span>';
+          var qn = g.on ? qNeste(l) : null;
+          if (qn != null && l.qtd && qn < l.qtd) loteH += '<span class="kb-qt">' + esc(fQtd(qn)) + ' de ' + esc(fQtd(l.qtd)) + ' un neste cartão</span>';
           var atras = l.entrega && l.entrega < hoje && chaveEnum(l.status) === 'backorder';
           var entTxt = l.entrega ? 'entrega ' + fDM(l.entrega) + (atras ? ' · passou' : '') : 'sem data de entrega';
           var conf = l.confirmada && l.confirmada !== l.entrega ? ' · confirmada ' + fDM(l.confirmada) : '';
@@ -1482,7 +1547,8 @@
           var desc = l.descPct ? 'desc. ' + fQtd(l.descPct) + '%' : (l.desconto ? 'desc. ' + fBRL(l.desconto) : '');
           h += '<div class="kb-it' + (g.fora ? ' fora' : '') + '"><div class="n">' + n + '</div><div class="c"><div class="t">' + esc(l.produto || l.item || 'Produto sem nome') + '</div>'
             + (meta || loteH ? '<div class="s">' + esc(meta) + loteH + '</div>' : '') + '<div class="s lg">' + lg + '</div></div>'
-            + '<div class="v"><b>' + esc(l.valor != null ? fBRL(l.valor) : '—') + '</b>' + (qx ? '<span>' + esc(qx) + '</span>' : '') + (desc ? '<span>' + esc(desc) + '</span>' : '') + '</div></div>';
+            + '<div class="v"><b>' + esc(l.valor != null ? fBRL(qn != null && l.qtd && qn < l.qtd ? Math.round(vNeste(l) * 100) / 100 : l.valor) : '—') + '</b>'
+            + (qn != null && l.qtd && qn < l.qtd ? '<span>de ' + esc(fBRL(l.valor)) + '</span>' : '') + (qx ? '<span>' + esc(qx) + '</span>' : '') + (desc ? '<span>' + esc(desc) + '</span>' : '') + '</div></div>';
         });
       });
       h += '</div>';
