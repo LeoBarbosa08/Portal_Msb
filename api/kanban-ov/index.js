@@ -26,6 +26,10 @@
 //                                         grava ENVIARPALLET_CUSTOM = Sim na carga
 //                                         (exige o login VALIDADO; fica no log) e
 //                                         relê para conferir: { confirmado, leitura, aviso }
+//   POST /api/kanban-ov { acao: 'email-cotacao', ov: 'OV…', enviar: false|true }
+//                                      -> 12/11/26: o e-mail da Cotação da OV — a prévia
+//                                         ou o envio já (login validado) para os
+//                                         destinatários do Azure (kanban-email.js)
 //   GET /api/kanban-ov?ov=OV017525     -> as linhas da OV (a ficha do painel)
 //   -> { ok, configured, numero, entidade, linhas:[{ linha, item, produto,
 //        qtd, un, preco, desconto, descPct, valor, status, entrega,
@@ -54,6 +58,23 @@ module.exports = async function (context, req) {
       let b = req.body;
       if (typeof b === 'string') { try { b = JSON.parse(b); } catch (e) { b = {}; } }
       b = b || {};
+      // 12/11/26 (dono): o E-MAIL DA COTAÇÃO pela ficha — prévia (enviar: false) ou
+      // envio já (enviar: true) para os destinatários do Azure (KANBAN_EMAIL_PARA);
+      // ninguém escolhe para quem vai. Enviar exige o login VALIDADO.
+      if (String(b.acao || '') === 'email-cotacao') {
+        const quem = String((base.user && base.user.email) || '').toLowerCase();
+        if (b.enviar && !base.validated) { const e = new Error('Para enviar o e-mail é preciso o login validado. Saia e entre de novo no portal.'); e.status = 403; e.publicMessage = e.message; throw e; }
+        try {
+          const r = await K.emailCotacao(b.ov, { enviar: !!b.enviar, por: quem });
+          if (b.enviar) context.log('[kanban-ov] email-cotacao', JSON.stringify({ por: quem, ov: r.ov, para: r.enviado && r.enviado.para, caixas: r.caixas }));
+          json(200, r);
+        } catch (e) {
+          if (b.enviar) context.log('[kanban-ov] email-cotacao recusado', JSON.stringify({ por: quem, ov: String(b.ov || '').slice(0, 40), erro: String(e.message || e).slice(0, 300) }));
+          if (e && [400, 404, 409, 502].indexOf(e.status) >= 0) { json(e.status, { ok: false, error: e.message }); return; }
+          throw e;
+        }
+        return;
+      }
       if (String(b.acao || '') !== 'enviar-pallet') throw http.badRequest('Ação desconhecida.');
       // 11/11/26 (dono: "retira o BOTÃO ENVIAR PARA O PALLET"): a ficha não tem mais o
       // botão e o Kanban não grava no Dynamics — o envio fica DESLIGADO

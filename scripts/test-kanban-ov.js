@@ -13,6 +13,16 @@
 
 process.env.D365_TENANT_ID = 't'; process.env.D365_CLIENT_ID = 'c'; process.env.D365_CLIENT_SECRET = 's';
 process.env.D365_RESOURCE_URL = 'https://fo.teste';
+// 12/11/26: o e-mail da Cotação — o segredo do app (Graph) e um Azure Blob / Graph falsos
+process.env.PORTAL_CLIENT_SECRET = 'segredo-teste';
+const BLOBS = {}, EMAILS = [];
+function blobFalso(u, opts) {
+  const nome = decodeURIComponent(u.pathname.replace(/^\/kanban\//, '')), metodo = (opts && opts.method) || 'GET', h = (opts && opts.headers) || {};
+  const resp = (st, tx) => ({ ok: st < 400, status: st, text: async () => tx || '', json: async () => JSON.parse(tx || 'null') });
+  if (metodo === 'GET') return BLOBS[nome] == null ? resp(404) : resp(200, BLOBS[nome]);
+  if (metodo === 'PUT') { if (h['If-None-Match'] === '*' && BLOBS[nome] != null) return resp(409); BLOBS[nome] = String(opts.body || ''); return resp(201); }
+  return resp(400);
+}
 
 let falhas = 0;
 function t(nome, ok, extra) { console.log((ok ? '  ok  ' : '  FALHOU ') + nome + (ok || extra === undefined ? '' : ' -> ' + JSON.stringify(extra))); if (!ok) falhas++; }
@@ -25,6 +35,11 @@ global.fetch = async (url, opts) => {
   url = String(url);
   if (/login\.microsoftonline/.test(url)) return corpo({ access_token: 'tok', expires_in: 3600 });
   const u = new URL(url);
+  if (u.hostname === 'blob.teste') return blobFalso(u, opts);
+  if (u.hostname === 'graph.microsoft.com' && /\/sendMail$/.test(u.pathname)) {
+    EMAILS.push({ de: decodeURIComponent(u.pathname.split('/')[3]), auth: (opts.headers || {}).Authorization, corpo: JSON.parse(opts.body) });
+    return { ok: true, status: 202, text: async () => '', json: async () => null };
+  }
   if (u.pathname === '/data') return corpo({ value: SERVICO.map(n => ({ name: n, url: n })) });
   // escrita: PATCH Entidade(chave='x',...) -> grava no cenário
   if (opts && opts.method === 'PATCH') {
@@ -1068,6 +1083,88 @@ const bio = (n, st, lib) => ({ dataAreaId: 'msb', SalesOrderNumber: n, StatusPed
   await fn(ctx, { method: 'GET', headers: {}, query: { de: '01/11/2026', data: 'hoje' } });
   t('quadro com data/período inválidos: 200, ignorados', ctx.res.status === 200, ctx.res.status);
   auth.requireArea = orig;
+
+  console.log('10) 12/11/26 o E-MAIL DA COTAÇÃO: Solicitar transportadora = Sim, as caixas da carga, uma vez só');
+  const EM = require('../api/shared/kanban-email');
+  // o modelo do dono, exatamente
+  const em0 = EM.montarEmail({ ov: 'OV017579', cliente: 'SIMMED PRODUTOS MEDICO HOSPITALARES LTDA', valor: 3200, cidade: 'Brasília', uf: 'DF', agora: new Date('2026-11-12T13:00:00Z'),
+    caixas: [{ id: 'CX1', tipo: 'Caixa Dreno', peso: 7.62, comprimento: 45, largura: 43, altura: 28 }, { id: 'CX2', tipo: 'Caixa Dreno', peso: 7.62, comprimento: 45, largura: 43, altura: 28 }] });
+  const modelo = ['Prezados, bom dia!', '', '📦 Pedido OV017579 — pronto para faturamento e coleta', '👤 Cliente: SIMMED PRODUTOS MEDICO HOSPITALARES LTDA', '',
+    '📦 Caixas:', '• 2x Caixa Dreno — Caixa Dreno (C 45,0 x L 43,0 x A 28,0)', '', '📊 Total: 2 caixa(s)', '⚖️ Peso total: 15,24 kg', '💰 Valor do pedido: R$ 3.200,00',
+    '📍 Entrega: Brasília/DF', '', '🚚 Gentileza informar qual transportadora fará a coleta, para que possamos programar a retirada e emitir a nota fiscal.', '',
+    '📍 Coleta no nosso endereço:', 'Rua Araponga, 364, qd 01, lt 19 — Lauro de Freitas/BA — CEP 42701-330', '', '🕒 Horário de funcionamento:',
+    'Seg. a Qui. — 08h às 17h30', 'Sex. — 08h às 16h30', '', 'Permanecemos à disposição.'].join('\n');
+  t('o texto é o modelo do dono, linha a linha', em0.texto === modelo, em0.texto.split('\n').filter((l, i) => l !== modelo.split('\n')[i]));
+  t('o assunto e o HTML', em0.assunto === 'Pedido OV017579 — pronto para faturamento e coleta' && /2x Caixa Dreno — Caixa Dreno \(C 45,0 x L 43,0 x A 28,0\)<br>/.test(em0.html) && em0.totalCaixas === 2 && em0.pesoTotal === 15.24, em0.assunto);
+  t('a saudação pela hora de Brasília', EM.saudacao(new Date('2026-11-12T16:00:00Z')) === 'boa tarde' && EM.saudacao(new Date('2026-11-12T22:30:00Z')) === 'boa noite', [EM.saudacao(new Date('2026-11-12T16:00:00Z'))]);
+  t('caixas de tipos/medidas diferentes ficam em linhas separadas', EM.agruparCaixas([{ tipo: 'A', comprimento: 1 }, { tipo: 'A', comprimento: 2 }, { tipo: 'A', comprimento: 1 }]).map(g => g.n).join() === '2,1');
+
+  // o quadro: a automação
+  K._limparCache(); chamadas.length = 0;
+  Object.keys(BLOBS).forEach(k => { delete BLOBS[k]; }); EMAILS.length = 0;
+  process.env.KANBAN_BLOB_URL = 'https://blob.teste/kanban?sv=1&sig=x';
+  process.env.KANBAN_EMAIL_DE = 'remetente@empresa.teste'; process.env.KANBAN_EMAIL_PARA = 'teste@empresa.teste';
+  const guarda10 = CEN, serv10 = SERVICO;
+  SERVICO = ['BIOSalesOrderHeaderV1', 'SalesOrderHeadersV2', 'SalesOrderLines', 'WHSWorkTableBiEntities', 'WHSLoadTableBiEntities', 'BioWHSContainerV1Entities'];
+  const ov10 = (n, h) => v2(n, DIA + 'T' + h + ':00:00Z', 'Backorder', { SalesOrderName: 'SIMMED PRODUTOS MEDICO HOSPITALARES LTDA', DeliveryAddressCity: 'Brasília', DeliveryAddressStateId: 'DF' });
+  const bio10 = (n, sol) => Object.assign(b4(n, 'Backorder', 'Released', 'No'), { Solicitartransportadora_Custom: sol });
+  const lin10 = (ov, n, v) => ({ dataAreaId: 'msb', SalesOrderNumber: ov, LineNumber: n, ItemNumber: 'IT-' + n, LineAmount: v, ItemBatchNumber: 'LT-' + n, SalesOrderLineStatus: 'Backorder' });
+  const ld10 = (id) => ({ dataAreaId: 'msb', LoadId: id, LoadStatus: 'Loaded', QuotationPerformed_InoveProjects: 'Yes', ENVIARPALLET_CUSTOM: 'No' });
+  const cx10 = (id, carga, rem) => ({ dataAreaId: 'msb', ContainerId: id, LoadId: carga, ShipmentId: rem, ContainerTypeCode: 'Caixa Dreno', Weight: 7.62, Length: 45, Width: 43, Height: 28 });
+  CEN = {
+    SalesOrderHeadersV2: { linhas: [ov10('OV019501', '10'), ov10('OV019503', '11')] },
+    BIOSalesOrderHeaderV1: { linhas: [bio10('OV019501', 'Yes'), bio10('OV019503', 'No')] },
+    SalesOrderLines: { linhas: [lin10('OV019501', 1, 2000), lin10('OV019501', 2, 1200), lin10('OV019502', 1, 500), lin10('OV019503', 1, 90), lin10('OV019504', 1, 70)] },
+    WHSWorkTableBiEntities: { linhas: ['501', '502', '503', '504'].map(x => w('OV019' + x, 'W' + x, 'Closed', { LoadId: 'LD-' + x, ShipmentId: 'SH-' + x })) },
+    WHSLoadTableBiEntities: { linhas: ['501', '502', '503', '504'].map(x => ld10('LD-' + x)) },
+    // a carga LD-501 leva também uma caixa de OUTRA remessa (outra OV): não conta
+    BioWHSContainerV1Entities: { linhas: [cx10('CX-1', 'LD-501', 'SH-501'), cx10('CX-2', 'LD-501', 'SH-501'), cx10('CX-9', 'LD-501', 'SH-OUTRA'), cx10('CX-3', 'LD-502', 'SH-502'), cx10('CX-4', 'LD-503', 'SH-503')] }
+  };
+  r = await K.quadro({});
+  const q10 = (n) => r.ovs.find(o => o.numero === n);
+  t('a OV em Cotação com Solicitar transportadora = Sim é candidata (a com Não, não)', q10('OV019501') && q10('OV019501').etapa === 'cotacao' && q10('OV019501').emailCotacao && q10('OV019503') && q10('OV019503').etapa === 'cotacao' && !q10('OV019503').emailCotacao,
+    r.ovs.map(o => o.chave + '=' + o.etapa + (o.emailCotacao ? ':' + o.emailCotacao.status : '')));
+  t('1ª vez: a que JÁ estava em Cotação fica como "base", sem envio', q10('OV019501').emailCotacao.status === 'base' && EMAILS.length === 0 && BLOBS['kanban-email-cotacao/_base.json'] && JSON.parse(BLOBS['kanban-email-cotacao/OV019501.json']).status === 'base', { st: q10('OV019501').emailCotacao.status, n: EMAILS.length });
+  t('a prévia vem pronta: só as caixas da remessa da OV (2, não 3), peso e valor', q10('OV019501').emailCotacao.caixas === 2 && q10('OV019501').emailCotacao.peso === 15.24 && /R\$ 3\.200,00/.test(q10('OV019501').emailCotacao.previa.texto) && /Brasília\/DF/.test(q10('OV019501').emailCotacao.previa.texto), q10('OV019501').emailCotacao);
+  // uma OV nova CAI em Cotação
+  K._limparCache();
+  CEN.SalesOrderHeadersV2.linhas.push(ov10('OV019502', '12')); CEN.BIOSalesOrderHeaderV1.linhas.push(bio10('OV019502', 'Yes'));
+  r = await K.quadro({});
+  t('a OV que caiu em Cotação recebe o e-mail (automático)', q10('OV019502').emailCotacao.status === 'enviado' && q10('OV019502').emailCotacao.auto === true && EMAILS.length === 1, { st: q10('OV019502').emailCotacao, n: EMAILS.length });
+  const m10 = EMAILS[0] && EMAILS[0].corpo.message;
+  t('pelo Graph: da caixa do Azure, para o destinatário do Azure, com o assunto e o HTML', EMAILS[0] && EMAILS[0].de === 'remetente@empresa.teste' && EMAILS[0].auth === 'Bearer tok' && m10.toRecipients[0].emailAddress.address === 'teste@empresa.teste'
+    && m10.subject === 'Pedido OV019502 — pronto para faturamento e coleta' && m10.body.contentType === 'HTML' && /1x Caixa Dreno/.test(m10.body.content) && EMAILS[0].corpo.saveToSentItems === true, EMAILS[0]);
+  t('a marca grava o envio', JSON.parse(BLOBS['kanban-email-cotacao/OV019502.json']).status === 'enviado', BLOBS['kanban-email-cotacao/OV019502.json']);
+  t('a que estava na base continua sem envio', q10('OV019501').emailCotacao.status === 'base', q10('OV019501').emailCotacao.status);
+  K._limparCache(); r = await K.quadro({});
+  t('na leitura seguinte não envia de novo', EMAILS.length === 1 && q10('OV019502').emailCotacao.status === 'enviado', EMAILS.length);
+  // sem caixas na carga: espera
+  K._limparCache();
+  CEN.SalesOrderHeadersV2.linhas.push(ov10('OV019504', '13')); CEN.BIOSalesOrderHeaderV1.linhas.push(bio10('OV019504', 'Yes'));
+  r = await K.quadro({});
+  t('sem caixas na carga: aguarda, sem envio e sem marca', q10('OV019504').emailCotacao.status === 'sem-caixas' && EMAILS.length === 1 && !BLOBS['kanban-email-cotacao/OV019504.json'], q10('OV019504').emailCotacao.status);
+  // o botão da ficha: prévia e envio já
+  const pv10 = await K.emailCotacao('OV019501', { enviar: false });
+  t('prévia pela ficha: o e-mail montado, sem enviar', pv10.ok && pv10.caixas === 2 && /2x Caixa Dreno — Caixa Dreno \(C 45,0 x L 43,0 x A 28,0\)/.test(pv10.texto) && /15,24 kg/.test(pv10.texto) && EMAILS.length === 1 && pv10.solicitaTransportadora === true, pv10);
+  const ev10 = await K.emailCotacao('OV019501', { enviar: true, por: 'fulano@empresa.teste' });
+  t('"Enviar e-mail agora": envia e marca como enviado (pelo botão)', ev10.enviado && ev10.enviado.status === 'enviado' && ev10.enviado.manual && EMAILS.length === 2 && JSON.parse(BLOBS['kanban-email-cotacao/OV019501.json']).manual === true, ev10.enviado);
+  let e10 = null; try { await K.emailCotacao('OV099999', { enviar: false }); } catch (e) { e10 = e; }
+  t('OV fora do quadro: 404', e10 && e10.status === 404, e10 && e10.message);
+  // a rota: enviar exige o login validado
+  const fn10 = require('../api/kanban-ov/index.js'), ctx10 = { log: Object.assign(() => {}, { error() {} }) };
+  auth.requireArea = async () => ({ user: { email: 'fulano@empresa.teste' }, validated: false });
+  await fn10(ctx10, { method: 'POST', headers: {}, query: {}, body: { acao: 'email-cotacao', ov: 'OV019501', enviar: true } });
+  t('rota: enviar sem o login validado -> 403 e não envia', ctx10.res.status === 403 && EMAILS.length === 2, ctx10.res.status);
+  await fn10(ctx10, { method: 'POST', headers: {}, query: {}, body: { acao: 'email-cotacao', ov: 'OV019501', enviar: false } });
+  t('rota: a prévia não precisa do login validado', ctx10.res.status === 200 && ctx10.res.body.caixas === 2, ctx10.res.status);
+  auth.requireArea = orig;
+  // sem remetente/destinatário: não envia e avisa
+  K._limparCache(); delete process.env.KANBAN_EMAIL_DE;
+  CEN.SalesOrderHeadersV2.linhas.push(ov10('OV019505', '14')); CEN.BIOSalesOrderHeaderV1.linhas.push(bio10('OV019505', 'Yes'));
+  r = await K.quadro({});
+  t('sem KANBAN_EMAIL_DE: "não configurado", sem envio e com aviso', q10('OV019502').emailCotacao.status === 'nao-configurado' && EMAILS.length === 2 && r.avisos.some(a => /KANBAN_EMAIL_DE e KANBAN_EMAIL_PARA/.test(a)), r.avisos);
+  delete process.env.KANBAN_EMAIL_PARA; delete process.env.KANBAN_BLOB_URL;
+  CEN = guarda10; SERVICO = serv10;
 
   console.log(falhas ? '\n' + falhas + ' FALHA(S)' : '\ntudo ok');
   process.exit(falhas ? 1 : 0);

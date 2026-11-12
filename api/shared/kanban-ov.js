@@ -38,6 +38,7 @@
 
 const D = require('./d365');
 const ST_NOTA = require('./fatdia-status');   // status da nota (documento fiscal / NF-e), pelo número
+const EMAIL = require('./kanban-email');        // 12/11/26: o e-mail da Cotação (Solicitar transportadora = Sim)
 
 const EMPRESA   = String(process.env.KANBAN_EMPRESA || process.env.ESTOQUE_MSB_EMPRESA || 'msb').trim().toLowerCase();
 const TTL_MS    = Number(process.env.KANBAN_TTL_MS || 15000);        // cache do dia: 15 s (a tela consulta a cada 30 s)
@@ -74,6 +75,9 @@ const COLS = {
   deposito: ['DefaultShippingWarehouseId', 'InventLocationId', 'ShippingWarehouseId'],
   pool:     ['SalesOrderPoolId', 'SalesPoolId'],
   criadoPor:['OrderTakerPersonnelNumber', 'CreatedBy', 'CREATEDBY', 'OrderResponsiblePersonnelNumber'],
+  // 12/11/26: a cidade/UF de entrega (o e-mail da Cotação: "📍 Entrega: Brasília/DF")
+  cidade:   ['DeliveryAddressCity'],
+  uf:       ['DeliveryAddressStateId', 'DeliveryAddressState'],
   // 11/11/2026 (dono): "quando o pedido tiver AREADEMANDANTE (areademandante_Custom),
   // sinalizar que veio do PI Pedidos" — o PI grava a Área Demandante na OV
   // (api/pedido-enviar · Areademandante). Nome exato (sem caixa) ou o pedaço do nome.
@@ -487,6 +491,31 @@ const CFG_FRETE = {
   chave: 'frete', candidatas: ENT_FRETE, reNome: /whsworkline/i, pedaco: 'whsworkline',
   cols: COL_FRETE, obrig: ['frete'], reCols: { frete: /fre(i)?ght.?type/i },
   erroCol: () => 'sem a coluna ' + COL_FRETE.frete.join('/')
+};
+// ── AS CAIXAS DA CARGA (12/11/2026) ─────────────────────────────────
+// Dono: "essas caixas são os containers — cada ContainerId é uma caixa —, da
+// BioWHSContainerV1Entity, que tem ligação com a carga; peso Weight, comprimento
+// Length, largura Width, altura Height". Para o e-mail da Cotação. Ligadas pela
+// carga (LoadId); com a remessa (ShipmentId) na entidade, só as das remessas da
+// OV (uma carga pode levar mais de uma OV). Nome público descoberto como as
+// outras extras (candidatas + "whscontainer"; env KANBAN_ENT_CAIXA).
+const ENT_CAIXA = envLista('KANBAN_ENT_CAIXA', []).concat([
+  'BioWHSContainerV1Entities', 'BioWHSContainerV1Entity', 'BioWHSContainersV1', 'BioWHSContainerV1', 'BIOWHSContainerV1Entities', 'BIOWHSContainerV1Entity'
+]).filter((v, i, a) => a.indexOf(v) === i);
+const COL_CAIXA = {
+  id:          ['ContainerId'],
+  carga:       ['LoadId'],
+  remessa:     ['ShipmentId'],
+  tipo:        envLista('KANBAN_COL_CAIXA_TIPO', ['ContainerTypeCode', 'ContainerType', 'ContainerTypeId']),
+  descricao:   ['ContainerTypeDescription', 'ContainerTypeName', 'Description', 'ContainerDescription'],
+  peso:        envLista('KANBAN_COL_CAIXA_PESO', ['Weight', 'GrossWeight']),
+  comprimento: ['Length', 'Depth'],
+  largura:     ['Width'],
+  altura:      ['Height']
+};
+const CFG_CAIXA = {
+  chave: 'caixa', candidatas: ENT_CAIXA, reNome: /whscontainer/i, pedaco: 'whscontainer',
+  cols: COL_CAIXA, obrig: ['id', 'carga'], erroCol: (p) => 'sem a coluna ' + COL_CAIXA[p].join('/')
 };
 const CFG_NOTA = {
   chave: 'nota', candidatas: ENT_NOTA, reNome: /salesinvoiceheader/i, pedaco: 'salesinvoiceheader',
@@ -1340,7 +1369,7 @@ async function montar(opts, modo) {
       origemPi: !!area, areaDemandante: area ? area.valor : null, areaCol: area ? area.coluna : null,
       // 12/11/26: os campos extras pedidos pelo dono (a ficha mostra em "Dados do pedido")
       extras: CAMPOS_EXTRA.map(nome => pegaExtra(k, nome)),
-      cliente: pega(k, 'nome'), conta: pega(k, 'conta'), oc: pega(k, 'oc'),
+      cliente: pega(k, 'nome'), conta: pega(k, 'conta'), oc: pega(k, 'oc'), cidade: pega(k, 'cidade'), uf: pega(k, 'uf'),
       criadaEm: txt(reg[k][principal.entidade][principal.criadaEm]),
       entrega: pega(k, 'entrega'), deposito: pega(k, 'deposito'), pool: pega(k, 'pool'), criadoPor: pega(k, 'criadoPor'),
       valor: l ? l.valor : null, itens: l ? l.itens : null,
@@ -1416,6 +1445,28 @@ async function montar(opts, modo) {
     if (o.dataPeriodo !== hoje) { expedicaoOutroDia++; return false; }
     return true;
   });
+  // 12/11/26 (dono): o E-MAIL DA COTAÇÃO — a OV em Cotação com Solicitar
+  // transportadora = Sim recebe o e-mail (uma vez só; kanban-email.js)
+  if (modo.quadro) {
+    const vistas = new Set();
+    const cands = ovs.filter(o => o.etapa === 'cotacao' && solicitaTransp(o) && !vistas.has(o.numero) && vistas.add(o.numero));
+    if (cands.length && restante(ate) > 8000) {
+      const ids = Array.from(new Set([].concat.apply([], cands.map(o => (o.cargas || []).map(c => String(c.id))))));
+      const CX = await caixasDasCargas(ids, token, ate, diag).catch(e => ({ E: null, por: {}, erro: String(e.message || e).slice(0, 160) }));
+      if (CX.erro) avisos.push('Não deu para ler as caixas das cargas (' + CX.erro + '): o e-mail da Cotação fica esperando as caixas.');
+      const lst = cands.map(o => { const em = EMAIL.montarEmail(dadosEmail(o, CX)); return { o, ov: o.numero, pronto: em.totalCaixas > 0, email: em }; });
+      const res = await EMAIL.processar(lst, { temTempo: () => restante(ate) > FOLGA_MS + 4000 });
+      lst.forEach(c => {
+        const st = res.porOv[c.ov] || { status: 'pendente' };
+        const info = Object.assign({}, st, { previa: { assunto: c.email.assunto, texto: c.email.texto }, caixas: c.email.totalCaixas, peso: c.email.pesoTotal, entidadeCaixas: CX.E ? CX.E.entidade : null });
+        ovs.filter(x => x.numero === c.ov && x.etapa === 'cotacao').forEach(x => { x.emailCotacao = info; });
+      });
+      diag.push({ etapa: 'email:cotacao', candidatas: cands.length, base: res.base, enviados: res.enviados, erro: res.erro });
+      if (res.erro) avisos.push('O e-mail da Cotação não conseguiu ler o registro dos envios (' + res.erro + ').');
+      if (!EMAIL.configurado()) avisos.push(cands.length + ' OV(s) em Cotação pedem o e-mail de transportadora, mas falta configurar o remetente e o destinatário (KANBAN_EMAIL_DE e KANBAN_EMAIL_PARA) no Azure.');
+      else if (!EMAIL.comRegistro()) avisos.push('O envio automático do e-mail da Cotação está desligado: falta o container do registro (KANBAN_BLOB_URL). O botão da ficha envia.');
+    }
+  }
   if (modo.quadro && CARGA.E && !(CARGA.lista || [CARGA.E]).some(L => L.envioConfirmado)) {
     avisos.push('Não achei o campo ' + COL_CARGA.envioConfirmado[0] + ' nas entidades de cargas (' + (CARGA.lista || [CARGA.E]).map(L => L.entidade).join(', ') +
       '): a Expedição, que mostra as cargas com o envio confirmado hoje, fica vazia. Fixe o nome em KANBAN_COL_CARGA_ENVIO_CONFIRMADO.');
@@ -1502,6 +1553,32 @@ const COLS_LINHA = {
 // data "vazia" do F&O (1900-01-01, em qualquer hora) = sem data
 const dataLinha = (v) => { const s = txt(v); return /^\d{4}-\d{2}-\d{2}/.test(s) && !/^1900-01-01/.test(s) ? s.slice(0, 10) : null; };
 const _cacheLinhas = new Map();
+// as caixas (containers) das cargas: LoadId -> [{ id, carga, remessa, tipo, descricao, peso, comprimento, largura, altura }]
+async function caixasDasCargas(ids, token, ate, diag) {
+  const x = await entidadeExtra(CFG_CAIXA, token, ate, diag), E = x.E;
+  if (!E) return { E: null, por: {}, erro: x.motivo || 'a entidade das caixas não respondeu' };
+  const rows = ids.length ? await porNumeros(E.entidade, E.carga, ids, token, ate, diag, 'email:caixas', null, !E.temEmpresa) : [];
+  const v = (r, papel) => E[papel] ? r[E[papel]] : null;
+  const por = {};
+  rows.forEach(r => {
+    const id = txt(v(r, 'id')), carga = txt(v(r, 'carga')).toUpperCase(); if (!id || !carga) return;
+    (por[carga] = por[carga] || []).push({ id, carga, remessa: txt(v(r, 'remessa')), tipo: txt(v(r, 'tipo')), descricao: txt(v(r, 'descricao')),
+      peso: num(v(r, 'peso')), comprimento: num(v(r, 'comprimento')), largura: num(v(r, 'largura')), altura: num(v(r, 'altura')) });
+  });
+  return { E, por };
+}
+// Solicitar transportadora = Sim (o campo extra da OV)
+const solicitaTransp = (o) => (o.extras || []).some(e => /^solicitartransportadora_custom$/i.test(e.nome) && marcadoV(e.valor));
+// os dados do e-mail de UMA OV: as caixas das cargas dela (só as das remessas dela, se der)
+function dadosEmail(o, CX) {
+  const remessas = new Set((o.trabalhos || []).map(w => txt(w.remessa).toUpperCase()).filter(Boolean));
+  let caixas = [];
+  (o.cargas || []).forEach(c => { caixas = caixas.concat((CX.por || {})[String(c.id).toUpperCase()] || []); });
+  if (remessas.size && CX.E && CX.E.remessa) caixas = caixas.filter(c => !c.remessa || remessas.has(c.remessa.toUpperCase()));
+  const vistos = new Set(); caixas = caixas.filter(c => !vistos.has(c.id) && vistos.add(c.id));
+  return { ov: o.numero, cliente: o.cliente, caixas, valor: o.valorOv != null ? o.valorOv : o.valor, cidade: o.cidade, uf: o.uf };
+}
+
 // o frete da OV: os tipos de frete (sem repetir) das linhas dos trabalhos dela
 async function freteDaOv(n, token, ate) {
   const x = await entidadeExtra(CFG_FRETE, token, ate, []);
@@ -1715,6 +1792,31 @@ async function conferirPallet(E, usada, id, token, ate) {
   }
 }
 
+// ── o e-mail da Cotação pela ficha (12/11/2026): prévia ou envio já ──
+// A OV do quadro (leitura em cache ou nova), as caixas das cargas dela e o
+// e-mail montado. enviar = true: envia já para os destinatários do Azure e grava
+// a marca (vale como "enviado" para a automação não repetir).
+async function emailCotacao(numero, opts) {
+  opts = opts || {};
+  const n = chaveOv(numero);
+  if (!/^[A-Z0-9._-]{3,40}$/.test(n)) throw erroStatus('Número de OV inválido.', 400);
+  const q = await quadro({});
+  const cards = (q.ovs || []).filter(o => o.numero === n);
+  if (!cards.length) throw erroStatus('A ' + n + ' não está no quadro agora.', 404);
+  const o = cards.find(x => x.etapa === 'cotacao') || cards[0];
+  const ate = Date.now() + 20000;
+  const token = await D.getToken();
+  const ids = (o.cargas || []).map(c => String(c.id));
+  const CX = await caixasDasCargas(ids, token, ate, []).catch(e => ({ E: null, por: {}, erro: String(e.message || e).slice(0, 160) }));
+  const email = EMAIL.montarEmail(dadosEmail(o, CX));
+  const base = { ok: true, ov: n, etapa: o.etapa, solicitaTransportadora: solicitaTransp(o), assunto: email.assunto, texto: email.texto,
+    caixas: email.totalCaixas, peso: email.pesoTotal, entidadeCaixas: CX.E ? CX.E.entidade : null, erroCaixas: CX.erro || null, configurado: EMAIL.configurado() };
+  if (!opts.enviar) return base;
+  const reg = await EMAIL.enviarAgora({ ov: n, email }, opts.por);
+  _cache.clear();   // a próxima leitura do quadro já mostra "enviado"
+  return Object.assign(base, { enviado: reg });
+}
+
 function _limparCache() { _cache.clear(); _cacheLinhas.clear(); _ents = null; _entsTs = 0; _servico = null; _servicoTs = 0; _entLinhas = null; Object.keys(_extras).forEach(k => { delete _extras[k]; }); ST_NOTA._limparCache(); _colsLinhas = null; }
 
-module.exports = { ordensDoDia, quadro, linhasDaOv, enviarParaPallet, operacoesDasOvs, hojeSP, EMPRESA, CONFIGURED: D.CONFIGURED, ETAPAS, _limparCache, _interno: { diaDe, RE_STATUS, RE_NAO_STATUS, etapaDe } };
+module.exports = { ordensDoDia, quadro, linhasDaOv, enviarParaPallet, emailCotacao, operacoesDasOvs, hojeSP, EMPRESA, CONFIGURED: D.CONFIGURED, ETAPAS, _limparCache, _interno: { diaDe, RE_STATUS, RE_NAO_STATUS, etapaDe } };

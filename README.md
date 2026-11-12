@@ -1551,6 +1551,52 @@ fases". A regra do lote (`partesPorLinhas`) está **LIGADA por padrão** de novo
 - Testes (1, 7c): Pendência com regra; `=0` desliga; sem env, ligada.
   `sw.js` — cache `bm-comest-v74`.
 
+### Kanban · o e-mail automático da Cotação (12/11/2026)
+
+O dono: "quando o PEDIDO cair em COTAÇÃO, se na OV Solicitartransportadora_Custom
+= Sim, envie automaticamente um e-mail para o cliente" — no modelo dele (📦 Pedido
+… pronto para faturamento e coleta, 👤 Cliente, 📦 Caixas, 📊 Total, ⚖️ Peso, 💰
+Valor, 📍 Entrega, 🚚 pedido da transportadora, 📍 coleta e 🕒 horário). "As caixas
+são os containers: cada ContainerId da BioWHSContainerV1Entity é uma caixa,
+ligada à carga; Weight, Length, Width, Height."
+
+- **O e-mail** (`api/shared/kanban-email.js` · `montarEmail`): o texto do modelo,
+  com a saudação pela hora de Brasília (bom dia / boa tarde / boa noite); as
+  caixas iguais (tipo + medidas) juntas — "• 2x Caixa Dreno — Caixa Dreno (C 45,0
+  x L 43,0 x A 28,0)"; o total, o peso somado, o valor da OV e a cidade/UF de
+  entrega (`DeliveryAddressCity` / `DeliveryAddressStateId`). O endereço de
+  coleta e o horário são do modelo (`KANBAN_EMAIL_COLETA`, `KANBAN_EMAIL_HORARIO`
+  trocam). Assunto: "Pedido OV… — pronto para faturamento e coleta".
+- **As caixas** (`caixasDasCargas`): a `BioWHSContainerV1Entity` (nome público
+  descoberto: candidatas + "whscontainer"; `KANBAN_ENT_CAIXA`), pelas cargas da
+  OV; com o `ShipmentId`, só as caixas das remessas da OV (uma carga pode levar
+  outra OV).
+- **O envio**: Microsoft Graph direto (`POST /users/{remetente}/sendMail`) com o
+  token de aplicativo do portal (`auth.getAppToken` — o app tem Mail.Send). Sai
+  da caixa `KANBAN_EMAIL_DE` para `KANBAN_EMAIL_PARA` (lista; `KANBAN_EMAIL_CC`
+  opcional) — **só pelas variáveis do Azure**, nunca pelo código (o repositório é
+  público) nem pela tela.
+- **A automação** (`processar`, a cada leitura do quadro): as OVs em Cotação com
+  Solicitar transportadora = Sim. **Uma vez só por OV**: uma marca
+  `kanban-email-cotacao/<OV>.json` no blob, criada com `If-None-Match:*` — só uma
+  instância consegue e só ela envia. Container: `KANBAN_BLOB_URL` (SAS de
+  container, Read + Create + Write) ou, sem ela, o do log de acessos
+  (`LOG_PORTAL_BLOB_URL`); sem nenhum, o automático fica desligado. Na 1ª vez
+  (sem `_base.json`), as que JÁ estavam em Cotação só são marcadas ("base"), sem
+  envio — daí em diante, envia para as que caem em Cotação. Sem caixas na carga:
+  espera. No máximo `KANBAN_EMAIL_MAX` (5) envios por leitura; `KANBAN_EMAIL_AUTO=0`
+  desliga.
+- **Ficha** (OV em Cotação): "E-mail da cotação" com a situação (enviado em … para
+  …, base, aguardando as caixas, na fila, falhou, falta configurar), a prévia do
+  e-mail e o botão **Enviar e-mail agora** (teste / reenvio; vai para os
+  destinatários do Azure e marca como enviado). Rota: `POST /api/kanban-ov
+  { acao: 'email-cotacao', ov, enviar }` — a prévia com a área kanban; o envio
+  exige o login validado.
+- Testes (10): o texto igual ao modelo, linha a linha; a 1ª vez como base; a OV
+  que cai em Cotação recebe (uma vez); só as caixas da remessa da OV; sem caixas
+  espera; a prévia e o botão; a rota (403 sem o login validado); sem
+  configuração, avisa. `sw.js` — cache `bm-comest-v85`.
+
 ### Kanban · o tipo de frete na ficha (12/11/2026)
 
 O dono: "preciso da informação de frete também: FreghtType_InoveProjects, que
