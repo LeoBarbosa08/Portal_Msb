@@ -1551,6 +1551,24 @@ fases". A regra do lote (`partesPorLinhas`) está **LIGADA por padrão** de novo
 - Testes (1, 7c): Pendência com regra; `=0` desliga; sem env, ligada.
   `sw.js` — cache `bm-comest-v74`.
 
+### Kanban · o campo extra com nome parecido (12/11/2026)
+
+O dono: "Solicitar transportadora está Sim no Dynamics e não está sinalizando" — a
+ficha mostrava "Solicitartransportadora_Custom · não veio do Dynamics": nenhuma
+entidade de OV lida tem a coluna com esse nome exato.
+
+- `pegaExtra` procura em 3 passos: o nome exato (sem caixa); um nome PARECIDO — o
+  miolo do nome sem `_Custom`/`_InoveProjects`/`_Inove` e sem "_" (ex.:
+  `SolicitarTransportadora`), ou as abreviações conhecidas (`SolicitarTransp…`)
+  —, marcado `aproximado`; sem nada, as colunas parecidas que existem nas
+  entidades lidas vão em `parecidos` (ex.: com "transp"/"solicit").
+- Ficha: o nome da coluna achada embaixo do valor; sem o campo, "não veio do
+  Dynamics · parecidos: …" (ou "nenhuma coluna parecida nas tabelas lidas") — a
+  pista para fixar o nome certo (`KANBAN_CAMPOS_EXTRA`).
+- O e-mail da Cotação usa o mesmo valor (Solicitar transportadora = Sim).
+- Testes (4a): o nome parecido achado; a pista sem o campo. `sw.js` — cache
+  `bm-comest-v88`.
+
 ### Kanban · o e-mail automático da Cotação (12/11/2026)
 
 O dono: "quando o PEDIDO cair em COTAÇÃO, se na OV Solicitartransportadora_Custom

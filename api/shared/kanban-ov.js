@@ -91,6 +91,13 @@ const RE_AREA = /area_?demandante/i;
 // inclusive "No" e vazio, que os campos crus (crus/VAZIOS) jogam fora. Lista
 // trocável por env: KANBAN_CAMPOS_EXTRA.
 const CAMPOS_EXTRA = envLista('KANBAN_CAMPOS_EXTRA', ['Solicitartransportadora_Custom', 'CarrierName_InoveProjects', 'CustomerOrderNumber_Inove', 'Operador_Custom']);
+// o "miolo" do nome de um campo extra, para achar o nome parecido no Dynamics:
+// sem o sufixo (_Custom, _InoveProjects, _Inove) e sem "_" / caixa
+const normCol = (c) => String(c || '').toLowerCase().replace(/[^a-z0-9]/g, '');
+const miolhoExtra = (nome) => normCol(String(nome || '').replace(/_(custom|inoveprojects|inove)$/i, ''));
+// nomes parecidos conhecidos (abreviações do Dynamics) e as pistas para listar
+const RE_EXTRA = { solicitartransportadora: /solicit\w{0,6}transp/i, carriername: /carrier_?name/i, customerordernumber: /customer_?order_?n(o|um|umber)/i };
+const RE_PISTA = { solicitartransportadora: /transp|solicit/i, carriername: /carrier|transp/i, customerordernumber: /customerorder|pedido|ordernum/i, operador: /operador|operator/i };
 const COL_AREA_TXT = () => COLS.area[0];
 function colArea(row) { const cols = colunasDe(row); return achaCol(cols, COLS.area) || cols.find(c => RE_AREA.test(c)) || null; }
 // SÓ O DEPÓSITO ALMOX-PA (09/11/2026, pedido do dono: "depósito somente o que
@@ -1244,16 +1251,32 @@ async function montar(opts, modo) {
   };
   // 12/11/26: os campos extras do dono — o valor da 1ª entidade que o tiver
   // preenchido; senão o da 1ª que tiver a coluna (vazio/"No"); senão nada
+  // 12/11/26 (dono: "Solicitar transportadora está Sim no Dynamics e não sinaliza"
+  // — a ficha dizia "não veio do Dynamics"): 1º o nome exato (sem caixa); 2º um
+  // nome PARECIDO (o miolo do nome sem _Custom/_InoveProjects/_Inove, sem "_");
+  // 3º sem nada: as colunas parecidas que existem vão juntas (parecidos), para
+  // achar o nome certo
   const pegaExtra = (k, nome) => {
-    let achou = null;
-    for (const ent of Object.keys(reg[k])) {
-      const row = reg[k][ent], col = achaCol(colunasDe(row), [nome]);
-      if (!col) continue;
-      const v = row[col] == null ? '' : txt(row[col]);
-      if (v) return { nome, coluna: ent + '.' + col, valor: v };
-      if (!achou) achou = { nome, coluna: ent + '.' + col, valor: '' };
-    }
-    return achou || { nome, coluna: null, valor: null };
+    const procura = (achaColuna) => {
+      let achou = null;
+      for (const ent of Object.keys(reg[k])) {
+        const row = reg[k][ent], col = achaColuna(colunasDe(row));
+        if (!col) continue;
+        const v = row[col] == null ? '' : txt(row[col]);
+        if (v) return { nome, coluna: ent + '.' + col, valor: v };
+        if (!achou) achou = { nome, coluna: ent + '.' + col, valor: '' };
+      }
+      return achou;
+    };
+    const exato = procura(cols => achaCol(cols, [nome]));
+    if (exato) return exato;
+    const miolo = miolhoExtra(nome);
+    const parecido = miolo.length >= 5 ? procura(cols => cols.find(c => normCol(c).indexOf(miolo) >= 0 || (RE_EXTRA[miolo] && RE_EXTRA[miolo].test(c))) || null) : null;
+    if (parecido) return Object.assign(parecido, { aproximado: true });
+    const pista = RE_PISTA[miolo] || new RegExp(miolo.slice(0, 6), 'i');
+    const parecidos = [];
+    Object.keys(reg[k]).forEach(ent => colunasDe(reg[k][ent]).forEach(c => { if (pista.test(c) && parecidos.length < 8) parecidos.push(ent + '.' + c); }));
+    return { nome, coluna: null, valor: null, parecidos };
   };
   const pega = (k, campo) => {
     for (const ent of Object.keys(reg[k])) { const col = achaCol(colunasDe(reg[k][ent]), COLS[campo]); if (col && txt(reg[k][ent][col]) && !VAZIOS.test(txt(reg[k][ent][col]))) return txt(reg[k][ent][col]); }

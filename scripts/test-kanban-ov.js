@@ -235,6 +235,15 @@ const bio = (n, st, lib) => ({ dataAreaId: 'msb', SalesOrderNumber: n, StatusPed
     && ex1.CarrierName_InoveProjects.valor === 'TRANSPORTES ABC' && ex1.CustomerOrderNumber_Inove.valor === 'PED-778899' && ex1.CustomerOrderNumber_Inove.coluna === 'SalesOrderHeadersV2.CustomerOrderNumber_Inove' && ex1.Operador_Custom.valor === 'maria.souza', ex1);
   t('"No" e vazio também vêm (os campos crus jogam fora)', ex2.Solicitartransportadora_Custom.valor === 'No' && ex2.Operador_Custom.valor === '' && ex2.Operador_Custom.coluna, ex2);
   t('sem a coluna em nenhuma entidade: valor null', ex3.Operador_Custom.valor === null && ex3.Operador_Custom.coluna === null, ex3.Operador_Custom);
+  // 12/11/26 ("Solicitar transportadora está Sim e não sinaliza"): o nome parecido no Dynamics
+  K._limparCache();
+  delete CEN.BIOSalesOrderHeaderV1.linhas[0].SolicitarTransportadora_Custom;
+  Object.assign(CEN.BIOSalesOrderHeaderV1.linhas[0], { SolicitarTransp_Custom: 'Yes' });
+  Object.assign(CEN.BIOSalesOrderHeaderV1.linhas[2], { TransportadoraPadrao: 'X', SolicitaFrete: 'No' });
+  r = await K.ordensDoDia({ data: DIA });
+  const ex4 = ex('OV017601'), ex5 = ex('OV017603');
+  t('nome parecido (SolicitarTransp_Custom): achado, aproximado', ex4.Solicitartransportadora_Custom.valor === 'Yes' && ex4.Solicitartransportadora_Custom.coluna === 'BIOSalesOrderHeaderV1.SolicitarTransp_Custom' && ex4.Solicitartransportadora_Custom.aproximado === true, ex4.Solicitartransportadora_Custom);
+  t('sem nada parecido: as colunas com "transp"/"solicit" vão como pista', ex5.Solicitartransportadora_Custom.coluna === null && ex5.Solicitartransportadora_Custom.parecidos.join() === 'BIOSalesOrderHeaderV1.TransportadoraPadrao,BIOSalesOrderHeaderV1.SolicitaFrete', ex5.Solicitartransportadora_Custom);
   CEN.BIOSalesOrderHeaderV1.linhas.forEach(x => { delete x.AREADEMANDANTE_Custom; });
   K._limparCache(); r = await K.ordensDoDia({ data: DIA });
   t('sem o campo em nenhuma entidade: aviso, e ninguém marcado', r.avisos.some(a => /Área Demandante \(areademandante_Custom\) não está/.test(a)) && !r.ovs.some(o => o.origemPi), r.avisos);
