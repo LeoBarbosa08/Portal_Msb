@@ -1551,6 +1551,26 @@ fases". A regra do lote (`partesPorLinhas`) está **LIGADA por padrão** de novo
 - Testes (1, 7c): Pendência com regra; `=0` desliga; sem env, ligada.
   `sw.js` — cache `bm-comest-v74`.
 
+### Kanban · sem o QtyLeftToLoad, o RemainInventPhysical (12/11/2026)
+
+O dono: "não está achando o campo QtyLeftToLoad — se baseia nesse,
+RemainInventPhysical".
+
+- `COLS_LINHA.restante` (`RemainInventPhysical`, `RemainingInventPhysicalQuantity`…;
+  ou "remain…invent…phys" no nome; `KANBAN_COL_LINHA_RESTANTE`) é a reserva do
+  `QtyLeftToLoad` nas linhas da OV — e na busca em outras entidades
+  (`CFG_LINHA_FALTA`). Com as duas, vale o `QtyLeftToLoad`.
+- A diferença: o `RemainInventPhysical` é o que falta ENTREGAR (inclui o que já
+  está na carga). Funciona como "falta carregar" porque a divisão por quantidade
+  desconta antes o que está em trabalho e em carga — o que sobra e ainda falta
+  entregar vai para a Pendência. Por isso, com ele, a liberação só conta pelo que
+  foi visto em trabalho/carga (`liberou`): a OV "parcialmente liberada" sem
+  trabalho/carga lidos não vai inteira para a Pendência (fica na fase da OV).
+- Diagnóstico `linhas:falta:coluna` (a coluna e o tipo: `carga` / `restante`).
+- Testes (7j): 10 restantes, 6 no trabalho com a carga → Cotação 6 e Pendência 4; a
+  parcialmente liberada sem trabalho/carga fica em Criada. `sw.js` — cache
+  `bm-comest-v95`.
+
 ### Kanban · os itens da carga na WHSLoadTableBiEntity, mesmo com a carga achada na outra (12/11/2026)
 
 O dono: "a tabela WHSLoadTableBiEntity não tem? Por que ainda não apareceu?". Duas

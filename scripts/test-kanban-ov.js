@@ -984,6 +984,29 @@ const bio = (n, st, lib) => ({ dataAreaId: 'msb', SalesOrderNumber: n, StatusPed
     && g7i['OV018901~pendencia'] && g7i['OV018901~pendencia'].parte.qtds[1] === 4 && g7i['OV018901~cotacao'].linhasCarga.length === 2, Object.keys(g7i));
   CEN = guarda7i; SERVICO = serv7i;
 
+  console.log('7j) 12/11/26 sem o QtyLeftToLoad, o RemainInventPhysical (o que falta entregar) — descontado o que está em trabalho/carga');
+  K._limparCache(); chamadas.length = 0;
+  const guarda7j = CEN, serv7j = SERVICO;
+  SERVICO = ['BIOSalesOrderHeaderV1', 'SalesOrderHeadersV2', 'SalesOrderLines', 'WHSWorkTableBiEntities', 'WHSLoadTableBiEntities', 'BioWHSWorkLineV1'];
+  const ln7j = (ov, item, qtd, valor, resta, tid) => ({ dataAreaId: 'msb', SalesOrderNumber: ov, LineNumber: 1, ItemNumber: item, OrderedSalesQuantity: qtd, LineAmount: valor,
+    RemainInventPhysical: resta, InventoryLotId: tid, ItemBatchNumber: '', SalesOrderLineStatus: 'Backorder' });
+  CEN = {
+    SalesOrderHeadersV2: { linhas: [v2('OV018951', DIA + 'T10:00:00Z', 'Backorder'), v2('OV018952', DIA + 'T11:00:00Z', 'Backorder')] },
+    BIOSalesOrderHeaderV1: { linhas: [b4('OV018951', 'Backorder', 'PartialReleased', 'No'), b4('OV018952', 'Backorder', 'PartialReleased', 'No')] },
+    // as linhas SEM o QtyLeftToLoad, com o RemainInventPhysical (nada entregue ainda: 10 e 8)
+    SalesOrderLines: { linhas: [ln7j('OV018951', '73339', 10, 1000, 10, 'T1'), ln7j('OV018952', '73344', 8, 800, 8, 'T2')] },
+    WHSWorkTableBiEntities: { linhas: [w('OV018951', 'W95', 'Closed', { LoadId: 'LD-95' })] },
+    BioWHSWorkLineV1: { linhas: [{ dataAreaId: 'msb', WorkId: 'W95', LineNum: 1, OrderNum: 'OV018951', ItemId: '73339', QtyWork: 6, InventTransId: 'T1', WorkType: 'Pick', FreghtType_InoveProjects: 'Blank' }] },
+    WHSLoadTableBiEntities: { linhas: [{ dataAreaId: 'msb', LoadId: 'LD-95', LoadStatus: 'Loaded', QuotationPerformed_InoveProjects: 'Yes', ENVIARPALLET_CUSTOM: 'No', ItemId: '73339', Qty: 6, OrderNum: 'OV018951', InventTransId: 'T1' }] }
+  };
+  r = await K.quadro({});
+  const g7j = {}; r.ovs.forEach(o => { g7j[o.chave] = o; });
+  t('RemainInventPhysical = 10, 6 no trabalho com a carga: Cotação 6, Pendência 4', g7j['OV018951~cotacao'] && g7j['OV018951~cotacao'].parte.qtds[1] === 6 && g7j['OV018951~pendencia'] && g7j['OV018951~pendencia'].parte.qtds[1] === 4, Object.keys(g7j));
+  t('"parcialmente liberada" sem trabalho/carga lidos: não vai inteira para Pendência (fica na fase da OV)', r.ovs.filter(o => o.numero === 'OV018952').map(o => o.etapa).join() === 'criada', r.ovs.filter(o => o.numero === 'OV018952').map(o => o.chave + '=' + o.etapa));
+  const d7j = r.diagnostico.find(d => d.etapa === 'linhas:falta:coluna');
+  t('o diagnóstico diz a coluna e o tipo (RemainInventPhysical · restante)', d7j && d7j.coluna === 'RemainInventPhysical' && d7j.tipo === 'restante', d7j);
+  CEN = guarda7j; SERVICO = serv7j;
+
   console.log('8) as regras do dono pela carga e pela nota (Separação … Expedição)');
   K._limparCache(); chamadas.length = 0;
   SERVICO = ['BIOSalesOrderHeaderV1', 'SalesOrderHeadersV2', 'SalesOrderLines', 'WHSWorkTableBiEntities', 'WHSOutboundLoadHeaderEntities', 'SalesInvoiceHeadersV2', 'FiscalDocuments'];
