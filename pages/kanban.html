@@ -569,6 +569,7 @@
       var h = '', p = o.parte, t = o.parteTrab;
       var chip = function (cls, tt, txt) { return '<span class="kb-chip ' + cls + '" title="' + esc(tt) + '">' + esc(txt) + '</span>'; };
       if (o.semLinhas) h += chip('kb-lote', 'A OV não tem nenhuma linha no Dynamics: fica em Criada', 'sem linha');
+      if (o.pendPorTempo && o.etapa === 'pendencia') h += chip('kb-lote', 'Ficou parada em Criada mais de ' + ((estado.r && estado.r.criadaMin) || 15) + ' min sem atualização: foi para Pendência', 'parada');
       if (p && p.inteira && p.id === 'entregue') h += chip('kb-parte', 'Todas as linhas estão Entregue (sem nota): a OV inteira está em Aguardando Faturamento', 'entregue');
       else if (p && p.inteira) h += chip('kb-lote', 'Nenhum item em aberto tem lote: a OV inteira está em Pendência', 'sem lote');
       else if (p && p.id === 'entregue') h += chip('kb-parte', 'Este cartão é só a parte ENTREGUE (sem nota): ' + itensTxt(p.n) + ' de ' + p.de + (ondeIrmas(o) ? '. O resto está em ' + ondeIrmas(o) : ''), 'entregue · ' + p.n + '/' + p.de);
@@ -1152,7 +1153,7 @@
         + '<li class="' + (o.etapa === 'conferencia' ? 'on' : '') + '">Status da carga = <b>Em processamento</b> → <b>Conferência</b> (também o trabalho já fechado ou em processo, com a carga ainda sem fase).</li>'
         + '<li class="' + (o.etapa === 'credito' ? 'on' : '') + '">Registro <b>ativo</b> na tabela de gerenciamento de crédito (<code>ACTIVE</code>, pelo <code>SALESID</code>) → <b>Gerenciamento de Crédito</b>.</li>'
         + '<li class="' + (o.etapa === 'liberado' ? 'on' : '') + '">Status do trabalho = <b>Abrir</b> → <b>Separação</b> (só isso).</li>'
-        + '<li class="' + (o.etapa === 'criada' || o.etapa === 'pendencia' ? 'on' : '') + '">Nenhuma das anteriores: itens em aberto <b>sem lote</b> → <b>Pendência</b>; os outros (inclusive a OV sem nenhuma linha) → <b>Criada</b>.</li></ol>'
+        + '<li class="' + (o.etapa === 'criada' || o.etapa === 'pendencia' ? 'on' : '') + '">Nenhuma das anteriores: itens em aberto <b>sem lote</b> → <b>Pendência</b>; os outros (inclusive a OV sem nenhuma linha) → <b>Criada</b> — e a Criada <b>parada mais de ' + esc((estado.r && estado.r.criadaMin) || 15) + ' min</b> sem atualização → <b>Pendência</b>.</li></ol>'
         + '<p class="kb-dw-p" style="margin-top:8px;">Onde as regras não falam, vale a de antes: OV que saiu do aberto sem status de nota → Faturado; sem a entidade de trabalho no OData, a OV liberada (<code>ReleaseStatus</code>) → Separação.</p>'
         + '<p class="kb-dw-p" style="margin-top:8px;">Entram as OVs da <b>MSB</b>' + (depTexto() ? ' do depósito <b>' + esc(depTexto()) + '</b>' : '') + '. <b>Criada, Crédito, Separação, Conferência, Cotação e Aguardando Faturamento</b>: todas as OVs <b>em aberto</b>, de qualquer data. <b>Faturado</b>, <b>Rejeitada</b> e <b>Pallet</b>: as que estão nelas agora com a nota fiscal (sem nota, a criação) de ' + (estado.r && estado.r.desde ? esc(fDia(estado.r.desde)) : '11/11/2026') + ' em diante. <b>Expedição</b>: só as com o envio da carga <b>confirmado hoje</b>, de OV de qualquer data. O quadro relê o Dynamics a cada 60 s; as linhas desta ficha são lidas quando ela abre.</p></details>';
       return h;
@@ -1223,7 +1224,12 @@
       // 10/11/26: itens em aberto sem lote -> Pendência (este cartão ou a OV inteira)
       if (o.etapa === 'pendencia') {
         var pp = o.parte || { n: 0, linhas: [] };
-        p.push({ cls: 'agora alerta', tt: 'Agora: Pendência', dt: '',
+        // 12/11/26: a Pendência por tempo (Criada parada) e pela quantidade não carregada
+        if (o.pendPorTempo && !o.pendPorCarga) p.push({ cls: 'agora alerta', tt: 'Agora: Pendência', dt: o.ultimaAtualizacao ? quando(o.ultimaAtualizacao) : '',
+          ds: 'Parada em Criada mais de ' + esc((estado.r && estado.r.criadaMin) || 15) + ' min sem atualização. Quando for liberada, segue o caminho dela.' });
+        else if (o.pendPorCarga) p.push({ cls: 'agora alerta', tt: 'Agora: Pendência', dt: '',
+          ds: 'A quantidade que <b>ainda não entrou em carga</b>' + (ondeIrmas(o) ? '; o resto da OV está em <b>' + esc(ondeIrmas(o)) + '</b>' : '') + '. Quando for carregada, segue com o resto.' });
+        else p.push({ cls: 'agora alerta', tt: 'Agora: Pendência', dt: '',
           ds: (pp.inteira ? 'Nenhum dos <b>' + esc(itensTxt(pp.n)) + '</b> em aberto tem lote' : '<b>' + esc(itensTxt(pp.n)) + '</b> em aberto <b>sem lote</b>' + ((pp.linhas || []).length ? ' (linha' + (pp.linhas.length === 1 ? ' ' : 's ') + esc(pp.linhas.join(', ')) + ')' : ''))
             + '. Quando receberem lote, segue' + (pp.inteira ? '' : 'm') + (destinoPend(o) ? ' para <b>' + esc(destinoPend(o)) + '</b>.' : ' com o resto da OV (' + esc(ondeIrmas(o)) + ').') });
       }
@@ -1338,7 +1344,11 @@
       var ci = credInfo(rg), credVeio = ci.veio;
       var porque = {
         pendencia: o.pendPorCarga ? 'Este cartão é a quantidade da OV que <b>ainda não entrou em carga</b> (QtyLeftToLoad &gt; 0): fica em <b>Pendência</b> até ser carregada.'
-          + (ondeIrmas(o) ? ' O resto da OV está em <b>' + esc(ondeIrmas(o)) + '</b>.' : '') : (o.parte && o.parte.inteira ? 'Nenhum item em aberto da OV tem <b>lote</b>' : 'Este cartão é a parte da OV com os itens em aberto <b>sem lote</b>')
+          + (ondeIrmas(o) ? ' O resto da OV está em <b>' + esc(ondeIrmas(o)) + '</b>.' : '')
+          // 12/11/26 (dono): Criada parada mais de 15 min sem atualização -> Pendência
+          : o.pendPorTempo ? 'A OV ficou <b>parada em Criada</b> mais de ' + esc((estado.r && estado.r.criadaMin) || 15) + ' min sem nenhuma atualização no sistema'
+          + (o.ultimaAtualizacao ? ' (a última foi ' + esc(quando(o.ultimaAtualizacao)) + ')' : '') + ': está em <b>Pendência</b>. Quando for liberada, segue o caminho dela sozinha.'
+          : (o.parte && o.parte.inteira ? 'Nenhum item em aberto da OV tem <b>lote</b>' : 'Este cartão é a parte da OV com os itens em aberto <b>sem lote</b>')
           + ': fica em <b>Pendência</b> até os itens receberem lote' + (destinoPend(o) ? ' — depois segue para <b>' + esc(destinoPend(o)) + '</b>' : '') + '.'
           + (ondeIrmas(o) ? ' Os itens com lote estão em <b>' + esc(ondeIrmas(o)) + '</b>.' : ''),
         criada: o.semLinhas ? 'A OV não tem <b>nenhuma linha</b> no Dynamics: fica em <b>Criada</b> até as linhas serem lançadas.'

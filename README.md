@@ -1551,6 +1551,27 @@ fases". A regra do lote (`partesPorLinhas`) está **LIGADA por padrão** de novo
 - Testes (1, 7c): Pendência com regra; `=0` desliga; sem env, ligada.
   `sw.js` — cache `bm-comest-v74`.
 
+### Kanban · a OV parada em Criada por 15 min vai para a Pendência (12/11/2026)
+
+O dono: "quando a OV pousar no Criada e em 15 minutos nada acontecer com ela — nada
+foi atualizado no sistema —, ela tem que ir para a Pendência; se for liberada, segue
+o rumo dela, e depois, na medida que for mudando, vai andando sozinha".
+
+- `parouEm` / `minutosCriada`: a OV (ou a parte dela) que cairia em **Criada** e está
+  há mais de `KANBAN_CRIADA_MIN` minutos (padrão 15; `0` desliga) sem atualização vai
+  para **Pendência** (`pendPorTempo`). "Atualização" = a data de alteração da OV
+  (`ModifiedDateTime`, `KANBAN_COL_OV_ALTERADA`) ou, sem ela, a de criação — a mais
+  recente das duas (`ultimaAtualizacao`). Vale no cálculo da OV, de cada linha e de
+  cada porção (por quantidade). Crédito, Separação etc. não mudam; quando a OV anda
+  (liberada, trabalho, carga…), sai da Pendência sozinha.
+- Tela: o selo "parada" no cartão; na ficha, "A OV ficou parada em Criada mais de 15
+  min sem nenhuma atualização (a última foi …)" e o passo "Agora: Pendência" com a
+  hora. A resposta traz `criadaMin`.
+- Testes (7k): criada há 1 h → Pendência; há 5 min → Criada; atualizada há 4 min →
+  Criada; com crédito → Crédito; liberada → Separação; a parada, depois liberada,
+  vai para Separação. Os cenários antigos rodam com a regra desligada. `sw.js` —
+  cache `bm-comest-v96`.
+
 ### Kanban · sem o QtyLeftToLoad, o RemainInventPhysical (12/11/2026)
 
 O dono: "não está achando o campo QtyLeftToLoad — se baseia nesse,

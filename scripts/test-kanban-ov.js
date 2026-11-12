@@ -17,6 +17,8 @@ process.env.D365_RESOURCE_URL = 'https://fo.teste';
 process.env.PORTAL_CLIENT_SECRET = 'segredo-teste';
 // 12/11/26: o corte de 11/11/2026 (Faturado/Rejeitada/Pallet) fica desligado nos cenários antigos; o 7e liga
 process.env.KANBAN_DESDE = '0';
+// 12/11/26: a Criada parada 15 min -> Pendência fica desligada nos cenários antigos (OVs de dias atrás); o 7k liga
+process.env.KANBAN_CRIADA_MIN = '0';
 const BLOBS = {}, EMAILS = [];
 function blobFalso(u, opts) {
   const nome = decodeURIComponent(u.pathname.replace(/^\/kanban\//, '')), metodo = (opts && opts.method) || 'GET', h = (opts && opts.headers) || {};
@@ -1006,6 +1008,42 @@ const bio = (n, st, lib) => ({ dataAreaId: 'msb', SalesOrderNumber: n, StatusPed
   const d7j = r.diagnostico.find(d => d.etapa === 'linhas:falta:coluna');
   t('o diagnóstico diz a coluna e o tipo (RemainInventPhysical · restante)', d7j && d7j.coluna === 'RemainInventPhysical' && d7j.tipo === 'restante', d7j);
   CEN = guarda7j; SERVICO = serv7j;
+
+  console.log('7k) 12/11/26 a OV parada em Criada há mais de 15 min (sem atualização) vai para Pendência; liberada, segue');
+  K._limparCache(); chamadas.length = 0;
+  const guarda7k = CEN, serv7k = SERVICO;
+  SERVICO = ['BIOSalesOrderHeaderV1', 'SalesOrderHeadersV2', 'SalesOrderLines', 'WHSWorkTableBiEntities'];
+  const iso = (minAtras) => new Date(Date.now() - minAtras * 60000).toISOString().replace(/\.\d{3}Z$/, 'Z');
+  const ov7k = (n, criada, alterada) => v2(n, criada, 'Backorder', alterada ? { ModifiedDateTime: alterada } : { ModifiedDateTime: '1900-01-01T00:00:00Z' });
+  CEN = {
+    SalesOrderHeadersV2: { linhas: [
+      ov7k('OV019601', iso(60)),            // criada há 1 h, nada aconteceu -> Pendência
+      ov7k('OV019602', iso(5)),             // criada há 5 min -> Criada
+      ov7k('OV019603', iso(2880), iso(4)),  // criada há 2 dias, mas atualizada há 4 min -> Criada
+      ov7k('OV019604', iso(60)),            // há 1 h, com crédito ativo -> Crédito (não muda)
+      ov7k('OV019605', iso(60))             // há 1 h, liberada com trabalho aberto -> Separação (segue o rumo)
+    ] },
+    BIOSalesOrderHeaderV1: { linhas: [b4('OV019601', 'Backorder', 'Open', 'No'), b4('OV019602', 'Backorder', 'Open', 'No'), b4('OV019603', 'Backorder', 'Open', 'No'),
+      b4('OV019604', 'Backorder', 'Open', 'Yes'), b4('OV019605', 'Backorder', 'Released', 'No')] },
+    SalesOrderLines: { linhas: [], auto: true },
+    WHSWorkTableBiEntities: { linhas: [w('OV019605', 'W965', 'Open')] }
+  };
+  process.env.KANBAN_CRIADA_MIN = '';   // o padrão: 15
+  r = await K.quadro({});
+  const e7k = {}; r.ovs.forEach(o => { e7k[o.numero] = o; });
+  t('criada há 1 h e nada aconteceu -> Pendência (parada)', e7k.OV019601 && e7k.OV019601.etapa === 'pendencia' && e7k.OV019601.pendPorTempo === true && !!e7k.OV019601.ultimaAtualizacao, e7k.OV019601 && e7k.OV019601.etapa);
+  t('criada há 5 min -> continua em Criada', e7k.OV019602 && e7k.OV019602.etapa === 'criada' && !e7k.OV019602.pendPorTempo, e7k.OV019602 && e7k.OV019602.etapa);
+  t('atualizada há 4 min (mesmo criada há 2 dias) -> continua em Criada', e7k.OV019603 && e7k.OV019603.etapa === 'criada', e7k.OV019603 && e7k.OV019603.etapa);
+  t('com crédito ativo: Crédito (a regra é só para a Criada)', e7k.OV019604 && e7k.OV019604.etapa === 'credito', e7k.OV019604 && e7k.OV019604.etapa);
+  t('liberada (trabalho aberto): Separação — segue o rumo', e7k.OV019605 && e7k.OV019605.etapa === 'liberado', e7k.OV019605 && e7k.OV019605.etapa);
+  t('o tempo vem na resposta (criadaMin = 15)', r.criadaMin === 15, r.criadaMin);
+  // a parada que é LIBERADA depois anda sozinha
+  K._limparCache();
+  CEN.BIOSalesOrderHeaderV1.linhas[0].ReleaseStatus = 'Released'; CEN.WHSWorkTableBiEntities.linhas.push(w('OV019601', 'W961', 'Open'));
+  r = await K.quadro({});
+  t('a parada liberada depois sai da Pendência e vai para Separação', r.ovs.find(o => o.numero === 'OV019601').etapa === 'liberado', r.ovs.find(o => o.numero === 'OV019601').etapa);
+  process.env.KANBAN_CRIADA_MIN = '0';
+  CEN = guarda7k; SERVICO = serv7k;
 
   console.log('8) as regras do dono pela carga e pela nota (Separação … Expedição)');
   K._limparCache(); chamadas.length = 0;

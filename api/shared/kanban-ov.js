@@ -77,6 +77,8 @@ const COLS = {
   criadoPor:['OrderTakerPersonnelNumber', 'CreatedBy', 'CREATEDBY', 'OrderResponsiblePersonnelNumber'],
   // 12/11/26: a cidade/UF de entrega (o e-mail da Cotação: "📍 Entrega: Brasília/DF")
   cidade:   ['DeliveryAddressCity'],
+  // 12/11/26 (Criada parada 15 min -> Pendência): a última atualização da OV no sistema
+  alterada: envLista('KANBAN_COL_OV_ALTERADA', ['ModifiedDateTime', 'SalesOrderModifiedDateTime', 'ModifiedDateTime1', 'ModifiedOn']),
   uf:       ['DeliveryAddressStateId', 'DeliveryAddressState'],
   // 11/11/2026 (dono): "quando o pedido tiver AREADEMANDANTE (areademandante_Custom),
   // sinalizar que veio do PI Pedidos" — o PI grava a Área Demandante na OV
@@ -341,6 +343,20 @@ const marcadoV = (v) => v === true || /^(yes|sim|true|1|noyes yes)$/.test(normV(
 // as regras do dono não falam, as anteriores ficam de reserva.
 // linha = o status da LINHA da OV ('aberta' = Ordem em aberto | 'entregue' |
 // 'faturada' | null = as linhas não foram lidas -> vale a situação da OV)
+// ── CRIADA PARADA -> PENDÊNCIA (12/11/2026) ──────────────────────
+// Dono: "se a OV pousar no Criada e em 15 minutos nada acontecer com ela — nada foi
+// atualizado no sistema —, ela tem que ir para a Pendência; se for liberada, segue o
+// rumo dela, e depois, na medida que for mudando, ela vai andando sozinha". A OV (ou
+// a parte dela) que cairia em Criada e está há mais de KANBAN_CRIADA_MIN minutos
+// (padrão 15; "0" desliga) sem atualização — a data de alteração da OV
+// (ModifiedDateTime), ou a de criação — vai para Pendência (pendPorTempo).
+function minutosCriada() {
+  const v = String(process.env.KANBAN_CRIADA_MIN == null ? '' : process.env.KANBAN_CRIADA_MIN).trim();
+  if (v === '') return 15;
+  const n = Number(v); return isNaN(n) || n < 0 ? 15 : n;
+}
+const parouEm = (e, c) => e === 'criada' && c && c.parada ? 'pendencia' : e;
+
 function etapaDe(sales, release, credito, trabalho, nota, carga, linha) {
   const sit = situacaoOv(sales);
   if (sit === 'cancelada') return 'cancelada';
@@ -846,7 +862,7 @@ const pendenciaPorLote = () => String(process.env.KANBAN_PENDENCIA_LOTE || '').t
 function partesPorLinhas(o, ls, lida, comLote, comStatus) {
   o.chave = o.numero; o.valorOv = o.valor; o.itensOv = o.itens; o._abertas = true;
   if (!ls || !ls.length) {
-    if (lida && NAO_DIVIDE.indexOf(o.etapa) < 0) { o.etapaOv = o.etapa; o.etapa = 'criada'; o.semLinhas = true; }
+    if (lida && NAO_DIVIDE.indexOf(o.etapa) < 0) { o.etapaOv = o.etapa; o.etapa = parouEm('criada', o._ctx); o.semLinhas = true; }
     return [o];
   }
   const c = o._ctx;
@@ -855,7 +871,7 @@ function partesPorLinhas(o, ls, lida, comLote, comStatus) {
   if (!vivas.length) return [o];
   const abertas = vivas.filter(l => st(l) === 'aberta' || st(l) == null);
   if (comLote) o.lotes = { linhas: abertas.length, semLote: abertas.filter(l => !l.lote).length };
-  const etapaDaLinha = (s2) => c ? etapaDe(c.sa, c.re, c.cr, c.trab, c.nota, c.carga, s2) : o.etapa;
+  const etapaDaLinha = (s2) => c ? parouEm(etapaDe(c.sa, c.re, c.cr, c.trab, c.nota, c.carga, s2), c) : o.etapa;
   const grupos = new Map();
   vivas.forEach(l => {
     const s2 = st(l);
@@ -932,7 +948,7 @@ function partesPorQuantidade(o, ls, Q, cargaPor, comStatus) {
   const porcoes = [], restos = [];
   vivas.forEach(l => {
     const s2 = st(l), q0 = Number(l.qtd) || 0, unit = q0 ? (Number(l.valor) || 0) / q0 : 0;
-    const add = (qtd, etapa, extra) => { if (qtd > 0) porcoes.push(Object.assign({ l, qtd, etapa, valor: qtd * unit }, extra || {})); };
+    const add = (qtd, etapa, extra) => { if (qtd > 0) porcoes.push(Object.assign({ l, qtd, etapa: parouEm(etapa, c), valor: qtd * unit }, extra || {})); };
     if (s2 !== 'aberta') { add(q0, etapaDe(c.sa, c.re, c.cr, c.trab, c.nota, c.carga, s2)); return; }
     let resto = q0;
     // 1) as linhas do trabalho (por trabalho; o tipo Pick, ou o maior quando o tipo não vem)
@@ -1612,7 +1628,12 @@ async function montar(opts, modo) {
     const faseOv = faseCargasDe(cargasDe(outrosW));
     const notaFase = nVale ? (nVale.rejeitada ? 'rejeitada' : nVale.aprovada ? 'aprovada' : 'outra') : null;
     const trabFase = TRAB.E ? faseTrabDe(misto ? outrosW : validos) : null;
-    const etapa = etapaDe(sa && sa.valor, re && re.valor, crAtivo, trabFase, notaFase, faseOv, null);
+    // 12/11/26: Criada parada (sem atualização há mais de KANBAN_CRIADA_MIN min) -> Pendência
+    const criadaIso = txt(reg[k][principal.entidade][principal.criadaEm]);
+    const ultima = [criadaIso, pega(k, 'alterada')].filter(v => /^\d{4}-\d{2}-\d{2}T/.test(v) && !/^1900/.test(v)).sort().pop() || null;
+    const minC = minutosCriada();
+    const parada = !!(minC && ultima && Date.now() - Date.parse(ultima) > minC * 60000);
+    const etapa = parouEm(etapaDe(sa && sa.valor, re && re.valor, crAtivo, trabFase, notaFase, faseOv, null), { parada });
     const status = {};
     statusCols.forEach(s => { const r = reg[k][s.entidade]; status[s.chave] = r ? (txt(r[s.coluna]) || '(vazio)') : null; });
     const campos = {};
@@ -1635,7 +1656,7 @@ async function montar(opts, modo) {
       criadaEm: txt(reg[k][principal.entidade][principal.criadaEm]),
       entrega: pega(k, 'entrega'), deposito: pega(k, 'deposito'), pool: pega(k, 'pool'), criadoPor: pega(k, 'criadoPor'),
       valor: l ? l.valor : null, itens: l ? l.itens : null,
-      etapa,
+      etapa, ultimaAtualizacao: ultima,
       // os três campos que decidiram a etapa (valor cru + de onde veio)
       regra: {
         salesStatus: sa ? txt(sa.valor) : null, salesStatusCol: sa ? sa.coluna : null,
@@ -1662,7 +1683,7 @@ async function montar(opts, modo) {
       // para a divisão pelos trabalhos (sai antes da resposta)
       _trab: { abertos: abertosW, outros: outrosW, misto },
       // para a etapa de cada LINHA (partesPorLinhas)
-      _ctx: { sa: sa && sa.valor, re: re && re.valor, cr: crAtivo, trab: trabFase, nota: notaFase, carga: faseOv }
+      _ctx: { sa: sa && sa.valor, re: re && re.valor, cr: crAtivo, trab: trabFase, nota: notaFase, carga: faseOv, parada }
     };
   }).sort((a, b) => b.criadaEm.localeCompare(a.criadaEm) || b.numero.localeCompare(a.numero));
   // 10/11/26: a OV em partes pelo lote das linhas (Pendência x o resto)
@@ -1791,7 +1812,7 @@ async function montar(opts, modo) {
     if (!p._abertas) partes.push(p);
     else partesPorTrabalho(p, cargasDe, faseCargasDe).forEach(q => partes.push(q));
   }));
-  partes.forEach(p => { delete p._trab; delete p._ctx; delete p._abertas; delete p._trabLinha; delete p._q; });
+  partes.forEach(p => { if (p.etapa === 'pendencia' && p._ctx && p._ctx.parada) p.pendPorTempo = true; delete p._trab; delete p._ctx; delete p._abertas; delete p._trabLinha; delete p._q; });
   // os outros cartões da mesma OV (a ficha lista todos e leva de um ao outro)
   const porNum = {};
   partes.forEach(p => { (porNum[p.numero] = porNum[p.numero] || []).push(p); });
@@ -1905,7 +1926,7 @@ async function montar(opts, modo) {
     if (falta.length) avisos.push('Não achei ' + falta.join(', ') + ' nas entidades lidas (' + fontes.map(f => f.entidade).join(', ') + '): as etapas dependem desses campos. Veja os campos de cada OV no painel.');
     else if (achou.sales < ovs.length) avisos.push((ovs.length - achou.sales) + ' OV(s) sem SalesStatus: ficaram em Criada, Gerenciamento de Crédito ou Separação pelos outros campos.');
   }
-  const r = Object.assign(base, { fontes, etapas, canceladas, depositos: TODOS_DEPOSITOS ? null : DEPOSITOS, foraDeposito, foraPeriodo, itensCarga: fonteItensCarga || undefined, desde: modo.quadro ? (corte || null) : undefined, desdeEtapas: modo.quadro && corte ? ETAPAS_DESDE : undefined, antesDoCorte, expedicaoDia: modo.quadro ? hoje : undefined, expedicaoOutroDia, expedicaoSemData, statusCols, statusPadrao, ovs, avisos, diagnostico: diag });
+  const r = Object.assign(base, { fontes, etapas, canceladas, depositos: TODOS_DEPOSITOS ? null : DEPOSITOS, foraDeposito, foraPeriodo, criadaMin: minutosCriada() || undefined, itensCarga: fonteItensCarga || undefined, desde: modo.quadro ? (corte || null) : undefined, desdeEtapas: modo.quadro && corte ? ETAPAS_DESDE : undefined, antesDoCorte, expedicaoDia: modo.quadro ? hoje : undefined, expedicaoOutroDia, expedicaoSemData, statusCols, statusPadrao, ovs, avisos, diagnostico: diag });
   if (!opts.diag) _cache.set(modo.chave, { ts: Date.now(), r });
   return r;
 }
