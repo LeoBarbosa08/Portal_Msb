@@ -10,11 +10,9 @@
 //                                         de qualquer data + as com nota HOJE + as
 //                                         faturadas com a carga Carregado (10/11/26:
 //                                         o Faturado sem data)
-//   GET /api/kanban-ov?de=2026-11-01&ate=2026-11-09
-//                                      -> o quadro com o período de Rejeitada
-//                                         e Expedição (máx. 366 dias; 11/11/26: o
-//                                         Pallet saiu — mostra todas, como o Faturado)
-//   GET /api/kanban-ov?data=2026-11-05 -> o mesmo que de=ate=essa data
+//                                         12/11/26: SEM período — de/ate/data são
+//                                         ignorados (uma página antiga em cache que
+//                                         ainda mande o período não dá erro)
 //   GET /api/kanban-ov?modo=dia&data=… -> o modo antigo: as OVs CRIADAS no dia
 //   GET /api/kanban-ov?atualizar=1     -> ignora o cache de 15 s
 //   GET /api/kanban-ov?diag=1          -> + colunas das entidades
@@ -87,15 +85,17 @@ module.exports = async function (context, req) {
       json(200, await K.linhasDaOv(ov, { atualizar: q.atualizar === '1' }));
       return;
     }
-    const ehData = (v) => /^\d{4}-\d{2}-\d{2}$/.test(v);
-    const data = String(q.data || '').trim();
-    if (data && !ehData(data)) throw http.badRequest('Data inválida: use AAAA-MM-DD.');
     const flags = { atualizar: q.atualizar === '1', diag: q.diag === '1' };
-    if (String(q.modo || '') === 'dia') { json(200, await K.ordensDoDia(Object.assign({ data }, flags))); return; }
-    const de = String(q.de || data || '').trim(), ate = String(q.ate || data || de || '').trim();
-    if ((de && !ehData(de)) || (ate && !ehData(ate))) throw http.badRequest('Período inválido: use de=AAAA-MM-DD&ate=AAAA-MM-DD.');
-    if (de && ate && Math.abs(Date.parse(ate) - Date.parse(de)) > 366 * 86400000) throw http.badRequest('Período grande demais: no máximo 1 ano.');
-    json(200, await K.quadro(Object.assign({ de, ate }, flags)));
+    if (String(q.modo || '') === 'dia') {
+      const data = String(q.data || '').trim();
+      if (data && !/^\d{4}-\d{2}-\d{2}$/.test(data)) throw http.badRequest('Data inválida: use AAAA-MM-DD.');
+      json(200, await K.ordensDoDia(Object.assign({ data }, flags)));
+      return;
+    }
+    // 12/11/26 (dono: "remove o período… tem que mostrar tudo" — e o erro "Período
+    // grande demais: no máximo 1 ano"): o quadro não tem mais período; de/ate/data
+    // são ignorados, sem validar
+    json(200, await K.quadro(flags));
   } catch (e) {
     if (e && (e.status === 401 || e.status === 403 || e.status === 400)) { http.sendError(context, req, 'kanban-ov', e); return; }
     // o motivo do Dynamics volta na resposta (é o diagnóstico da tela)

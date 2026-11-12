@@ -512,19 +512,20 @@ const bio = (n, st, lib) => ({ dataAreaId: 'msb', SalesOrderNumber: n, StatusPed
   t('o documento antigo (2023) da FiscalDocuments não empresta o "Cancelled"', n97.etapa === 'faturado' && !n97.nota.rejeitada, n97.etapa);
   t('a entidade da Bio foi testada mesmo com 9 fiscais antes dela', chamadas.some(c => c.ent === 'FiscalDocumentBioV2Entities'), chamadas.map(c => c.ent).filter((x, i, a) => a.indexOf(x) === i));
 
-  console.log('7) o QUADRO: em aberto de qualquer data + Faturado/Rejeitada só no período');
+  console.log('7) o QUADRO (12/11/26: SEM período): em aberto de qualquer data + as notas de hoje; nada filtra por data (só a Expedição)');
   K._limparCache(); chamadas.length = 0;
   SERVICO = ['BIOSalesOrderHeaderV1', 'SalesOrderHeadersV2', 'SalesOrderLines', 'SalesInvoiceHeadersV2', 'FiscalDocuments'];
-  const DE = '2026-11-01', ATE = '2026-11-06';
+  const DE = '2026-11-01', ATE = '2026-11-06', HOJE = K.hojeSP();
+  const AMANHA = new Date(Date.parse(HOJE + 'T00:00:00Z') + 86400000).toISOString().slice(0, 10);
   CEN = {
     SalesOrderHeadersV2: { linhas: [
       v2('OV018001', '2025-03-10T13:00:00Z', 'Backorder'),                                            // aberta há mais de 1 ano -> Criada
       v2('OV018002', '2026-10-01T13:00:00Z', 'Backorder'),                                            // aberta e liberada -> Separação
       v2('OV018003', '2025-01-01T13:00:00Z', 'Backorder', { DefaultShippingWarehouseId: 'RETCONSIGV' }), // outro depósito -> fora
-      v2('OV018004', '2026-10-20T13:00:00Z', 'Invoiced'),                                             // nota em 05/11 (no período) -> Faturado
-      v2('OV018005', '2026-09-01T13:00:00Z', 'Invoiced'),                                             // nota em 15/10 (fora) -> não vem
+      v2('OV018004', '2026-10-20T13:00:00Z', 'Invoiced'),                                             // nota de HOJE -> Faturado
+      v2('OV018005', '2026-09-01T13:00:00Z', 'Invoiced'),                                             // faturada em 15/10, sem carga -> não vem
       v2('OV018006', '2026-11-02T13:00:00Z', 'Backorder'),                                            // nota rejeitada em 03/11 -> Rejeitada
-      v2('OV018007', '2026-08-01T13:00:00Z', 'Backorder'),                                            // nota rejeitada em 01/10 -> fora do período
+      v2('OV018007', '2026-08-01T13:00:00Z', 'Backorder'),                                            // nota rejeitada em 01/10 -> Rejeitada (sem período)
       v2('OV018008', '2024-12-12T13:00:00Z', 'Canceled')                                              // cancelada, sem nota -> não vem
     ] },
     BIOSalesOrderHeaderV1: { linhas: [
@@ -532,29 +533,28 @@ const bio = (n, st, lib) => ({ dataAreaId: 'msb', SalesOrderNumber: n, StatusPed
       b4('OV018006', 'Backorder', 'Released', 'No'), b4('OV018007', 'Backorder', 'Released', 'No')
     ] },
     SalesOrderLines: { linhas: [], auto: true },
-    SalesInvoiceHeadersV2: { linhas: [nf('OV018004', '000030004', '2026-11-05'), nf('OV018005', '000030005', '2026-10-15'), nf('OV018006', '000030006', '2026-11-03'), nf('OV018007', '000030007', '2026-10-01')] },
-    FiscalDocuments: { linhas: [fd('000030004', 'Approved', '2026-11-05'), fd('000030005', 'Approved', '2026-10-15'), fd('000030006', 'Rejected', '2026-11-03'), fd('000030007', 'Rejected', '2026-10-01')] }
+    SalesInvoiceHeadersV2: { linhas: [nf('OV018004', '000030004', HOJE), nf('OV018005', '000030005', '2026-10-15'), nf('OV018006', '000030006', '2026-11-03'), nf('OV018007', '000030007', '2026-10-01')] },
+    FiscalDocuments: { linhas: [fd('000030004', 'Approved', HOJE), fd('000030005', 'Approved', '2026-10-15'), fd('000030006', 'Rejected', '2026-11-03'), fd('000030007', 'Rejected', '2026-10-01')] }
   };
   r = await K.quadro({ de: DE, ate: ATE });
   const eq = {}; r.ovs.forEach(o => { eq[o.numero] = o.etapa; });
-  t('modo quadro com o período', r.modo === 'quadro' && r.de === DE && r.ate === ATE && r.datadas.join() === 'rejeitada', { modo: r.modo, de: r.de, ate: r.ate, datadas: r.datadas });
+  t('quadro sem período: de/ate = hoje e nenhuma coluna datada', r.modo === 'quadro' && r.de === HOJE && r.ate === HOJE && r.datadas.length === 0, { modo: r.modo, de: r.de, ate: r.ate, datadas: r.datadas });
   t('em aberto de QUALQUER data (até de 2025)', eq.OV018001 === 'criada' && eq.OV018002 === 'liberado', eq);
-  t('faturada com nota no período -> Faturado', eq.OV018004 === 'faturado', eq);
-  t('rejeitada com nota no período -> Rejeitada', eq.OV018006 === 'rejeitada', eq);
-  t('faturada fora do período, rejeitada fora do período, cancelada e outro depósito: fora', !eq.OV018005 && !eq.OV018007 && !eq.OV018008 && !eq.OV018003, eq);
-  t('rejeitada fora do período contada à parte', r.foraPeriodo === 1, r.foraPeriodo);
+  t('faturada com a nota de HOJE -> Faturado', eq.OV018004 === 'faturado', eq);
+  t('rejeitadas de qualquer data -> Rejeitada (sem período: tudo)', eq.OV018006 === 'rejeitada' && eq.OV018007 === 'rejeitada', eq);
+  t('faturada antiga sem carga, cancelada e outro depósito: fora', !eq.OV018005 && !eq.OV018008 && !eq.OV018003, eq);
+  t('nada fica fora por período', r.foraPeriodo === 0, r.foraPeriodo);
   const lab = chamadas.find(c => c.ent === 'SalesOrderHeadersV2' && /Backorder/.test(c.q.filter));
   t('em aberto: filtro pelo status (enum) e pelo depósito, SEM data', lab && /SalesOrderStatus eq Microsoft\.Dynamics\.DataEntities\.SalesStatus'Backorder'/.test(lab.q.filter) && /DefaultShippingWarehouseId eq 'ALMOX-PA'/.test(lab.q.filter) && !/OrderCreationDateTime/.test(lab.q.filter), lab && lab.q.filter);
   const lper = chamadas.find(c => c.ent === 'SalesInvoiceHeadersV2' && / ge /.test(c.q.filter));
-  t('período: o diário pela InvoiceDate, de 01/11 até 06/11 inclusive', lper && /InvoiceDate ge 2026-11-01T00:00:00Z and InvoiceDate lt 2026-11-07T00:00:00Z/.test(lper.q.filter), lper && lper.q.filter);
+  t('o diário de faturas só de HOJE (InvoiceDate)', lper && new RegExp('InvoiceDate ge ' + HOJE + 'T00:00:00Z and InvoiceDate lt ' + AMANHA + 'T00:00:00Z').test(lper.q.filter), lper && lper.q.filter);
   const nq = chamadas.length;
   r = await K.quadro({ de: DE, ate: ATE });
-  t('2ª leitura do mesmo período vem do cache', r.cache === true && chamadas.length === nq);
+  t('2ª leitura vem do cache', r.cache === true && chamadas.length === nq);
+  K._limparCache();
   r = await K.quadro({ de: '2026-10-01', ate: ATE });
   const eq2 = {}; r.ovs.forEach(o => { eq2[o.numero] = o.etapa; });
-  t('período maior traz a faturada de 15/10 e a rejeitada de 01/10', eq2.OV018005 === 'faturado' && eq2.OV018007 === 'rejeitada' && eq2.OV018001 === 'criada', eq2);
-  r = await K.quadro({ de: ATE, ate: DE });
-  t('de/até trocados são acertados', r.de === DE && r.ate === ATE, { de: r.de, ate: r.ate });
+  t('de/ate na URL são ignorados (sem período)', r.de === HOJE && r.ate === HOJE && !eq2.OV018005 && eq2.OV018007 === 'rejeitada', { de: r.de, eq2 });
 
   console.log('7a) 10/11/26 Faturado SEM data: as faturadas com a carga Carregado, de qualquer data');
   K._limparCache(); chamadas.length = 0;
@@ -641,6 +641,29 @@ const bio = (n, st, lib) => ({ dataAreaId: 'msb', SalesOrderNumber: n, StatusPed
   const d7d = r.diagnostico.find(d => d.etapa === 'exp:cargas');
   t('o diagnóstico diz quantas cargas expedidas hoje', d7d && d7d.hoje === 1, d7d);
   t('sem aviso do campo de confirmação', !r.avisos.some(a => /LoadShipConfirmUTCDateTime/.test(a)), r.avisos);
+  // o caso da CG011509 (12/11/26: "confirmada hoje e não apareceu em Expedição"):
+  // 450 cargas Carregado antigas na frente (mais que o teto de 400) — a confirmada
+  // hoje tem que ser lida mesmo assim, e a OV dela primeiro
+  K._limparCache(); chamadas.length = 0;
+  const velhas = Array.from({ length: 450 }, (_, i) => ({ dataAreaId: 'msb', LoadId: 'LD-V' + String(i).padStart(3, '0'), LoadStatus: 'Loaded', QuotationPerformed_InoveProjects: 'No', ENVIARPALLET_CUSTOM: 'No', LoadShipConfirmUTCDateTime: '1900-01-01T00:00:00Z' }));
+  const so7d = CEN.WHSLoadTableBiEntities.linhas;
+  CEN.WHSLoadTableBiEntities.linhas = so7d.slice(0, 1).concat(velhas, so7d.slice(1));
+  r = await K.quadro({});
+  const p7e = r.ovs.find(o => o.numero === 'OV018401');
+  t('com 450 cargas Carregado na fila, a confirmada hoje entra na Expedição', p7e && p7e.etapa === 'expedicao', p7e && p7e.etapa);
+  const t7e = chamadas.find(c => c.ent === 'WHSWorkTableBiEntities' && /LoadId eq/.test(c.q.filter || ''));
+  t('os trabalhos das cargas confirmadas hoje são lidos primeiro', t7e && /LoadId eq 'LD-E1'/.test(t7e.q.filter), t7e && t7e.q.filter.slice(0, 120));
+  const f7e = r.diagnostico.find(d => d.etapa === 'fat:ovs');
+  t('o diagnóstico lista a OV da carga confirmada hoje', f7e && f7e.cargasHoje === 1 && f7e.ovsHoje.indexOf('OV018401') >= 0 && r.avisos.some(a => /olhou só 400/.test(a)), f7e);
+  // com o depósito na carga: as cargas lidas só do ALMOX-PA (as do EMB-SEC nem vêm)
+  K._limparCache(); chamadas.length = 0;
+  CEN.WHSLoadTableBiEntities.linhas.forEach(x => { x.InventLocationId = /^LD-V/.test(x.LoadId) ? 'EMB-SEC' : 'ALMOX-PA'; });
+  r = await K.quadro({});
+  const q7f = chamadas.filter(c => c.ent === 'WHSLoadTableBiEntities' && /LoadStatus eq|LoadShipConfirmUTCDateTime ge/.test(c.q.filter || ''));
+  t('as cargas (Carregado e confirmadas hoje) só do depósito ALMOX-PA', q7f.length >= 2 && q7f.every(c => /InventLocationId eq 'ALMOX-PA'/.test(c.q.filter)) && !r.avisos.some(a => /olhou só/.test(a))
+    && r.ovs.some(o => o.numero === 'OV018401' && o.etapa === 'expedicao'), q7f.map(c => c.q.filter));
+  CEN.WHSLoadTableBiEntities.linhas = so7d;
+  so7d.forEach(x => { delete x.InventLocationId; });
   // a entidade de cargas sem o campo: aviso
   K._limparCache();
   CEN.WHSLoadTableBiEntities.linhas.forEach(x => { delete x.LoadShipConfirmUTCDateTime; });
@@ -652,7 +675,7 @@ const bio = (n, st, lib) => ({ dataAreaId: 'msb', SalesOrderNumber: n, StatusPed
   K._limparCache(); chamadas.length = 0;
   CEN.SalesOrderHeadersV2.recusaEnum = true;
   r = await K.quadro({ de: DE, ate: ATE });
-  t('mesmo resultado pelo filtro de texto', r.ovs.map(o => o.numero).sort().join() === 'OV018001,OV018002,OV018004,OV018006', r.ovs.map(o => o.numero));
+  t('mesmo resultado pelo filtro de texto', r.ovs.map(o => o.numero).sort().join() === 'OV018001,OV018002,OV018004,OV018006,OV018007', r.ovs.map(o => o.numero));
   t('o diagnóstico diz a forma usada', r.diagnostico.some(d => d.etapa === 'ov:abertas' && d.forma === 'texto' && d.linhas >= 1), r.diagnostico.filter(d => d.etapa === 'ov:abertas'));
   delete CEN.SalesOrderHeadersV2.recusaEnum;
 
@@ -665,7 +688,7 @@ const bio = (n, st, lib) => ({ dataAreaId: 'msb', SalesOrderNumber: n, StatusPed
       v2('OV018101', '2026-11-03T13:00:00Z', 'Backorder'),   // 3 linhas, 1 sem lote -> 2 cartões
       v2('OV018102', '2026-11-03T14:00:00Z', 'Backorder'),   // nenhuma com lote -> a OV inteira em Pendência
       v2('OV018103', '2026-11-03T15:00:00Z', 'Backorder'),   // todas com lote -> não divide
-      v2('OV018104', '2026-11-01T13:00:00Z', 'Invoiced'),    // faturada (nota no período) -> não divide
+      v2('OV018104', '2026-11-01T13:00:00Z', 'Invoiced'),    // faturada (nota de hoje) -> não divide
       v2('OV018105', '2026-11-03T16:00:00Z', 'Backorder'),   // a sem lote está cancelada -> não divide
       v2('OV018106', '2026-11-03T17:00:00Z', 'Backorder'),   // a sem lote já foi entregue -> não divide
       v2('OV018107', '2026-11-03T18:00:00Z', 'Backorder'),   // liberada, mas SEM linha nenhuma -> Criada
@@ -681,8 +704,8 @@ const bio = (n, st, lib) => ({ dataAreaId: 'msb', SalesOrderNumber: n, StatusPed
       lnL('OV018106', 1, 'IT-A', 10, 'LT-1'), lnL('OV018106', 2, 'IT-B', 20, '', 'Delivered'),
       lnL('OV018108', 1, 'IT-A', 100, 'LT-8', 'Delivered'), lnL('OV018108', 2, 'IT-C', 200, 'LT-9', 'Delivered')
     ] },
-    SalesInvoiceHeadersV2: { linhas: [nf('OV018104', '000030104', '2026-11-05')] },
-    FiscalDocuments: { linhas: [fd('000030104', 'Approved', '2026-11-05')] }
+    SalesInvoiceHeadersV2: { linhas: [nf('OV018104', '000030104', HOJE)] },
+    FiscalDocuments: { linhas: [fd('000030104', 'Approved', HOJE)] }
   };
   // KANBAN_PENDENCIA_LOTE=0 desliga a regra do lote (ficou de lado de manhã, 11/11/26)
   process.env.KANBAN_PENDENCIA_LOTE = '0';
@@ -977,8 +1000,8 @@ const bio = (n, st, lib) => ({ dataAreaId: 'msb', SalesOrderNumber: n, StatusPed
   await fn(ctx, { method: 'GET', headers: {}, query: {} });
   t('sem a área -> 403', ctx.res.status === 403 && pediu === 'kanban', ctx.res.status);
   auth.requireArea = async () => ({ user: { email: 'ia@biomedical.com.br' }, validated: true });
-  await fn(ctx, { method: 'GET', headers: {}, query: { data: 'hoje' } });
-  t('data inválida -> 400', ctx.res.status === 400, ctx.res.status);
+  await fn(ctx, { method: 'GET', headers: {}, query: { modo: 'dia', data: 'hoje' } });
+  t('modo dia com data inválida -> 400', ctx.res.status === 400, ctx.res.status);
   await fn(ctx, { method: 'GET', headers: {}, query: { ov: "OV1' or 1 eq 1" } });
   t('nº de OV inválido -> 400', ctx.res.status === 400, ctx.res.status);
   await fn(ctx, { method: 'GET', headers: {}, query: { ov: 'OV017525' } });
@@ -1003,10 +1026,12 @@ const bio = (n, st, lib) => ({ dataAreaId: 'msb', SalesOrderNumber: n, StatusPed
   await fn(ctxL, { method: 'POST', headers: {}, query: {}, body: { acao: 'apagar-tudo' } });
   t('POST com outra ação -> 400', ctxL.res.status === 400, ctxL.res.status);
   delete process.env.KANBAN_PALLET_BOTAO;
-  await fn(ctx, { method: 'GET', headers: {}, query: { de: '2025-01-01', ate: '2026-11-06' } });
-  t('período de mais de 1 ano -> 400', ctx.res.status === 400, ctx.res.status);
-  await fn(ctx, { method: 'GET', headers: {}, query: { de: '01/11/2026' } });
-  t('data de período inválida -> 400', ctx.res.status === 400, ctx.res.status);
+  // 12/11/26: o quadro sem período — o de/ate de uma página antiga não dá mais erro
+  // ("Período grande demais: no máximo 1 ano")
+  await fn(ctx, { method: 'GET', headers: {}, query: { de: '2025-02-07', ate: '2026-11-12' } });
+  t('quadro com um período de mais de 1 ano (página antiga): 200, ignorado', ctx.res.status === 200 && ctx.res.body.de === K.hojeSP(), { st: ctx.res.status, de: ctx.res.body && ctx.res.body.de });
+  await fn(ctx, { method: 'GET', headers: {}, query: { de: '01/11/2026', data: 'hoje' } });
+  t('quadro com data/período inválidos: 200, ignorados', ctx.res.status === 200, ctx.res.status);
   auth.requireArea = orig;
 
   console.log(falhas ? '\n' + falhas + ' FALHA(S)' : '\ntudo ok');

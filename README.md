@@ -1551,6 +1551,37 @@ fases". A regra do lote (`partesPorLinhas`) está **LIGADA por padrão** de novo
 - Testes (1, 7c): Pendência com regra; `=0` desliga; sem env, ligada.
   `sw.js` — cache `bm-comest-v74`.
 
+### Kanban · sem período + a carga confirmada hoje que não aparecia (12/11/2026)
+
+O dono: "remove o período, não preciso disso, tem que mostrar tudo — olha essa
+carga, ela está confirmada hoje e não apareceu em Expedição" (CG011509, ALMOX-PA,
+confirmada 12/11 10:42) — e, com o período de 07/02/2025 a hoje, o erro
+"Período grande demais: no máximo 1 ano".
+
+- **Sem período**: saíram da tela os campos "Período de / até" e os botões Hoje,
+  7 dias e Mês; a tela pede só `/api/kanban-ov`. No servidor, `quadro()` ignora
+  `de`/`ate` (`DATADAS = []`): nenhuma coluna filtra por data — a Rejeitada também
+  mostra tudo — e o diário de faturas é lido só de HOJE. A rota não valida mais
+  período (uma página antiga em cache que mande `de`/`ate` não dá erro); o
+  `?modo=dia&data=` segue validando a data. Só a Expedição é "hoje".
+- **A carga confirmada hoje que sumia** — duas causas, as duas corrigidas em
+  `ovsDeCargasCarregadas`/`montar`:
+  1. as cargas confirmadas hoje entravam NO FIM da lista, depois das Carregado
+     de todos os depósitos, e o teto `MAX_CARGAS_FAT` (400) as cortava. Agora vão
+     à parte (`idsHoje`), na frente e sem teto; os trabalhos delas são lidos
+     primeiro e as OVs delas também (`numerosHoje`, antes das Carregado e das
+     notas).
+  2. as cargas eram lidas de TODOS os depósitos (EMB-SEC…): agora só do
+     depósito do quadro (`InventLocationId eq 'ALMOX-PA'`), quando a entidade de
+     cargas tem a coluna.
+  Diagnóstico: `exp:cargas` lista as cargas confirmadas hoje; `fat:ovs`, as OVs
+  delas (`ovsHoje`).
+- Testes (7, 7c, 7d, 6): quadro sem período (de/ate = hoje, nada datado, a
+  Rejeitada antiga aparece, o diário só de hoje, de/ate da URL ignorados); 450
+  cargas Carregado na fila e a confirmada hoje na Expedição (falhava com o código
+  anterior); as cargas só do ALMOX-PA; a rota sem o 400 do período. `sw.js` —
+  cache `bm-comest-v82`.
+
 ### Kanban · Expedição = envio da carga confirmado HOJE (12/11/2026)
 
 O dono: "na fase EXPEDIÇÃO, a entidade WHSLoadTableBiEntities tem um campo

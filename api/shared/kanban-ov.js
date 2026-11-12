@@ -813,7 +813,10 @@ async function ovsDoDia(E, dia, token, ate, diag) {
 // 12/11/2026 (dono): a EXPEDIÇÃO também saiu do período — mostra as OVs cuja
 // carga teve o envio confirmado HOJE (LoadShipConfirmUTCDateTime), de qualquer
 // data (expedidaEmDe, abaixo). O período fica só para a Rejeitada.
-const DATADAS = ['rejeitada', 'cancelada'];
+// 12/11/2026, depois (dono: "remove o período, não preciso disso, tem que mostrar
+// TUDO"): SEM período — nenhuma coluna filtra por data (a Rejeitada também mostra
+// tudo); só a Expedição é "hoje", pela confirmação do envio.
+const DATADAS = [];
 // quando a carga da OV foi expedida: a confirmação de envio MAIS RECENTE das
 // cargas remetidas dela (a OV só vai para a Expedição com todas lá); null = sem
 function expedidaEmDe(cargas) {
@@ -893,9 +896,15 @@ const MAX_CARGAS_FAT = Number(process.env.KANBAN_MAX_CARGAS_FAT || 400);
 async function ovsDeCargasCarregadas(token, ate, diag) {
   const [xc, xt] = await Promise.all([entidadeExtra(CFG_CARGA, token, ate, diag), entidadeExtra(CFG_TRABALHO, token, ate, diag)]);
   if (!xc.E || !xt.E || !xt.E.carga) return { numeros: [], semFonte: true };
-  const ids = {};
+  // 12/11/26 (dono: "essa carga está confirmada hoje e não apareceu em Expedição"):
+  // as cargas com o envio confirmado HOJE ficam à parte (idsHoje) e vão PRIMEIRO —
+  // antes, entravam no fim da lista e o teto de MAX_CARGAS_FAT (ou o tempo) as cortava
+  const ids = {}, idsHoje = {};
   for (const E of (xc.todas && xc.todas.length ? xc.todas : [xc.E]).filter(L => L.status)) {
-    const emp = E.temEmpresa ? "dataAreaId eq '" + D.odataStr(EMPRESA) + "' and " : '';
+    // 12/11/26: só as cargas do depósito do quadro (ALMOX-PA), quando a entidade tem
+    // a coluna — sem isso vinham as de todos os depósitos (EMB-SEC…) e o teto cortava
+    const emp = (E.temEmpresa ? "dataAreaId eq '" + D.odataStr(EMPRESA) + "' and " : '') +
+      (E.deposito && !TODOS_DEPOSITOS ? '(' + DEPOSITOS.map(d => E.deposito + " eq '" + D.odataStr(d) + "'").join(' or ') + ') and ' : '');
     const sel = [E.numero, E.status].join(',');
     const formas = [{ f: E.status + " eq Microsoft.Dynamics.DataEntities.WHSLoadStatus'Loaded'", rot: 'enum' }, { f: E.status + " eq 'Loaded'", rot: 'texto' }];
     for (const fo of formas) {
@@ -921,22 +930,27 @@ async function ovsDeCargasCarregadas(token, ate, diag) {
       try {
         const rows = await D.odataGetComPrazo(E.entidade, { crossCompany: true, filter: emp + f, select: [E.numero, c].join(',') }, token, prazo(ate, PRAZO_MS));
         let n = 0;
-        rows.forEach(r => { const id = txt(r[E.numero]); if (id && diaSP(r[c]) === hoje) { ids[id.toUpperCase()] = id; n++; } });
-        diag.push({ etapa: 'exp:cargas', entidade: E.entidade, coluna: c, linhas: rows.length, hoje: n });
+        rows.forEach(r => { const id = txt(r[E.numero]); if (id && diaSP(r[c]) === hoje) { idsHoje[id.toUpperCase()] = id; n++; } });
+        diag.push({ etapa: 'exp:cargas', entidade: E.entidade, coluna: c, linhas: rows.length, hoje: n, cargas: rows.map(r => txt(r[E.numero])).slice(0, 40) });
       } catch (e) {
         diag.push({ etapa: 'exp:cargas', entidade: E.entidade, coluna: c, erro: String(e.message || e).slice(0, 200) });
       }
     }
   }
-  let lista = Object.keys(ids).map(k => ids[k]);
-  if (!lista.length) return { numeros: [], cargas: 0 };
-  const total = lista.length;
-  if (lista.length > MAX_CARGAS_FAT) lista = lista.slice(0, MAX_CARGAS_FAT);
+  const hojeL = Object.keys(idsHoje).map(k => idsHoje[k]);
+  let carregadas = Object.keys(ids).filter(k => !idsHoje[k]).map(k => ids[k]);
+  if (!hojeL.length && !carregadas.length) return { numeros: [], numerosHoje: [], cargas: 0 };
+  const total = carregadas.length;
+  // o teto vale só para as Carregado; as confirmadas hoje vão todas, na frente
+  if (carregadas.length > MAX_CARGAS_FAT) carregadas = carregadas.slice(0, MAX_CARGAS_FAT);
+  const lista = hojeL.concat(carregadas);
   const T = xt.E, sel = [T.numero, T.carga].concat(T.tipo ? [T.tipo] : []).join(',');
   const rows = await porNumeros(T.entidade, T.carga, lista, token, ate, diag, 'fat:trabalho', sel, !T.temEmpresa);
   // só trabalho de VENDA (a carga também leva transferência)
-  const nums = rows.filter(r => !T.tipo || !txt(r[T.tipo]) || /^(sales|venda)/.test(normV(r[T.tipo]))).map(r => chaveOv(r[T.numero])).filter(Boolean);
-  return { numeros: Array.from(new Set(nums)), cargas: total, corte: total > lista.length ? total : 0 };
+  const venda = rows.filter(r => !T.tipo || !txt(r[T.tipo]) || /^(sales|venda)/.test(normV(r[T.tipo])));
+  const deHoje = venda.filter(r => idsHoje[txt(r[T.carga]).toUpperCase()]).map(r => chaveOv(r[T.numero])).filter(Boolean);
+  const nums = venda.map(r => chaveOv(r[T.numero])).filter(Boolean);
+  return { numeros: Array.from(new Set(nums)), numerosHoje: Array.from(new Set(deHoje)), cargas: total, cargasHoje: hojeL.length, corte: total > carregadas.length ? total : 0 };
 }
 
 // linhas de uma entidade pelos números das OVs (em lotes; 2 lotes por vez —
@@ -1040,13 +1054,14 @@ async function ordensDoDia(opts) {
   return montar(opts, { chave: 'dia|' + dia, dia });
 }
 // o QUADRO (09/11/2026): em aberto de qualquer data + as com nota no período
+// 12/11/26 (dono: "remove o período, não preciso disso, tem que mostrar tudo"):
+// o quadro não tem mais período — de/ate são ignorados. As notas lidas pelo
+// diário de faturas são as de HOJE (o Faturado/Rejeitada do dia sem carga); o resto
+// vem das OVs em aberto e das cargas, de qualquer data.
 async function quadro(opts) {
   opts = opts || {};
   const hoje = hojeSP();
-  const ehData = (v) => /^\d{4}-\d{2}-\d{2}$/.test(String(v || ''));
-  let de = ehData(opts.de) ? String(opts.de) : hoje, ateDia = ehData(opts.ate) ? String(opts.ate) : de;
-  if (ateDia < de) { const t = de; de = ateDia; ateDia = t; }
-  return montar(opts, { chave: 'quadro|' + de + '|' + ateDia, quadro: true, de, ateDia, dia: ateDia });
+  return montar(opts, { chave: 'quadro|' + hoje, quadro: true, de: hoje, ateDia: hoje, dia: hoje });
 }
 async function montar(opts, modo) {
   const dia = modo.dia;
@@ -1080,12 +1095,14 @@ async function montar(opts, modo) {
       ovsComNotaNoPeriodo(modo.de, modo.ateDia, token, ate, diag).catch(e => ({ numeros: [], erro: String(e.message || e).slice(0, 160) })),
       ovsDeCargasCarregadas(token, ate, diag).catch(e => ({ numeros: [], erro: String(e.message || e).slice(0, 160) }))
     ]);
-    if (per.erro) avisos.push('Não deu para ler as notas do período no diário de faturas (' + per.erro + '): a Rejeitada pode ficar incompleta.');
+    if (per.erro) avisos.push('Não deu para ler as notas de hoje no diário de faturas (' + per.erro + '): o Faturado e a Rejeitada de hoje podem ficar incompletos.');
     if (fat.erro) avisos.push('Não deu para ler as cargas Carregado e as expedidas hoje (' + fat.erro + '): no Faturado, no Pallet e na Expedição, as OVs faturadas antes do período podem faltar.');
     if (fat.corte) avisos.push(fat.corte + ' cargas Carregado no Dynamics: o Faturado olhou só ' + MAX_CARGAS_FAT + ' delas (KANBAN_MAX_CARGAS_FAT).');
-    diag.push({ etapa: 'fat:ovs', cargas: fat.cargas || 0, ovs: (fat.numeros || []).length });
+    diag.push({ etapa: 'fat:ovs', cargas: fat.cargas || 0, ovs: (fat.numeros || []).length, cargasHoje: fat.cargasHoje || 0, ovsHoje: (fat.numerosHoje || []).slice(0, 40) });
     const ja = {}; abertas.forEach(r => { ja[chaveOv(r[principal.numero])] = 1; });
-    const faltam = Array.from(new Set(per.numeros.concat(fat.numeros || []))).filter(n => !ja[n]);
+    // 12/11/26: as OVs das cargas confirmadas hoje primeiro (Expedição), depois as
+    // das cargas Carregado e por último as das notas — se o tempo acabar, faltam estas
+    const faltam = Array.from(new Set((fat.numerosHoje || []).concat(fat.numeros || [], per.numeros))).filter(n => !ja[n]);
     let faturadas = [];
     if (faltam.length) {
       try { faturadas = await porNumeros(principal.entidade, principal.numero, faltam, token, ate, diag, 'ov:faturadas', null, !principal.temEmpresa); }
@@ -1344,24 +1361,17 @@ async function montar(opts, modo) {
   }
   // 12/11/26: quando a carga foi expedida (a ficha mostra; o quadro filtra)
   partes.forEach(o => { if (o.etapa === 'expedicao') o.expedidaEm = expedidaEmDe(o.cargas); });
-  // quadro: a coluna DATADA (Rejeitada) só com a OV do período — pela data da
-  // nota mais recente; sem nota, a de criação. A EXPEDIÇÃO (12/11/26) só com a
-  // OV cuja carga teve o envio confirmado HOJE, de qualquer data, fora do período
+  // quadro (12/11/26): sem período — só a EXPEDIÇÃO filtra, pela OV cuja carga
+  // teve o envio confirmado HOJE, de qualquer data
   const hoje = hojeSP();
-  let foraPeriodo = 0, expedicaoOutroDia = 0, expedicaoSemData = 0;
+  const foraPeriodo = 0;
+  let expedicaoOutroDia = 0, expedicaoSemData = 0;
   const ovs = !modo.quadro ? partes : partes.filter(o => {
-    if (o.etapa === 'expedicao') {
-      if (!o.expedidaEm) { expedicaoSemData++; return false; }
-      o.dataPeriodo = diaSP(o.expedidaEm);
-      if (o.dataPeriodo !== hoje) { expedicaoOutroDia++; return false; }
-      return true;
-    }
-    if (DATADAS.indexOf(o.etapa) < 0) return true;
-    const d = (o.notas && o.notas[0] && o.notas[0].data) || diaDe(o.criadaEm, principal.criadaEm) || '';
-    o.dataPeriodo = d || null;
-    const dentro = d >= modo.de && d <= modo.ateDia;
-    if (!dentro) foraPeriodo++;
-    return dentro;
+    if (o.etapa !== 'expedicao') return true;
+    if (!o.expedidaEm) { expedicaoSemData++; return false; }
+    o.dataPeriodo = diaSP(o.expedidaEm);
+    if (o.dataPeriodo !== hoje) { expedicaoOutroDia++; return false; }
+    return true;
   });
   if (modo.quadro && CARGA.E && !(CARGA.lista || [CARGA.E]).some(L => L.envioConfirmado)) {
     avisos.push('Não achei o campo ' + COL_CARGA.envioConfirmado[0] + ' nas entidades de cargas (' + (CARGA.lista || [CARGA.E]).map(L => L.entidade).join(', ') +
