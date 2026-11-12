@@ -492,8 +492,17 @@ const ENT_FRETE = envLista('KANBAN_ENT_FRETE', []).concat([
 const COL_FRETE = {
   numero:   ['OrderNum', 'OrderNumber', 'SalesId', 'SalesOrderNumber'],
   trabalho: ['WorkId'],
-  frete:    envLista('KANBAN_COL_FRETE', ['FreghtType_InoveProjects', 'FreightType_InoveProjects'])
+  frete:    envLista('KANBAN_COL_FRETE', ['FreghtType_InoveProjects', 'FreightType_InoveProjects']),
+  // 12/11/26 (liberação parcial): a qual LINHA da OV a linha do trabalho pertence —
+  // pelo id da transação da linha (InventTransId = InventoryLotId da linha da OV);
+  // sem ele, pelo item
+  inventTrans: ['InventTransId', 'InventoryTransactionId', 'InventoryLotId'],
+  item:     ['ItemId', 'ItemNumber']
 };
+// 12/11/26 (dono: "o frete vem em inglês — ChargeFreight é FOB, Destinatário"): os
+// valores do tipo de frete que contam como FOB (o e-mail da Cotação só sai com FOB)
+const FRETE_FOB = envLista('KANBAN_FRETE_FOB', ['ChargeFreight', 'FOB', 'Destinatario']).map(v => v.toLowerCase().replace(/[^a-z0-9]/g, ''));
+const freteFobV = (v) => FRETE_FOB.indexOf(String(v || '').toLowerCase().replace(/[^a-z0-9]/g, '')) >= 0;
 const CFG_FRETE = {
   chave: 'frete', candidatas: ENT_FRETE, reNome: /whsworkline/i, pedaco: 'whsworkline',
   cols: COL_FRETE, obrig: ['frete'], reCols: { frete: /fre(i)?ght.?type/i },
@@ -772,8 +781,15 @@ function partesPorLinhas(o, ls, lida, comLote, comStatus) {
     // a linha em aberto sem lote vai para Pendência — 12/11/26 (dono): "SÓ vai para a
     // Pendência se NENHUMA das outras fases for atendida; se tiver trabalho ou carga
     // que atende os outros status, vai para a outra fase": só quando a linha cairia
-    // em Criada (a fase de quando nada mais bate)
-    if (comLote && pendenciaPorLote() && (s2 === 'aberta' || s2 == null) && !l.lote && e === 'criada') { destino = e; e = 'pendencia'; semlote = true; }
+    // em Criada (a fase de quando nada mais bate).
+    // 12/11/26, depois (dono: "pode haver liberação parcial das linhas: parte fica em
+    // Pendência e parte tem trabalho"): a linha sem lote que NÃO tem trabalho DELA
+    // (o._trabLinha, pelas linhas do trabalho) não herda a fase do trabalho/carga das
+    // outras linhas — vale o contexto só dela (não liberada, sem trabalho, sem carga)
+    if (comLote && pendenciaPorLote() && (s2 === 'aberta' || s2 == null) && !l.lote) {
+      if (c && typeof o._trabLinha === 'function' && o._trabLinha(l) === false) e = etapaDe(c.sa, 'Open', c.cr, 'nenhum', c.nota, null, s2);
+      if (e === 'criada') { destino = e; e = 'pendencia'; semlote = true; }
+    }
     if (!grupos.has(e)) grupos.set(e, { etapa: e, ls: [], status: [], semlote, destino });
     const g = grupos.get(e); g.ls.push(l); if (s2 && g.status.indexOf(s2) < 0) g.status.push(s2);
   });
@@ -1074,7 +1090,7 @@ async function colunasLinhas(ent, token, ate) {
   const rows = await D.odataGetComPrazo(ent, { top: 1, crossCompany: true, filter: "dataAreaId eq '" + D.odataStr(EMPRESA) + "'" }, token, prazo(ate, PROVA_MS));
   const cols = rows.length ? colunasDe(rows[0]) : [];
   const C = { ent, lote: achaCol(cols, COL_LOTE), linha: achaCol(cols, COLS_LINHA.linha), item: achaCol(cols, COLS_LINHA.item),
-    qtd: achaCol(cols, COLS_LINHA.qtd), status: achaCol(cols, COLS_LINHA.status), amostra: rows.length > 0 };
+    qtd: achaCol(cols, COLS_LINHA.qtd), status: achaCol(cols, COLS_LINHA.status), tid: achaCol(cols, COLS_LINHA.tid), amostra: rows.length > 0 };
   // sem linha de amostra não dá para saber as colunas: não guarda (tenta de novo)
   if (C.amostra) _colsLinhas = C;
   return C;
@@ -1086,7 +1102,7 @@ async function linhas(numeros, token, ate, diag) {
   for (const ent of alvos) {
     try {
       const C = await colunasLinhas(ent, token, ate);
-      const sel = ['SalesOrderNumber', 'LineAmount', 'dataAreaId'].concat([C.lote, C.linha, C.item, C.qtd, C.status].filter(Boolean));
+      const sel = ['SalesOrderNumber', 'LineAmount', 'dataAreaId'].concat([C.lote, C.linha, C.item, C.qtd, C.status, C.tid].filter(Boolean));
       const rows = await porNumeros(ent, 'SalesOrderNumber', numeros, token, ate, diag, 'ov:linhas', Array.from(new Set(sel)).join(','));
       _entLinhas = ent;
       const por = {};
@@ -1096,7 +1112,7 @@ async function linhas(numeros, token, ate, diag) {
         o.itens++; o.valor += Number(r.LineAmount) || 0;
         const lt = C.lote ? txt(r[C.lote]) : '';
         o.linhas.push({ linha: C.linha ? num(r[C.linha]) : null, item: C.item ? txt(r[C.item]) : '', valor: Math.round((Number(r.LineAmount) || 0) * 100) / 100,
-          qtd: C.qtd ? num(r[C.qtd]) : null, lote: VAZIOS.test(lt) ? '' : lt, status: C.status ? txt(r[C.status]) : '' });
+          qtd: C.qtd ? num(r[C.qtd]) : null, lote: VAZIOS.test(lt) ? '' : lt, status: C.status ? txt(r[C.status]) : '', tid: C.tid ? txt(r[C.tid]).toUpperCase() : '' });
       });
       Object.keys(por).forEach(k => { por[k].valor = Math.round(por[k].valor * 100) / 100; });
       // as OVs cujas linhas foram lidas (com ou sem linha)
@@ -1441,6 +1457,38 @@ async function montar(opts, modo) {
   }).sort((a, b) => b.criadaEm.localeCompare(a.criadaEm) || b.numero.localeCompare(a.numero));
   // 10/11/26: a OV em partes pelo lote das linhas (Pendência x o resto)
   const colLote = _colsLinhas && _colsLinhas.lote;
+  // 12/11/26: as LINHAS DO TRABALHO (BioWHSWorkLineV1) só das OVs que precisam — a
+  // com linha em aberto sem lote E trabalho (liberação parcial: qual linha tem
+  // trabalho) e, no quadro, a com Solicitar transportadora = Sim (o frete FOB do
+  // e-mail da Cotação)
+  const precisaLT = todas.filter(o => {
+    const ls = (porLinha[o.numero] || {}).linhas || [];
+    const semLote = !!colLote && ls.some(l => !l.lote && statusLinha(l.status) === 'aberta');
+    const temTrab = (o.trabalhos || []).some(w => w.fase !== 'ignora');
+    return (semLote && temTrab) || (modo.quadro && solicitaTransp(o));
+  }).map(o => o.numero);
+  const LT = precisaLT.length && restante(ate) > 6000
+    ? await linhasTrabalhoDasOvs(precisaLT, token, ate, diag).catch(e => ({ E: null, por: {}, erro: String(e.message || e).slice(0, 160) }))
+    : { E: null, por: {} };
+  if (precisaLT.length) diag.push({ etapa: 'ov:linhastrab', ovs: precisaLT.length, entidade: LT.E ? LT.E.entidade : null, erro: LT.erro || null });
+  const precisa = new Set(precisaLT);
+  todas.forEach(o => {
+    if (!precisa.has(o.numero) || !LT.E || LT.erro) return;
+    const lt = LT.por[o.numero] || [];
+    // o frete (FOB?) das linhas do trabalho da OV
+    const fretes = Array.from(new Set(lt.map(x => x.frete).filter(v => v && !/^none$/i.test(v))));
+    o.frete = { valores: fretes, fob: fretes.some(freteFobV), entidade: LT.E.entidade, coluna: LT.E.frete };
+    // qual linha da OV tem trabalho (só dos trabalhos válidos)
+    const validos = new Set((o.trabalhos || []).filter(w => w.fase !== 'ignora').map(w => String(w.id).toUpperCase()));
+    const doOv = lt.filter(x => !x.trabalho || validos.has(x.trabalho.toUpperCase()));
+    const tids = new Set(doOv.map(x => x.tid).filter(Boolean)), itens = new Set(doOv.map(x => x.item).filter(Boolean));
+    o._trabLinha = (l) => {
+      if (!doOv.length) return validos.size ? null : false;     // trabalho sem as linhas lidas: não se sabe
+      if (l.tid && tids.size) return tids.has(l.tid);
+      if (l.item && itens.size) return itens.has(String(l.item).toUpperCase());
+      return null;
+    };
+  });
   const partes = [];
   const lidas = porLinha._lidas || new Set();
   // 1º o lote (a parte sem lote vai para Pendência); 2º os trabalhos, na parte
@@ -1451,7 +1499,7 @@ async function montar(opts, modo) {
     if (!p._abertas) partes.push(p);
     else partesPorTrabalho(p, cargasDe, faseCargasDe).forEach(q => partes.push(q));
   }));
-  partes.forEach(p => { delete p._trab; delete p._ctx; delete p._abertas; });
+  partes.forEach(p => { delete p._trab; delete p._ctx; delete p._abertas; delete p._trabLinha; });
   // os outros cartões da mesma OV (a ficha lista todos e leva de um ao outro)
   const porNum = {};
   partes.forEach(p => { (porNum[p.numero] = porNum[p.numero] || []).push(p); });
@@ -1492,7 +1540,8 @@ async function montar(opts, modo) {
   // transportadora = Sim recebe o e-mail (uma vez só; kanban-email.js)
   if (modo.quadro) {
     const vistas = new Set();
-    const cands = ovs.filter(o => o.etapa === 'cotacao' && solicitaTransp(o) && !vistas.has(o.numero) && vistas.add(o.numero));
+    // 12/11/26 (dono): "deve disparar se for Sim E se for FOB" (ChargeFreight = FOB)
+    const cands = ovs.filter(o => o.etapa === 'cotacao' && solicitaTransp(o) && o.frete && o.frete.fob && !vistas.has(o.numero) && vistas.add(o.numero));
     if (cands.length && restante(ate) > 8000) {
       const ids = Array.from(new Set([].concat.apply([], cands.map(o => (o.cargas || []).map(c => String(c.id))))));
       const CX = await caixasDasCargas(ids, token, ate, diag).catch(e => ({ E: null, por: {}, erro: String(e.message || e).slice(0, 160) }));
@@ -1590,7 +1639,9 @@ const COLS_LINHA = {
   entrega:    ['RequestedShippingDate', 'RequestedReceiptDate'],
   confirmada: ['ConfirmedShippingDate', 'ConfirmedReceiptDate'],
   deposito:   ['ShippingWarehouseId', 'InventLocationId'],
-  lote:       ['ItemBatchNumber', 'InventBatchId', 'BatchNumber', 'BatchId']
+  lote:       ['ItemBatchNumber', 'InventBatchId', 'BatchNumber', 'BatchId'],
+  // 12/11/26: o id da transação da linha (liga a linha do trabalho à linha da OV)
+  tid:        ['InventoryLotId', 'InventTransId']
 };
 // data "vazia" do F&O (1900-01-01, em qualquer hora) = sem data
 const dataLinha = (v) => { const s = txt(v); return /^\d{4}-\d{2}-\d{2}/.test(s) && !/^1900-01-01/.test(s) ? s.slice(0, 10) : null; };
@@ -1619,6 +1670,23 @@ function dadosEmail(o, CX) {
   if (remessas.size && CX.E && CX.E.remessa) caixas = caixas.filter(c => !c.remessa || remessas.has(c.remessa.toUpperCase()));
   const vistos = new Set(); caixas = caixas.filter(c => !vistos.has(c.id) && vistos.add(c.id));
   return { ov: o.numero, cliente: o.cliente, caixas, valor: o.valorOv != null ? o.valorOv : o.valor, cidade: o.cidade, uf: o.uf };
+}
+
+// as LINHAS DO TRABALHO das OVs (12/11/26), no quadro: a qual linha da OV cada uma
+// pertence (liberação parcial -> Pendência por linha) e o tipo de frete (FOB, para o
+// e-mail da Cotação). Pelo nº da OV (OrderNum). -> { E, por: { OV: [{ trabalho, tid, item, frete }] } }
+async function linhasTrabalhoDasOvs(numeros, token, ate, diag) {
+  const x = await entidadeExtra(CFG_FRETE, token, ate, diag), E = x.E;
+  if (!E) return { E: null, por: {}, erro: x.motivo || 'a entidade das linhas de trabalho não respondeu' };
+  if (!E.numero) return { E, por: {}, erro: 'a ' + E.entidade + ' não tem o nº da OV (OrderNum)' };
+  const rows = await porNumeros(E.entidade, E.numero, numeros, token, ate, diag, 'ov:linhastrab', null, !E.temEmpresa);
+  const por = {};
+  rows.forEach(r => {
+    const k = chaveOv(r[E.numero]); if (!k) return;
+    (por[k] = por[k] || []).push({ trabalho: E.trabalho ? txt(r[E.trabalho]) : '', tid: E.inventTrans ? txt(r[E.inventTrans]).toUpperCase() : '',
+      item: E.item ? txt(r[E.item]).toUpperCase() : '', frete: E.frete ? txt(r[E.frete]) : '' });
+  });
+  return { E, por };
 }
 
 // o frete da OV: os tipos de frete (sem repetir) das linhas dos trabalhos dela
@@ -1851,7 +1919,7 @@ async function emailCotacao(numero, opts) {
   const ids = (o.cargas || []).map(c => String(c.id));
   const CX = await caixasDasCargas(ids, token, ate, []).catch(e => ({ E: null, por: {}, erro: String(e.message || e).slice(0, 160) }));
   const email = EMAIL.montarEmail(dadosEmail(o, CX));
-  const base = { ok: true, ov: n, etapa: o.etapa, solicitaTransportadora: solicitaTransp(o), assunto: email.assunto, texto: email.texto,
+  const base = { ok: true, ov: n, etapa: o.etapa, solicitaTransportadora: solicitaTransp(o), frete: o.frete || null, assunto: email.assunto, texto: email.texto,
     caixas: email.totalCaixas, peso: email.pesoTotal, entidadeCaixas: CX.E ? CX.E.entidade : null, erroCaixas: CX.erro || null, configurado: EMAIL.configurado() };
   if (!opts.enviar) return base;
   const reg = await EMAIL.enviarAgora({ ov: n, email }, opts.por);

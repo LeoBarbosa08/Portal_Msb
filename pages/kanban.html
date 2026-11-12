@@ -994,13 +994,21 @@
       'nao-configurado': function () { return ['alerta', 'Falta configurar o remetente e o destinatário no Azure (KANBAN_EMAIL_DE e KANBAN_EMAIL_PARA).']; },
       desligado: function () { return ['', 'Envio automático desligado (KANBAN_EMAIL_AUTO = 0).']; }
     };
+    // o tipo de frete em português (o Dynamics manda o nome do enum, em inglês)
+    var ROT_FRETE = { chargefreight: 'FOB - Destinatário', fob: 'FOB - Destinatário', blank: 'Em branco' };
+    function rotFrete(v) { var r = ROT_FRETE[String(v || '').toLowerCase().replace(/[^a-z0-9]/g, '')]; return r ? r + ' (' + v + ')' : String(v); }
     function solicitaTransp(o) { return (o.extras || []).some(function (e) { return /^solicitartransportadora_custom$/i.test(e.nome) && /^(yes|sim|true|1)$/i.test(String(e.valor || '').trim()); }); }
     function secEmail(o) {
       if (o.etapa !== 'cotacao') return '';
       var m = o.emailCotacao, sim = solicitaTransp(o);
+      // 12/11/26 (dono): "deve disparar se for Sim E se for FOB"
+      var fob = !!(o.frete && o.frete.fob);
       var st = m ? (ST_MAIL[m.status] || function () { return ['', m.status]; })(m)
-        : sim ? ['', 'Na fila: envia na próxima leitura do quadro.'] : ['', 'Solicitar transportadora = Não: a automação não envia e-mail para esta OV.'];
-      var h = '<section class="kb-dw-card"><h5>E-mail da cotação' + (sim ? ' <small>automático</small>' : '') + '</h5>'
+        : !sim ? ['', 'Solicitar transportadora = Não: a automação não envia e-mail para esta OV.']
+        : !o.frete ? ['alerta', 'Sem o tipo de frete (linhas do trabalho): a automação só envia com frete FOB.']
+        : !fob ? ['', 'Frete ' + ((o.frete.valores || []).map(rotFrete).join(' / ') || 'em branco') + ' — não é FOB: a automação não envia e-mail para esta OV.']
+        : ['', 'Na fila: envia na próxima leitura do quadro.'];
+      var h = '<section class="kb-dw-card"><h5>E-mail da cotação' + (sim && fob ? ' <small>automático</small>' : '') + '</h5>'
         + '<p class="kb-mail-st ' + st[0] + '">' + esc(st[1]) + '</p>';
       if (m && m.previa) h += '<div class="kb-mail-ass">Assunto: ' + esc(m.previa.assunto) + '</div><pre class="kb-mail-txt">' + esc(m.previa.texto) + '</pre>';
       return h + '</section>';
@@ -1533,7 +1541,8 @@
       // na BioWHSWorkLineV1"): o tipo de frete das linhas do trabalho de depósito da
       // OV — vem com as linhas da OV, lidas quando a ficha abre
       var LF = LINHAS.get(o.numero), fr = LF && LF.st === 'ok' ? LF.frete : null;
-      var vFrete = !LF || LF.st === 'carregando' ? 'lendo…' : fr && fr.valores && fr.valores.length ? fr.valores.join(' / ') : '—';
+      // 12/11/26 (dono: "o frete vem em inglês — ChargeFreight é FOB, Destinatário"): o rótulo em português
+      var vFrete = !LF || LF.st === 'carregando' ? 'lendo…' : fr && fr.valores && fr.valores.length ? fr.valores.map(rotFrete).join(' / ') : '—';
       var deFrete = fr && fr.entidade ? (fr.coluna || 'FreghtType_InoveProjects') + ' · ' + fr.entidade
         : (fr && fr.erro) || (LF && LF.st === 'erro') ? 'FreghtType_InoveProjects · não veio do Dynamics' : 'FreghtType_InoveProjects';
       pares.push(['Tipo de frete', esc(vFrete) + '<small>' + esc(deFrete) + '</small>', '']);

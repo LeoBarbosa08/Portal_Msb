@@ -839,6 +839,39 @@ const bio = (n, st, lib) => ({ dataAreaId: 'msb', SalesOrderNumber: n, StatusPed
   t('linhas não lidas: a OV sem linha segue a etapa dela', pc('OV018107') && pc('OV018107').etapa === 'liberado' && !pc('OV018107').semLinhas && pc('OV018101') && pc('OV018101').etapa === 'criada', pc('OV018107') && pc('OV018107').etapa);
   CEN.SalesOrderLines = lin7c;
 
+  console.log('7f) 12/11/26 liberação PARCIAL: a linha sem lote e sem trabalho DELA vai para Pendência; a liberada anda');
+  K._limparCache(); chamadas.length = 0;
+  const guarda7f = CEN, serv7f = SERVICO;
+  SERVICO = ['BIOSalesOrderHeaderV1', 'SalesOrderHeadersV2', 'SalesOrderLines', 'WHSWorkTableBiEntities', 'BioWHSWorkLineV1'];
+  const ln7f = (ov, n, v, lote, tid) => ({ dataAreaId: 'msb', SalesOrderNumber: ov, LineNumber: n, ItemNumber: 'IT-' + ov.slice(-1) + n, LineAmount: v, ItemBatchNumber: lote, InventoryLotId: tid, SalesOrderLineStatus: 'Backorder' });
+  const wl7f = (ov, work, tid) => ({ dataAreaId: 'msb', WorkId: work, LineNum: 1, OrderNum: ov, ItemId: 'X', InventTransId: tid, FreghtType_InoveProjects: 'ChargeFreight' });
+  CEN = {
+    SalesOrderHeadersV2: { linhas: [v2('OV018601', DIA + 'T10:00:00Z', 'Backorder'), v2('OV018602', DIA + 'T11:00:00Z', 'Backorder'), v2('OV018603', DIA + 'T12:00:00Z', 'Backorder')] },
+    BIOSalesOrderHeaderV1: { linhas: [b4('OV018601', 'Backorder', 'PartialReleased', 'No'), b4('OV018602', 'Backorder', 'Released', 'No'), b4('OV018603', 'Backorder', 'PartialReleased', 'No')] },
+    SalesOrderLines: { linhas: [
+      ln7f('OV018601', 1, 300, 'LT-1', 'TID-1'), ln7f('OV018601', 2, 200, '', 'TID-2'),   // a 1 liberada (trabalho), a 2 sem lote e sem trabalho
+      ln7f('OV018602', 1, 150, '', 'TID-3'),                                           // sem lote, mas COM trabalho dela
+      ln7f('OV018603', 1, 100, 'LT-5', 'TID-5'), ln7f('OV018603', 2, 50, '', 'TID-6')     // tem trabalho, mas as linhas do trabalho não vieram
+    ] },
+    WHSWorkTableBiEntities: { linhas: [w('OV018601', 'W601', 'Open'), w('OV018602', 'W602', 'Open'), w('OV018603', 'W603', 'Open')] },
+    BioWHSWorkLineV1: { linhas: [wl7f('OV018601', 'W601', 'TID-1'), wl7f('OV018602', 'W602', 'TID-3')] }
+  };
+  r = await K.quadro({});
+  const g7f = {}; r.ovs.forEach(o => { g7f[o.chave] = o; });
+  t('liberação parcial: a linha sem lote e sem trabalho -> Pendência; a liberada -> Separação (2 cartões)', g7f['OV018601~semlote'] && g7f['OV018601~semlote'].etapa === 'pendencia' && g7f['OV018601~semlote'].valor === 200
+    && g7f['OV018601~liberado'] && g7f['OV018601~liberado'].etapa === 'liberado' && g7f['OV018601~liberado'].valor === 300, Object.keys(g7f));
+  t('a linha sem lote COM trabalho dela fica em Separação (sem Pendência)', g7f.OV018602 && g7f.OV018602.etapa === 'liberado' && !g7f.OV018602.parte, g7f.OV018602 && g7f.OV018602.etapa);
+  t('com trabalho, mas sem as linhas do trabalho lidas: não se sabe — segue a fase da OV (sem Pendência)', g7f.OV018603 && g7f.OV018603.etapa === 'liberado' && !Object.keys(g7f).some(k => /OV018603~semlote/.test(k)), Object.keys(g7f).filter(k => /OV018603/.test(k)));
+  const ql7f = chamadas.find(c => c.ent === 'BioWHSWorkLineV1' && /OrderNum eq/.test(c.q.filter || ''));
+  t('as linhas do trabalho lidas pelo nº da OV, só das que precisam', ql7f && /OV018601/.test(ql7f.q.filter) && /OV018602/.test(ql7f.q.filter), ql7f && ql7f.q.filter);
+  t('a linha da OV traz o id da transação (InventoryLotId) no $select', chamadas.some(c => c.ent === 'SalesOrderLines' && /InventoryLotId/.test(c.q.select || '')), chamadas.filter(c => c.ent === 'SalesOrderLines').map(c => c.q.select));
+  // sem a entidade das linhas do trabalho: a regra de antes (a OV inteira segue a fase do trabalho)
+  K._limparCache();
+  SERVICO = SERVICO.filter(n => n !== 'BioWHSWorkLineV1');
+  r = await K.quadro({});
+  t('sem as linhas do trabalho no OData: sem Pendência por linha (a OV segue a fase dela)', r.ovs.some(o => o.chave === 'OV018601' && o.etapa === 'liberado') && !r.ovs.some(o => o.etapa === 'pendencia'), r.ovs.map(o => o.chave + '=' + o.etapa));
+  CEN = guarda7f; SERVICO = serv7f;
+
   console.log('8) as regras do dono pela carga e pela nota (Separação … Expedição)');
   K._limparCache(); chamadas.length = 0;
   SERVICO = ['BIOSalesOrderHeaderV1', 'SalesOrderHeadersV2', 'SalesOrderLines', 'WHSWorkTableBiEntities', 'WHSOutboundLoadHeaderEntities', 'SalesInvoiceHeadersV2', 'FiscalDocuments'];
@@ -1165,7 +1198,7 @@ const bio = (n, st, lib) => ({ dataAreaId: 'msb', SalesOrderNumber: n, StatusPed
   process.env.KANBAN_BLOB_URL = 'https://blob.teste/kanban?sv=1&sig=x';
   process.env.KANBAN_EMAIL_DE = 'remetente@empresa.teste'; process.env.KANBAN_EMAIL_PARA = 'teste@empresa.teste';
   const guarda10 = CEN, serv10 = SERVICO;
-  SERVICO = ['BIOSalesOrderHeaderV1', 'SalesOrderHeadersV2', 'SalesOrderLines', 'WHSWorkTableBiEntities', 'WHSLoadTableBiEntities', 'BioWHSContainerV1Entities'];
+  SERVICO = ['BIOSalesOrderHeaderV1', 'SalesOrderHeadersV2', 'SalesOrderLines', 'WHSWorkTableBiEntities', 'WHSLoadTableBiEntities', 'BioWHSContainerV1Entities', 'BioWHSWorkLineV1'];
   const ov10 = (n, h) => v2(n, DIA + 'T' + h + ':00:00Z', 'Backorder', { SalesOrderName: 'SIMMED PRODUTOS MEDICO HOSPITALARES LTDA', DeliveryAddressCity: 'Brasília', DeliveryAddressStateId: 'DF' });
   const bio10 = (n, sol) => Object.assign(b4(n, 'Backorder', 'Released', 'No'), { Solicitartransportadora_Custom: sol });
   const lin10 = (ov, n, v) => ({ dataAreaId: 'msb', SalesOrderNumber: ov, LineNumber: n, ItemNumber: 'IT-' + n, LineAmount: v, ItemBatchNumber: 'LT-' + n, SalesOrderLineStatus: 'Backorder' });
@@ -1178,10 +1211,19 @@ const bio = (n, st, lib) => ({ dataAreaId: 'msb', SalesOrderNumber: n, StatusPed
     WHSWorkTableBiEntities: { linhas: ['501', '502', '503', '504'].map(x => w('OV019' + x, 'W' + x, 'Closed', { LoadId: 'LD-' + x, ShipmentId: 'SH-' + x })) },
     WHSLoadTableBiEntities: { linhas: ['501', '502', '503', '504'].map(x => ld10('LD-' + x)) },
     // a carga LD-501 leva também uma caixa de OUTRA remessa (outra OV): não conta
-    BioWHSContainerV1Entities: { linhas: [cx10('CX-1', 'LD-501', 'SH-501'), cx10('CX-2', 'LD-501', 'SH-501'), cx10('CX-9', 'LD-501', 'SH-OUTRA'), cx10('CX-3', 'LD-502', 'SH-502'), cx10('CX-4', 'LD-503', 'SH-503')] }
+    BioWHSContainerV1Entities: { linhas: [cx10('CX-1', 'LD-501', 'SH-501'), cx10('CX-2', 'LD-501', 'SH-501'), cx10('CX-9', 'LD-501', 'SH-OUTRA'), cx10('CX-3', 'LD-502', 'SH-502'), cx10('CX-4', 'LD-503', 'SH-503')] },
+    // 12/11/26 (dono: "deve disparar se for Sim E se for FOB" — ChargeFreight = FOB): o frete das linhas do trabalho
+    BioWHSWorkLineV1: { linhas: ['501', '502', '503', '504', '505', '506', '507'].map(x => ({ dataAreaId: 'msb', WorkId: 'W' + x, LineNum: 1, OrderNum: 'OV019' + x, ItemId: 'IT-1', InventTransId: '', FreghtType_InoveProjects: 'ChargeFreight' }))
+      .concat(['OV019506', 'OV019507'].map(n => ({ dataAreaId: 'msb', WorkId: 'W' + n, LineNum: 1, OrderNum: n, ItemId: 'IT-1', InventTransId: '', FreghtType_InoveProjects: 'ChargeFreight' })))
+      .concat([{ dataAreaId: 'msb', WorkId: 'W508', LineNum: 1, OrderNum: 'OV019508', ItemId: 'IT-1', InventTransId: '', FreghtType_InoveProjects: 'PaidFreight' }]) }
   };
+  // a OV019508: Solicitar = Sim, mas o frete NÃO é FOB (PaidFreight) -> não recebe
+  CEN.SalesOrderHeadersV2.linhas.push(ov10('OV019508', '09')); CEN.BIOSalesOrderHeaderV1.linhas.push(bio10('OV019508', 'Yes')); CEN.SalesOrderLines.linhas.push(lin10('OV019508', 1, 800));
+  CEN.WHSWorkTableBiEntities.linhas.push(w('OV019508', 'W508', 'Closed', { LoadId: 'LD-508', ShipmentId: 'SH-508' })); CEN.WHSLoadTableBiEntities.linhas.push(ld10('LD-508')); CEN.BioWHSContainerV1Entities.linhas.push(cx10('CX-508', 'LD-508', 'SH-508'));
   r = await K.quadro({});
   const q10 = (n) => r.ovs.find(o => o.numero === n);
+  t('Solicitar = Sim e frete FOB (ChargeFreight): o e-mail; Sim e CIF (PaidFreight): não', q10('OV019508') && q10('OV019508').etapa === 'cotacao' && !q10('OV019508').emailCotacao && q10('OV019508').frete.fob === false
+    && q10('OV019508').frete.valores.join() === 'PaidFreight' && q10('OV019501').frete.fob === true, { f508: q10('OV019508') && q10('OV019508').frete, f501: q10('OV019501') && q10('OV019501').frete });
   t('a OV em Cotação com Solicitar transportadora = Sim é candidata (a com Não, não)', q10('OV019501') && q10('OV019501').etapa === 'cotacao' && q10('OV019501').emailCotacao && q10('OV019503') && q10('OV019503').etapa === 'cotacao' && !q10('OV019503').emailCotacao,
     r.ovs.map(o => o.chave + '=' + o.etapa + (o.emailCotacao ? ':' + o.emailCotacao.status : '')));
   // 12/11/26 (dono: "vai ser automática, não quero botão"): sem a "base" — a que já está em Cotação também recebe

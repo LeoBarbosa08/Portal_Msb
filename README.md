@@ -1551,6 +1551,35 @@ fases". A regra do lote (`partesPorLinhas`) está **LIGADA por padrão** de novo
 - Testes (1, 7c): Pendência com regra; `=0` desliga; sem env, ligada.
   `sw.js` — cache `bm-comest-v74`.
 
+### Kanban · liberação parcial por linha + o frete FOB no e-mail da Cotação (12/11/2026)
+
+O dono: "lembrando que pode haver liberação parcial das linhas: parte fica em
+Pendência e parte tem trabalho"; e "o frete vem em inglês — o Kanban vai entender
+que ChargeFreight é FOB? Para disparar o e-mail ao cliente sobre a cubagem: deve
+disparar se for Sim E se for FOB (FOB - Destinatário)".
+
+- **As linhas do trabalho no quadro** (`linhasTrabalhoDasOvs`, a
+  `BioWHSWorkLineV1` — a mesma do frete — pelo `OrderNum`), só das OVs que
+  precisam: a com linha em aberto sem lote E trabalho, e a com Solicitar
+  transportadora = Sim. Cada linha do trabalho se liga à linha da OV pelo id da
+  transação (`InventTransId` = `InventoryLotId` da linha da OV, agora no `$select`
+  das linhas) ou, sem ele, pelo item.
+- **Pendência por linha** (`partesPorLinhas` + `o._trabLinha`): a linha em aberto
+  sem lote que NÃO tem trabalho dela não herda a fase do trabalho/carga das outras
+  linhas — vale o contexto só dela (não liberada, sem trabalho, sem carga) e, sem
+  outra fase, vai para Pendência; a parte liberada segue (Separação…). Com
+  trabalho mas sem as linhas do trabalho lidas (ou sem a entidade): não se sabe —
+  vale a regra de antes (a fase da OV).
+- **O frete** (`o.frete = { valores, fob }`): `KANBAN_FRETE_FOB` (padrão
+  `ChargeFreight`, `FOB`, `Destinatario`) diz o que é FOB. **O e-mail da Cotação só
+  sai com Solicitar transportadora = Sim E frete FOB.** Na ficha, "Tipo de frete"
+  em português ("FOB - Destinatário (ChargeFreight)"); o "E-mail da cotação" diz
+  quando o frete não é FOB (ou não veio).
+- Testes (7f, 10): a linha sem lote e sem trabalho em Pendência e a liberada em
+  Separação; a sem lote com trabalho dela em Separação; sem as linhas do trabalho,
+  a regra de antes; Sim + FOB recebe, Sim + CIF não. `sw.js` — cache
+  `bm-comest-v91`.
+
 ### Kanban · Pendência só quando nenhuma outra fase é atendida (12/11/2026)
 
 O dono: "a fase PENDÊNCIA: só vão as ordens para ela se NENHUMA das outras fases
