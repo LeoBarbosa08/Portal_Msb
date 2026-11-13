@@ -696,9 +696,25 @@ const bio = (n, st, lib) => ({ dataAreaId: 'msb', SalesOrderNumber: n, StatusPed
   const e7g = {}; r.ovs.forEach(o => { e7g[o.numero] = o.etapa; });
   t('450 cargas antigas na frente: o teto fica com as mais recentes (a de 11/11 no Faturado, a de 12/11 no Pallet)', e7g.OV018501 === 'faturado' && e7g.OV018504 === 'pallet', e7g);
   const c7g = r.diagnostico.find(d => d.etapa === 'fat:corte');
-  t('o aviso e o diagnóstico do corte dizem que ficaram as mais recentes', c7g && c7g.cargas === 454 && c7g.lidas === 400 && c7g.daMaisRecente === 'LD-754' && r.avisos.some(a => /454 cargas Carregado.*olharam só as 400 mais recentes/.test(a)), { c7g, avisos: r.avisos });
+  t('o diagnóstico do corte diz que ficaram as mais recentes', c7g && c7g.cargas === 454 && c7g.lidas === 400 && c7g.daMaisRecente === 'LD-754', c7g);
+  // 13/11/26 (dono: "ainda está mostrando esses alertas"): as cargas mais antigas
+  // lidas (a borda) não têm OV de 11/11 em diante -> o corte não tirou nada: sem aviso
+  const b7g = r.diagnostico.find(d => d.etapa === 'fat:corte:borda');
+  t('a borda do corte sem OV de 11/11 em diante: sem o aviso do teto', !r.avisos.some(a => /cargas Carregado no Dynamics/.test(a)) && b7g && b7g.noQuadro.length === 0, { b7g, avisos: r.avisos });
   const t7g = chamadas.find(c => c.ent === 'WHSWorkTableBiEntities' && /LoadId eq/.test(c.q.filter || ''));
   t('os trabalhos das cargas mais recentes são lidos primeiro', t7g && /LoadId eq 'LD-754'/.test(t7g.q.filter) && !/CG000001/.test(t7g.q.filter), t7g && t7g.q.filter.slice(0, 120));
+  // uma OV faturada em 12/11 numa das cargas mais antigas lidas (CG000060, na borda):
+  // o corte pode ter tirado outras -> o aviso aparece, dizendo para aumentar o teto
+  K._limparCache();
+  CEN.SalesOrderHeadersV2.linhas.push(v2('OV018508', '2026-11-10T13:00:00Z', 'Invoiced'));
+  CEN.BIOSalesOrderHeaderV1.linhas.push(b4('OV018508', 'Invoiced', 'Released', 'No'));
+  CEN.WHSWorkTableBiEntities.linhas.push(w('OV018508', 'WE58', 'Closed', { LoadId: 'CG000060' }));
+  CEN.SalesInvoiceHeadersV2.linhas.push(nf('OV018508', '000040508', '2026-11-12'));
+  CEN.FiscalDocuments.linhas.push(fd('000040508', 'Approved', '2026-11-12'));
+  r = await K.quadro({});
+  const b7h = r.diagnostico.find(d => d.etapa === 'fat:corte:borda');
+  t('a borda com OV de 11/11 em diante: o aviso do teto aparece (pode faltar OV)', r.ovs.some(o => o.numero === 'OV018508' && o.etapa === 'faturado') && b7h && b7h.noQuadro.indexOf('OV018508') >= 0
+    && r.avisos.some(a => /454 cargas Carregado.*olharam só as 400 mais recentes.*pode faltar OV/.test(a)), { b7h, avisos: r.avisos });
   CEN.WHSLoadTableBiEntities.linhas = ld7eSo;
   K._limparCache(); process.env.KANBAN_DESDE = '0';
   r = await K.quadro({});
@@ -1167,6 +1183,15 @@ const bio = (n, st, lib) => ({ dataAreaId: 'msb', SalesOrderNumber: n, StatusPed
   CEN.OutboundLoadHeaders.linhas = CEN.OutboundLoadHeaders.linhas.filter(x => x.LoadId !== 'LD-2');
   r = await K.ordensDoDia({ data: DIA });
   t('carga do trabalho fora da entidade: aviso com o nº', r.avisos.some(a => /1 de \d+ carga\(s\) dos trabalhos de depósito não estão na entidade de cargas OutboundLoadHeaders \(ex\.: LD-2\)/.test(a)), r.avisos);
+  // 13/11/26 (dono: "ainda está mostrando esses alertas"): a carga que só aparece em
+  // trabalho CANCELADO não decide a fase da OV -> não entra no aviso (o diagnóstico lista)
+  K._limparCache();
+  const tr8d = CEN.WHSWorkTableBiEntities.linhas.filter(x => x.LoadId === 'LD-2'), st8d = tr8d.map(x => x.WorkStatus);
+  tr8d.forEach(x => { x.WorkStatus = 'Cancelled'; });
+  r = await K.ordensDoDia({ data: DIA });
+  const n8d = r.diagnostico.find(d => d.etapa === 'carga:nao-achadas');
+  t('carga só de trabalho cancelado fora da entidade: sem aviso (o diagnóstico lista)', tr8d.length > 0 && !r.avisos.some(a => /não estão na/.test(a)) && n8d && n8d.soDeCancelados.indexOf('LD-2') >= 0, { avisos: r.avisos, n8d });
+  tr8d.forEach((x, i) => { x.WorkStatus = st8d[i]; });
   delete CEN.OutboundLoadHeaders; delete CEN.TMSLoadBuildStrategies; CEN.WHSOutboundLoadHeaderEntities = guarda8d;
   SERVICO = ['BIOSalesOrderHeaderV1', 'SalesOrderHeadersV2', 'SalesOrderLines', 'WHSWorkTableBiEntities', 'WHSOutboundLoadHeaderEntities', 'SalesInvoiceHeadersV2', 'FiscalDocuments'];
   K._limparCache(); r = await K.ordensDoDia({ data: DIA });

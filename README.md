@@ -1705,6 +1705,32 @@ no Dynamics: o Faturado olhou só 400 delas".
   a de 12/11 no Pallet, e os trabalhos das recentes são lidos primeiro (falhava
   com o código anterior).
 
+### Kanban · menos alertas falsos: o teto de cargas e as cargas "não achadas" (13/11/2026)
+
+O dono: "ainda está mostrando esses alertas...".
+
+- **O teto de 400 cargas** só avisa quando pode ter tirado OV do quadro. Com o
+  corte de data ligado (`KANBAN_DESDE`, 11/11/2026), o quadro olha as OVs das
+  cargas MAIS ANTIGAS que foram lidas (a borda: 10% das lidas, no mínimo 20): se
+  nenhuma delas chega ao Faturado/Pallet/Rejeitada, as cortadas — ainda mais
+  antigas — também não chegariam, e o aviso não aparece. Se a borda ainda tem OV
+  no quadro, o aviso aparece e manda aumentar o `KANBAN_MAX_CARGAS_FAT`. Sem o
+  corte de data (`KANBAN_DESDE=0`), avisa sempre, como antes. Diagnóstico:
+  `fat:corte:borda`.
+- **"N cargas dos trabalhos não estão nas entidades de cargas"**: agora conta só
+  as cargas dos trabalhos VÁLIDOS — a de trabalho cancelado/combinado (que pode
+  nem existir mais no Dynamics) não decide a fase da OV e não entra; e a carga
+  que não deu tempo de consultar não é mais contada como "não achada" (tem aviso
+  próprio, "Não deu tempo de ler N carga(s)"). Diagnóstico `carga:nao-achadas`
+  (as não achadas, quantas sem tempo e as só de trabalhos cancelados).
+- **"Cotação realizada" não achada** (`QuotationPerformed_InoveProjects` na
+  `WHSLoadTableBiEntities`): segue — é o campo que falta na entidade publicada
+  no Dynamics, não dá para resolver no portal. Com o nome certo do campo (ou a
+  entidade que o tem), fixe em `KANBAN_COL_CARGA_COTACAO` / `KANBAN_ENT_CARGA`.
+- Testes (7e, 8d): a borda sem OV de 11/11 → sem aviso; com uma OV de 12/11
+  numa carga da borda → aviso; a carga só de trabalho cancelado fora da entidade
+  → sem aviso (o diagnóstico lista).
+
 ### Kanban · liberação parcial por linha + o frete FOB no e-mail da Cotação (12/11/2026)
 
 O dono: "lembrando que pode haver liberação parcial das linhas: parte fica em

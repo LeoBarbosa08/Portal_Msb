@@ -782,6 +782,9 @@ async function cargasPorId(ids, token, ate, diag) {
   if (!E) return { E: null, por: {}, erro: x.motivo };
   const lista = x.todas && x.todas.length ? x.todas : [E];
   const por = {}, usadas = [], linhas = {};
+  // 13/11/26: as cargas de fato CONSULTADAS em alguma entidade (o lote sem tempo
+  // fica de fora) — "não achada" só vale para essas
+  const consultadas = new Set();
   let falta = ids.slice(), erro = null;
   for (const Ei of lista) {
     if (!falta.length) break;
@@ -789,6 +792,7 @@ async function cargasPorId(ids, token, ate, diag) {
     let rows;
     try { rows = await porNumeros(Ei.entidade, Ei.numero, falta, token, ate, diag, 'ov:carga', null, !Ei.temEmpresa); }
     catch (e) { erro = Ei.entidade + ': ' + String(e.message || e).slice(0, 160); usadas.push({ entidade: Ei.entidade, cargas: 0, erro }); continue; }
+    (rows.cobertos || []).forEach(id => consultadas.add(String(id).toUpperCase()));
     let n = 0;
     rows.forEach(r => {
       if (addCarga(por, Ei, r)) n++;
@@ -808,7 +812,7 @@ async function cargasPorId(ids, token, ate, diag) {
   // a "principal" = a que trouxe mais cargas (as colunas da ficha e dos avisos)
   const principal = usadas.filter(u => u.cargas).sort((a, b) => b.cargas - a.cargas)[0];
   const Ep = principal ? lista.find(L => L.entidade === principal.entidade) : E;
-  return { E: Ep, por, usadas, lista, erro, linhas };
+  return { E: Ep, por, usadas, lista, erro, linhas, consultadas };
 }
 function addCarga(por, E, r) {
   const v = (papel) => { const col = E[papel] || achaCol(colunasDe(r), COL_CARGA[papel]); return col ? r[col] : null; };
@@ -1276,7 +1280,17 @@ async function ovsDeCargasCarregadas(token, ate, diag) {
   const venda = rows.filter(r => !T.tipo || !txt(r[T.tipo]) || /^(sales|venda)/.test(normV(r[T.tipo])));
   const deHoje = venda.filter(r => idsHoje[txt(r[T.carga]).toUpperCase()]).map(r => chaveOv(r[T.numero])).filter(Boolean);
   const nums = venda.map(r => chaveOv(r[T.numero])).filter(Boolean);
-  return { numeros: Array.from(new Set(nums)), numerosHoje: Array.from(new Set(deHoje)), cargas: total, cargasHoje: hojeL.length, corte: total > carregadas.length ? total : 0 };
+  // 13/11/26 (dono: "ainda está mostrando esses alertas"): com o teto, as OVs das
+  // cargas MAIS ANTIGAS que foram lidas (a borda do corte, 10% / mín. 20). Se nenhuma
+  // delas chega ao quadro (o Faturado/Pallet só de 11/11 em diante), as cargas
+  // cortadas — ainda mais antigas — também não chegariam: o aviso não aparece.
+  const corte = total > carregadas.length ? total : 0;
+  let numerosBorda = [];
+  if (corte) {
+    const borda = new Set(carregadas.slice(-Math.max(20, Math.ceil(carregadas.length / 10))).map(id => id.toUpperCase()));
+    numerosBorda = Array.from(new Set(venda.filter(r => borda.has(txt(r[T.carga]).toUpperCase())).map(r => chaveOv(r[T.numero])).filter(Boolean)));
+  }
+  return { numeros: Array.from(new Set(nums)), numerosHoje: Array.from(new Set(deHoje)), cargas: total, cargasHoje: hojeL.length, corte, numerosBorda };
 }
 
 // linhas de uma entidade pelos números das OVs (em lotes; 2 lotes por vez —
@@ -1415,7 +1429,7 @@ async function montar(opts, modo) {
       avisos: ['As entidades de ordem de venda responderam, mas nenhuma tem coluna de data de criação para separar as OVs do dia (' + ents.map(e => e.entidade).join(', ') + '). Fixe a coluna em KANBAN_COL_CRIADA.'], diagnostico: diag });
   }
 
-  let rows;
+  let rows, fatCarg = null;
   if (modo.quadro) {
     // em aberto (qualquer data) + as com nota no período, em paralelo
     // (10/11/26: + as faturadas com a carga ainda Carregado, de qualquer data)
@@ -1426,7 +1440,8 @@ async function montar(opts, modo) {
     ]);
     if (per.erro) avisos.push('Não deu para ler as notas de hoje no diário de faturas (' + per.erro + '): o Faturado e a Rejeitada de hoje podem ficar incompletos.');
     if (fat.erro) avisos.push('Não deu para ler as cargas Carregado e as expedidas hoje (' + fat.erro + '): no Faturado, no Pallet e na Expedição, as OVs faturadas antes do período podem faltar.');
-    if (fat.corte) avisos.push(fat.corte + ' cargas Carregado no Dynamics: o Faturado e o Pallet olharam só as ' + MAX_CARGAS_FAT + ' mais recentes (KANBAN_MAX_CARGAS_FAT) — as OVs em aberto vêm todas.');
+    // o aviso do teto sai depois do corte de data (lá embaixo): só se ele fizer falta
+    fatCarg = fat;
     diag.push({ etapa: 'fat:ovs', cargas: fat.cargas || 0, ovs: (fat.numeros || []).length, cargasHoje: fat.cargasHoje || 0, ovsHoje: (fat.numerosHoje || []).slice(0, 40) });
     const ja = {}; abertas.forEach(r => { ja[chaveOv(r[principal.numero])] = 1; });
     // 12/11/26: as OVs das cargas confirmadas hoje primeiro (Expedição), depois as
@@ -1859,6 +1874,18 @@ async function montar(opts, modo) {
     if (o.dataPeriodo !== hoje) { expedicaoOutroDia++; return false; }
     return true;
   });
+  // 13/11/26: o teto das cargas Carregado — o aviso só quando ele pode ter tirado OV
+  // do quadro: sem o corte de data, ou se as cargas mais antigas que foram lidas (a
+  // borda) ainda têm OV no Faturado/Pallet/Rejeitada de 11/11 em diante
+  if (fatCarg && fatCarg.corte) {
+    const borda = new Set(fatCarg.numerosBorda || []);
+    const naBorda = ovs.filter(o => ETAPAS_DESDE.indexOf(o.etapa) >= 0 && borda.has(o.numero)).map(o => o.numero);
+    diag.push({ etapa: 'fat:corte:borda', desde: corte || null, ovsBorda: borda.size, noQuadro: Array.from(new Set(naBorda)).slice(0, 20) });
+    if (!corte || naBorda.length) {
+      avisos.push(fatCarg.corte + ' cargas Carregado no Dynamics: o Faturado e o Pallet olharam só as ' + MAX_CARGAS_FAT + ' mais recentes (KANBAN_MAX_CARGAS_FAT) — as OVs em aberto vêm todas.' +
+        (corte ? ' Até as mais antigas lidas ainda têm OV de ' + corte.split('-').reverse().join('/') + ' em diante: pode faltar OV — aumente o KANBAN_MAX_CARGAS_FAT.' : ''));
+    }
+  }
   // 12/11/26 (dono): o E-MAIL DA COTAÇÃO — a OV em Cotação com Solicitar
   // transportadora = Sim recebe o e-mail (uma vez só; kanban-email.js)
   if (modo.quadro) {
@@ -1919,9 +1946,19 @@ async function montar(opts, modo) {
         ' Fixe os nomes em KANBAN_COL_CARGA_STATUS / KANBAN_COL_CARGA_COTACAO / KANBAN_COL_CARGA_PALLET.');
     }
     if (CARGA.E && idsCarga.length) {
-      const naoAchadas = idsCarga.filter(id => !CARGA.por[id.toUpperCase()]);
-      if (naoAchadas.length) avisos.push(naoAchadas.length + ' de ' + idsCarga.length + ' carga(s) dos trabalhos de depósito não estão na' + ((CARGA.lista || []).length > 1 ? 's entidades de cargas ' + CARGA.lista.map(L => L.entidade).join(' / ') : ' entidade de cargas ' + CARGA.E.entidade) +
+      // 13/11/26 (dono: "ainda está mostrando esses alertas"): só as cargas dos
+      // trabalhos VÁLIDOS contam — a do trabalho cancelado/combinado (carga que pode
+      // nem existir mais) não decide a fase da OV; e a carga que não deu tempo de
+      // consultar não é "não achada" (tem aviso próprio)
+      const idsValidas = Array.from(new Set([].concat.apply([], Object.keys(TRAB.por).map(k => TRAB.por[k].lista.filter(w => w.fase !== 'ignora').map(w => w.carga))).filter(Boolean)));
+      const semReg = idsValidas.filter(id => !CARGA.por[id.toUpperCase()]);
+      const lidas = CARGA.consultadas || new Set(idsCarga.map(id => id.toUpperCase()));
+      const naoAchadas = semReg.filter(id => lidas.has(id.toUpperCase())), naoLidas = semReg.filter(id => !lidas.has(id.toUpperCase()));
+      diag.push({ etapa: 'carga:nao-achadas', cargas: idsCarga.length, validas: idsValidas.length, naoAchadas: naoAchadas.slice(0, 40), naoLidas: naoLidas.length,
+        soDeCancelados: idsCarga.filter(id => !CARGA.por[id.toUpperCase()] && idsValidas.indexOf(id) < 0).slice(0, 40) });
+      if (naoAchadas.length) avisos.push(naoAchadas.length + ' de ' + idsValidas.length + ' carga(s) dos trabalhos de depósito não estão na' + ((CARGA.lista || []).length > 1 ? 's entidades de cargas ' + CARGA.lista.map(L => L.entidade).join(' / ') : ' entidade de cargas ' + CARGA.E.entidade) +
         ' (ex.: ' + naoAchadas.slice(0, 3).join(', ') + '): sem o status delas, essas OVs não entram em Conferência, Cotação, Pallet nem Expedição.');
+      if (naoLidas.length) avisos.push('Não deu tempo de ler ' + naoLidas.length + ' carga(s) dos trabalhos de depósito (ex.: ' + naoLidas.slice(0, 3).join(', ') + '): essas OVs podem ficar fora de Conferência, Cotação, Pallet e Expedição até a próxima atualização.');
     }
     if (!CARGA.E && !CARGA.semIds) {
       avisos.push('A entidade de cargas (WHSLoadTableBiEntity / WHSOutboundLoadHeaderEntity) não respondeu no OData' + (CARGA.erro ? ' (' + CARGA.erro + ')' : '') +
