@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Kanban · Rastreio de Entrega e Cálculo de Frete · MSB</title>
+  <link rel="stylesheet" href="../styles.css?v=15">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="../dash-v2.css?v=3">
+  <script src="https://unpkg.com/@azure/msal-browser@2.38.3/lib/msal-browser.min.js"></script>
+  <!-- Layout v3 (Claude Design · animado): fonte + camada visual + motor de animações -->
+  <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300..900&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../portal-v3.css?v=2">
+  <script src="../portal-motion.js?v=3" defer></script>
+  <!-- Tema claro/escuro (menu do avatar): marca o <html> antes de pintar + camada escura -->
+  <script>try{if(localStorage.getItem('bm-tema')==='escuro')document.documentElement.setAttribute('data-tema','escuro')}catch(e){}</script>
+  <link rel="stylesheet" href="../portal-tema.css?v=1">
+  <script src="../portal-tema.js?v=1" defer></script>
+  <!-- Celular (varredura 15/10/26): só vale em tela < 768px; no computador não se aplica -->
+  <link rel="stylesheet" href="../portal-mobile.css?v=1" media="(max-width: 767.98px)">
+  <script src="../portal-mobile.js?v=1" defer></script>
+</head>
+<body class="dept">
+
+  <header class="site-header">
+    <div class="container">
+      <a href="../index.html" class="brand" aria-label="Portal MSB — página inicial">
+        <img class="brand-logo" src="/icons/logo-msb.png" alt="MSB · Medical System do Brasil" onerror="this.dataset.failed='true'">
+        <span class="brand-fallback">MSB</span>
+      </a>
+      <nav class="header-nav">
+        <a href="../index.html">Início</a>
+        <a href="../index.html#areas">Áreas</a>
+        <a href="../index.html#sistemas">Sistemas</a>
+        <a href="../index.html#avisos">Avisos</a>
+        <a href="../index.html#contato">Contato</a>
+      </nav>
+    </div>
+  </header>
+
+  <div class="area-body">
+    <div class="container">
+      <div class="area-grid">
+
+        <aside class="area-sidebar">
+          <div class="sb-card">
+            <div class="sb-head">
+              <span class="sb-ic"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="9" y1="3" x2="9" y2="21"/><line x1="15" y1="3" x2="15" y2="21"/></svg></span>
+              <div><div class="sb-tt">Kanban</div><div class="sb-st">Departamento</div></div>
+            </div>
+            <nav></nav>
+          </div>
+          <a href="../index.html" class="sb-back"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></svg>Voltar ao Portal</a>
+        </aside>
+
+        <div class="area-main">
+
+          <!-- ═══════════ KANBAN · RASTREIO DE ENTREGA E CÁLCULO DE FRETE ═══════════
+               13/11/26 (pedido do dono): módulo novo no menu lateral do Kanban
+               (NAV.kanban em nav-sidebar.js). Duas abas — Rastreio de entrega e
+               Cálculo de frete — ainda SEM regra: o dono vai dizer como rastrear
+               e como calcular. O endereço abre direto numa aba com #rastreio ou
+               #frete. -->
+          <style>
+            .rf-head{display:flex;align-items:flex-end;justify-content:space-between;gap:16px;flex-wrap:wrap;padding:22px 0 10px;}
+            .rf-bc{font-size:12px;color:var(--text-3);}
+            .rf-title{margin:4px 0 0;font-size:23px;font-weight:800;letter-spacing:-.5px;color:var(--text);}
+            .rf-sub{margin-top:2px;font-size:13px;color:var(--text-3);}
+            .rf-seg{display:inline-flex;padding:3px;border-radius:10px;border:1px solid var(--border);background:var(--surface);margin:6px 0 14px;}
+            .rf-seg button{display:inline-flex;align-items:center;gap:7px;padding:7px 14px;border:0;border-radius:8px;background:transparent;font:inherit;font-size:12.5px;font-weight:600;color:var(--text-3);cursor:pointer;white-space:nowrap;}
+            .rf-seg button:hover{color:var(--text);}
+            .rf-seg button.on{background:#287A8E;color:#fff;}
+            .rf-seg svg{width:15px;height:15px;flex-shrink:0;}
+            .rf-painel[hidden]{display:none;}
+            .rf-card{border:1px solid var(--border);border-radius:14px;background:var(--surface);padding:22px 22px 24px;}
+            .rf-card h2{display:flex;align-items:center;gap:10px;margin:0;font-size:16px;font-weight:800;color:var(--text);}
+            .rf-card h2 .ic{display:inline-flex;align-items:center;justify-content:center;width:34px;height:34px;border-radius:10px;background:#E6F2F5;color:#1B6072;flex-shrink:0;}
+            .rf-card h2 .ic svg{width:18px;height:18px;}
+            .rf-card p{margin:12px 0 0;font-size:13px;line-height:1.55;color:var(--text-2);max-width:68ch;}
+            .rf-pend{display:inline-flex;align-items:center;gap:7px;margin-top:16px;padding:6px 11px;border-radius:999px;background:#FFF6D6;border:1px solid #F3E2A3;color:#7A5A06;font-size:12px;font-weight:700;}
+            .rf-pend i{width:7px;height:7px;border-radius:50%;background:currentColor;opacity:.8;}
+            html[data-tema="escuro"] .rf-card h2 .ic{background:#1E3438;color:#8FD3E0;}
+            html[data-tema="escuro"] .rf-pend{background:#3A3320;border-color:#5A4E2A;color:#F0D98A;}
+            @media(max-width:767.98px){
+              .rf-title{font-size:18px;}
+              .rf-seg{display:flex;}
+              .rf-seg button{flex:1;justify-content:center;padding:8px 6px;}
+            }
+          </style>
+
+          <div class="rf-head">
+            <div>
+              <div class="rf-bc">Kanban</div>
+              <h1 class="rf-title">Rastreio de Entrega e Cálculo de Frete</h1>
+            </div>
+          </div>
+
+          <div class="rf-seg" role="tablist" aria-label="Rastreio de entrega ou cálculo de frete">
+            <button type="button" role="tab" id="rf-tab-rastreio" data-aba="rastreio" aria-controls="rf-rastreio" aria-selected="true" class="on">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
+              Rastreio de entrega
+            </button>
+            <button type="button" role="tab" id="rf-tab-frete" data-aba="frete" aria-controls="rf-frete" aria-selected="false" tabindex="-1">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="1" y="3" width="15" height="13"/><polygon points="16 8 20 8 23 11 23 16 16 16 16 8"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/></svg>
+              Cálculo de frete
+            </button>
+          </div>
+
+          <section class="rf-painel" id="rf-rastreio" role="tabpanel" aria-labelledby="rf-tab-rastreio">
+            <div class="rf-card">
+              <h2><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg></span>Rastreio de entrega</h2>
+              <p>Aqui vai aparecer onde está cada entrega depois que a carga sai da expedição.</p>
+              <span class="rf-pend"><i></i>Aguardando a regra do rastreio</span>
+            </div>
+          </section>
+
+          <section class="rf-painel" id="rf-frete" role="tabpanel" aria-labelledby="rf-tab-frete" hidden>
+            <div class="rf-card">
+              <h2><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="1" y="3" width="15" height="13"/><polygon points="16 8 20 8 23 11 23 16 16 16 16 8"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/></svg></span>Cálculo de frete</h2>
+              <p>Aqui vai sair o valor do frete de cada pedido.</p>
+              <span class="rf-pend"><i></i>Aguardando a regra do cálculo</span>
+            </div>
+          </section>
+
+        </div><!-- /area-main -->
+      </div><!-- /area-grid -->
+    </div><!-- /container -->
+  </div><!-- /area-body -->
+
+  <footer class="site-footer">
+    <div class="container">
+      <div class="bm-footer-bottom">
+        <span>© <span id="year"></span> MSB · Medical System do Brasil · Portal interno</span>
+        <span class="bm-footer-meta">Belo Horizonte · São Paulo · Rio de Janeiro · Curitiba · Recife · Porto Alegre</span>
+      </div>
+    </div>
+  </footer>
+
+  <script src="../script.js?v=8"></script>
+  <script src="../nav-sidebar.js?v=89"></script>
+  <script>
+  (function () {
+    'use strict';
+    var abas = Array.prototype.slice.call(document.querySelectorAll('.rf-seg [data-aba]'));
+    function mostrar(id, foco) {
+      if (!document.getElementById('rf-' + id)) id = 'rastreio';
+      abas.forEach(function (b) {
+        var on = b.getAttribute('data-aba') === id;
+        b.classList.toggle('on', on);
+        b.setAttribute('aria-selected', on ? 'true' : 'false');
+        b.tabIndex = on ? 0 : -1;
+        document.getElementById('rf-' + b.getAttribute('data-aba')).hidden = !on;
+        if (on && foco) b.focus();
+      });
+    }
+    abas.forEach(function (b, i) {
+      b.addEventListener('click', function () {
+        var id = b.getAttribute('data-aba');
+        mostrar(id);
+        try { history.replaceState(null, '', '#' + id); } catch (e) {}
+      });
+      // setas trocam de aba (padrão de tablist)
+      b.addEventListener('keydown', function (e) {
+        if (e.key !== 'ArrowRight' && e.key !== 'ArrowLeft') return;
+        e.preventDefault();
+        var prox = abas[(i + (e.key === 'ArrowRight' ? 1 : abas.length - 1)) % abas.length];
+        prox.click(); mostrar(prox.getAttribute('data-aba'), true);
+      });
+    });
+    mostrar(location.hash.slice(1));
+    window.addEventListener('hashchange', function () { mostrar(location.hash.slice(1)); });
+  })();
+  </script>
+</body>
+</html>

@@ -1073,6 +1073,9 @@ if (!window._bmPerfilSheetLoaded && !window._bmPerfilSheetInjected) {
       label:'Kanban',
       nav:[
         {id:'kanban', label:'Ordens do Dia', href:'kanban.html', icon:I.kanban},
+        // 13/11/26 (pedido do dono): rastreio da entrega e cálculo do frete —
+        // as regras de cada um ele ainda vai passar
+        {id:'kanban-rastreio-frete', label:'Rastreio de Entrega e Cálculo de Frete', href:'kanban-rastreio-frete.html', icon:I.truck, quebra:true},
       ],
       auto:[],
       agen:[],
@@ -1356,7 +1359,9 @@ if (!window._bmPerfilSheetLoaded && !window._bmPerfilSheetInjected) {
         </div>`;
       } else {
         const cls = childActive(item) ? ' class="active"' : '';
-        navHtml += `<a href="${item.href}"${cls} title="${item.label}">${item.icon}<span class="sb-lbl">${item.label}</span></a>`;
+        // `quebra`: nome comprido que vai inteiro, em duas linhas, em vez de cortar com "…"
+        const lbl = item.quebra ? ' style="white-space:normal;line-height:1.3"' : '';
+        navHtml += `<a href="${item.href}"${cls} title="${item.label}">${item.icon}<span class="sb-lbl"${lbl}>${item.label}</span></a>`;
       }
     }
 

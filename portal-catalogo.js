@@ -182,8 +182,9 @@ window.PORTAL_CATALOGO = (function () {
     ['contabil', 'Margem de Contribuição', '',                       'contabil-margem.html',           'bars',  'margem contribuicao mc meta visao geral'],
     ['contabil', 'Analítico',              'Margem de Contribuição', 'contabil-margem-analitico.html', 'sub',   'margem analitico detalhado produto familia'],
     ['contabil', 'Analítico por NF',       'Margem de Contribuição', 'contabil-margem-nf.html',        'sub',   'margem nota fiscal nf analitico item'],
-    // ── Kanban (09/11/26) — espelho do NAV.kanban: um módulo só ─────
+    // ── Kanban (09/11/26) — espelho do NAV.kanban ─────
     ['kanban', 'Ordens do Dia',            '',                       'kanban.html',                    'grid',  'kanban quadro ordens de venda ov ovs dia hoje almox-pa criada credito logistica faturado dynamics tempo real'],
+    ['kanban', 'Rastreio de Entrega e Cálculo de Frete', '',         'kanban-rastreio-frete.html',     'truck', 'kanban rastreio rastreamento entrega entregas transportadora frete calculo cotacao de frete expedicao'],
 
     // ── Licitação ─────────────────────────────────────────────────
     ['licitacao', 'Sales Report',              '',             'licitacao-sales-report.html',            'bars',  'sales report licitacao bi empenho visao geral'],
