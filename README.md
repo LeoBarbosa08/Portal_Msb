@@ -2447,6 +2447,37 @@ na ficha do portal; anexar no Dynamics (documento da OV) seria um passo à parte
 - Testes: `node scripts/test-rastreio.js` (39 verificações: as expedidas no F&O
   simulado, a normalização da Brix, o robô, as fases, a gravação com ETag e a rota).
 
+### Kanban · sem o nome do campo do Dynamics na ficha e sem o aviso das colunas da carga (13/11/2026)
+
+O dono: "retire esses campos, o nome do campo no sistema, confunde um pouco —
+deixa igual essa parte de baixo"; sobre o aviso "Na entidade de cargas
+(WHSLoadTableBiEntities) não achei 'Cotação realizada'…": "retire esse aviso
+também"; e, no "Por que está em Faturado": "faz a tradução aqui para
+português, será melhor compreendido".
+
+- **"Por que está em …"** (`secRegra`): a linha em mono embaixo de cada caixa
+  (`SalesOrderStatus = Invoiced`, `WorkStatus: 1 fechado`, `CG014444 ·
+  LoadStatus = Loaded · cotação: — · pallet: Não`…) virou uma frase em
+  português ("situação do pedido no Dynamics", "trabalhos de separação: 1
+  fechado", "carga CG014444 · cotação: sem informação · pallet: não", "nota nº
+  …"); o nome técnico ficou na dica do mouse. "Crédito · tabela" virou
+  "Crédito". O parágrafo do porquê perdeu os `ReleaseStatus = Released`,
+  `ENVIARPALLET_CUSTOM = Sim` e `QtyLeftToLoad > 0`.
+
+- **Aviso das colunas da carga** (`quadro()`): saiu da tela. O que falta
+  (status, `QuotationPerformed_InoveProjects`, `EnviarPallet_Custom`) e os
+  campos parecidos ficam só no Diagnóstico da leitura, etapa `carga:faltam`. A
+  regra não mudou: sem a coluna de cotação, a carga Carregado fica em Cotação.
+  Testes (4h, 8c) conferem que não há aviso e que o Diagnóstico tem o que falta.
+
+- **Ficha** (`secDados`): saiu o texto cinza com o nome da coluna/entidade ao
+  lado do valor em Área demandante, Gerenciamento de crédito, Solicitar
+  transportadora, Transportadora, Nº do pedido do cliente, Operador e Tipo de
+  frete. O nome (e o "não veio do Dynamics · parecidos: …") ficou só na dica do
+  mouse. O valor em inglês ao lado dos status traduzidos (Faturada *Invoiced*,
+  Liberada *Released*) continua, como na parte de baixo. `sw.js` — cache
+  `bm-comest-v100`.
+
 ## Como colocar no ar
 
 1. **Repositório no GitHub** — crie um repositório **privado e vazio** (sem

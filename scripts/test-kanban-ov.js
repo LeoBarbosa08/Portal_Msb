@@ -465,7 +465,10 @@ const bio = (n, st, lib) => ({ dataAreaId: 'msb', SalesOrderNumber: n, StatusPed
   const lcg = chamadas.find(c => c.ent === 'WHSOutboundLoadHeaderEntities' && /LoadId eq/.test(c.q.filter));
   t('lê as cargas pelo LoadId, só a MSB, de uma vez', lcg && /dataAreaId eq 'msb'/.test(lcg.q.filter) && /LD-100/.test(lcg.q.filter) && /LD-200/.test(lcg.q.filter), lcg && lcg.q.filter);
   t('carga Carregado (sem a coluna de cotação) -> Cotação; trabalho em processo com a carga Aberta -> Conferência (não é mais Separação)', c60.etapa === 'cotacao' && c61.etapa === 'conferencia' && c62.etapa === 'liberado', { c60: c60.etapa, c61: c61.etapa, c62: c62.etapa });
-  t('aviso: sem as colunas de cotação e de pallet', r.avisos.some(a => /não achei "Cotação realizada".*ENVIARPALLET_CUSTOM/.test(a)), r.avisos);
+  // 13/11/26 (dono: "retire esse aviso também"): sem aviso na tela, só no Diagnóstico
+  const dft = r.diagnostico.find(d => d.etapa === 'carga:faltam');
+  t('sem as colunas de cotação e de pallet: nada nos avisos, o que falta no Diagnóstico', !r.avisos.some(a => /entidade de cargas .*não achei|KANBAN_COL_CARGA/.test(a))
+    && dft && dft.faltam.some(c => /quotationperformed/i.test(c)) && dft.faltam.some(c => /enviarpallet_custom/i.test(c)), { avisos: r.avisos, dft });
   t('sem o botão do pallet (sem a coluna)', c60.podePallet === false, c60.podePallet);
 
   console.log('4i) entidade de cargas fora do OData: aviso só quando há carga para procurar');
@@ -1161,7 +1164,9 @@ const bio = (n, st, lib) => ({ dataAreaId: 'msb', SalesOrderNumber: n, StatusPed
   r = await K.ordensDoDia({ data: DIA });
   const o3 = r.ovs.find(o => o.numero === 'OV019004');
   t('"PalletQuantity" e "QuotationId" não são usados', o3.cargaCols.pallet === null && o3.cargaCols.cotacao === null && o3.podePallet === false, o3.cargaCols);
-  t('aviso diz o que falta e mostra os campos parecidos', r.avisos.some(a => /não achei "Cotação realizada".*ENVIARPALLET_CUSTOM/.test(a) && /Campos parecidos nessa entidade: .*PalletQuantity/.test(a)), r.avisos);
+  const dft8 = r.diagnostico.find(d => d.etapa === 'carga:faltam');
+  t('o Diagnóstico diz o que falta e mostra os campos parecidos (sem aviso na tela)', !r.avisos.some(a => /KANBAN_COL_CARGA/.test(a))
+    && dft8 && dft8.faltam.some(c => /quotationperformed/i.test(c)) && dft8.parecidos.indexOf('PalletQuantity') >= 0, { avisos: r.avisos, dft8 });
   delete CEN.OutboundLoadHeaders; CEN.WHSOutboundLoadHeaderEntities = guarda;
   SERVICO = ['BIOSalesOrderHeaderV1', 'SalesOrderHeadersV2', 'SalesOrderLines', 'WHSWorkTableBiEntities', 'WHSOutboundLoadHeaderEntities', 'SalesInvoiceHeadersV2', 'FiscalDocuments'];
   K._limparCache(); r = await K.ordensDoDia({ data: DIA });

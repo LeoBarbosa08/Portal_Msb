@@ -335,6 +335,7 @@
             .kb-rg .v{font-size:13px;font-weight:800;color:var(--dw-ink);margin-top:4px;line-height:1.25;}
             .kb-rg .v.z{color:var(--dw-mut3);font-weight:700;}
             .kb-rg code{display:block;margin-top:4px;font-family:'JetBrains Mono',ui-monospace,monospace;font-size:10px;color:var(--dw-mut2);overflow-wrap:anywhere;line-height:1.35;}
+            .kb-rg .d{margin-top:4px;font-size:10.5px;font-weight:500;color:var(--dw-mut2);overflow-wrap:anywhere;line-height:1.4;}
             .kb-rg .dc{display:inline-block;margin-top:6px;font-size:9px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:var(--dw-blue);}
             .kb-rg-p{margin:10px 0 0;font-size:12px;line-height:1.55;color:var(--dw-body);font-weight:500;}
             .kb-rg-p b{color:var(--dw-ink);}
@@ -791,7 +792,7 @@
       var fechados = ls.filter(function (w) { return w.fase === 'fechado' && w.fim; }).sort(function (a, b) { return String(a.fim).localeCompare(String(b.fim)); });
       var ult = fechados[fechados.length - 1] || null;
       return {
-        veio: true, fase: t.fase,
+        veio: true, fase: t.fase, conta: conta,
         rotulo: !t.fase ? 'Sem trabalho' : t.fase === 'fechado' ? 'Fechado' : t.fase === 'processo' ? 'Em processo' : 'Aberto · não iniciado',
         cod: !t.fase ? colCurta(t.colOv, 'OrderNum') + ': sem trabalho' : col + ': ' + conta,
         quem: (vivo && vivo.usuario) || (ult && ult.usuario) || '', ini: vivo && vivo.inicio, fim: ult && ult.fim, total: t.total, fechados: t.fechados
@@ -1336,16 +1337,35 @@
         : (et === 'expedicao' || et === 'pallet' || et === 'aguardando' || et === 'cotacao') ? 'carga'
         : et === 'credito' ? 'cred' : et === 'liberado' ? (ti.fase ? 'trab' : 'lib') : '';
       var cg1 = (o.cargas || [])[0] || null, ccol = o.cargaCols || {};
-      var tile = function (id, k, cru, col, padrao, fmt) {
-        var veio = cru != null && cru !== '';
-        return '<div class="' + (decide === id ? 'decide' : '') + '"><div class="k">' + esc(k) + '</div>'
-          + '<div class="v' + (veio ? '' : ' z') + '">' + esc(veio ? fmt(cru) : 'não veio') + '</div>'
-          + '<code>' + esc(colCurta(col, padrao)) + (veio ? ' = ' + esc(cru) : '') + '</code>'
-          + (decide === id ? '<span class="dc">decidiu a etapa</span>' : '') + '</div>';
+      // 13/11/26 (dono: "faz a tradução aqui para português, será melhor
+      // compreendido"): embaixo do valor, uma frase em português; o nome do campo
+      // do Dynamics (o que vinha em mono) ficou só na dica do mouse
+      // on = esta caixa decidiu a etapa
+      var caixa = function (on, k, v, z, desc, dica) {
+        return '<div class="' + (on ? 'decide' : '') + '"' + (dica ? ' title="' + esc(dica) + '"' : '') + '><div class="k">' + esc(k) + '</div>'
+          + '<div class="v' + (z ? ' z' : '') + '">' + esc(v) + '</div>'
+          + (desc ? '<div class="d">' + esc(desc) + '</div>' : '')
+          + (on ? '<span class="dc">decidiu a etapa</span>' : '') + '</div>';
       };
+      var tile = function (id, k, cru, col, padrao, fmt, desc) {
+        var veio = cru != null && cru !== '';
+        return caixa(decide === id, k, veio ? fmt(cru) : 'não veio', !veio, veio ? desc : 'o Dynamics não informou', colCurta(col, padrao) + (veio ? ' = ' + cru : ''));
+      };
+      var snPt = function (v) { var s = simNao(v); return s === '—' ? 'sem informação' : s.toLowerCase(); };
       var ci = credInfo(rg), credVeio = ci.veio;
+      var nCred = rg.creditoRegistros || 0;
+      var credDesc = !credVeio ? 'o Dynamics não informou o crédito'
+        : ci.fonte === 'tabela' ? (ci.sem ? 'nenhum registro no gerenciamento de crédito'
+          : 'registro ' + (ci.ativo ? 'ativo' : 'inativo') + ' no gerenciamento de crédito' + (nCred > 1 ? ' · ' + nCred + ' registros' : ''))
+        : 'marcação de crédito no pedido';
+      var trabDesc = !ti.veio ? 'o Dynamics não informou os trabalhos' : !ti.fase ? 'nenhum trabalho de separação para a OV' : 'trabalhos de separação: ' + ti.conta;
+      var cargaDesc = cg1 ? 'carga ' + cg1.id + ' · cotação: ' + snPt(cg1.cotacao) + ' · pallet: ' + snPt(cg1.pallet)
+        : o.cargaFonte ? 'nenhuma carga para a OV' : 'o Dynamics não informou a carga';
+      var cargaDica = cg1 ? cg1.id + (cg1.status ? ' · ' + (ccol.status || 'LoadStatus') + ' = ' + cg1.status : '') + ' · cotação: ' + simNao(cg1.cotacao) + ' · pallet: ' + simNao(cg1.pallet) : 'WHSLoadTableBiEntity';
+      var notaDesc = o.nota ? 'nota nº ' + o.nota.numero : o.notaFonte ? 'nenhuma nota para a OV' : 'o Dynamics não informou as notas';
+      var notaDica = o.nota ? 'NF ' + o.nota.numero + (o.nota.status ? ' · ' + colCurta(o.nota.fonte, 'Status') + ' = ' + o.nota.status : '') : 'SalesInvoiceHeadersV2';
       var porque = {
-        pendencia: o.pendPorCarga ? 'Este cartão é a quantidade da OV que <b>ainda não entrou em carga</b> (QtyLeftToLoad &gt; 0): fica em <b>Pendência</b> até ser carregada.'
+        pendencia: o.pendPorCarga ? 'Este cartão é a quantidade da OV que <b>ainda não entrou em carga</b>: fica em <b>Pendência</b> até ser carregada.'
           + (ondeIrmas(o) ? ' O resto da OV está em <b>' + esc(ondeIrmas(o)) + '</b>.' : '')
           // 12/11/26 (dono): Criada parada mais de 15 min sem atualização -> Pendência
           : o.pendPorTempo ? 'A OV ficou <b>parada em Criada</b> mais de ' + esc((estado.r && estado.r.criadaMin) || 15) + ' min sem nenhuma atualização no sistema'
@@ -1358,7 +1378,7 @@
         credito: (ci.fonte === 'tabela' ? 'O registro <b>ativo</b> na tabela de gerenciamento de crédito decide' : 'O crédito marcado decide') + ': a OV fica em <b>Gerenciamento de Crédito</b> até o crédito aprovar, qualquer que seja a liberação.',
         liberado: ti.veio ? 'Trabalho de separação <b>aberto</b> (Status do trabalho = Abrir): fica em <b>Separação</b> — só o trabalho aberto conta.'
             + (o.parteTrab && ondeIrmas(o) ? ' O resto da OV está em <b>' + esc(ondeIrmas(o)) + '</b>.' : '')
-          : 'A entidade de trabalho não respondeu: a OV liberada para o depósito (<code>ReleaseStatus = Released</code>) fica em <b>Separação</b> até o trabalho voltar a ser lido.',
+          : 'Os trabalhos de separação não vieram do Dynamics: a OV <b>liberada</b> para o depósito fica em <b>Separação</b> até os trabalhos voltarem a ser lidos.',
         conferencia: o.cargaFase === 'processando' ? 'A carga está <b>em processamento</b> (Status da carga = Em processamento): fica em <b>Conferência</b> até ficar Carregado.'
           : 'O trabalho de separação já saiu de <b>Abrir</b> (' + esc(ti.fase === 'fechado' ? 'fechado' : 'em processo') + ') e a carga ainda não está Em processamento: fica em <b>Conferência</b>.',
         cotacao: 'A carga está <b>Carregado</b> e a linha está <b>em aberto</b> (Ordem em aberto): fica em <b>Cotação</b> até a linha ficar Entregue.',
@@ -1366,7 +1386,7 @@
         faturado: o.linhasSt && o.linhasSt.faturada ? 'A linha está com status <b>Faturado</b>: fica em <b>Faturado</b>.' + (o.nota ? ' Nota fiscal <b>' + esc(o.nota.numero) + '</b>.' : '')
           : o.nota && o.nota.aprovada ? 'A nota fiscal <b>' + esc(o.nota.numero) + '</b> está <b>Aprovada</b> (as linhas não foram lidas): fica em <b>Faturado</b>.'
           : 'A situação não é mais “Ordem em aberto” e não há status de nota para conferir: fica em <b>Faturado</b>.' + (o.nota ? ' Nota fiscal <b>' + esc(o.nota.numero) + '</b>.' : ''),
-        pallet: 'A carga foi enviada para o Pallet (<code>' + esc(ccol.pallet || 'ENVIARPALLET_CUSTOM') + ' = Sim</code>): fica em <b>Pallet</b> até ser remetida.',
+        pallet: 'A carga foi marcada como <b>enviada para o Pallet</b>: fica em <b>Pallet</b> até ser remetida.',
         expedicao: 'A carga está <b>Remetido</b>: fica em <b>Expedição</b>.',
         rejeitada: 'A nota fiscal mais recente da OV (<b>' + esc(o.nota ? o.nota.numero : '—') + '</b>) está <b>' + esc(rotNF(o.nota && o.nota.status)) + '</b>: fica em <b>Rejeitada</b> até sair uma nota aprovada — vale antes das outras regras.',
         cancelada: 'Situação <b>Cancelada</b>: a OV fica fora do quadro (só aparece na lista).'
@@ -1374,33 +1394,21 @@
       // 10/11/26: o lote dos itens (Pendência)
       var lt = o.parte ? (o.parte.inteira ? 'nenhum com lote' : o.parte.id === 'semlote' ? itensTxt(o.parte.n) + ' sem lote' : itensTxt(o.parte.n) + ' com lote')
         : o.semLinhas ? 'sem linha' : o.lotes ? (o.lotes.semLote ? o.lotes.semLote + ' sem lote' : 'todos com lote') : '';
-      var tileLote = lt ? '<div class="' + (decide === 'lote' ? 'decide' : '') + '"><div class="k">Lote dos itens</div><div class="v">' + esc(lt) + '</div>'
-        + '<code>ItemBatchNumber' + (o.lotes ? ' · ' + esc(o.lotes.linhas) + ' em aberto' : '') + '</code>' + (decide === 'lote' ? '<span class="dc">decidiu a etapa</span>' : '') + '</div>' : '';
+      var nAb = o.lotes ? Number(o.lotes.linhas) || 0 : 0;
+      var tileLote = lt ? caixa(decide === 'lote', 'Lote dos itens', lt, false, o.lotes ? plural(nAb, 'item em aberto', 'itens em aberto') : 'lote dos itens da OV',
+        'ItemBatchNumber' + (o.lotes ? ' · ' + o.lotes.linhas + ' em aberto' : '')) : '';
       // 11/11/26: o status das linhas (Cotação / Aguardando / Faturado)
       var lsR = resumoLinhasSt(o.linhasSt);
       var decLin = decide === 'linha' || et === 'cotacao' || et === 'aguardando';
-      var tileLin = lsR ? '<div class="' + (decLin ? 'decide' : '') + '"><div class="k">Status da linha</div><div class="v">' + esc(lsR) + '</div><code>SalesOrderLineStatus</code>'
-        + (decLin ? '<span class="dc">decidiu a etapa</span>' : '') + '</div>' : '';
+      var tileLin = lsR ? caixa(decLin, 'Status da linha', lsR, false, 'situação dos itens da OV', 'SalesOrderLineStatus') : '';
       return '<section class="kb-dw-card"><h5>Por que está em ' + esc(et === 'cancelada' ? 'Cancelada' : (NOME_ETAPA[et] || et)) + '</h5><div class="kb-rg">'
         + tileLin + tileLote
-        + tile('sit', 'Situação da OV', rg.salesStatus, rg.salesStatusCol, 'SalesStatus', rot)
-        + tile('lib', 'Liberação', rg.releaseStatus, rg.releaseStatusCol, 'ReleaseStatus', rotLib)
-        + '<div class="' + (decide === 'cred' ? 'decide' : '') + '"><div class="k">Crédito' + (ci.fonte === 'tabela' ? ' · tabela' : ci.fonte === 'cabecalho' ? ' · cabeçalho' : '') + '</div>'
-        +   '<div class="v' + (credVeio ? '' : ' z') + '">' + esc(ci.rotulo) + '</div>'
-        +   '<code>' + (ci.tabela ? esc(ci.tabela) + ' · ' : '') + ci.cod.replace(/<\/?code>/g, '') + '</code>'
-        +   (decide === 'cred' ? '<span class="dc">decidiu a etapa</span>' : '') + '</div>'
-        + '<div class="' + (decide === 'trab' ? 'decide' : '') + '"><div class="k">Trabalho no depósito</div>'
-        +   '<div class="v' + (ti.veio ? '' : ' z') + '">' + esc(ti.rotulo) + '</div>'
-        +   '<code>' + esc(ti.cod) + '</code>'
-        +   (decide === 'trab' ? '<span class="dc">decidiu a etapa</span>' : '') + '</div>'
-        + '<div class="' + (decide === 'carga' ? 'decide' : '') + '"><div class="k">Carga</div>'
-        +   '<div class="v' + (cg1 || o.cargaFonte ? '' : ' z') + '">' + esc(cg1 ? rotCarga(cg1.status) : o.cargaFonte ? 'Sem carga' : 'não veio') + '</div>'
-        +   '<code>' + esc(cg1 ? cg1.id + (cg1.status ? ' · ' + (ccol.status || 'LoadStatus') + ' = ' + cg1.status : '') + ' · cotação: ' + simNao(cg1.cotacao) + ' · pallet: ' + simNao(cg1.pallet) : 'WHSLoadTableBiEntity') + '</code>'
-        +   (decide === 'carga' ? '<span class="dc">decidiu a etapa</span>' : '') + '</div>'
-        + '<div class="' + (decide === 'nota' ? 'decide' : '') + '"><div class="k">Nota fiscal</div>'
-        +   '<div class="v' + (o.nota || o.notaFonte ? '' : ' z') + '">' + esc(o.nota ? rotNF(o.nota.status) : o.notaFonte ? 'Sem nota' : 'não veio') + '</div>'
-        +   '<code>' + esc(o.nota ? 'NF ' + o.nota.numero + (o.nota.status ? ' · ' + colCurta(o.nota.fonte, 'Status') + ' = ' + o.nota.status : '') : o.notaFonte ? 'nenhuma nota da OV' : 'SalesInvoiceHeadersV2') + '</code>'
-        +   (decide === 'nota' ? '<span class="dc">decidiu a etapa</span>' : '') + '</div>'
+        + tile('sit', 'Situação da OV', rg.salesStatus, rg.salesStatusCol, 'SalesStatus', rot, 'situação do pedido no Dynamics')
+        + tile('lib', 'Liberação', rg.releaseStatus, rg.releaseStatusCol, 'ReleaseStatus', rotLib, 'liberação do pedido para o depósito')
+        + caixa(decide === 'cred', 'Crédito', ci.rotulo, !credVeio, credDesc, (ci.tabela ? ci.tabela + ' · ' : '') + ci.cod.replace(/<\/?code>/g, ''))
+        + caixa(decide === 'trab', 'Trabalho no depósito', ti.rotulo, !ti.veio, trabDesc, ti.cod)
+        + caixa(decide === 'carga', 'Carga', cg1 ? rotCarga(cg1.status) : o.cargaFonte ? 'Sem carga' : 'não veio', !(cg1 || o.cargaFonte), cargaDesc, cargaDica)
+        + caixa(decide === 'nota', 'Nota fiscal', o.nota ? rotNF(o.nota.status) : o.notaFonte ? 'Sem nota' : 'não veio', !(o.nota || o.notaFonte), notaDesc, notaDica)
         + '</div>' + (porque ? '<p class="kb-rg-p">' + porque + '</p>' : '') + '</section>';
     }
 
@@ -1611,11 +1619,13 @@
       customerordernumber_inove: 'Nº do pedido do cliente', operador_custom: 'Operador' };
     function secDados(o) {
       var pares = [], ciD = credInfo(o.regra);
-      if (o.areaDemandante) pares.push(['Área demandante', esc(o.areaDemandante) + '<small>veio do PI Pedidos · ' + esc(o.areaCol || 'areademandante_Custom') + '</small>', '']);
-      if (ciD.fonte === 'tabela') pares.push(['Gerenciamento de crédito', esc(ciD.rotulo) + '<small>' + esc(ciD.tabela) + '</small>', '']);
+      // 13/11/26 (dono: "retire o nome do campo no sistema, confunde"): o nome da
+      // coluna/entidade do Dynamics saiu do texto e ficou só na dica (passar o mouse)
+      if (o.areaDemandante) pares.push(['Área demandante', esc(o.areaDemandante), '', 'veio do PI Pedidos · ' + (o.areaCol || 'areademandante_Custom')]);
+      if (ciD.fonte === 'tabela') pares.push(['Gerenciamento de crédito', esc(ciD.rotulo), '', ciD.tabela]);
       // 12/11/26 (dono: "insira esses campos a mais: Solicitartransportadora_Custom,
       // CarrierName_InoveProjects, CustomerOrderNumber_Inove, Operador_Custom"): sempre
-      // aparecem — "—" quando vazios; Sim/Não no da transportadora; a coluna embaixo
+      // aparecem — "—" quando vazios; Sim/Não no da transportadora; a coluna na dica
       (o.extras || []).forEach(function (x) {
         var rotulo = ROT_EXTRA[String(x.nome).toLowerCase()] || x.nome;
         var cru = x.valor == null ? '' : String(x.valor).trim();
@@ -1623,7 +1633,7 @@
         // 12/11/26: sem o campo — as colunas parecidas que o Dynamics trouxe (para achar o nome certo)
         var de = x.coluna ? x.coluna.split('.').pop() : x.nome + ' · não veio do Dynamics'
           + (x.parecidos && x.parecidos.length ? ' · parecidos: ' + x.parecidos.join(', ') : ' · nenhuma coluna parecida nas tabelas lidas');
-        pares.push([rotulo, esc(v) + '<small>' + esc(de) + '</small>', '']);
+        pares.push([rotulo, esc(v), '', de]);
       });
       // 12/11/26 (dono: "preciso da informação de frete também: FreghtType_InoveProjects,
       // na BioWHSWorkLineV1"): o tipo de frete das linhas do trabalho de depósito da
@@ -1633,7 +1643,7 @@
       var vFrete = !LF || LF.st === 'carregando' ? 'lendo…' : fr && fr.valores && fr.valores.length ? fr.valores.map(rotFrete).join(' / ') : '—';
       var deFrete = fr && fr.entidade ? (fr.coluna || 'FreghtType_InoveProjects') + ' · ' + fr.entidade
         : (fr && fr.erro) || (LF && LF.st === 'erro') ? 'FreghtType_InoveProjects · não veio do Dynamics' : 'FreghtType_InoveProjects';
-      pares.push(['Tipo de frete', esc(vFrete) + '<small>' + esc(deFrete) + '</small>', '']);
+      pares.push(['Tipo de frete', esc(vFrete), '', deFrete]);
       DADOS.forEach(function (d) {
         var x = campoOv(o, d[1]); if (!x) return;
         var cru = String(x.v).trim(), v = cru, mostraCru = false;
@@ -1652,7 +1662,7 @@
       if (end) pares.push(['Endereço de entrega', esc(end), 'largo']);
       if (!pares.length) return '<section class="kb-dw-card"><h5>Dados do pedido</h5><div class="kb-dw-nada">O Dynamics não trouxe outros dados desta OV.</div></section>';
       return '<section class="kb-dw-card"><h5>Dados do pedido</h5><dl class="kb-dw-dl">' + pares.map(function (p) {
-        return '<div' + (p[2] ? ' class="' + p[2] + '"' : '') + '><dt>' + esc(p[0]) + '</dt><dd>' + p[1] + '</dd></div>';
+        return '<div' + (p[2] ? ' class="' + p[2] + '"' : '') + (p[3] ? ' title="' + esc(p[3]) + '"' : '') + '><dt>' + esc(p[0]) + '</dt><dd>' + p[1] + '</dd></div>';
       }).join('') + '</dl></section>';
     }
 

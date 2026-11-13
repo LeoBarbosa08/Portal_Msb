@@ -1930,15 +1930,14 @@ async function montar(opts, modo) {
       avisos.push('Não achei o status da nota fiscal (documento fiscal / NF-e) no OData' + (STN.erro ? ' (' + STN.erro + ')' : '') +
         ': o número da nota aparece, mas a coluna Rejeitada fica vazia.');
     }
+    // 13/11/26 (dono: "retire esse aviso também"): as colunas da carga que faltam
+    // não aparecem mais na tela — ficam só no Diagnóstico (carga:faltam), com os
+    // campos parecidos, para achar o nome (KANBAN_COL_CARGA_STATUS / _COTACAO / _PALLET)
     if (CARGA.E && (!CARGA.E.cotacao || !CARGA.E.pallet || !CARGA.E.status)) {
-      const falta = [!CARGA.E.status ? 'o status da carga (' + COL_CARGA.status[0] + ')' : '', !CARGA.E.cotacao ? '"Cotação realizada" (' + COL_CARGA.cotacao[0] + ')' : '',
+      const falta = [!CARGA.E.status ? COL_CARGA.status[0] : '', !CARGA.E.cotacao ? COL_CARGA.cotacao[0] : '',
         !CARGA.E.pallet ? COL_CARGA.pallet[0] : ''].filter(Boolean);
-      // os campos da entidade que parecem ser o que falta — para o dono apontar o nome
       const parecidos = (CARGA.E.colunas || []).filter(cn => /status|quot|cota|pallet|realiz/i.test(cn)).slice(0, 12);
-      avisos.push('Na entidade de cargas (' + CARGA.E.entidade + ') não achei ' + falta.join(', nem ') + '.' +
-        (!CARGA.E.cotacao ? ' Carga Carregado fica em Cotação.' : '') + (!CARGA.E.pallet ? ' O botão "Enviar para o Pallet" não aparece.' : '') +
-        (parecidos.length ? ' Campos parecidos nessa entidade: ' + parecidos.join(', ') + '.' : '') +
-        ' Fixe os nomes em KANBAN_COL_CARGA_STATUS / KANBAN_COL_CARGA_COTACAO / KANBAN_COL_CARGA_PALLET.');
+      diag.push({ etapa: 'carga:faltam', entidade: CARGA.E.entidade, faltam: falta, parecidos });
     }
     if (CARGA.E && idsCarga.length) {
       // 13/11/26 (dono: "ainda está mostrando esses alertas"): só as cargas dos
