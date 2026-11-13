@@ -37,6 +37,10 @@
    ler as linhas, agrupar, diagnosticar, montar o DAX e o Excel — sem DOM.
    Desenho: sr-dia.css, em cima do .sd-dw do sr-diario.css.
 
+   O painel é um MOTOR comum (ficha(K)): a ficha do dia é uma
+   especificação (DIA, no fim do arquivo) e a do MÊS — clique na coluna do
+   gráfico Evolução Mensal — é outra, no sr-mes.js (SRDia.ficha, SRDia.core).
+
    Veio do portal completo (b093755, 23/10/2026). RECORTE MSB: aqui só
    existe a empresa MSB (o pbi-throttle.js recorta toda consulta), então a
    empresa não vira quebra, nem selo no cabeçalho, nem linha da nota; a
@@ -465,13 +469,23 @@
     return { linhas: linhas, notas: notas, diag: diag };
   }
 
+  // ── pedaços de HTML sem DOM (o desenho daqui e o da ficha do mês) ──
+  function kp(k, v, s, cls, vcls, scls) {
+    return '<div class="sd-dw-kp' + (cls ? ' ' + cls : '') + '"><div class="k">' + esc(k) + '</div><div class="v' + (vcls ? ' ' + vcls : '') + '">' + v + '</div>' +
+      (s ? '<div class="s' + (scls ? ' ' + scls : '') + '">' + s + '</div>' : '') + '</div>';
+  }
+  function rotuloDia(rotulo, iso) { return iso ? fData(iso) + ' · ' + diaSem(iso, true) : 'Dia ' + rotulo; }
+
   // ── núcleo puro: no Node (teste) o arquivo para aqui ────────────
+  // (a ficha do mês, sr-mes.js, usa o mesmo núcleo: SRDia.core no navegador)
   var CORE = {
-    COL: COL, NIVEIS: NIVEIS, MED_MG: MED_MG, PASSO: PASSO, TOPN: TOPN, OUTRAS: OUTRAS,
+    COL: COL, NIVEIS: NIVEIS, MED_MG: MED_MG, PASSO: PASSO, TOPN: TOPN, OUTRAS: OUTRAS, QUEBRAS: QUEBRAS, DSEM: DSEM,
     predDia: predDia, predNota: predNota, daxDia: daxDia, daxMargem: daxMargem, daxItens: daxItens, msgErro: msgErro, campo: campo,
-    lerLinhas: lerLinhas, notasDe: notasDe, agrupar: agrupar, filtrarLinhas: filtrarLinhas, buscarNotas: buscarNotas,
+    lerLinhas: lerLinhas, notasDe: notasDe, agrupar: agrupar, filtrarLinhas: filtrarLinhas, buscarNotas: buscarNotas, totalDe: totalDe, temDim: temDim,
     contexto: contexto, ritmo: ritmo, diagnostico: diagnostico, modelo: modelo, planilhas: planilhas,
-    isoDia: isoDia, diasUteis: diasUteis, hojeISO: hojeISO, fMi: fMi, fVar: fVar, esc: esc
+    isoDia: isoDia, isoDe: isoDe, diasUteis: diasUteis, hojeISO: hojeISO, fData: fData, diaSem: diaSem,
+    fMi: fMi, fMiS: fMiS, fBRL: fBRL, fBRLp: fBRLp, fInt: fInt, fPct: fPct, fVar: fVar, fPct1: fPct1, fPP: fPP, plural: plural,
+    pctAbs: pctAbs, nomeNota: nomeNota, num: num, numOu: numOu, esc: esc, kp: kp, rotuloDia: rotuloDia
   };
   if (typeof module === 'object' && module.exports) { module.exports = CORE; return; }
 
@@ -480,210 +494,14 @@
   // memória de OLS do freio (pbi-throttle.js): a margem que o usuário não vê
   // nem entra na consulta
   var OLSM = (root.PBIQ && root.PBIQ.ols) || { vivas: function (l) { return l; }, aprender: function () { }, leque: function () { return true; } };
-
-  // ══════════════════════════════════════════════════════════════
-  // ESTADO + PAINEL
-  // ══════════════════════════════════════════════════════════════
-  var S = { serie: null, ctx: null, dia: null, sel: null, quebra: null, busca: '', lim: PASSO, aberta: null, todos: {}, volta: null, E: null, vistas: [] };
-  var CACHE = new Map();          // dia|filtros → { st, linhas, nivel, em, erro, mg }
-  var ITENS = new Map();          // nota|filtros → { st, rows, erro }
-  var NIVEL = 0;                  // o nível de colunas que o modelo aceitou da última vez
-  var EL = null, OV = null;
   var IC_X = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>';
   var IC_ANT = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="15 18 9 12 15 6"/></svg>';
   var IC_PROX = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="9 18 15 12 9 6"/></svg>';
   var IC_XLS = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>';
   var IC_BUSCA = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>';
   var IC_SETA = '<svg class="sdd-car" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="6 9 12 15 18 9"/></svg>';
+  var FICHAS = [];                // as fichas montadas (dia, mês): abrir uma fecha as outras
 
-  function setTxt(id, t) { var e = D.getElementById(id); if (e) e.textContent = t; }
-  function setHTML(id, h) { var e = D.getElementById(id); if (e) e.innerHTML = h; }
-
-  function montar() {
-    if (EL) return;
-    OV = D.createElement('div'); OV.className = 'sd-dw-ov sdd-ov';
-    EL = D.createElement('aside'); EL.className = 'sd-dw sdd';
-    EL.setAttribute('role', 'dialog'); EL.setAttribute('aria-modal', 'true'); EL.setAttribute('aria-labelledby', 'sdd-tt');
-    EL.innerHTML =
-        '<div class="sd-dw-head">'
-      +   '<div class="sd-dw-hl"><div class="sd-dw-k" id="sdd-k"></div><h2 class="sd-dw-tt" id="sdd-tt"></h2>'
-      +   '<div class="sd-dw-sub" id="sdd-sub"></div><div class="sd-dw-tags" id="sdd-tags"></div></div>'
-      +   '<div class="sd-dw-nav">'
-      +     '<button type="button" class="sd-dw-pn" data-sdd="ant" aria-label="Dia anterior com faturamento" title="Dia anterior com faturamento (←)">' + IC_ANT + '</button>'
-      +     '<button type="button" class="sd-dw-pn" data-sdd="prox" aria-label="Próximo dia com faturamento" title="Próximo dia com faturamento (→)">' + IC_PROX + '</button>'
-      +     '<button type="button" class="sd-dw-x" data-sdd="fechar" aria-label="Fechar a ficha do dia" title="Fechar (Esc)">' + IC_X + '</button>'
-      +   '</div>'
-      + '</div>'
-      + '<div class="sd-dw-body" id="sdd-body"></div>'
-      + '<div class="sd-dw-foot"><button type="button" class="sd-dw-cp" data-sdd="xlsx">' + IC_XLS + '<span id="sdd-xlt">Excel do dia</span></button>'
-      +   '<span class="sd-dw-lido" id="sdd-lido"></span><button type="button" class="sd-dw-btn" data-sdd="fechar">Fechar</button></div>';
-    D.body.appendChild(OV); D.body.appendChild(EL);
-    OV.addEventListener('click', fechar);
-    EL.addEventListener('click', clique);
-    var tb = null;
-    EL.addEventListener('input', function (e) {
-      var t = e.target; if (!t || !t.matches || !t.matches('.sdd-busca input')) return;
-      clearTimeout(tb);
-      tb = setTimeout(function () { S.busca = t.value; S.lim = PASSO; pintarNotas(); }, 160);
-    });
-    D.addEventListener('keydown', function (e) {
-      if (!EL.classList.contains('open')) return;
-      if (e.key === 'Escape') { e.preventDefault(); fechar(); return; }
-      if (e.key === 'Tab') { prender(e); return; }
-      var t = e.target, digitando = t && /^(INPUT|SELECT|TEXTAREA)$/.test(t.tagName);
-      if (!digitando && (e.key === 'ArrowLeft' || e.key === 'ArrowRight') && !e.altKey && !e.ctrlKey && !e.metaKey) { e.preventDefault(); andar(e.key === 'ArrowLeft' ? -1 : 1); }
-    });
-  }
-  // o foco não sai da ficha enquanto ela está aberta
-  function prender(e) {
-    var fs = Array.prototype.filter.call(EL.querySelectorAll('button, a[href], input, summary, [tabindex]:not([tabindex="-1"])'), function (x) { return !x.disabled && x.offsetParent !== null; });
-    if (!fs.length) return;
-    var a = fs[0], z = fs[fs.length - 1];
-    if (e.shiftKey && (D.activeElement === a || !EL.contains(D.activeElement))) { e.preventDefault(); z.focus(); }
-    else if (!e.shiftKey && (D.activeElement === z || !EL.contains(D.activeElement))) { e.preventDefault(); a.focus(); }
-  }
-  function clique(e) {
-    var t = e.target; if (!t || !t.closest) return;
-    var b = t.closest('[data-sdd]');
-    if (b) {
-      var a = b.getAttribute('data-sdd');
-      if (a === 'fechar') fechar();
-      else if (a === 'ant') andar(-1);
-      else if (a === 'prox') andar(1);
-      else if (a === 'xlsx') exportar();
-      else if (a === 'limpar') { S.sel = null; S.lim = PASSO; pintar(true); }
-      else if (a === 'tentar') { var ent = entrada(S.dia); ent.st = null; carregar(S.dia); }
-      else if (a === 'todos') { var q = b.getAttribute('data-q'); S.todos[q] = !S.todos[q]; pintar(true); }
-      else if (a === 'mais') { S.lim += PASSO; pintarNotas(); }
-      else if (a === 'itens') { var k = chaveItens(b.getAttribute('data-id')); ITENS.delete(k); carregarItens(b.getAttribute('data-id')); }
-      return;
-    }
-    var s = t.closest('[data-sdd-sel]');
-    if (s) {
-      var dim = s.getAttribute('data-sdd-sel'), kk = s.getAttribute('data-k');
-      var val = kk === '' ? null : kk;
-      S.sel = S.sel && S.sel.dim === dim && S.sel.k === val ? null : { dim: dim, k: val };
-      S.lim = PASSO; S.aberta = null;
-      pintar(true); return;
-    }
-    var qb = t.closest('[data-sdd-q]');
-    if (qb) { S.quebra = qb.getAttribute('data-sdd-q'); pintar(true); return; }
-    var nf = t.closest('[data-sdd-nf]');
-    if (nf) { var id = nf.getAttribute('data-sdd-nf'); S.aberta = S.aberta === id ? null : id; pintarNotas(); if (S.aberta) carregarItens(id); }
-  }
-
-  function abrir(rotulo, origem) {
-    if (!S.serie || rotulo == null) return;
-    rotulo = String(rotulo);
-    if (S.serie.labels.indexOf(rotulo) < 0) return;
-    montar();
-    // uma ficha de cada vez: a do pedido/nota (sr-diario.js) fecha
-    if (root.SRDiario && root.SRDiario.fechar) { try { root.SRDiario.fechar(); } catch (e) { } }
-    if (!EL.classList.contains('open')) S.volta = origem || D.activeElement;
-    OV.classList.add('open'); EL.classList.add('open');
-    D.documentElement.classList.add('sd-dw-on');
-    ir(rotulo);
-    setTimeout(function () { try { EL.querySelector('.sd-dw-x').focus(); } catch (e) { } }, 40);
-  }
-  function ir(rotulo) {
-    S.dia = rotulo; S.sel = null; S.busca = ''; S.lim = PASSO; S.aberta = null; S.todos = {};
-    marcar(rotulo);
-    pintar();
-    D.getElementById('sdd-body').scrollTop = 0;
-    carregar(rotulo);
-  }
-  function fechar() {
-    if (!EL || !EL.classList.contains('open')) return;
-    EL.classList.remove('open'); OV.classList.remove('open');
-    D.documentElement.classList.remove('sd-dw-on');
-    S.dia = null; S.E = null;
-    marcar(null);
-    var f = S.volta; S.volta = null;
-    if (f && f.focus) { try { f.focus(); } catch (e) { } }
-  }
-  function andar(dir) {
-    if (S.dia == null) return;
-    var P = contexto(S.serie, S.dia), alvo = dir < 0 ? P.ant : P.prox;
-    if (alvo) ir(alvo.l);
-  }
-  function marcar(rotulo) { var c = S.ctx; if (c && typeof c.marcar === 'function') { try { c.marcar(rotulo); } catch (e) { } } }
-
-  // ── leitura no Power BI ─────────────────────────────────────────
-  function q() {
-    var c = S.ctx, fn = (c && c.query) || (root.PBIData && root.PBIData.query);
-    return fn || function () { return Promise.reject(new Error('Power BI ainda não conectado')); };
-  }
-  function baseDia(rotulo) {
-    var c = S.ctx || {}, i = S.serie ? S.serie.labels.indexOf(String(rotulo)) : -1;
-    var bruto = i >= 0 && S.serie.brutos ? S.serie.brutos[i] : undefined;
-    return (c.filtros || []).concat(predDia(bruto, rotulo));
-  }
-  function entrada(rotulo) {
-    var k = rotulo + '|' + baseDia(rotulo).join('&'), e = CACHE.get(k);
-    if (!e) { e = { st: null }; CACHE.set(k, e); if (CACHE.size > 60) CACHE.delete(CACHE.keys().next().value); }
-    return e;
-  }
-  function carregar(rotulo) {
-    var ent = entrada(rotulo);
-    var pinta = function () { if (S.dia === rotulo) pintar(true); };
-    if (ent.st === 'ok' || ent.st === 'carregando') return;
-    // barra zerada: não houve nota (nada a perguntar ao Power BI)
-    if (contexto(S.serie, rotulo).v === 0) { ent.st = 'ok'; ent.linhas = []; ent.nivel = NIVEL; ent.em = new Date(); pinta(); return; }
-    var fn = q(), base = baseDia(rotulo);
-    ent.st = 'carregando'; ent.mg = null; pinta();
-    var tenta = function (nv) {
-      fn(daxDia(base, nv)).then(function (rows) {
-        ent.st = 'ok'; ent.linhas = lerLinhas(rows); ent.nivel = nv; ent.em = new Date(); pinta();
-      }, function (e) {
-        if (nv + 1 < NIVEIS.length && OLSM.leque(e)) {
-          // recusa do MODELO (coluna fora / OLS) vale para os próximos dias;
-          // erro de momento (5xx, tempo) não rebaixa o nível
-          if (!/HTTP 5\d\d|time ?out|abort/i.test(String(e && e.message))) NIVEL = Math.max(NIVEL, nv + 1);
-          tenta(nv + 1);
-        } else { ent.st = 'erro'; ent.erro = msgErro(e); pinta(); }
-      });
-    };
-    tenta(NIVEL);
-    // a margem é extra: quem não a vê (OLS) não perde a ficha
-    var meds = OLSM.vivas(MED_MG, function (m) { return m[1]; });
-    if (meds.length) {
-      fn(daxMargem(base, meds)).then(function (rows) {
-        var r = rows && rows[0];
-        ent.mg = { mp: numOu(campo(r, '[mp]')), mn: numOu(campo(r, '[mn]')) }; pinta();
-      }, function () { ent.mg = { erro: true }; });
-    }
-  }
-  function chaveItens(id) { return id + '|' + baseDia(S.dia).join('&'); }
-  function carregarItens(id) {
-    var k = chaveItens(id), it = ITENS.get(k);
-    if (it && (it.st === 'ok' || it.st === 'carregando')) return;
-    var n = null; (S.E ? S.E.notas : []).forEach(function (x) { if (x.id === id) n = x; });
-    if (!n || n.id === '—') return;
-    var fn = q(), base = baseDia(S.dia), dia = S.dia;
-    it = { st: 'carregando' }; ITENS.set(k, it);
-    if (ITENS.size > 200) ITENS.delete(ITENS.keys().next().value);
-    var pinta = function () { if (S.dia === dia && S.aberta === id) pintarNotas(); };
-    var achou = function (rows) {
-      it.st = 'ok';
-      it.rows = (rows || []).map(function (r) {
-        return { cod: campo(r, "'Produtos'[Cód. produto]"), prod: campo(r, "'Produtos'[Produto]"), fam: campo(r, "'Famílias'[Família]"),
-          v: num(campo(r, '[Fat]')), qt: numOu(campo(r, '[Qt]')) };
-      }).filter(function (o) { return o.prod != null || o.cod != null || o.v; }).sort(function (a, b) { return b.v - a.v; });
-      pinta();
-    };
-    var falhou = function (e) { it.st = 'erro'; it.erro = msgErro(e); pinta(); };
-    // a medida de quantidade pode não existir: sem ela, o resto
-    fn(daxItens(base, n.raw, true)).then(achou, function () { fn(daxItens(base, n.raw, false)).then(achou, falhou); });
-    pinta();
-  }
-
-  // ══════════════════════════════════════════════════════════════
-  // DESENHO
-  // ══════════════════════════════════════════════════════════════
-  function kp(k, v, s, cls, vcls, scls) {
-    return '<div class="sd-dw-kp' + (cls ? ' ' + cls : '') + '"><div class="k">' + esc(k) + '</div><div class="v' + (vcls ? ' ' + vcls : '') + '">' + v + '</div>' +
-      (s ? '<div class="s' + (scls ? ' ' + scls : '') + '">' + s + '</div>' : '') + '</div>';
-  }
   function carregandoH(t) { return '<div class="sd-dw-load"><span class="sd-spin"></span>' + esc(t) + '</div>'; }
   function erroH(t, e, acao, id) {
     return '<div class="sd-dw-err"><span>' + esc(t) + ': <b>' + esc(e) + '</b></span><button type="button" data-sdd="' + acao + '"' + (id != null ? ' data-id="' + esc(id) + '"' : '') + '>Tentar de novo</button></div>';
@@ -693,71 +511,400 @@
     if (dim === 'data') return fData(k) + ' · ' + diaSem(k);
     return k;
   }
-  function rotuloDia(rotulo, iso) { return iso ? fData(iso) + ' · ' + diaSem(iso, true) : 'Dia ' + rotulo; }
 
-  // keep = mantém a rolagem (filtro, aba, "ver todas")
-  function pintar(keep) {
-    if (!EL || S.dia == null) return;
-    var body = D.getElementById('sdd-body'), top = keep ? body.scrollTop : 0;
-    var rot = S.dia, c = S.ctx || {}, ent = entrada(rot), P = contexto(S.serie, rot);
-    var iso = c.mes && c.ano ? isoDia(c.ano, c.mes, rot) : null, hoje = !!iso && iso === hojeISO();
-    var ok = ent.st === 'ok';
-    var E = ok ? modelo(rot, ent.linhas, S.serie, c, ent.mg && !ent.mg.erro ? ent.mg : null) : null;
-    S.E = E;
+  // ══════════════════════════════════════════════════════════════
+  // A FICHA — o motor comum à do DIA (aqui, embaixo) e à do MÊS (sr-mes.js)
+  // K = o que é de cada uma:
+  //   id ('sdd' → ids sdd-tt, sdd-body…), chave ('dia' no estado()),
+  //   t = textos { un, doUn, uns, ant, prox, xls },
+  //   base(c, serie, rot)            → filtro-base + o predicado do dia/mês
+  //   modelo(rot, linhas, serie, c, mg) → E (com E.diag, E.notas, E.grupos…)
+  //   cab(rot, c, P, E, serie)       → { k, tt, sub, tags: [html] }
+  //   kpis(P, E, c, rot, serie)      → html dos números-chave
+  //   comoConta(rot, c, nivel)       → html do "Como conta"
+  //   mostraData(E)                  → a quebra Data entra nas outras?
+  //   posicao(P, rot, c, serie)      → (opcional) a posição no rodapé ("2º de 10 dias")
+  //   margem(base, meds, c) → DAX · lerMargem(linha) → { mp, mn, … }
+  //   nome(rot, c), abas(E, nome) → [[aba, linhas]], arquivo(rot, c) → o Excel
+  // ══════════════════════════════════════════════════════════════
+  function ficha(K) {
+    var T = K.t;
+    var S = { serie: null, ctx: null, rot: null, sel: null, quebra: null, busca: '', lim: PASSO, aberta: null, todos: {}, volta: null, E: null, vistas: [] };
+    var CACHE = new Map();          // rótulo|filtros → { st, linhas, nivel, em, erro, mg }
+    var ITENS = new Map();          // nota|filtros → { st, rows, erro }
+    var NIVEL = 0;                  // o nível de colunas que o modelo aceitou da última vez
+    var EL = null, OV = null, EU = null;
 
-    setTxt('sdd-k', 'Faturamento do dia' + (hoje ? ' · hoje' : ''));
-    setTxt('sdd-tt', rotuloDia(rot, iso));
-    setTxt('sdd-sub', (iso ? '' : 'O dia ' + rot + ' de cada mês · ') + (c.periodo || ''));
-    var tags = [];
-    if (hoje) tags.push('<span class="sd-dw-tag vd">Hoje · em andamento</span>');
-    if (P.rank === 1 && P.n > 1) tags.push('<span class="sd-dw-tag az">Maior dia do período</span>');
-    if (iso) { var w = new Date(iso + 'T12:00:00').getDay(); if (w === 0 || w === 6) tags.push('<span class="sd-dw-tag">Fim de semana</span>'); }
-    // RECORTE MSB: sem o selo por empresa (BIO · R$ … / MSB · R$ …) — só há a MSB
-    setHTML('sdd-tags', tags.join(''));
-    EL.querySelector('[data-sdd="ant"]').disabled = !P.ant;
-    EL.querySelector('[data-sdd="prox"]').disabled = !P.prox;
-    EL.querySelector('[data-sdd="xlsx"]').disabled = !(E && E.linhas.length);
-    setTxt('sdd-lido', ent.em ? 'lido às ' + ent.em.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }) + (P.n ? ' · ' + (P.v > 0 ? (P.rank + 'º de ' + P.n + ' dias') : P.n + ' dias com faturamento') : '') : '');
+    function no(s) { return EL ? EL.querySelector('#' + K.id + '-' + s) : null; }
+    function setTxt(s, t) { var e = no(s); if (e) e.textContent = t; }
+    function setHTML(s, h) { var e = no(s); if (e) e.innerHTML = h; }
 
-    var h = kpis(P, E, c, iso);
-    if (!ok) {
-      h += ent.st === 'erro'
-        ? '<section class="sd-dw-card"><h5>O que foi faturado</h5>' + erroH('Não deu para ler o dia', ent.erro, 'tentar') + '</section>'
-        : '<section class="sd-dw-card"><h5>Diagnóstico do dia</h5>' + carregandoH('Lendo as notas do dia no Power BI…') + '</section>';
-      h += comoConta(iso, rot, null);
-      body.innerHTML = h; body.scrollTop = top; return;
+    function montar() {
+      if (EL) return;
+      var p = K.id + '-';
+      OV = D.createElement('div'); OV.className = 'sd-dw-ov sdd-ov';
+      EL = D.createElement('aside'); EL.className = 'sd-dw sdd' + (K.id !== 'sdd' ? ' ' + K.id : '');
+      EL.setAttribute('role', 'dialog'); EL.setAttribute('aria-modal', 'true'); EL.setAttribute('aria-labelledby', p + 'tt');
+      EL.innerHTML =
+          '<div class="sd-dw-head">'
+        +   '<div class="sd-dw-hl"><div class="sd-dw-k" id="' + p + 'k"></div><h2 class="sd-dw-tt" id="' + p + 'tt"></h2>'
+        +   '<div class="sd-dw-sub" id="' + p + 'sub"></div><div class="sd-dw-tags" id="' + p + 'tags"></div></div>'
+        +   '<div class="sd-dw-nav">'
+        +     '<button type="button" class="sd-dw-pn" data-sdd="ant" aria-label="' + esc(T.ant) + '" title="' + esc(T.ant) + ' (←)">' + IC_ANT + '</button>'
+        +     '<button type="button" class="sd-dw-pn" data-sdd="prox" aria-label="' + esc(T.prox) + '" title="' + esc(T.prox) + ' (→)">' + IC_PROX + '</button>'
+        +     '<button type="button" class="sd-dw-x" data-sdd="fechar" aria-label="Fechar a ficha ' + esc(T.doUn) + '" title="Fechar (Esc)">' + IC_X + '</button>'
+        +   '</div>'
+        + '</div>'
+        + '<div class="sd-dw-body" id="' + p + 'body"></div>'
+        + '<div class="sd-dw-foot"><button type="button" class="sd-dw-cp" data-sdd="xlsx">' + IC_XLS + '<span id="' + p + 'xlt">' + esc(T.xls) + '</span></button>'
+        +   '<span class="sd-dw-lido" id="' + p + 'lido"></span><button type="button" class="sd-dw-btn" data-sdd="fechar">Fechar</button></div>';
+      D.body.appendChild(OV); D.body.appendChild(EL);
+      OV.addEventListener('click', fechar);
+      EL.addEventListener('click', clique);
+      var tb = null;
+      EL.addEventListener('input', function (e) {
+        var t = e.target; if (!t || !t.matches || !t.matches('.sdd-busca input')) return;
+        clearTimeout(tb);
+        tb = setTimeout(function () { S.busca = t.value; S.lim = PASSO; pintarNotas(); }, 160);
+      });
+      D.addEventListener('keydown', function (e) {
+        if (!EL.classList.contains('open')) return;
+        if (e.key === 'Escape') { e.preventDefault(); fechar(); return; }
+        if (e.key === 'Tab') { prender(e); return; }
+        var t = e.target, digitando = t && /^(INPUT|SELECT|TEXTAREA)$/.test(t.tagName);
+        if (!digitando && (e.key === 'ArrowLeft' || e.key === 'ArrowRight') && !e.altKey && !e.ctrlKey && !e.metaKey) { e.preventDefault(); andar(e.key === 'ArrowLeft' ? -1 : 1); }
+      });
     }
-    h += secDiag(E);
-    if (!E.linhas.length) { h += comoConta(iso, rot, ent.nivel); body.innerHTML = h; body.scrollTop = top; return; }
+    // o foco não sai da ficha enquanto ela está aberta
+    function prender(e) {
+      var fs = Array.prototype.filter.call(EL.querySelectorAll('button, a[href], input, summary, [tabindex]:not([tabindex="-1"])'), function (x) { return !x.disabled && x.offsetParent !== null; });
+      if (!fs.length) return;
+      var a = fs[0], z = fs[fs.length - 1];
+      if (e.shiftKey && (D.activeElement === a || !EL.contains(D.activeElement))) { e.preventDefault(); z.focus(); }
+      else if (!e.shiftKey && (D.activeElement === z || !EL.contains(D.activeElement))) { e.preventDefault(); a.focus(); }
+    }
+    function clique(e) {
+      var t = e.target; if (!t || !t.closest) return;
+      var b = t.closest('[data-sdd]');
+      if (b) {
+        var a = b.getAttribute('data-sdd');
+        if (a === 'fechar') fechar();
+        else if (a === 'ant') andar(-1);
+        else if (a === 'prox') andar(1);
+        else if (a === 'xlsx') exportar();
+        else if (a === 'limpar') { S.sel = null; S.lim = PASSO; pintar(true); }
+        else if (a === 'tentar') { var ent = entrada(S.rot); ent.st = null; carregar(S.rot); }
+        else if (a === 'todos') { var qq = b.getAttribute('data-q'); S.todos[qq] = !S.todos[qq]; pintar(true); }
+        else if (a === 'mais') { S.lim += PASSO; pintarNotas(); }
+        else if (a === 'itens') { var k = chaveItens(b.getAttribute('data-id')); ITENS.delete(k); carregarItens(b.getAttribute('data-id')); }
+        return;
+      }
+      var s = t.closest('[data-sdd-sel]');
+      if (s) {
+        var dim = s.getAttribute('data-sdd-sel'), kk = s.getAttribute('data-k');
+        var val = kk === '' ? null : kk;
+        S.sel = S.sel && S.sel.dim === dim && S.sel.k === val ? null : { dim: dim, k: val };
+        S.lim = PASSO; S.aberta = null;
+        pintar(true); return;
+      }
+      var qb = t.closest('[data-sdd-q]');
+      if (qb) { S.quebra = qb.getAttribute('data-sdd-q'); pintar(true); return; }
+      var nf = t.closest('[data-sdd-nf]');
+      if (nf) { var id = nf.getAttribute('data-sdd-nf'); S.aberta = S.aberta === id ? null : id; pintarNotas(); if (S.aberta) carregarItens(id); }
+    }
 
-    // filtro cruzado: as quebras (menos a da própria seleção) e as notas
-    // olham só as linhas escolhidas; o diagnóstico fica no dia inteiro
-    var sel = S.sel, LF = filtrarLinhas(E.linhas, sel);
-    var g = function (dim) { return agrupar(sel && sel.dim !== dim ? LF : E.linhas, dim); };
-    if (sel) {
-      var sv = totalDe(LF);
-      h += '<div class="sdd-fxbar" role="status"><span>Filtrando por <b>' + esc(QUEBRAS[sel.dim][0] + ': ' + nomeDe(sel.dim, sel.k)) + '</b> · ' + esc(fMi(sv)) +
-        ' (' + esc(fPct(E.soma ? sv / E.soma : null)) + ' do dia)</span><button type="button" data-sdd="limpar">✕ limpar</button></div>';
+    function abrir(rotulo, origem) {
+      if (!S.serie || rotulo == null) return;
+      rotulo = String(rotulo);
+      if (S.serie.labels.indexOf(rotulo) < 0) return;
+      montar();
+      // uma ficha de cada vez: a do pedido/nota (sr-diario.js) e a outra (dia/mês) fecham
+      if (root.SRDiario && root.SRDiario.fechar) { try { root.SRDiario.fechar(); } catch (e) { } }
+      FICHAS.forEach(function (f) { if (f !== EU) { try { f.fechar(); } catch (e) { } } });
+      if (!EL.classList.contains('open')) S.volta = origem || D.activeElement;
+      OV.classList.add('open'); EL.classList.add('open');
+      D.documentElement.classList.add('sd-dw-on');
+      ir(rotulo);
+      setTimeout(function () { try { EL.querySelector('.sd-dw-x').focus(); } catch (e) { } }, 40);
     }
-    if (temDim(E.linhas, 'est')) h += secQuebra('est', g('est'), 'Por estratégia');
-    h += secQuebra('fam', g('fam'), 'Por família');
-    h += secQuebra('cli', g('cli'), 'Por cliente');
-    var dims = OUTRAS.filter(function (d) { return d === 'data' ? E.multi && temDim(E.linhas, 'data') : temDim(E.linhas, d); });
-    if (dims.length) {
-      if (dims.indexOf(S.quebra) < 0) S.quebra = dims[0];
-      h += secQuebra(S.quebra, g(S.quebra), 'Outras quebras', dims);
+    function ir(rotulo) {
+      S.rot = rotulo; S.sel = null; S.busca = ''; S.lim = PASSO; S.aberta = null; S.todos = {};
+      marcar(rotulo);
+      pintar();
+      no('body').scrollTop = 0;
+      carregar(rotulo);
     }
-    S.vistas = notasDe(LF);
-    h += '<section class="sd-dw-card" id="sdd-nfs-card"><h5>Notas fiscais <small id="sdd-nfs-n"></small></h5>'
-      + '<div class="sdd-bar"><label class="sdd-busca">' + IC_BUSCA + '<input type="search" placeholder="Buscar nota, cliente, família, vendedor…" autocomplete="off" aria-label="Buscar nas notas do dia" value="' + esc(S.busca) + '"></label>'
-      + '<span class="sdd-info" id="sdd-nfs-info"></span></div><div class="sdd-nfs" id="sdd-nfs"></div></section>';
-    h += comoConta(iso, rot, ent.nivel);
-    body.innerHTML = h;
-    pintarNotas();
-    body.scrollTop = top;
+    function fechar() {
+      if (!EL || !EL.classList.contains('open')) return;
+      EL.classList.remove('open'); OV.classList.remove('open');
+      D.documentElement.classList.remove('sd-dw-on');
+      S.rot = null; S.E = null;
+      marcar(null);
+      var f = S.volta; S.volta = null;
+      if (f && f.focus) { try { f.focus(); } catch (e) { } }
+    }
+    function andar(dir) {
+      if (S.rot == null) return;
+      var P = contexto(S.serie, S.rot), alvo = dir < 0 ? P.ant : P.prox;
+      if (alvo) ir(alvo.l);
+    }
+    function marcar(rotulo) { var c = S.ctx; if (c && typeof c.marcar === 'function') { try { c.marcar(rotulo); } catch (e) { } } }
+
+    // ── leitura no Power BI ───────────────────────────────────────
+    function q() {
+      var c = S.ctx, fn = (c && c.query) || (root.PBIData && root.PBIData.query);
+      return fn || function () { return Promise.reject(new Error('Power BI ainda não conectado')); };
+    }
+    function baseDe(rotulo) { return K.base(S.ctx || {}, S.serie, String(rotulo)); }
+    function entrada(rotulo) {
+      var k = rotulo + '|' + baseDe(rotulo).join('&'), e = CACHE.get(k);
+      if (!e) { e = { st: null }; CACHE.set(k, e); if (CACHE.size > 60) CACHE.delete(CACHE.keys().next().value); }
+      return e;
+    }
+    function carregar(rotulo) {
+      var ent = entrada(rotulo);
+      var pinta = function () { if (S.rot === rotulo) pintar(true); };
+      if (ent.st === 'ok' || ent.st === 'carregando') return;
+      // barra zerada: não houve nota (nada a perguntar ao Power BI)
+      if (contexto(S.serie, rotulo).v === 0) { ent.st = 'ok'; ent.linhas = []; ent.nivel = NIVEL; ent.em = new Date(); pinta(); return; }
+      var fn = q(), base = baseDe(rotulo);
+      ent.st = 'carregando'; ent.mg = null; pinta();
+      var tenta = function (nv) {
+        fn(daxDia(base, nv)).then(function (rows) {
+          ent.st = 'ok'; ent.linhas = lerLinhas(rows); ent.nivel = nv; ent.em = new Date(); pinta();
+        }, function (e) {
+          if (nv + 1 < NIVEIS.length && OLSM.leque(e)) {
+            // recusa do MODELO (coluna fora / OLS) vale para os próximos;
+            // erro de momento (5xx, tempo) não rebaixa o nível
+            if (!/HTTP 5\d\d|time ?out|abort/i.test(String(e && e.message))) NIVEL = Math.max(NIVEL, nv + 1);
+            tenta(nv + 1);
+          } else { ent.st = 'erro'; ent.erro = msgErro(e); pinta(); }
+        });
+      };
+      tenta(NIVEL);
+      // a margem é extra: quem não a vê (OLS) não perde a ficha
+      var meds = OLSM.vivas(MED_MG, function (m) { return m[1]; });
+      if (meds.length) {
+        fn(K.margem(base, meds, S.ctx || {})).then(function (rows) {
+          ent.mg = K.lerMargem(rows && rows[0]); pinta();
+        }, function () { ent.mg = { erro: true }; });
+      }
+    }
+    function chaveItens(id) { return id + '|' + baseDe(S.rot).join('&'); }
+    function carregarItens(id) {
+      var k = chaveItens(id), it = ITENS.get(k);
+      if (it && (it.st === 'ok' || it.st === 'carregando')) return;
+      var n = null; (S.E ? S.E.notas : []).forEach(function (x) { if (x.id === id) n = x; });
+      if (!n || n.id === '—') return;
+      var fn = q(), base = baseDe(S.rot), rot = S.rot;
+      it = { st: 'carregando' }; ITENS.set(k, it);
+      if (ITENS.size > 200) ITENS.delete(ITENS.keys().next().value);
+      var pinta = function () { if (S.rot === rot && S.aberta === id) pintarNotas(); };
+      var achou = function (rows) {
+        it.st = 'ok';
+        it.rows = (rows || []).map(function (r) {
+          return { cod: campo(r, "'Produtos'[Cód. produto]"), prod: campo(r, "'Produtos'[Produto]"), fam: campo(r, "'Famílias'[Família]"),
+            v: num(campo(r, '[Fat]')), qt: numOu(campo(r, '[Qt]')) };
+        }).filter(function (o) { return o.prod != null || o.cod != null || o.v; }).sort(function (a, b) { return b.v - a.v; });
+        pinta();
+      };
+      var falhou = function (e) { it.st = 'erro'; it.erro = msgErro(e); pinta(); };
+      // a medida de quantidade pode não existir: sem ela, o resto
+      fn(daxItens(base, n.raw, true)).then(achou, function () { fn(daxItens(base, n.raw, false)).then(achou, falhou); });
+      pinta();
+    }
+
+    // ── desenho ───────────────────────────────────────────────────
+    // keep = mantém a rolagem (filtro, aba, "ver todas")
+    function pintar(keep) {
+      if (!EL || S.rot == null) return;
+      var body = no('body'), top = keep ? body.scrollTop : 0;
+      var rot = S.rot, c = S.ctx || {}, ent = entrada(rot), P = contexto(S.serie, rot);
+      var ok = ent.st === 'ok';
+      var E = ok ? K.modelo(rot, ent.linhas, S.serie, c, ent.mg && !ent.mg.erro ? ent.mg : null) : null;
+      S.E = E;
+
+      var cab = K.cab(rot, c, P, E, S.serie);
+      setTxt('k', cab.k); setTxt('tt', cab.tt); setTxt('sub', cab.sub); setHTML('tags', (cab.tags || []).join(''));
+      EL.querySelector('[data-sdd="ant"]').disabled = !P.ant;
+      EL.querySelector('[data-sdd="prox"]').disabled = !P.prox;
+      EL.querySelector('[data-sdd="xlsx"]').disabled = !(E && E.linhas.length);
+      var pos = K.posicao ? K.posicao(P, rot, c, S.serie) : (P.n ? (P.v > 0 ? P.rank + 'º de ' + P.n + ' ' + T.uns : P.n + ' ' + T.uns + ' com faturamento') : '');
+      setTxt('lido', ent.em ? 'lido às ' + ent.em.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }) + (pos ? ' · ' + pos : '') : '');
+
+      var h = K.kpis(P, E, c, rot, S.serie);
+      if (!ok) {
+        h += ent.st === 'erro'
+          ? '<section class="sd-dw-card"><h5>O que foi faturado</h5>' + erroH('Não deu para ler o ' + T.un, ent.erro, 'tentar') + '</section>'
+          : '<section class="sd-dw-card"><h5>Diagnóstico ' + esc(T.doUn) + '</h5>' + carregandoH('Lendo as notas ' + T.doUn + ' no Power BI…') + '</section>';
+        h += K.comoConta(rot, c, null);
+        body.innerHTML = h; body.scrollTop = top; return;
+      }
+      h += secDiag(E);
+      if (!E.linhas.length) { h += K.comoConta(rot, c, ent.nivel); body.innerHTML = h; body.scrollTop = top; return; }
+
+      // filtro cruzado: as quebras (menos a da própria seleção) e as notas
+      // olham só as linhas escolhidas; o diagnóstico fica no todo
+      var sel = S.sel, LF = filtrarLinhas(E.linhas, sel);
+      var g = function (dim) { return agrupar(sel && sel.dim !== dim ? LF : E.linhas, dim); };
+      if (sel) {
+        var sv = totalDe(LF);
+        h += '<div class="sdd-fxbar" role="status"><span>Filtrando por <b>' + esc(QUEBRAS[sel.dim][0] + ': ' + nomeDe(sel.dim, sel.k)) + '</b> · ' + esc(fMi(sv)) +
+          ' (' + esc(fPct(E.soma ? sv / E.soma : null) + ' ' + T.doUn) + ')</span><button type="button" data-sdd="limpar">✕ limpar</button></div>';
+      }
+      if (temDim(E.linhas, 'est')) h += secQuebra('est', g('est'), 'Por estratégia');
+      h += secQuebra('fam', g('fam'), 'Por família');
+      h += secQuebra('cli', g('cli'), 'Por cliente');
+      var dims = OUTRAS.filter(function (d) { return d === 'data' ? K.mostraData(E) && temDim(E.linhas, 'data') : temDim(E.linhas, d); });
+      if (dims.length) {
+        if (dims.indexOf(S.quebra) < 0) S.quebra = dims[0];
+        h += secQuebra(S.quebra, g(S.quebra), 'Outras quebras', dims);
+      }
+      S.vistas = notasDe(LF);
+      var p = K.id + '-';
+      h += '<section class="sd-dw-card" id="' + p + 'nfs-card"><h5>Notas fiscais <small id="' + p + 'nfs-n"></small></h5>'
+        + '<div class="sdd-bar"><label class="sdd-busca">' + IC_BUSCA + '<input type="search" placeholder="Buscar nota, cliente, família, vendedor…" autocomplete="off" aria-label="Buscar nas notas ' + esc(T.doUn) + '" value="' + esc(S.busca) + '"></label>'
+        + '<span class="sdd-info" id="' + p + 'nfs-info"></span></div><div class="sdd-nfs" id="' + p + 'nfs"></div></section>';
+      h += K.comoConta(rot, c, ent.nivel);
+      body.innerHTML = h;
+      pintarNotas();
+      body.scrollTop = top;
+    }
+
+    function secDiag(E) {
+      var d = E.diag;
+      return '<section class="sd-dw-card sdd-diag"><h5>Diagnóstico ' + esc(T.doUn) + '</h5><p class="sdd-man">' + esc(d.manchete) + '</p><ul class="sdd-dg">' +
+        d.itens.map(function (i) {
+          return '<li class="' + i.tom + '"><span class="dot" aria-hidden="true"></span><div><b>' + esc(i.tt) + '</b><span>' + esc(i.ds) + '</span></div></li>';
+        }).join('') + '</ul></section>';
+    }
+
+    // uma quebra: linhas clicáveis (filtro cruzado); abas = as outras quebras
+    function secQuebra(dim, grupos, titulo, abas) {
+      var todos = !!S.todos[dim], lista = todos ? grupos : grupos.slice(0, TOPN);
+      var outra = S.sel && S.sel.dim !== dim;
+      var h = '<section class="sd-dw-card sdd-q"><h5>' + esc(titulo) + ' <small>' + esc(fInt(grupos.length)) + '</small>' + (outra ? '<em>no filtro</em>' : '') + '</h5>';
+      if (abas) {
+        h += '<div class="sdd-tabs" role="group" aria-label="Escolher a quebra">' + abas.map(function (d) {
+          var on = d === dim;
+          return '<button type="button" data-sdd-q="' + d + '" aria-pressed="' + on + '"' + (on ? ' class="on"' : '') + '>' + esc(QUEBRAS[d][0]) + '</button>';
+        }).join('') + '</div>';
+      }
+      if (!grupos.length) return h + '<div class="sd-dw-nada">Nada neste recorte.</div></section>';
+      h += '<div class="sdd-rows">' + lista.map(function (gr) {
+        var on = !!S.sel && S.sel.dim === dim && S.sel.k === gr.k, nome = nomeDe(dim, gr.k);
+        var sub;
+        if (dim === 'est') sub = plural(gr.n, 'nota', 'notas') + ' · ' + plural(gr.subs.length, 'família', 'famílias');
+        else if (dim === 'fam') sub = [gr.subs[0] || null, plural(gr.n, 'nota', 'notas')].filter(Boolean).join(' · ');
+        else if (dim === 'cli') sub = [gr.subs[0] || null, plural(gr.n, 'nota', 'notas')].filter(Boolean).join(' · ');
+        else sub = plural(gr.n, 'nota', 'notas') + ' · ' + plural(gr.subs.length, 'cliente', 'clientes');
+        var w = Math.max(0, Math.min(1, gr.p)) * 100;
+        return '<button type="button" class="sdd-r' + (on ? ' on' : '') + '" data-sdd-sel="' + dim + '" data-k="' + esc(gr.k == null ? '' : gr.k) + '" aria-pressed="' + on + '" title="' +
+          esc(on ? 'tirar o filtro' : 'filtrar a ficha por ' + nome) + '"><span class="t">' + esc(nome) + '<small>' + esc(sub) + '</small></span>' +
+          '<span class="v">' + esc(fBRL(gr.v)) + '<small>' + esc(fPct(gr.p)) + '</small></span><span class="tr" aria-hidden="true"><span style="--p:' + w.toFixed(1) + '%"></span></span></button>';
+      }).join('') + '</div>';
+      if (grupos.length > TOPN) {
+        h += '<button type="button" class="sdd-todos" data-sdd="todos" data-q="' + dim + '">' +
+          (todos ? 'Mostrar só ' + (dim === 'cli' || dim === 'vend' ? 'os' : 'as') + ' ' + TOPN + ' maiores' : 'Ver ' + (dim === 'cli' || dim === 'vend' ? 'todos' : 'todas') + ' (' + fInt(grupos.length) + ')') + '</button>';
+      }
+      return h + '</section>';
+    }
+
+    // a lista de notas (só ela repinta na busca: o campo não perde o foco)
+    function pintarNotas() {
+      var box = no('nfs'); if (!box || !S.E) return;
+      var todas = S.vistas || [], lista = buscarNotas(todas, S.busca), vis = lista.slice(0, S.lim);
+      var somaL = lista.reduce(function (s, n) { return s + n.v; }, 0), soma = S.E.soma;
+      setTxt('nfs-n', fInt(todas.length));
+      setHTML('nfs-info', '<b>' + esc(lista.length !== todas.length ? fInt(lista.length) + ' de ' + plural(todas.length, 'nota', 'notas') : plural(lista.length, 'nota', 'notas')) + '</b> · ' + esc(fMi(somaL)));
+      if (!lista.length) { box.innerHTML = '<div class="sd-dw-nada">' + (S.busca.trim() ? 'Nada com “' + esc(S.busca.trim()) + '”.' : 'Nenhuma nota neste recorte.') + '</div>'; return; }
+      var inteiras = {}; S.E.notas.forEach(function (n) { inteiras[n.id] = n.v; });
+      var h = vis.map(function (n) {
+        var on = S.aberta === n.id, f0 = n.fams[0];
+        var fam = f0 ? (f0.fam || '—') + (n.fams.length > 1 ? ' +' + (n.fams.length - 1) : '') : '';
+        var parte = S.sel && Math.abs((inteiras[n.id] || 0) - n.v) > 0.005;
+        return '<div class="sdd-nf' + (on ? ' open' : '') + '"><button type="button" class="sdd-nf-h" data-sdd-nf="' + esc(n.id) + '" aria-expanded="' + on + '">' +
+          '<span class="id"><b>' + esc(n.id === '—' ? 'sem nº' : 'NF ' + n.id) + '</b><small>' + esc(soma ? fPct(n.v / soma) + ' ' + T.doUn : '') + '</small></span>' +
+          '<span class="cli"><b>' + esc(n.cli || '—') + '</b><small>' + esc([fam, n.uf].filter(Boolean).join(' · ')) + '</small></span>' +
+          '<span class="v"><b>' + esc(fBRL(n.v)) + '</b>' + (parte ? '<small>de ' + esc(fBRL(inteiras[n.id])) + '</small>' : '') + '</span>' + IC_SETA + '</button>' +
+          (on ? notaAberta(n) : '') + '</div>';
+      }).join('');
+      var resto = lista.length - vis.length;
+      if (resto > 0) h += '<button type="button" class="sdd-todos" data-sdd="mais">Mostrar mais ' + esc(fInt(Math.min(PASSO, resto))) + ' <span>faltam ' + esc(fInt(resto)) + '</span></button>';
+      box.innerHTML = h;
+    }
+    function notaAberta(n) {
+      var pares = [];
+      if (n.data) pares.push(['Emissão', fData(n.data) + ' · ' + diaSem(n.data, true)]);
+      if (n.vend) pares.push(['Vendedor', n.vend]);
+      if (n.fil) pares.push(['Filial', n.fil]);
+      // RECORTE MSB: sem a linha Empresa (é sempre MSB)
+      var h = '<div class="sdd-nf-x">';
+      if (pares.length) h += '<dl class="sd-dw-dl">' + pares.map(function (p) { return '<div><dt>' + esc(p[0]) + '</dt><dd>' + esc(p[1]) + '</dd></div>'; }).join('') + '</dl>';
+      h += '<div class="sdd-sub">O que compõe a nota</div><div class="sd-cmp">' + n.fams.map(function (f) {
+        var p = n.v ? f.v / n.v : 0;
+        var sub = [f.est, f.vert].filter(function (x, i, a) { return x && a.indexOf(x) === i; }).join(' · ');
+        return '<div class="sd-cmp-r"><span class="t">' + esc(f.fam || 'Sem família') + '<small>' + esc(sub) + '</small></span>' +
+          '<span class="v">' + esc(fBRL(f.v)) + '<small>' + esc(fPct(p)) + '</small></span><span class="tr" aria-hidden="true"><span style="--p:' + (Math.max(0, Math.min(1, p)) * 100).toFixed(1) + '%"></span></span></div>';
+      }).join('') + '</div>';
+      h += '<div class="sdd-sub">Itens da nota</div>' + itensH(n);
+      return h + '</div>';
+    }
+    function itensH(n) {
+      if (n.id === '—') return '<div class="sd-dw-nada">Linha sem nº de nota: não dá para ler os itens.</div>';
+      var it = ITENS.get(chaveItens(n.id));
+      if (!it || it.st === 'carregando') return carregandoH('Lendo os itens no Power BI…');
+      if (it.st === 'erro') return erroH('Não deu para ler os itens', it.erro, 'itens', n.id);
+      if (!it.rows.length) return '<div class="sd-dw-nada">O Power BI não trouxe itens para esta nota.</div>';
+      // com filtro cruzado de família/estratégia/vertical a lista de itens
+      // continua da nota inteira (o filtro é das linhas, não do item)
+      return '<div class="sd-its">' + it.rows.map(function (r, i) {
+        var meta = [r.cod ? 'cód. ' + r.cod : null, r.fam].filter(Boolean).join(' · ');
+        var qx = r.qt != null ? r.qt.toLocaleString('pt-BR', { maximumFractionDigits: 2 }) + (r.qt === 1 ? ' unidade' : ' unidades') : '';
+        return '<div class="sd-it"><div class="n">' + (i + 1) + '</div><div class="c"><div class="t">' + esc(r.prod || 'Produto sem nome') + '</div>' +
+          (meta ? '<div class="s">' + esc(meta) + '</div>' : '') + '</div><div class="v"><b>' + esc(fBRL(r.v)) + '</b>' + (qx ? '<span>' + esc(qx) + '</span>' : '') + '</div></div>';
+      }).join('') + '</div>';
+    }
+
+    // ── Excel ─────────────────────────────────────────────────────
+    function exportar() {
+      var E = S.E; if (!E || !E.linhas.length) return;
+      var X = root.XLSX;
+      if (!X) { try { root.alert('A biblioteca do Excel não carregou.'); } catch (e) { } return; }
+      var c = S.ctx || {}, wb = X.utils.book_new();
+      K.abas(E, K.nome(S.rot, c)).forEach(function (a) { X.utils.book_append_sheet(wb, X.utils.aoa_to_sheet(a[1]), a[0]); });
+      X.writeFile(wb, K.arquivo(S.rot, c));
+      var t = no('xlt'); if (t) { t.textContent = 'Baixado'; clearTimeout(exportar._t); exportar._t = setTimeout(function () { t.textContent = T.xls; }, 1600); }
+    }
+
+    EU = {
+      // a série nova do gráfico (filtro trocado): a ficha aberta relê o mesmo rótulo
+      serie: function (dados, ctx) {
+        dados = dados || {};
+        S.serie = { labels: (dados.labels || []).map(String), valores: (dados.valores || []).slice(), brutos: dados.brutos ? dados.brutos.slice() : null };
+        S.ctx = ctx || null;
+        if (S.rot != null && EL && EL.classList.contains('open')) {
+          if (S.serie.labels.indexOf(S.rot) >= 0) ir(S.rot); else fechar();
+        }
+      },
+      abrir: function (rotulo, origem) { abrir(rotulo, origem); },
+      fechar: fechar,
+      estado: function () {
+        var o = { rotulo: S.rot, filtro: S.sel, quebra: S.quebra, busca: S.busca, nivel: NIVEL, cache: CACHE.size, itens: ITENS.size,
+          rotulos: S.serie ? S.serie.labels.length : 0, diagnostico: S.E ? S.E.diag : null };
+        o[K.chave] = S.rot;
+        return o;
+      }
+    };
+    FICHAS.push(EU);
+    return EU;
   }
 
-  function kpis(P, E, c, iso) {
+  // ══════════════════════════════════════════════════════════════
+  // A FICHA DO DIA
+  // ══════════════════════════════════════════════════════════════
+  function isoDoDia(c, rot) { return c.mes && c.ano ? isoDia(c.ano, c.mes, rot) : null; }
+  function kpisDia(P, E) {
     var tot = P.v, h = '<div class="sd-dw-kpis">';
     var pPer = P.tot ? tot / P.tot : null;
     h += kp('Faturado no dia', fBRLp(tot), pPer != null ? esc(fPct(pPer) + ' do período') : '', 'destaque');
@@ -777,103 +924,7 @@
     if (E && E.mg && E.mg.mp != null) h += kp('Margem do dia', esc(fPct1(E.mg.mp)), E.mpPer != null ? esc(fPP(E.mg.mp - E.mpPer) + ' vs período') : '');
     return h + '</div>';
   }
-
-  function secDiag(E) {
-    var d = E.diag;
-    return '<section class="sd-dw-card sdd-diag"><h5>Diagnóstico do dia</h5><p class="sdd-man">' + esc(d.manchete) + '</p><ul class="sdd-dg">' +
-      d.itens.map(function (i) {
-        return '<li class="' + i.tom + '"><span class="dot" aria-hidden="true"></span><div><b>' + esc(i.tt) + '</b><span>' + esc(i.ds) + '</span></div></li>';
-      }).join('') + '</ul></section>';
-  }
-
-  // uma quebra: linhas clicáveis (filtro cruzado); abas = as outras quebras
-  function secQuebra(dim, grupos, titulo, abas) {
-    var todos = !!S.todos[dim], lista = todos ? grupos : grupos.slice(0, TOPN);
-    var outra = S.sel && S.sel.dim !== dim;
-    var h = '<section class="sd-dw-card sdd-q"><h5>' + esc(titulo) + ' <small>' + esc(fInt(grupos.length)) + '</small>' + (outra ? '<em>no filtro</em>' : '') + '</h5>';
-    if (abas) {
-      h += '<div class="sdd-tabs" role="group" aria-label="Escolher a quebra">' + abas.map(function (d) {
-        var on = d === dim;
-        return '<button type="button" data-sdd-q="' + d + '" aria-pressed="' + on + '"' + (on ? ' class="on"' : '') + '>' + esc(QUEBRAS[d][0]) + '</button>';
-      }).join('') + '</div>';
-    }
-    if (!grupos.length) return h + '<div class="sd-dw-nada">Nada neste recorte.</div></section>';
-    h += '<div class="sdd-rows">' + lista.map(function (gr) {
-      var on = !!S.sel && S.sel.dim === dim && S.sel.k === gr.k, nome = nomeDe(dim, gr.k);
-      var sub;
-      if (dim === 'est') sub = plural(gr.n, 'nota', 'notas') + ' · ' + plural(gr.subs.length, 'família', 'famílias');
-      else if (dim === 'fam') sub = [gr.subs[0] || null, plural(gr.n, 'nota', 'notas')].filter(Boolean).join(' · ');
-      else if (dim === 'cli') sub = [gr.subs[0] || null, plural(gr.n, 'nota', 'notas')].filter(Boolean).join(' · ');
-      else sub = plural(gr.n, 'nota', 'notas') + ' · ' + plural(gr.subs.length, 'cliente', 'clientes');
-      var w = Math.max(0, Math.min(1, gr.p)) * 100;
-      return '<button type="button" class="sdd-r' + (on ? ' on' : '') + '" data-sdd-sel="' + dim + '" data-k="' + esc(gr.k == null ? '' : gr.k) + '" aria-pressed="' + on + '" title="' +
-        esc(on ? 'tirar o filtro' : 'filtrar a ficha por ' + nome) + '"><span class="t">' + esc(nome) + '<small>' + esc(sub) + '</small></span>' +
-        '<span class="v">' + esc(fBRL(gr.v)) + '<small>' + esc(fPct(gr.p)) + '</small></span><span class="tr" aria-hidden="true"><span style="--p:' + w.toFixed(1) + '%"></span></span></button>';
-    }).join('') + '</div>';
-    if (grupos.length > TOPN) {
-      h += '<button type="button" class="sdd-todos" data-sdd="todos" data-q="' + dim + '">' +
-        (todos ? 'Mostrar só ' + (dim === 'cli' || dim === 'vend' ? 'os' : 'as') + ' ' + TOPN + ' maiores' : 'Ver ' + (dim === 'cli' || dim === 'vend' ? 'todos' : 'todas') + ' (' + fInt(grupos.length) + ')') + '</button>';
-    }
-    return h + '</section>';
-  }
-
-  // a lista de notas (só ela repinta na busca: o campo não perde o foco)
-  function pintarNotas() {
-    var box = D.getElementById('sdd-nfs'); if (!box || !S.E) return;
-    var todas = S.vistas || [], lista = buscarNotas(todas, S.busca), vis = lista.slice(0, S.lim);
-    var somaL = lista.reduce(function (s, n) { return s + n.v; }, 0), soma = S.E.soma;
-    setTxt('sdd-nfs-n', fInt(todas.length));
-    setHTML('sdd-nfs-info', '<b>' + esc(lista.length !== todas.length ? fInt(lista.length) + ' de ' + plural(todas.length, 'nota', 'notas') : plural(lista.length, 'nota', 'notas')) + '</b> · ' + esc(fMi(somaL)));
-    if (!lista.length) { box.innerHTML = '<div class="sd-dw-nada">' + (S.busca.trim() ? 'Nada com “' + esc(S.busca.trim()) + '”.' : 'Nenhuma nota neste recorte.') + '</div>'; return; }
-    var inteiras = {}; S.E.notas.forEach(function (n) { inteiras[n.id] = n.v; });
-    var h = vis.map(function (n) {
-      var on = S.aberta === n.id, f0 = n.fams[0];
-      var fam = f0 ? (f0.fam || '—') + (n.fams.length > 1 ? ' +' + (n.fams.length - 1) : '') : '';
-      var parte = S.sel && Math.abs((inteiras[n.id] || 0) - n.v) > 0.005;
-      return '<div class="sdd-nf' + (on ? ' open' : '') + '"><button type="button" class="sdd-nf-h" data-sdd-nf="' + esc(n.id) + '" aria-expanded="' + on + '">' +
-        '<span class="id"><b>' + esc(n.id === '—' ? 'sem nº' : 'NF ' + n.id) + '</b><small>' + esc(soma ? fPct(n.v / soma) + ' do dia' : '') + '</small></span>' +
-        '<span class="cli"><b>' + esc(n.cli || '—') + '</b><small>' + esc([fam, n.uf].filter(Boolean).join(' · ')) + '</small></span>' +
-        '<span class="v"><b>' + esc(fBRL(n.v)) + '</b>' + (parte ? '<small>de ' + esc(fBRL(inteiras[n.id])) + '</small>' : '') + '</span>' + IC_SETA + '</button>' +
-        (on ? notaAberta(n) : '') + '</div>';
-    }).join('');
-    var resto = lista.length - vis.length;
-    if (resto > 0) h += '<button type="button" class="sdd-todos" data-sdd="mais">Mostrar mais ' + esc(fInt(Math.min(PASSO, resto))) + ' <span>faltam ' + esc(fInt(resto)) + '</span></button>';
-    box.innerHTML = h;
-  }
-  function notaAberta(n) {
-    var pares = [];
-    if (n.data) pares.push(['Emissão', fData(n.data) + ' · ' + diaSem(n.data, true)]);
-    if (n.vend) pares.push(['Vendedor', n.vend]);
-    if (n.fil) pares.push(['Filial', n.fil]);
-    // RECORTE MSB: sem a linha Empresa (é sempre MSB)
-    var h = '<div class="sdd-nf-x">';
-    if (pares.length) h += '<dl class="sd-dw-dl">' + pares.map(function (p) { return '<div><dt>' + esc(p[0]) + '</dt><dd>' + esc(p[1]) + '</dd></div>'; }).join('') + '</dl>';
-    h += '<div class="sdd-sub">O que compõe a nota</div><div class="sd-cmp">' + n.fams.map(function (f) {
-      var p = n.v ? f.v / n.v : 0;
-      var sub = [f.est, f.vert].filter(function (x, i, a) { return x && a.indexOf(x) === i; }).join(' · ');
-      return '<div class="sd-cmp-r"><span class="t">' + esc(f.fam || 'Sem família') + '<small>' + esc(sub) + '</small></span>' +
-        '<span class="v">' + esc(fBRL(f.v)) + '<small>' + esc(fPct(p)) + '</small></span><span class="tr" aria-hidden="true"><span style="--p:' + (Math.max(0, Math.min(1, p)) * 100).toFixed(1) + '%"></span></span></div>';
-    }).join('') + '</div>';
-    h += '<div class="sdd-sub">Itens da nota</div>' + itensH(n);
-    return h + '</div>';
-  }
-  function itensH(n) {
-    if (n.id === '—') return '<div class="sd-dw-nada">Linha sem nº de nota: não dá para ler os itens.</div>';
-    var it = ITENS.get(chaveItens(n.id));
-    if (!it || it.st === 'carregando') return carregandoH('Lendo os itens no Power BI…');
-    if (it.st === 'erro') return erroH('Não deu para ler os itens', it.erro, 'itens', n.id);
-    if (!it.rows.length) return '<div class="sd-dw-nada">O Power BI não trouxe itens para esta nota.</div>';
-    // com filtro cruzado de família/estratégia/vertical a lista de itens
-    // continua da nota inteira (o filtro é das linhas do dia, não do item)
-    return '<div class="sd-its">' + it.rows.map(function (r, i) {
-      var meta = [r.cod ? 'cód. ' + r.cod : null, r.fam].filter(Boolean).join(' · ');
-      var qx = r.qt != null ? r.qt.toLocaleString('pt-BR', { maximumFractionDigits: 2 }) + (r.qt === 1 ? ' unidade' : ' unidades') : '';
-      return '<div class="sd-it"><div class="n">' + (i + 1) + '</div><div class="c"><div class="t">' + esc(r.prod || 'Produto sem nome') + '</div>' +
-        (meta ? '<div class="s">' + esc(meta) + '</div>' : '') + '</div><div class="v"><b>' + esc(fBRL(r.v)) + '</b>' + (qx ? '<span>' + esc(qx) + '</span>' : '') + '</div></div>';
-    }).join('') + '</div>';
-  }
-
-  function comoConta(iso, rot, nivel) {
+  function comoContaDia(iso, rot, nivel) {
     return '<details class="sd-dw-card sd-dw-mais"><summary><h5>Como conta</h5></summary>'
       + '<p class="sd-dw-p">' + (iso ? 'Entram as notas fiscais com data de <b>' + esc(fData(iso)) + '</b>' : 'Entram as notas fiscais com data no <b>dia ' + esc(rot) + '</b> de cada mês do período')
       + ', com as mesmas regras do gráfico: fora intercompany, só operações que geram fatura a receber e sem as notas ocultadas pelo negócio. Só a empresa <b>MSB</b>; o filtro de <b>Tipo de Cliente</b> vale aqui — a ficha soma igual à barra.</p>'
@@ -882,41 +933,41 @@
       + (nivel ? '<p class="sd-dw-p">O seu usuário não tem acesso a todas as colunas no Power BI: ' + (nivel >= 2 ? 'estratégia, ' : '') + 'filial, vendedor e data ficam de fora.</p>' : '')
       + '</details>';
   }
-
-  // ── Excel do dia ────────────────────────────────────────────────
-  function exportar() {
-    var E = S.E; if (!E || !E.linhas.length) return;
-    var X = root.XLSX;
-    if (!X) { try { root.alert('A biblioteca do Excel não carregou.'); } catch (e) { } return; }
-    var c = S.ctx || {}, iso = c.mes && c.ano ? isoDia(c.ano, c.mes, S.dia) : null;
-    var nome = rotuloDia(S.dia, iso) + (c.periodo && !iso ? ' · ' + c.periodo : '');
-    var P = planilhas(E, nome), wb = X.utils.book_new();
-    X.utils.book_append_sheet(wb, X.utils.aoa_to_sheet(P.notas), 'Notas');
-    X.utils.book_append_sheet(wb, X.utils.aoa_to_sheet(P.linhas), 'Linhas');
-    X.utils.book_append_sheet(wb, X.utils.aoa_to_sheet(P.diag), 'Diagnóstico');
-    var arq = iso ? iso.split('-').reverse().join('-') : 'dia-' + S.dia + (c.ano ? '-' + [].concat(c.ano).join('+') : '');
-    X.writeFile(wb, 'Faturamento_' + arq + '.xlsx');
-    var t = D.getElementById('sdd-xlt'); if (t) { t.textContent = 'Baixado'; clearTimeout(exportar._t); exportar._t = setTimeout(function () { t.textContent = 'Excel do dia'; }, 1600); }
-  }
-
-  // ══════════════════════════════════════════════════════════════
-  // API
-  // ══════════════════════════════════════════════════════════════
-  root.SRDia = {
-    // a série nova do gráfico (filtro trocado): a ficha aberta relê o mesmo dia
-    serie: function (dados, ctx) {
-      dados = dados || {};
-      S.serie = { labels: (dados.labels || []).map(String), valores: (dados.valores || []).slice(), brutos: dados.brutos ? dados.brutos.slice() : null };
-      S.ctx = ctx || null;
-      if (S.dia != null && EL && EL.classList.contains('open')) {
-        if (S.serie.labels.indexOf(S.dia) >= 0) ir(S.dia); else fechar();
-      }
+  var DIA = {
+    id: 'sdd', chave: 'dia',
+    t: { un: 'dia', doUn: 'do dia', uns: 'dias', ant: 'Dia anterior com faturamento', prox: 'Próximo dia com faturamento', xls: 'Excel do dia' },
+    // a consulta do gráfico + 'Calendário'[Dia] = N, com o literal do tipo que o modelo devolveu
+    base: function (c, serie, rot) {
+      var i = serie ? serie.labels.indexOf(String(rot)) : -1;
+      var bruto = i >= 0 && serie.brutos ? serie.brutos[i] : undefined;
+      return (c.filtros || []).concat(predDia(bruto, rot));
     },
-    abrir: function (rotulo, origem) { abrir(rotulo, origem); },
-    fechar: fechar,
-    estado: function () {
-      return { dia: S.dia, filtro: S.sel, quebra: S.quebra, busca: S.busca, nivel: NIVEL, cache: CACHE.size, itens: ITENS.size,
-        dias: S.serie ? S.serie.labels.length : 0, diagnostico: S.E ? S.E.diag : null };
+    modelo: modelo,
+    cab: function (rot, c, P) {
+      var iso = isoDoDia(c, rot), hoje = !!iso && iso === hojeISO(), tags = [];
+      if (hoje) tags.push('<span class="sd-dw-tag vd">Hoje · em andamento</span>');
+      if (P.rank === 1 && P.n > 1) tags.push('<span class="sd-dw-tag az">Maior dia do período</span>');
+      if (iso) { var w = new Date(iso + 'T12:00:00').getDay(); if (w === 0 || w === 6) tags.push('<span class="sd-dw-tag">Fim de semana</span>'); }
+      // RECORTE MSB: sem o selo por empresa (BIO · R$ … / MSB · R$ …) — só há a MSB
+      return { k: 'Faturamento do dia' + (hoje ? ' · hoje' : ''), tt: rotuloDia(rot, iso), sub: (iso ? '' : 'O dia ' + rot + ' de cada mês · ') + (c.periodo || ''), tags: tags };
+    },
+    kpis: kpisDia,
+    comoConta: function (rot, c, nivel) { return comoContaDia(isoDoDia(c, rot), rot, nivel); },
+    mostraData: function (E) { return E.multi; },
+    margem: function (base, meds) { return daxMargem(base, meds); },
+    lerMargem: function (r) { return { mp: numOu(campo(r, '[mp]')), mn: numOu(campo(r, '[mn]')) }; },
+    nome: function (rot, c) { var iso = isoDoDia(c, rot); return rotuloDia(rot, iso) + (c.periodo && !iso ? ' · ' + c.periodo : ''); },
+    abas: function (E, nome) { var P = planilhas(E, nome); return [['Notas', P.notas], ['Linhas', P.linhas], ['Diagnóstico', P.diag]]; },
+    arquivo: function (rot, c) {
+      var iso = isoDoDia(c, rot);
+      return 'Faturamento_' + (iso ? iso.split('-').reverse().join('-') : 'dia-' + rot + (c.ano ? '-' + [].concat(c.ano).join('+') : '')) + '.xlsx';
     }
   };
+
+  // ══════════════════════════════════════════════════════════════
+  // API — SRDia é a ficha do dia; SRDia.ficha e SRDia.core servem o mês
+  // ══════════════════════════════════════════════════════════════
+  root.SRDia = ficha(DIA);
+  root.SRDia.ficha = ficha;
+  root.SRDia.core = CORE;
 })(typeof window !== 'undefined' ? window : this);

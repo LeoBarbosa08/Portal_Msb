@@ -2313,6 +2313,50 @@ cabeçalho (o "BIO · R$ … / MSB · R$ …" do completo), nem linha da nota; o
 - `sw.js` sem troca de versão: a página é rede-primeiro e os arquivos novos
   entram com `?v=1`.
 
+### Sales Report · ficha do mês na Evolução Mensal (13/11/2026)
+
+Pedido do dono: "faça a mesma coisa só que por mês" — "para os meses fechados
+também, no gráfico de cima". Clicar numa coluna do **Evolução Mensal** (os 12
+meses do ano, com a linha da meta) abre a **ficha do mês**, no mesmo painel da
+ficha do dia — para qualquer mês: fechado, em andamento ou por vir.
+
+- **Números do mês**: faturado (% do ano), notas fiscais (ticket médio),
+  clientes (o maior), **meta do mês** (atingimento; no mês corrente, "meta até
+  hoje" com os dias úteis corridos), contra a média dos **meses fechados** e a
+  margem do mês contra a do ano.
+- **Diagnóstico do mês**: força (só mês fechado, contra a média dos meses
+  fechados e o mês anterior); meta (fechado: batida ou o que faltou; em
+  andamento: o ritmo por dia útil, quanto falta por dia útil e a projeção do
+  fechamento); **acumulado do ano** contra a meta acumulada (no mês corrente,
+  só até o último mês fechado); os dias do mês (em quantos faturou, o melhor
+  dia); concentração; cliente; o que puxou; margem contra o ano; negativos;
+  mês em andamento. Mês por vir: só a meta dele.
+- Quebras com filtro cruzado — em **Outras quebras › Data** ficam os dias do
+  mês —, notas fiscais com busca e os itens, ‹ › entre os meses com
+  faturamento, a coluna do mês aberto em petróleo, **Excel do mês** (abas
+  Notas, Linhas, Por dia e Diagnóstico). O rodapé põe o mês entre os meses
+  fechados ("2º de 10 meses fechados"); o corrente fica fora do ranking.
+- A consulta é a do gráfico (o novo `filtrosMensal()` da página, usado pelo
+  faturamento, pela meta e pela ficha) + `YEAR = ano` e `MONTH = mês`: a
+  ficha soma igual à coluna. O ano é o do gráfico (o maior ano escolhido); o
+  filtro de período não muda nem o gráfico nem a ficha. A margem do ano vem
+  na mesma consulta da do mês (`"mpa"`, só para quem vê a margem).
+
+**O motor ficou comum**: o painel do `sr-dia.js` virou `SRDia.ficha(K)` — a
+ficha do dia é uma especificação (`DIA`, ids `sdd-*`, comportamento igual) e a
+do mês é outra (`MES`, ids `sdm-*`, no `sr-mes.js`, que usa `SRDia.core`).
+Abrir uma ficha fecha a outra (e a do pedido/nota do `sr-diario.js`).
+
+- `sr-mes.js` (novo, carrega depois do `sr-dia.js?v=2`); mesmo `sr-dia.css`.
+- Testes: `node scripts/test-sr-mes.js` (66 verificações, "hoje" fixo em
+  13/11/2026) e `node scripts/test-sr-dia.js` (90, sem mudança).
+- Teste local: o `.claude/fake-pbi-generico.js` responde também o Evolução
+  Mensal (faturamento e meta) e a ficha do mês. O service worker serve o
+  arquivo do fake do cache primeiro: depois de mexer nele, recarregue duas
+  vezes. Com a janela do app minimizada o navegador do teste não desenha
+  quadros, e aí o Chart.js não recebe o clique (ele despacha no quadro
+  seguinte) e o painel fechado fica parado na tela — não é defeito da página.
+
 ## Como colocar no ar
 
 1. **Repositório no GitHub** — crie um repositório **privado e vazio** (sem
