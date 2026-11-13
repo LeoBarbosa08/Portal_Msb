@@ -2274,6 +2274,45 @@ carrega `sr-diario.css` e usa as classes `.sd-dw` (nada copiado).
 - Testes: `node scripts/test-faturamento-dia.js` (caso 6b). `sw.js` — cache
   `bm-comest-v80` (v77–v79 foram de outras sessões no mesmo dia).
 
+### Sales Report · ficha do dia no Faturamento por Dia (13/11/2026)
+
+Pedido do dono: "no salesreport, quero que você implemente esse modal quando
+clicar nas colunas, igual aqui do portal da bio". Veio do portal completo
+(`b093755`, 23/10/2026 — depois da cópia deste portal): clicar numa coluna do
+gráfico **Faturamento por Dia** (Visão Geral) abre, à direita, a **ficha do
+dia**, no mesmo painel `.sd-dw` das listas Pedidos em andamento / Faturamento
+diário.
+
+- **Números do dia**: faturado (% do período), notas fiscais (ticket médio),
+  clientes (o maior), contra a média dos dias com faturamento, ritmo da meta
+  (só com um mês no período: meta do mês ÷ dias úteis seg–sex) e a margem do
+  dia contra a do período (só para quem vê a margem — memória de OLS do freio).
+- **Diagnóstico do dia**, escrito a partir dos números: força do dia, ritmo
+  da meta, concentração das notas, peso do cliente, o que puxou (estratégia,
+  família), margem, valores negativos, fim de semana, hoje em andamento e
+  vários meses no mesmo dia.
+- **Quebras** por estratégia, família, cliente e as outras (vertical, filial,
+  UF, vendedor; data com vários meses) — clicar numa linha filtra o resto da
+  ficha (filtro cruzado). **Notas fiscais** do dia com busca; clicar abre a
+  nota com emissão, vendedor, filial, o que a compõe e os itens lidos na hora.
+- ‹ › e ← → andam entre os dias com faturamento; Esc fecha; Enter no gráfico
+  abre o último dia; a barra do dia aberto fica petróleo. **Excel do dia**
+  (abas Notas, Linhas e Diagnóstico).
+- A consulta é a do gráfico (mesmo filtro-base, com a Empresa fixa em MSB) +
+  `'Calendário'[Dia] = N`: a ficha soma igual à barra.
+
+**RECORTE MSB** (no `sr-dia.js`): a empresa não vira quebra, nem selo no
+cabeçalho (o "BIO · R$ … / MSB · R$ …" do completo), nem linha da nota; o
+"Como conta" diz "Só a empresa MSB". A coluna continua na consulta e no Excel.
+
+- `sr-dia.js` + `sr-dia.css` (convertido pelo `scripts/msb-cores.js` — não
+  converta de novo); `pages/comercial-sales-report.html` liga o gráfico.
+- Testes: `node scripts/test-sr-dia.js` (90 verificações, com o recorte MSB).
+- Teste local: o `.claude/fake-pbi-generico.js` responde o gráfico e a ficha
+  do dia com notas sintéticas por dia útil (devolução no dia 5).
+- `sw.js` sem troca de versão: a página é rede-primeiro e os arquivos novos
+  entram com `?v=1`.
+
 ## Como colocar no ar
 
 1. **Repositório no GitHub** — crie um repositório **privado e vazio** (sem

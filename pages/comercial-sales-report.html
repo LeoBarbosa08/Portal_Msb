@@ -16,6 +16,8 @@
   <link rel="stylesheet" href="../portal-v3.css?v=2">
   <!-- Pedidos em andamento + Faturamento Diário: listas no molde das Negociações e a ficha à direita -->
   <link rel="stylesheet" href="../sr-diario.css?v=2">
+  <!-- Faturamento por Dia: clicar na barra abre a ficha do dia à direita (tudo o que foi faturado + diagnóstico) -->
+  <link rel="stylesheet" href="../sr-dia.css?v=1">
   <script src="../portal-motion.js?v=3" defer></script>
   <!-- Tema claro/escuro (menu do avatar): marca o <html> antes de pintar + camada escura -->
   <script>try{if(localStorage.getItem('bm-tema')==='escuro')document.documentElement.setAttribute('data-tema','escuro')}catch(e){}</script>
@@ -577,8 +579,8 @@
             <!-- ── GRÁFICO DIÁRIO ──────────────────────────────── -->
             <div class="sr-mid" style="grid-template-columns:1fr;">
               <div class="sr-panel">
-                <h4>Faturamento por Dia</h4>
-                <div class="sr-chart-wrap"><canvas id="sr-chart-daily"></canvas></div>
+                <h4>Faturamento por Dia <span class="sr-dia-dica">clique na barra para ver tudo o que foi faturado no dia</span></h4>
+                <div class="sr-chart-wrap"><canvas id="sr-chart-daily" tabindex="0" role="img" aria-label="Faturamento por dia. Clique numa barra para abrir a ficha do dia; com o teclado, Enter abre o último dia com faturamento e as setas andam entre os dias."></canvas></div>
               </div>
             </div>
 
@@ -774,11 +776,22 @@
           }
 
           // ── Gráfico diário (alimentado pelo Power BI) ──────────
-          let _chartDiario = null;
+          // Clicar na coluna do dia (a barra ou o vão acima dela) abre a ficha
+          // do dia à direita (../sr-dia.js); a barra do dia aberto fica petróleo.
+          let _chartDiario = null, _diaMarcado = null;
+          const _coresDiario = (labels, valores) => valores.map((v, i) =>
+            labels[i] === _diaMarcado ? 'rgba(26,81,96,.92)' : (Number(v) > 0 ? 'rgba(39,208,69,.7)' : 'rgba(206,213,218,.45)'));
+          window.srDiaMarcar = function(rotulo){
+            _diaMarcado = rotulo == null ? null : String(rotulo);
+            if(!_chartDiario) return;
+            const d = _chartDiario.data;
+            d.datasets[0].backgroundColor = _coresDiario(d.labels, d.datasets[0].data);
+            _chartDiario.update('none');
+          };
           window.renderChartDiario = function(labels, valores){
             const el = document.getElementById('sr-chart-daily');
             if(!el || typeof Chart === 'undefined') return;
-            const cores = valores.map(v => Number(v) > 0 ? 'rgba(39,208,69,.7)' : 'rgba(206,213,218,.45)');
+            const cores = _coresDiario(labels, valores);
             if(_chartDiario){
               _chartDiario.data.labels = labels;
               _chartDiario.data.datasets[0].data = valores;
@@ -786,12 +799,21 @@
               _chartDiario.update();
               return;
             }
+            // teclado: Enter abre o último dia com faturamento (na ficha, ← → andam)
+            el.addEventListener('keydown', e => {
+              if((e.key !== 'Enter' && e.key !== ' ') || !_chartDiario || !window.SRDia) return;
+              const d = _chartDiario.data, vs = d.datasets[0].data;
+              for(let i = vs.length - 1; i >= 0; i--) if(Number(vs[i]) > 0){ e.preventDefault(); window.SRDia.abrir(d.labels[i], el); return; }
+            });
             _chartDiario = new Chart(el.getContext('2d'),{
               type:'bar',
               data:{ labels, datasets:[{ label:'Faturamento', data:valores, backgroundColor:cores, borderRadius:3, borderSkipped:false }] },
               options:{
                 responsive:true, maintainAspectRatio:false,
-                plugins:{ legend:{ display:false }, tooltip:{ callbacks:{ label:c=>'R$ '+Number(c.raw).toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2}) } } },
+                interaction:{ mode:'index', intersect:false },
+                onClick:(evt, els, ch) => { if(els && els.length && window.SRDia) window.SRDia.abrir(ch.data.labels[els[0].index], el); },
+                onHover:(evt, els) => { const c = evt && evt.native && evt.native.target; if(c) c.style.cursor = els && els.length && window.SRDia ? 'pointer' : ''; },
+                plugins:{ legend:{ display:false }, tooltip:{ callbacks:{ label:c=>'R$ '+Number(c.raw).toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2}), footer:()=>window.SRDia ? 'clique para ver o dia' : '' } } },
                 scales:{
                   x:{ grid:{ display:false }, ticks:{ font:{ size:10 }, maxRotation:0, autoSkip:true, autoSkipPadding:8 } },
                   y:{ grid:{ color:'rgba(16,24,30,.05)' }, ticks:{ font:{ size:10 }, callback:v=>'R$'+(v/1000).toFixed(0)+'k' } }
@@ -1072,6 +1094,7 @@
 <script src="../sr-intercompany.js?v=1"></script>
 <script src="../sr-regional.js?v=1"></script>
 <script src="../sr-diario.js?v=4"></script>
+<script src="../sr-dia.js?v=1"></script>
 <script>
 // ================================================================
 // POWER BI — Autenticação automática e busca de dados reais
@@ -1357,8 +1380,10 @@ async function medirPedidos(periodFilters, segFiltro) {
 }
 
 // ── Faturamento por dia (eixo X = Calendário[Dia]) ──
+// brutos = o Calendário[Dia] como o modelo devolveu: a ficha do dia
+// (../sr-dia.js) filtra por ele com o literal do tipo certo
 async function medirFaturamentoDiario(filtros) {
-  const out = { labels: [], valores: [] };
+  const out = { labels: [], valores: [], brutos: [] };
   try {
     const fStr = filtros.join(', ');
     const rows = await pbiQuery(`EVALUATE CALCULATETABLE(ADDCOLUMNS(VALUES('Calendário'[Dia]), "Fat", [Faturamento]), ${fStr})`);
@@ -1367,11 +1392,12 @@ async function medirFaturamentoDiario(filtros) {
     const kLabel = keys.find(k => /\[Dia\]/i.test(k)) || keys[0];
     const kVal   = keys.find(k => /Fat/i.test(k) && k !== kLabel) || '[Fat]';
     const dados = rows
-      .map(r => ({ dia: Number(r[kLabel]), valor: Number(r[kVal]) || 0 }))
+      .map(r => ({ dia: Number(r[kLabel]), bruto: r[kLabel], valor: Number(r[kVal]) || 0 }))
       .filter(x => !isNaN(x.dia))
       .sort((a, b) => a.dia - b.dia);
     out.labels  = dados.map(x => String(x.dia));
     out.valores = dados.map(x => x.valor);
+    out.brutos  = dados.map(x => x.bruto);
   } catch (e) { console.warn('[PBI] faturamento diário falhou:', e.message); }
   return out;
 }
@@ -1950,8 +1976,16 @@ async function aplicarFiltroFaturamento() {
     if (mbar && r.mpct != null) mbar.style.width = Math.max(0, Math.min(r.mpct, 100)) + '%';
     pintarRegionais(regionais);
 
-    // Gráfico Faturamento por Dia
+    // Gráfico Faturamento por Dia + a ficha do dia (clique na barra): o mesmo
+    // filtro-base do gráfico, e o consolidado do período para o diagnóstico
+    // (meta → ritmo do mês; margem → a do dia contra a do período)
     if (window.renderChartDiario) window.renderChartDiario(diario.labels, diario.valores);
+    if (window.SRDia) window.SRDia.serie(diario, {
+      filtros: filtrosDia, query: pbiQuery, periodo: labelPeriodo + srSufixoValores(),
+      mes: meses.length === 1 && anos.length === 1 && !f.tri && !f.sem ? meses[0] : null,
+      ano: anos.length === 1 ? anos[0] : null,
+      resumo: msbio, marcar: window.srDiaMarcar
+    });
 
     // Gráfico Evolução Mensal
     if (window.renderChartMensal) window.renderChartMensal(evol, metaEvol);
