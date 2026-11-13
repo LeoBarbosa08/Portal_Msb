@@ -57,43 +57,148 @@
         <div class="area-main">
 
           <!-- ═══════════ KANBAN · RASTREIO DE ENTREGA ═══════════
-               13/11/26 (pedido do dono): módulo do menu lateral do Kanban
-               (NAV.kanban em nav-sidebar.js). Nasceu junto com o Cálculo de Frete numa
-               página só, com abas; o dono pediu para dividir. Ainda SEM regra:
-               o dono vai dizer como rastrear. -->
+               13/11/26 (pedido do dono): três fases —
+                 EXPEDIÇÃO           o histórico da expedição, com a regra da coluna
+                                     Expedição do Kanban (carga com o envio confirmado),
+                                     de todos os dias desde RASTREIO_DESDE (11/11/2026)
+                 AGUARDANDO REVISÃO  o ROBÔ achou a NF entregue na transportadora (Brix):
+                                     a OV anda sozinha, com o recebedor e o comprovante
+                 ENTREGUE            o OPERADOR conferiu e concluiu na ficha
+               O robô roda a cada 30 min (agendamento do GitHub Actions) e quando a
+               tela abre com a última consulta mais velha que isso. Motor e regras:
+               api/shared/rastreio.js, brix.js, rastreio-store.js; rota /api/rastreio. -->
           <style>
-            .rf-head{display:flex;align-items:flex-end;justify-content:space-between;gap:16px;flex-wrap:wrap;padding:22px 0 14px;}
-            .rf-bc{font-size:12px;color:var(--text-3);}
-            .rf-title{margin:4px 0 0;font-size:23px;font-weight:800;letter-spacing:-.5px;color:var(--text);}
-            .rf-card{border:1px solid var(--border);border-radius:14px;background:var(--surface);padding:22px 22px 24px;}
-            .rf-card h2{display:flex;align-items:center;gap:10px;margin:0;font-size:16px;font-weight:800;color:var(--text);}
-            .rf-card h2 .ic{display:inline-flex;align-items:center;justify-content:center;width:34px;height:34px;border-radius:10px;background:#E6F2F5;color:#1B6072;flex-shrink:0;}
-            .rf-card h2 .ic svg{width:18px;height:18px;}
-            .rf-card p{margin:12px 0 0;font-size:13px;line-height:1.55;color:var(--text-2);max-width:68ch;}
-            .rf-pend{display:inline-flex;align-items:center;gap:7px;margin-top:16px;padding:6px 11px;border-radius:999px;background:#FFF6D6;border:1px solid #F3E2A3;color:#7A5A06;font-size:12px;font-weight:700;}
-            .rf-pend i{width:7px;height:7px;border-radius:50%;background:currentColor;opacity:.8;}
-            html[data-tema="escuro"] .rf-card h2 .ic{background:#1E3438;color:#8FD3E0;}
-            html[data-tema="escuro"] .rf-pend{background:#3A3320;border-color:#5A4E2A;color:#F0D98A;}
-            @media(max-width:767.98px){ .rf-title{font-size:18px;} }
+            .rt-head{display:flex;align-items:flex-end;justify-content:space-between;gap:16px;flex-wrap:wrap;padding:22px 0 10px;}
+            .rt-bc{font-size:12px;color:var(--text-3);}
+            .rt-title{margin:4px 0 0;font-size:23px;font-weight:800;letter-spacing:-.5px;color:var(--text);}
+            .rt-acoes{display:flex;align-items:center;gap:8px;flex-wrap:wrap;}
+            .rt-btn{display:inline-flex;align-items:center;gap:6px;padding:8px 12px;border-radius:9px;border:1px solid var(--border);background:var(--surface);font:inherit;font-size:12.5px;font-weight:600;color:var(--text-2);cursor:pointer;white-space:nowrap;}
+            .rt-btn:hover{border-color:#287A8E;color:var(--text);}
+            .rt-btn:disabled{opacity:.55;cursor:default;}
+            .rt-btn.pri{background:#287A8E;border-color:#287A8E;color:#fff;}
+            .rt-btn.pri:hover{background:#1B6072;color:#fff;}
+            .rt-btn svg{width:14px;height:14px;flex-shrink:0;}
+            .rt-bar{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin:4px 0 12px;}
+            .rt-busca{flex:1;min-width:220px;max-width:360px;padding:7px 10px;border-radius:9px;border:1px solid var(--border);background:var(--surface);color:var(--text);font:inherit;font-size:12.5px;}
+            .rt-live{display:inline-flex;align-items:center;gap:7px;margin-left:auto;font-size:12px;color:var(--text-3);}
+            .rt-dot{width:8px;height:8px;border-radius:50%;background:#2E9E6B;flex-shrink:0;}
+            .rt-dot.off{background:#B4BEC4;}
+            .rt-dot.vai{background:#E0A526;animation:rt-pisca 1s infinite;}
+            @keyframes rt-pisca{50%{opacity:.35}}
+            .rt-msg{margin:0 0 10px;padding:9px 12px;border-radius:10px;font-size:12.5px;line-height:1.45;}
+            .rt-msg.aviso{background:#FFF6D6;border:1px solid #F3E2A3;color:#7A5A06;}
+            .rt-msg.erro{background:#FDECEA;border:1px solid #F6CFC9;color:#9A3B2E;}
+            .rt-board{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;align-items:start;}
+            .rt-col{border:1px solid var(--rt-bd);background:var(--rt-bg);border-radius:14px;display:flex;flex-direction:column;max-height:calc(100vh - 230px);min-height:200px;}
+            .rt-col[data-f="expedicao"]{--rt-bg:#E3F7E6;--rt-bd:#C2EBC9;--rt-ink:#1B6B2B;}
+            .rt-col[data-f="revisao"]{--rt-bg:#FDEEE0;--rt-bd:#F5D6B8;--rt-ink:#8A4B12;}
+            .rt-col[data-f="entregue"]{--rt-bg:#E6F0FD;--rt-bd:#C9DCF8;--rt-ink:#1C4E9C;}
+            html[data-tema="escuro"] .rt-col[data-f="expedicao"]{--rt-bg:#1F3A25;--rt-bd:#2E5636;--rt-ink:#9BE0A8;}
+            html[data-tema="escuro"] .rt-col[data-f="revisao"]{--rt-bg:#3D2D1F;--rt-bd:#5C4330;--rt-ink:#F2C08F;}
+            html[data-tema="escuro"] .rt-col[data-f="entregue"]{--rt-bg:#1F3149;--rt-bd:#2E4668;--rt-ink:#A9C8F5;}
+            .rt-col-h{padding:11px 12px 8px;border-bottom:1px solid var(--rt-bd);}
+            .rt-col-t{display:flex;align-items:center;gap:8px;font-size:13px;font-weight:800;color:var(--rt-ink);}
+            .rt-col-t .n{flex:1;}
+            .rt-cnt{min-width:22px;padding:1px 7px;border-radius:999px;background:var(--surface);color:var(--rt-ink);font-size:11.5px;font-weight:800;text-align:center;}
+            .rt-col-s{margin-top:3px;font-size:11px;font-weight:600;color:var(--rt-ink);opacity:.75;}
+            .rt-cards{padding:8px;display:flex;flex-direction:column;gap:7px;overflow:auto;}
+            .rt-card{display:block;width:100%;text-align:left;padding:9px 10px;border-radius:10px;border:1px solid var(--border);background:var(--surface);font:inherit;color:var(--text);cursor:pointer;}
+            .rt-card:hover{border-color:#287A8E;}
+            .rt-card.is-aberta{outline:2px solid #287A8E;outline-offset:-1px;}
+            .rt-l1{display:flex;align-items:baseline;gap:7px;min-width:0;}
+            .rt-ov{font-size:12.5px;font-weight:800;white-space:nowrap;}
+            .rt-cli{font-size:12px;color:var(--text-2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+            .rt-l2{display:flex;flex-wrap:wrap;gap:4px;margin-top:6px;}
+            .rt-l3{display:flex;justify-content:space-between;gap:8px;margin-top:6px;font-size:11px;color:var(--text-3);}
+            .rt-l3 span:first-child{white-space:nowrap;flex-shrink:0;}
+            .rt-l3 span:last-child{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;text-align:right;}
+            .rt-chip{display:inline-flex;align-items:center;gap:4px;padding:1px 7px;border-radius:999px;border:1px solid var(--border);font-size:10.5px;font-weight:700;color:var(--text-2);background:var(--surface);white-space:nowrap;}
+            .rt-chip.ok{background:#E3F7E6;border-color:#C2EBC9;color:#1B6B2B;}
+            .rt-chip.vai{background:#E6F0FD;border-color:#C9DCF8;color:#1C4E9C;}
+            .rt-chip.mal{background:#FDECEA;border-color:#F6CFC9;color:#9A3B2E;}
+            .rt-chip.nada{color:var(--text-3);}
+            html[data-tema="escuro"] .rt-chip.ok{background:#1F3A25;border-color:#2E5636;color:#9BE0A8;}
+            html[data-tema="escuro"] .rt-chip.vai{background:#1F3149;border-color:#2E4668;color:#A9C8F5;}
+            html[data-tema="escuro"] .rt-chip.mal{background:#3E2422;border-color:#5C3530;color:#F2B1A6;}
+            html[data-tema="escuro"] .rt-msg.aviso{background:#3A3320;border-color:#5A4E2A;color:#F0D98A;}
+            html[data-tema="escuro"] .rt-msg.erro{background:#3E2422;border-color:#5C3530;color:#F2B1A6;}
+            .rt-vazio{padding:18px 8px;text-align:center;font-size:12px;color:var(--text-3);}
+            .rt-mais{display:block;width:100%;padding:7px;border:1px dashed var(--rt-bd);border-radius:9px;background:transparent;font:inherit;font-size:11.5px;font-weight:700;color:var(--rt-ink);cursor:pointer;}
+            /* ficha (painel à direita) */
+            .rt-dw-fundo{position:fixed;inset:0;background:rgba(10,24,30,.35);z-index:9200;}
+            .rt-dw{position:fixed;top:0;right:0;bottom:0;width:min(520px,100vw);background:var(--surface);border-left:1px solid var(--border);box-shadow:-12px 0 32px rgba(0,0,0,.12);z-index:9201;display:flex;flex-direction:column;}
+            .rt-dw[hidden],.rt-dw-fundo[hidden]{display:none;}
+            .rt-dw-head{display:flex;gap:12px;align-items:flex-start;padding:16px 18px 12px;border-bottom:1px solid var(--border);}
+            .rt-dw-head .hl{flex:1;min-width:0;}
+            .rt-dw-k{font-size:11.5px;color:var(--text-3);}
+            .rt-dw-tt{margin:2px 0 0;font-size:19px;font-weight:800;color:var(--text);}
+            .rt-dw-sub{margin-top:2px;font-size:12.5px;color:var(--text-2);}
+            .rt-dw-tags{display:flex;flex-wrap:wrap;gap:5px;margin-top:8px;}
+            .rt-dw-x{border:0;background:transparent;color:var(--text-3);cursor:pointer;padding:4px;border-radius:8px;}
+            .rt-dw-x:hover{background:var(--border);color:var(--text);}
+            .rt-dw-body{flex:1;overflow:auto;padding:14px 18px 18px;display:flex;flex-direction:column;gap:12px;}
+            .rt-dw-foot{display:flex;align-items:center;gap:8px;padding:12px 18px;border-top:1px solid var(--border);}
+            .rt-dw-foot .quem{flex:1;font-size:11.5px;color:var(--text-3);}
+            .rt-sec{border:1px solid var(--border);border-radius:12px;padding:12px 14px;}
+            .rt-sec h5{margin:0 0 9px;font-size:12px;font-weight:800;letter-spacing:.3px;text-transform:uppercase;color:var(--text-3);}
+            .rt-dl{display:grid;grid-template-columns:auto 1fr;gap:5px 14px;margin:0;font-size:12.5px;}
+            .rt-dl dt{color:var(--text-3);}
+            .rt-dl dd{margin:0;color:var(--text);font-weight:600;min-width:0;overflow-wrap:anywhere;}
+            .rt-comp{display:flex;flex-wrap:wrap;gap:8px;margin-top:10px;}
+            .rt-comp a{display:block;width:120px;height:90px;border-radius:9px;overflow:hidden;border:1px solid var(--border);background:var(--bg,#f4f6f7);}
+            .rt-comp img{width:100%;height:100%;object-fit:cover;display:block;}
+            .rt-tl{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;}
+            .rt-tl li{display:grid;grid-template-columns:86px 1fr;gap:10px;padding:6px 0;border-top:1px solid var(--border);font-size:12px;}
+            .rt-tl li:first-child{border-top:0;}
+            .rt-tl .q{color:var(--text-3);font-variant-numeric:tabular-nums;}
+            .rt-tl .d{color:var(--text);}
+            .rt-tl li.ent .d{font-weight:800;color:#1B6B2B;}
+            html[data-tema="escuro"] .rt-tl li.ent .d{color:#9BE0A8;}
+            .rt-p{margin:0;font-size:12.5px;line-height:1.5;color:var(--text-2);}
+            @media(max-width:1100px){.rt-board{grid-template-columns:1fr;}.rt-col{max-height:none;}}
+            @media(max-width:767.98px){.rt-title{font-size:18px;}.rt-live{margin-left:0;width:100%;}.rt-busca{max-width:none;}}
           </style>
 
-          <div class="rf-head">
+          <div class="rt-head">
             <div>
-              <div class="rf-bc">Kanban</div>
-              <h1 class="rf-title">Rastreio de Entrega</h1>
+              <div class="rt-bc">Kanban</div>
+              <h1 class="rt-title">Rastreio de Entrega</h1>
+            </div>
+            <div class="rt-acoes">
+              <button type="button" class="rt-btn" id="rt-consultar" title="Consulta a transportadora agora, sem esperar o robô">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="1" y="3" width="15" height="13"/><polygon points="16 8 20 8 23 11 23 16 16 16 16 8"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/></svg>
+                Consultar a Brix agora
+              </button>
+              <button type="button" class="rt-btn" id="rt-atualizar">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>
+                Atualizar
+              </button>
             </div>
           </div>
 
-          <div class="rf-card">
-            <h2><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg></span>Rastreio de Entrega</h2>
-            <p>Aqui vai aparecer onde está cada entrega depois que a carga sai da expedição.</p>
-            <span class="rf-pend"><i></i>Aguardando a regra do rastreio</span>
+          <div class="rt-bar">
+            <input type="search" class="rt-busca" id="rt-busca" placeholder="Buscar OV, cliente ou NF…" aria-label="Buscar OV, cliente ou NF">
+            <span class="rt-live"><span class="rt-dot off" id="rt-dot"></span><span id="rt-status">Conectando ao Dynamics…</span></span>
           </div>
+
+          <div id="rt-msgs"></div>
+          <div id="rt-quadro"><div class="rt-vazio">Carregando…</div></div>
 
         </div><!-- /area-main -->
       </div><!-- /area-grid -->
     </div><!-- /container -->
   </div><!-- /area-body -->
+
+  <!-- ficha da OV (painel à direita) -->
+  <div class="rt-dw-fundo" id="rt-dw-fundo" hidden></div>
+  <aside class="rt-dw" id="rt-dw" role="dialog" aria-modal="true" aria-labelledby="rt-dw-tt" hidden>
+    <div class="rt-dw-head">
+      <div class="hl"><div class="rt-dw-k" id="rt-dw-k"></div><h2 class="rt-dw-tt" id="rt-dw-tt"></h2><div class="rt-dw-sub" id="rt-dw-sub"></div><div class="rt-dw-tags" id="rt-dw-tags"></div></div>
+      <button type="button" class="rt-dw-x" data-rt="fechar" aria-label="Fechar a ficha" title="Fechar (Esc)"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+    </div>
+    <div class="rt-dw-body" id="rt-dw-body"></div>
+    <div class="rt-dw-foot" id="rt-dw-foot"></div>
+  </aside>
 
   <footer class="site-footer">
     <div class="container">
@@ -106,5 +211,261 @@
 
   <script src="../script.js?v=8"></script>
   <script src="../nav-sidebar.js?v=90"></script>
+  <script>
+  (function () {
+    'use strict';
+    var RELER_MS = 5 * 60000;          // o quadro relê a cada 5 min (com a aba visível)
+    var POR_COLUNA = 60;               // cartões por coluna antes do "Mostrar mais"
+    var $ = function (id) { return document.getElementById(id); };
+    var esc = function (s) { return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); };
+    // data-hora UTC (Dynamics, gravações) -> "12/11 11:20" em Brasília
+    var fSP = function (iso, comAno) {
+      var t = Date.parse(iso); if (isNaN(t)) return '';
+      var o = { timeZone: 'America/Sao_Paulo', day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' };
+      if (comAno) o.year = 'numeric';
+      return new Date(t).toLocaleString('pt-BR', o).replace(',', '');
+    };
+    // data-hora da Brix (já em Brasília, sem fuso: "2026-11-12T11:20:44") -> "12/11 11:20"
+    var fLocal = function (s) { var m = /^(\d{4})-(\d{2})-(\d{2})(?:T(\d{2}):(\d{2}))?/.exec(s || ''); return m ? m[3] + '/' + m[2] + (m[4] ? ' ' + m[4] + ':' + m[5] : '') : ''; };
+    var fDia = function (s) { var m = /^(\d{4})-(\d{2})-(\d{2})/.exec(s || ''); return m ? m[3] + '/' + m[2] + '/' + m[1] : ''; };
+    var fHora = function (iso) { var t = Date.parse(iso); return isNaN(t) ? '' : new Date(t).toLocaleTimeString('pt-BR', { timeZone: 'America/Sao_Paulo', hour: '2-digit', minute: '2-digit' }); };
+    var nfCurta = function (n) { return String(n || '').replace(/^0+/, '') || String(n || ''); };
+    var plural = function (n, um, varios) { return n + ' ' + (n === 1 ? um : varios); };
+    var NOME = { expedicao: 'Expedição', revisao: 'Aguardando Revisão', entregue: 'Entregue' };
+
+    var estado = { r: null, busca: '', aberta: null, carregando: false, rodando: false, mais: {}, timer: null, autoEm: 0, erroFicha: '' };
+
+    function status(t, cls) { $('rt-status').textContent = t; $('rt-dot').className = 'rt-dot' + (cls ? ' ' + cls : ''); }
+    function msgs(lista) { $('rt-msgs').innerHTML = lista.map(function (m) { return '<div class="rt-msg ' + m[0] + '">' + m[1] + '</div>'; }).join(''); }
+    function chip(cls, txt, tt) { return '<span class="rt-chip' + (cls ? ' ' + cls : '') + '"' + (tt ? ' title="' + esc(tt) + '"' : '') + '>' + esc(txt) + '</span>'; }
+    function transp(o) { var rz = o.rastreio; return rz ? rz.transportadora : ((o.cargas || [])[0] || {}).transportadora || ''; }
+
+    // a situação da entrega (o mesmo texto no cartão e na ficha)
+    function chipsSituacao(o) {
+      var rz = o.rastreio;
+      if (o.fase === 'entregue') return chip('ok', 'concluída ' + fSP(o.concluidoEm), 'Conferida por ' + (o.concluidoNome || o.concluidoPor || '?'));
+      if (rz && rz.situacao === 'entregue') return chip('ok', 'entregue ' + fLocal(rz.entregueEm)) + ((rz.comprovantes || []).length ? chip('', 'comprovante') : '');
+      if (rz && rz.situacao === 'cancelado') return chip('mal', 'CT-e cancelado', 'A Brix só tem esta NF num CT-e cancelado');
+      if (rz) return chip('vai', 'a caminho' + (rz.previsao ? ' · prev. ' + fLocal(rz.previsao).slice(0, 5) : ''), rz.ultimo ? rz.ultimo.descricao : '');
+      if (!(o.notas || []).length) return chip('nada', 'sem NF', 'A OV expedida ainda não tem nota fiscal no Dynamics');
+      return chip('nada', 'sem rastreio', estado.r && estado.r.brix ? 'A Brix não tem esta NF: outra transportadora, ou a Brix ainda não registrou' : 'A consulta à Brix está desligada');
+    }
+    function cardHtml(o) {
+      var rz = o.rastreio, nfs = (o.notas || []).map(function (n) { return nfCurta(n.numero); });
+      var pe = o.fase === 'entregue' ? 'por ' + (o.concluidoNome || o.concluidoPor || '?') : rz && rz.ultimo ? rz.ultimo.descricao : '';
+      return '<button type="button" class="rt-card' + (estado.aberta === o.numero ? ' is-aberta' : '') + '" data-ov="' + esc(o.numero) + '">'
+        + '<div class="rt-l1"><span class="rt-ov">' + esc(o.numero) + '</span><span class="rt-cli" title="' + esc(o.cliente) + '">' + esc(o.cliente || o.conta || '') + '</span></div>'
+        + '<div class="rt-l2">' + (nfs.length ? chip('', 'NF ' + nfs.join(', ')) : '') + (transp(o) ? chip('', transp(o)) : '') + chipsSituacao(o) + '</div>'
+        + '<div class="rt-l3"><span>' + (o.expedidaEm ? 'expedida ' + esc(fSP(o.expedidaEm)) : '') + '</span><span title="' + esc(pe) + '">' + esc(pe) + '</span></div></button>';
+    }
+    function bate(o, q) {
+      if (!q) return true;
+      var alvo = [o.numero, o.cliente, o.conta].concat((o.notas || []).map(function (n) { return n.numero + ' ' + nfCurta(n.numero); })).join(' ').toLowerCase();
+      return q.toLowerCase().split(/\s+/).every(function (p) { return alvo.indexOf(p) >= 0; });
+    }
+    var ORDEM = {
+      expedicao: function (o) { return o.expedidaEm || ''; },
+      revisao: function (o) { return (o.rastreio && o.rastreio.entregueEm) || o.revisaoEm || ''; },
+      entregue: function (o) { return o.concluidoEm || ''; }
+    };
+    var SUB = { revisao: 'o robô achou a entrega · confira e conclua', entregue: 'conferidas pelo operador' };
+
+    function render() {
+      var r = estado.r; if (!r) return;
+      var ovs = (r.ovs || []).filter(function (o) { return bate(o, estado.busca); });
+      if (!(r.ovs || []).length) { $('rt-quadro').innerHTML = '<div class="rt-vazio">Nenhuma OV expedida desde ' + esc(fDia(r.desde)) + '.</div>'; return; }
+      $('rt-quadro').innerHTML = '<div class="rt-board">' + r.fases.map(function (f) {
+        var lista = ovs.filter(function (o) { return o.fase === f.id; }).sort(function (a, b) { var x = ORDEM[f.id](a), y = ORDEM[f.id](b); return x < y ? 1 : x > y ? -1 : 0; });
+        var lim = estado.mais[f.id] ? lista.length : POR_COLUNA;
+        var sub = f.id === 'expedicao' ? 'desde ' + fDia(r.desde) : SUB[f.id];
+        return '<section class="rt-col" data-f="' + f.id + '"><div class="rt-col-h"><div class="rt-col-t"><span class="n">' + esc(f.nome) + '</span><span class="rt-cnt">' + lista.length + '</span></div>'
+          + '<div class="rt-col-s">' + esc(sub) + '</div></div><div class="rt-cards">'
+          + (lista.length ? lista.slice(0, lim).map(cardHtml).join('') : '<div class="rt-vazio">' + (estado.busca ? 'Nada com essa busca.' : '—') + '</div>')
+          + (lista.length > lim ? '<button type="button" class="rt-mais" data-mais="' + f.id + '">Mostrar mais ' + (lista.length - lim) + '</button>' : '')
+          + '</div></section>';
+      }).join('') + '</div>';
+    }
+
+    // ── a ficha ──
+    function acharOv(n) { return estado.r && (estado.r.ovs || []).filter(function (o) { return o.numero === n; })[0]; }
+    function dl(pares) {
+      pares = pares.filter(function (p) { return p[1]; });
+      return pares.length ? '<dl class="rt-dl">' + pares.map(function (p) { return '<dt>' + esc(p[0]) + '</dt><dd>' + p[1] + '</dd>'; }).join('') + '</dl>' : '';
+    }
+    function pintarFicha() {
+      var o = acharOv(estado.aberta);
+      if (!o) { fechar(); return; }
+      var rz = o.rastreio, h = '';
+      $('rt-dw-k').textContent = 'Rastreio de Entrega · ' + NOME[o.fase];
+      $('rt-dw-tt').textContent = o.numero;
+      $('rt-dw-sub').textContent = [o.cliente, [o.cidade, o.uf].filter(Boolean).join('/')].filter(Boolean).join(' · ');
+      $('rt-dw-tags').innerHTML = (transp(o) ? chip('', transp(o)) : '') + chipsSituacao(o);
+      if (estado.erroFicha) h += '<div class="rt-msg erro">' + esc(estado.erroFicha) + '</div>';
+      if (o.fase === 'revisao') h += '<p class="rt-p">O robô achou a entrega na ' + esc(rz ? rz.transportadora : 'transportadora') + (o.revisaoEm ? ' em ' + esc(fSP(o.revisaoEm)) : '') + '. Confira o comprovante e <b>conclua a entrega</b>: a OV vai para Entregue com o seu nome.</p>';
+      // a entrega e o comprovante
+      if (rz && rz.situacao === 'entregue') {
+        h += '<section class="rt-sec"><h5>Entrega</h5>' + dl([
+          ['Entregue em', esc(fLocal(rz.entregueEm))], ['Recebedor', esc(rz.recebedor)],
+          ['NF', esc((o.notas || []).map(function (n) { return nfCurta(n.numero); }).join(', '))], ['CT-e', esc(rz.cte + (rz.minuta ? ' · minuta ' + rz.minuta : ''))]
+        ]);
+        h += (rz.comprovantes || []).length
+          ? '<div class="rt-comp">' + rz.comprovantes.map(function (u, i) { return '<a href="' + esc(u) + '" target="_blank" rel="noopener noreferrer" title="Abrir o comprovante ' + (i + 1) + '"><img src="' + esc(u) + '" alt="Comprovante de entrega ' + (i + 1) + '" loading="lazy" referrerpolicy="no-referrer"></a>'; }).join('') + '</div>'
+          : '<p class="rt-p" style="margin-top:8px;">A transportadora ainda não mandou o comprovante.</p>';
+        h += '</section>';
+      }
+      // o rastreio na transportadora
+      if (rz) {
+        h += '<section class="rt-sec"><h5>Rastreio na ' + esc(rz.transportadora) + '</h5>' + dl([
+          ['Situação', esc({ entregue: 'Entregue', transito: 'A caminho', cancelado: 'CT-e cancelado' }[rz.situacao] || rz.situacao) + (rz.status ? ' <span style="color:var(--text-3);font-weight:400;">(status ' + esc(rz.status) + ')</span>' : '')],
+          ['Previsão', esc(fLocal(rz.previsao))], ['CT-e', rz.situacao === 'entregue' ? '' : esc(rz.cte + (rz.minuta ? ' · minuta ' + rz.minuta : ''))],
+          ['Consultado', esc(fSP(o.consultadoEm))]
+        ]);
+        if ((rz.envios || []).length) h += '<div style="margin-top:8px;">' + rz.envios.map(function (e) { return chip(e.situacao === 'entregue' ? 'ok' : e.situacao === 'cancelado' ? 'mal' : 'vai', 'NF ' + e.nf + ' · ' + ({ entregue: 'entregue', transito: 'a caminho', cancelado: 'cancelado' }[e.situacao] || e.situacao)); }).join(' ') + '</div>';
+        if ((rz.eventos || []).length) h += '<ol class="rt-tl" style="margin-top:10px;">' + rz.eventos.map(function (e) { return '<li class="' + (e.codigo === '1' ? 'ent' : '') + '"><span class="q">' + esc(fLocal(e.em)) + '</span><span class="d">' + esc(e.descricao) + '</span></li>'; }).join('') + '</ol>';
+        h += '</section>';
+      } else {
+        h += '<section class="rt-sec"><h5>Rastreio</h5><p class="rt-p">' + (!(o.notas || []).length ? 'A OV ainda não tem nota fiscal no Dynamics: sem a NF, a transportadora não é consultada.'
+          : !estado.r.brix ? 'A consulta à Brix está desligada (falta o token nas configurações do site).'
+          : 'A Brix não tem a NF ' + esc((o.notas || []).map(function (n) { return nfCurta(n.numero); }).join(', ')) + ': é de outra transportadora (ainda sem integração) ou a Brix ainda não registrou o envio. O robô tenta de novo a cada ' + esc(estado.r.intervaloMin) + ' min.') + '</p></section>';
+      }
+      // a expedição (Dynamics)
+      h += '<section class="rt-sec"><h5>Expedição</h5>' + dl([
+        ['Expedida em', esc(fSP(o.expedidaEm, true))],
+        ['NF', (o.notas || []).map(function (n) { return esc(nfCurta(n.numero)) + (n.data ? ' <span style="color:var(--text-3);font-weight:400;">de ' + esc(fDia(n.data)) + '</span>' : ''); }).join('<br>')],
+        ['Carga', (o.cargas || []).map(function (c) { return esc(c.id) + (c.transportadora ? ' · ' + esc(c.transportadora) : '') + (c.envioConfirmado ? ' <span style="color:var(--text-3);font-weight:400;">' + esc(fSP(c.envioConfirmado)) + '</span>' : ''); }).join('<br>')],
+        ['Conta', esc(o.conta)]
+      ]) + '</section>';
+      if ((o.hist || []).length) {
+        h += '<section class="rt-sec"><h5>Histórico</h5><ol class="rt-tl">' + o.hist.slice().reverse().map(function (x) {
+          return '<li><span class="q">' + esc(fSP(x.em)) + '</span><span class="d">' + esc(NOME[x.de] || x.de) + ' → <b>' + esc(NOME[x.para] || x.para) + '</b> · ' + esc(x.por) + '</span></li>';
+        }).join('') + '</ol></section>';
+      }
+      $('rt-dw-body').innerHTML = h;
+      var f = '';
+      if (o.fase === 'revisao') f = '<span class="quem"></span><button type="button" class="rt-btn" data-rt="fechar">Fechar</button><button type="button" class="rt-btn pri" data-rt="concluir">Concluir entrega</button>';
+      else if (o.fase === 'entregue') f = '<span class="quem">Concluída por <b>' + esc(o.concluidoNome || o.concluidoPor || '?') + '</b> em ' + esc(fSP(o.concluidoEm, true)) + '</span><button type="button" class="rt-btn" data-rt="reabrir">Reabrir</button><button type="button" class="rt-btn" data-rt="fechar">Fechar</button>';
+      else f = '<span class="quem">Anda sozinha para Aguardando Revisão quando a transportadora registrar a entrega.</span><button type="button" class="rt-btn" data-rt="fechar">Fechar</button>';
+      $('rt-dw-foot').innerHTML = f;
+    }
+    var voltarFoco = null;
+    function abrir(n, el) {
+      estado.aberta = n; estado.erroFicha = ''; voltarFoco = el || null;
+      $('rt-dw').hidden = false; $('rt-dw-fundo').hidden = false;
+      pintarFicha(); render();
+      var x = $('rt-dw').querySelector('.rt-dw-x'); if (x) x.focus();
+    }
+    function fechar() {
+      estado.aberta = null; $('rt-dw').hidden = true; $('rt-dw-fundo').hidden = true; render();
+      if (voltarFoco && document.body.contains(voltarFoco)) voltarFoco.focus();
+    }
+    async function mover(acao) {
+      var o = acharOv(estado.aberta); if (!o) return;
+      var pergunta = acao === 'concluir' ? 'Concluir a entrega da ' + o.numero + '? Ela vai para Entregue com o seu nome.' : 'Reabrir a ' + o.numero + '? Ela volta para Aguardando Revisão.';
+      if (!window.confirm(pergunta)) return;
+      Array.prototype.forEach.call($('rt-dw-foot').querySelectorAll('button'), function (b) { b.disabled = true; });
+      estado.erroFicha = '';
+      try {
+        var res = await fetch('/api/rastreio', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ acao: acao, ov: o.numero }), cache: 'no-store' });
+        var j = null; try { j = await res.json(); } catch (e) {}
+        if (!res.ok || !j || !j.ok) throw new Error((j && (j.error || j.detalhe)) || ('HTTP ' + res.status));
+        // a OV volta do servidor já na fase nova (os dados da expedição seguem os do quadro)
+        var i = estado.r.ovs.indexOf(o);
+        estado.r.ovs[i] = Object.assign({}, o, j.ov, { cargas: o.cargas, notas: o.notas, expedidaEm: o.expedidaEm });
+        recontar();
+      } catch (e) { estado.erroFicha = 'Não deu para ' + (acao === 'concluir' ? 'concluir' : 'reabrir') + ': ' + e.message; }
+      pintarFicha(); render();
+    }
+    function recontar() { estado.r.fases.forEach(function (f) { f.qtd = estado.r.ovs.filter(function (o) { return o.fase === f.id; }).length; }); }
+
+    // ── leitura e robô ──
+    function linhaStatus() {
+      var r = estado.r; if (!r) return;
+      var p = ['Dynamics às ' + fHora(r.geradoEm)];
+      if (!r.brix) p.push('consulta à Brix desligada');
+      else if (r.rodada) p.push('Brix às ' + fHora(r.rodada.em) + ' (' + plural(r.rodada.nfs, 'NF', 'NFs') + (r.rodada.novasRevisao ? ', ' + plural(r.rodada.novasRevisao, 'entrega nova', 'entregas novas') : '') + ')', 'a cada ' + r.intervaloMin + ' min');
+      else p.push('a Brix ainda não foi consultada');
+      status(p.join(' · '), r.brix ? '' : 'off');
+    }
+    function avisos() {
+      var r = estado.r, l = (r.avisos || []).map(function (a) { return ['aviso', esc(a)]; });
+      if (r.rodada && (r.rodada.erros || []).length) l.push(['erro', 'Na última consulta à Brix (' + esc(fHora(r.rodada.em)) + '): ' + esc(r.rodada.erros.join(' · '))]);
+      return l;
+    }
+    function precisaRodar(r) {
+      if (!r || !r.brix || estado.rodando) return false;
+      if (Date.now() - estado.autoEm < r.intervaloMin * 60000) return false;   // no máximo 1 automática por intervalo nesta aba
+      return !r.rodada || Date.now() - Date.parse(r.rodada.em) > r.intervaloMin * 60000;
+    }
+    async function carregar(forcar) {
+      if (estado.carregando) return;
+      estado.carregando = true; $('rt-atualizar').disabled = true;
+      if (!estado.rodando) status('Lendo o Dynamics…', 'vai');
+      try {
+        var res = await fetch('/api/rastreio' + (forcar ? '?atualizar=1' : ''), { cache: 'no-store' });
+        var j = null; try { j = await res.json(); } catch (e) {}
+        if (res.status === 401) throw new Error('Entre com a sua conta Microsoft para ver o rastreio.');
+        if (res.status === 403) throw new Error('A área Kanban é de acesso restrito.');
+        if (!res.ok || !j || j.ok === false) throw new Error((j && (j.error || j.detalhe)) || ('HTTP ' + res.status));
+        if (j.configured === false) { msgs([['aviso', 'O Dynamics não está configurado neste ambiente.']]); $('rt-quadro').innerHTML = '<div class="rt-vazio">Sem conexão com o Dynamics.</div>'; status('Dynamics não configurado', 'off'); return; }
+        estado.r = j;
+        msgs(avisos()); render(); linhaStatus();
+        $('rt-consultar').disabled = !j.brix;
+        if (estado.aberta) pintarFicha();
+        if (precisaRodar(j)) { estado.autoEm = Date.now(); setTimeout(function () { rodar(); }, 0); }
+      } catch (e) {
+        msgs([['erro', 'Não foi possível ler o rastreio: ' + esc(e.message)]]);
+        if (!estado.r) $('rt-quadro').innerHTML = '<div class="rt-vazio">—</div>';
+        status('Falhou: tente Atualizar', 'off');
+      } finally {
+        estado.carregando = false; $('rt-atualizar').disabled = false; agendar();
+      }
+    }
+    async function rodar() {
+      if (estado.rodando) return;
+      estado.rodando = true; $('rt-consultar').disabled = true;
+      status('Consultando a Brix…', 'vai');
+      try {
+        var res = await fetch('/api/rastreio', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ acao: 'consultar' }), cache: 'no-store' });
+        var j = null; try { j = await res.json(); } catch (e) {}
+        if (!res.ok || !j || !j.ok) throw new Error((j && (j.error || j.detalhe)) || ('HTTP ' + res.status));
+      } catch (e) {
+        msgs(avisos().concat([['erro', 'A consulta à Brix falhou: ' + esc(e.message)]]));
+      } finally {
+        estado.rodando = false;
+        await carregar(false);
+        if (estado.r) $('rt-consultar').disabled = !estado.r.brix;
+      }
+    }
+    function agendar() {
+      clearTimeout(estado.timer);
+      estado.timer = setTimeout(function () { if (document.visibilityState === 'visible') carregar(false); else agendar(); }, RELER_MS);
+    }
+    document.addEventListener('visibilitychange', function () {
+      if (document.visibilityState === 'visible' && estado.r && Date.now() - Date.parse(estado.r.geradoEm) > RELER_MS) carregar(false);
+    });
+
+    $('rt-atualizar').addEventListener('click', function () { carregar(true); });
+    $('rt-consultar').addEventListener('click', function () { rodar(); });
+    $('rt-busca').addEventListener('input', function (e) { estado.busca = e.target.value.trim(); estado.mais = {}; render(); });
+    $('rt-quadro').addEventListener('click', function (e) {
+      if (!e.target.closest) return;
+      var m = e.target.closest('[data-mais]'); if (m) { estado.mais[m.getAttribute('data-mais')] = true; render(); return; }
+      var c = e.target.closest('[data-ov]'); if (c) abrir(c.getAttribute('data-ov'), c);
+    });
+    $('rt-dw').addEventListener('click', function (e) {
+      var b = e.target.closest && e.target.closest('[data-rt]'); if (!b) return;
+      var a = b.getAttribute('data-rt');
+      if (a === 'fechar') fechar(); else if (a === 'concluir' || a === 'reabrir') mover(a);
+    });
+    $('rt-dw-fundo').addEventListener('click', fechar);
+    document.addEventListener('keydown', function (e) { if (e.key === 'Escape' && estado.aberta) fechar(); });
+
+    // abre já buscando: assim que o login (auth.js) estiver pronto
+    var foi = false;
+    function iniciar() { if (foi) return; foi = true; carregar(false); }
+    if (window._portalUser && window._portalUser.email) iniciar();
+    else document.addEventListener('portalauth:ready', iniciar);
+  })();
+  </script>
 </body>
 </html>

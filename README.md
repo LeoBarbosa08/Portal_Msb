@@ -2386,6 +2386,67 @@ Abrir uma ficha fecha a outra (e a do pedido/nota do `sr-diario.js`).
   quadros, e aí o Chart.js não recebe o clique (ele despacha no quadro
   seguinte) e o painel fechado fica parado na tela — não é defeito da página.
 
+### Kanban · Rastreio de Entrega com a Brix (13/11/2026)
+
+Dono: "um script de rastreio — todas as ordens do Kanban que foram EXPEDIDAS, ir
+no site da transportadora e verificar se o pedido foi entregue". E as fases: "EXPEDIÇÃO,
+que vai trazer o histórico da expedição (mesmo status do kanban), AGUARDANDO REVISÃO
+(quando o robô identificar que a entrega aconteceu e colocar o anexo no pedido) e
+ENTREGUE (quando o operador avaliar o aguardando revisão e concluir a entrega)".
+
+A página `pages/kanban-rastreio.html` é um quadro com as três fases:
+
+| Fase | O que entra |
+|---|---|
+| **Expedição** | As OVs expedidas desde `RASTREIO_DESDE` (padrão 11/11/2026), pela regra da coluna Expedição do Kanban — a carga com o envio confirmado (`LoadShipConfirmUTCDateTime`), do ALMOX-PA, OV pelo trabalho de venda —, mas de **todos os dias**, não só hoje (`expedidas()` no `api/shared/kanban-ov.js`). |
+| **Aguardando Revisão** | O **robô** achou a NF entregue na transportadora: a OV anda sozinha, com a data, o recebedor e o **comprovante** (a foto do canhoto, link da Brix). |
+| **Entregue** | O **operador** abriu a ficha, conferiu o comprovante e clicou em **Concluir entrega** (fica quem e quando; **Reabrir** desfaz). |
+
+**A Brix** (sistema Brudam) tem API em JSON — o robô não abre o site:
+`GET https://brix.ws.brudam.com.br/tracking/integracao/{token}/notas/{nf1},{nf2},…`
+(docs: `/docs/clientes`). O `codigoRastreio` da resposta é o **número da NF da MSB**
+(sem zeros à esquerda). Visto com os dados reais (19 envios de 1º a 13/11/2026):
+`status` **6 = entregue** (todos com o evento 1 "ENTREGA REALIZADA NORMALMENTE", o
+recebedor e o comprovante), 13 = CT-e cancelado, 1 e 3 = a caminho. Entregue = status
+6 **ou** evento 1 (`BRIX_STATUS_ENTREGUE`, `BRIX_EVENTO_ENTREGA`). Com mais de uma NF,
+a OV só vai para a revisão quando todas as que a Brix achou estão entregues.
+
+**Outras transportadoras**: o robô manda **todas** as NFs expedidas para a Brix; a que
+a Brix não conhece é de outra transportadora e fica em Expedição como "sem rastreio"
+(nenhuma outra tem integração ainda). A API de integração da Brix (`/docs/integracao`,
+por CNPJ do remetente) pede um token próprio, "fornecido após solicitação" — não é
+preciso: a de clientes já traz o comprovante.
+
+**O robô** (`POST /api/rastreio { acao: 'consultar' }`) roda:
+- a cada 30 min pelo **GitHub Actions** (`.github/workflows/rastreio.yml`, `7,37 * * * *`),
+  sem login, com o cabeçalho `x-rastreio-chave` = `RASTREIO_CHAVE` (a chave só serve
+  para consultar; concluir e reabrir exigem o login da área Kanban);
+- quando a tela abre e a última consulta passou de `RASTREIO_INTERVALO_MIN` (30);
+- no botão **Consultar a Brix agora**.
+Uma chamada à Brix por 40 NFs; só as OVs em Expedição com NF são consultadas.
+
+**As fases** moram em `kanban-rastreio/estado.json` no container do Kanban
+(`KANBAN_BLOB_URL`, ou o do log de acessos `LOG_PORTAL_BLOB_URL`), gravado com ETag
+(o robô e o operador ao mesmo tempo não se atropelam). Sem blob, só na memória — a
+tela avisa. Só entra a OV que a transportadora achou.
+
+**Configuração** (Azure › Static Web App › Configuration):
+- `BRIX_TOKEN` — o token do portal do cliente da Brix (Dados Cadastrais). **Segredo:
+  o repositório é público** — nunca no código; nenhuma mensagem nem log o repete.
+- `RASTREIO_CHAVE` — uma senha longa (16+ caracteres) qualquer, a mesma do segredo do GitHub.
+- (opcionais) `RASTREIO_DESDE` (AAAA-MM-DD), `RASTREIO_INTERVALO_MIN`, `BRIX_URL`.
+
+**GitHub** (Settings › Secrets and variables › Actions): `RASTREIO_URL` (o endereço do
+portal, sem barra no fim) e `RASTREIO_CHAVE`. Sem eles o job só avisa. Os logs do
+Actions de repositório público são públicos: o job imprime só as contagens.
+
+**Limites conhecidos**: a Expedição relê todas as cargas desde `RASTREIO_DESDE` a cada
+leitura — com meses de histórico, avance a data. O "anexo no pedido" é o comprovante
+na ficha do portal; anexar no Dynamics (documento da OV) seria um passo à parte.
+
+- Testes: `node scripts/test-rastreio.js` (39 verificações: as expedidas no F&O
+  simulado, a normalização da Brix, o robô, as fases, a gravação com ETag e a rota).
+
 ## Como colocar no ar
 
 1. **Repositório no GitHub** — crie um repositório **privado e vazio** (sem

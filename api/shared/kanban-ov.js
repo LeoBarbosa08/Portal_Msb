@@ -2379,6 +2379,98 @@ async function emailCotacao(numero, opts) {
   return Object.assign(base, { enviado: reg });
 }
 
+// ── RASTREIO DE ENTREGA (13/11/2026) ─────────────────────────────
+// Dono: "EXPEDIÇÃO vai trazer o histórico da expedição (mesmo status do kanban)".
+// As OVs EXPEDIDAS pela regra da coluna Expedição do quadro — a carga com o envio
+// confirmado (LoadShipConfirmUTCDateTime), do depósito do quadro, OV pelo trabalho
+// de VENDA —, mas de TODOS os dias desde `desde` (RASTREIO_DESDE; padrão o corte do
+// quadro, 11/11/2026), não só hoje. Leve: só o que o rastreio usa (cliente, NF,
+// cargas), sem montar o resto do quadro. Cache de TTL_QUADRO, como o quadro.
+// -> { ok, configured, empresa, desde, geradoEm, ovs:[{ numero, cliente, conta,
+//      cidade, uf, expedidaEm, cargas:[{ id, transportadora, envioConfirmado }],
+//      notas:[{ numero, data, valor }] }] (a expedida mais recente primeiro),
+//      avisos, diagnostico }
+function rastreioDesde() { const v = txt(process.env.RASTREIO_DESDE); return /^\d{4}-\d{2}-\d{2}$/.test(v) ? v : DESDE_PADRAO; }
+async function expedidas(opts) {
+  opts = opts || {};
+  const dia = /^\d{4}-\d{2}-\d{2}$/.test(String(opts.desde || '')) ? String(opts.desde) : rastreioDesde();
+  const chave = 'expedidas|' + dia;
+  const c = _cache.get(chave);
+  if (!opts.atualizar && c && Date.now() - c.ts < TTL_QUADRO) return Object.assign({}, c.r, { cache: true });
+  // o rastreio ainda consulta a transportadora e grava depois: orçamento menor que o do quadro
+  const ate = Date.now() + Number(opts.orcamento || process.env.RASTREIO_ORCAMENTO_MS || 25000);
+  const diag = [], avisos = [];
+  const base = { ok: true, configured: true, empresa: EMPRESA, desde: dia, geradoEm: new Date().toISOString() };
+  const token = await D.getToken();
+  const [xc, xt] = await Promise.all([entidadeExtra(CFG_CARGA, token, ate, diag), entidadeExtra(CFG_TRABALHO, token, ate, diag)]);
+  if (!xc.E || !xt.E || !xt.E.carga) {
+    const porque = !xc.E ? 'a entidade de cargas não respondeu (' + (xc.motivo || '?') + ')' : 'a entidade de trabalho de depósito não respondeu ou não tem a carga (' + (xt.motivo || '?') + ')';
+    return Object.assign(base, { ovs: [], avisos: ['Não deu para ler as cargas expedidas: ' + porque + '.'], diagnostico: diag });
+  }
+  // 1) as cargas com o envio confirmado desde o dia (em Brasília), do depósito do quadro
+  const cargas = {};
+  const entsCarga = (xc.todas && xc.todas.length ? xc.todas : [xc.E]).filter(L => L.envioConfirmado);
+  if (!entsCarga.length) avisos.push('Nenhuma entidade de cargas tem o campo ' + COL_CARGA.envioConfirmado[0] + ': sem ele não dá para saber o que foi expedido.');
+  for (const E of entsCarga) {
+    if (restante(ate) < FOLGA_MS + 2000) { avisos.push('O tempo acabou antes de ler as cargas expedidas da ' + E.entidade + '.'); break; }
+    const emp = (E.temEmpresa ? "dataAreaId eq '" + D.odataStr(EMPRESA) + "' and " : '') +
+      (E.deposito && !TODOS_DEPOSITOS ? '(' + DEPOSITOS.map(d => E.deposito + " eq '" + D.odataStr(d) + "'").join(' or ') + ') and ' : '');
+    const col = E.envioConfirmado;
+    const sel = [E.numero, col].concat(E.transportadora ? [E.transportadora] : []).join(',');
+    try {
+      const rows = await D.odataGetComPrazo(E.entidade, { crossCompany: true, filter: emp + col + ' ge ' + dia + 'T0' + FUSO_H + ':00:00Z', select: sel }, token, prazo(ate, PRAZO_MS));
+      let n = 0;
+      rows.forEach(r => {
+        const id = txt(r[E.numero]), conf = dataHora(r[col]);
+        if (!id || !conf || (diaSP(conf) || '') < dia) return;
+        const k = id.toUpperCase(), ant = cargas[k];
+        if (!ant) n++;
+        cargas[k] = { id, envioConfirmado: conf, transportadora: txt(E.transportadora ? r[E.transportadora] : '') || (ant && ant.transportadora) || '' };
+      });
+      diag.push({ etapa: 'exp:historico', entidade: E.entidade, coluna: col, linhas: rows.length, cargas: n });
+    } catch (e) {
+      diag.push({ etapa: 'exp:historico', entidade: E.entidade, coluna: col, erro: String(e.message || e).slice(0, 200) });
+      avisos.push('Não deu para ler as cargas expedidas da ' + E.entidade + ': ' + String(e.message || e).slice(0, 160));
+    }
+  }
+  const ids = Object.keys(cargas).map(k => cargas[k].id);
+  const fim = (ovs) => { const r = Object.assign(base, { ovs, avisos, diagnostico: diag }); _cache.set(chave, { ts: Date.now(), r }); return r; };
+  if (!ids.length) return fim([]);
+  // 2) as OVs dessas cargas, pelo trabalho de depósito (só o de VENDA: a carga também leva transferência)
+  const T = xt.E, selT = [T.numero, T.carga].concat(T.tipo ? [T.tipo] : []).join(',');
+  const trab = await porNumeros(T.entidade, T.carga, ids, token, ate, diag, 'exp:trabalho', selT, !T.temEmpresa);
+  const porOv = {};
+  trab.forEach(r => {
+    if (T.tipo && txt(r[T.tipo]) && !/^(sales|venda)/.test(normV(r[T.tipo]))) return;
+    const ov = chaveOv(r[T.numero]), cg = cargas[txt(r[T.carga]).toUpperCase()];
+    if (!ov || !cg) return;
+    const l = porOv[ov] || (porOv[ov] = []);
+    if (!l.some(x => x.id === cg.id)) l.push(cg);
+  });
+  const numeros = Object.keys(porOv);
+  if (!numeros.length) return fim([]);
+  // 3) o cliente (cabeçalho da OV) e as notas fiscais, em paralelo
+  const entsOv = await entidades(token, ate, diag, false);
+  const principal = entsOv.find(e => e.criadaEm && e.temEmpresa) || entsOv.find(e => e.criadaEm) || entsOv[0];
+  const [cab, NOTAS] = await Promise.all([
+    principal
+      ? porNumeros(principal.entidade, principal.numero, numeros, token, ate, diag, 'exp:ov', null, !principal.temEmpresa)
+        .catch(e => { avisos.push('Não deu para ler o cliente das OVs expedidas: ' + String(e.message || e).slice(0, 160)); return []; })
+      : Promise.resolve([]),
+    notasDasOvs(numeros, token, ate, diag).catch(e => ({ por: {}, erro: String(e.message || e).slice(0, 160) }))
+  ]);
+  if (NOTAS.erro) avisos.push('Não deu para ler as notas fiscais das OVs expedidas (' + NOTAS.erro + '): sem a NF, a transportadora não é consultada.');
+  const cabPor = {};
+  cab.forEach(r => { const k = chaveOv(r[principal.numero]); if (k && !cabPor[k]) cabPor[k] = r; });
+  const campo = (r, nomes) => { if (!r) return ''; const col = achaCol(colunasDe(r), nomes); return col ? txt(r[col]) : ''; };
+  const ovs = numeros.map(n => {
+    const r = cabPor[n], cs = porOv[n].slice().sort((a, b) => a.envioConfirmado < b.envioConfirmado ? 1 : a.envioConfirmado > b.envioConfirmado ? -1 : 0);
+    return { numero: n, cliente: campo(r, COLS.nome), conta: campo(r, COLS.conta), cidade: campo(r, COLS.cidade), uf: campo(r, COLS.uf),
+      expedidaEm: cs[0].envioConfirmado, cargas: cs, notas: NOTAS.por[n] || [] };
+  }).sort((a, b) => a.expedidaEm < b.expedidaEm ? 1 : a.expedidaEm > b.expedidaEm ? -1 : 0);
+  return fim(ovs);
+}
+
 function _limparCache() { _cache.clear(); _cacheLinhas.clear(); _ents = null; _entsTs = 0; _entsDev = null; _entsDevTs = 0; _servico = null; _servicoTs = 0; _entLinhas = null; Object.keys(_extras).forEach(k => { delete _extras[k]; }); ST_NOTA._limparCache(); _colsLinhas = null; }
 
-module.exports = { ordensDoDia, quadro, linhasDaOv, enviarParaPallet, emailCotacao, emailCotacaoAuto, operacoesDasOvs, hojeSP, EMPRESA, CONFIGURED: D.CONFIGURED, ETAPAS, _limparCache, _interno: { diaDe, RE_STATUS, RE_NAO_STATUS, etapaDe } };
+module.exports = { ordensDoDia, quadro, expedidas, linhasDaOv, enviarParaPallet, emailCotacao, emailCotacaoAuto, operacoesDasOvs, hojeSP, EMPRESA, CONFIGURED: D.CONFIGURED, ETAPAS, _limparCache, _interno: { diaDe, RE_STATUS, RE_NAO_STATUS, etapaDe } };

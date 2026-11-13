@@ -1,0 +1,44 @@
+name: Rastreio · consulta a Brix
+
+# KANBAN › RASTREIO DE ENTREGA (13/11/2026): a cada 30 min chama o robô do portal
+# (POST /api/rastreio { acao: 'consultar' }), que consulta a Brix pelas NFs das OVs
+# expedidas e move as entregues para Aguardando Revisão.
+#
+# Segredos (GitHub › Settings › Secrets and variables › Actions):
+#   RASTREIO_URL    o endereço do portal (https://….azurestaticapps.net), sem barra no fim
+#   RASTREIO_CHAVE  a MESMA chave do RASTREIO_CHAVE nas configurações do site (Azure),
+#                   com 16 caracteres ou mais
+# Sem os dois, o job só avisa e termina sem erro.
+#
+# O repositório é PÚBLICO e os logs do Actions também: o job imprime só as contagens
+# da rodada (nada de cliente, NF ou token). O GitHub pode atrasar o agendamento
+# alguns minutos e desliga agendamentos de repositório sem atividade há 60 dias —
+# a tela do rastreio também roda o robô quando abre com a última consulta velha.
+on:
+  schedule:
+    - cron: '7,37 * * * *'
+  workflow_dispatch:
+
+jobs:
+  consultar:
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    env:
+      URL: ${{ secrets.RASTREIO_URL }}
+      CHAVE: ${{ secrets.RASTREIO_CHAVE }}
+    steps:
+      - name: Sem configuração ainda
+        if: env.URL == '' || env.CHAVE == ''
+        run: echo "::warning::Faltam os segredos RASTREIO_URL e/ou RASTREIO_CHAVE — o robô do rastreio não foi chamado."
+      - name: Chamar o robô
+        if: env.URL != '' && env.CHAVE != ''
+        run: |
+          code=$(curl -sS -o resposta.json -w '%{http_code}' --max-time 60 -X POST "$URL/api/rastreio" \
+            -H 'Content-Type: application/json' -H "x-rastreio-chave: $CHAVE" -d '{"acao":"consultar"}' || echo 000)
+          echo "HTTP $code"
+          if [ "$code" = "200" ]; then
+            jq -c '{brix, ovs: .rodada.ovs, nfs: .rodada.nfs, achadas: .rodada.achadas, novasRevisao: .rodada.novasRevisao, erros: (.rodada.erros // [] | length), ms: .rodada.ms}' resposta.json || true
+          else
+            echo "::error::O robô do rastreio respondeu HTTP $code"
+            exit 1
+          fi
