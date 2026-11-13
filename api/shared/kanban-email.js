@@ -176,6 +176,9 @@ async function gravarMarca(nome, obj) {
   if (!r.ok) throw new Error('registro ' + r.status);
 }
 
+// por que a OV ficou na fila (a ficha mostra)
+const motivoFila = (out) => out.enviados >= MAX() ? 'no máximo ' + MAX() + ' envio(s) por leitura (KANBAN_EMAIL_MAX)' : 'acabou o tempo desta leitura';
+
 // ── a automação ──────────────────────────────────────────────────
 // candidatos = [{ ov, pronto (tem caixas), email (montarEmail) }] — as OVs em
 // Cotação com Solicitar transportadora = Sim. -> { porOv: { OV: { status, em,
@@ -192,16 +195,17 @@ async function processar(candidatos, opts) {
   if (!comRegistro()) return processarNaMemoria(candidatos, tempo, out);
   try {
     // as marcas de cada OV (o que já foi feito)
-    const marcas = await Promise.all(candidatos.map(c => lerMarca(nomeOv(c.ov)).catch(() => undefined)));
+    // 13/11/26: a marca ilegível deixa o MOTIVO (antes, "pendente" calado para sempre)
+    const marcas = await Promise.all(candidatos.map(c => lerMarca(nomeOv(c.ov)).catch(e => ({ _falha: String((e && e.name === 'AbortError') ? 'sem resposta em 6 s' : (e && e.message) || e).slice(0, 120) }))));
     for (let i = 0; i < candidatos.length; i++) {
       const c = candidatos[i], m = marcas[i];
+      if (m && m._falha) { porOv[c.ov] = { status: 'pendente', motivo: 'não deu para ler o registro dos envios (' + m._falha + ')' }; continue; }
       if (m) { porOv[c.ov] = m; continue; }
-      if (m === undefined) { porOv[c.ov] = { status: 'pendente' }; continue; }   // não deu para ler a marca
       if (!c.pronto) { porOv[c.ov] = { status: 'sem-caixas' }; continue; }
       if (!AUTO()) { porOv[c.ov] = { status: 'desligado' }; continue; }
-      if (out.enviados >= MAX() || !tempo()) { porOv[c.ov] = { status: 'pendente' }; continue; }
+      if (out.enviados >= MAX() || !tempo()) { porOv[c.ov] = { status: 'pendente', motivo: motivoFila(out) }; continue; }
       const nome = nomeOv(c.ov);
-      if (!(await reivindicar(nome, { status: 'enviando', ts: new Date().toISOString() }))) { porOv[c.ov] = { status: 'pendente' }; continue; }
+      if (!(await reivindicar(nome, { status: 'enviando', ts: new Date().toISOString() }))) { porOv[c.ov] = { status: 'pendente', motivo: 'outra leitura está enviando esta OV' }; continue; }
       try {
         const r = await enviar(c.email);
         const reg = { status: 'enviado', em: new Date().toISOString(), para: r.para, cc: r.cc, assunto: c.email.assunto, caixas: c.email.totalCaixas, auto: true };
@@ -231,7 +235,7 @@ async function processarNaMemoria(candidatos, tempo, out) {
     if (m) { porOv[c.ov] = m; continue; }
     if (!c.pronto) { porOv[c.ov] = { status: 'sem-caixas' }; continue; }
     if (!AUTO()) { porOv[c.ov] = { status: 'desligado' }; continue; }
-    if (out.enviados >= MAX() || !tempo()) { porOv[c.ov] = { status: 'pendente' }; continue; }
+    if (out.enviados >= MAX() || !tempo()) { porOv[c.ov] = { status: 'pendente', motivo: motivoFila(out) }; continue; }
     _memoria.set(k, { status: 'enviando', memoria: true });
     try {
       const r = await enviar(c.email);

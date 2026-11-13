@@ -20,9 +20,11 @@ process.env.KANBAN_DESDE = '0';
 // 12/11/26: a Criada parada 15 min -> Pendência fica desligada nos cenários antigos (OVs de dias atrás); o 7k liga
 process.env.KANBAN_CRIADA_MIN = '0';
 const BLOBS = {}, EMAILS = [];
+let BLOB_FALHA = 0;   // 13/11/26: o registro que não deixa ler (ex.: SAS vencida -> 403)
 function blobFalso(u, opts) {
   const nome = decodeURIComponent(u.pathname.replace(/^\/kanban\//, '')), metodo = (opts && opts.method) || 'GET', h = (opts && opts.headers) || {};
   const resp = (st, tx) => ({ ok: st < 400, status: st, text: async () => tx || '', json: async () => JSON.parse(tx || 'null') });
+  if (BLOB_FALHA) return resp(BLOB_FALHA);
   if (metodo === 'GET') return BLOBS[nome] == null ? resp(404) : resp(200, BLOBS[nome]);
   if (metodo === 'PUT') { if (h['If-None-Match'] === '*' && BLOBS[nome] != null) return resp(409); BLOBS[nome] = String(opts.body || ''); return resp(201); }
   return resp(400);
@@ -1502,6 +1504,73 @@ const bio = (n, st, lib) => ({ dataAreaId: 'msb', SalesOrderNumber: n, StatusPed
     && r.ovs.find(o => o.numero === 'OV019504').emailCotacao.status === 'sem-caixas', nb1 - nb0);
   K._limparCache(); EM._limparMemoria(); r = await K.quadro({});
   t('sem blob: se o servidor reiniciar (memória vazia), pode reenviar — o aviso da ficha diz isso', EMAILS.length > nb1, EMAILS.length - nb1);
+
+  // 13/11/26 (dono: "tá tudo configurado e nada" — a OV017594 em Cotação, Sim + FOB,
+  // parada em "Na fila"): a leitura do quadro gasta o prazo e o e-mail, o último
+  // passo, ficava de fora sem aviso. Agora: "sem-tempo" + a chamada própria
+  K._limparCache(); EM._limparMemoria(); Object.keys(BLOBS).forEach(k => { delete BLOBS[k]; });
+  process.env.KANBAN_BLOB_URL = 'https://blob.teste/kanban?sv=1&sig=x';
+  process.env.KANBAN_EMAIL_DE = 'remetente@empresa.teste'; process.env.KANBAN_EMAIL_PARA = 'teste@empresa.teste';
+  const wl12 = (n, x) => ({ dataAreaId: 'msb', WorkId: 'W' + x, LineNum: 1, OrderNum: n, ItemId: 'IT-1', InventTransId: '', FreghtType_InoveProjects: 'ChargeFreight' });
+  CEN = {
+    SalesOrderHeadersV2: { linhas: [ov10('OV019601', '10'), ov10('OV019602', '11')] },
+    BIOSalesOrderHeaderV1: { linhas: [bio10('OV019601', 'Yes'), bio10('OV019602', 'Yes')] },
+    SalesOrderLines: { linhas: [lin10('OV019601', 1, 6600), lin10('OV019602', 1, 900)] },
+    WHSWorkTableBiEntities: { linhas: ['601', '602'].map(x => w('OV019' + x, 'W' + x, 'Closed', { LoadId: 'LD-' + x, ShipmentId: 'SH-' + x })) },
+    WHSLoadTableBiEntities: { linhas: ['601', '602'].map(x => ld10('LD-' + x)) },
+    BioWHSContainerV1Entities: { linhas: [cx10('CX-601', 'LD-601', 'SH-601'), cx10('CX-602', 'LD-602', 'SH-602')] },
+    BioWHSWorkLineV1: { linhas: [wl12('OV019601', '601'), wl12('OV019602', '602')] }
+  };
+  // o relógio pula 31 s logo depois de ler o frete (linhas do trabalho): sobram ~5 s
+  // dos 36 s — o e-mail (que pede mais de 8 s) não cabe nesta leitura
+  const fetch12 = global.fetch, agora12 = Date.now; let salto12 = 0;
+  Date.now = () => agora12() + salto12;
+  global.fetch = async (url, opts) => {
+    const res = await fetch12(url, opts);
+    const u = new URL(String(url));
+    if (/BioWHSWorkLineV1$/.test(u.pathname) && /OrderNum/.test(u.searchParams.get('$filter') || '')) salto12 = 31000;
+    return res;
+  };
+  const n12 = EMAILS.length;
+  try { r = await K.quadro({}); } finally { global.fetch = fetch12; Date.now = agora12; }
+  const q12 = (rr, n) => rr.ovs.find(o => o.numero === n && o.etapa === 'cotacao');
+  t('sem tempo na leitura: a OV em Cotação (Sim + FOB) fica "sem-tempo" — não some calada — e nada é enviado ainda',
+    q12(r, 'OV019601') && q12(r, 'OV019601').frete.fob === true && q12(r, 'OV019601').emailCotacao && q12(r, 'OV019601').emailCotacao.status === 'sem-tempo' && EMAILS.length === n12
+    && r.diagnostico.some(d => d.etapa === 'email:cotacao' && d.semTempo === true && d.candidatas === 2), { ov: q12(r, 'OV019601') && q12(r, 'OV019601').emailCotacao, n: EMAILS.length - n12, d: r.diagnostico.filter(d => /email/.test(d.etapa)) });
+  const au12 = await K.emailCotacaoAuto();
+  t('a chamada própria envia (sobre o quadro em cache) e devolve a situação de cada OV',
+    au12.ok && au12.candidatas === 2 && au12.enviados === 2 && au12.porOv.OV019601.status === 'enviado' && au12.porOv.OV019601.caixas === 1 && EMAILS.length === n12 + 2
+    && JSON.parse(BLOBS['kanban-email-cotacao/OV019601.json']).status === 'enviado', { au12, n: EMAILS.length - n12 });
+  r = await K.quadro({});
+  t('o quadro em cache já mostra "enviado"', r.cache === true && q12(r, 'OV019601').emailCotacao.status === 'enviado' && /OV019601/.test(q12(r, 'OV019601').emailCotacao.previa.assunto), q12(r, 'OV019601').emailCotacao);
+  const au12b = await K.emailCotacaoAuto();
+  t('chamada de novo: nada a fazer, sem reenviar', au12b.ok && au12b.candidatas === 0 && EMAILS.length === n12 + 2, au12b);
+  // a próxima leitura (com tempo) lê a marca: não reenvia
+  K._limparCache(); r = await K.quadro({});
+  t('a leitura seguinte, com tempo, lê o registro e não reenvia', q12(r, 'OV019601').emailCotacao.status === 'enviado' && EMAILS.length === n12 + 2, q12(r, 'OV019601').emailCotacao.status);
+  // sem o quadro em cache: não relê o Dynamics inteiro (estouraria o prazo), só avisa
+  K._limparCache(); chamadas.length = 0;
+  const au12c = await K.emailCotacaoAuto();
+  t('sem o quadro em cache: não lê o Dynamics, só avisa (a tela tenta depois)', au12c.ok && au12c.semQuadro === true && chamadas.length === 0 && EMAILS.length === n12 + 2, au12c);
+  // a rota
+  r = await K.quadro({});
+  const fn12 = require('../api/kanban-ov/index.js'), ctx12 = { log: Object.assign(() => {}, { error() {} }) };
+  auth.requireArea = async () => ({ user: { email: 'fulano@empresa.teste' }, validated: false });
+  await fn12(ctx12, { method: 'POST', headers: {}, query: {}, body: { acao: 'email-cotacao-auto' } });
+  t('rota: POST { acao: "email-cotacao-auto" } -> 200, sem reenviar', ctx12.res.status === 200 && ctx12.res.body.ok === true && ctx12.res.body.candidatas === 0 && EMAILS.length === n12 + 2, ctx12.res);
+  auth.requireArea = orig;
+  // o registro que não deixa ler (ex.: SAS vencida): "pendente" COM o motivo
+  K._limparCache(); Object.keys(BLOBS).forEach(k => { delete BLOBS[k]; }); BLOB_FALHA = 403;
+  r = await K.quadro({});
+  BLOB_FALHA = 0;
+  const p12 = q12(r, 'OV019602') && q12(r, 'OV019602').emailCotacao;
+  t('registro ilegível: fica na fila com o motivo (registro 403), sem enviar', p12 && p12.status === 'pendente' && /registro dos envios \(registro 403\)/.test(p12.motivo) && EMAILS.length === n12 + 2, p12);
+  // o teto por leitura: o motivo também
+  K._limparCache(); Object.keys(BLOBS).forEach(k => { delete BLOBS[k]; }); process.env.KANBAN_EMAIL_MAX = '1';
+  r = await K.quadro({});
+  delete process.env.KANBAN_EMAIL_MAX;
+  const sts12 = ['OV019601', 'OV019602'].map(n => q12(r, n).emailCotacao);
+  t('teto por leitura: a que ficou diz o porquê (KANBAN_EMAIL_MAX)', sts12.filter(s => s.status === 'enviado').length === 1 && sts12.some(s => s.status === 'pendente' && /KANBAN_EMAIL_MAX/.test(s.motivo)), sts12);
   EM._limparMemoria(); delete process.env.KANBAN_EMAIL_DE;
   delete process.env.KANBAN_EMAIL_PARA; delete process.env.KANBAN_BLOB_URL;
   CEN = guarda10; SERVICO = serv10;

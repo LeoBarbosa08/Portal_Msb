@@ -1003,7 +1003,9 @@
       enviado: function (m) { return ['ok', 'Enviado ' + (m.em ? 'em ' + fDM(diaSP(m.em)) + ' às ' + fHora(m.em) + ' ' : '') + 'para ' + ((m.para || []).join(', ') || '—') + '.'
         + (m.memoria ? ' (Sem o registro em blob, o portal guarda o envio só na memória: se reiniciar, pode enviar de novo.)' : '')]; },
       'sem-caixas': function () { return ['alerta', 'Aguardando as caixas da carga: envia sozinho quando as caixas aparecerem.']; },
-      pendente: function () { return ['', 'Na fila: envia na próxima leitura do quadro.']; },
+      // 13/11/26: o motivo de estar na fila (antes, "Na fila" calado para sempre)
+      pendente: function (m) { return [m.motivo && /registro/.test(m.motivo) ? 'alerta' : '', 'Na fila' + (m.motivo ? ' (' + m.motivo + ')' : '') + ': o portal tenta de novo em seguida, com o quadro aberto.']; },
+      'sem-tempo': function () { return ['', 'Na fila: a leitura do quadro não teve tempo para o e-mail — o portal envia em seguida, numa chamada só para ele.']; },
       enviando: function () { return ['', 'Enviando…']; },
       erro: function (m) { return ['alerta', 'O envio falhou: ' + (m.erro || 'erro desconhecido')]; },
       'nao-configurado': function () { return ['alerta', 'Falta configurar o remetente e o destinatário no Azure (KANBAN_EMAIL_DE e KANBAN_EMAIL_PARA).']; },
@@ -1742,6 +1744,7 @@
         var hora = new Date(j.geradoEm || Date.now()).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
         var n = Object.keys(estado.mudou).length;
         status('Ao vivo · atualizado às ' + hora + ' · a cada 60 s' + (n ? ' · ' + n + ' mudança(s)' : ''), true);
+        emailAuto();
       } catch (e) {
         msgs([['erro', 'Não foi possível ler as ordens de venda no Dynamics: ' + esc(e.message)]]);
         if (!estado.r) $('kb-quadro').innerHTML = '<div class="kb-vazio">—</div>';
@@ -1751,6 +1754,31 @@
         $('kb-atualizar').disabled = false;
         agendar();
       }
+    }
+
+    // 13/11/26 (dono: "tá tudo configurado e nada"): a leitura do quadro gasta quase
+    // todo o prazo e o e-mail da Cotação ficava de fora. Quando alguma OV em Cotação
+    // está "sem-tempo" ou "pendente", a tela pede o envio numa chamada só para ele
+    // (o servidor usa o quadro em cache e envia uma vez por OV). Sem botão: automático.
+    var EMAIL_AUTO_MS = 15000;
+    function emailAuto() {
+      var ea = estado.emailAuto || (estado.emailAuto = { emCurso: false, ultimo: 0 });
+      if (ea.emCurso || Date.now() - ea.ultimo < EMAIL_AUTO_MS) return;
+      var fila = ((estado.r && estado.r.ovs) || []).some(function (o) {
+        var st = o.etapa === 'cotacao' && o.emailCotacao && o.emailCotacao.status;
+        return st === 'sem-tempo' || st === 'pendente';
+      });
+      if (!fila) return;
+      ea.emCurso = true; ea.ultimo = Date.now();
+      fetch('/api/kanban-ov', { method: 'POST', cache: 'no-store', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ acao: 'email-cotacao-auto' }) })
+        .then(function (res) { return res.json().catch(function () { return null; }); })
+        .then(function (j) {
+          if (!j || !j.porOv || !estado.r) return;
+          (estado.r.ovs || []).forEach(function (o) { if (o.etapa === 'cotacao' && j.porOv[o.numero]) o.emailCotacao = j.porOv[o.numero]; });
+          if (estado.aberta) pintarFicha();
+        })
+        .catch(function () {})
+        .then(function () { ea.emCurso = false; });
     }
 
     // o quadro se atualiza sozinho (o que está em aberto é sempre "agora"), só com a aba visível

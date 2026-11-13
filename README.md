@@ -1705,6 +1705,35 @@ no Dynamics: o Faturado olhou só 400 delas".
   a de 12/11 no Pallet, e os trabalhos das recentes são lidos primeiro (falhava
   com o código anterior).
 
+### Kanban · o e-mail da Cotação numa chamada própria quando a leitura não tem tempo (13/11/2026)
+
+O dono: "criei uma automação: se for FOB e Solicitar transportadora = Sim, envia
+um e-mail pedindo a cubagem — por que não aconteceu?" e "tá tudo configurado e
+nada". A OV017594 (Cotação, Sim, FOB - Destinatário) ficava em "Na fila" para sempre.
+
+- **A causa**: o e-mail é o último passo da leitura do quadro e só rodava com mais
+  de 8 s sobrando dos 36 s (`KANBAN_ORCAMENTO_MS`). As leituras de antes (cargas
+  Carregado, linhas do trabalho, linhas das cargas, QtyLeftToLoad…) gastam quase
+  tudo: o passo era pulado **sem aviso e sem diagnóstico**, e a ficha caía no
+  texto de reserva "Na fila", em toda leitura.
+- **Agora**: sem tempo, a OV fica `sem-tempo` (diagnóstico `email:cotacao` com
+  `semTempo` e `restanteMs`) e a **tela** chama `POST /api/kanban-ov { acao:
+  'email-cotacao-auto' }` (`emailCotacaoAuto`): prazo próprio (25 s), sobre o
+  **quadro em cache** — não relê o Dynamics inteiro; sem o cache, só responde
+  `semQuadro` e a tela tenta depois. Envia as OVs que pedem (Em Cotação, Sim, FOB)
+  e ainda não têm situação final; as marcas (blob ou memória) seguem garantindo
+  uma vez só por OV; atualiza os cartões do cache e a ficha. Sem botão: a tela
+  chama sozinha depois de cada leitura com OV `sem-tempo`/`pendente` (no máximo a
+  cada 15 s, uma de cada vez). A rota fica no log quando envia.
+- **O motivo da fila** (`kanban-email.js`): o "pendente" diz por quê — o registro
+  dos envios que não deu para ler (ex.: "registro 403", SAS vencida; em alerta na
+  ficha), o teto `KANBAN_EMAIL_MAX`, o fim do tempo ou outra leitura enviando.
+- Testes (12): a leitura sem tempo deixa `sem-tempo` e não envia (falhava com o
+  código anterior: nada no diagnóstico); a chamada própria envia, o cache mostra
+  "enviado", não reenvia (nem na chamada seguinte nem na leitura seguinte); sem o
+  cache não lê o Dynamics; a rota; o registro 403 e o teto com o motivo. `sw.js` —
+  cache `bm-comest-v99`.
+
 ### Kanban · menos alertas falsos: o teto de cargas e as cargas "não achadas" (13/11/2026)
 
 O dono: "ainda está mostrando esses alertas...".

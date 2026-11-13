@@ -1890,23 +1890,17 @@ async function montar(opts, modo) {
   // 12/11/26 (dono): o E-MAIL DA COTAÇÃO — a OV em Cotação com Solicitar
   // transportadora = Sim recebe o e-mail (uma vez só; kanban-email.js)
   if (modo.quadro) {
-    const vistas = new Set();
-    // 12/11/26 (dono): "deve disparar se for Sim E se for FOB" (ChargeFreight = FOB)
-    const cands = ovs.filter(o => o.etapa === 'cotacao' && solicitaTransp(o) && o.frete && o.frete.fob && !vistas.has(o.numero) && vistas.add(o.numero));
+    const cands = candidatasEmail(ovs);
     if (cands.length && restante(ate) > 8000) {
-      const ids = Array.from(new Set([].concat.apply([], cands.map(o => (o.cargas || []).map(c => String(c.id))))));
-      const CX = await caixasDasCargas(ids, token, ate, diag).catch(e => ({ E: null, por: {}, erro: String(e.message || e).slice(0, 160) }));
-      if (CX.erro) avisos.push('Não deu para ler as caixas das cargas (' + CX.erro + '): o e-mail da Cotação fica esperando as caixas.');
-      const lst = cands.map(o => { const em = EMAIL.montarEmail(dadosEmail(o, CX)); return { o, ov: o.numero, pronto: em.totalCaixas > 0, email: em }; });
-      const res = await EMAIL.processar(lst, { temTempo: () => restante(ate) > FOLGA_MS + 4000 });
-      lst.forEach(c => {
-        const st = res.porOv[c.ov] || { status: 'pendente' };
-        const info = Object.assign({}, st, { previa: { assunto: c.email.assunto, texto: c.email.texto }, caixas: c.email.totalCaixas, peso: c.email.pesoTotal, entidadeCaixas: CX.E ? CX.E.entidade : null });
-        ovs.filter(x => x.numero === c.ov && x.etapa === 'cotacao').forEach(x => { x.emailCotacao = info; });
-      });
+      const res = await processarEmails(cands, ovs, token, ate, diag, avisos);
       diag.push({ etapa: 'email:cotacao', candidatas: cands.length, enviados: res.enviados, erro: res.erro });
-      if (res.erro) avisos.push('O e-mail da Cotação não conseguiu ler o registro dos envios (' + res.erro + ').');
-      if (!EMAIL.configurado()) avisos.push(cands.length + ' OV(s) em Cotação pedem o e-mail de transportadora, mas falta configurar o remetente e o destinatário (KANBAN_EMAIL_DE e KANBAN_EMAIL_PARA) no Azure.');
+    } else if (cands.length) {
+      // 13/11/26 (dono: "tá tudo configurado e nada" — a OV017594 ficou em "Na fila"):
+      // a leitura do quadro gastou o tempo e o e-mail ficava de fora SEM AVISO, em toda
+      // leitura. Agora a OV fica "sem-tempo" e a tela pede o envio numa chamada só
+      // para ele (emailCotacaoAuto, com prazo próprio)
+      cands.forEach(o => { ovs.filter(x => x.numero === o.numero && x.etapa === 'cotacao').forEach(x => { x.emailCotacao = { status: 'sem-tempo' }; }); });
+      diag.push({ etapa: 'email:cotacao', candidatas: cands.length, semTempo: true, restanteMs: Math.max(0, restante(ate)) });
     }
   }
   if (modo.quadro && CARGA.E && !(CARGA.lista || [CARGA.E]).some(L => L.envioConfirmado)) {
@@ -2030,6 +2024,52 @@ async function caixasDasCargas(ids, token, ate, diag) {
 }
 // Solicitar transportadora = Sim (o campo extra da OV)
 const solicitaTransp = (o) => (o.extras || []).some(e => /^solicitartransportadora_custom$/i.test(e.nome) && marcadoV(e.valor));
+// as OVs que pedem o e-mail da Cotação (uma por OV, mesmo dividida em cartões)
+// 12/11/26 (dono): "deve disparar se for Sim E se for FOB" (ChargeFreight = FOB)
+function candidatasEmail(ovs) {
+  const vistas = new Set();
+  return ovs.filter(o => o.etapa === 'cotacao' && solicitaTransp(o) && o.frete && o.frete.fob && !vistas.has(o.numero) && vistas.add(o.numero));
+}
+// as caixas, o texto e o envio (kanban-email.js) das candidatas; grava a situação
+// em cada cartão da OV em Cotação (o emailCotacao que a ficha mostra)
+async function processarEmails(cands, ovs, token, ate, diag, avisos) {
+  const ids = Array.from(new Set([].concat.apply([], cands.map(o => (o.cargas || []).map(c => String(c.id))))));
+  const CX = await caixasDasCargas(ids, token, ate, diag).catch(e => ({ E: null, por: {}, erro: String(e.message || e).slice(0, 160) }));
+  if (CX.erro) avisos.push('Não deu para ler as caixas das cargas (' + CX.erro + '): o e-mail da Cotação fica esperando as caixas.');
+  const lst = cands.map(o => { const em = EMAIL.montarEmail(dadosEmail(o, CX)); return { o, ov: o.numero, pronto: em.totalCaixas > 0, email: em }; });
+  const res = await EMAIL.processar(lst, { temTempo: () => restante(ate) > FOLGA_MS + 4000 });
+  const porOv = {};
+  lst.forEach(c => {
+    const st = res.porOv[c.ov] || { status: 'pendente' };
+    const info = Object.assign({}, st, { previa: { assunto: c.email.assunto, texto: c.email.texto }, caixas: c.email.totalCaixas, peso: c.email.pesoTotal, entidadeCaixas: CX.E ? CX.E.entidade : null });
+    ovs.filter(x => x.numero === c.ov && x.etapa === 'cotacao').forEach(x => { x.emailCotacao = info; });
+    porOv[c.ov] = info;
+  });
+  if (res.erro) avisos.push('O e-mail da Cotação não conseguiu ler o registro dos envios (' + res.erro + ').');
+  if (!EMAIL.configurado()) avisos.push(cands.length + ' OV(s) em Cotação pedem o e-mail de transportadora, mas falta configurar o remetente e o destinatário (KANBAN_EMAIL_DE e KANBAN_EMAIL_PARA) no Azure.');
+  return Object.assign({}, res, { porOv });
+}
+
+// ── o E-MAIL DA COTAÇÃO numa chamada SÓ PARA ELE (13/11/2026) ─────
+// Dono: "tá tudo configurado e nada" — a leitura do quadro usa quase todo o prazo
+// (ORCAMENTO) e o e-mail, o último passo, só rodava com mais de 8 s sobrando: a OV
+// ficava em "Na fila" para sempre. A tela, quando vê uma OV "sem-tempo" (ou
+// "pendente"), chama POST /api/kanban-ov { acao: 'email-cotacao-auto' }: aqui, com
+// prazo próprio, sobre o QUADRO EM CACHE (não relê o Dynamics inteiro — sem o
+// cache, só avisa e a tela tenta depois). As marcas (blob ou memória) seguem
+// garantindo uma vez só por OV. Atualiza os cartões do cache.
+const EMAIL_FINAL = ['enviado', 'enviando', 'erro', 'nao-configurado', 'desligado'];
+async function emailCotacaoAuto() {
+  const c = _cache.get('quadro|' + hojeSP());
+  if (!c || Date.now() - c.ts > TTL_QUADRO * 4) return { ok: true, semQuadro: true, candidatas: 0, enviados: 0, porOv: {} };
+  const ovs = c.r.ovs || [];
+  const cands = candidatasEmail(ovs).filter(o => EMAIL_FINAL.indexOf((o.emailCotacao || {}).status) < 0);
+  if (!cands.length) return { ok: true, candidatas: 0, enviados: 0, porOv: {} };
+  const ate = Date.now() + 25000, diag = [], avisos = [];
+  const token = await D.getToken();
+  const res = await processarEmails(cands, ovs, token, ate, diag, avisos);
+  return { ok: true, candidatas: cands.length, enviados: res.enviados, erro: res.erro || null, porOv: res.porOv, avisos };
+}
 // os dados do e-mail de UMA OV: as caixas das cargas dela (só as das remessas dela, se der)
 function dadosEmail(o, CX) {
   const remessas = new Set((o.trabalhos || []).map(w => txt(w.remessa).toUpperCase()).filter(Boolean));
@@ -2341,4 +2381,4 @@ async function emailCotacao(numero, opts) {
 
 function _limparCache() { _cache.clear(); _cacheLinhas.clear(); _ents = null; _entsTs = 0; _entsDev = null; _entsDevTs = 0; _servico = null; _servicoTs = 0; _entLinhas = null; Object.keys(_extras).forEach(k => { delete _extras[k]; }); ST_NOTA._limparCache(); _colsLinhas = null; }
 
-module.exports = { ordensDoDia, quadro, linhasDaOv, enviarParaPallet, emailCotacao, operacoesDasOvs, hojeSP, EMPRESA, CONFIGURED: D.CONFIGURED, ETAPAS, _limparCache, _interno: { diaDe, RE_STATUS, RE_NAO_STATUS, etapaDe } };
+module.exports = { ordensDoDia, quadro, linhasDaOv, enviarParaPallet, emailCotacao, emailCotacaoAuto, operacoesDasOvs, hojeSP, EMPRESA, CONFIGURED: D.CONFIGURED, ETAPAS, _limparCache, _interno: { diaDe, RE_STATUS, RE_NAO_STATUS, etapaDe } };

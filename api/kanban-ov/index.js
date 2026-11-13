@@ -30,6 +30,10 @@
 //                                      -> 12/11/26: a PRÉVIA do e-mail da Cotação da OV
 //                                         (kanban-email.js); enviar: true -> 410 — o
 //                                         envio é só automático, na leitura do quadro
+//   POST /api/kanban-ov { acao: 'email-cotacao-auto' }
+//                                      -> 13/11/26: o envio automático com prazo próprio,
+//                                         sobre o quadro em cache (a tela chama quando a
+//                                         leitura não teve tempo): { candidatas, enviados, porOv }
 //   GET /api/kanban-ov?ov=OV017525     -> as linhas da OV (a ficha do painel)
 //   -> { ok, configured, numero, entidade, linhas:[{ linha, item, produto,
 //        qtd, un, preco, desconto, descPct, valor, status, entrega,
@@ -58,6 +62,17 @@ module.exports = async function (context, req) {
       let b = req.body;
       if (typeof b === 'string') { try { b = JSON.parse(b); } catch (e) { b = {}; } }
       b = b || {};
+      // 13/11/26 (dono: "tá tudo configurado e nada"): o e-mail AUTOMÁTICO da Cotação
+      // numa chamada só para ele — a tela pede quando a leitura do quadro não teve
+      // tempo (OV "sem-tempo"/"pendente"). Envia só para os destinatários do Azure, só
+      // as OVs do quadro em cache que pedem (Sim + FOB, em Cotação), uma vez por OV.
+      if (String(b.acao || '') === 'email-cotacao-auto') {
+        const r = await K.emailCotacaoAuto();
+        if (r.enviados || r.erro) context.log('[kanban-ov] email-cotacao-auto', JSON.stringify({ por: String((base.user && base.user.email) || '').toLowerCase(),
+          candidatas: r.candidatas, enviados: r.enviados, erro: r.erro, ovs: Object.keys(r.porOv || {}).map(k => k + '=' + r.porOv[k].status) }));
+        json(200, r);
+        return;
+      }
       // 12/11/26 (dono): o E-MAIL DA COTAÇÃO pela ficha — prévia (enviar: false) ou
       // envio já (enviar: true) para os destinatários do Azure (KANBAN_EMAIL_PARA);
       // ninguém escolhe para quem vai. Enviar exige o login VALIDADO.
