@@ -853,6 +853,7 @@ if (!window._bmPerfilSheetLoaded && !window._bmPerfilSheetInjected) {
     file:   '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="9" y1="15" x2="15" y2="15"/></svg>',
     dollar: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>',
     truck:  '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="3" width="15" height="13"/><polygon points="16 8 20 8 23 11 23 16 16 16 16 8"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/></svg>',
+    pin:    '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>',
     send:   '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>',
     users:  '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>',
     shield: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>',
@@ -1074,8 +1075,10 @@ if (!window._bmPerfilSheetLoaded && !window._bmPerfilSheetInjected) {
       nav:[
         {id:'kanban', label:'Ordens do Dia', href:'kanban.html', icon:I.kanban},
         // 13/11/26 (pedido do dono): rastreio da entrega e cálculo do frete —
-        // as regras de cada um ele ainda vai passar
-        {id:'kanban-rastreio-frete', label:'Rastreio de Entrega e Cálculo de Frete', href:'kanban-rastreio-frete.html', icon:I.truck, quebra:true},
+        // nasceram numa página só e o dono pediu para dividir; as regras de
+        // cada um ele ainda vai passar
+        {id:'kanban-rastreio', label:'Rastreio de Entrega', href:'kanban-rastreio.html', icon:I.pin},
+        {id:'kanban-frete',    label:'Cálculo de Frete',    href:'kanban-frete.html',    icon:I.truck},
       ],
       auto:[],
       agen:[],
@@ -1359,9 +1362,7 @@ if (!window._bmPerfilSheetLoaded && !window._bmPerfilSheetInjected) {
         </div>`;
       } else {
         const cls = childActive(item) ? ' class="active"' : '';
-        // `quebra`: nome comprido que vai inteiro, em duas linhas, em vez de cortar com "…"
-        const lbl = item.quebra ? ' style="white-space:normal;line-height:1.3"' : '';
-        navHtml += `<a href="${item.href}"${cls} title="${item.label}">${item.icon}<span class="sb-lbl"${lbl}>${item.label}</span></a>`;
+        navHtml += `<a href="${item.href}"${cls} title="${item.label}">${item.icon}<span class="sb-lbl">${item.label}</span></a>`;
       }
     }
 

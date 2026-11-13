@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Kanban · Rastreio de Entrega e Cálculo de Frete · MSB</title>
+  <title>Kanban · Rastreio de Entrega · MSB</title>
   <link rel="stylesheet" href="../styles.css?v=15">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -56,23 +56,15 @@
 
         <div class="area-main">
 
-          <!-- ═══════════ KANBAN · RASTREIO DE ENTREGA E CÁLCULO DE FRETE ═══════════
-               13/11/26 (pedido do dono): módulo novo no menu lateral do Kanban
-               (NAV.kanban em nav-sidebar.js). Duas abas — Rastreio de entrega e
-               Cálculo de frete — ainda SEM regra: o dono vai dizer como rastrear
-               e como calcular. O endereço abre direto numa aba com #rastreio ou
-               #frete. -->
+          <!-- ═══════════ KANBAN · RASTREIO DE ENTREGA ═══════════
+               13/11/26 (pedido do dono): módulo do menu lateral do Kanban
+               (NAV.kanban em nav-sidebar.js). Nasceu junto com o Cálculo de Frete numa
+               página só, com abas; o dono pediu para dividir. Ainda SEM regra:
+               o dono vai dizer como rastrear. -->
           <style>
-            .rf-head{display:flex;align-items:flex-end;justify-content:space-between;gap:16px;flex-wrap:wrap;padding:22px 0 10px;}
+            .rf-head{display:flex;align-items:flex-end;justify-content:space-between;gap:16px;flex-wrap:wrap;padding:22px 0 14px;}
             .rf-bc{font-size:12px;color:var(--text-3);}
             .rf-title{margin:4px 0 0;font-size:23px;font-weight:800;letter-spacing:-.5px;color:var(--text);}
-            .rf-sub{margin-top:2px;font-size:13px;color:var(--text-3);}
-            .rf-seg{display:inline-flex;padding:3px;border-radius:10px;border:1px solid var(--border);background:var(--surface);margin:6px 0 14px;}
-            .rf-seg button{display:inline-flex;align-items:center;gap:7px;padding:7px 14px;border:0;border-radius:8px;background:transparent;font:inherit;font-size:12.5px;font-weight:600;color:var(--text-3);cursor:pointer;white-space:nowrap;}
-            .rf-seg button:hover{color:var(--text);}
-            .rf-seg button.on{background:#287A8E;color:#fff;}
-            .rf-seg svg{width:15px;height:15px;flex-shrink:0;}
-            .rf-painel[hidden]{display:none;}
             .rf-card{border:1px solid var(--border);border-radius:14px;background:var(--surface);padding:22px 22px 24px;}
             .rf-card h2{display:flex;align-items:center;gap:10px;margin:0;font-size:16px;font-weight:800;color:var(--text);}
             .rf-card h2 .ic{display:inline-flex;align-items:center;justify-content:center;width:34px;height:34px;border-radius:10px;background:#E6F2F5;color:#1B6072;flex-shrink:0;}
@@ -82,46 +74,21 @@
             .rf-pend i{width:7px;height:7px;border-radius:50%;background:currentColor;opacity:.8;}
             html[data-tema="escuro"] .rf-card h2 .ic{background:#1E3438;color:#8FD3E0;}
             html[data-tema="escuro"] .rf-pend{background:#3A3320;border-color:#5A4E2A;color:#F0D98A;}
-            @media(max-width:767.98px){
-              .rf-title{font-size:18px;}
-              .rf-seg{display:flex;}
-              .rf-seg button{flex:1;justify-content:center;padding:8px 6px;}
-            }
+            @media(max-width:767.98px){ .rf-title{font-size:18px;} }
           </style>
 
           <div class="rf-head">
             <div>
               <div class="rf-bc">Kanban</div>
-              <h1 class="rf-title">Rastreio de Entrega e Cálculo de Frete</h1>
+              <h1 class="rf-title">Rastreio de Entrega</h1>
             </div>
           </div>
 
-          <div class="rf-seg" role="tablist" aria-label="Rastreio de entrega ou cálculo de frete">
-            <button type="button" role="tab" id="rf-tab-rastreio" data-aba="rastreio" aria-controls="rf-rastreio" aria-selected="true" class="on">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
-              Rastreio de entrega
-            </button>
-            <button type="button" role="tab" id="rf-tab-frete" data-aba="frete" aria-controls="rf-frete" aria-selected="false" tabindex="-1">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="1" y="3" width="15" height="13"/><polygon points="16 8 20 8 23 11 23 16 16 16 16 8"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/></svg>
-              Cálculo de frete
-            </button>
+          <div class="rf-card">
+            <h2><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg></span>Rastreio de Entrega</h2>
+            <p>Aqui vai aparecer onde está cada entrega depois que a carga sai da expedição.</p>
+            <span class="rf-pend"><i></i>Aguardando a regra do rastreio</span>
           </div>
-
-          <section class="rf-painel" id="rf-rastreio" role="tabpanel" aria-labelledby="rf-tab-rastreio">
-            <div class="rf-card">
-              <h2><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg></span>Rastreio de entrega</h2>
-              <p>Aqui vai aparecer onde está cada entrega depois que a carga sai da expedição.</p>
-              <span class="rf-pend"><i></i>Aguardando a regra do rastreio</span>
-            </div>
-          </section>
-
-          <section class="rf-painel" id="rf-frete" role="tabpanel" aria-labelledby="rf-tab-frete" hidden>
-            <div class="rf-card">
-              <h2><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="1" y="3" width="15" height="13"/><polygon points="16 8 20 8 23 11 23 16 16 16 16 8"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/></svg></span>Cálculo de frete</h2>
-              <p>Aqui vai sair o valor do frete de cada pedido.</p>
-              <span class="rf-pend"><i></i>Aguardando a regra do cálculo</span>
-            </div>
-          </section>
 
         </div><!-- /area-main -->
       </div><!-- /area-grid -->
@@ -138,39 +105,6 @@
   </footer>
 
   <script src="../script.js?v=8"></script>
-  <script src="../nav-sidebar.js?v=89"></script>
-  <script>
-  (function () {
-    'use strict';
-    var abas = Array.prototype.slice.call(document.querySelectorAll('.rf-seg [data-aba]'));
-    function mostrar(id, foco) {
-      if (!document.getElementById('rf-' + id)) id = 'rastreio';
-      abas.forEach(function (b) {
-        var on = b.getAttribute('data-aba') === id;
-        b.classList.toggle('on', on);
-        b.setAttribute('aria-selected', on ? 'true' : 'false');
-        b.tabIndex = on ? 0 : -1;
-        document.getElementById('rf-' + b.getAttribute('data-aba')).hidden = !on;
-        if (on && foco) b.focus();
-      });
-    }
-    abas.forEach(function (b, i) {
-      b.addEventListener('click', function () {
-        var id = b.getAttribute('data-aba');
-        mostrar(id);
-        try { history.replaceState(null, '', '#' + id); } catch (e) {}
-      });
-      // setas trocam de aba (padrão de tablist)
-      b.addEventListener('keydown', function (e) {
-        if (e.key !== 'ArrowRight' && e.key !== 'ArrowLeft') return;
-        e.preventDefault();
-        var prox = abas[(i + (e.key === 'ArrowRight' ? 1 : abas.length - 1)) % abas.length];
-        prox.click(); mostrar(prox.getAttribute('data-aba'), true);
-      });
-    });
-    mostrar(location.hash.slice(1));
-    window.addEventListener('hashchange', function () { mostrar(location.hash.slice(1)); });
-  })();
-  </script>
+  <script src="../nav-sidebar.js?v=90"></script>
 </body>
 </html>

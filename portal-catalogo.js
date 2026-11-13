@@ -39,6 +39,7 @@ window.PORTAL_CATALOGO = (function () {
     box:     '<svg' + S + '<rect x="2" y="2" width="20" height="8" rx="2"/><rect x="2" y="14" width="20" height="8" rx="2"/><line x1="6" y1="6" x2="6.01" y2="6"/><line x1="6" y1="18" x2="6.01" y2="18"/></svg>',
     money:   '<svg' + S + '<line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>',
     truck:   '<svg' + S + '<rect x="1" y="3" width="15" height="13"/><polygon points="16 8 20 8 23 11 23 16 16 16 16 8"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/></svg>',
+    pin:     '<svg' + S + '<path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>',
     send:    '<svg' + S + '<line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>',
     users:   '<svg' + S + '<path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>',
     shield:  '<svg' + S + '<path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><polyline points="9 12 11 14 15 10"/></svg>',
@@ -184,7 +185,8 @@ window.PORTAL_CATALOGO = (function () {
     ['contabil', 'Analítico por NF',       'Margem de Contribuição', 'contabil-margem-nf.html',        'sub',   'margem nota fiscal nf analitico item'],
     // ── Kanban (09/11/26) — espelho do NAV.kanban ─────
     ['kanban', 'Ordens do Dia',            '',                       'kanban.html',                    'grid',  'kanban quadro ordens de venda ov ovs dia hoje almox-pa criada credito logistica faturado dynamics tempo real'],
-    ['kanban', 'Rastreio de Entrega e Cálculo de Frete', '',         'kanban-rastreio-frete.html',     'truck', 'kanban rastreio rastreamento entrega entregas transportadora frete calculo cotacao de frete expedicao'],
+    ['kanban', 'Rastreio de Entrega',      '',                       'kanban-rastreio.html',           'pin',   'kanban rastreio rastreamento rastrear entrega entregas transportadora onde esta pedido carga expedicao'],
+    ['kanban', 'Cálculo de Frete',         '',                       'kanban-frete.html',              'truck', 'kanban frete calculo calcular cotacao de frete valor transportadora peso cep'],
 
     // ── Licitação ─────────────────────────────────────────────────
     ['licitacao', 'Sales Report',              '',             'licitacao-sales-report.html',            'bars',  'sales report licitacao bi empenho visao geral'],
