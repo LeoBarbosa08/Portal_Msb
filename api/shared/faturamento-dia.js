@@ -440,9 +440,21 @@ async function notasDoDia(opts) {
       const daOv = (ov) => o.porOv[String(ov || '').trim().toUpperCase()];
       semOp.forEach(n => { const x = daOv(n.ordem); if (x && x.valor) { n.operacao = x.valor; n.operacaoFonte = 'OV · ' + x.coluna; achou++; } });
       repetidas.forEach(x => { const y = daOv(x.ordem); if (y && y.valor) x.operacao = y.valor; });
-      operacaoOv = { colunas: o.colunas, notas: semOp.length, achadas: achou };
+      const naoAchadas = new Set((o.naoAchadas || []).map(k => String(k).toUpperCase()));
+      operacaoOv = { colunas: o.colunas, consultadas: o.consultadas || [], notas: semOp.length, achadas: achou, naoAchadas: o.naoAchadas || [] };
       if (!o.colunas.length) avisos.push('Tipo de operação: o diário de faturas não tem, e as entidades de ordem de venda também não trazem uma coluna de tipo de operação. Rode "Procurar no Dynamics" lá embaixo e mande o resultado.');
-      else if (achou < semOp.length) avisos.push('Tipo de operação: ' + (semOp.length - achou) + ' nota(s) sem operação na OV (' + o.colunas.join(' · ') + ').');
+      else if (achou < semOp.length) {
+        // 13/11/26: o porquê, nota por nota — a OV existe e está sem o tipo, ou
+        // a OV não foi achada em entidade nenhuma (de venda nem de devolução)
+        const sem = semOp.filter(n => !n.operacao);
+        const nao = sem.filter(n => naoAchadas.has(n.ordem.toUpperCase()));
+        const vazia = sem.filter(n => !naoAchadas.has(n.ordem.toUpperCase()));
+        const lista = (arr) => arr.slice(0, 6).map(n => n.numero + ' (' + (n.tipo === 'devolucao' ? 'devolução, ' : '') + n.ordem + ')').join(', ') + (arr.length > 6 ? ', …' : '');
+        const partes = [];
+        if (vazia.length) partes.push(vazia.length + ' nota(s) com a ordem sem tipo de operação preenchido no Dynamics: ' + lista(vazia));
+        if (nao.length) partes.push(nao.length + ' nota(s) cuja ordem não foi achada nas entidades de ordem de venda nem de devolução (' + (o.consultadas || []).join(', ') + '): ' + lista(nao));
+        avisos.push('Tipo de operação: ' + partes.join(' · ') + '.');
+      }
     } catch (e) {
       lerOpFalhou = true;
       diag.push({ etapa: 'ov:operacao', erro: String(e.message || e).slice(0, 200) });
@@ -456,7 +468,12 @@ async function notasDoDia(opts) {
     const algumTipo = notas.some(n => n.operacao);
     if (!algumTipo || lerOpFalhou) {
       filtroOperacao = { aplicado: false, aceitos: OPS_ACEITAS };
-      avisos.unshift('ATENÇÃO: o filtro dos tipos de operação aceitos (' + OPS_ACEITAS.join(', ') + ') NÃO foi aplicado — não deu para ler o tipo de operação das notas agora. Os valores abaixo incluem todas as notas. Clique em Atualizar.');
+      // 13/11/26: leu as ordens e nenhuma nota tem tipo ≠ não conseguiu ler
+      // (o aviso antigo dizia "não deu para ler" e mandava atualizar à toa)
+      const leu = !lerOpFalhou && operacaoOv && operacaoOv.colunas.length;
+      avisos.unshift('ATENÇÃO: o filtro dos tipos de operação aceitos (' + OPS_ACEITAS.join(', ') + ') NÃO foi aplicado — '
+        + (leu ? 'nenhuma nota do dia tem tipo de operação na sua ordem (o motivo, nota por nota, está no aviso "Tipo de operação" abaixo). Os valores abaixo incluem todas as notas.'
+               : 'não deu para ler o tipo de operação das notas agora. Os valores abaixo incluem todas as notas. Clique em Atualizar.'));
     } else {
       const ficam = [];
       notas.forEach(n => {

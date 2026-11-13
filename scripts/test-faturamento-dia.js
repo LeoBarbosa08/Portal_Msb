@@ -282,6 +282,38 @@ const CLIENTES = { porConta: true, amostra: { dataAreaId: 'msb', CustomerAccount
   t('sem tipos lidos, todas as notas ficam', r.notas.length === 5 && r.resumo.liquido === 1850, r.resumo);
   t('aviso em destaque: filtro NÃO aplicado', /NÃO foi aplicado/.test(r.avisos[0]) && r.filtroOperacao && r.filtroOperacao.aplicado === false, r.avisos);
 
+  console.log('8c) a devolução do dia: a ordem é de DEVOLUÇÃO (RMA), não está nas entidades de OV — 13/11/2026');
+  const jd = (n, ov, v) => Object.assign(jl8(n, ov, v), { InvoiceDate: '2026-11-13T12:00:00Z' });
+  FD._limparCache(); K8._limparCache(); chamadas.length = 0;
+  CEN = {
+    FiscalDocuments: { amostra: AMOSTRA_FISCAL, linhas: [], ultima: '2023-12-05T00:00:00Z', colData: 'FiscalDocumentDate' },
+    SalesInvoiceHeadersV2: Object.assign(DIARIO([jd('000021610', 'OV017700', -6400)]), { porNumero: true }),
+    BIOSalesOrderHeaderV1: { amostra: ov8('OV0', 'S.VEN.006'), linhas: [] },   // a OV de devolução não vem aqui
+    ReturnOrderHeaders: { amostra: { dataAreaId: 'msb', ReturnOrderNumber: 'OV0', RMANumber: 'RMA0', FiscalDocumentOperationTypeId: 'E.VEN.002' },
+      linhas: [{ dataAreaId: 'msb', ReturnOrderNumber: 'OV017700', FiscalDocumentOperationTypeId: 'E.VEN.002' }] },
+    CustomersV3: CLIENTES
+  };
+  r = await FD.notasDoDia({ data: '2026-11-13' });
+  const n8c = r.notas.find(x => x.numero === '000021610');
+  t('achou o tipo na ordem de devolução (E.VEN.002)', n8c && n8c.operacao === 'E.VEN.002' && /ReturnOrderHeaders\.FiscalDocumentOperationTypeId$/.test(n8c.operacaoFonte), n8c || r.foraOperacao);
+  t('filtro aplicado: a devolução de 6.400 conta', r.filtroOperacao && r.filtroOperacao.aplicado === true && r.resumo.devolucao.qtd === 1 && r.resumo.devolucao.valor === 6400, r.resumo);
+  t('sem aviso vermelho de operação', !r.avisos.some(a => /tipos de operação aceitos.*NÃO foi aplicado/.test(a)), r.avisos);
+  t('ordem de devolução lida pelo nº, só a MSB', chamadas.some(c => c.ent === 'ReturnOrderHeaders' && /ReturnOrderNumber eq 'OV017700'/.test(c.q.filter) && /dataAreaId eq 'msb'/.test(c.q.filter)), chamadas.filter(c => c.ent === 'ReturnOrderHeaders').map(c => c.q.filter));
+
+  console.log('8d) a ordem não está em entidade nenhuma: o aviso diz isso (não "não deu para ler")');
+  FD._limparCache(); K8._limparCache(); chamadas.length = 0;
+  CEN.ReturnOrderHeaders.linhas = [];
+  r = await FD.notasDoDia({ data: '2026-11-13' });
+  t('filtro NÃO aplicado (nenhuma nota com tipo): a devolução continua na soma', r.filtroOperacao && r.filtroOperacao.aplicado === false && r.resumo.devolucao.valor === 6400, r.resumo);
+  const av8d = r.avisos.find(a => /tipos de operação aceitos.*NÃO foi aplicado/.test(a)) || '';
+  t('aviso vermelho diz que nenhuma nota tem tipo, não que a leitura falhou', /NÃO foi aplicado — nenhuma nota do dia tem tipo de operação/.test(av8d) && !/Clique em Atualizar/.test(av8d), r.avisos);
+  t('aviso diz a nota, a ordem e onde procurou', r.avisos.some(a => /não foi achada nas entidades de ordem de venda nem de devolução/.test(a) && /000021610 \(devolução, OV017700\)/.test(a) && /ReturnOrderHeaders/.test(a)), r.avisos);
+
+  FD._limparCache(); K8._limparCache(); chamadas.length = 0;
+  CEN.BIOSalesOrderHeaderV1.linhas = [ov8('OV017700', '')];   // a OV existe, mas sem o tipo
+  r = await FD.notasDoDia({ data: '2026-11-13' });
+  t('OV achada sem tipo: o aviso diz "sem tipo de operação preenchido"', r.avisos.some(a => /ordem sem tipo de operação preenchido no Dynamics: 000021610/.test(a)), r.avisos);
+
   console.log('9) só nota com status Aprovado (o caso da 000021478 "Descartado")');
   const ST9 = require('../api/shared/fatdia-status');
   FD._limparCache(); K8._limparCache(); ST9._limparCache(); chamadas.length = 0;

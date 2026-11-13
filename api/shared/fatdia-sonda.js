@@ -35,7 +35,9 @@ const CONHECIDAS = [
   'CustInvoiceJourBiEntities', 'CustInvoiceTransBiEntities',
   'FreeTextInvoiceHeaders', 'FreeTextInvoiceLines',
   'FiscalDocuments', 'FiscalDocumentLines', 'FiscalDocumentLinesBR', 'FiscalDocumentHeaders',
-  'SalesOrderHeadersV2', 'BIOSalesOrderHeaderV1', 'SalesOrderLines'
+  'SalesOrderHeadersV2', 'BIOSalesOrderHeaderV1', 'SalesOrderLines',
+  // 13/11/26: a nota de devolução aponta para a ordem de devolução (RMA)
+  'ReturnOrderHeaders', 'ReturnOrderLines'
 ];
 const RE_NOME = /invoice|fiscal|cfop|nfe|efdoc|electronic|operationtype|opertype|salespurchoper/i;
 // 09/11/26: também o STATUS da nota (aprovado, descartado…) — o filtro "Aprovado"

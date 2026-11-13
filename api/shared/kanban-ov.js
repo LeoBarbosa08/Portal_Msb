@@ -431,7 +431,8 @@ async function doServico(token, ate) {
   return _servico;
 }
 
-async function sondar(ent, token, ate) {
+// nomesNumero: as colunas do nº da ordem (padrão: as da OV; a devolução tem as dela)
+async function sondar(ent, token, ate, nomesNumero) {
   let rows = null, erro = null;
   for (const filtro of ["dataAreaId eq '" + D.odataStr(EMPRESA) + "'", null]) {
     try {
@@ -441,7 +442,7 @@ async function sondar(ent, token, ate) {
   }
   if (!rows || !rows.length) return { entidade: ent, serve: false, erro: erro ? erro.slice(0, 200) : 'sem linhas' };
   const cols = colunasDe(rows[0]);
-  const numero = achaCol(cols, COLS.numero);
+  const numero = achaCol(cols, nomesNumero || COLS.numero);
   const criadaEm = achaCol(cols, COLS.criadaEm) || cols.find(c => RE_CRIADA.test(c)) || null;
   const temEmpresa = cols.some(c => c.toLowerCase() === 'dataareaid');
   return { entidade: ent, serve: !!numero, numero, criadaEm, temEmpresa, colunas: cols, erro: numero ? null : 'sem coluna de número da OV' };
@@ -2140,27 +2141,67 @@ const SEM_VALOR_OP = /^(doesnotapply|notapplicable|not applicable|none|no|nao se
 // Ele vence qualquer outra coluna com cara de operação. KANBAN_COL_OPERACAO
 // troca/acrescenta nomes (lista, em ordem de preferência).
 const COL_OPERACAO = envLista('KANBAN_COL_OPERACAO', ['FiscalDocumentOperationTypeId']);
+// 13/11/26 (dono: "não achou o tipo de operação?" — a única nota do dia era uma
+// DEVOLUÇÃO): a nota de crédito de uma devolução aponta para a ORDEM DE
+// DEVOLUÇÃO (RMA), e as entidades de OV (SalesOrderHeaders*) não trazem ordem de
+// devolução — a OV da nota não era achada em nenhuma. A OV que sair das
+// entidades de OV sem tipo de operação é procurada também nas entidades de
+// ordem de devolução (as candidatas + o que o service document publicar com
+// "returnorderheader" no nome). KANBAN_ENT_DEVOLUCAO acrescenta nomes.
+const ENT_DEVOL = envLista('KANBAN_ENT_DEVOLUCAO', []).concat([
+  'ReturnOrderHeaders', 'ReturnOrderHeadersV2', 'BIOReturnOrderHeaderV1', 'BIOReturnOrderHeadersV1'
+]).filter((v, i, a) => a.indexOf(v) === i);
+const COLS_NUM_DEVOL = ['ReturnOrderNumber', 'SalesOrderNumber', 'SalesId', 'SALESID', 'ReturnSalesOrderNumber'];
+let _entsDev = null, _entsDevTs = 0;
+async function entidadesDevolucao(token, ate, diag) {
+  if (_entsDev && Date.now() - _entsDevTs < ENT_TTL) { diag.push({ etapa: 'ov:devolucao:entidades', cache: true, usadas: _entsDev.map(e => e.entidade) }); return _entsDev; }
+  const servico = await doServico(token, ate);
+  const existe = {}; servico.forEach(n => { existe[n.toLowerCase()] = n; });
+  let alvos = ENT_DEVOL.map(n => existe[n.toLowerCase()] || n);
+  if (servico.length) {
+    alvos = alvos.filter(n => existe[n.toLowerCase()]);
+    servico.filter(n => /returnorderheader/i.test(n) && alvos.indexOf(n) < 0).slice(0, 4).forEach(n => alvos.push(n));
+  }
+  const sondas = await Promise.all(alvos.map(ent => sondar(ent, token, ate, COLS_NUM_DEVOL).catch(e => ({ entidade: ent, serve: false, erro: String(e.message || e).slice(0, 200) }))));
+  const achadas = sondas.filter(s => s.serve);
+  sondas.forEach(s => diag.push({ etapa: 'ov:devolucao:entidade', entidade: s.entidade, serve: s.serve, numero: s.numero || null, erro: s.erro }));
+  _entsDev = achadas; _entsDevTs = Date.now();   // nenhuma serve: não sonda de novo a cada leitura
+  return achadas;
+}
+
 async function operacoesDasOvs(numeros, ate) {
   const diag = [], porOv = {};
   const nums = Array.from(new Set((numeros || []).map(chaveOv).filter(Boolean)));
-  if (!nums.length) return { porOv, colunas: [], diag };
+  if (!nums.length) return { porOv, colunas: [], naoAchadas: [], consultadas: [], diag };
   const token = await D.getToken();
-  const ents = await entidades(token, ate, diag, false);
-  const comOp = ents.map(E => ({ E, cols: (E.colunas || []).filter(c => RE_OPER.test(c) && !RE_OPER_NAO.test(c)) })).filter(x => x.cols.length);
-  if (!comOp.length) {
-    diag.push({ etapa: 'ov:operacao', erro: 'nenhuma entidade de OV tem coluna de tipo de operação', entidades: ents.map(e => e.entidade) });
-    return { porOv, colunas: [], diag };
-  }
-  await Promise.all(comOp.map(async ({ E, cols }) => {
+  const comOpDe = (ents) => ents.map(E => ({ E, cols: (E.colunas || []).filter(c => RE_OPER.test(c) && !RE_OPER_NAO.test(c)) })).filter(x => x.cols.length);
+  const achadas = new Set();   // OVs que vieram em alguma entidade (com ou sem tipo)
+  const lerEm = (lista, quais, etapa) => Promise.all(lista.map(async ({ E, cols }) => {
     try {
-      const rows = await porNumeros(E.entidade, E.numero, nums, token, ate, diag, 'ov:operacao', [E.numero].concat(cols).join(','), !E.temEmpresa);
+      const rows = await porNumeros(E.entidade, E.numero, quais, token, ate, diag, etapa, [E.numero].concat(cols).join(','), !E.temEmpresa);
       rows.forEach(r => {
         const k = chaveOv(r[E.numero]); if (!k) return;
+        achadas.add(k);
         const o = porOv[k] || (porOv[k] = { todos: {} });
         cols.forEach(c => { const v = txt(r[c]); if (v && !VAZIOS.test(v) && !SEM_VALOR_OP.test(v)) o.todos[E.entidade + '.' + c] = v; });
       });
     } catch (e) { /* o erro já está no diag */ }
   }));
+  const ents = await entidades(token, ate, diag, false);
+  const comOp = comOpDe(ents);
+  if (!comOp.length) diag.push({ etapa: 'ov:operacao', erro: 'nenhuma entidade de OV tem coluna de tipo de operação', entidades: ents.map(e => e.entidade) });
+  await lerEm(comOp, nums, 'ov:operacao');
+  // a OV sem tipo nas entidades de OV: é ordem de devolução?
+  const semTipo = nums.filter(k => !porOv[k] || !Object.keys(porOv[k].todos).length);
+  let comOpDev = [];
+  if (semTipo.length && restante(ate) > FOLGA_MS + 3000) {
+    try {
+      comOpDev = comOpDe(await entidadesDevolucao(token, ate, diag));
+      await lerEm(comOpDev, semTipo, 'ov:devolucao');
+    } catch (e) { diag.push({ etapa: 'ov:devolucao', erro: String(e.message || e).slice(0, 200) }); }
+  }
+  const todas = comOp.concat(comOpDev);
+  if (!todas.length) return { porOv, colunas: [], naoAchadas: nums.filter(k => !achadas.has(k)), consultadas: [], diag };
   // o que vai para a tela: o FiscalDocumentOperationTypeId (COL_OPERACAO), se
   // alguma entidade trouxer; senão uma coluna de descrição; senão a 1ª preenchida
   const colDe = (chave) => chave.split('.').pop().toLowerCase();
@@ -2171,7 +2212,8 @@ async function operacoesDasOvs(numeros, ate) {
     pref = pref || ks.find(x => /descr|name|nome|texto|text/i.test(x)) || ks[0] || null;
     porOv[k].coluna = pref; porOv[k].valor = pref ? porOv[k].todos[pref] : '';
   });
-  return { porOv, colunas: comOp.map(x => x.E.entidade + ': ' + x.cols.join(', ')), diag };
+  return { porOv, colunas: todas.map(x => x.E.entidade + ': ' + x.cols.join(', ')),
+    naoAchadas: nums.filter(k => !achadas.has(k)), consultadas: todas.map(x => x.E.entidade), diag };
 }
 
 
@@ -2297,6 +2339,6 @@ async function emailCotacao(numero, opts) {
   return Object.assign(base, { enviado: reg });
 }
 
-function _limparCache() { _cache.clear(); _cacheLinhas.clear(); _ents = null; _entsTs = 0; _servico = null; _servicoTs = 0; _entLinhas = null; Object.keys(_extras).forEach(k => { delete _extras[k]; }); ST_NOTA._limparCache(); _colsLinhas = null; }
+function _limparCache() { _cache.clear(); _cacheLinhas.clear(); _ents = null; _entsTs = 0; _entsDev = null; _entsDevTs = 0; _servico = null; _servicoTs = 0; _entLinhas = null; Object.keys(_extras).forEach(k => { delete _extras[k]; }); ST_NOTA._limparCache(); _colsLinhas = null; }
 
 module.exports = { ordensDoDia, quadro, linhasDaOv, enviarParaPallet, emailCotacao, operacoesDasOvs, hojeSP, EMPRESA, CONFIGURED: D.CONFIGURED, ETAPAS, _limparCache, _interno: { diaDe, RE_STATUS, RE_NAO_STATUS, etapaDe } };
