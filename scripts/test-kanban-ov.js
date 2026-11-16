@@ -1659,6 +1659,56 @@ const bio = (n, st, lib) => ({ dataAreaId: 'msb', SalesOrderNumber: n, StatusPed
   r = await K.quadro({});
   const sr15c = e15('OV019701') && e15('OV019701').busca.semRemessa;
   t('o porquê: a entidade de cargas não tem o campo ShipmentId', e15('OV019701').status === 'sem-caixas' && e15('OV019701').busca.semLigacao === true && sr15c && sr15c[0].motivo === 'sem-coluna' && sr15c[0].fonte === 'WHSLoadTableBiEntities', sr15c);
+  // (4) 16/11/26 (dono: "está nessa entidade, WHSLoadLineBiEntities — gera várias linhas,
+  // uma por item, mas a remessa é sempre a mesma; pegue só o ShipmentId com base na
+  // carga e vá na tabela de container"): o caso da OV017597 / CG014448 / RM018553
+  K._limparCache(); Object.keys(BLOBS).forEach(k => { delete BLOBS[k]; });
+  SERVICO = serv15.concat(['BioWHSContainerV1', 'WHSLoadLineBiEntities']);
+  const ll16 = (carga, ov, item, sh) => ({ dataAreaId: 'msb', LoadId: carga, OrderNum: ov, ItemId: item, Qty: 6, InventTransId: 'MSB-' + item, ShipmentId: sh, LoadDirection: 'Outbound' });
+  const cx16 = (id, tipo, sh, kg, C, L, A) => ({ dataAreaId: 'msb', ContainerId: id, ShipmentId: sh, ContainerTypeCode: tipo, Weight: kg, Length: C, Width: L, Height: A });
+  CEN = {
+    SalesOrderHeadersV2: { linhas: [ov10('OV019801', '10')] },
+    BIOSalesOrderHeaderV1: { linhas: [bio10('OV019801', 'Yes')] },
+    SalesOrderLines: { linhas: [lin10('OV019801', 1, 2100)] },
+    WHSWorkTableBiEntities: { linhas: [w('OV019801', 'W801', 'Closed', { LoadId: 'CG-801' })] },
+    // a entidade de cargas SEM ShipmentId (como hoje)
+    WHSLoadTableBiEntities: { linhas: [ld10('CG-801')] },
+    // 3 linhas (itens) da carga, a mesma remessa
+    WHSLoadLineBiEntities: { linhas: [ll16('CG-801', 'OV019801', 'IT-1', 'RM018553'), ll16('CG-801', 'OV019801', 'IT-2', 'RM018553'), ll16('CG-801', 'OV019801', 'IT-3', 'RM018553')] },
+    // o container sem LoadId — só a remessa
+    BioWHSContainerV1: { linhas: [cx16('CNT000016038', 'Caixa Dreno', 'RM018553', 7.63, 45, 43, 28), cx16('CNT000016039', 'Caixa Amarela', 'RM018553', 1.92, 30, 26.5, 34.5), cx16('CNT-OUTRA', 'Caixa Dreno', 'RM099999', 5, 45, 43, 28)] },
+    BioWHSWorkLineV1: { linhas: [wl12('OV019801', '801')] }
+  };
+  // 1ª leitura: as linhas da carga falham -> "pendente" com o motivo (não "sem-caixas")
+  const fetch16 = global.fetch; let falha16 = true;
+  global.fetch = async (url, opts) => {
+    const u = new URL(String(url));
+    if (falha16 && /WHSLoadLineBiEntities$/.test(u.pathname) && /ShipmentId/.test(u.searchParams.get('$select') || '')) return corpo({ error: { message: 'falhou' } }, 500);
+    return fetch16(url, opts);
+  };
+  const n16 = EMAILS.length;
+  try {
+    r = await K.quadro({});
+    const p16 = e15('OV019801');
+    t('remessa ilegível nas linhas da carga: "pendente" com o motivo, sem enviar', p16 && p16.status === 'pendente' && /remessa \(ShipmentId\) nas linhas da carga/.test(p16.motivo) && EMAILS.length === n16, p16);
+    falha16 = false; chamadas.length = 0;
+    const au16 = await K.emailCotacaoAuto();
+    const ll = chamadas.filter(c => c.ent === 'WHSLoadLineBiEntities' && /ShipmentId/.test(c.q.select || ''));
+    const cxq = chamadas.filter(c => c.ent === 'BioWHSContainerV1' && c.q.top !== '1');
+    t('a remessa vem da WHSLoadLineBiEntities pela carga (só LoadId, ShipmentId e OrderNum)', ll.length === 1 && /LoadId eq 'CG-801'/.test(ll[0].q.filter) && ll[0].q.select === 'LoadId,ShipmentId,OrderNum', ll.map(c => c.q));
+    t('e as caixas da BioWHSContainerV1 pelo ShipmentId da carga (RM018553)', cxq.length === 1 && /ShipmentId eq 'RM018553'/.test(cxq[0].q.filter) && !/LoadId/.test(cxq[0].q.filter), cxq.map(c => c.q.filter));
+    const e16 = au16.porOv.OV019801;
+    t('envia com as 2 caixas da remessa (não a de outra remessa)', e16 && e16.status === 'enviado' && e16.caixas === 2 && e16.busca.naRemessa.map(x => x.remessa + '=' + x.caixas).join() === 'RM018553=2'
+      && e16.busca.linhasCarga.entidade === 'WHSLoadLineBiEntities' && EMAILS.length === n16 + 1, e16);
+    t('o e-mail com as caixas e o peso', /1x Caixa Dreno — Caixa Dreno \(C 45,0 x L 43,0 x A 28,0\)/.test(e16.previa.texto) && /1x Caixa Amarela/.test(e16.previa.texto) && /Total: 2 caixa\(s\)/.test(e16.previa.texto) && /9,55 kg/.test(e16.previa.texto), e16.previa.texto);
+  } finally { global.fetch = fetch16; }
+  // a carga com a linha de OUTRA OV só: a remessa não é desta
+  K._limparCache(); Object.keys(BLOBS).forEach(k => { delete BLOBS[k]; });
+  CEN.WHSLoadLineBiEntities.linhas = [ll16('CG-801', 'OV099999', 'IT-1', 'RM099999')];
+  r = await K.quadro({});
+  const e16b = e15('OV019801');
+  t('as linhas da carga só de outra OV: "sem-caixas" dizendo de qual OV são (a remessa não é desta)', e16b.status === 'sem-caixas' && e16b.busca.semRemessa[0].motivo === 'outra-ov'
+    && e16b.busca.semRemessa[0].fonte === 'WHSLoadLineBiEntities' && e16b.busca.semRemessa[0].ovsLinhas.join() === 'OV099999', e16b.busca);
   SERVICO = serv15;
   EM._limparMemoria(); delete process.env.KANBAN_EMAIL_DE;
   delete process.env.KANBAN_EMAIL_PARA; delete process.env.KANBAN_BLOB_URL;

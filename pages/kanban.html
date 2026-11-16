@@ -1031,7 +1031,9 @@
       // por que a carga ficou sem a remessa (16/11/26: sem falar de LoadId — o container não tem)
       (b.semRemessa || []).forEach(function (x) {
         var f = x.fonte || 'entidade de cargas';
-        s += ' ' + (x.motivo === 'sem-coluna' ? 'A ' + f + ' não tem o campo ShipmentId: a carga ' + x.carga + ' não traz a remessa.'
+        // 16/11/26: a remessa vem da WHSLoadLineBiEntities — sem ela, o porquê
+        s += ' ' + (x.motivo === 'sem-coluna' ? 'A carga ' + x.carga + ' não trouxe o ShipmentId'
+            + (b.linhasCarga && b.linhasCarga.erro ? ': nas linhas da carga, ' + b.linhasCarga.erro + '.' : ' (a ' + f + ' não tem o campo).')
           : x.motivo === 'vazio' ? 'A carga ' + x.carga + ' está com o ShipmentId vazio na ' + f + '.'
           : 'As linhas da carga ' + x.carga + ' com ShipmentId são de outra(s) OV(s) (' + ((x.ovsLinhas || []).join(', ') || '—') + '), não desta.');
       });
