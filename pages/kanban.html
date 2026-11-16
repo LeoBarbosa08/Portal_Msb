@@ -1003,7 +1003,8 @@
     var ST_MAIL = {
       enviado: function (m) { return ['ok', 'Enviado ' + (m.em ? 'em ' + fDM(diaSP(m.em)) + ' às ' + fHora(m.em) + ' ' : '') + 'para ' + ((m.para || []).join(', ') || '—') + '.'
         + (m.memoria ? ' (Sem o registro em blob, o portal guarda o envio só na memória: se reiniciar, pode enviar de novo.)' : '')]; },
-      'sem-caixas': function () { return ['alerta', 'Aguardando as caixas da carga: envia sozinho quando as caixas aparecerem.']; },
+      // 16/11/26 (dono: "o que você está aguardando?"): diz o que procurou e onde
+      'sem-caixas': function (m) { return ['alerta', 'Aguardando as caixas da carga: envia sozinho quando as caixas aparecerem.' + buscaCaixas(m)]; },
       // 13/11/26: o motivo de estar na fila (antes, "Na fila" calado para sempre)
       pendente: function (m) { return [m.motivo && /registro/.test(m.motivo) ? 'alerta' : '', 'Na fila' + (m.motivo ? ' (' + m.motivo + ')' : '') + ': o portal tenta de novo em seguida, com o quadro aberto.']; },
       'sem-tempo': function () { return ['', 'Na fila: a leitura do quadro não teve tempo para o e-mail — o portal envia em seguida, numa chamada só para ele.']; },
@@ -1012,6 +1013,17 @@
       'nao-configurado': function () { return ['alerta', 'Falta configurar o remetente e o destinatário no Azure (KANBAN_EMAIL_DE e KANBAN_EMAIL_PARA).']; },
       desligado: function () { return ['', 'Envio automático desligado (KANBAN_EMAIL_AUTO = 0).']; }
     };
+    // o que o servidor procurou: as cargas da OV, quantas caixas cada uma tem na
+    // entidade e quantas eram de outra remessa (busca, de dadosEmail)
+    function buscaCaixas(m) {
+      var b = m && m.busca; if (!b) return '';
+      if (!(b.cargas || []).length) return ' A OV não tem carga nos trabalhos dela.';
+      var ent = m.entidadeCaixas || 'entidade das caixas';
+      var cg = (b.naCarga || []).map(function (x) { return x.carga + ' (' + (x.caixas ? x.caixas + ' caixa(s)' : 'nenhuma caixa') + ')'; }).join(', ');
+      var s = ' Procurei na ' + ent + ': ' + cg + '.';
+      if (b.outraRemessa) s += ' ' + b.outraRemessa + ' caixa(s) de outra remessa (' + ((b.remessasCaixas || []).join(', ') || '—') + '; a OV: ' + ((b.remessasOv || []).join(', ') || '—') + ') e a carga leva outra OV do quadro.';
+      return s;
+    }
     // o tipo de frete em português (o Dynamics manda o nome do enum, em inglês)
     var ROT_FRETE = { chargefreight: 'FOB - Destinatário', fob: 'FOB - Destinatário', blank: 'Em branco' };
     function rotFrete(v) { var r = ROT_FRETE[String(v || '').toLowerCase().replace(/[^a-z0-9]/g, '')]; return r ? r + ' (' + v + ')' : String(v); }

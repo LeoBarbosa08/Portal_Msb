@@ -178,9 +178,13 @@ async function gravarMarca(nome, obj) {
 
 // por que a OV ficou na fila (a ficha mostra)
 const motivoFila = (out) => out.enviados >= MAX() ? 'no máximo ' + MAX() + ' envio(s) por leitura (KANBAN_EMAIL_MAX)' : 'acabou o tempo desta leitura';
+// 16/11/26: sem caixas no e-mail — "sem-caixas" só se as caixas foram LIDAS; a
+// leitura que falhou/ficou sem tempo (c.semLeitura) é "pendente" (a tela tenta de novo)
+const semCaixas = (c) => c.semLeitura ? { status: 'pendente', motivo: c.semLeitura } : { status: 'sem-caixas' };
 
 // ── a automação ──────────────────────────────────────────────────
-// candidatos = [{ ov, pronto (tem caixas), email (montarEmail) }] — as OVs em
+// candidatos = [{ ov, pronto (tem caixas), semLeitura (motivo: as caixas não foram
+// lidas — vira "pendente", não "sem-caixas"), email (montarEmail) }] — as OVs em
 // Cotação com Solicitar transportadora = Sim. -> { porOv: { OV: { status, em,
 // para, erro } }, base: bool, enviados: n, erro }
 // status: 'enviado' | 'sem-caixas' | 'pendente' (fica para a próxima leitura) |
@@ -201,7 +205,7 @@ async function processar(candidatos, opts) {
       const c = candidatos[i], m = marcas[i];
       if (m && m._falha) { porOv[c.ov] = { status: 'pendente', motivo: 'não deu para ler o registro dos envios (' + m._falha + ')' }; continue; }
       if (m) { porOv[c.ov] = m; continue; }
-      if (!c.pronto) { porOv[c.ov] = { status: 'sem-caixas' }; continue; }
+      if (!c.pronto) { porOv[c.ov] = semCaixas(c); continue; }
       if (!AUTO()) { porOv[c.ov] = { status: 'desligado' }; continue; }
       if (out.enviados >= MAX() || !tempo()) { porOv[c.ov] = { status: 'pendente', motivo: motivoFila(out) }; continue; }
       const nome = nomeOv(c.ov);
@@ -233,7 +237,7 @@ async function processarNaMemoria(candidatos, tempo, out) {
   for (const c of candidatos) {
     const k = nomeOv(c.ov), m = _memoria.get(k);
     if (m) { porOv[c.ov] = m; continue; }
-    if (!c.pronto) { porOv[c.ov] = { status: 'sem-caixas' }; continue; }
+    if (!c.pronto) { porOv[c.ov] = semCaixas(c); continue; }
     if (!AUTO()) { porOv[c.ov] = { status: 'desligado' }; continue; }
     if (out.enviados >= MAX() || !tempo()) { porOv[c.ov] = { status: 'pendente', motivo: motivoFila(out) }; continue; }
     _memoria.set(k, { status: 'enviando', memoria: true });

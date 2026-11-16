@@ -1466,6 +1466,8 @@ const bio = (n, st, lib) => ({ dataAreaId: 'msb', SalesOrderNumber: n, StatusPed
   CEN.SalesOrderHeadersV2.linhas.push(ov10('OV019504', '13')); CEN.BIOSalesOrderHeaderV1.linhas.push(bio10('OV019504', 'Yes'));
   r = await K.quadro({});
   t('sem caixas na carga: aguarda, sem envio e sem marca', q10('OV019504').emailCotacao.status === 'sem-caixas' && EMAILS.length === 2 && !BLOBS['kanban-email-cotacao/OV019504.json'], q10('OV019504').emailCotacao.status);
+  const bu10 = q10('OV019504').emailCotacao.busca;
+  t('16/11/26: "sem-caixas" diz o que procurou (a carga lida, nenhuma caixa nela)', bu10 && bu10.lidas === true && bu10.cargas.join() === 'LD-504' && bu10.naCarga[0].caixas === 0 && q10('OV019504').emailCotacao.entidadeCaixas === 'BioWHSContainerV1Entities', q10('OV019504').emailCotacao);
   // a prévia (sem enviar)
   const pv10 = await K.emailCotacao('OV019501', { enviar: false });
   t('prévia: o e-mail montado, sem enviar', pv10.ok && pv10.caixas === 2 && /2x Caixa Dreno — Caixa Dreno \(C 45,0 x L 43,0 x A 28,0\)/.test(pv10.texto) && /15,24 kg/.test(pv10.texto) && EMAILS.length === 2 && pv10.solicitaTransportadora === true, pv10);
@@ -1576,6 +1578,41 @@ const bio = (n, st, lib) => ({ dataAreaId: 'msb', SalesOrderNumber: n, StatusPed
   delete process.env.KANBAN_EMAIL_MAX;
   const sts12 = ['OV019601', 'OV019602'].map(n => q12(r, n).emailCotacao);
   t('teto por leitura: a que ficou diz o porquê (KANBAN_EMAIL_MAX)', sts12.filter(s => s.status === 'enviado').length === 1 && sts12.some(s => s.status === 'pendente' && /KANBAN_EMAIL_MAX/.test(s.motivo)), sts12);
+
+  // 16/11/26 (dono, com a CG014448 com 2 caixas Fechado no Dynamics e o portal em
+  // "Aguardando as caixas": "o que você está aguardando?")
+  // (1) a leitura das caixas que FALHA não é "sem caixas": "pendente" com o motivo —
+  // a tela chama o email-cotacao-auto, que envia quando a leitura volta
+  K._limparCache(); Object.keys(BLOBS).forEach(k => { delete BLOBS[k]; });
+  const fetch13 = global.fetch; let falhaCx13 = true;
+  global.fetch = async (url, opts) => {
+    const u = new URL(String(url));
+    if (falhaCx13 && /BioWHSContainerV1Entities$/.test(u.pathname) && /LoadId/.test(u.searchParams.get('$filter') || '')) return corpo({ error: { message: 'falhou' } }, 500);
+    return fetch13(url, opts);
+  };
+  const n13 = EMAILS.length;
+  try {
+    r = await K.quadro({});
+    const p13 = q12(r, 'OV019601') && q12(r, 'OV019601').emailCotacao;
+    t('caixas ilegíveis: "pendente" com o motivo (não "sem-caixas"), sem enviar e sem marca', p13 && p13.status === 'pendente' && /ler as caixas da carga/.test(p13.motivo)
+      && EMAILS.length === n13 && !BLOBS['kanban-email-cotacao/OV019601.json'], p13);
+    falhaCx13 = false;
+    const au13 = await K.emailCotacaoAuto();
+    t('a chamada própria (a tela pede para "pendente") envia quando as caixas voltam', au13.enviados === 2 && au13.porOv.OV019601.status === 'enviado' && au13.porOv.OV019601.caixas === 1 && EMAILS.length === n13 + 2, au13);
+  } finally { global.fetch = fetch13; }
+  // (2) as caixas da carga noutra remessa (a remessa do trabalho não é a da caixa):
+  // a carga SÓ desta OV -> as caixas são dela; a carga com outra OV do quadro -> não
+  // contam, e o "sem-caixas" diz quantas achou e de que remessa
+  K._limparCache(); Object.keys(BLOBS).forEach(k => { delete BLOBS[k]; });
+  CEN.BioWHSContainerV1Entities.linhas = [cx10('CX-601', 'LD-601', 'SH-X601'), cx10('CX-601B', 'LD-601', 'SH-X601'), cx10('CX-602', 'LD-602', 'SH-OUTRA')];
+  CEN.SalesOrderHeadersV2.linhas.push(ov10('OV019603', '12')); CEN.BIOSalesOrderHeaderV1.linhas.push(bio10('OV019603', 'No')); CEN.SalesOrderLines.linhas.push(lin10('OV019603', 1, 100));
+  CEN.WHSWorkTableBiEntities.linhas.push(w('OV019603', 'W603', 'Closed', { LoadId: 'LD-602', ShipmentId: 'SH-603' })); CEN.BioWHSWorkLineV1.linhas.push(wl12('OV019603', '603'));
+  const n14 = EMAILS.length;
+  r = await K.quadro({});
+  const e14a = q12(r, 'OV019601').emailCotacao, e14b = q12(r, 'OV019602').emailCotacao;
+  t('carga só da OV, caixas de outra remessa: envia com as caixas da carga', e14a.status === 'enviado' && e14a.caixas === 2 && e14a.busca.cargaSoDela === true && EMAILS.length === n14 + 1, e14a);
+  t('carga com outra OV do quadro: a caixa de outra remessa não conta — "sem-caixas" com o que achou', e14b.status === 'sem-caixas' && e14b.busca.lidas === true && e14b.busca.outraRemessa === 1
+    && e14b.busca.naCarga[0].caixas === 1 && e14b.busca.remessasCaixas.join() === 'SH-OUTRA' && e14b.busca.remessasOv.join() === 'SH-602', e14b);
   EM._limparMemoria(); delete process.env.KANBAN_EMAIL_DE;
   delete process.env.KANBAN_EMAIL_PARA; delete process.env.KANBAN_BLOB_URL;
   CEN = guarda10; SERVICO = serv10;
