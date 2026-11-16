@@ -265,7 +265,11 @@ const COL_CARGA = {
   linhaItem:      ['ItemId', 'ItemNumber'],
   linhaQtd:       envLista('KANBAN_COL_CARGA_QTD', ['Qty', 'LoadLineQty', 'Quantity']),
   linhaOv:        ['OrderNum', 'SalesId', 'OrderNumber'],
-  linhaTid:       ['InventTransId']
+  linhaTid:       ['InventTransId'],
+  // 16/11/26 (dono: "vou precisar desse campo na tabela de cargas; na de container
+  // você pesquisa esse mesmo campo"): a REMESSA da linha da carga — as caixas do
+  // e-mail da Cotação são as do container com o mesmo ShipmentId
+  remessa:        envLista('KANBAN_COL_CARGA_REMESSA', ['ShipmentId'])
 };
 // ── AS REGRAS DO DONO PELA CARGA E PELA NOTA (09/11/2026) ─────────
 //   Separação   = status do TRABALHO = "Abrir" (Open)
@@ -543,8 +547,10 @@ const CFG_FRETE = {
 // carga (LoadId); com a remessa (ShipmentId) na entidade, só as das remessas da
 // OV (uma carga pode levar mais de uma OV). Nome público descoberto como as
 // outras extras (candidatas + "whscontainer"; env KANBAN_ENT_CAIXA).
+// 16/11/26 (dono: "a entidade que eu usei no Power Automate foi essa, BioWHSContainerV1"):
+// ela primeiro
 const ENT_CAIXA = envLista('KANBAN_ENT_CAIXA', []).concat([
-  'BioWHSContainerV1Entities', 'BioWHSContainerV1Entity', 'BioWHSContainersV1', 'BioWHSContainerV1', 'BIOWHSContainerV1Entities', 'BIOWHSContainerV1Entity'
+  'BioWHSContainerV1', 'BioWHSContainerV1Entities', 'BioWHSContainerV1Entity', 'BioWHSContainersV1', 'BIOWHSContainerV1Entities', 'BIOWHSContainerV1Entity'
 ]).filter((v, i, a) => a.indexOf(v) === i);
 const COL_CAIXA = {
   id:          ['ContainerId'],
@@ -620,9 +626,12 @@ async function faltaDasLinhas(numeros, token, ate, diag) {
   return { E, por };
 }
 
+// 16/11/26: a caixa vale com a carga (LoadId) OU a remessa (ShipmentId) — a busca
+// é pela remessa da carga; a LoadId fica para a carga sem ShipmentId
 const CFG_CAIXA = {
   chave: 'caixa', candidatas: ENT_CAIXA, reNome: /whscontainer/i, pedaco: 'whscontainer',
-  cols: COL_CAIXA, obrig: ['id', 'carga'], erroCol: (p) => 'sem a coluna ' + COL_CAIXA[p].join('/')
+  cols: COL_CAIXA, obrig: ['id'], algum: [['remessa', 'carga']],
+  erroCol: (p) => p === 'remessa' ? 'sem a coluna ShipmentId (nem LoadId)' : 'sem a coluna ' + COL_CAIXA[p].join('/')
 };
 const CFG_NOTA = {
   chave: 'nota', candidatas: ENT_NOTA, reNome: /salesinvoiceheader/i, pedaco: 'salesinvoiceheader',
@@ -644,7 +653,8 @@ async function sondarExtra(cfg, ent, token, ate) {
   Object.keys(cfg.cols).forEach(papel => {
     achado[papel] = achaCol(cols, cfg.cols[papel]) || (cfg.reCols && cfg.reCols[papel] ? cols.find(c => cfg.reCols[papel].test(c)) || null : null);
   });
-  const falta = cfg.obrig.filter(papel => !achado[papel]);
+  // cfg.algum: grupos em que basta UMA das colunas (16/11/26)
+  const falta = cfg.obrig.filter(papel => !achado[papel]).concat((cfg.algum || []).filter(g => !g.some(papel => achado[papel])).map(g => g[0]));
   return Object.assign({ entidade: ent, serve: !falta.length, temEmpresa: cols.some(c => c.toLowerCase() === 'dataareaid'), colunas: cols,
     erro: falta.length ? cfg.erroCol(falta[0]) : null }, achado);
 }
@@ -782,7 +792,7 @@ async function cargasPorId(ids, token, ate, diag) {
   const x = await entidadeExtra(CFG_CARGA, token, ate, diag), E = x.E;
   if (!E) return { E: null, por: {}, erro: x.motivo };
   const lista = x.todas && x.todas.length ? x.todas : [E];
-  const por = {}, usadas = [], linhas = {};
+  const por = {}, usadas = [], linhas = {}, remessas = {};
   // 13/11/26: as cargas de fato CONSULTADAS em alguma entidade (o lote sem tempo
   // fica de fora) — "não achada" só vale para essas
   const consultadas = new Set();
@@ -803,6 +813,13 @@ async function cargasPorId(ids, token, ate, diag) {
         (linhas[id] = linhas[id] || []).push({ carga: txt(r[Ei.numero]), item: txt(r[Ei.linhaItem]).toUpperCase(), qtd: num(r[Ei.linhaQtd]),
           ov: Ei.linhaOv ? chaveOv(r[Ei.linhaOv]) : '', tid: Ei.linhaTid ? txt(r[Ei.linhaTid]).toUpperCase() : '' });
       }
+      // 16/11/26: as remessas (ShipmentId) de TODAS as linhas da carga, com a OV da
+      // linha quando a entidade tem — [] = a coluna existe, sem valor
+      if (reg && reg.E === Ei && Ei.remessa) {
+        const l = remessas[id] = remessas[id] || [];
+        const sh = txt(r[Ei.remessa]).toUpperCase(), ov = Ei.linhaOv ? chaveOv(r[Ei.linhaOv]) : '';
+        if (sh && !l.some(x => x.remessa === sh && x.ov === ov)) l.push({ remessa: sh, ov });
+      }
     });
     usadas.push({ entidade: Ei.entidade, cargas: n });
     diag.push({ etapa: 'ov:carga:fonte', entidade: Ei.entidade, procuradas: falta.length, achadas: n });
@@ -810,6 +827,7 @@ async function cargasPorId(ids, token, ate, diag) {
   }
   // nenhuma entidade respondeu: é falha de leitura (vira aviso), não "sem carga"
   if (!usadas.some(u => !u.erro)) { const e = new Error(erro || 'a leitura das cargas falhou'); throw e; }
+  Object.keys(remessas).forEach(id => { if (por[id]) por[id].carga.remessas = remessas[id]; });
   // a "principal" = a que trouxe mais cargas (as colunas da ficha e dos avisos)
   const principal = usadas.filter(u => u.cargas).sort((a, b) => b.cargas - a.cargas)[0];
   const Ep = principal ? lista.find(L => L.entidade === principal.entidade) : E;
@@ -2007,22 +2025,52 @@ const COLS_LINHA = {
 // data "vazia" do F&O (1900-01-01, em qualquer hora) = sem data
 const dataLinha = (v) => { const s = txt(v); return /^\d{4}-\d{2}-\d{2}/.test(s) && !/^1900-01-01/.test(s) ? s.slice(0, 10) : null; };
 const _cacheLinhas = new Map();
-// as caixas (containers) das cargas: LoadId -> [{ id, carga, remessa, tipo, descricao, peso, comprimento, largura, altura }]
-// 16/11/26: + lidas (as cargas que a consulta de fato cobriu — a que ficou sem
+// as caixas (containers) das cargas: [{ id, carga, remessa, tipo, descricao, peso, comprimento, largura, altura }]
+// 16/11/26: + lidas/lidasRem (o que a consulta de fato cobriu — o que ficou sem
 // tempo NÃO é "carga sem caixas")
-async function caixasDasCargas(ids, token, ate, diag) {
+// 16/11/26 (dono: "pegar os dados do container onde a remessa que existe na carga for
+// igual à do container, ShipmentId"): alvos = { remessas (as das cargas), ids (as
+// cargas SEM ShipmentId), todas (todas as cargas) }. Pela remessa -> porRem; pela
+// LoadId (só a carga sem remessa, ou o container sem ShipmentId) -> por.
+async function caixasDasCargas(alvos, token, ate, diag) {
   const x = await entidadeExtra(CFG_CAIXA, token, ate, diag), E = x.E;
-  if (!E) return { E: null, por: {}, erro: x.motivo || 'a entidade das caixas não respondeu' };
-  const rows = ids.length ? await porNumeros(E.entidade, E.carga, ids, token, ate, diag, 'email:caixas', null, !E.temEmpresa) : [];
+  if (!E) return { E: null, por: {}, porRem: {}, erro: x.motivo || 'a entidade das caixas não respondeu' };
+  const rems = E.remessa ? alvos.remessas : [];
+  const ids = !E.carga ? [] : E.remessa ? alvos.ids : alvos.todas;
+  const [rowsC, rowsR] = await Promise.all([
+    ids.length ? porNumeros(E.entidade, E.carga, ids, token, ate, diag, 'email:caixas', null, !E.temEmpresa) : [],
+    rems.length ? porNumeros(E.entidade, E.remessa, rems, token, ate, diag, 'email:caixas:remessa', null, !E.temEmpresa) : []
+  ]);
   const v = (r, papel) => E[papel] ? r[E[papel]] : null;
-  const por = {};
-  rows.forEach(r => {
-    const id = txt(v(r, 'id')), carga = txt(v(r, 'carga')).toUpperCase(); if (!id || !carga) return;
-    (por[carga] = por[carga] || []).push({ id, carga, remessa: txt(v(r, 'remessa')), tipo: txt(v(r, 'tipo')), descricao: txt(v(r, 'descricao')),
-      peso: num(v(r, 'peso')), comprimento: num(v(r, 'comprimento')), largura: num(v(r, 'largura')), altura: num(v(r, 'altura')) });
+  const caixa = (r) => ({ id: txt(v(r, 'id')), carga: txt(v(r, 'carga')).toUpperCase(), remessa: txt(v(r, 'remessa')).toUpperCase(), tipo: txt(v(r, 'tipo')), descricao: txt(v(r, 'descricao')),
+    peso: num(v(r, 'peso')), comprimento: num(v(r, 'comprimento')), largura: num(v(r, 'largura')), altura: num(v(r, 'altura')) });
+  const por = {}, porRem = {};
+  rowsC.forEach(r => { const c = caixa(r); if (c.id && c.carga) (por[c.carga] = por[c.carga] || []).push(c); });
+  rowsR.forEach(r => { const c = caixa(r); if (c.id && c.remessa) (porRem[c.remessa] = porRem[c.remessa] || []).push(c); });
+  const cobertos = (rows) => new Set(Array.from(rows.cobertos || []).map(s => String(s).toUpperCase()));
+  return { E, por, porRem, lidas: cobertos(rowsC), lidasRem: cobertos(rowsR) };
+}
+// as remessas da CARGA de uma OV (16/11/26): as das linhas da carga com a OV dela;
+// linhas sem a OV -> todas as da carga. -> { porCarga: { LoadId: [ShipmentId] }, semRemessa: [LoadId] }
+function remessasDaCarga(o) {
+  const porCarga = {}, semRemessa = [];
+  (o.cargas || []).forEach(c => {
+    const id = String(c.id || '').toUpperCase(); if (!id) return;
+    const rs = Array.isArray(c.remessas) ? c.remessas : [], temOv = rs.some(x => x.ov);
+    const minhas = Array.from(new Set(rs.filter(x => !temOv || x.ov === o.numero).map(x => x.remessa)));
+    if (minhas.length) porCarga[id] = minhas; else semRemessa.push(id);
   });
-  const lidas = new Set(Array.from(rows.cobertos || []).map(s => String(s).toUpperCase()));
-  return { E, por, lidas };
+  return { porCarga, semRemessa };
+}
+// o que ler na entidade das caixas para estas OVs
+function alvosCaixas(lista) {
+  const rem = new Set(), ids = new Set(), todas = new Set();
+  lista.forEach(o => {
+    const R = remessasDaCarga(o);
+    Object.keys(R.porCarga).forEach(id => { todas.add(id); R.porCarga[id].forEach(s => rem.add(s)); });
+    R.semRemessa.forEach(id => { todas.add(id); ids.add(id); });
+  });
+  return { remessas: Array.from(rem), ids: Array.from(ids), todas: Array.from(todas) };
 }
 // Solicitar transportadora = Sim (o campo extra da OV)
 const solicitaTransp = (o) => (o.extras || []).some(e => /^solicitartransportadora_custom$/i.test(e.nome) && marcadoV(e.valor));
@@ -2035,8 +2083,7 @@ function candidatasEmail(ovs) {
 // as caixas, o texto e o envio (kanban-email.js) das candidatas; grava a situação
 // em cada cartão da OV em Cotação (o emailCotacao que a ficha mostra)
 async function processarEmails(cands, ovs, token, ate, diag, avisos) {
-  const ids = Array.from(new Set([].concat.apply([], cands.map(o => (o.cargas || []).map(c => String(c.id))))));
-  const CX = await caixasDasCargas(ids, token, ate, diag).catch(e => ({ E: null, por: {}, erro: String(e.message || e).slice(0, 160) }));
+  const CX = await caixasDasCargas(alvosCaixas(cands), token, ate, diag).catch(e => ({ E: null, por: {}, porRem: {}, erro: String(e.message || e).slice(0, 160) }));
   if (CX.erro) avisos.push('Não deu para ler as caixas das cargas (' + CX.erro + '): o e-mail da Cotação tenta de novo em seguida.');
   // 16/11/26 (dono, com a CG014448 com 2 caixas Fechado no Dynamics: "o que você está
   // aguardando?"): a leitura das caixas que FALHOU ou ficou SEM TEMPO virava "sem
@@ -2088,20 +2135,35 @@ async function emailCotacaoAuto() {
 // cada uma tem, quantas eram de outra remessa) — a ficha diz o que falta. E a carga
 // SÓ desta OV (nenhuma outra OV do quadro nela) com caixas só de outra remessa: as
 // caixas são da OV (a remessa do trabalho pode não ser a da caixa) — antes, sumiam.
+// 16/11/26 (dono): PRIMEIRO pela remessa da carga (ShipmentId da linha da carga da OV
+// = ShipmentId do container) — exato, mesmo com mais de uma OV na carga. A carga sem
+// ShipmentId (ou o container sem a coluna) segue pela LoadId, como antes.
 function dadosEmail(o, CX, ovs) {
-  const remessas = new Set((o.trabalhos || []).map(w => txt(w.remessa).toUpperCase()).filter(Boolean));
   const ids = Array.from(new Set((o.cargas || []).map(c => String(c.id).toUpperCase()).filter(Boolean)));
-  const daCarga = [].concat.apply([], ids.map(id => (CX.por || {})[id] || []));
-  let caixas = daCarga, outraRemessa = 0, cargaSoDela = false;
+  const R = remessasDaCarga(o), pelaRem = !!(CX.E && CX.E.remessa);
+  const remCarga = pelaRem ? Array.from(new Set([].concat.apply([], Object.keys(R.porCarga).map(id => R.porCarga[id])))) : [];
+  const idsLoad = pelaRem ? R.semRemessa : ids;
+  // pela remessa da carga
+  let caixas = [].concat.apply([], remCarga.map(sh => (CX.porRem || {})[sh] || []));
+  // pela LoadId (a carga sem remessa): só as da remessa do TRABALHO da OV, se der
+  const remessas = new Set((o.trabalhos || []).map(w => txt(w.remessa).toUpperCase()).filter(Boolean));
+  const daCarga = [].concat.apply([], idsLoad.map(id => (CX.por || {})[id] || []));
+  let dela = daCarga, outraRemessa = 0, cargaSoDela = false;
   if (remessas.size && CX.E && CX.E.remessa) {
-    caixas = daCarga.filter(c => !c.remessa || remessas.has(c.remessa.toUpperCase()));
-    outraRemessa = daCarga.length - caixas.length;
+    dela = daCarga.filter(c => !c.remessa || remessas.has(c.remessa.toUpperCase()));
+    outraRemessa = daCarga.length - dela.length;
     const outraOv = (id) => (ovs || []).some(x => x.numero !== o.numero && (x.cargas || []).some(c => String(c.id).toUpperCase() === id));
-    if (!caixas.length && daCarga.length && !ids.some(outraOv)) { caixas = daCarga; cargaSoDela = true; }
+    if (!dela.length && daCarga.length && !idsLoad.some(outraOv)) { dela = daCarga; cargaSoDela = true; }
   }
+  caixas = caixas.concat(dela);
   const vistos = new Set(); caixas = caixas.filter(c => !vistos.has(c.id) && vistos.add(c.id));
-  const busca = { cargas: ids, lidas: !CX.erro && !!CX.lidas && ids.every(id => CX.lidas.has(id)),
-    naCarga: ids.map(id => ({ carga: id, caixas: ((CX.por || {})[id] || []).length })), outraRemessa, cargaSoDela,
+  // a carga sem ShipmentId e o container sem LoadId: não há como ligar (não é leitura pendente)
+  const semLigacao = !!(CX.E && !CX.E.carga && idsLoad.length);
+  const lidas = !CX.erro && !!CX.E && remCarga.every(sh => CX.lidasRem && CX.lidasRem.has(sh))
+    && (semLigacao || idsLoad.every(id => CX.lidas && CX.lidas.has(id)));
+  const busca = { cargas: ids, lidas, semLigacao,
+    naRemessa: remCarga.map(sh => ({ remessa: sh, caixas: ((CX.porRem || {})[sh] || []).length })),
+    naCarga: semLigacao ? [] : idsLoad.map(id => ({ carga: id, caixas: ((CX.por || {})[id] || []).length })), outraRemessa, cargaSoDela,
     remessasOv: Array.from(remessas).slice(0, 10), remessasCaixas: Array.from(new Set(daCarga.map(c => c.remessa).filter(Boolean))).slice(0, 10) };
   return { ov: o.numero, cliente: o.cliente, caixas, valor: o.valorOv != null ? o.valorOv : o.valor, cidade: o.cidade, uf: o.uf, busca };
 }
@@ -2394,8 +2456,7 @@ async function emailCotacao(numero, opts) {
   const o = cards.find(x => x.etapa === 'cotacao') || cards[0];
   const ate = Date.now() + 20000;
   const token = await D.getToken();
-  const ids = (o.cargas || []).map(c => String(c.id));
-  const CX = await caixasDasCargas(ids, token, ate, []).catch(e => ({ E: null, por: {}, erro: String(e.message || e).slice(0, 160) }));
+  const CX = await caixasDasCargas(alvosCaixas([o]), token, ate, []).catch(e => ({ E: null, por: {}, porRem: {}, erro: String(e.message || e).slice(0, 160) }));
   const d = dadosEmail(o, CX, q.ovs), email = EMAIL.montarEmail(d);
   const base = { ok: true, ov: n, etapa: o.etapa, solicitaTransportadora: solicitaTransp(o), frete: o.frete || null, assunto: email.assunto, texto: email.texto,
     caixas: email.totalCaixas, peso: email.pesoTotal, entidadeCaixas: CX.E ? CX.E.entidade : null, erroCaixas: CX.erro || null, busca: d.busca, configurado: EMAIL.configurado() };

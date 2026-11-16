@@ -1015,13 +1015,20 @@
     };
     // o que o servidor procurou: as cargas da OV, quantas caixas cada uma tem na
     // entidade e quantas eram de outra remessa (busca, de dadosEmail)
+    // 16/11/26 (dono): primeiro pela remessa da carga (ShipmentId = o do container)
     function buscaCaixas(m) {
       var b = m && m.busca; if (!b) return '';
       if (!(b.cargas || []).length) return ' A OV não tem carga nos trabalhos dela.';
-      var ent = m.entidadeCaixas || 'entidade das caixas';
-      var cg = (b.naCarga || []).map(function (x) { return x.carga + ' (' + (x.caixas ? x.caixas + ' caixa(s)' : 'nenhuma caixa') + ')'; }).join(', ');
-      var s = ' Procurei na ' + ent + ': ' + cg + '.';
-      if (b.outraRemessa) s += ' ' + b.outraRemessa + ' caixa(s) de outra remessa (' + ((b.remessasCaixas || []).join(', ') || '—') + '; a OV: ' + ((b.remessasOv || []).join(', ') || '—') + ') e a carga leva outra OV do quadro.';
+      var ent = m.entidadeCaixas || 'entidade das caixas', qt = function (n) { return n ? n + ' caixa(s)' : 'nenhuma caixa'; };
+      var s = '';
+      if ((b.naRemessa || []).length) s += ' Procurei na ' + ent + ' pela remessa da carga (ShipmentId): '
+        + b.naRemessa.map(function (x) { return x.remessa + ' (' + qt(x.caixas) + ')'; }).join(', ') + '.';
+      if (b.semLigacao) s += ' A carga não tem ShipmentId e a ' + ent + ' não tem LoadId: não há como achar as caixas dela.';
+      else if ((b.naCarga || []).length) {
+        s += ' A carga não trouxe o ShipmentId: procurei na ' + ent + ' pela carga (LoadId): '
+          + b.naCarga.map(function (x) { return x.carga + ' (' + qt(x.caixas) + ')'; }).join(', ') + '.';
+        if (b.outraRemessa) s += ' ' + b.outraRemessa + ' caixa(s) de outra remessa (' + ((b.remessasCaixas || []).join(', ') || '—') + '; a OV: ' + ((b.remessasOv || []).join(', ') || '—') + ') e a carga leva outra OV do quadro.';
+      }
       return s;
     }
     // o tipo de frete em português (o Dynamics manda o nome do enum, em inglês)

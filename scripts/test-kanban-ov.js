@@ -1613,6 +1613,39 @@ const bio = (n, st, lib) => ({ dataAreaId: 'msb', SalesOrderNumber: n, StatusPed
   t('carga só da OV, caixas de outra remessa: envia com as caixas da carga', e14a.status === 'enviado' && e14a.caixas === 2 && e14a.busca.cargaSoDela === true && EMAILS.length === n14 + 1, e14a);
   t('carga com outra OV do quadro: a caixa de outra remessa não conta — "sem-caixas" com o que achou', e14b.status === 'sem-caixas' && e14b.busca.lidas === true && e14b.busca.outraRemessa === 1
     && e14b.busca.naCarga[0].caixas === 1 && e14b.busca.remessasCaixas.join() === 'SH-OUTRA' && e14b.busca.remessasOv.join() === 'SH-602', e14b);
+  // (3) 16/11/26 (dono: "vou precisar desse campo na tabela de cargas; na de container você
+  // pesquisa esse mesmo campo — a entidade do Power Automate é a BioWHSContainerV1"): a
+  // carga com o ShipmentId por linha (com a OV) -> as caixas são as do container com a
+  // MESMA remessa: exato mesmo com 2 OVs na carga; a remessa do TRABALHO não conta
+  K._limparCache(); Object.keys(BLOBS).forEach(k => { delete BLOBS[k]; });
+  const serv15 = SERVICO; SERVICO = SERVICO.concat(['BioWHSContainerV1']);
+  const ld15 = (id, ov, sh) => Object.assign(ld10(id), { OrderNum: ov, ShipmentId: sh });
+  // o container SEM LoadId (só a remessa)
+  const cx15 = (id, sh) => ({ dataAreaId: 'msb', ContainerId: id, ShipmentId: sh, ContainerTypeCode: 'Caixa Amarela', Weight: 1.92, Length: 30, Width: 26.5, Height: 34.5 });
+  CEN = {
+    SalesOrderHeadersV2: { linhas: [ov10('OV019701', '10'), ov10('OV019702', '11'), ov10('OV019703', '12')] },
+    BIOSalesOrderHeaderV1: { linhas: [bio10('OV019701', 'Yes'), bio10('OV019702', 'Yes'), bio10('OV019703', 'Yes')] },
+    SalesOrderLines: { linhas: [lin10('OV019701', 1, 2100), lin10('OV019702', 1, 900), lin10('OV019703', 1, 300)] },
+    WHSWorkTableBiEntities: { linhas: [w('OV019701', 'W701', 'Closed', { LoadId: 'LD-701', ShipmentId: 'SH-TRAB' }), w('OV019702', 'W702', 'Closed', { LoadId: 'LD-701', ShipmentId: 'SH-TRAB' }),
+      w('OV019703', 'W703', 'Closed', { LoadId: 'LD-703', ShipmentId: 'SH-703' })] },
+    // a LD-701 leva as duas OVs, cada uma com a sua remessa; a LD-703 sem o ShipmentId preenchido
+    WHSLoadTableBiEntities: { linhas: [ld15('LD-701', 'OV019701', 'SH-701A'), ld15('LD-701', 'OV019702', 'SH-701B'), ld15('LD-703', 'OV019703', '')] },
+    BioWHSContainerV1: { linhas: [cx15('CNT-1', 'SH-701A'), cx15('CNT-2', 'SH-701A'), cx15('CNT-3', 'SH-701B'), cx15('CNT-703', 'SH-703')] },
+    BioWHSWorkLineV1: { linhas: [wl12('OV019701', '701'), wl12('OV019702', '702'), wl12('OV019703', '703')] }
+  };
+  chamadas.length = 0;
+  r = await K.quadro({});
+  const e15 = (n) => q12(r, n) && q12(r, n).emailCotacao;
+  const cxq15 = chamadas.filter(c => c.ent === 'BioWHSContainerV1' && c.q.top !== '1');
+  t('a BioWHSContainerV1 (a do Power Automate) é a entidade das caixas, consultada pelo ShipmentId da carga', e15('OV019701') && e15('OV019701').entidadeCaixas === 'BioWHSContainerV1'
+    && cxq15.length === 1 && /ShipmentId eq 'SH-701A'/.test(cxq15[0].q.filter) && /ShipmentId eq 'SH-701B'/.test(cxq15[0].q.filter) && !/LoadId/.test(cxq15[0].q.filter), cxq15.map(c => c.q.filter));
+  t('2 OVs na carga: cada uma com as caixas da SUA remessa da carga (a remessa do trabalho não conta)', e15('OV019701').status === 'enviado' && e15('OV019701').caixas === 2
+    && e15('OV019701').busca.naRemessa.map(x => x.remessa + '=' + x.caixas).join() === 'SH-701A=2' && e15('OV019702').status === 'enviado' && e15('OV019702').caixas === 1, [e15('OV019701'), e15('OV019702')]);
+  t('o e-mail lista as caixas da remessa', /2x Caixa Amarela — Caixa Amarela \(C 30,0 x L 26,5 x A 34,5\)/.test(e15('OV019701').previa.texto) && /3,84 kg/.test(e15('OV019701').previa.texto), e15('OV019701').previa.texto);
+  t('a carga sem ShipmentId e o container sem LoadId: "sem-caixas" dizendo que não há como ligar (não fica na fila)', e15('OV019703').status === 'sem-caixas' && e15('OV019703').busca.semLigacao === true && e15('OV019703').busca.lidas === true, e15('OV019703'));
+  const pv15 = await K.emailCotacao('OV019702', { enviar: false });
+  t('a prévia da ficha também vai pela remessa da carga', pv15.caixas === 1 && pv15.busca.naRemessa[0].remessa === 'SH-701B', pv15);
+  SERVICO = serv15;
   EM._limparMemoria(); delete process.env.KANBAN_EMAIL_DE;
   delete process.env.KANBAN_EMAIL_PARA; delete process.env.KANBAN_BLOB_URL;
   CEN = guarda10; SERVICO = serv10;
