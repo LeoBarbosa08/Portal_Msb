@@ -841,7 +841,10 @@ function addCarga(por, E, r) {
     id, status: txt(v('status')), transportadora: txt(v('transportadora')), servico: txt(v('servico')),
     envio: dataHora(v('envio')), expedido: dataHora(v('expedido')), envioConfirmado: dataHora(v('envioConfirmado')), deposito: txt(v('deposito')), modelo: txt(v('modelo')),
     cotacao: cot == null ? null : txt(cot), cotacaoSim: marcadoV(cot), pallet: pal == null ? null : txt(pal), palletSim: marcadoV(pal),
-    fonte: E.entidade
+    fonte: E.entidade,
+    // 16/11/26: a coluna da remessa (ShipmentId) nesta entidade de cargas — null =
+    // a entidade não tem (a ficha diz que falta o campo)
+    remessaCol: E.remessa || null
   };
   carga.fase = faseCarga(carga);
   // o botão "Enviar para o Pallet": carga Carregado E cotação realizada = Sim (e ainda não enviada)
@@ -2161,7 +2164,16 @@ function dadosEmail(o, CX, ovs) {
   const semLigacao = !!(CX.E && !CX.E.carga && idsLoad.length);
   const lidas = !CX.erro && !!CX.E && remCarga.every(sh => CX.lidasRem && CX.lidasRem.has(sh))
     && (semLigacao || idsLoad.every(id => CX.lidas && CX.lidas.has(id)));
-  const busca = { cargas: ids, lidas, semLigacao,
+  // por que cada carga sem remessa ficou sem (16/11/26, dono: "não vai ter LoadId
+  // mesmo, vai ter ShipmentId"): 'sem-coluna' (a entidade de cargas não tem o
+  // ShipmentId), 'vazio' (tem, sem valor nesta carga) ou 'outra-ov' (as linhas da
+  // carga com ShipmentId são de outras OVs)
+  const semRemessa = R.semRemessa.map(id => {
+    const c = (o.cargas || []).find(x => String(x.id || '').toUpperCase() === id) || {}, rs = Array.isArray(c.remessas) ? c.remessas : [];
+    return { carga: id, fonte: c.fonte || null, motivo: !c.remessaCol ? 'sem-coluna' : !rs.length ? 'vazio' : 'outra-ov',
+      ovsLinhas: Array.from(new Set(rs.map(x => x.ov).filter(Boolean))).slice(0, 10) };
+  });
+  const busca = { cargas: ids, lidas, semLigacao, semRemessa,
     naRemessa: remCarga.map(sh => ({ remessa: sh, caixas: ((CX.porRem || {})[sh] || []).length })),
     naCarga: semLigacao ? [] : idsLoad.map(id => ({ carga: id, caixas: ((CX.por || {})[id] || []).length })), outraRemessa, cargaSoDela,
     remessasOv: Array.from(remessas).slice(0, 10), remessasCaixas: Array.from(new Set(daCarga.map(c => c.remessa).filter(Boolean))).slice(0, 10) };

@@ -1643,8 +1643,22 @@ const bio = (n, st, lib) => ({ dataAreaId: 'msb', SalesOrderNumber: n, StatusPed
     && e15('OV019701').busca.naRemessa.map(x => x.remessa + '=' + x.caixas).join() === 'SH-701A=2' && e15('OV019702').status === 'enviado' && e15('OV019702').caixas === 1, [e15('OV019701'), e15('OV019702')]);
   t('o e-mail lista as caixas da remessa', /2x Caixa Amarela — Caixa Amarela \(C 30,0 x L 26,5 x A 34,5\)/.test(e15('OV019701').previa.texto) && /3,84 kg/.test(e15('OV019701').previa.texto), e15('OV019701').previa.texto);
   t('a carga sem ShipmentId e o container sem LoadId: "sem-caixas" dizendo que não há como ligar (não fica na fila)', e15('OV019703').status === 'sem-caixas' && e15('OV019703').busca.semLigacao === true && e15('OV019703').busca.lidas === true, e15('OV019703'));
+  const sr15 = e15('OV019703').busca.semRemessa;
+  t('o porquê: o ShipmentId VAZIO nesta carga (a entidade tem o campo)', sr15 && sr15.length === 1 && sr15[0].carga === 'LD-703' && sr15[0].motivo === 'vazio' && sr15[0].fonte === 'WHSLoadTableBiEntities', sr15);
   const pv15 = await K.emailCotacao('OV019702', { enviar: false });
   t('a prévia da ficha também vai pela remessa da carga', pv15.caixas === 1 && pv15.busca.naRemessa[0].remessa === 'SH-701B', pv15);
+  // as linhas da carga com ShipmentId só de OUTRA OV
+  K._limparCache(); Object.keys(BLOBS).forEach(k => { delete BLOBS[k]; });
+  CEN.WHSLoadTableBiEntities.linhas = CEN.WHSLoadTableBiEntities.linhas.filter(x => x.LoadId !== 'LD-703').concat([ld15('LD-703', 'OV099999', 'SH-X')]);
+  r = await K.quadro({});
+  const sr15b = e15('OV019703') && e15('OV019703').busca.semRemessa;
+  t('o porquê: as linhas da carga com ShipmentId são de outra OV (e quais)', e15('OV019703').status === 'sem-caixas' && sr15b && sr15b[0].motivo === 'outra-ov' && sr15b[0].ovsLinhas.join() === 'OV099999', sr15b);
+  // a entidade de cargas SEM o campo
+  K._limparCache(); Object.keys(BLOBS).forEach(k => { delete BLOBS[k]; });
+  CEN.WHSLoadTableBiEntities.linhas = CEN.WHSLoadTableBiEntities.linhas.map(x => { const y = Object.assign({}, x); delete y.ShipmentId; return y; });
+  r = await K.quadro({});
+  const sr15c = e15('OV019701') && e15('OV019701').busca.semRemessa;
+  t('o porquê: a entidade de cargas não tem o campo ShipmentId', e15('OV019701').status === 'sem-caixas' && e15('OV019701').busca.semLigacao === true && sr15c && sr15c[0].motivo === 'sem-coluna' && sr15c[0].fonte === 'WHSLoadTableBiEntities', sr15c);
   SERVICO = serv15;
   EM._limparMemoria(); delete process.env.KANBAN_EMAIL_DE;
   delete process.env.KANBAN_EMAIL_PARA; delete process.env.KANBAN_BLOB_URL;

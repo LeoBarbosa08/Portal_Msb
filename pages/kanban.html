@@ -1004,7 +1004,12 @@
       enviado: function (m) { return ['ok', 'Enviado ' + (m.em ? 'em ' + fDM(diaSP(m.em)) + ' às ' + fHora(m.em) + ' ' : '') + 'para ' + ((m.para || []).join(', ') || '—') + '.'
         + (m.memoria ? ' (Sem o registro em blob, o portal guarda o envio só na memória: se reiniciar, pode enviar de novo.)' : '')]; },
       // 16/11/26 (dono: "o que você está aguardando?"): diz o que procurou e onde
-      'sem-caixas': function (m) { return ['alerta', 'Aguardando as caixas da carga: envia sozinho quando as caixas aparecerem.' + buscaCaixas(m)]; },
+      'sem-caixas': function (m) {
+        var b = m.busca || {};
+        // a carga sem a remessa (e o container sem LoadId): espera o ShipmentId da carga
+        return ['alerta', (b.semLigacao ? 'Aguardando o ShipmentId da carga: envia sozinho quando a carga trouxer a remessa e a BioWHSContainerV1 tiver as caixas dela.'
+          : 'Aguardando as caixas da carga: envia sozinho quando as caixas aparecerem.') + buscaCaixas(m)];
+      },
       // 13/11/26: o motivo de estar na fila (antes, "Na fila" calado para sempre)
       pendente: function (m) { return [m.motivo && /registro/.test(m.motivo) ? 'alerta' : '', 'Na fila' + (m.motivo ? ' (' + m.motivo + ')' : '') + ': o portal tenta de novo em seguida, com o quadro aberto.']; },
       'sem-tempo': function () { return ['', 'Na fila: a leitura do quadro não teve tempo para o e-mail — o portal envia em seguida, numa chamada só para ele.']; },
@@ -1023,9 +1028,16 @@
       var s = '';
       if ((b.naRemessa || []).length) s += ' Procurei na ' + ent + ' pela remessa da carga (ShipmentId): '
         + b.naRemessa.map(function (x) { return x.remessa + ' (' + qt(x.caixas) + ')'; }).join(', ') + '.';
-      if (b.semLigacao) s += ' A carga não tem ShipmentId e a ' + ent + ' não tem LoadId: não há como achar as caixas dela.';
-      else if ((b.naCarga || []).length) {
-        s += ' A carga não trouxe o ShipmentId: procurei na ' + ent + ' pela carga (LoadId): '
+      // por que a carga ficou sem a remessa (16/11/26: sem falar de LoadId — o container não tem)
+      (b.semRemessa || []).forEach(function (x) {
+        var f = x.fonte || 'entidade de cargas';
+        s += ' ' + (x.motivo === 'sem-coluna' ? 'A ' + f + ' não tem o campo ShipmentId: a carga ' + x.carga + ' não traz a remessa.'
+          : x.motivo === 'vazio' ? 'A carga ' + x.carga + ' está com o ShipmentId vazio na ' + f + '.'
+          : 'As linhas da carga ' + x.carga + ' com ShipmentId são de outra(s) OV(s) (' + ((x.ovsLinhas || []).join(', ') || '—') + '), não desta.');
+      });
+      if (b.semLigacao) return s;
+      if ((b.naCarga || []).length) {
+        s += ' Procurei na ' + ent + ' pela carga (LoadId): '
           + b.naCarga.map(function (x) { return x.carga + ' (' + qt(x.caixas) + ')'; }).join(', ') + '.';
         if (b.outraRemessa) s += ' ' + b.outraRemessa + ' caixa(s) de outra remessa (' + ((b.remessasCaixas || []).join(', ') || '—') + '; a OV: ' + ((b.remessasOv || []).join(', ') || '—') + ') e a carga leva outra OV do quadro.';
       }
