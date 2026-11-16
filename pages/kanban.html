@@ -172,6 +172,21 @@
             .kb-grp.vazio .kb-grp-n,.kb-grp.vazio .kb-cnt{opacity:.6;}
             .kb-grp.on tr[data-ov] td:first-child{box-shadow:inset 3px 0 0 var(--kb-bd);}
             @media (prefers-reduced-motion: reduce){.kb-grp-seta{transition:none;}}
+            /* 16/11/26: o Pallet em subgrupos por TRANSPORTADORA (lista suspensa),
+               no quadro (.kb-tp dentro da coluna) e na lista (.kb-tp-h dentro do grupo) */
+            .kb-tp{display:flex;flex-direction:column;gap:6px;}
+            .kb-tp-b{display:flex;align-items:center;gap:6px;width:100%;min-width:0;padding:6px 8px;border:1px solid var(--kb-bd);border-radius:8px;background:rgba(255,255,255,.55);font:inherit;color:var(--kb-ink);text-align:left;cursor:pointer;}
+            html[data-tema="escuro"] .kb-tp-b{background:rgba(255,255,255,.06);}
+            .kb-tp-b:hover{background:var(--surface);}
+            .kb-tp-b:focus-visible{outline:2px solid #1E5BD8;outline-offset:1px;}
+            .kb-tp-b[aria-expanded="true"] .kb-grp-seta{transform:rotate(90deg);}
+            .kb-tp-n{flex:1;min-width:0;font-size:12px;font-weight:800;text-transform:uppercase;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+            .kb-tp-v{font-size:11.5px;font-weight:700;white-space:nowrap;}
+            .kb-tp-b .kb-cnt{min-width:20px;height:19px;padding:0 6px;font-size:11px;}
+            .kb-tbl tr.kb-tp-h td,.kb-tbl tr.kb-tp-h:hover td{background:color-mix(in srgb,var(--kb-bg) 55%,var(--surface));}
+            .kb-tp-in{position:sticky;left:0;display:inline-flex;padding:5px 12px 5px 34px;}
+            .kb-tp-in .kb-tp-b{width:auto;gap:10px;border:none;background:transparent;padding:3px 6px;}
+            .kb-tp-in .kb-tp-n{flex:none;max-width:420px;}
 
             .kb-card.is-aberta{border-color:#287A8E;box-shadow:0 0 0 2px rgba(40,122,142,.32);}
             .kb-tbl tr.is-aberta td{background:#EEF6F9;}
@@ -392,6 +407,9 @@
               .kb-l2{gap:4px;font-size:10.5px;}
               .kb-chip{max-width:100%;}
               .kb-vazio{padding:18px 0;font-size:12px;}
+              .kb-tp-b{flex-wrap:wrap;gap:2px 6px;}
+              .kb-tp-n{flex-basis:calc(100% - 60px);}
+              .kb-tp-v{flex-basis:100%;padding-left:20px;}
               .kb-longo{display:none;}
               .kb-curto{display:inline;}
             }
@@ -610,6 +628,44 @@
         + '<span class="kb-val">' + (o.valor != null ? esc(fBRL(o.valor)) : '') + '</span></div></button>';
     }
 
+    // ── 16/11/26 (dono: "no Pallet, agrupar por TRANSPORTADORA, nessa pegada de
+    // lista suspensa"): as OVs do Pallet em subgrupos por transportadora — o campo
+    // Transportadora da OV (CarrierName_InoveProjects); sem ele, a da carga. Cada
+    // subgrupo abre/recolhe pela setinha, no quadro e na lista (guardado junto
+    // dos grupos da lista; recolhidos de saída; com busca abrem sozinhos).
+    var ETAPAS_TRANSP = { pallet: true };
+    var SEM_TRANSP = 'Sem transportadora';
+    function transpDe(o) {
+      var x = (o.extras || []).filter(function (e) { return /^carriername/i.test(e.nome || ''); })[0];
+      var v = x && x.valor != null ? String(x.valor).trim() : '';
+      if (!v) (o.cargas || []).some(function (c) { v = String(c.transportadora || '').trim(); return !!v; });
+      return v || SEM_TRANSP;
+    }
+    function idTransp(etapa, nome) { return etapa + '|' + nome.toUpperCase(); }
+    // [{ id, nome, ovs }] em ordem alfabética; "Sem transportadora" no fim
+    function gruposTransp(etapa, lista) {
+      var m = {}, gs = [];
+      lista.forEach(function (o) {
+        var nome = transpDe(o), id = idTransp(etapa, nome);
+        if (!m[id]) { m[id] = { id: id, nome: nome, sem: nome === SEM_TRANSP, ovs: [] }; gs.push(m[id]); }
+        m[id].ovs.push(o);
+      });
+      return gs.sort(function (a, b) { return a.sem !== b.sem ? (a.sem ? 1 : -1) : a.nome.localeCompare(b.nome, 'pt-BR'); });
+    }
+    function cabTransp(g) {
+      var ab = grupoAberto(g.id);
+      var soma = g.ovs.reduce(function (s, o) { return s + (o.valor || 0); }, 0);
+      var temValor = g.ovs.some(function (o) { return o.valor != null; });
+      return '<button type="button" class="kb-tp-b" data-grp="' + esc(g.id) + '" aria-expanded="' + ab + '" title="' + esc((ab ? 'Recolher ' : 'Abrir ') + g.nome) + '">'
+        + '<span class="kb-grp-seta">' + IC_SETA + '</span><span class="kb-tp-n">' + esc(g.nome) + '</span><span class="kb-cnt">' + g.ovs.length + '</span>'
+        + (temValor ? '<span class="kb-tp-v">' + esc(fK(soma)) + '</span>' : '') + '</button>';
+    }
+    function cardsTransp(etapa, lista) {
+      return gruposTransp(etapa, lista).map(function (g) {
+        return '<div class="kb-tp' + (grupoAberto(g.id) ? ' on' : '') + '">' + cabTransp(g) + (grupoAberto(g.id) ? g.ovs.map(cardHtml).join('') : '') + '</div>';
+      }).join('');
+    }
+
     function render() {
       var r = estado.r; if (!r) return;
       var ovs = filtradas();
@@ -635,7 +691,7 @@
           + (e.id === 'expedicao' && r.expedicaoDia ? '<div class="kb-col-p" title="Só as OVs com o envio da carga confirmado hoje (LoadShipConfirmUTCDateTime), de qualquer data">expedidas hoje</div>'
             // 12/11/26 (dono): Faturado, Rejeitada e Pallet só de 11/11/2026 em diante
             : r.desde && (r.desdeEtapas || []).indexOf(e.id) >= 0 ? '<div class="kb-col-p" title="Só as OVs com a nota fiscal (sem nota, a criação) de ' + esc(fDia(r.desde)) + ' em diante">desde ' + esc(fDM(r.desde)) + '</div>' : '') + '</div>'
-          + '<div class="kb-cards">' + (lista.length ? lista.map(cardHtml).join('') : e.pendente ? '<div class="kb-vazio pend" title="aguardando os campos da fase"><span class="kb-longo">aguardando os campos da fase</span><span class="kb-curto">a definir</span></div>' : '<div class="kb-vazio">—</div>') + '</div></section>';
+          + '<div class="kb-cards">' + (lista.length ? (ETAPAS_TRANSP[e.id] ? cardsTransp(e.id, lista) : lista.map(cardHtml).join('')) : e.pendente ? '<div class="kb-vazio pend" title="aguardando os campos da fase"><span class="kb-longo">aguardando os campos da fase</span><span class="kb-curto">a definir</span></div>' : '<div class="kb-vazio">—</div>') + '</div></section>';
       }).join('') + '</div>';
     }
 
@@ -669,11 +725,15 @@
       marcarGrupo(id, !grupoAberto(id));
       if (!estado.busca) salvarGrupos();
       render();
-      var b = document.querySelector('#kb-quadro [data-grp="' + id + '"]');
+      var b = Array.prototype.filter.call(document.querySelectorAll('#kb-quadro [data-grp]'), function (x) { return x.getAttribute('data-grp') === id; })[0];
       if (b) { try { b.focus({ preventScroll: true }); } catch (e) {} }
     }
     function todosGrupos(ab) {
-      gruposLista(filtradas()).forEach(function (g) { if (g.ovs.length) marcarGrupo(g.id, ab); });
+      gruposLista(filtradas()).forEach(function (g) {
+        if (!g.ovs.length) return;
+        marcarGrupo(g.id, ab);
+        if (ETAPAS_TRANSP[g.id]) gruposTransp(g.id, g.ovs).forEach(function (t) { marcarGrupo(t.id, ab); });
+      });
       if (!estado.busca) salvarGrupos();
       render();
     }
@@ -715,12 +775,16 @@
             + '<span class="kb-grp-in"><span class="kb-grp-seta">' + IC_SETA + '</span><span class="kb-grp-n">' + esc(g.nome) + '</span><span class="kb-cnt">' + n + '</span>'
             + (temValor ? '<span class="kb-grp-v">' + esc(fK(soma)) + '</span>' : '')
             + (nota ? '<span class="kb-grp-p">' + esc(nota) + '</span>' : '') + '</span></button></td></tr>'
-            + (ab ? g.ovs.map(linhaLista).join('') : '') + '</tbody>';
+            + (!ab ? '' : !ETAPAS_TRANSP[g.id] ? g.ovs.map(linhaLista).join('')
+              : gruposTransp(g.id, g.ovs).map(function (t) {
+                  return '<tr class="kb-grp-h kb-tp-h"><td colspan="' + NCOLS_LISTA + '"><span class="kb-tp-in">' + cabTransp(t) + '</span></td></tr>'
+                    + (grupoAberto(t.id) ? t.ovs.map(linhaLista).join('') : '');
+                }).join('')) + '</tbody>';
         }).join('') + '</table></div>';
 
       var nova = document.querySelector('#kb-quadro .kb-lista');
       if (rolou && nova) { nova.scrollTop = rolou[0]; nova.scrollLeft = rolou[1]; }
-      if (foco) { var f = document.querySelector('#kb-quadro [' + foco[0] + '="' + foco[1].replace(/"/g, '\\"') + '"]'); if (f) { try { f.focus({ preventScroll: true }); } catch (e) {} } }
+      if (foco) { var f = Array.prototype.filter.call(document.querySelectorAll('#kb-quadro [' + foco[0] + ']'), function (x) { return x.getAttribute(foco[0]) === foco[1]; })[0]; if (f) { try { f.focus({ preventScroll: true }); } catch (e) {} } }
     }
 
     // ══════════════════════════════════════════════════════════════
@@ -919,15 +983,22 @@
     }
     // a ordem em que a tela mostra as OVs: no quadro, coluna a coluna; na lista,
     // grupo a grupo (só os grupos abertos — o que está recolhido não aparece)
+    // as OVs de uma etapa na ordem da tela: no Pallet, transportadora a transportadora (só as abertas)
+    function visiveisDe(etapa, lista) {
+      if (!ETAPAS_TRANSP[etapa]) return lista;
+      var out = [];
+      gruposTransp(etapa, lista).forEach(function (t) { if (grupoAberto(t.id)) out = out.concat(t.ovs); });
+      return out;
+    }
     function ordemVisivel() {
       var ovs = filtradas();
       if (estado.vis === 'lista') {
         var vis = [];
-        gruposLista(ovs).forEach(function (g) { if (grupoAberto(g.id)) g.ovs.forEach(function (o) { vis.push(idOv(o)); }); });
+        gruposLista(ovs).forEach(function (g) { if (grupoAberto(g.id)) visiveisDe(g.id, g.ovs).forEach(function (o) { vis.push(idOv(o)); }); });
         return vis;
       }
       var out = [];
-      ((estado.r && estado.r.etapas) || []).forEach(function (e) { ovs.forEach(function (o) { if (o.etapa === e.id) out.push(idOv(o)); }); });
+      ((estado.r && estado.r.etapas) || []).forEach(function (e) { visiveisDe(e.id, ovs.filter(function (o) { return o.etapa === e.id; })).forEach(function (o) { out.push(idOv(o)); }); });
       return out;
     }
     function noQuadro(num) {
