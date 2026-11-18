@@ -259,6 +259,13 @@ const GRUPO_AREAS = {
   // portal a esse pessoal, somente a parte do Kanban") — SÓ o Kanban. Sem esta
   // linha o grupo caía no fail-open no_group_match e via o portal inteiro.
   '2a2eeb08-99e5-407e-a68f-d67b011296ad': ['kanban'],
+  // Equipe de produção MSB - Gerentes (18/11/2026, pedido do dono: "ele
+  // precisa ter acesso a todos os módulos") — TODAS as áreas deste portal,
+  // com o CRM junto (o /api/cot-* exige a área Comercial por regra de grupo).
+  // Sem esta linha o grupo caía no fail-open no_group_match: via as telas,
+  // mas levava 403 no CRM. Não é o "acesso full" de UNRESTRICTED_GROUPS
+  // (diretoria/TI): não ganha área reservada nem os privilégios de lá.
+  '54f9b649-d6b5-4637-9f0d-20c32fe1d252': ['comercial', 'estoque', 'contabil', 'kanban'],
   '2b708ffe-34c5-4417-abb2-ba65b124ddd3': ['marketing'],
   '0d864abf-a728-4f1a-9828-564d21e79685': ['marketing'],
   '45cea106-e77d-4017-99a7-4ea52e31856d': ['marketing'],
@@ -306,18 +313,6 @@ const GRUPO_MODULOS = {
     'estoque-gestao-consignacao', 'estoque-saldo-consignado', 'estoque-contagem-saldo-nota',
     'estoque-devolucoes-faturamento', 'estoque-rastreabilidade', 'estoque-gmroi',
     'estoque-perdas'
-  ],
-  // Equipe de produção MSB - Gerentes (18/11/2026, pedido do dono: "liberar o
-  // CRM para o pessoal") — SÓ o CRM, sem a área Comercial (Sales Report, PI ·
-  // Pedido, Tabela de Preços etc. ficam fora). O /api/cot-* aceita o módulo
-  // avulso (cot-motor.exigirEquipe, MODULO_CRM); o /api/pedido-extrair (a
-  // leitura do PDF pela IA) e o /api/pedido-lotes (os lotes da fase A faturar)
-  // também, pelo opts.modulo do requireArea. Sem esta linha o grupo caía no
-  // fail-open no_group_match: via o resto do portal e levava 403 no CRM.
-  // Página nova do CRM (comercial-cot-*) NÃO entra sozinha: acrescentar aqui.
-  '54f9b649-d6b5-4637-9f0d-20c32fe1d252': [
-    'comercial-cot-funil', 'comercial-cot-analitico', 'comercial-cot-casos',
-    'comercial-cot-nova', 'comercial-crm'
   ],
 };
 
