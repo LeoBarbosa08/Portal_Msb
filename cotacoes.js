@@ -540,10 +540,10 @@
       h += '<p class="cot-ov-msg"><span class="cs-spin"></span>&nbsp; Conferindo a ' + esc(est.ov || 'OV') + ' no Dynamics…</p>';
     } else if (aberto) {
       var val = S.ovRascunho[num] != null ? S.ovRascunho[num] : '';
-      h += '<div class="cot-ov-form"><input id="cot-ov-num" value="' + esc(val) + '" placeholder="OVMSB144950" autocomplete="off" spellcheck="false" maxlength="24" aria-label="Número da Ordem de Venda">' +
+      h += '<div class="cot-ov-form"><input id="cot-ov-num" value="' + esc(val) + '" placeholder="OV017760" autocomplete="off" spellcheck="false" maxlength="24" aria-label="Número da Ordem de Venda">' +
         '<button type="button" class="cs-btn cs-btn-sm cs-btn-pi" data-act="ov-fechar">' + (ovs.length ? IC.plus + 'Adicionar OV' : IC.check + 'Fechar como Ganha') + '</button>' +
         (ovs.length ? '<button type="button" class="cs-btn cs-btn-sm cs-btn-ghost" data-act="ov-mais-x">Cancelar</button>' : '') + '</div>' +
-        (est.estado === 'erro' ? '<p class="cot-ov-msg erro">' + IC.alert + esc(est.msg) + '</p>' : '<p class="cot-ov-msg">OVMSB e os números — ou só os números. Pedido quebrado em mais de uma OV? Adicione as outras depois.</p>');
+        (est.estado === 'erro' ? '<p class="cot-ov-msg erro">' + IC.alert + esc(est.msg) + '</p>' : '<p class="cot-ov-msg">OV e os números (OV017760) — ou só os números. Pedido quebrado em mais de uma OV? Adicione as outras depois.</p>');
     } else {
       h += '<div class="cot-ped-bts"><button type="button" class="cs-btn cs-btn-sm cs-btn-ghost" data-act="ov-mais">' + IC.plus + 'Outra OV</button></div>';
     }
@@ -1037,7 +1037,7 @@
     var num = c.numero;
     var n = C.numeroOv(valor != null ? valor : (S.ovRascunho[num] || ''));
     if (!n) {
-      S.ovEnvio[num] = { estado: 'erro', msg: 'Número da Ordem de Venda inválido — use OVMSB seguido dos números (ex.: OVMSB144950).' };
+      S.ovEnvio[num] = { estado: 'erro', msg: 'Número da Ordem de Venda inválido — use OV seguido dos números (ex.: OV017760).' };
       renderCaso(); var i = $('cot-ov-num'); if (i) i.focus();
       return;
     }
@@ -1164,7 +1164,7 @@
             h = '<div class="cs-campo"><label>Nº da ordem de compra (opcional)</label><input id="dlg-oc" value="' + esc(oc) + '" autocomplete="off"></div>' +
               '<p class="cot-dlg-nota">Sem o PDF: os itens marcados como <b>Ganho</b> são o pedido. Depois, <b>Abrir Pedido no PI</b> leva o comprador e os itens prontos para lançar no Dynamics.</p>';
           } else {
-            h = '<div class="cs-campo"><label>Número da Ordem de Venda *</label><input id="dlg-ov" value="' + esc(ovTxt) + '" placeholder="OVMSB144950 — ou escolha abaixo" autocomplete="off" spellcheck="false" maxlength="24"></div>' +
+            h = '<div class="cs-campo"><label>Número da Ordem de Venda *</label><input id="dlg-ov" value="' + esc(ovTxt) + '" placeholder="OV017760 — ou escolha abaixo" autocomplete="off" spellcheck="false" maxlength="24"></div>' +
               '<div class="cot-ov-escolha" id="dlg-ovs"></div>' +
               '<p class="cot-dlg-nota">O pedido já foi lançado no Dynamics: a oportunidade vira pedido e <b>fecha com esta OV</b>. O portal confere a OV no Dynamics (cliente, OC, itens) antes de gravar.</p>';
           }
@@ -1333,7 +1333,7 @@
             return '';
           }
           var sem = marcas.filter(function (x) { return !x.r; }).length;
-          if (modo === 'ov' && !C.numeroOv(ovTxt)) return ovTxt ? 'Número da Ordem de Venda inválido — OVMSB e os números (ou só os números).' : 'Informe o número da Ordem de Venda.';
+          if (modo === 'ov' && !C.numeroOv(ovTxt)) return ovTxt ? 'Número da Ordem de Venda inválido — OV e os números (ou só os números).' : 'Informe o número da Ordem de Venda.';
           if (sem) return 'Marque cada item como Ganho ou Perdido — falta' + (sem > 1 ? 'm ' + sem + ' itens' : ' 1 item') + '.';
           if (its.length && !marcas.some(function (x) { return x.r === 'ganho'; })) return 'Nenhum item ganho — se nada foi ganho, a oportunidade é Perdida.';
           return '';

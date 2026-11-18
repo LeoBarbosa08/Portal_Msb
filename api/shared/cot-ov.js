@@ -9,7 +9,8 @@
 //
 // SÓ LEITURA, app-only (as mesmas credenciais D365_* do /api/pedido-lotes e
 // do shared/cot-erp.js). O OData do F&O só filtra TEXTO com eq: a OV vai
-// como está ("OVMSB144950"; na BIO, "OVBIO144950"). Cabeçalho em SalesOrderHeadersV2 e, sem ela,
+// como está ("OV017760" na MSB — 18/11/26, o dono: "não existe esse prefixo
+// na MSB"; na BIO, "OVBIO144950"). Cabeçalho em SalesOrderHeadersV2 e, sem ela,
 // SalesOrderHeaders (COT_OV_ENTIDADE fixa outra); linhas em SalesOrderLines
 // (COT_OV_LINHAS). Sem $select: são 1-2 linhas de cabeçalho e cada campo é
 // lido por vários nomes (o que a entidade não tiver fica vazio). O usuário de
@@ -41,9 +42,9 @@ const COL = {
 const SITUACAO = { backorder: 'Em aberto', delivered: 'Entregue', invoiced: 'Faturada', canceled: 'Cancelada', cancelled: 'Cancelada', none: '' };
 // RECORTE MSB: a cotação é sempre da MSB — a OV é a da empresa msb do
 // Dynamics (a mesma ESTOQUE_MSB_EMPRESA do /api/pedido-lotes), e o número
-// curto ganha o prefixo da MSB (COT_OV_PREFIXO, padrão OVMSB)
+// curto ganha o prefixo da MSB (COT_OV_PREFIXO, padrão OV: "017760" -> "OV017760")
 const EMPRESA_PREFERIDA = String(process.env.ESTOQUE_MSB_EMPRESA || 'msb').trim().toLowerCase();
-const PREFIXO = String(process.env.COT_OV_PREFIXO || 'OVMSB').trim().toUpperCase().replace(/[^A-Z]/g, '') || 'OVMSB';
+const PREFIXO = String(process.env.COT_OV_PREFIXO || 'OV').trim().toUpperCase().replace(/[^A-Z]/g, '') || 'OV';
 const TTL = 5 * 60e3;
 const _cache = new Map();
 let _alvo = null;                   // a entidade de cabeçalho que respondeu
@@ -52,14 +53,15 @@ function txt(v, max) { return v == null ? '' : String(v).replace(/\s+/g, ' ').tr
 function ler(row, campo) { const v = D.pick(row, COL[campo]); return v == null ? '' : v; }
 function r2(n) { return Math.round((Number(n) || 0) * 100) / 100; }
 
-// o número como o Dynamics grava: "ovmsb 144950" -> "OVMSB144950"; só os
-// números -> PREFIXO + números (a cotação é sempre da MSB). '' = não é OV.
-// RECORTE MSB: aceita OV + letras + números (OVMSB…, e a OVBIO… de quem fatura
-// pela BIO — a conferência no Dynamics avisa a empresa diferente)
+// o número como o Dynamics grava: "ov 017760" -> "OV017760"; só os números
+// -> PREFIXO + números (a cotação é sempre da MSB). '' = não é OV.
+// RECORTE MSB: aceita OV + números (a da MSB, OV017760) e OV + letras +
+// números (a OVBIO… de quem fatura pela BIO — a conferência no Dynamics avisa
+// a empresa diferente)
 function numeroOv(v) {
   let s = String(v == null ? '' : v).toUpperCase().replace(/\s+/g, '');
   if (/^\d{4,10}$/.test(s)) s = PREFIXO + s;
-  return /^OV[A-Z]{2,6}\d{4,10}$/.test(s) ? s : '';
+  return /^OV[A-Z]{0,6}\d{4,10}$/.test(s) ? s : '';
 }
 
 async function linhasDa(numero, empresa, token, ms) {

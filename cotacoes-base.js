@@ -392,13 +392,13 @@
     return c.pi === 'enviado' ? '<span class="cs-chip pi-aguarda-ov" title="O pedido está no Dynamics — falta informar a Ordem de Venda">' + IC.tag + 'Aguardando OV</span>' : '';
   }
   // o número da Ordem de Venda como o Dynamics grava (a mesma regra do
-  // api/shared/cot-ov.js): "ovmsb 144950" -> "OVMSB144950"; só os números
-  // -> "OVMSB" + números (RECORTE MSB: a cotação é sempre da MSB; aceita
-  // OV + letras + números, como o servidor). '' = não é OV.
+  // api/shared/cot-ov.js): "ov 017760" -> "OV017760"; só os números
+  // -> "OV" + números (18/11/26: a OV da MSB não tem "MSB" no prefixo; aceita
+  // também OV + letras + números, como o servidor). '' = não é OV.
   function numeroOv(v) {
     var s = String(v == null ? '' : v).toUpperCase().replace(/\s+/g, '');
-    if (/^\d{4,10}$/.test(s)) s = 'OVMSB' + s;
-    return /^OV[A-Z]{2,6}\d{4,10}$/.test(s) ? s : '';
+    if (/^\d{4,10}$/.test(s)) s = 'OV' + s;
+    return /^OV[A-Z]{0,6}\d{4,10}$/.test(s) ? s : '';
   }
   function tituloCaso(c) {
     var p = [c.portal, c.cotacaoId ? 'nº ' + c.cotacaoId : ''].filter(Boolean).join(' ');

@@ -2555,19 +2555,35 @@ conectores SQL Server e HTTP são Premium) é só da conta dona do fluxo.
 5. Teste: rode o fluxo e veja a saída do passo HTTP — `gravadas` deve ser o
    número de notas; se vier `ignoradas`, os `motivos` dizem o porquê.
 
-### CRM · a OV do flow do PI com o Caso sem o "COT-" (18/11/2026)
+### CRM · a OV da MSB sem "MSB", o Caso sem o "COT-" e a OC do PI (18/11/2026)
 
-O dono, montando a volta da OV no flow do PI · Pedido: "veio o número sem o
-COT-". O `/api/cot-ov-retorno` só aceitava o Caso inteiro
-(`COT-MSB-AAAA-NNNNNN`) — sem o prefixo respondia `ignorado`. Agora
-(`casoDoFlow()` em `api/shared/cot-motor.js`) vale também `MSB-AAAA-NNNNNN`
-(maiúscula/minúscula, espaço ou sem hífen) e só `AAAA-NNNNNN` **quando todas
-as OVs são da MSB** (`OVMSB…`): a BIO tem a mesma numeração
-(`COT-AAAA-NNNNNN`) e uma OV dela nunca fecha uma cotação da MSB. A resposta
-traz `caso` (o número achado) e `casoRecebido` (o que veio, quando diferente).
-No flow, a condição para chamar este portal pode ser o campo `Empresa` = `MSB`
-que o PI manda (em vez de "Caso começa com COT-MSB-"). Testes: `node
-scripts/test-cot-ov-retorno.js`.
+Montando a volta da OV no flow do PI · Pedido, o dono achou três coisas:
+
+- **"Não existe esse prefixo na MSB"** — a OV da MSB é `OV` + números
+  (`OV017760`), e o CRM exigia `OVMSB…` ("Número da Ordem de Venda inválido —
+  use OVMSB…"). `numeroOv()` (em `api/shared/cot-ov.js` e na cópia de
+  `cotacoes-base.js`) aceita `OV` + números (e ainda `OV` + letras + números,
+  a da BIO); só os números viram `OV` + números (`COT_OV_PREFIXO`, padrão
+  agora `OV` — se a variável existir no Azure com `OVMSB`, apague). Os textos
+  e exemplos da tela passaram a `OV017760`.
+- **"Veio o número sem o COT-"** — o `/api/cot-ov-retorno` aceita o Caso
+  `COT-MSB-AAAA-NNNNNN` e também `MSB-AAAA-NNNNNN` (maiúscula/minúscula,
+  espaço ou sem hífen; `casoDoFlow()` em `api/shared/cot-motor.js`). Só ano +
+  sequência (`2026-000123`, `2026000005`) **não** vale: a BIO tem a mesma
+  numeração e a OV da MSB não diz a empresa. A resposta traz `caso` e
+  `casoRecebido`. (O flow de teste mandou o Caso inteiro: `COT-MSB-2026-000005`.)
+- **A Ordem de Compra do PI com o número da cotação** — a proposta da MSB que
+  o cliente devolve como pedido fazia a IA ler o "Número de Proposta" como OC
+  (`2026000005`). O dono: o número da cotação vai no **Caso** (oculto,
+  automático quando o PI vem do CRM), não na OC. `ocEhACotacao()` no
+  `pedido-inteligente.js` limpa a OC que é o número da cotação (inteiro ou só
+  os dígitos, quando o PI veio do CRM; `COT-MSB-…` sempre) — vazia, ela vai
+  como NAO INFORMADO; e as duas instruções da IA (`api/pedido-extrair`) dizem
+  que o Número de Proposta não é OC.
+- No flow, a condição para chamar este portal pode ser o campo `Empresa` =
+  `MSB` que o PI manda. Testes: `node scripts/test-cot-ov-retorno.js`.
+  Versões: `cotacoes-base.js?v=31`, `cotacoes.js?v=44`,
+  `pedido-inteligente.js?v=43`; `sw.js` — cache `bm-comest-v102`.
 
 ## Como colocar no ar
 

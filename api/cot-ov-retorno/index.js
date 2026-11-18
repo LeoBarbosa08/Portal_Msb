@@ -6,10 +6,10 @@
 // fim, chama esta porta — a cotação fecha sozinha com a OV (conferida no
 // Dynamics, como a digitada no cartão; ver cot-motor.retornoDoFlow).
 //
-//   POST { Caso: 'COT-MSB-AAAA-NNNNNN', OrdemVenda: 'OVMSB144950' }
-//        OrdemVenda também aceita lista ['OVMSB…', …] ou "OVMSB…, OVMSB…"
-//        Caso (18/11/26) também sem o prefixo: 'MSB-AAAA-NNNNNN', ou só
-//        'AAAA-NNNNNN' quando a(s) OV(s) são da MSB (cot-motor.casoDoFlow)
+//   POST { Caso: 'COT-MSB-AAAA-NNNNNN', OrdemVenda: 'OV017760' }
+//        OrdemVenda também aceita lista ['OV…', …] ou "OV…, OV…" e só os
+//        números (vira OV + números); a OV da MSB não tem "MSB" no prefixo
+//        Caso (18/11/26) também sem o COT-: 'MSB-AAAA-NNNNNN' (cot-motor.casoDoFlow)
 //   cabeçalho x-portal-chave: <COT_OV_CHAVE>
 //
 //   200 { ok, caso, ovs, fase }         a OV entrou (repetida = idempotente)
@@ -19,7 +19,7 @@
 //   409 cotação descartada ou sem o PDF do pedido · 503 COT_OV_CHAVE não configurada
 //
 // RECORTE MSB (04/11/2026): aqui a cotação é COT-MSB-AAAA-NNNNNN e a OV é a
-// da MSB (OVMSB…). O flow do PI · Pedido é o mesmo da BIO: para a OV voltar
+// da MSB (OV + números). O flow do PI · Pedido é o mesmo da BIO: para a OV voltar
 // sozinha às cotações da MSB, o flow precisa chamar ESTA porta (a do portal
 // da MSB) quando o Caso começar com COT-MSB-, com a COT_OV_CHAVE desta Static
 // Web App. Sem isso, a OV entra à mão no cartão ("Já tenho a OV") — e o

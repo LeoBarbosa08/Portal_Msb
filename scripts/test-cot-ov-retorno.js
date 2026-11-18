@@ -5,8 +5,8 @@
 //   node scripts/test-cot-ov-retorno.js
 //
 // 18/11/26 (dono: "veio o número sem o COT-"): o Caso vale com ou sem o
-// prefixo; o "só ano + sequência" só com OV da MSB (a BIO tem a mesma
-// numeração). Aqui só o que não precisa do armazenamento das cotações.
+// COT- (o "MSB" fica); a OV da MSB é OV + números ("não existe esse prefixo
+// na MSB"). Aqui só o que não precisa do armazenamento das cotações.
 // ================================================================
 
 delete process.env.COT_OV_CHAVE;
@@ -23,37 +23,39 @@ async function chama(corpo, chave) {
 
 (async () => {
   console.log('1) o Caso: com ou sem o COT-');
-  const MSB = ['OVMSB144950'];
-  t('COT-MSB-2026-000123 (inteiro)', M.casoDoFlow('COT-MSB-2026-000123', MSB) === 'COT-MSB-2026-000123');
-  t('MSB-2026-000123 (sem o COT-)', M.casoDoFlow('MSB-2026-000123', MSB) === 'COT-MSB-2026-000123');
-  t('minúsculo, espaços e sem hífen: "msb 2026 000123", "MSB2026000123"', M.casoDoFlow('msb 2026 000123', MSB) === 'COT-MSB-2026-000123' && M.casoDoFlow('MSB2026000123', MSB) === 'COT-MSB-2026-000123');
-  t('2026-000123 com OV da MSB', M.casoDoFlow('2026-000123', MSB) === 'COT-MSB-2026-000123');
-  // 18/11/26: o "2026000005" do campo Ordem de Compra do PI (a proposta da MSB
-  // devolvida como pedido: a IA leu o Número de Proposta só com os dígitos)
-  t('2026000005 (só os dígitos) com OV da MSB', M.casoDoFlow('2026000005', MSB) === 'COT-MSB-2026-000005');
-  t('2026-000123 com OV da BIO: não (a BIO tem a mesma numeração)', M.casoDoFlow('2026-000123', ['OVBIO012345']) === '');
-  t('2026-000123 com uma OV da MSB e outra da BIO: não', M.casoDoFlow('2026-000123', ['OVMSB144950', 'OVBIO012345']) === '');
-  t('2026-000123 sem OV válida: não', M.casoDoFlow('2026-000123', []) === '');
-  t('MSB-… vale mesmo com OV de outra empresa (o portal confere e avisa na OV)', M.casoDoFlow('MSB-2026-000123', ['OVBIO012345']) === 'COT-MSB-2026-000123');
-  t('N/D, vazio, caso do Customer Service: não', M.casoDoFlow('N/D', MSB) === '' && M.casoDoFlow('', MSB) === '' && M.casoDoFlow('CS-2026-000123', MSB) === '');
-  t('número curto/comprido demais: não', M.casoDoFlow('MSB-2026-123', MSB) === '' && M.casoDoFlow('MSB-2026-0001234', MSB) === '');
+  t('COT-MSB-2026-000123 (inteiro)', M.casoDoFlow('COT-MSB-2026-000123') === 'COT-MSB-2026-000123');
+  t('MSB-2026-000123 (sem o COT-)', M.casoDoFlow('MSB-2026-000123') === 'COT-MSB-2026-000123');
+  t('minúsculo, espaços e sem hífen: "msb 2026 000123", "MSB2026000123"', M.casoDoFlow('msb 2026 000123') === 'COT-MSB-2026-000123' && M.casoDoFlow('MSB2026000123') === 'COT-MSB-2026-000123');
+  // a OV da MSB é OV + números (sem "MSB"): sem o "MSB" no Caso não dá para
+  // separar da BIO (COT-2026-000123) — só ano + sequência não vale
+  t('2026-000123 e 2026000005 (sem o MSB): não', M.casoDoFlow('2026-000123') === '' && M.casoDoFlow('2026000005') === '' && M.casoDoFlow('COT-2026-000123') === '');
+  t('N/D, vazio, caso do Customer Service: não', M.casoDoFlow('N/D') === '' && M.casoDoFlow('') === '' && M.casoDoFlow('CS-2026-000123') === '');
+  t('número curto/comprido demais: não', M.casoDoFlow('MSB-2026-123') === '' && M.casoDoFlow('MSB-2026-0001234') === '');
+
+  console.log('1b) a OV da MSB: OV + números, sem o "MSB" (18/11/26)');
+  const OV = require('../api/shared/cot-ov');
+  t('OV017760 vale', OV.numeroOv('OV017760') === 'OV017760');
+  t('só os números: 017760 -> OV017760', OV.numeroOv('017760') === 'OV017760');
+  t('minúsculo e com espaço: "ov 017760" -> OV017760', OV.numeroOv('ov 017760') === 'OV017760');
+  t('com letras (a da BIO) continua valendo: OVBIO012345', OV.numeroOv('OVBIO012345') === 'OVBIO012345');
+  t('não é OV: "abc", "OV12", "17760x"', OV.numeroOv('abc') === '' && OV.numeroOv('OV12') === '' && OV.numeroOv('17760x') === '');
 
   console.log('2) retornoDoFlow: o que não é cotação da MSB é ignorado (antes de olhar a OV)');
   let r = await M.retornoDoFlow('N/D', 'qualquer coisa');
   t('N/D -> ignorado, sem erro de OV', r.ignorado === true && /N\/D/.test(r.motivo), r);
-  r = await M.retornoDoFlow('2026-000123', 'OVBIO012345');
-  t('ano + sequência com OV da BIO -> ignorado', r.ignorado === true, r);
+  r = await M.retornoDoFlow('2026-000123', 'OV017760');
+  t('ano + sequência (sem o MSB) -> ignorado', r.ignorado === true, r);
   let erro = null;
   try { await M.retornoDoFlow('MSB-2026-000123', 'abc'); } catch (e) { erro = e; }
-  t('cotação da MSB com OV inválida -> 400', erro && erro.status === 400 && /OrdemVenda inválida/.test(erro.publicMessage), erro && erro.publicMessage);
+  t('cotação da MSB com OV inválida -> 400, com o exemplo OV + números', erro && erro.status === 400 && /OrdemVenda inválida/.test(erro.publicMessage) && /use OV seguido/.test(erro.publicMessage), erro && erro.publicMessage);
 
   console.log('3) a rota: chave');
-  r = await chama({ Caso: 'MSB-2026-000123', OrdemVenda: 'OVMSB144950' });
+  r = await chama({ Caso: 'MSB-2026-000123', OrdemVenda: 'OV017760' });
   t('sem COT_OV_CHAVE: 503', r.status === 503, r);
   process.env.COT_OV_CHAVE = 'chave-do-flow-do-pi-com-24-caracteres';
-  r = await chama({ Caso: 'MSB-2026-000123', OrdemVenda: 'OVMSB144950' }, 'errada');
+  r = await chama({ Caso: 'MSB-2026-000123', OrdemVenda: 'OV017760' }, 'errada');
   t('chave errada: 401', r.status === 401, r);
-  r = await chama({ Caso: 'N/D', OrdemVenda: 'OVMSB144950' }, process.env.COT_OV_CHAVE);
+  r = await chama({ Caso: 'N/D', OrdemVenda: 'OV017760' }, process.env.COT_OV_CHAVE);
   t('chave certa, Caso N/D: 200 ignorado', r.status === 200 && r.body.ignorado === true, r);
 
   console.log(falhas ? '\n' + falhas + ' FALHA(S)' : '\ntudo ok');

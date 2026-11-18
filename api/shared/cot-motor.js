@@ -96,7 +96,7 @@
 //   . UNIDADE fixa MSB (05/11/26; até então VENDA RECORRENTE): não depende
 //     do RLS do Power BI, que esconde a unidade MSB (comEscopo);
 //   . o dono são as DUAS contas (DONOS), como no resto do portal da MSB;
-//   . a Ordem de Venda da MSB (OVMSB…, api/shared/cot-ov.js) e o cliente, o
+//   . a Ordem de Venda da MSB (OV017760…, api/shared/cot-ov.js) e o cliente, o
 //     lote e a OV procurados na empresa msb do Dynamics.
 //
 // Acesso: quem tem a ÁREA Comercial (grupos do Entra, api/shared/auth.js) —
@@ -866,26 +866,22 @@ function exigirChaveDoFlow(req) {
 // 18/11/26 (dono: "veio o número sem o COT-"): o Caso que o flow devolve pode
 // chegar sem o prefixo. Vale:
 //   COT-MSB-2026-000123 (o número inteiro)  ·  MSB-2026-000123 (sem o COT-)
-//   2026-000123 (só ano + sequência)        ·  maiúscula/minúscula, espaços, "_"
-// O "só ano + sequência" não diz a empresa (a BIO tem a mesma numeração,
-// COT-2026-000123): só vale quando TODAS as OVs são da MSB (OVMSB…) — uma OV
-// da BIO nunca fecha uma cotação da MSB de mesmo número.
-function casoDoFlow(caso, ovsValidas) {
+//   maiúscula/minúscula, espaços, "_", sem hífen
+// Só ano + sequência (2026-000123) NÃO vale: a BIO tem a mesma numeração
+// (COT-2026-000123) e a OV da MSB não diz a empresa (OV017760, sem "MSB") —
+// sem o "MSB" no Caso, não dá para saber de quem é a cotação.
+function casoDoFlow(caso) {
   const s = txt(caso, 60).toUpperCase().replace(/[\s_]+/g, '-').replace(/-+/g, '-').replace(/^-|-$/g, '');
   if (numeroOk(s)) return s;
-  let m = /^(?:COT-?)?MSB-?(\d{4})-?(\d{6})$/.exec(s);
-  if (m) return NUM_PREFIXO + m[1] + '-' + m[2];
-  m = /^(?:COT-?)?(\d{4})-?(\d{6})$/.exec(s);
-  const daMsb = (ovsValidas || []).length && ovsValidas.every(function (o) { return String(o).indexOf(ovD365.PREFIXO) === 0; });
-  if (m && daMsb) return NUM_PREFIXO + m[1] + '-' + m[2];
-  return '';
+  const m = /^(?:COT-?)?MSB-?(\d{4})-?(\d{6})$/.exec(s);
+  return m ? NUM_PREFIXO + m[1] + '-' + m[2] : '';
 }
 // { Caso, OrdemVenda } do flow -> a OV entra na cotação (uma ou várias)
 async function retornoDoFlow(caso, ovs) {
   const recebido = txt(caso, 60);
   const brutos = (Array.isArray(ovs) ? ovs : String(ovs == null ? '' : ovs).split(/[,;\r\n]+/)).map(function (v) { return txt(v, 30); }).filter(Boolean);
   const lista = brutos.map(ovD365.numeroOv);
-  const numero = casoDoFlow(recebido, lista.filter(Boolean));
+  const numero = casoDoFlow(recebido);
   // o mesmo flow recebe pedido do Customer Service e do PI avulso: não é cotação, não é com a gente
   if (!numero) return { ignorado: true, motivo: 'Caso não é uma cotação da MSB (' + (recebido || 'vazio') + ')' };
   const ruins = brutos.filter(function (v, i) { return !lista[i]; });

@@ -370,8 +370,8 @@
     });
     if (!S.produtos.length) S.produtos.push(novoProduto());
 
-    // pré-preenche o cabeçalho
-    $('cab-oc').value       = ext.ordemDeCompra || '';
+    // pré-preenche o cabeçalho (o número da cotação não é OC: vai no Caso)
+    $('cab-oc').value       = ocEhACotacao(ext.ordemDeCompra) ? '' : (ext.ordemDeCompra || '');
     $('cab-endereco').value = ext.enderecoEntrega || '';
     $('cab-email').value    = ext.email || '';
     $('cab-obs').value      = ext.observacao || '';
@@ -379,6 +379,20 @@
     // escolhe manualmente. Se o PDF trouxe a condição, a dica fica EMBAIXO do
     // próprio campo (e não some quando a etapa mostra "Preencha: …").
     dicaCondPag(ext.condicaoPagamento);
+  }
+
+  // 18/11/26 (dono): o número da cotação vai no CASO (oculto, automático
+  // quando o PI vem do CRM) — NÃO na Ordem de Compra. A proposta da MSB que o
+  // cliente devolve como pedido fazia a IA ler o "Número de Proposta"
+  // (COT-MSB-2026-000005) como OC, às vezes só os dígitos (2026000005).
+  function ocEhACotacao(oc) {
+    var s = String(oc || '').toUpperCase().replace(/\s+/g, '');
+    if (!s) return false;
+    if (/^COT-?MSB/.test(s)) return true;
+    var caso = (CS && CS.origemPI === 'cot' && CS.numero) ? String(CS.numero) : String(($('cab-caso') || {}).value || '');
+    if (!/^COT-/i.test(caso)) return false;
+    var dig = caso.replace(/\D/g, '');
+    return !!dig && s.replace(/\D/g, '') === dig;
   }
 
   function dicaCondPag(txt) {
@@ -1497,7 +1511,7 @@
     escolherOpcao('cab-area', e.areaPI);
     escolherOpcao('cab-empresa', e.empresa);
     var oc = $('cab-oc');
-    if (e.oc && oc && !oc.value) oc.value = e.oc;
+    if (e.oc && !ocEhACotacao(e.oc) && oc && !oc.value) oc.value = e.oc;
     // 22/10/2026 (pedido do usuário): o resto do que a cotação sabe — endereço,
     // e-mail, observação, condição de pagamento e frete — entra nos campos
     // VAZIOS (o que o PDF trouxe fica). A condição e o frete só quando batem

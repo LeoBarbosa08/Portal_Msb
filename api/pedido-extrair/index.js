@@ -123,7 +123,7 @@ const SYSTEM_PROMPT = `Você extrai dados de ORDENS DE COMPRA (pedidos) recebida
 REGRAS DE EXTRAÇÃO:
 - cnpj: o CNPJ do CLIENTE (quem COMPRA, quem emitiu a ordem). NUNCA o da Biomedical (19.848.316/0001-66) — ela aparece no documento como fornecedor. Devolva no formato encontrado.
 - nomeCliente: razão social do cliente comprador (nunca a Biomedical).
-- ordemDeCompra: o número da ordem de compra/pedido. Devolva só o número principal, sem pontos de milhar (ex.: "Número 84.938" -> "84938"). O nome do arquivo, quando informado, costuma confirmar esse número.
+- ordemDeCompra: o número da ordem de compra/pedido. Devolva só o número principal, sem pontos de milhar (ex.: "Número 84.938" -> "84938"). O nome do arquivo, quando informado, costuma confirmar esse número. Na PROPOSTA DA PRÓPRIA BIOMEDICAL/MSB devolvida como pedido, o "Número de Proposta" (COT-…, ex.: COT-MSB-2026-000005) NÃO é a ordem de compra: use a OC do cliente se o documento tiver uma (carimbo, "OC", "Pedido nº", "Autorização"); senão, "".
 - enderecoEntrega: endereço de entrega completo (logradouro, bairro, cidade, UF). Se houver um local de entrega (ex.: "ALMOXARIFADO CENTRAL"), inclua no início.
 - email: e-mail de contato do cliente ("" se não houver).
 - condicaoPagamento: a condição de pagamento como está escrita no PDF ("" se não houver).
@@ -185,7 +185,7 @@ const CONSIG_PROMPT = `Você extrai dados de documentos de FATURAMENTO DE CONSIG
 
 REGRAS DE EXTRAÇÃO:
 - cnpj / nomeCliente: SEMPRE do CLIENTE (hospital/clínica que compra) — NUNCA da Biomedical (19.848.316/0001-66), que aparece como fornecedora.
-- ordemDeCompra: número da OC/autorização, sem pontos de milhar ("" se não houver).
+- ordemDeCompra: número da OC/autorização, sem pontos de milhar ("" se não houver). O "Número de Proposta" (COT-…) da proposta da Biomedical/MSB NÃO é OC.
 - enderecoEntrega: endereço de entrega/faturamento do cliente ("" se não houver).
 - email: e-mail de contato ("" se não houver).
 - condicaoPagamento / condicaoPagamentoSugerida / freteSugerido: mesmas regras — sugerida deve ser exatamente uma opção da LISTA DE CONDIÇÕES; freteSugerido uma de "CIF - COM VALOR" | "CIF - SEM VALOR" | "FOB - DESTINATARIO"; "" se incerto.
