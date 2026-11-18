@@ -863,19 +863,37 @@ function exigirChaveDoFlow(req) {
   const hash = function (v) { return crypto.createHash('sha256').update(v).digest(); };
   if (!veio || !crypto.timingSafeEqual(hash(veio), hash(certa))) throw erro(401, 'Chave do flow ausente ou errada.');
 }
+// 18/11/26 (dono: "veio o número sem o COT-"): o Caso que o flow devolve pode
+// chegar sem o prefixo. Vale:
+//   COT-MSB-2026-000123 (o número inteiro)  ·  MSB-2026-000123 (sem o COT-)
+//   2026-000123 (só ano + sequência)        ·  maiúscula/minúscula, espaços, "_"
+// O "só ano + sequência" não diz a empresa (a BIO tem a mesma numeração,
+// COT-2026-000123): só vale quando TODAS as OVs são da MSB (OVMSB…) — uma OV
+// da BIO nunca fecha uma cotação da MSB de mesmo número.
+function casoDoFlow(caso, ovsValidas) {
+  const s = txt(caso, 60).toUpperCase().replace(/[\s_]+/g, '-').replace(/-+/g, '-').replace(/^-|-$/g, '');
+  if (numeroOk(s)) return s;
+  let m = /^(?:COT-?)?MSB-?(\d{4})-?(\d{6})$/.exec(s);
+  if (m) return NUM_PREFIXO + m[1] + '-' + m[2];
+  m = /^(?:COT-?)?(\d{4})-?(\d{6})$/.exec(s);
+  const daMsb = (ovsValidas || []).length && ovsValidas.every(function (o) { return String(o).indexOf(ovD365.PREFIXO) === 0; });
+  if (m && daMsb) return NUM_PREFIXO + m[1] + '-' + m[2];
+  return '';
+}
 // { Caso, OrdemVenda } do flow -> a OV entra na cotação (uma ou várias)
 async function retornoDoFlow(caso, ovs) {
-  const numero = txt(caso, 40).toUpperCase();
-  // o mesmo flow recebe pedido do Customer Service e do PI avulso: não é cotação, não é com a gente
-  if (!numeroOk(numero)) return { ignorado: true, motivo: 'Caso não é uma cotação (' + (numero || 'vazio') + ')' };
+  const recebido = txt(caso, 60);
   const brutos = (Array.isArray(ovs) ? ovs : String(ovs == null ? '' : ovs).split(/[,;\r\n]+/)).map(function (v) { return txt(v, 30); }).filter(Boolean);
   const lista = brutos.map(ovD365.numeroOv);
+  const numero = casoDoFlow(recebido, lista.filter(Boolean));
+  // o mesmo flow recebe pedido do Customer Service e do PI avulso: não é cotação, não é com a gente
+  if (!numero) return { ignorado: true, motivo: 'Caso não é uma cotação da MSB (' + (recebido || 'vazio') + ')' };
   const ruins = brutos.filter(function (v, i) { return !lista[i]; });
   if (!brutos.length || ruins.length) throw erro(400, 'OrdemVenda inválida' + (ruins.length ? ' (' + ruins.join(', ') + ')' : '') + ' — use ' + ovD365.PREFIXO + ' seguido dos números.');
   const quem = Object.assign({ cfg: await lerConfig() }, FLOW_PI);
   let c = null;
   for (const n of lista.filter(function (v, i, l) { return l.indexOf(v) === i; })) c = await agir(numero, { acao: 'ov', ov: n, doFlow: true }, quem);
-  return { caso: numero, ovs: (c.ovs || []).map(function (o) { return o.numero; }), fase: c.fase };
+  return { caso: numero, casoRecebido: recebido !== numero ? recebido : undefined, ovs: (c.ovs || []).map(function (o) { return o.numero; }), fase: c.fase };
 }
 
 // ── o RESULTADO DE CADA ITEM ao virar pedido (21/10/26) ───────────
@@ -2117,7 +2135,7 @@ function diagnostico() {
 
 module.exports = {
   FASES, FASES_AMOSTRA, FASES_INICIAIS, nomeFase, PORTAIS_PADRAO, MOTIVOS_PERDA_PADRAO, MOTIVOS_CANCEL_PADRAO, EMPRESAS_PADRAO, AREAS_PADRAO, DONO, DONOS, NUM_PREFIXO, UNIDADE_MSB, EMPRESA_FIXA,
-  lerConfig, salvarConfig, montarConfig, exigirEquipe, perfilDe, exigirChaveDoFlow, retornoDoFlow, comEscopo, veCaso, motivoUnidade: pbiU.motivoFechado,
+  lerConfig, salvarConfig, montarConfig, exigirEquipe, perfilDe, exigirChaveDoFlow, retornoDoFlow, casoDoFlow, comEscopo, veCaso, motivoUnidade: pbiU.motivoFechado,
   novoDaLoja, PORTAL_LOJA,
   motivosDaPerda, ovsDaCotacao, conferirLotes: lotesD365.conferir, listar, obter, arquivo, duplicado, novo, agir, criarAmostra, perderVencidas, completarResumos, familias, resumoDe, diagnostico, consultarErp, consultarErpCodigo,
   produtosSf: produtosSf.porCodigos,

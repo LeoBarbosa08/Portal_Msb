@@ -8,6 +8,8 @@
 //
 //   POST { Caso: 'COT-MSB-AAAA-NNNNNN', OrdemVenda: 'OVMSB144950' }
 //        OrdemVenda também aceita lista ['OVMSB…', …] ou "OVMSB…, OVMSB…"
+//        Caso (18/11/26) também sem o prefixo: 'MSB-AAAA-NNNNNN', ou só
+//        'AAAA-NNNNNN' quando a(s) OV(s) são da MSB (cot-motor.casoDoFlow)
 //   cabeçalho x-portal-chave: <COT_OV_CHAVE>
 //
 //   200 { ok, caso, ovs, fase }         a OV entrou (repetida = idempotente)

@@ -2555,6 +2555,20 @@ conectores SQL Server e HTTP são Premium) é só da conta dona do fluxo.
 5. Teste: rode o fluxo e veja a saída do passo HTTP — `gravadas` deve ser o
    número de notas; se vier `ignoradas`, os `motivos` dizem o porquê.
 
+### CRM · a OV do flow do PI com o Caso sem o "COT-" (18/11/2026)
+
+O dono, montando a volta da OV no flow do PI · Pedido: "veio o número sem o
+COT-". O `/api/cot-ov-retorno` só aceitava o Caso inteiro
+(`COT-MSB-AAAA-NNNNNN`) — sem o prefixo respondia `ignorado`. Agora
+(`casoDoFlow()` em `api/shared/cot-motor.js`) vale também `MSB-AAAA-NNNNNN`
+(maiúscula/minúscula, espaço ou sem hífen) e só `AAAA-NNNNNN` **quando todas
+as OVs são da MSB** (`OVMSB…`): a BIO tem a mesma numeração
+(`COT-AAAA-NNNNNN`) e uma OV dela nunca fecha uma cotação da MSB. A resposta
+traz `caso` (o número achado) e `casoRecebido` (o que veio, quando diferente).
+No flow, a condição para chamar este portal pode ser o campo `Empresa` = `MSB`
+que o PI manda (em vez de "Caso começa com COT-MSB-"). Testes: `node
+scripts/test-cot-ov-retorno.js`.
+
 ## Como colocar no ar
 
 1. **Repositório no GitHub** — crie um repositório **privado e vazio** (sem
