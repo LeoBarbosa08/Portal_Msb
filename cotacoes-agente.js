@@ -405,24 +405,50 @@
     var m = MASCARA[tipo]; if (!m) return '';
     return ' data-mask="' + tipo + '" inputmode="' + m.modo + '" maxlength="' + m.max + '" spellcheck="false"';
   }
+  // 18/11/2026 (pedido do usuário): o "Não informado" do prazo de entrega — o
+  // mesmo dos dados do paciente (cotacoes.js): o campo trava com NÃO INFORMADO
+  var NAO_INF = 'NÃO INFORMADO';
+  function naoInformado(v) { return C.norm(v).replace(/\s+/g, ' ').trim() === 'nao informado'; }
   function campo(rot, k, opt) {
     opt = opt || {};
     var v = opt.valor != null ? opt.valor : pegar(S.dados, k);
     if (opt.mask) v = C.formatar(opt.mask, v);
     // req (29/10/2026): obrigatório para criar — o asterisco, e marcado enquanto vazio
     var lido = S.lidos[k] ? ' lido' : '', falta = (opt.obrig || opt.req) && !v ? ' falta' : '';
+    var ni = !!opt.ni && naoInformado(v);
     var input;
     if (opt.lista) {
       input = '<select data-k="' + k + '"><option value="">—</option>' + opt.lista.map(function (o) { return '<option' + (o === v ? ' selected' : '') + '>' + esc(o) + '</option>'; }).join('') + '</select>';
     } else if (opt.area) {
       input = '<textarea data-k="' + k + '" rows="' + (opt.linhas || 2) + '" placeholder="' + esc(opt.ph || '') + '">' + esc(v) + '</textarea>';
     } else {
-      input = '<input data-k="' + k + '" type="' + (opt.tipo || 'text') + '" value="' + esc(opt.tipo === 'date' ? C.paraInput(v) : opt.tipo === 'datetime-local' ? C.paraInput(v, true) : v) + '"' +
+      input = '<input data-k="' + k + '" type="' + (opt.tipo || 'text') + '" value="' + esc(ni ? NAO_INF : opt.tipo === 'date' ? C.paraInput(v) : opt.tipo === 'datetime-local' ? C.paraInput(v, true) : v) + '"' + (ni ? ' readonly' : '') +
         (opt.lista2 ? ' list="' + opt.lista2 + '"' : '') + (opt.ph ? ' placeholder="' + esc(opt.ph) + '"' : '') + (opt.max ? ' maxlength="' + opt.max + '"' : '') + attrsMascara(opt.mask) + ' autocomplete="off">';
     }
-    return '<div class="cs-campo ' + (opt.cls || '') + lido + falta + '"' + (opt.id ? ' id="' + opt.id + '"' : '') + '><label>' + esc(rot) + (opt.req ? '<b class="cot-req" title="obrigatório">*</b>' : '') + (S.lidos[k] ? '<span class="ia">IA</span>' : '') + '</label>' + input + (opt.depois || '') +
+    var rotulo = '<label>' + esc(rot) + (opt.req ? '<b class="cot-req" title="obrigatório">*</b>' : '') + (S.lidos[k] ? '<span class="ia">IA</span>' : '') + '</label>';
+    if (opt.ni) {
+      rotulo = '<div class="cot-ni-rot">' + rotulo + '<label class="cot-ni" title="Não veio no pedido — grava NÃO INFORMADO">' +
+        '<input type="checkbox" data-ni="' + k + '"' + (ni ? ' checked' : '') + '>Não informado</label></div>';
+    }
+    return '<div class="cs-campo ' + (opt.cls || '') + lido + falta + (ni ? ' ni' : '') + '"' + (opt.id ? ' id="' + opt.id + '"' : '') + '>' + rotulo + input + (opt.depois || '') +
       (opt.mask || opt.erro ? '<small class="cot-erro-campo" role="alert"></small>' : '') + (opt.aviso ? '<small class="cot-aviso-campo"></small>' : '') +
       (opt.dica ? '<small>' + opt.dica + '</small>' : '') + '</div>';
+  }
+  var niGuardado = {};
+  function marcarNi(cb, on) {
+    var k = cb.getAttribute('data-ni'), cp = cb.closest('.cs-campo');
+    var inp = cp && cp.querySelector('input[data-k="' + k + '"]'); if (!inp) return;
+    cb.checked = on;
+    if (on) {
+      if (!naoInformado(inp.value)) niGuardado[k] = inp.value;
+      inp.value = NAO_INF; inp.readOnly = true;
+    } else {
+      inp.readOnly = false; inp.value = niGuardado[k] || '';
+    }
+    por(S.dados, k, inp.value);
+    cp.classList.toggle('ni', on);
+    cp.classList.toggle('falta', !inp.value && !!cp.querySelector('.cot-req'));
+    if (!on) inp.focus();
   }
 
   /* ── validação dos campos (19/10/2026) ──────────────────────────
@@ -895,7 +921,7 @@
           campo('Condição de pagamento', 'condicoes.pagamento', { cls: 's4', req: true, dica: 'exatamente como veio no PDF' }) +
           // 22/10/2026: o frete e o prazo de entrega voltaram (saem na proposta)
           campo('Frete', 'condicoes.frete', { cls: 's1', req: true, lista: ['CIF', 'FOB'] }) +
-          campo('Prazo de entrega', 'condicoes.entrega', { cls: 's3', req: true, ph: 'ex.: 5 dias úteis após o pedido', max: 120 }) +
+          campo('Prazo de entrega', 'condicoes.entrega', { cls: 's3', req: true, ni: true, ph: 'ex.: 5 dias úteis após o pedido', max: 120 }) +
           campo('Observação', 'condicoes.observacao', { cls: 's4', area: true, linhas: 2, dica: 'sai no PDF da proposta' }) +
         '</div></div>' +
       '</div>' +
@@ -1125,6 +1151,9 @@
       if (t.id === 'cot-arquivo') { receberArquivo(t.files && t.files[0]); t.value = ''; return; }
       if (t.id === 'cot-forcar') { S.forcar = t.checked; msg(''); return; }
       if (t.id === 'cot-prop-enviar') { S.prop.enviar = t.checked; msg(''); pintarValidade(); return; }
+      // o "Não informado" (prazo de entrega): marcar trava o campo com NÃO INFORMADO;
+      // desmarcar devolve o que estava digitado
+      if (t.matches && t.matches('input[data-ni]')) { marcarNi(t, t.checked); return; }
       // o "Tem IPI?" (29/10/2026): desmarcar tira o IPI de todos os itens
       if (t.id === 'cot-ipi') {
         S.ipi = t.checked;
