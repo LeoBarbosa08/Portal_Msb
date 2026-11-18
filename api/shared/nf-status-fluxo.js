@@ -20,8 +20,10 @@
 //
 // O corpo aceita: { notas: [...] }, [...], { value: [...] } ou o resultado
 // do "Executar uma consulta SQL (V2)" ({ ResultSets: { Table1: [...] } }).
-// Cada linha: número, status (em TEXTO: Aprovada, Cancelada…), data de
-// emissão e, se tiver, a empresa — cada um por vários nomes de coluna.
+// Cada linha: número, status, data de emissão e, se tiver, a empresa — cada
+// um por vários nomes de coluna. O status vem em texto (Aprovada, Cancelada…)
+// ou no NÚMERO do banco: KANBAN_NF_STATUS_APROVADO (padrão 1) = Aprovada;
+// outro número = "Não aprovada (status N)" (vai para a Rejeitada).
 //
 // Onde mora: <container>/kanban-nf-status/<empresa>.json, no container do
 // Kanban (KANBAN_BLOB_URL; sem ela, LOG_PORTAL_BLOB_URL — a regra do
@@ -36,6 +38,14 @@ const EMPRESA = () => txt(process.env.FATDIA_EMPRESA || process.env.ESTOQUE_MSB_
 const BLOB = () => txt(process.env.KANBAN_BLOB_URL || process.env.LOG_PORTAL_BLOB_URL);
 const CHAVE = () => String(process.env.KANBAN_NF_CHAVE || '');
 const CHAVE_MIN = 24;
+// 18/11/26 (dono: "todo mundo que é 1 é aprovado, diferente disso" vai para a
+// Rejeitada): o STATUS do banco chega em NÚMERO. O(s) código(s) de aprovada
+// viram "Aprovada"; qualquer outro número vira "Não aprovada (status N)" —
+// o Kanban manda para a Rejeitada e o Faturamento do Dia tira da soma.
+const COD_APROVADO = () => String(process.env.KANBAN_NF_STATUS_APROVADO || '1').split(',').map(s => s.trim()).filter(Boolean);
+function statusDoCodigo(cod) {
+  return COD_APROVADO().indexOf(cod) >= 0 ? 'Aprovada' : 'Não aprovada (status ' + cod + ')';
+}
 const RETEM_DIAS = () => Number(process.env.KANBAN_NF_RETEM_DIAS || 400);
 const CACHE_MS = () => Number(process.env.KANBAN_NF_CACHE_MS || 60000);
 const MAX_LINHAS = 20000;     // por chamada
@@ -117,10 +127,10 @@ function normalizar(corpo) {
     if (!k || /^0+$/.test(k)) { ignoradas.push({ numero, motivo: 'sem o número da nota' }); return; }
     if (empresa && empresa !== emp) { ignoradas.push({ numero, motivo: 'de outra empresa', valor: empresa }); return; }
     if (!status) { ignoradas.push({ numero, motivo: 'sem status' }); return; }
-    if (/^-?\d+$/.test(status)) { ignoradas.push({ numero, motivo: 'status em número: converta para o texto (Aprovada, Cancelada…) na consulta', valor: status }); return; }
     const data = isoD(dataV);
     if (data === undefined) { ignoradas.push({ numero, motivo: 'data inválida', valor: txt(dataV).slice(0, 30) }); return; }
-    validas.push({ k, numero: numero.slice(0, 30), status: status.slice(0, 60), data });
+    const st = /^-?\d+(\.0+)?$/.test(status) ? statusDoCodigo(String(parseInt(status, 10))) : status;
+    validas.push({ k, numero: numero.slice(0, 30), status: st.slice(0, 60), data });
   });
   return { recebidas: linhas.length, validas, ignoradas };
 }

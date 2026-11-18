@@ -90,15 +90,29 @@ const diaMenos = (n) => new Date(Date.now() - n * 86400000).toISOString().slice(
   t('{ value: [...] } em texto, com os nomes do Dynamics', r.status === 200 && r.body.gravadas === 1, r.body);
   r = await chama('POST', { notas: [
     { numero: '000021650', status: 'Aprovada', data: '2026-11-17', empresa: 'bio' },
-    { numero: '000021651', status: '1', data: '2026-11-17' },
     { numero: '000021652', status: '', data: '2026-11-17' },
     { numero: '000021653', status: 'Aprovada', data: 'ontem' },
     { status: 'Aprovada' }, null
   ] }, CHAVE);
   const mot = {}; (r.body.motivos || []).forEach(m => { mot[m.motivo] = m; });
-  t('nada disso entra', r.status === 200 && r.body.gravadas === 0 && r.body.ignoradas === 6, r.body);
+  t('nada disso entra', r.status === 200 && r.body.gravadas === 0 && r.body.ignoradas === 5, r.body);
   t('outra empresa (a BIO tem a numeração dela)', mot['de outra empresa'] && mot['de outra empresa'].exemplos[0] === '000021650 (bio)', mot);
-  t('status em número: pede o texto na consulta', Object.keys(mot).some(m => /status em número/.test(m) && /Aprovada/.test(m)), Object.keys(mot));
+  console.log('2b) o STATUS em número (o do banco): 1 = Aprovada, outro = Não aprovada');
+  r = await chama('POST', { ResultSets: { Table1: [
+    { dataareaid: 'MSB', FISCALDOCUMENTNUMBER: '000021660', STATUS: 1, FISCALDOCUMENTDATE: '2026-11-17T00:00:00' },
+    { dataareaid: 'MSB', FISCALDOCUMENTNUMBER: '000021661', STATUS: 2, FISCALDOCUMENTDATE: '2026-11-17T00:00:00' },
+    { dataareaid: 'MSB', FISCALDOCUMENTNUMBER: '000021662', STATUS: '0', FISCALDOCUMENTDATE: '2026-11-17T00:00:00' }
+  ] } }, CHAVE);
+  t('os três entram (número não é mais ignorado)', r.status === 200 && r.body.gravadas === 3 && r.body.ignoradas === 0, r.body);
+  let cn = await FX.consultar(['000021660', '000021661', '000021662'], Date.now() + 10000);
+  t('1 -> Aprovada', cn.porNum['21660'][0].status === 'Aprovada', cn.porNum['21660']);
+  t('2 -> Não aprovada (status 2); 0 -> Não aprovada (status 0)', cn.porNum['21661'][0].status === 'Não aprovada (status 2)' && cn.porNum['21662'][0].status === 'Não aprovada (status 0)', cn.porNum);
+  t('"Aprovada" passa no filtro de aprovada; "Não aprovada" não', ST.aprovado(cn.porNum['21660'][0].status) && !ST.aprovado(cn.porNum['21661'][0].status));
+  process.env.KANBAN_NF_STATUS_APROVADO = '5, 6';
+  r = await chama('POST', [{ numero: '000021663', status: 6, data: '2026-11-17' }, { numero: '000021664', status: 1, data: '2026-11-17' }], CHAVE);
+  cn = await FX.consultar(['000021663', '000021664'], Date.now() + 10000);
+  t('KANBAN_NF_STATUS_APROVADO troca o(s) código(s) de aprovada', cn.porNum['21663'][0].status === 'Aprovada' && cn.porNum['21664'][0].status === 'Não aprovada (status 1)', cn.porNum);
+  delete process.env.KANBAN_NF_STATUS_APROVADO;
   t('sem status, data inválida, sem número, linha vazia', mot['sem status'] && mot['data inválida'] && mot['sem o número da nota'] && mot['linha vazia'], Object.keys(mot));
 
   console.log('3) consultar: pelo número (com ou sem zeros), reserva marcada');

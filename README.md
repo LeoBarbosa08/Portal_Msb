@@ -2499,8 +2499,15 @@ conectores SQL Server e HTTP são Premium) é só da conta dona do fluxo.
   vários nomes de coluna (`NumeroNF`, `FiscalDocumentNumber`, `StatusNF`,
   `DataEmissao`, `DATAAREAID`…). Responde as contagens (`gravadas`, `novas`,
   `alteradas`, `ignoradas`) e os **motivos** do que não entrou: outra empresa,
-  sem status, **status em número** (o enum do banco: converta para o texto na
-  consulta), data inválida, sem número.
+  sem status, data inválida, sem número.
+- **STATUS em número** (o do banco, 18/11/2026 — dono: "todo mundo que é 1 é
+  aprovado, diferente disso" vai para a **Rejeitada**): o código
+  `KANBAN_NF_STATUS_APROVADO` (padrão `1`; aceita lista "1,5") vira
+  **Aprovada**; qualquer outro número vira **"Não aprovada (status N)"** — o
+  Kanban leva a OV para a Rejeitada (`nfRejeitadaV` aceita "não aprovada") e o
+  Faturamento do Dia tira a nota da soma. Status em texto continua valendo
+  como veio. Nota recém-emitida ainda sem aprovação no banco fica na Rejeitada
+  até a próxima execução do fluxo trazer o 1.
 - **Onde mora** — `api/shared/nf-status-fluxo.js`:
   `<container>/kanban-nf-status/msb.json` no container do Kanban
   (`KANBAN_BLOB_URL`, senão `LOG_PORTAL_BLOB_URL`), gravado com ETag. Mesmo
@@ -2529,21 +2536,18 @@ conectores SQL Server e HTTP são Premium) é só da conta dona do fluxo.
 1. Na Static Web App da MSB, *Settings › Environment variables*: crie
    `KANBAN_NF_CHAVE` com um texto aleatório de 32+ caracteres. A mesma chave
    vai no fluxo (passo 4) — não mande por e-mail/chat.
-2. Power Automate › *Fluxo agendado na nuvem* › **Recorrência** a cada 15
-   minutos.
+2. Power Automate › *Fluxo agendado na nuvem* › **Recorrência** (a cada 1
+   hora).
 3. **SQL Server › Executar uma consulta SQL (V2)** (com o gateway de dados
    local, se o banco for da empresa — o mesmo que o Power BI usa). Só as notas
-   recentes da MSB e o status em **texto**, por exemplo:
+   recentes da MSB; o `STATUS` pode ir em número (1 = Aprovada):
    ```sql
-   SELECT NumeroNF AS numero,
-          CASE Status WHEN 1 THEN 'Aprovada' WHEN 2 THEN 'Cancelada'
-                      WHEN 3 THEN 'Rejeitada' ELSE CAST(Status AS varchar(20)) END AS status,
-          DataEmissao AS data, Empresa AS empresa
+   SELECT FISCALDOCUMENTNUMBER, STATUS, FISCALDOCUMENTDATE, DATAAREAID
    FROM <tabela das notas>
-   WHERE Empresa = 'msb' AND DataEmissao >= DATEADD(day, -30, CAST(GETDATE() AS date))
+   WHERE DATAAREAID = 'msb' AND FISCALDOCUMENTDATE >= DATEADD(day, -30, CAST(GETDATE() AS date))
    ```
-   (os nomes e os números do `CASE` são os do banco de vocês; se o status já
-   estiver em texto, sem o `CASE`).
+   (os nomes são os do banco de vocês). O dono roda o fluxo de **1 em 1
+   hora**: o status no Kanban pode levar até 1 h para mudar.
 4. **HTTP**: método `POST`, URI `https://<endereço do portal da MSB>/api/nf-status`,
    cabeçalhos `Content-Type: application/json` e `x-portal-chave: <a chave>`,
    corpo = o **Corpo** do passo 3 (conteúdo dinâmico) — o portal acha a lista

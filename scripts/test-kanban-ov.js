@@ -567,12 +567,17 @@ const bio = (n, st, lib) => ({ dataAreaId: 'msb', SalesOrderNumber: n, StatusPed
     { numero: '000021639', status: 'Cancelada', data: DIA },
     { numero: '000021640', status: 'Rejeitada', data: DIA }
   ] });
+  // o banco manda o STATUS em número: 1 = Aprovada; outro -> Rejeitada (dono, 18/11/26)
+  await FXK.receber({ ResultSets: { Table1: [
+    { dataareaid: 'MSB', FISCALDOCUMENTNUMBER: '000021641', STATUS: 1, FISCALDOCUMENTDATE: DIA + 'T00:00:00' },
+    { dataareaid: 'MSB', FISCALDOCUMENTNUMBER: '000021642', STATUS: 2, FISCALDOCUMENTDATE: DIA + 'T00:00:00' }
+  ] } });
   SERVICO = ['BIOSalesOrderHeaderV1', 'SalesOrderHeadersV2', 'SalesOrderLines', 'SalesInvoiceHeadersV2', 'FiscalDocuments'];
   CEN = {
-    SalesOrderHeadersV2: { linhas: [v2('OV017638', DIA + 'T13:00:00Z', 'Invoiced'), v2('OV017639', DIA + 'T13:00:00Z', 'Invoiced'), v2('OV017640', DIA + 'T13:00:00Z', 'Invoiced')] },
-    BIOSalesOrderHeaderV1: { linhas: [b4('OV017638', 'Invoiced', 'Released', 'No'), b4('OV017639', 'Invoiced', 'Released', 'No'), b4('OV017640', 'Invoiced', 'Released', 'No')] },
+    SalesOrderHeadersV2: { linhas: ['OV017638', 'OV017639', 'OV017640', 'OV017641', 'OV017642'].map(n => v2(n, DIA + 'T13:00:00Z', 'Invoiced')) },
+    BIOSalesOrderHeaderV1: { linhas: ['OV017638', 'OV017639', 'OV017640', 'OV017641', 'OV017642'].map(n => b4(n, 'Invoiced', 'Released', 'No')) },
     SalesOrderLines: { linhas: [], auto: true },
-    SalesInvoiceHeadersV2: { linhas: [nf('OV017638', '000021638', DIA), nf('OV017639', '000021639', DIA), nf('OV017640', '000021640', DIA)] },
+    SalesInvoiceHeadersV2: { linhas: [nf('OV017638', '000021638', DIA), nf('OV017639', '000021639', DIA), nf('OV017640', '000021640', DIA), nf('OV017641', '000021641', DIA), nf('OV017642', '000021642', DIA)] },
     // o Dynamics: a 000021638 não está; a 000021640 está APROVADA (vale a do Dynamics)
     FiscalDocuments: { linhas: [fd('000021640', 'Approved', DIA)] }
   };
@@ -581,8 +586,11 @@ const bio = (n, st, lib) => ({ dataAreaId: 'msb', SalesOrderNumber: n, StatusPed
   t('a 000021638 sai Aprovada pelo Power Automate', o38.nota && o38.nota.status === 'Aprovada' && o38.nota.aprovada === true && o38.nota.fonte === 'Power Automate (banco).status' && o38.etapa === 'faturado', o38.nota);
   t('a 000021639 Cancelada pelo fluxo -> Rejeitada', o39.etapa === 'rejeitada' && o39.nota.rejeitada === true, { etapa: o39.etapa, nota: o39.nota });
   t('a 000021640: o Dynamics (Approved) vale sobre o fluxo (Rejeitada)', o40.etapa === 'faturado' && o40.nota.status === 'Approved', { etapa: o40.etapa, nota: o40.nota });
+  const o41 = r.ovs.find(o => o.numero === 'OV017641'), o42 = r.ovs.find(o => o.numero === 'OV017642');
+  t('STATUS 1 do banco -> Aprovada, Faturado', o41.etapa === 'faturado' && o41.nota.status === 'Aprovada' && o41.nota.aprovada === true, { etapa: o41.etapa, nota: o41.nota });
+  t('STATUS 2 do banco -> Não aprovada, Rejeitada', o42.etapa === 'rejeitada' && o42.nota.status === 'Não aprovada (status 2)' && o42.nota.rejeitada === true, { etapa: o42.etapa, nota: o42.nota });
   t('sem o aviso "Não achei o status"', !r.avisos.some(a => /Não achei o status da nota fiscal/.test(a)), r.avisos);
-  t('o diagnóstico mostra a etapa status:fluxo', (r.diagnostico || []).some(d => d.etapa === 'status:fluxo' && d.achadas === 3), (r.diagnostico || []).filter(d => /status/.test(d.etapa)));
+  t('o diagnóstico mostra a etapa status:fluxo', (r.diagnostico || []).some(d => d.etapa === 'status:fluxo' && d.achadas === 5), (r.diagnostico || []).filter(d => /status/.test(d.etapa)));
   K._limparCache(); delete CEN.FiscalDocuments;
   r = await K.ordensDoDia({ data: DIA });
   t('sem nenhuma entidade fiscal no Dynamics, o fluxo segue valendo', r.ovs.find(o => o.numero === 'OV017638').nota.status === 'Aprovada' && !r.avisos.some(a => /Não achei o status/.test(a)), r.ovs.find(o => o.numero === 'OV017638').nota);

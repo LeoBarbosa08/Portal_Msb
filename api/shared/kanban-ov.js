@@ -316,7 +316,9 @@ const COL_NOTA = {
   data:   ['InvoiceDate', 'InvoiceDateTime'],
   valor:  ['TotalInvoiceAmount', 'InvoiceAmount', 'InvoiceTotalAmount']
 };
-const nfRejeitadaV = (v) => /^(rejected|rejeitad|rejection|cancel|discard|descartad|denied|denegad)/.test(normV(v).replace(/ /g, ''));
+// 18/11/26: + "Não aprovada (status N)" — o STATUS do banco diferente de 1,
+// que o Power Automate manda (nf-status-fluxo.js): o dono quer na Rejeitada
+const nfRejeitadaV = (v) => /^(rejected|rejeitad|rejection|cancel|discard|descartad|denied|denegad|naoaprovad)/.test(normV(v).replace(/ /g, ''));
 // fase de UM trabalho, pelo WorkStatus (nome do enum no OData ou rótulo da tela)
 function faseTrab(v) {
   const n = normV(v);
