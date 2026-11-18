@@ -558,6 +558,39 @@ const bio = (n, st, lib) => ({ dataAreaId: 'msb', SalesOrderNumber: n, StatusPed
   t('o documento antigo (2023) da FiscalDocuments não empresta o "Cancelled"', n97.etapa === 'faturado' && !n97.nota.rejeitada, n97.etapa);
   t('a entidade da Bio foi testada mesmo com 9 fiscais antes dela', chamadas.some(c => c.ent === 'FiscalDocumentBioV2Entities'), chamadas.map(c => c.ent).filter((x, i, a) => a.indexOf(x) === i));
 
+  console.log('4m) status da nota pelo POWER AUTOMATE (18/11/26: a 000021638 "Sem status" no OData; o status está no banco)');
+  K._limparCache();
+  const FXK = require('../api/shared/nf-status-fluxo');
+  process.env.KANBAN_NF_CHAVE = 'chave-do-fluxo-com-mais-de-24-caracteres';
+  await FXK.receber({ notas: [
+    { numero: '000021638', status: 'Aprovada', data: DIA },
+    { numero: '000021639', status: 'Cancelada', data: DIA },
+    { numero: '000021640', status: 'Rejeitada', data: DIA }
+  ] });
+  SERVICO = ['BIOSalesOrderHeaderV1', 'SalesOrderHeadersV2', 'SalesOrderLines', 'SalesInvoiceHeadersV2', 'FiscalDocuments'];
+  CEN = {
+    SalesOrderHeadersV2: { linhas: [v2('OV017638', DIA + 'T13:00:00Z', 'Invoiced'), v2('OV017639', DIA + 'T13:00:00Z', 'Invoiced'), v2('OV017640', DIA + 'T13:00:00Z', 'Invoiced')] },
+    BIOSalesOrderHeaderV1: { linhas: [b4('OV017638', 'Invoiced', 'Released', 'No'), b4('OV017639', 'Invoiced', 'Released', 'No'), b4('OV017640', 'Invoiced', 'Released', 'No')] },
+    SalesOrderLines: { linhas: [], auto: true },
+    SalesInvoiceHeadersV2: { linhas: [nf('OV017638', '000021638', DIA), nf('OV017639', '000021639', DIA), nf('OV017640', '000021640', DIA)] },
+    // o Dynamics: a 000021638 não está; a 000021640 está APROVADA (vale a do Dynamics)
+    FiscalDocuments: { linhas: [fd('000021640', 'Approved', DIA)] }
+  };
+  r = await K.ordensDoDia({ data: DIA });
+  const o38 = r.ovs.find(o => o.numero === 'OV017638'), o39 = r.ovs.find(o => o.numero === 'OV017639'), o40 = r.ovs.find(o => o.numero === 'OV017640');
+  t('a 000021638 sai Aprovada pelo Power Automate', o38.nota && o38.nota.status === 'Aprovada' && o38.nota.aprovada === true && o38.nota.fonte === 'Power Automate (banco).status' && o38.etapa === 'faturado', o38.nota);
+  t('a 000021639 Cancelada pelo fluxo -> Rejeitada', o39.etapa === 'rejeitada' && o39.nota.rejeitada === true, { etapa: o39.etapa, nota: o39.nota });
+  t('a 000021640: o Dynamics (Approved) vale sobre o fluxo (Rejeitada)', o40.etapa === 'faturado' && o40.nota.status === 'Approved', { etapa: o40.etapa, nota: o40.nota });
+  t('sem o aviso "Não achei o status"', !r.avisos.some(a => /Não achei o status da nota fiscal/.test(a)), r.avisos);
+  t('o diagnóstico mostra a etapa status:fluxo', (r.diagnostico || []).some(d => d.etapa === 'status:fluxo' && d.achadas === 3), (r.diagnostico || []).filter(d => /status/.test(d.etapa)));
+  K._limparCache(); delete CEN.FiscalDocuments;
+  r = await K.ordensDoDia({ data: DIA });
+  t('sem nenhuma entidade fiscal no Dynamics, o fluxo segue valendo', r.ovs.find(o => o.numero === 'OV017638').nota.status === 'Aprovada' && !r.avisos.some(a => /Não achei o status/.test(a)), r.ovs.find(o => o.numero === 'OV017638').nota);
+  K._limparCache(); FXK._limpar();
+  r = await K.ordensDoDia({ data: DIA });
+  t('nem o Dynamics nem o fluxo: o aviso cita o Power Automate', r.avisos.some(a => /Não achei o status da nota fiscal.*nem no que o Power Automate mandou/.test(a)), r.avisos);
+  FXK._limpar(); K._limparCache(); delete process.env.KANBAN_NF_CHAVE;
+
   console.log('7) o QUADRO (12/11/26: SEM período): em aberto de qualquer data + as notas de hoje; nada filtra por data (só a Expedição)');
   K._limparCache(); chamadas.length = 0;
   SERVICO = ['BIOSalesOrderHeaderV1', 'SalesOrderHeadersV2', 'SalesOrderLines', 'SalesInvoiceHeadersV2', 'FiscalDocuments'];

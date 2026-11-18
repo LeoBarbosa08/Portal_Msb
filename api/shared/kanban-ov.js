@@ -1961,7 +1961,7 @@ async function montar(opts, modo) {
       avisos.push('A entidade de notas fiscais (SalesInvoiceHeadersV2) não respondeu no OData' + (NOTAS.erro ? ' (' + NOTAS.erro + ')' : '') +
         '. Sem ela, o número da nota não aparece e a coluna Rejeitada fica vazia.');
     } else if (nfs.length && !(STN.fontes || []).length) {
-      avisos.push('Não achei o status da nota fiscal (documento fiscal / NF-e) no OData' + (STN.erro ? ' (' + STN.erro + ')' : '') +
+      avisos.push('Não achei o status da nota fiscal (documento fiscal / NF-e) no OData' + (STN.fluxo && STN.fluxo.ligado ? ' nem no que o Power Automate mandou do banco' : '') + (STN.erro ? ' (' + STN.erro + ')' : '') +
         ': o número da nota aparece, mas a coluna Rejeitada fica vazia.');
     }
     // 13/11/26 (dono: "retire esse aviso também"): as colunas da carga que faltam

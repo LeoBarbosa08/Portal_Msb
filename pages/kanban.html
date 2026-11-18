@@ -1529,7 +1529,7 @@
         return '<div class="kb-it"><div class="n">' + (i + 1) + '</div><div class="c"><div class="t">NF ' + esc(n.numero) + (i === 0 && ns.length > 1 ? ' <span class="kb-dw-nada" style="font-size:10.5px;">· a mais recente</span>' : '') + '</div>'
           + (meta ? '<div class="s">' + esc(meta) + '</div>' : '') + '</div>'
           + '<div class="v">' + (n.valor != null ? '<b>' + esc(fBRL(n.valor)) + '</b>' : '')
-          + '<span class="kb-trab-st' + (n.rejeitada ? ' rej' : n.aprovada ? ' ok' : '') + '">' + esc(rotNF(n.status)) + '</span>' + (n.status ? '<span>' + esc(n.status) + '</span>' : '') + '</div></div>';
+          + '<span class="kb-trab-st' + (n.rejeitada ? ' rej' : n.aprovada ? ' ok' : '') + '">' + esc(rotNF(n.status)) + '</span>' + (n.status && n.status !== rotNF(n.status) ? '<span>' + esc(n.status) + '</span>' : '') + '</div></div>';
       }).join('') + '</div></section>';
     }
 

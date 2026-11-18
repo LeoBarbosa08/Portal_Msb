@@ -29,7 +29,8 @@ Venda Recorrente".
 `directline-token`, `chat`, `transcrever`, `comercial-funil`, `cot-casos`,
 `cot-config`, `cot-ov-retorno`, `fca`, `pedido-extrair`, `pedido-enviar`, `pedido-lotes`,
 `consig-lote`, `consig-faturar`, `consig-processo`, `dossie-cliente`,
-`dossie-ganchos`, `dossie-agenda` (+ `pedido-transportadoras`, de 12/11/2026).
+`dossie-ganchos`, `dossie-agenda` (+ `pedido-transportadoras`, de 12/11/2026, e
+`nf-status`, de 18/11/2026 — o Power Automate manda o status das notas).
 
 ## O que mudou em relação ao portal completo
 
@@ -2477,6 +2478,78 @@ português, será melhor compreendido".
   mouse. O valor em inglês ao lado dos status traduzidos (Faturada *Invoiced*,
   Liberada *Released*) continua, como na parte de baixo. `sw.js` — cache
   `bm-comest-v100`.
+
+### Kanban · status da nota pelo Power Automate (18/11/2026)
+
+O dono: a NF 000021638 aparece "Sem status" no Kanban — o status está no
+banco (o que alimenta o BI), não no OData do Dynamics, e ninguém pode precisar
+de licença do Power BI para ver. Saída: um **fluxo do Power Automate** lê o
+status no banco e **manda para o portal**; o portal guarda e usa como
+**reserva**. Quem vê o Kanban não precisa de licença nenhuma (quem lê o banco
+é o fluxo; quem mostra é o portal). A licença Premium do Power Automate (os
+conectores SQL Server e HTTP são Premium) é só da conta dona do fluxo.
+
+- **A porta** — `POST /api/nf-status` (`api/nf-status`), sem login, só com a
+  chave no cabeçalho `x-portal-chave` = `KANBAN_NF_CHAVE` (fail-closed: sem a
+  variável, ou com menos de 24 caracteres, responde 503 e não faz nada — o
+  molde do `/api/cot-ov-retorno`). Corpo: `{ "notas": [ { "numero":
+  "000021638", "status": "Aprovada", "data": "2026-11-17", "empresa": "msb" }
+  ] }` — aceita também a lista pura, `{ value: [...] }` e o corpo do
+  *Executar uma consulta SQL (V2)* (`ResultSets.Table1`), e cada campo por
+  vários nomes de coluna (`NumeroNF`, `FiscalDocumentNumber`, `StatusNF`,
+  `DataEmissao`, `DATAAREAID`…). Responde as contagens (`gravadas`, `novas`,
+  `alteradas`, `ignoradas`) e os **motivos** do que não entrou: outra empresa,
+  sem status, **status em número** (o enum do banco: converta para o texto na
+  consulta), data inválida, sem número.
+- **Onde mora** — `api/shared/nf-status-fluxo.js`:
+  `<container>/kanban-nf-status/msb.json` no container do Kanban
+  (`KANBAN_BLOB_URL`, senão `LOG_PORTAL_BLOB_URL`), gravado com ETag. Mesmo
+  número e mesma data = a mesma nota (o status novo substitui o antigo); outra
+  data = outro documento (o número se repete com os anos). Notas com mais de
+  `KANBAN_NF_RETEM_DIAS` (400) dias saem do arquivo. Leitura com cache de
+  `KANBAN_NF_CACHE_MS` (60 s).
+- **A regra** — `api/shared/fatdia-status.js` lê o OData e o arquivo do fluxo
+  em paralelo (um não derruba o outro). Na `statusDaNota`, o status do
+  **Dynamics vale primeiro**; o do fluxo entra só quando o Dynamics não trouxe
+  status com data perto da nota (até 7 dias). Vale para o **Kanban** (Faturado
+  / Rejeitada, o chip NF, a ficha: "status em Power Automate (banco)") e para o
+  **Faturamento do Dia** (o filtro "status Aprovado"). Diagnóstico da leitura:
+  etapa `status:fluxo` (quantas notas o arquivo tem, quantas achou, quando o
+  fluxo mandou por último) e `status:odata` (o erro do Dynamics, se houver). O
+  aviso "Não achei o status…" passa a dizer "nem no que o Power Automate
+  mandou" quando a chave está configurada.
+- **Ficha**: o status cru ao lado do traduzido só aparece quando é diferente
+  (o "Aprovada" do banco não sai duas vezes). `sw.js` — cache `bm-comest-v101`.
+- Testes: `node scripts/test-nf-status.js` (chave, formatos, motivos,
+  atualização e poda, blob com ETag e conflito, cache, a reserva atrás do
+  Dynamics, o Dynamics fora do ar) e o 4m de `scripts/test-kanban-ov.js`.
+
+**O fluxo (passo a passo)**
+
+1. Na Static Web App da MSB, *Settings › Environment variables*: crie
+   `KANBAN_NF_CHAVE` com um texto aleatório de 32+ caracteres. A mesma chave
+   vai no fluxo (passo 4) — não mande por e-mail/chat.
+2. Power Automate › *Fluxo agendado na nuvem* › **Recorrência** a cada 15
+   minutos.
+3. **SQL Server › Executar uma consulta SQL (V2)** (com o gateway de dados
+   local, se o banco for da empresa — o mesmo que o Power BI usa). Só as notas
+   recentes da MSB e o status em **texto**, por exemplo:
+   ```sql
+   SELECT NumeroNF AS numero,
+          CASE Status WHEN 1 THEN 'Aprovada' WHEN 2 THEN 'Cancelada'
+                      WHEN 3 THEN 'Rejeitada' ELSE CAST(Status AS varchar(20)) END AS status,
+          DataEmissao AS data, Empresa AS empresa
+   FROM <tabela das notas>
+   WHERE Empresa = 'msb' AND DataEmissao >= DATEADD(day, -30, CAST(GETDATE() AS date))
+   ```
+   (os nomes e os números do `CASE` são os do banco de vocês; se o status já
+   estiver em texto, sem o `CASE`).
+4. **HTTP**: método `POST`, URI `https://<endereço do portal da MSB>/api/nf-status`,
+   cabeçalhos `Content-Type: application/json` e `x-portal-chave: <a chave>`,
+   corpo = o **Corpo** do passo 3 (conteúdo dinâmico) — o portal acha a lista
+   em `ResultSets.Table1`.
+5. Teste: rode o fluxo e veja a saída do passo HTTP — `gravadas` deve ser o
+   número de notas; se vier `ignoradas`, os `motivos` dizem o porquê.
 
 ## Como colocar no ar
 
