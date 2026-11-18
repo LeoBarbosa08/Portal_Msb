@@ -12,12 +12,19 @@
 // amostra (tem número e status?). Mesma inteligência das Faturas em Aberto.
 //
 // -> statusPorNumero(numeros, ate) = { porNum: { '21478': [{ status, entidade,
-//    coluna }] }, fontes: [...], diag: [...] }
+//    coluna, data, reserva? }] }, fontes: [...], diag: [...], erro?, fluxo }
 // Envs: FATDIA_ENT_STATUS (entidades), FATDIA_COL_STATUS (colunas de status).
 // SOMENTE LEITURA.
+//
+// 18/11/2026 (dono: a 000021638 "Sem status" no Kanban; o status está no
+// banco, não no OData): entra também o status que o POWER AUTOMATE manda
+// (api/shared/nf-status-fluxo.js, /api/nf-status), lido em paralelo com o
+// OData. É RESERVA: na statusDaNota, o do Dynamics vale primeiro; o do fluxo
+// só quando o Dynamics não trouxer status (com data perto) para a nota.
 // ================================================================
 
 const D = require('./d365');
+const FLUXO = require('./nf-status-fluxo');
 
 const EMPRESA = String(process.env.FATDIA_EMPRESA || process.env.ESTOQUE_MSB_EMPRESA || 'msb').trim().toLowerCase();
 function envLista(nome, padrao) {
@@ -99,6 +106,24 @@ async function statusPorNumero(numeros, ate) {
   const diag = [], porNum = {};
   const lista = Array.from(new Set((numeros || []).map(txt).filter(Boolean)));
   if (!lista.length) return { porNum, fontes: [], diag };
+  // o Dynamics (OData) e o que o Power Automate mandou, ao mesmo tempo; um
+  // não derruba o outro (sem o Dynamics, o fluxo ainda serve)
+  const [OD, FX] = await Promise.all([
+    statusNoOData(lista, ate, diag).catch(e => ({ porNum: {}, fontes: [], erro: String(e.message || e).slice(0, 160) })),
+    FLUXO.consultar(lista, ate).catch(e => ({ porNum: {}, ligado: true, erro: String(e.publicMessage || e.message || e).slice(0, 160) }))
+  ]);
+  Object.keys(OD.porNum).forEach(k => { porNum[k] = OD.porNum[k].slice(); });
+  const achadasFluxo = Object.keys(FX.porNum || {});
+  achadasFluxo.forEach(k => { porNum[k] = (porNum[k] || []).concat(FX.porNum[k]); });
+  if (OD.erro) diag.push({ etapa: 'status:odata', erro: OD.erro });
+  if (FX.ligado) diag.push({ etapa: 'status:fluxo', notas: FX.total || 0, achadas: achadasFluxo.length, atualizadoEm: FX.atualizadoEm || null, memoria: FX.memoria, erro: FX.erro });
+  const fontes = OD.fontes.concat(achadasFluxo.length ? [FLUXO.ENTIDADE + '.status'] : []);
+  // o erro do OData só sobe se nem o fluxo trouxe nada (o aviso do Kanban usa)
+  return { porNum, fontes, diag, erro: fontes.length ? undefined : (OD.erro || undefined), fluxo: { ligado: !!FX.ligado, atualizadoEm: FX.atualizadoEm || null, achadas: achadasFluxo.length } };
+}
+
+async function statusNoOData(lista, ate, diag) {
+  const porNum = {};
   const token = await D.getToken();
   const fontes = await descobrir(token, ate, diag);
   await Promise.all(fontes.map(async F => {
@@ -120,23 +145,24 @@ async function statusPorNumero(numeros, ate) {
       }
     }
   }));
-  return { porNum, fontes: fontes.map(f => f.entidade + '.' + f.status), diag };
+  return { porNum, fontes: fontes.map(f => f.entidade + '.' + f.status) };
 }
 
 // o status que vale para a nota: só dos documentos com data perto da da nota
-// (documento sem data entra); entre eles, o aprovado, se houver; senão o 1º
+// (documento sem data entra); entre eles, o aprovado, se houver; senão o 1º.
+// 18/11/26: o do Power Automate (reserva) só quando o Dynamics não trouxe
+// nenhum com data perto; entre os do fluxo, o de data mais perto da nota (o
+// banco guarda o status de HOJE da nota — não há "o aprovado" a preferir).
 function statusDaNota(lista, dataNota) {
   if (!lista || !lista.length) return null;
-  const perto = (x) => {
-    if (!x.data || !dataNota) return true;
-    const d = Math.abs(Date.parse(x.data + 'T00:00:00Z') - Date.parse(dataNota + 'T00:00:00Z')) / 86400000;
-    return !(d > DIAS_MAX);
-  };
-  const ok = lista.filter(perto);
-  if (!ok.length) return null;
-  return ok.find(x => aprovado(x.status)) || ok[0];
+  const dist = (x) => (!x.data || !dataNota) ? 0 : Math.abs(Date.parse(x.data + 'T00:00:00Z') - Date.parse(dataNota + 'T00:00:00Z')) / 86400000;
+  const ok = lista.filter(x => !(dist(x) > DIAS_MAX));
+  const dyn = ok.filter(x => !x.reserva);
+  if (dyn.length) return dyn.find(x => aprovado(x.status)) || dyn[0];
+  const res = ok.filter(x => x.reserva).sort((a, b) => dist(a) - dist(b));
+  return res[0] || null;
 }
 
-function _limparCache() { _fontes = null; _fontesTs = 0; }
+function _limparCache() { _fontes = null; _fontesTs = 0; FLUXO._limparCache(); }
 
 module.exports = { statusPorNumero, statusDaNota, aprovado, numNorm, _limparCache };
