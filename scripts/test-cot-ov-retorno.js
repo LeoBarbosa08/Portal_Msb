@@ -28,6 +28,9 @@ async function chama(corpo, chave) {
   t('MSB-2026-000123 (sem o COT-)', M.casoDoFlow('MSB-2026-000123', MSB) === 'COT-MSB-2026-000123');
   t('minúsculo, espaços e sem hífen: "msb 2026 000123", "MSB2026000123"', M.casoDoFlow('msb 2026 000123', MSB) === 'COT-MSB-2026-000123' && M.casoDoFlow('MSB2026000123', MSB) === 'COT-MSB-2026-000123');
   t('2026-000123 com OV da MSB', M.casoDoFlow('2026-000123', MSB) === 'COT-MSB-2026-000123');
+  // 18/11/26: o "2026000005" do campo Ordem de Compra do PI (a proposta da MSB
+  // devolvida como pedido: a IA leu o Número de Proposta só com os dígitos)
+  t('2026000005 (só os dígitos) com OV da MSB', M.casoDoFlow('2026000005', MSB) === 'COT-MSB-2026-000005');
   t('2026-000123 com OV da BIO: não (a BIO tem a mesma numeração)', M.casoDoFlow('2026-000123', ['OVBIO012345']) === '');
   t('2026-000123 com uma OV da MSB e outra da BIO: não', M.casoDoFlow('2026-000123', ['OVMSB144950', 'OVBIO012345']) === '');
   t('2026-000123 sem OV válida: não', M.casoDoFlow('2026-000123', []) === '');
