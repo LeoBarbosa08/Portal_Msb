@@ -187,7 +187,9 @@ module.exports = async function (context, req) {
   if (req.method === 'OPTIONS') { context.res = { status: 204, headers: cors }; return; }
 
   try {
-    await auth.requireArea(req, ['comercial', 'estoque']);
+    // o CRM (lotes da fase A faturar) também chama: quem tem só o módulo
+    // avulso do CRM (GRUPO_MODULOS) passa pelo opts.modulo
+    await auth.requireArea(req, ['comercial', 'estoque'], { modulo: auth.MODULO_CRM });
 
     if (!D.CONFIGURED) { context.res = { status: 200, headers: Object.assign({ 'Content-Type': 'application/json' }, cors), body: { configured: false } }; return; }
 

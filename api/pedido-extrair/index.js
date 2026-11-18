@@ -355,7 +355,9 @@ const handler = async function (context, req) {
   if (req.method === 'OPTIONS') { context.res = { status: 204, headers: cors }; return; }
 
   try {
-    await auth.requireArea(req, ['comercial', 'estoque']);
+    // o CRM (perfil cotacao/consignado) também chama: quem tem só o módulo
+    // avulso do CRM (GRUPO_MODULOS) passa pelo opts.modulo
+    await auth.requireArea(req, ['comercial', 'estoque'], { modulo: auth.MODULO_CRM });
 
     if (!AOAI_ENDPOINT || !AOAI_KEY) { const e = new Error('AOAI não configurado'); e.status = 500; throw e; }
     const texto    = (req.body && req.body.texto) || '';

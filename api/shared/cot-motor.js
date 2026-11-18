@@ -424,7 +424,7 @@ async function exigirEquipe(req) {
     try { az = await auth.authorizedAreas(r.user); } catch (e) { az = null; }
     const temRegra = !!(az && RAZOES_COM_REGRA.indexOf(az.reason) >= 0);
     const comercial = temRegra && ((az.areas || []).indexOf('comercial') >= 0 ||
-      (az.modulos || []).some(function (m) { return /^comercial-(cot-|crm$)/.test(String(m)); }));
+      (az.modulos || []).some(function (m) { return auth.MODULO_CRM.test(String(m)); }));
     // 09/11/26: o MOTIVO e a CONTA vão na mensagem — o "não foi confirmado"
     // sozinho não dizia se a pessoa estava fora dos grupos, logada com outra
     // conta (a @msbbrasil.com no lugar da @biomedical.com.br, ou o contrário)

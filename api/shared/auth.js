@@ -280,6 +280,8 @@ const GRUPO_AREAS = {
 // (requireArea), então o grupo precisa ter alguma área aceita pela API que a
 // página chama — a Coordenação de Compras e Estoque abaixo já tem
 // estoque/comercial, e o /api/pbi-query aceita as duas.
+// EXCEÇÃO: endpoint que passa opts.modulo ao requireArea aceita também o
+// módulo avulso (hoje o CRM: /api/pedido-extrair e /api/pedido-lotes).
 const GRUPO_MODULOS = {
   // Equipe de compras e estoque - Coordenação -> só Margem de Contribuição (Contábil)
   '2ce79101-0437-48b3-aa01-dbebd1dbe93d': [
@@ -305,7 +307,24 @@ const GRUPO_MODULOS = {
     'estoque-devolucoes-faturamento', 'estoque-rastreabilidade', 'estoque-gmroi',
     'estoque-perdas'
   ],
+  // Equipe de produção MSB - Gerentes (18/11/2026, pedido do dono: "liberar o
+  // CRM para o pessoal") — SÓ o CRM, sem a área Comercial (Sales Report, PI ·
+  // Pedido, Tabela de Preços etc. ficam fora). O /api/cot-* aceita o módulo
+  // avulso (cot-motor.exigirEquipe, MODULO_CRM); o /api/pedido-extrair (a
+  // leitura do PDF pela IA) e o /api/pedido-lotes (os lotes da fase A faturar)
+  // também, pelo opts.modulo do requireArea. Sem esta linha o grupo caía no
+  // fail-open no_group_match: via o resto do portal e levava 403 no CRM.
+  // Página nova do CRM (comercial-cot-*) NÃO entra sozinha: acrescentar aqui.
+  '54f9b649-d6b5-4637-9f0d-20c32fe1d252': [
+    'comercial-cot-funil', 'comercial-cot-analitico', 'comercial-cot-casos',
+    'comercial-cot-nova', 'comercial-crm'
+  ],
 };
+
+// As páginas do CRM do Comercial (comercial-cot-* e a casa comercial-crm).
+// Quem tem um destes módulos avulsos usa o CRM sem ter a área Comercial — é a
+// régua do cot-motor.exigirEquipe e do opts.modulo do requireArea.
+const MODULO_CRM = /^comercial-(cot-|crm$)/;
 
 // Área "dona" de um id de página pelo PREFIXO do arquivo (contabil-margem ->
 // contabil). Serve para não repetir no payload um módulo cuja área a pessoa
@@ -593,7 +612,11 @@ async function authorizedAreas(user) {
 // `area` aceita string OU array (any-of): passa se o usuário tiver QUALQUER
 // uma das áreas — necessário para endpoints multi-área (ex.: pbi-query,
 // pedido/consig servem comercial E estoque). Sob AUTH_ENFORCE off não bloqueia.
-async function requireArea(req, area) {
+// opts.modulo (RegExp, opcional): passa também quem NÃO tem a área mas tem um
+// módulo avulso (GRUPO_MODULOS) que casa — ex.: o CRM (MODULO_CRM) chama o
+// /api/pedido-extrair e o /api/pedido-lotes, que são da área Comercial/Estoque.
+// Só vale para quem caiu em regra de grupo (o payload de módulos só existe aí).
+async function requireArea(req, area, opts) {
   const base = await requireUser(req);
   const need = Array.isArray(area) ? area : (area ? [area] : []);
 
@@ -618,7 +641,9 @@ async function requireArea(req, area) {
 
   if (!base.enforced) return Object.assign({ areas: null }, base); // rollout: não bloqueia
   const az = await authorizedAreas(base.user);
-  if (need.length && !need.some(a => az.areas.indexOf(a) >= 0)) {
+  const re = opts && opts.modulo instanceof RegExp ? opts.modulo : null;
+  const viaModulo = !!re && (az.modulos || []).some(m => re.test(String(m)));
+  if (need.length && !need.some(a => az.areas.indexOf(a) >= 0) && !viaModulo) {
     const e = new Error('forbidden'); e.status = 403; throw e;
   }
   return Object.assign({ areas: az.areas }, base);
@@ -666,4 +691,5 @@ module.exports = {
   ENFORCE, ALLOWED_DOMAIN, ALLOWED_DOMAINS, dominioPermitido, ALL_AREAS, AREAS_RESERVADAS, RESERVA_ESTRITA,
   verifyIdToken, requireUser, requireArea, authorizedAreas, isAdmin, areaLiberada, temAcessoFull,
   getAppToken, listGroups, flowAuthHeader, isGuid: (s) => GUID.test(String(s || '')), gruposSoDaArea,
+  MODULO_CRM,
 };
