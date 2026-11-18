@@ -2555,6 +2555,47 @@ conectores SQL Server e HTTP são Premium) é só da conta dona do fluxo.
 5. Teste: rode o fluxo e veja a saída do passo HTTP — `gravadas` deve ser o
    número de notas; se vier `ignoradas`, os `motivos` dizem o porquê.
 
+### Kanban · o "falta carregar" calculado, sem o QtyLeftToLoad (18/11/2026)
+
+O dono: "Não achei o QtyLeftToLoad nem o RemainInventPhysical nas linhas da OV
+(SalesOrderLinesV3, SalesOrderLines, SalesLineINBiEntities,
+PDSSalesLinePricingCalculationBiEntities, BioSalesInvoiceV1Lines,
+RentalSalesLineBiEntities…) — a gente já tinha resolvido isso antes". Nada do
+Kanban mudou desde 12/11: a correção daquele dia só acrescentou o
+`RemainInventPhysical` como reserva do `QtyLeftToLoad`, e **nenhuma** entidade de
+linhas de OV publicada no Dynamics da MSB tem um dos dois (o `QtyLeftToLoad` é um
+campo da tela da SalesLine, não sai no OData).
+
+- **A conta** (`FALTA_CALCULADA`, tipo `calculado`): sem a coluna, o que falta
+  carregar = a quantidade da linha **menos** o que está nas linhas do trabalho
+  (`QtyWork`) e nas linhas da carga (`Qty`) — que é a definição do
+  `QtyLeftToLoad`. O que sobra vai para a **Pendência** (com crédito, Crédito),
+  como com a coluna.
+- **Quando vale**: só para a OV cuja liberação já começou (alguma parte vista em
+  trabalho/carga — a OV que ninguém liberou continua em Criada) e com **todos** os
+  trabalhos dela cobertos: o trabalho com carga precisa das linhas DA CARGA lidas;
+  sem carga, das linhas do trabalho. Senão a OV segue a regra de antes (não manda
+  nada para a Pendência por engano).
+- A coluna, se um dia for publicada, continua valendo antes da conta
+  (`KANBAN_ENT_LINHA_FALTA` / `KANBAN_COL_LINHA_FALTA`). Aceita também o
+  `RemainSalesPhysical` (o restante na unidade de venda).
+- **Busca** (`CFG_LINHA_FALTA.reNomeNao`): no service document, não sonda mais as
+  que não são linha de OV de venda (locação, preço, nota, cotação, devolução, a
+  localização da Índia `SalesLineIN…`).
+- **Aviso**: "Não achei o QtyLeftToLoad…" só aparece quando nem a conta é
+  possível (sem as linhas das cargas). Diagnóstico: `linhas:falta:calculado` (por
+  que não achou a coluna e com o que calculou); a resposta traz
+  `faltaTipo: "calculado"` e o selo do cartão explica "a quantidade da linha menos
+  o que já está no trabalho e na carga".
+- Limite conhecido: as cargas da OV vêm pelos trabalhos — uma carga montada para
+  a OV e ainda **sem trabalho** não é vista, e a quantidade dela conta como "falta
+  carregar".
+- `KANBAN_FALTA_CALCULADA=0` desliga a conta (volta o aviso).
+- Testes (7l): as entidades do aviso do dono, sem a coluna → Cotação 6 de A,
+  Pendência 4 de A + 4 de B; a OV não liberada em Criada; o trabalho com carga sem
+  linhas lidas não vai para a Pendência; sem o aviso; a nota/locação/Índia não
+  são sondadas; desligado, o aviso volta. `sw.js` — cache `bm-comest-v102`.
+
 ## Como colocar no ar
 
 1. **Repositório no GitHub** — crie um repositório **privado e vazio** (sem

@@ -599,19 +599,38 @@ const CFG_CARGA_REMESSA = {
   obrig: ['carga', 'remessa'], erroCol: (p) => 'sem a coluna ' + (p === 'carga' ? 'LoadId' : 'ShipmentId')
 };
 // o tipo da coluna do "falta": 'carga' (QtyLeftToLoad: o que não entrou em carga) ou
-// 'restante' (RemainInventPhysical: o que falta entregar, carga incluída)
-const RE_RESTANTE = /remain\w*invent\w*phys/i;
+// 'restante' (RemainInventPhysical / RemainSalesPhysical: o que falta entregar, carga
+// incluída). Sem coluna nenhuma: 'calculado' (18/11/26, veja FALTA_CALCULADA)
+const RE_RESTANTE = /remain\w*(invent|sales)\w*phys/i;
 const tipoFalta = (col) => !col ? null : /left_?to_?load/i.test(col) ? 'carga' : 'restante';
+// ── O "FALTA CARREGAR" CALCULADO (18/11/2026) ───────────────────────
+// O dono: "Não achei o QtyLeftToLoad nem o RemainInventPhysical nas linhas da OV
+// (SalesOrderLinesV3, SalesOrderLines, SalesLineINBiEntities, … RentalSalesLineBiEntities)
+// — a gente já tinha resolvido isso antes". O de 12/11 só acrescentou o
+// RemainInventPhysical como reserva — e nenhuma entidade de linhas publicada no
+// Dynamics da MSB tem um dos dois (o QtyLeftToLoad é um campo de tela da SalesLine,
+// não vai para o OData). Sem a coluna, o portal CALCULA o que falta carregar com o
+// que já lê: a quantidade da linha MENOS o que está nas linhas do trabalho (QtyWork) e
+// nas linhas da carga (Qty) — que é a definição do QtyLeftToLoad. Só para a OV cuja
+// liberação já começou (alguma parte vista em trabalho/carga) e com TODOS os
+// trabalhos dela cobertos (as linhas do trabalho ou as da carga lidas): sem isso não
+// dá para saber o que já está carregado e a OV segue a regra de antes. A coluna, se
+// um dia aparecer, continua valendo antes da conta. KANBAN_FALTA_CALCULADA=0 desliga.
+const FALTA_CALCULADA = () => String(process.env.KANBAN_FALTA_CALCULADA || '').trim() !== '0';
 const ENT_LINHA_FALTA = envLista('KANBAN_ENT_LINHA_FALTA', []).concat([
   'BioSalesOrderLinesV1', 'BioSalesOrderLineV1', 'BIOSalesOrderLinesV1', 'BIOSalesOrderLineV1', 'BioSalesLinesV1', 'BioSalesLineV1',
+  'SalesLineBiEntities', 'SalesLineBiEntity',
   'SalesOrderLinesV3', 'SalesOrderLinesV2', 'SalesOrderLines'
 ]).filter((v, i, a) => a.indexOf(v) === i);
 const CFG_LINHA_FALTA = {
   chave: 'linhafalta', candidatas: ENT_LINHA_FALTA, reNome: /bio\w*sales\w*line|salesorderline|salesline/i, pedaco: 'salesorderline',
-  cols: { numero: ['SalesOrderNumber', 'SalesId', 'OrderNumber'], falta: envLista('KANBAN_COL_LINHA_FALTA', ['QtyLeftToLoad', 'QuantityLeftToLoad', 'RemainingQuantityToLoad', 'RemainInventPhysical', 'RemainingInventPhysicalQuantity', 'RemainingInventoryPhysicalQuantity']),
+  // 18/11/26: no service document, sem as que não são linha de OV de venda (locação,
+  // preço, nota, cotação, devolução, a localização da Índia — "SalesLineIN")
+  reNomeNao: /rental|pricing|invoice|quotation|return|purch|charge|tax|salesline_?in_?bi/i,
+  cols: { numero: ['SalesOrderNumber', 'SalesId', 'OrderNumber'], falta: envLista('KANBAN_COL_LINHA_FALTA', ['QtyLeftToLoad', 'QuantityLeftToLoad', 'RemainingQuantityToLoad', 'RemainInventPhysical', 'RemainingInventPhysicalQuantity', 'RemainingInventoryPhysicalQuantity', 'RemainSalesPhysical', 'RemainingSalesPhysicalQuantity']),
     tid: ['InventoryLotId', 'InventTransId'], linha: ['LineNumber', 'LineNum'], item: ['ItemNumber', 'ItemId'] },
-  reCols: { falta: /left_?to_?load|remain\w*invent\w*phys/i },
-  obrig: ['numero', 'falta'], erroCol: (p) => p === 'falta' ? 'sem o QtyLeftToLoad' : 'sem o nº da OV'
+  reCols: { falta: /left_?to_?load|remain\w*(invent|sales)\w*phys/i },
+  obrig: ['numero', 'falta'], erroCol: (p) => p === 'falta' ? 'sem o QtyLeftToLoad/RemainInventPhysical' : 'sem o nº da OV'
 };
 // as linhas das cargas pela entidade própria: LoadId -> [{ carga, item, qtd, ov, tid }]
 async function linhasDasCargas(ids, token, ate, diag) {
@@ -684,7 +703,7 @@ async function entidadeExtra(cfg, token, ate, diag) {
   let alvos = cfg.candidatas.map(n => existe[n.toLowerCase()] || n);
   if (servico.length) {
     alvos = alvos.filter(n => existe[n.toLowerCase()]);
-    servico.filter(n => cfg.reNome.test(n) && alvos.indexOf(n) < 0).slice(0, 6).forEach(n => alvos.push(n));
+    servico.filter(n => cfg.reNome.test(n) && !(cfg.reNomeNao && cfg.reNomeNao.test(n)) && alvos.indexOf(n) < 0).slice(0, 6).forEach(n => alvos.push(n));
   }
   diag.push({ etapa: cfg.chave + ':candidatas', servico: servico.length > 0, alvos });
   const sondar = (lista) => Promise.all(lista.map(ent => sondarExtra(cfg, ent, token, ate).catch(e => ({ entidade: ent, serve: false, erro: String(e.message || e).slice(0, 200) }))));
@@ -1026,12 +1045,15 @@ function partesPorQuantidade(o, ls, Q, cargaPor, comStatus) {
   const re = normV(c.re).replace(/ /g, '');
   // (com o RemainInventPhysical — o que falta ENTREGAR —, só vale o que foi visto em
   // trabalho/carga: sem isso não dá para saber o que já está carregado)
+  // (18/11/26: o mesmo com o 'calculado' — a conta é justamente o que não foi visto)
   const viuCarga = porcoes.some(p => p.trabalho || p.carga);
-  const liberou = viuCarga || (Q.faltaTipo !== 'restante' && (liberadoV(c.re) || /partial|parcial/.test(re)));
+  const liberou = viuCarga || (Q.faltaTipo === 'carga' && (liberadoV(c.re) || /partial|parcial/.test(re)));
   restos.forEach(({ l, s2, add }) => {
     let resto = restos.find(x => x.l === l).resto;
     // 3) o que falta carregar (QtyLeftToLoad), com a liberação já começada -> Pendência
-    if (Q.temFalta && liberou && Number(l.falta) > 0) { const q = Math.min(Number(l.falta), resto); add(q, marcadoV(c.cr) ? 'credito' : 'pendencia', { falta: true }); resto -= q; }
+    // (18/11/26: sem a coluna, o calculado = o que sobrou da linha depois do trabalho e da carga)
+    const faltaL = Q.faltaTipo === 'calculado' ? resto : Number(l.falta);
+    if (Q.temFalta && liberou && faltaL > 0) { const q = Math.min(faltaL, resto); add(q, marcadoV(c.cr) ? 'credito' : 'pendencia', { falta: true }); resto -= q; }
     // 4) o resto: a fase da OV (a regra de antes; o lote só sem o QtyLeftToLoad)
     if (resto > 0) {
       let e = etapaDe(c.sa, c.re, c.cr, c.trab, c.nota, c.carga, s2);
@@ -1831,6 +1853,10 @@ async function montar(opts, modo) {
     if (LC.E) CARGA.linhas = LC.por;
     else if (modo.quadro) avisos.push('Não achei as linhas das cargas (ItemId e Qty) — nem na ' + (CARGA.E ? CARGA.E.entidade : 'entidade de cargas') + ' nem numa entidade de linhas de carga (' + LC.erro + '): a divisão por carga não acontece. Fixe o nome em KANBAN_ENT_CARGA_LINHA.');
   }
+  // 18/11/26: com as linhas da carga (Qty) — ou, quando nenhum trabalho tem carga, as
+  // do trabalho (QtyWork) —, dá para CALCULAR o que falta carregar sem a coluna
+  const temQtdTrab = !!(LT.E && !LT.erro && LT.E.qtd);
+  const podeCalcular = FALTA_CALCULADA() && (Object.keys(CARGA.linhas || {}).length > 0 || (temQtdTrab && !idsCargaOv.length));
   if (FL) {
     diag.push({ etapa: 'linhas:falta:fonte', entidade: FL.E ? FL.E.entidade : null, ovs: Object.keys(FL.por).length, erro: FL.erro || null, coluna: FL.E ? FL.E.falta : null });
     if (FL.E) {
@@ -1843,11 +1869,15 @@ async function montar(opts, modo) {
           if (f && f.falta != null) l.falta = f.falta;
         });
       });
-    } else if (modo.quadro) avisos.push('Não achei o QtyLeftToLoad nem o RemainInventPhysical nas linhas da OV (' + FL.erro + '): a Pendência por quantidade (o que falta carregar) não acontece. Fixe a entidade em KANBAN_ENT_LINHA_FALTA.');
+    } else if (modo.quadro && !podeCalcular) avisos.push('Não achei o QtyLeftToLoad nem o RemainInventPhysical nas linhas da OV (' + FL.erro + ') e, sem as linhas das cargas, também não dá para calcular o que falta: a Pendência por quantidade (o que falta carregar) não acontece. Fixe a entidade em KANBAN_ENT_LINHA_FALTA.');
   }
-  const colFalta = (_colsLinhas && _colsLinhas.falta) || (FL && FL.E ? FL.E.falta : null), faltaTipo = tipoFalta(colFalta);
+  const colFalta = (_colsLinhas && _colsLinhas.falta) || (FL && FL.E ? FL.E.falta : null);
+  // 18/11/26: sem a coluna em nenhuma entidade, o "falta carregar" calculado
+  const calcFalta = !colFalta && podeCalcular;
+  const faltaTipo = colFalta ? tipoFalta(colFalta) : calcFalta ? 'calculado' : null;
   if (colFalta) diag.push({ etapa: 'linhas:falta:coluna', coluna: colFalta, tipo: faltaTipo });
-  const temQtdTrab = !!(LT.E && !LT.erro && LT.E.qtd);
+  else if (calcFalta) diag.push({ etapa: 'linhas:falta:calculado', porque: FL && FL.erro ? FL.erro : 'sem a coluna nas linhas da OV',
+    com: [temQtdTrab ? 'linhas do trabalho (' + LT.E.entidade + ')' : '', Object.keys(CARGA.linhas || {}).length ? 'linhas da carga' : ''].filter(Boolean).join(' + ') });
   todas.forEach(o => {
     const lt = LT.E && !LT.erro && precisa.has(o.numero) ? (LT.por[o.numero] || []) : null;
     const idsCg = Array.from(new Set((o.trabalhos || []).map(w => w.carga).filter(Boolean).map(x => String(x).toUpperCase())));
@@ -1855,7 +1885,16 @@ async function montar(opts, modo) {
     // pela OV (OrderNum); se o nº não casar com nenhuma (outro formato), todas as das
     // cargas dela — o casamento com a linha da OV é pelo id da transação ou pelo item
     const llOv = llTodas.filter(x => !x.ov || x.ov === o.numero), ll = llOv.length ? llOv : llTodas;
-    o._q = { wl: temQtdTrab ? lt : null, ll, temFalta: !!colFalta, faltaTipo };
+    const wl = temQtdTrab ? lt : null;
+    // 18/11/26: o calculado só com TODOS os trabalhos da OV cobertos — o trabalho com
+    // carga, as linhas DA CARGA lidas (a carga pode levar item que não está nas linhas
+    // do trabalho); sem carga, as linhas do trabalho. Um trabalho/carga sem linhas
+    // lidas faria a quantidade dele cair na Pendência por engano
+    const up = (v) => String(v || '').toUpperCase();
+    const ativos = (o.trabalhos || []).filter(w => w.fase !== 'ignora');
+    const cobre = calcFalta && ativos.length > 0 && ativos.every(w => w.carga
+      ? ll.some(x => up(x.carga) === up(w.carga) && x.item) : (wl || []).some(x => up(x.trabalho) === up(w.id)));
+    o._q = { wl, ll, temFalta: !!colFalta || cobre, faltaTipo };
     if (lt && lt.length) o.linhasTrab = lt.map(x => ({ trabalho: x.trabalho, item: x.item, qtd: x.qtd, tipo: x.tipo || undefined }));
     if (ll.length) o.linhasCarga = ll.map(x => ({ carga: x.carga, item: x.item, qtd: x.qtd }));
   });
@@ -2003,7 +2042,7 @@ async function montar(opts, modo) {
     if (falta.length) avisos.push('Não achei ' + falta.join(', ') + ' nas entidades lidas (' + fontes.map(f => f.entidade).join(', ') + '): as etapas dependem desses campos. Veja os campos de cada OV no painel.');
     else if (achou.sales < ovs.length) avisos.push((ovs.length - achou.sales) + ' OV(s) sem SalesStatus: ficaram em Criada, Gerenciamento de Crédito ou Separação pelos outros campos.');
   }
-  const r = Object.assign(base, { fontes, etapas, canceladas, depositos: TODOS_DEPOSITOS ? null : DEPOSITOS, foraDeposito, foraPeriodo, criadaMin: minutosCriada() || undefined, itensCarga: fonteItensCarga || undefined, desde: modo.quadro ? (corte || null) : undefined, desdeEtapas: modo.quadro && corte ? ETAPAS_DESDE : undefined, antesDoCorte, expedicaoDia: modo.quadro ? hoje : undefined, expedicaoOutroDia, expedicaoSemData, statusCols, statusPadrao, ovs, avisos, diagnostico: diag });
+  const r = Object.assign(base, { fontes, etapas, canceladas, depositos: TODOS_DEPOSITOS ? null : DEPOSITOS, foraDeposito, foraPeriodo, criadaMin: minutosCriada() || undefined, itensCarga: fonteItensCarga || undefined, faltaTipo: modo.quadro ? (faltaTipo || undefined) : undefined, desde: modo.quadro ? (corte || null) : undefined, desdeEtapas: modo.quadro && corte ? ETAPAS_DESDE : undefined, antesDoCorte, expedicaoDia: modo.quadro ? hoje : undefined, expedicaoOutroDia, expedicaoSemData, statusCols, statusPadrao, ovs, avisos, diagnostico: diag });
   if (!opts.diag) _cache.set(modo.chave, { ts: Date.now(), r });
   return r;
 }
@@ -2038,7 +2077,7 @@ const COLS_LINHA = {
   // 12/11/26 (dono: "não está achando o QtyLeftToLoad — se baseia no RemainInventPhysical"):
   // o que falta ENTREGAR da linha (inclui o que já está na carga): vale como "falta
   // carregar" porque a divisão desconta antes o que está em trabalho e em carga
-  restante:   envLista('KANBAN_COL_LINHA_RESTANTE', ['RemainInventPhysical', 'RemainingInventPhysicalQuantity', 'RemainingInventoryPhysicalQuantity'])
+  restante:   envLista('KANBAN_COL_LINHA_RESTANTE', ['RemainInventPhysical', 'RemainingInventPhysicalQuantity', 'RemainingInventoryPhysicalQuantity', 'RemainSalesPhysical', 'RemainingSalesPhysicalQuantity'])
 };
 // data "vazia" do F&O (1900-01-01, em qualquer hora) = sem data
 const dataLinha = (v) => { const s = txt(v); return /^\d{4}-\d{2}-\d{2}/.test(s) && !/^1900-01-01/.test(s) ? s.slice(0, 10) : null; };

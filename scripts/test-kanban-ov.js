@@ -1086,6 +1086,52 @@ const bio = (n, st, lib) => ({ dataAreaId: 'msb', SalesOrderNumber: n, StatusPed
   t('o diagnóstico diz a coluna e o tipo (RemainInventPhysical · restante)', d7j && d7j.coluna === 'RemainInventPhysical' && d7j.tipo === 'restante', d7j);
   CEN = guarda7j; SERVICO = serv7j;
 
+  console.log('7l) 18/11/26 nenhuma entidade de linhas tem o QtyLeftToLoad nem o RemainInventPhysical: o que falta carregar CALCULADO (linha − trabalho − carga)');
+  K._limparCache(); chamadas.length = 0;
+  const guarda7l = CEN, serv7l = SERVICO;
+  // as entidades do Dynamics da MSB (o aviso do dono): nenhuma tem a coluna
+  SERVICO = ['BIOSalesOrderHeaderV1', 'SalesOrderHeadersV2', 'SalesOrderLines', 'SalesOrderLinesV3', 'SalesLineINBiEntities', 'PDSSalesLinePricingCalculationBiEntities',
+    'BioSalesInvoiceV1Lines', 'RentalSalesLineBiEntities', 'WHSWorkTableBiEntities', 'WHSLoadTableBiEntities', 'BioWHSWorkLineV1'];
+  const ln7l = (ov, n, item, qtd, valor, tid) => ({ dataAreaId: 'msb', SalesOrderNumber: ov, LineNumber: n, ItemNumber: item, OrderedSalesQuantity: qtd, LineAmount: valor,
+    InventoryLotId: tid, ItemBatchNumber: '', SalesOrderLineStatus: 'Backorder' });
+  const ld7l = (id, item, qtd, ov, tid) => Object.assign({ dataAreaId: 'msb', LoadId: id, LoadStatus: 'Loaded', QuotationPerformed_InoveProjects: 'Yes', ENVIARPALLET_CUSTOM: 'No', OrderNum: ov },
+    item ? { ItemId: item, Qty: qtd, InventTransId: tid } : {});
+  const wl7l = (work, ov, item, qtd, tid) => ({ dataAreaId: 'msb', WorkId: work, LineNum: 1, OrderNum: ov, ItemId: item, QtyWork: qtd, InventTransId: tid, WorkType: 'Pick', FreghtType_InoveProjects: 'Blank' });
+  const linhas7l = [
+    ln7l('OV019501', 1, 'A', 10, 1000, 'T51A'), ln7l('OV019501', 2, 'B', 4, 400, 'T51B'),   // 6 de A no trabalho/carga; 4 de A + 4 de B faltam
+    Object.assign(ln7l('OV019502', 1, 'Z', 8, 800, 'T52Z'), { ItemBatchNumber: 'L52' }),   // ninguém liberou (com lote): Criada
+    ln7l('OV019503', 1, 'Y', 5, 500, 'T53Y')                                                // trabalho com carga SEM as linhas lidas: não se sabe
+  ];
+  CEN = {
+    SalesOrderHeadersV2: { linhas: [v2('OV019501', DIA + 'T10:00:00Z', 'Backorder'), v2('OV019502', DIA + 'T11:00:00Z', 'Backorder'), v2('OV019503', DIA + 'T12:00:00Z', 'Backorder')] },
+    BIOSalesOrderHeaderV1: { linhas: [b4('OV019501', 'Backorder', 'PartialReleased', 'No'), b4('OV019502', 'Backorder', 'Open', 'No'), b4('OV019503', 'Backorder', 'PartialReleased', 'No')] },
+    // as linhas padrão SEM o QtyLeftToLoad e SEM o RemainInventPhysical
+    SalesOrderLines: { linhas: linhas7l },
+    SalesOrderLinesV3: { linhas: linhas7l },
+    SalesLineINBiEntities: { linhas: [] },
+    BioSalesInvoiceV1Lines: { linhas: [{ dataAreaId: 'msb', SalesId: 'OV019501', ItemId: 'A', Qty: 1 }] },
+    WHSWorkTableBiEntities: { linhas: [w('OV019501', 'W951', 'Closed', { LoadId: 'LD-951' }), w('OV019503', 'W953', 'Closed', { LoadId: 'LD-953' })] },
+    BioWHSWorkLineV1: { linhas: [wl7l('W951', 'OV019501', 'A', 6, 'T51A'), wl7l('W953', 'OV019503', 'Y', 2, 'T53Y')] },
+    WHSLoadTableBiEntities: { linhas: [ld7l('LD-951', 'A', 6, 'OV019501', 'T51A'), ld7l('LD-953', null, null, 'OV019503')] }
+  };
+  r = await K.quadro({});
+  const g7l = {}; r.ovs.forEach(o => { g7l[o.chave] = o; });
+  const p7l = g7l['OV019501~pendencia'], c7l = g7l['OV019501~cotacao'];
+  t('calculado: Cotação os 6 de A (trabalho fechado, carga Carregado)', c7l && c7l.parte.qtds[1] === 6 && c7l.valor === 600, Object.keys(g7l));
+  t('calculado: Pendência os 4 de A + os 4 de B que não estão em trabalho/carga = R$ 800', p7l && p7l.parte.qtds[1] === 4 && p7l.parte.qtds[2] === 4 && p7l.valor === 800 && p7l.pendPorCarga === true, p7l && { q: p7l.parte.qtds, v: p7l.valor });
+  t('calculado: a OV que ninguém liberou fica em CRIADA, inteira', r.ovs.filter(o => o.numero === 'OV019502').map(o => o.etapa).join() === 'criada', r.ovs.filter(o => o.numero === 'OV019502').map(o => o.chave + '=' + o.etapa));
+  t('calculado: o trabalho com carga sem as linhas lidas não manda nada para a Pendência', !r.ovs.some(o => o.numero === 'OV019503' && o.etapa === 'pendencia'), r.ovs.filter(o => o.numero === 'OV019503').map(o => o.chave + '=' + o.etapa));
+  t('sem o aviso "Não achei o QtyLeftToLoad" (a conta resolve)', !r.avisos.some(a => /Não achei o QtyLeftToLoad/.test(a)), r.avisos);
+  const d7l = r.diagnostico.find(d => d.etapa === 'linhas:falta:calculado');
+  t('o diagnóstico diz que foi calculado, e por quê', d7l && /SalesOrderLines/.test(d7l.porque) && /linhas da carga/.test(d7l.com) && r.faltaTipo === 'calculado', [d7l, r.faltaTipo]);
+  t('a busca não sonda a nota, a locação nem a da Índia (não são linha de OV)', !chamadas.some(c => /^(BioSalesInvoiceV1Lines|RentalSalesLineBiEntities|SalesLineINBiEntities)$/.test(c.ent)), Array.from(new Set(chamadas.map(c => c.ent))));
+  // desligado (KANBAN_FALTA_CALCULADA=0): o aviso de antes, sem Pendência por quantidade
+  K._limparCache(); process.env.KANBAN_FALTA_CALCULADA = '0';
+  r = await K.quadro({});
+  t('KANBAN_FALTA_CALCULADA=0: sem a conta, o aviso de volta e nada na Pendência', r.avisos.some(a => /Não achei o QtyLeftToLoad/.test(a)) && !r.ovs.some(o => o.numero === 'OV019501' && o.etapa === 'pendencia'), r.ovs.filter(o => o.numero === 'OV019501').map(o => o.chave + '=' + o.etapa));
+  delete process.env.KANBAN_FALTA_CALCULADA;
+  CEN = guarda7l; SERVICO = serv7l;
+
   console.log('7k) 12/11/26 a OV parada em Criada há mais de 15 min (sem atualização) vai para Pendência; liberada, segue');
   K._limparCache(); chamadas.length = 0;
   const guarda7k = CEN, serv7k = SERVICO;
