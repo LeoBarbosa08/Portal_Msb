@@ -255,7 +255,6 @@
     if (!(v > 0)) return;
     it.valorUnitario = v;
     if (it._fat) it._fat.auto = !!auto && k === 'media';
-    S.criarAcima = false;
     var tr = D.querySelector('#cot-itens tr[data-i="' + i + '"]');
     if (tr) {
       var inp = tr.querySelector('[data-f="valorUnitario"]'); if (inp) inp.value = it.valorUnitario.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 4 });
@@ -1027,7 +1026,7 @@
     if (S.url) URL.revokeObjectURL(S.url);
     S.passo = 'pdf'; S.arq = null; S.url = ''; S.texto = ''; S.leitura = null; S.dados = null; S.lidos = {}; S.dup = null; S.forcar = false;
     S.criado = null; S.erroIA = ''; S.envio = null; S.codErro = ''; S.criarSemConferir = false; S.erp = null; S.modoCli = 'cnpj';
-    S.prop.enviar = false; S.prop.para = ''; S.prop.copia = ''; S.prop.anexos = []; S.portalLivre = false; S.semPortal = false; S.criarAcima = false; S.ipi = false;
+    S.prop.enviar = false; S.prop.para = ''; S.prop.copia = ''; S.prop.anexos = []; S.portalLivre = false; S.semPortal = false; S.ipi = false;
     render();
   }
   function atualizarTotal() {
@@ -1079,16 +1078,9 @@
     if (!d.cliente.nome && !d.cotacaoId && !d.itens.length) { msg(S.semPortal ? 'Informe ao menos o cliente ou um item.' : 'Informe ao menos o cliente, o número da cotação ou um item.', 'erro'); return; }
     if (d.contato.email && !emailOk(d.contato.email)) { msg('O e-mail do comprador não parece válido.', 'erro'); return; }
     if (S.dup && !S.forcar) { msg(S.dup.outraUnidade ? 'Esta oportunidade já foi registrada por outra unidade — marque "Registrar mesmo assim" se for mesmo outra resposta.' : 'Esta oportunidade já tem caso (' + esc(S.dup.numero) + '). Abra o caso — ou marque "Registrar mesmo assim".', 'alerta'); var dp = $('cot-dup'); if (dp) dp.scrollIntoView({ behavior: 'smooth', block: 'center' }); return; }
-    // 23/10/2026 (pedido do usuário): o preço acima da média dos 6 meses ou da
-    // tabela de preço — a pessoa fica sabendo antes de criar; o 2º clique cria
-    var acima = itensAcima();
-    if (acima.length && !S.criarAcima) {
-      S.criarAcima = true;
-      msg('<b>Você está passando da referência em ' + acima.length + ' item(ns)</b>: ' + acima.slice(0, 5).map(function (x) { return esc((x.it.codigo || 'item ' + (x.i + 1)) + ' (' + C.brl(x.it.valorUnitario) + ' acima ' + C.textoAcima(x.acima) + ')'); }).join('; ') +
-        '. Confira os preços — ou clique em criar outra vez para registrar assim mesmo.', 'alerta');
-      var rf = $('cot-ref-faixa'); if (rf) rf.scrollIntoView({ behavior: 'smooth', block: 'center' });
-      return;
-    }
+    // 19/11/2026 (pedido do usuário): o preço acima da média dos 6 meses ou da
+    // tabela de preço é só alerta visual (a faixa e a linha em destaque) — não
+    // segura o criar
     var enviar = podeEnviar();
     if (P && S.prop.enviar && !enviar) { msg('Para enviar a proposta, informe o e-mail do comprador (em "Proposta para o comprador") — ou desmarque o envio.', 'erro'); var pp = $('cot-prop-para'); if (pp) pp.focus(); return; }
     var nota = d.nota; delete d.nota; delete d.validadeCalculada;
@@ -1235,7 +1227,7 @@
         it[f] = (f === 'quantidade' || f === 'valorUnitario' || f === 'ipi') ? C.num(t.value) : t.value;
         if (f === 'codigo') { it._cod = null; conferirLinha(i); }
         if (f === 'codigo' || f === 'quantidade') estoqueDepois();
-        if (f === 'valorUnitario') { if (it._fat) it._fat.auto = false; S.criarAcima = false; pintarRefs(); }
+        if (f === 'valorUnitario') { if (it._fat) it._fat.auto = false; pintarRefs(); }
         if (f === 'ipi') { t.classList.toggle('invalido', Number(it.ipi) > 100); atualizarTotal(); }
         if (f === 'quantidade' || f === 'valorUnitario') {
           var cel = corpo.querySelector('[data-tot="' + i + '"]');
