@@ -1162,18 +1162,29 @@ async function ovsDoDia(E, dia, token, ate, diag) {
 // 12/11/2026, depois (dono: "remove o período, não preciso disso, tem que mostrar
 // TUDO"): SEM período — nenhuma coluna filtra por data (a Rejeitada também mostra
 // tudo); só a Expedição é "hoje", pela confirmação do envio.
+// 23/11/2026 (dono): a Rejeitada também é "hoje" — pela data da nota rejeitada.
 const DATADAS = [];
 // 12/11/2026, depois (dono: "as fases FATURADO, REJEITADO e PALLET, quero somente
 // que seja do dia 11/11/2026 para frente"): um CORTE fixo nessas colunas — fica
 // a OV cuja nota fiscal mais recente (sem nota, a criação) é desse dia em diante.
 // KANBAN_DESDE troca a data ("0" desliga); KANBAN_DESDE_ETAPAS, as colunas.
+// 23/11/2026 (dono: "a fase REJEITADA será somente do dia, igual EXPEDIÇÃO"): a
+// Rejeitada SAIU do corte — mostra só a OV cuja nota que a decidiu (a mais recente
+// com status, a rejeitada) é de HOJE (dia de Brasília); ver rejeitadaEmDe.
 const DESDE_PADRAO = '2026-11-11';
 function desde() {
   const v = String(process.env.KANBAN_DESDE == null ? '' : process.env.KANBAN_DESDE).trim();
   if (v === '0') return '';
   return /^\d{4}-\d{2}-\d{2}$/.test(v) ? v : DESDE_PADRAO;
 }
-const ETAPAS_DESDE = envLista('KANBAN_DESDE_ETAPAS', ['faturado', 'rejeitada', 'pallet']);
+// a Rejeitada e a Expedição são sempre "hoje": nem pela variável entram no corte
+const ETAPAS_DESDE = envLista('KANBAN_DESDE_ETAPAS', ['faturado', 'pallet']).filter(e => e !== 'rejeitada' && e !== 'expedicao');
+// 23/11/26: o dia da nota que pôs a OV na Rejeitada (a mais recente com status —
+// a que decide a fase); sem essa, a mais recente. null = sem data
+function rejeitadaEmDe(notas) {
+  const n = (notas || []).find(x => x.status) || (notas || [])[0];
+  return (n && n.data) || null;
+}
 // quando a carga da OV foi expedida: a confirmação de envio MAIS RECENTE das
 // cargas remetidas dela (a OV só vai para a Expedição com todas lá); null = sem
 function expedidaEmDe(cargas) {
@@ -1894,11 +1905,20 @@ async function montar(opts, modo) {
   partes.forEach(o => { if (o.etapa === 'expedicao') o.expedidaEm = expedidaEmDe(o.cargas); });
   // quadro (12/11/26): sem período — só a EXPEDIÇÃO filtra, pela OV cuja carga
   // teve o envio confirmado HOJE, de qualquer data
+  // 23/11/26 (dono: "a fase REJEITADA será somente do dia, igual EXPEDIÇÃO"): a
+  // REJEITADA também — só a OV cuja nota rejeitada é de HOJE, de OV de qualquer data
   const hoje = hojeSP();
   const foraPeriodo = 0, corte = desde();
-  let expedicaoOutroDia = 0, expedicaoSemData = 0, antesDoCorte = 0;
+  let expedicaoOutroDia = 0, expedicaoSemData = 0, antesDoCorte = 0, rejeitadaOutroDia = 0, rejeitadaSemData = 0;
   const ovs = !modo.quadro ? partes : partes.filter(o => {
-    // 12/11/26: Faturado, Rejeitada e Pallet só de 11/11/2026 em diante (pela nota)
+    if (o.etapa === 'rejeitada') {
+      const d = rejeitadaEmDe(o.notas);
+      o.dataPeriodo = d;
+      if (!d) { rejeitadaSemData++; return false; }
+      if (d !== hoje) { rejeitadaOutroDia++; return false; }
+      return true;
+    }
+    // 12/11/26: Faturado e Pallet só de 11/11/2026 em diante (pela nota)
     if (corte && ETAPAS_DESDE.indexOf(o.etapa) >= 0) {
       const d = (o.notas && o.notas[0] && o.notas[0].data) || diaDe(o.criadaEm, principal.criadaEm) || '';
       o.dataPeriodo = d || null;
@@ -1913,7 +1933,7 @@ async function montar(opts, modo) {
   });
   // 13/11/26: o teto das cargas Carregado — o aviso só quando ele pode ter tirado OV
   // do quadro: sem o corte de data, ou se as cargas mais antigas que foram lidas (a
-  // borda) ainda têm OV no Faturado/Pallet/Rejeitada de 11/11 em diante
+  // borda) ainda têm OV no Faturado/Pallet de 11/11 em diante
   if (fatCarg && fatCarg.corte) {
     const borda = new Set(fatCarg.numerosBorda || []);
     const naBorda = ovs.filter(o => ETAPAS_DESDE.indexOf(o.etapa) >= 0 && borda.has(o.numero)).map(o => o.numero);
@@ -2003,7 +2023,7 @@ async function montar(opts, modo) {
     if (falta.length) avisos.push('Não achei ' + falta.join(', ') + ' nas entidades lidas (' + fontes.map(f => f.entidade).join(', ') + '): as etapas dependem desses campos. Veja os campos de cada OV no painel.');
     else if (achou.sales < ovs.length) avisos.push((ovs.length - achou.sales) + ' OV(s) sem SalesStatus: ficaram em Criada, Gerenciamento de Crédito ou Separação pelos outros campos.');
   }
-  const r = Object.assign(base, { fontes, etapas, canceladas, depositos: TODOS_DEPOSITOS ? null : DEPOSITOS, foraDeposito, foraPeriodo, criadaMin: minutosCriada() || undefined, itensCarga: fonteItensCarga || undefined, desde: modo.quadro ? (corte || null) : undefined, desdeEtapas: modo.quadro && corte ? ETAPAS_DESDE : undefined, antesDoCorte, expedicaoDia: modo.quadro ? hoje : undefined, expedicaoOutroDia, expedicaoSemData, statusCols, statusPadrao, ovs, avisos, diagnostico: diag });
+  const r = Object.assign(base, { fontes, etapas, canceladas, depositos: TODOS_DEPOSITOS ? null : DEPOSITOS, foraDeposito, foraPeriodo, criadaMin: minutosCriada() || undefined, itensCarga: fonteItensCarga || undefined, desde: modo.quadro ? (corte || null) : undefined, desdeEtapas: modo.quadro && corte ? ETAPAS_DESDE : undefined, antesDoCorte, expedicaoDia: modo.quadro ? hoje : undefined, expedicaoOutroDia, expedicaoSemData, rejeitadaDia: modo.quadro ? hoje : undefined, rejeitadaOutroDia, rejeitadaSemData, statusCols, statusPadrao, ovs, avisos, diagnostico: diag });
   if (!opts.diag) _cache.set(modo.chave, { ts: Date.now(), r });
   return r;
 }

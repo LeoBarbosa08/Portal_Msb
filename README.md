@@ -2627,6 +2627,28 @@ Montando a volta da OV no flow do PI · Pedido, o dono achou três coisas:
    domains* na Static Web App + CNAME no DNS (TI). Se usar, cadastre também
    esse endereço no passo 3 e em `PORTAL_ALLOWED_ORIGINS`.
 
+### Kanban · Rejeitada só do dia, igual à Expedição (23/11/2026)
+
+O dono: "a fase REJEITADA será somente do dia, igual EXPEDIÇÃO" — a coluna
+mostrava as rejeitadas desde 11/11 (o corte fixo), com notas de 17/11 e 19/11.
+
+- **Regra** (no filtro do quadro, `montar`): a coluna **Rejeitada** fica só com a
+  OV cuja nota que a pôs lá — a mais recente com status, a rejeitada
+  (`rejeitadaEmDe`) — é de **hoje** (dia de Brasília), de OV de qualquer data.
+  Nota de outro dia, ou sem data → fora, contadas em `rejeitadaOutroDia` /
+  `rejeitadaSemData`; a resposta traz `rejeitadaDia` = hoje. A nota rejeitada de
+  hoje sempre entra no quadro: o diário de faturas é lido de hoje.
+- **Saiu do corte de 11/11**: `KANBAN_DESDE_ETAPAS` passa a ser `faturado,pallet`
+  por padrão, e a Rejeitada (e a Expedição) não entram no corte nem pela
+  variável. Faturado e Pallet continuam de 11/11/2026 em diante.
+- **Tela**: "rejeitadas hoje" no cabeçalho da coluna (e na lista), no lugar de
+  "desde 11/11"; o passo "Agora: Rejeitada" da ficha com a data da nota; "Como a
+  etapa é decidida" explica.
+- Testes (7, 7b, 7e): a nota rejeitada de hoje (OV de agosto / de 2025) fica; as
+  de 03/11, 11/11 e 01/10 saem e são contadas; o corte conta só Faturado e
+  Pallet; `KANBAN_DESDE=0` não traz a rejeitada antiga de volta. `sw.js` — cache
+  `bm-comest-v103`.
+
 ### Cuidados
 
 - **Minutos do GitHub Actions**: repositório privado na mesma conta divide a
