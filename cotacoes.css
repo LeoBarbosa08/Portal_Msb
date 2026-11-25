@@ -1546,3 +1546,8 @@ table.cot-itens.cot-itens-nova th.desc, table.cot-itens.cot-itens-nova td.desc {
 html[data-tema="escuro"] .pf-meu { color: #7CF0B0; }
 @media (max-width: 640px) { .pf-meu { flex-wrap: wrap; } .pf-meu .cs-btn { width: 100%; justify-content: center; } }
 body.pi-page .pf-wrap { margin-bottom: 8px; }
+/* 25/11/2026: a prévia da proposta pode ser ocultada (Nova oportunidade) */
+.cot-conf-tit { display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap; }
+.cot-conf-tit [hidden] { display: none !important; }
+.cot-conf-previa.sem-previa { grid-template-columns: minmax(0, 1fr); }
+.cot-conf-previa.sem-previa .cot-previa { display: none; }

@@ -688,10 +688,12 @@
   function repintarTransp() { var w = $('cot-transp-campo'); if (w) w.outerHTML = htmlTransp(); }
   function htmlConf() {
     var d = S.dados, cfg = S.cfg || {};
-    return '<h3>Dados da oportunidade</h3>' +
+    return '<div class="cot-conf-tit"><h3>Dados da oportunidade</h3>' +
+      // 25/11/2026 (pedido do dono): a prévia pode ser ocultada (como o "Ocultar PDF" do PI)
+      '<button type="button" class="cs-btn cs-btn-sm" id="cot-previa-mostrar"' + (PV.oculta ? '' : ' hidden') + '>' + IC.eye + 'Mostrar prévia da proposta</button></div>' +
       '<p class="cot-ag-sub">Os campos com <b class="cot-req">*</b> são obrigatórios para criar, e ao menos 1 item cotado (com quantidade e preço); o resto dá para completar depois, no caso.</p>' +
       '<div id="cot-dup">' + htmlDup() + '</div>' +
-      '<div class="cot-conf cot-conf-previa"><div class="cot-conf-form">' +
+      '<div class="cot-conf cot-conf-previa' + (PV.oculta ? ' sem-previa' : '') + '" id="cot-conf"><div class="cot-conf-form">' +
         '<div class="cot-sec"><h5>' + IC.inbox + (S.semPortal ? 'Oportunidade' : 'Cotação no portal') + ' <span class="cs-chip f-cotada" style="margin-left:auto"><span class="bol"></span>Entra como Cotada</span></h5><div class="cot-grade">' +
           // à mão (sem PDF) é uma ordem nova: não há portal nem nº da cotação (23/10/2026)
           (S.semPortal ? '' : htmlPortal() +
@@ -744,11 +746,27 @@
      de novo quando os dados da proposta mudaram (a assinatura), e as páginas
      novas (pdf.js, na largura do painel) só entram no lugar das antigas
      depois de desenhadas — sem piscar. Sem o pdf.js, um <iframe>. */
-  var PV = { assin: '', vez: 0, des: 0, doc: null, url: '', st: '', erro: '' };
+  // 25/11/2026 (pedido do dono: "deixe a opção para ocultar o PDF aqui também"): o
+  // "Ocultar" no cabeçalho da prévia some com o painel (o formulário fica com a
+  // largura toda) e o "Mostrar prévia da proposta" no topo traz de volta; oculta,
+  // a prévia nem é gerada. A escolha fica no navegador (cot-previa-oculta).
+  var PV = { assin: '', vez: 0, des: 0, doc: null, url: '', st: '', erro: '', oculta: C.lerLocal('cot-previa-oculta') === '1' };
+  function ocultarPrevia(sim) {
+    PV.oculta = !!sim;
+    C.gravarLocal('cot-previa-oculta', sim ? '1' : '0');
+    var g = $('cot-conf'), bt = $('cot-previa-mostrar');
+    if (g) g.classList.toggle('sem-previa', PV.oculta);
+    if (bt) bt.hidden = !PV.oculta;
+    if (PV.oculta) return;
+    // de volta: as páginas que já existiam na hora e, se os dados mudaram, a nova
+    if (PV.doc || PV.url) desenharPrevia().catch(function () {});
+    previaDepois();
+  }
   function htmlPrevia() {
     return '<aside class="cot-previa" id="cot-previa" aria-label="Prévia da proposta">' +
       '<div class="cot-previa-h">' + IC.pdf + '<b>Prévia da proposta</b><span class="st" id="cot-previa-st">' + htmlStPrevia() + '</span>' +
-        '<button type="button" class="cs-btn cs-btn-xs" id="cot-previa-abrir" title="Abrir a proposta numa aba nova">' + IC.eye + 'Abrir</button></div>' +
+        '<button type="button" class="cs-btn cs-btn-xs" id="cot-previa-abrir" title="Abrir a proposta numa aba nova">' + IC.eye + 'Abrir</button>' +
+        '<button type="button" class="cs-btn cs-btn-xs" id="cot-previa-ocultar" title="Ocultar a prévia — o formulário fica com a largura toda">' + IC.x + 'Ocultar</button></div>' +
       '<div class="cot-previa-v" id="cot-previa-v"><div class="cot-previa-pags" id="cot-previa-pags"><div class="cot-previa-car"><span class="cs-spin"></span> Montando a proposta…</div></div></div>' +
     '</aside>';
   }
@@ -763,7 +781,7 @@
   // o caso como vai na proposta (o número só existe depois de criar)
   function casoDaPrevia() { var c = casoDaTela(); c.numero = ''; return c; }
   function previa() {
-    if (S.passo !== 'conf' || !S.dados || !P || !P.pronto() || !$('cot-previa')) return;
+    if (S.passo !== 'conf' || !S.dados || !P || !P.pronto() || !$('cot-previa') || PV.oculta) return;
     var caso = casoDaPrevia(), op = operador();
     var assin = JSON.stringify([caso, op]);
     if (assin === PV.assin) return;
@@ -1161,6 +1179,8 @@
       if (t.hasAttribute('data-buscar-cli')) { buscarCli(t.getAttribute('data-buscar-cli')); return; }
       if (t.id === 'cot-prop-ver') { verProposta(casoDaPrevia()); return; }
       if (t.id === 'cot-previa-abrir') { abrirPrevia(); return; }
+      if (t.id === 'cot-previa-ocultar') { ocultarPrevia(true); return; }
+      if (t.id === 'cot-previa-mostrar') { ocultarPrevia(false); return; }
       if (t.id === 'cot-prop-ver2') { verProposta(S.criado); return; }
       if (t.id === 'cot-prop-mandar') {
         if (!P.listaEmails(S.prop.para).length) { S.envio = { estado: 'erro', msg: 'Informe o e-mail do comprador.' }; pintarEnvio(); return; }
@@ -1197,7 +1217,7 @@
     });
     // a prévia da proposta: depois de cada mudança (o debounce espera a pessoa parar)
     ['input', 'change', 'click'].forEach(function (tipo) { corpo.addEventListener(tipo, function () { if (S.passo === 'conf') previaDepois(); }); });
-    window.addEventListener('resize', C.debounce(function () { if (S.passo === 'conf' && PV.doc) desenharPrevia().catch(function () {}); }, 250));
+    window.addEventListener('resize', C.debounce(function () { if (S.passo === 'conf' && PV.doc && !PV.oculta) desenharPrevia().catch(function () {}); }, 250));
     corpo.addEventListener('keydown', function (ev) {
       if (ev.key === 'Enter' && ev.target.closest && ev.target.closest('.cot-busca')) {
         var k = ev.target.getAttribute('data-k');

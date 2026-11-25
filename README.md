@@ -2726,6 +2726,10 @@ qtd são obrigatórios".
     clica em **Reenviar para a fila** (o PDF é refeito). **Voltar para a fila**
     solta o "em andamento" que não foi lançado (`estado:'fila'`).
   - **Proposta (PDF)** gera a proposta de agora; os anexos abrem em outra aba.
+- **Ocultar a prévia** (Nova oportunidade): "Ocultar" no cabeçalho da prévia da
+  proposta some com o painel (o formulário fica com a largura toda; oculta, a
+  prévia nem é gerada) e "Mostrar prévia da proposta" no topo traz de volta —
+  como o "Ocultar PDF" do PI. A escolha fica no navegador (`cot-previa-oculta`).
 - **Quantidade e preço obrigatórios** em todo item (Nova oportunidade e edição
   dos itens): asterisco no cabeçalho, a caixa que falta em vermelho, criar e
   salvar barrados — e o servidor recusa (`exigirQtdPreco` no `novo` e na ação
@@ -2736,10 +2740,10 @@ qtd são obrigatórios".
 - Testes: `node scripts/test-pi-fila.js` (a lista do navegador = a do prompt da
   IA, os campos novos, devolver/reenviar, o item e a rota da fila, o pedido
   pela proposta, quantidade e preço obrigatórios).
-- Versões: `cotacoes-base.js?v=34`, `cotacoes.js?v=47`, `cotacoes-agente.js?v=31`,
-  `cotacoes-proposta.js?v=10`, `cotacoes-ficha.js?v=15`, `cotacoes.css?v=40`,
+- Versões: `cotacoes-base.js?v=34`, `cotacoes.js?v=47`, `cotacoes-agente.js?v=32`,
+  `cotacoes-proposta.js?v=10`, `cotacoes-ficha.js?v=15`, `cotacoes.css?v=41`,
   `pedido-inteligente.js?v=45`, `pi-fila.js?v=5`, `nav-sidebar.js?v=92`, `script.js?v=10`,
-  `portal-catalogo.js?v=27`, `area-access.js?v=23`; `sw.js` — cache `bm-comest-v108`.
+  `portal-catalogo.js?v=27`, `area-access.js?v=23`; `sw.js` — cache `bm-comest-v109`.
 
 ### Cuidados
 
