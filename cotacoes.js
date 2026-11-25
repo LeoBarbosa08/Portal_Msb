@@ -52,6 +52,7 @@
     propNome: {},                 // e o nome do comprador digitado (29/10/2026)
     ipiEdicao: false,             // o "Tem IPI?" na edição dos itens (29/10/2026)
     propExtras: {},               // e os outros arquivos que vão junto: { arquivos: [], doCaso: {id: true} }
+    transp: null,   // 25/11/2026: as transportadoras do PI ({ nomes, erro } — C.transportadoras)
     ovRascunho: {}, ovEnvio: {}, ovMais: {}   // a Ordem de Venda, por caso: o número digitado, a conferência e o "+ outra OV"
   };
 
@@ -191,7 +192,7 @@
     var amG = ams.filter(function (c) { return c.fase === 'amostra_ganha'; }).length, amP = ams.filter(function (c) { return c.fase === 'amostra_perdida'; }).length;
     var K = [
       ['todas', IC.layers, C.int(vivos.length), 'Cotadas', 'todas as oportunidades · ' + C.brlCurto(soma(vivos)), '#324C57', '#ECF0F3'],
-      ['andamento', IC.inbox, C.int(n.andamento), 'Em andamento', (aguarda ? aguarda + ' com pedido, aguardando a OV · ' : '') + C.brlCurto(soma(and)) + ' cotados', '#2C7288', '#EEF5F9'],
+      ['andamento', IC.inbox, C.int(n.andamento), 'Em andamento', (aguarda ? aguarda + ' aguardando o pedido ser finalizado · ' : '') + C.brlCurto(soma(and)) + ' cotados', '#2C7288', '#EEF5F9'],
       ['perdidas', IC.xc, C.int(n.perdidas), 'Perdidas', (venc ? venc + ' com o prazo vencido · ' : '') + C.brlCurto(soma(per)), '#CF3434', '#FDE7E7'],
       ['pedido', IC.trophy, C.int(n.pedido), 'Ganhas', C.brlCurto(soma(gan, true)) + ' em pedidos', '#138A4B', '#DDF5E7'],
       ['amostras', IC.amostra, C.int(n.amostras), 'Amostras', !n.amostras ? 'a perdida pode virar amostra' : amG || amP ? [amG ? amG + ' ganha' + (amG > 1 ? 's' : '') : '', amP ? amP + ' perdida' + (amP > 1 ? 's' : '') : ''].filter(Boolean).join(' · ') + ' · fora das contas' : 'cópias das perdidas · fora das contas', '#7C3AED', '#F1EAFE'],
@@ -425,11 +426,11 @@
       ? '<div class="tk-hero-conta ' + (pr.nivel === 2 ? 'vencido' : pr.nivel === 1 ? 'alerta' : '') + '"><small>Data de vencimento</small><b>' + esc(pr.txt) + '</b><span>' + esc(pr.quando ? C.quando(pr.quando.toISOString()) : '') + '</span></div>'
       : '<div class="tk-hero-conta vazio"><small>Data de vencimento</small><b>' + (C.aberta(c.fase) ? 'sem data' : (c.fechadoEm ? 'Fechada ' + esc(C.dataBR(c.fechadoEm)) : '—')) + '</b><span>' + (C.aberta(c.fase) ? 'informe em "Detalhes"' : esc(C.quando(c.fechadoEm))) + '</span></div>';
     var pedBox = ped
-      ? '<div class="tk-hero-conta ganho"><small>Pedido</small><b class="grande">' + C.brl((ped.previa && ped.previa.total) || ped.total || 0) + '</b><span>' + esc(ped.oc ? 'OC ' + ped.oc : ped.nome) + ((c.ovs || []).length ? ' · ' + c.ovs[0].numero + (c.ovs.length > 1 ? ' +' + (c.ovs.length - 1) : '') : c.pi && c.pi.estado === 'enviado' ? ' · aguardando OV' : c.fase === 'pedido' ? ' · ganha' : ' · aguardando a OV') + '</span></div>'
+      ? '<div class="tk-hero-conta ganho"><small>Pedido</small><b class="grande">' + C.brl((ped.previa && ped.previa.total) || ped.total || 0) + '</b><span>' + esc(ped.oc ? 'OC ' + ped.oc : ped.nome) + ((c.ovs || []).length ? ' · ' + c.ovs[0].numero + (c.ovs.length > 1 ? ' +' + (c.ovs.length - 1) : '') : c.pi && c.pi.estado === 'enviado' ? ' · aguardando OV' : c.fase === 'pedido' ? ' · ganha' : c.pi && c.pi.estado === 'devolvido' ? ' · devolvido pela fila' : ' · aguardando ser finalizado') + '</span></div>'
       : '<div class="tk-hero-conta"><small>Responsável</small><b>' + (c.dono ? esc(c.dono.nome) : 'Sem responsável') + '</b><span>' + (c.dono ? esc(c.dono.email) : 'clique em Assumir') + '</span></div>';
     return '<section class="cs-card tk-hero" style="--c:' + (c.descartado ? '#95A4AB' : f.cor) + '">' +
       '<div class="tk-hero-l1"><span class="cs-d-num" id="cot-copiar" title="Copiar o número e o link">' + esc(c.numero) + IC.copy + '</span>' +
-        (c.descartado ? '<span class="cs-chip descartada">Descartada</span>' : (c.amostra ? chipAmostra({ amostraDe: c.amostra.de, fase: c.fase }) : C.chipFase(c.fase))) + '<span class="cs-chip portal">' + esc(c.portal || 'sem portal') + '</span>' +
+        (c.descartado ? '<span class="cs-chip descartada">Descartada</span>' : (c.amostra ? chipAmostra({ amostraDe: c.amostra.de, fase: c.fase }) : C.chipFase(c.fase) + C.chipPi(c))) + '<span class="cs-chip portal">' + esc(c.portal || 'sem portal') + '</span>' +
         '<span class="cs-chip portal" title="Unidade de negócio">' + esc(c.unidade || 'sem unidade') + '</span>' +
         '<span class="tk-hero-meta" title="' + esc(C.dataBR(c.criadoEm, true)) + '">Registrada ' + esc(C.chegada(c.criadoEm)) + (c.criadoPor ? ' por ' + esc(c.criadoPor.nome) : '') + '</span></div>' +
       '<h2 class="tk-titulo">' + esc(cli.nome || 'Cliente não informado') + '</h2>' +
@@ -479,21 +480,24 @@
     var temOvs = !!(ped && (c.ovs || []).length);
     var noPi = !!ped && (pi.estado === 'enviado' || pi.estado === 'em_andamento');
     var passo = function (on, txt) { return '<span class="' + (on ? 'on' : '') + '">' + txt + '</span>'; };
-    var fluxo = '<div class="cs-pi-fluxo"><span class="on">Oportunidade</span><i>→</i>' + passo(!!ped, 'Pedido do portal') + '<i>→</i>' + passo(noPi, 'PI · Pedido') + '<i>→</i>' +
-      passo(!!ped && (pi.estado === 'enviado' || temOvs), 'Dynamics') + '<i>→</i>' + passo(temOvs, 'Ordem de Venda') + '</div>';
+    // 25/11/2026 (pedido do dono): o vendedor só registra o pedido — ele vai para a
+    // FILA DE APROVAÇÃO do PI · Pedido e quem dá andamento é o time de lá
+    var fluxo = '<div class="cs-pi-fluxo"><span class="on">Oportunidade</span><i>→</i>' + passo(!!ped, 'Virou pedido') + '<i>→</i>' + passo(!!ped, 'Fila do PI') + '<i>→</i>' +
+      passo(!!ped && (pi.estado === 'enviado' || temOvs), 'Dynamics') + '<i>→</i>' + passo(temOvs, 'Ganha (OV)') + '</div>';
     var h = '<div class="cs-card cot-ped"><h5>' + IC.cart + 'Pedido</h5>' + fluxo;
     if (!ped) {
       // 21/10/2026 (pedido do usuário): as duas alternativas ao PDF aqui também
-      return h + '<h4>A oportunidade virou pedido?</h4><p>Solte o PDF do pedido que o portal gerou — o portal lê, compara com o que foi cotado e deixa pronto para o PI · Pedido. Sem o PDF? Registre <b>à mão</b> (os itens ganhos são o pedido) ou, se o pedido já foi feito no Dynamics, <b>amarre a Ordem de Venda</b>.</p>' +
-        '<label class="cot-drop" id="cot-drop-ped" tabindex="0"><input type="file" id="cot-arq-ped" accept="application/pdf,.pdf" hidden><span class="ic">' + IC.upload + '</span><b>Soltar o PDF do pedido</b><small>ou clique para escolher · .pdf</small></label>' +
-        '<div class="cot-ped-alt"><button type="button" class="cs-btn" data-act="ped-manual">' + IC.edit + 'À mão, sem o PDF</button>' +
-        '<button type="button" class="cs-btn" data-act="ped-ov">' + IC.tag + 'Já tenho a Ordem de Venda</button></div></div>';
+      // 25/11/2026 (pedido do dono): sem anexar — o PDF do pedido é a PROPOSTA
+      // gerada com os dados da oportunidade; ou a Ordem de Venda já feita
+      return h + '<h4>A oportunidade virou pedido?</h4><p>Clique em <b>Virou pedido</b>: o portal gera o PDF da proposta com os dados desta oportunidade e manda para a <b>fila de aprovação do PI · Pedido</b> — o time de lá lança no Dynamics, você não precisa abrir o PI nem anexar nada. Se o pedido já foi feito no Dynamics, <b>amarre a Ordem de Venda</b>.</p>' +
+        '<div class="cot-ped-bts"><button type="button" class="cs-btn cs-btn-pi" data-act="ped-proposta">' + IC.trophy + 'Virou pedido</button>' +
+        '<button type="button" class="cs-btn cs-btn-sm cs-btn-ghost" data-act="ped-ov">' + IC.tag + 'Já tenho a Ordem de Venda</button></div></div>';
     }
     // o pedido à mão (21/10/2026): sem PDF — os itens ganhos são o pedido
     var arq = ped.manual
       ? '<div class="cs-pi-arq">' + IC.edit + '<b>' + (ped.viaOv ? 'Pedido já lançado no Dynamics (pela Ordem de Venda)' : 'Pedido registrado à mão') + '</b><span class="cot-ped-man">' +
         esc([ped.oc ? 'OC ' + ped.oc : '', ped.total ? C.brl(ped.total) + ' em itens ganhos' : ''].filter(Boolean).join(' · ') || 'sem o PDF') + '</span></div>'
-      : '<div class="cs-pi-arq">' + IC.pdf + '<b>' + esc(ped.nome || 'Pedido.pdf') + '</b><button type="button" class="cs-btn cs-btn-xs" data-ver-anexo="' + esc(ped.anexoId) + '">' + IC.eye + 'Ver</button></div>';
+      : '<div class="cs-pi-arq">' + IC.pdf + '<b title="' + esc(ped.proposta ? 'O PDF da proposta, gerado com os dados da oportunidade' : '') + '">' + esc(ped.nome || 'Pedido.pdf') + '</b><button type="button" class="cs-btn cs-btn-xs" data-ver-anexo="' + esc(ped.anexoId) + '">' + IC.eye + 'Ver</button></div>';
     var pv = ped.previa;
     var prev = pv ? '<div class="cs-pi-prev">' +
         '<div><small>Ordem de compra</small><b>' + esc(pv.oc || ped.oc || '—') + '</b></div>' +
@@ -508,14 +512,35 @@
     // fechou com a OV lançada fora do PI: o PI não tem mais o que fazer aqui
     if (temOvs) return h + arq + prev + htmlOv(c) + '</div>';
     if (S.lendoPedido[c.numero]) return h + arq + '<p><span class="cs-spin"></span>&nbsp; Lendo o pedido com o leitor do PI…</p></div>';
-    var erro = pi.estado === 'erro' ? '<p>Não consegui ler o PDF do pedido: ' + esc(pi.erro || '') + '</p>' : '';
-    var andamento = pi.estado === 'em_andamento' ? '<p>Aberto no PI por ' + esc((pi.abertoPor && pi.abertoPor.nome) || '') + ' · ' + esc(C.quando(pi.abertoEm)) + '. Quando o pedido for lançado, este cartão muda sozinho.</p>' : '';
-    var texto = ped.manual ? '<p>Sem o PDF: os itens ganhos da oportunidade são o pedido. <b>Abrir Pedido no PI</b> leva o comprador e esses itens prontos para conferir e lançar no Dynamics.</p>'
-      : (erro || '<p>PDF do pedido anexado. O portal lê e entrega pronto para o PI conferir e lançar no Dynamics.</p>');
-    return h + arq + (pv ? prev : texto) + andamento +
-      '<div class="cot-ped-bts"><button type="button" class="cs-btn cs-btn-pi" data-act="abrir-pi">' + IC.cart + 'Abrir Pedido no PI</button>' +
+    var erro = pi.estado === 'erro' ? '<p>Não consegui ler o PDF do pedido: ' + esc(pi.erro || '') + ' — a fila do PI lê de novo.</p>' : '';
+    var texto = ped.manual ? '<p>Sem o PDF: os itens ganhos da oportunidade são o pedido.</p>' : erro;
+    var devolvido = pi.estado === 'devolvido';
+    return h + arq + (pv ? prev : texto) + htmlNaFila(c) +
+      '<div class="cot-ped-bts">' + (devolvido ? '<button type="button" class="cs-btn cs-btn-pi" data-act="ped-reenviar">' + IC.refresh + 'Reenviar para a fila</button>' : '') +
       (!pv && !ped.manual ? '<button type="button" class="cs-btn cs-btn-sm cs-btn-ghost" data-act="ler-pedido">' + IC.refresh + 'Ler o pedido agora</button>' : '') +
-      '<label class="cs-btn cs-btn-sm cs-btn-ghost" style="cursor:pointer">' + IC.upload + (ped.manual ? 'Anexar o PDF do pedido' : 'Trocar o PDF') + '<input type="file" id="cot-arq-ped" accept="application/pdf,.pdf" hidden></label></div>' + htmlOv(c) + '</div>';
+      // 25/11/2026: mudou alguma condição depois de virar pedido? o PDF sai de novo
+      (ped.proposta && !devolvido ? '<button type="button" class="cs-btn cs-btn-sm cs-btn-ghost" data-act="ped-atualizar" title="Gera de novo o PDF da proposta com os dados de agora e devolve o pedido para a fila">' + IC.refresh + 'Atualizar o PDF do pedido</button>' : '') +
+      '</div>' + htmlOv(c) + '</div>';
+  }
+  // 25/11/2026 (pedido do dono): "o vendedor clica em VIRAR PEDIDO e fica
+  // Aguardando o pedido ser finalizado" — onde o pedido está na FILA DE
+  // APROVAÇÃO do PI · Pedido (pages/pi-fila.html): esperando alguém, em
+  // andamento com alguém, ou DEVOLVIDO com o motivo (o vendedor ajusta e
+  // reenvia). Lançado, o cartão mostra o "Pedido lançado no Dynamics".
+  function htmlNaFila(c) {
+    var pi = c.pi || {}, ped = c.pedido || {};
+    var link = '<a class="cot-fila-link" href="pi-fila.html?caso=' + encodeURIComponent(c.numero) + '">' + IC.eye + 'Ver na fila do PI</a>';
+    if (pi.estado === 'devolvido') {
+      var d = pi.devolvido || {};
+      return '<div class="cot-na-fila devolvido">' + IC.alert + '<div><b>Pedido devolvido pela fila do PI · Pedido</b>' +
+        '<q>' + esc(d.motivo || 'sem motivo') + '</q>' +
+        '<span>' + esc((d.por && d.por.nome) || '') + (d.em ? ' · ' + esc(C.quando(d.em)) : '') + '. Ajuste o que foi pedido (em <b>Condições ofertadas</b> ou nos itens) e clique em <b>Reenviar para a fila</b>' + (ped.proposta ? ' — o PDF do pedido é refeito com os dados de agora' : '') + '.</span></div></div>';
+    }
+    var andamento = pi.estado === 'em_andamento';
+    return '<div class="cot-na-fila">' + (andamento ? '<span class="cs-spin"></span>' : IC.alarm) + '<div><b>Aguardando pedido ser finalizado</b>' +
+      '<span>' + (andamento ? 'Em andamento no PI · Pedido com ' + esc((pi.abertoPor && pi.abertoPor.nome) || 'o time da fila') + ' · ' + esc(C.quando(pi.abertoEm))
+        : 'Na fila de aprovação do PI · Pedido desde ' + esc(C.quando(ped.em)) + ' — o time de lá confere e lança no Dynamics') +
+      '. Você não precisa fazer nada: quando a Ordem de Venda voltar, a oportunidade fecha como <b>Ganha</b>.</span>' + link + '</div></div>';
   }
   // a ORDEM DE VENDA: a cotação fecha com o número da OV do Dynamics (do PI
   // ou do pedido lançado à mão). O portal confere a OV no Dynamics antes de
@@ -533,7 +558,7 @@
       // 22/10/2026 (pedido do usuário): o pedido registrado não é Ganha — a OV é que fecha
       h += '<div class="cot-ov-h">' + IC.tag + '<div><b>' + (lancado ? 'Feche a oportunidade com a Ordem de Venda' : 'A oportunidade fecha como Ganha com a Ordem de Venda') + '</b>' +
         (lancado ? 'Quando o pedido virar Ordem de Venda no Dynamics, informe o número aqui (o fluxo do PI também devolve sozinho) — o portal confere a OV e a oportunidade fecha como Ganha.'
-          : 'O pedido está registrado; a oportunidade segue aberta. Mande pelo PI · Pedido — a OV volta do fluxo — ou, se lançou direto no Dynamics, informe a OV aqui.') + '</div></div>';
+          : 'O pedido está na fila do PI · Pedido; quando for lançado, a OV volta do fluxo e a oportunidade fecha sozinha. Se o pedido já foi lançado direto no Dynamics, informe a OV aqui.') + '</div></div>';
     }
     var aberto = !ovs.length || S.ovMais[num];
     if (est.estado === 'conferindo') {
@@ -676,11 +701,13 @@
     if (S.editandoItens) {
       var its = S.itensRascunho || [], comIpi = S.ipiEdicao || C.temIpi(its);
       return '<div class="cs-card"><h5>' + IC.list + 'Itens cotados · editando</h5>' +
-        '<div class="cot-itens-w"><table class="cot-itens"><thead><tr><th class="cod">Código do produto</th><th class="codc">Cód. comprador</th><th>Descrição</th><th class="marca">Fabricante</th><th class="rms">RMS</th><th class="qtd n">Qtd</th><th class="vu n">Preço unit.</th>' +
+        '<div class="cot-itens-w"><table class="cot-itens"><thead><tr><th class="cod">Código do produto</th><th class="codc">Cód. comprador</th><th>Descrição</th><th class="marca">Fabricante</th><th class="rms">RMS</th><th class="qtd n">Qtd<b class="cot-req" title="obrigatório">*</b></th><th class="vu n">Preço unit.<b class="cot-req" title="obrigatório">*</b></th>' +
         (comIpi ? '<th class="ipi n" title="O IPI de cada item, em % — sai na proposta">IPI %</th>' : '') + '<th class="vt n">Total</th><th class="res">Resultado do item</th><th class="x"></th></tr></thead><tbody>' +
         its.map(function (it, i) {
           var ruim = it._cod && (it._cod.st === 'nao' || (it._cod.st === 'vazio' && Number(it.valorUnitario) > 0));
-          return '<tr data-i="' + i + '"' + (ruim ? ' class="cod-nao"' : it._cod && it._cod.st === 'ok' ? ' class="cod-ok"' : '') + '><td class="cod"><input data-f="codigo" value="' + esc(it.codigo) + '" autocomplete="off"><span class="cod-st-box">' + C.statusCodigo(it) + '</span></td><td class="codc"><input data-f="codigoCliente" value="' + esc(it.codigoCliente) + '"></td>' +
+          // 25/11/2026: quantidade e preço obrigatórios (a linha fica vermelha no que falta)
+          var clsL = [ruim ? 'cod-nao' : it._cod && it._cod.st === 'ok' ? 'cod-ok' : '', C.semQtd(it) ? 'qtd-falta' : '', C.semPreco(it) ? 'vu-falta' : ''].filter(Boolean).join(' ');
+          return '<tr data-i="' + i + '"' + (clsL ? ' class="' + clsL + '"' : '') + '><td class="cod"><input data-f="codigo" value="' + esc(it.codigo) + '" autocomplete="off"><span class="cod-st-box">' + C.statusCodigo(it) + '</span></td><td class="codc"><input data-f="codigoCliente" value="' + esc(it.codigoCliente) + '"></td>' +
             '<td><input data-f="descricao" value="' + esc(it.descricao) + '"><span class="cot-sf-box">' + C.dicaSf(it) + '</span></td><td class="marca"><input data-f="marca" value="' + esc(it.marca) + '" placeholder="Fabricante"></td><td class="rms"><input data-f="registro" value="' + esc(it.registro || '') + '" placeholder="ANVISA" inputmode="numeric"></td>' +
             '<td class="qtd n"><input data-f="quantidade" inputmode="decimal" value="' + esc(it.quantidade ? C.qtd(it.quantidade) : '') + '"></td>' +
             '<td class="vu n"><input data-f="valorUnitario" inputmode="decimal" value="' + esc(it.valorUnitario ? it.valorUnitario.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 4 }) : '') + '"></td>' +
@@ -855,12 +882,22 @@
       '<dt>E-mail</dt><dd>' + ed('contato.email', ct.email, 'email') + (ct.email ? ' <a href="mailto:' + esc(ct.email) + '" title="Escrever">' + IC.arrow + '</a>' : '') + '</dd>' +
       '<dt>Telefone</dt><dd>' + ed('contato.telefone', ct.telefone, 'fone', null, C.formatar('fone', ct.telefone)) + '</dd>' +
       '</dl></div>';
+    // 25/11/2026 (pedido do dono): a condição de pagamento é a LISTA do PI · Pedido
+    // (era campo aberto — a antiga, fora da lista, aparece marcada até trocar), a
+    // TRANSPORTADORA é a mesma lista do PI (Dynamics) e a OBSERVAÇÃO NA NOTA vai
+    // para o rodapé da nota fiscal — tudo sai na proposta e vai para o PI
+    var foraPag = co.pagamento && C.COND_PAGAMENTO.length && !C.naListaPag(co.pagamento);
+    var tr = S.transp || { nomes: [] };
     var cond = '<div class="cs-card"><h5>' + IC.tag + 'Condições ofertadas</h5><dl class="cs-kv">' +
-      '<dt>Pagamento</dt><dd>' + ed('condicoes.pagamento', co.pagamento) + '</dd>' +
+      '<dt>Pagamento</dt><dd>' + ed('condicoes.pagamento', co.pagamento, 'lista', C.listaCom(C.COND_PAGAMENTO, co.pagamento)) +
+        (foraPag ? ' <span class="cs-chip prazo-alerta" title="A condição foi digitada antes da lista — escolha a correspondente da lista do PI · Pedido">fora da lista do PI</span>' : '') + '</dd>' +
       // 22/10/2026: o frete (CIF ou FOB) e o prazo de entrega voltaram — saem na proposta, com a observação
       '<dt>Frete</dt><dd>' + ed('condicoes.frete', C.freteCifFob(co.frete) || co.frete, 'lista', ['CIF', 'FOB']) + '</dd>' +
+      '<dt>Transportadora</dt><dd>' + ed('condicoes.transportadora', co.transportadora, 'lista', C.listaCom(tr.nomes, co.transportadora)) +
+        (!S.transp ? ' <span class="vazio">carregando a lista…</span>' : tr.erro ? ' <span class="vazio" title="' + esc(tr.erro) + '">lista do Dynamics indisponível</span>' : '') + '</dd>' +
       '<dt>Prazo de entrega</dt><dd>' + ed('condicoes.entrega', co.entrega) + '</dd>' +
       '<dt>Observação</dt><dd>' + ed('condicoes.observacao', co.observacao, 'area') + '</dd>' +
+      '<dt>Obs. na nota</dt><dd>' + ed('condicoes.obsNota', co.obsNota, 'area') + '</dd>' +
       '</dl></div>';
     var anexos = (c.anexos || []).filter(function (a) { return !a.removido; });
     var anx = '<div class="cs-card"><h5>' + IC.clip + 'Anexos · ' + anexos.length + '</h5><div class="cot-anexos">' +
@@ -947,27 +984,45 @@
     });
   }
 
-  /* ── pedido: anexar, ler, mandar para o PI ──────────────────── */
-  function anexarPedido(c, file, extra) {
-    if (!file) return;
-    if (!/\.pdf$/i.test(file.name || '') && !/pdf/i.test(file.type || '')) { C.toast('Só PDF', 'O pedido precisa ser o PDF que o portal gerou.', 'erro'); return; }
-    var numero = c.numero;
+  /* ── pedido: o PDF da PROPOSTA vira o pedido (25/11/2026) ─────── */
+  // Pedido do dono: "quando virar pedido, retire a opção manual — somente JÁ
+  // TENHO UMA OV e usar o PDF gerado da proposta, sem precisar anexar: se vai
+  // virar pedido, todos os dados da cotação estão corretos". O portal gera a
+  // proposta (COTPROP, o mesmo PDF do envio, só com os itens GANHOS) e ela vai
+  // como o PDF do pedido para a FILA DE APROVAÇÃO do PI · Pedido. O servidor
+  // monta a leitura (pedido.previa) com os itens ganhos e as condições.
+  // resultados: as marcas do diálogo (no 1º registro); sem elas = atualizar o
+  // PDF do pedido já registrado (as condições mudaram, ou reenviar à fila).
+  function casoDoPedido(c, resultados) {
+    var cp = JSON.parse(JSON.stringify(c));
+    var ganhou = function (it, i) {
+      var r = resultados ? (resultados.filter(function (x) { return x.i === i; })[0] || {}).resultado : it.resultado;
+      return r === 'ganho';
+    };
+    cp.itens = (c.itens || []).map(function (it) { var x = Object.assign({}, it); delete x._cod; delete x._sf; return x; }).filter(ganhou);
+    cp.total = cp.itens.reduce(function (s, it) { return s + (Number(it.quantidade) || 0) * (Number(it.valorUnitario) || 0); }, 0);
+    return comNomeDigitado(cp);
+  }
+  function pedidoPelaProposta(c, oc, resultados) {
+    var numero = c.numero, atualizar = !resultados;
+    if (!W.COTPROP || !W.COTPROP.pronto()) { C.toast('O gerador da proposta não carregou', 'Recarregue a página (F5) e tente de novo.', 'erro'); return Promise.resolve(false); }
     S.lendoPedido[numero] = true; renderCaso();
-    C.lerArquivo(file).then(function (arq) {
-      return C.api('cot-casos', Object.assign({ acao: 'pedido', numero: numero, anexo: { nome: arq.nome, tipo: 'application/pdf', base64: arq.base64 } }, extra || {})).then(function (j) {
-        mesclar(j.caso); if (S.caso && S.caso.numero === numero) S.caso = j.caso;
-        C.toast('Oportunidade virou pedido', j.caso.numero + ' · lendo o pedido…', 'ok');
-        // RECORTE MSB (05/11/2026, pedido do dono): anexou o PDF do pedido, vai
-        // para o PI · Pedido (nesta aba) — com a leitura pronta ou, se ela
-        // falhar, para o PI ler o PDF
-        return lerPedido(j.caso, arq).then(function () {
-          var atual = (S.caso && S.caso.numero === numero) ? S.caso : j.caso;
-          return abrirPI(atual);
-        });
-      });
+    return W.COTPROP.gerar(casoDoPedido(c, resultados), operador(c)).then(function (pdf) {
+      var corpo = { acao: 'pedido', numero: numero, proposta: true, anexo: { nome: 'Pedido ' + pdf.nome.replace(/^Proposta /, ''), tipo: 'application/pdf', base64: pdf.base64 } };
+      if (!atualizar) { corpo.oc = oc || ''; corpo.resultados = resultados; }
+      else if (c.pedido && c.pedido.oc) corpo.oc = c.pedido.oc;
+      return C.api('cot-casos', corpo);
+    }).then(function (j) {
+      S.lendoPedido[numero] = false;
+      if (j && j.caso) { mesclar(j.caso); if (S.caso && S.caso.numero === numero) S.caso = j.caso; }
+      renderTudo();
+      C.toast(atualizar ? 'PDF do pedido atualizado' : 'Pedido na fila do PI · Pedido',
+        numero + (atualizar ? ' · com os dados de agora — de volta à fila do PI' : ' · aguardando o pedido ser finalizado — fecha como Ganha com a Ordem de Venda'), 'ok');
+      return j;
     }).catch(function (e) {
       S.lendoPedido[numero] = false; renderTudo();
-      C.toast('Não consegui anexar o pedido', e.message, 'erro');
+      C.toast(atualizar ? 'Não consegui atualizar o pedido' : 'A oportunidade não virou pedido', e.message, 'erro');
+      return false;
     });
   }
   // a leitura do pedido (a IA do PI) no formato que o caso guarda (pedido.previa)
@@ -976,29 +1031,9 @@
     var total = prods.reduce(function (s, p) { return s + (Number(p.quantidade) || 0) * (Number(p.valorUnitario) || 0); }, 0);
     return {
       cnpj: d.cnpj || '', cliente: d.nomeCliente || '', oc: d.ordemDeCompra || '', itens: prods.length, total: total,
-      condicao: d.condicaoPagamento || '', email: d.email || '',
+      condicao: d.condicaoPagamento || '', email: d.email || '', endereco: d.enderecoEntrega || '', observacao: d.observacao || '',
       produtos: prods.slice(0, 120).map(function (p) { return { codigo: p.codigo, descricao: p.descricao, quantidade: p.quantidade, valorUnitario: p.valorUnitario }; })
     };
-  }
-  // virar pedido pelo PDF já lido e conferido no diálogo (22/10/2026): vai
-  // junto a leitura — o servidor confere de novo (divergência = 409) e grava
-  // o pedido lido, pronto para o PI; o resultado de cada item sai do confronto
-  function virarPedidoPdf(c, lido, oc, ms) {
-    var numero = c.numero, d = lido.dados || {};
-    var resultados = ms.map(function (x, i) { var o = { i: i, resultado: x.r }; if (x.r === 'perdido' && x.m) o.motivo = x.m; return o; });
-    S.lendoPedido[numero] = true; renderCaso();
-    C.api('cot-casos', { acao: 'pedido', numero: numero, anexo: { nome: lido.arq.nome, tipo: 'application/pdf', base64: lido.arq.base64 }, oc: oc, resultados: resultados, previa: previaDe(d) }).then(function (j) {
-      S.lendoPedido[numero] = false;
-      S.leiturasPedido[numero] = { dados: d, avisos: lido.avisos || [] };
-      mesclar(j.caso); if (S.caso && S.caso.numero === numero) S.caso = j.caso;
-      renderTudo();
-      C.toast('Pedido registrado', j.caso.numero + ' · conferido com o PDF — a oportunidade fecha como Ganha com a Ordem de Venda', 'ok');
-      // RECORTE MSB (05/11/2026, pedido do dono): anexou o pedido, vai para o PI · Pedido (nesta aba)
-      return abrirPI(j.caso);
-    }).catch(function (e) {
-      S.lendoPedido[numero] = false; renderTudo();
-      C.toast('A oportunidade não virou pedido', e.message, 'erro');
-    });
   }
   // lê o PDF do pedido com o leitor do PI (o PI recebe a leitura pronta)
   function lerPedido(c, arq) {
@@ -1080,17 +1115,6 @@
         });
       });
   }
-  // RECORTE MSB (05/11/2026): o PI abre nesta aba (cotacoes-base.js › abrirNoPI);
-  // o botão fica travado enquanto prepara, para não abrir duas vezes
-  function abrirPI(c) {
-    var b = D.querySelector('#cot-caso [data-act="abrir-pi"]');
-    if (b) { b.disabled = true; b.innerHTML = '<span class="cs-spin"></span> Abrindo o PI…'; }
-    return C.abrirNoPI(c, S.leiturasPedido[c.numero]).then(function (j) {
-      if (j === false) { renderTudo(); return; }
-      if (j && j.caso) mesclar(j.caso);
-    });
-  }
-
   /* ── diálogos ───────────────────────────────────────────────── */
   function opcoes(l, sel) { return (l || []).map(function (o) { return '<option' + (o === sel ? ' selected' : '') + '>' + esc(o) + '</option>'; }).join(''); }
   // a Perdida (21/10/2026: a Vencida e a Cancelada viraram motivos dela)
@@ -1121,48 +1145,57 @@
       });
   }
   // 21/10/2026 (pedido do usuário): virar pedido pede o RESULTADO DE CADA
-  // ITEM — Ganho ou Perdido, todos, ao menos um ganho — e tem três jeitos: o
-  // PDF do pedido do portal, o pedido À MÃO (sem o PDF, como o manual do PI:
-  // os itens ganhos são o pedido) ou a ORDEM DE VENDA de um pedido já feito
-  // antes no Dynamics (a cotação vira pedido e fecha com ela de uma vez).
-  // 22/10/2026 (pedido do usuário): pelo PDF, o pedido é LIDO AQUI e cada
-  // item dele é conferido com a cotação (C.comparar) — mesmo item, preço e
-  // quantidade. Divergência barra (a pessoa ajusta os itens); tudo certo, o
-  // item é ganho; o cotado que não veio no pedido, perdido. À mão e pela OV
-  // não conferem: a pessoa marca cada item.
-  function dlgPedido(c, arqInicial, modoInicial) {
+  // ITEM — Ganho ou Perdido, todos, ao menos um ganho.
+  // 25/11/2026 (pedido do dono): "quando virar pedido, retire a opção manual —
+  // somente JÁ TENHO UMA OV e usar o PDF que é gerado da proposta, sem precisar
+  // anexar: se vai virar pedido, todos os dados da cotação estão corretos".
+  // Dois jeitos: PELO PDF DA PROPOSTA (o portal gera a proposta com os dados do
+  // caso e ela vai para a fila de aprovação do PI · Pedido — o vendedor não
+  // abre o PI; a oportunidade fica "Aguardando pedido ser finalizado") ou JÁ
+  // TENHO A ORDEM DE VENDA (o pedido já foi feito no Dynamics: fecha na hora).
+  // Os itens chegam marcados Ganho (a pessoa troca o que não foi); o PDF do
+  // pedido leva só os ganhos. Saíram o PDF anexado (conferido item a item) e
+  // o pedido à mão.
+  function dlgPedido(c, modoInicial) {
     var its = c.itens || [];
-    var marcas = its.map(function (it) { return { r: it.resultado || '', m: it.motivo || '' }; });
-    var modo = modoInicial || 'pdf', arq = arqInicial || null, oc = '', ovTxt = '';
-    // a leitura do PDF no diálogo: null | { estado: 'lendo' | 'erro' | 'ok', … }
-    var lido = null, ajustando = false;
+    var marcas = its.map(function (it) { return { r: it.resultado || 'ganho', m: it.motivo || '' }; });
+    var modo = modoInicial === 'ov' ? 'ov' : 'proposta', oc = '', ovTxt = '';
     // as OVs no Dynamics, do cliente ou TODAS (21/10/2026: "pode cotar para mim e faturar
     // para outro"): null = ainda não buscou; 'carregando'; { ovs, cliente, motivo }
     var ovEsc = 'cliente', ovListas = { cliente: null, todas: null }, ovFiltro = '';
     var MODOS = [
-      ['pdf', IC.pdf, 'PDF do pedido', 'o pedido do portal — conferido item a item com a oportunidade'],
-      ['manual', IC.edit, 'À mão, sem o PDF', 'os itens ganhos são o pedido — como o manual do PI'],
+      ['proposta', IC.pdf, 'Pelo PDF da proposta', 'o portal gera o PDF com os dados da oportunidade e manda para a fila do PI · Pedido'],
       ['ov', IC.tag, 'Já tenho a Ordem de Venda', 'o pedido já foi feito no Dynamics: amarra a OV e fecha como Ganha']
     ];
-    C.dialogo('<h3>A oportunidade virou pedido</h3><p>' + esc(c.numero) + ' · ' + esc(C.tituloCaso(c)) + '. Diga como veio o pedido: pelo PDF, os itens são conferidos com a oportunidade; à mão ou pela Ordem de Venda, marque o resultado de cada item. O pedido fica <b>registrado</b> e a oportunidade fecha como <b>Ganha</b> com a Ordem de Venda (a do fluxo do PI ou a informada) — só "Já tenho a Ordem de Venda" fecha na hora.</p>' +
+    var co = c.condicoes || {};
+    C.dialogo('<h3>A oportunidade virou pedido</h3><p>' + esc(c.numero) + ' · ' + esc(C.tituloCaso(c)) + '. Pelo PDF da proposta, o pedido vai para a <b>fila de aprovação do PI · Pedido</b> — o time de lá lança no Dynamics e a oportunidade fica <b>Aguardando pedido ser finalizado</b> até a Ordem de Venda voltar e fechar como <b>Ganha</b>. Se o pedido já foi feito no Dynamics, informe a Ordem de Venda: fecha na hora.</p>' +
       '<div class="cot-fases-ini cot-ped-modos">' + MODOS.map(function (m) {
         return '<button type="button" class="cot-fase-ini' + (m[0] === modo ? ' on' : '') + '" data-modo="' + m[0] + '"><b>' + m[1] + esc(m[2]) + '</b><small>' + esc(m[3]) + '</small></button>';
       }).join('') + '</div>' +
       '<div id="dlg-modo"></div>' +
-      (its.length ? '<div class="cot-dlg-itens"><div class="cot-dlg-itens-h"><b id="dlg-itens-tt">Resultado de cada item <i>*</i></b><span id="dlg-itens-sub">todos marcados · ao menos um ganho</span>' +
+      (its.length ? '<div class="cot-dlg-itens"><div class="cot-dlg-itens-h"><b>Resultado de cada item <i>*</i></b><span>todos marcados · ao menos um ganho · o PDF do pedido leva só os ganhos</span>' +
         '<button type="button" class="cs-btn cs-btn-xs" id="dlg-todos-g">' + IC.check + 'Todos ganhos</button></div>' +
         '<div class="cot-dlg-tw"><table><tbody id="dlg-itens"></tbody></table></div></div>' : '') +
       '<p class="cot-dlg-falta" id="dlg-falta"></p>' +
       '<div class="cs-dlg-pe"><button class="cs-btn" value="x">Voltar</button><button class="cs-btn cs-btn-azul" value="ok" id="dlg-ok">' + IC.trophy + 'Virou pedido</button></div>',
       function (dlg) {
+        // o que vai para o PI: as condições da oportunidade (o PDF sai com elas)
+        function htmlResumo() {
+          var pag = String(co.pagamento || '').trim(), fora = pag && C.COND_PAGAMENTO.length && !C.naListaPag(pag);
+          var linha = function (rot, val, cls) { return '<div class="' + (cls || '') + '"><small>' + esc(rot) + '</small><b>' + (val ? esc(val) : '<span class="vazio">—</span>') + '</b></div>'; };
+          return '<div class="cot-ped-resumo">' +
+            linha('Condição de pagamento', pag + (fora ? ' (fora da lista do PI)' : ''), !pag || fora ? 'falta' : '') +
+            linha('Frete', C.freteCifFob(co.frete) || co.frete) + linha('Prazo de entrega', co.entrega) +
+            linha('Transportadora', co.transportadora || 'não informada') +
+            linha('Observação na nota', co.obsNota, 'largo') + '</div>';
+        }
         function pintarModo() {
           var h;
-          if (modo === 'pdf') {
-            h = '<label class="cot-drop" id="dlg-drop" style="min-height:110px"><input type="file" id="dlg-arq" accept="application/pdf,.pdf" hidden><span class="ic">' + IC.upload + '</span><b id="dlg-arq-nome">' + esc(arq ? arq.name : 'Escolher o PDF do pedido') + '</b><small>.pdf do portal</small></label>' +
-              '<div class="cs-campo" style="margin-top:12px"><label>Nº da ordem de compra (opcional — o portal lê do PDF)</label><input id="dlg-oc" value="' + esc(oc) + '" autocomplete="off"></div>';
-          } else if (modo === 'manual') {
-            h = '<div class="cs-campo"><label>Nº da ordem de compra (opcional)</label><input id="dlg-oc" value="' + esc(oc) + '" autocomplete="off"></div>' +
-              '<p class="cot-dlg-nota">Sem o PDF: os itens marcados como <b>Ganho</b> são o pedido. Depois, <b>Abrir Pedido no PI</b> leva o comprador e os itens prontos para lançar no Dynamics.</p>';
+          if (modo === 'proposta') {
+            h = '<p class="cot-dlg-nota">' + IC.pdf + ' O PDF do pedido é a <b>proposta</b> com os dados desta oportunidade — não precisa anexar nada. Confira as condições: elas vão para o PI. Algo errado? Volte e ajuste em <b>Condições ofertadas</b>.</p>' +
+              htmlResumo() +
+              '<div class="cot-ped-oc"><div class="cs-campo"><label>Nº da ordem de compra do cliente (opcional)</label><input id="dlg-oc" value="' + esc(oc) + '" autocomplete="off" maxlength="60"></div>' +
+              '<button type="button" class="cs-btn cs-btn-sm" id="dlg-ver-pdf">' + IC.eye + 'Ver o PDF do pedido</button></div>';
           } else {
             h = '<div class="cs-campo"><label>Número da Ordem de Venda *</label><input id="dlg-ov" value="' + esc(ovTxt) + '" placeholder="OV017760 — ou escolha abaixo" autocomplete="off" spellcheck="false" maxlength="24"></div>' +
               '<div class="cot-ov-escolha" id="dlg-ovs"></div>' +
@@ -1171,103 +1204,16 @@
           $('dlg-modo').innerHTML = h;
           Array.prototype.forEach.call(dlg.querySelectorAll('[data-modo]'), function (b) { b.classList.toggle('on', b.getAttribute('data-modo') === modo); });
           if (modo === 'ov') { if (ovListas[ovEsc] == null) carregarOvs(); else pintarOvs(); }
-          var tt = $('dlg-itens-tt'), sub = $('dlg-itens-sub'), tg = $('dlg-todos-g');
-          if (tt) tt.innerHTML = modo === 'pdf' ? 'Oportunidade × pedido' : 'Resultado de cada item <i>*</i>';
-          if (sub) sub.textContent = modo === 'pdf' ? 'igual no pedido = ganho · não veio no pedido = perdido · diferente = ajuste' : 'todos marcados · ao menos um ganho';
-          if (tg) tg.style.display = modo === 'pdf' ? 'none' : '';
-          var ok = $('dlg-ok'); if (ok) ok.innerHTML = IC.trophy + (modo === 'ov' ? 'Fechar como Ganha' : 'Registrar o pedido');
-          if (modo === 'pdf' && arq && !lido) lerPdf();
+          var ok = $('dlg-ok'); if (ok) ok.innerHTML = IC.trophy + (modo === 'ov' ? 'Fechar como Ganha' : 'Virou pedido · mandar para a fila');
           pintarItens(); checar();
         }
-        // lê o PDF escolhido (o leitor do PI + a IA) e confere com a cotação
-        function lerPdf() {
-          var f = arq; if (!f) return;
-          lido = { estado: 'lendo' };
-          var a64 = null;
-          var fim = function (x) { if (arq !== f) return; lido = x; pintarItens(); checar(); };
-          if (!/\.pdf$/i.test(f.name || '') && !/pdf/i.test(f.type || '')) { fim({ estado: 'erro', msg: 'O pedido precisa ser o PDF que o portal gerou.' }); return; }
-          if (!C.leitorPronto()) { fim({ estado: 'erro', msg: 'O leitor de PDF não carregou — recarregue a página (F5) e tente de novo.' }); return; }
-          C.lerArquivo(f).then(function (a) { a64 = a; return C.textoDoPdf(a.buffer); }).then(function (texto) {
-            if (!texto || texto.trim().length < 40) throw new Error('o PDF parece escaneado (imagem, sem texto) e os itens não podem ser conferidos — registre à mão');
-            return C.lerComIA(texto, a64.nome);
-          }).then(function (r) {
-            var d = (r && r.dados) || {};
-            var prods = (d.produtos || []).filter(function (p) { return p && (p.descricao || p.codigo); });
-            if (!prods.length) throw new Error('não achei os itens no PDF — confira se é o pedido do portal');
-            // o item do pedido sem o nosso código ganha o do item da cotação que é o mesmo produto
-            return C.codigosDoPedido(its, prods).then(function (ps) {
-              fim({ estado: 'ok', arq: a64, dados: Object.assign({}, d, { produtos: ps }), avisos: (r && r.avisos) || [], prods: ps, cmp: C.comparar(its, ps) });
-            });
-          }).catch(function (e) { fim({ estado: 'erro', msg: 'Não consegui conferir o pedido: ' + (e.message || e) + '.' }); });
-        }
-        // põe na cotação o que o pedido diz (as linhas ks do confronto): a quantidade e o
-        // preço do item diferente; o item fora da cotação entra no fim (o código nosso
-        // em Cód. Biomedical; o do comprador em Cód. comprador). Grava e reconfere
-        // com a mesma leitura (sem ler o PDF de novo)
-        function ajustar(ks) {
-          if (!lido || lido.estado !== 'ok' || ajustando || !ks.length) return;
-          var novos = its.map(function (it) { var x = Object.assign({}, it); delete x._cod; delete x._sf; return x; });
-          var extras = [], n = 0;
-          ks.forEach(function (k) {
-            var l = lido.cmp.linhas[k]; if (!l) return;
-            if (l.st === 'dif') { var i = its.indexOf(l.cot); if (i < 0) return; novos[i].quantidade = Number(l.ped.quantidade) || 0; novos[i].valorUnitario = Number(l.ped.valorUnitario) || 0; n++; }
-            else if (l.st === 'extra') extras.push(l.ped);
+        // os resultados no formato da ação (só os ganhos vão no PDF)
+        function resultados() {
+          return marcas.map(function (x, i) {
+            var it = its[i], o = { i: i, codigo: it.codigo || '', descricao: it.descricao || '', resultado: x.r };
+            if (x.r === 'perdido' && x.m) o.motivo = x.m;
+            return o;
           });
-          ajustando = true; pintarItens(); checar();
-          var cods = extras.map(function (p) { return p.codigo; }).filter(Boolean);
-          (cods.length ? C.produtosSf(cods).catch(function () { return {}; }) : Promise.resolve({})).then(function (sf) {
-            extras.forEach(function (p) {
-              var nosso = p.codigo && (sf[C.normCod(p.codigo)] || (C.produtoDoCodigo(p.codigo) && C.produtoDoCodigo(p.codigo).nome));
-              novos.push({ codigo: nosso ? C.normCod(p.codigo) : '', codigoCliente: nosso ? (p.codigoPedido || '') : (p.codigo || p.codigoPedido || ''), descricao: p.descricao || '', marca: '', registro: '', unidade: '',
-                quantidade: Number(p.quantidade) || 0, valorUnitario: Number(p.valorUnitario) || 0 });
-              n++;
-            });
-            return C.api('cot-casos', { acao: 'itens', numero: c.numero, itens: novos });
-          }).then(function (j) {
-            ajustando = false;
-            if (j && j.caso) { mesclar(j.caso); if (S.caso && S.caso.numero === c.numero) S.caso = j.caso; c = j.caso; }
-            its = (c.itens || []);
-            marcas = its.map(function (it, i) { return { r: it.resultado || '', m: (marcas[i] && marcas[i].m) || it.motivo || '' }; });
-            lido.cmp = C.comparar(its, lido.prods);
-            pintarItens(); checar(); renderCaso();
-            C.toast('Oportunidade ajustada pelo pedido', n + (n === 1 ? ' item ajustado' : ' itens ajustados') + ' — o histórico registra a mudança', 'ok');
-          }).catch(function (e) {
-            ajustando = false; pintarItens(); checar();
-            C.toast('Não consegui ajustar a oportunidade', e.message, 'erro');
-          });
-        }
-        // as marcas que o confronto dá: igual = ganho; não veio no pedido = perdido
-        function marcasPdf() {
-          var m = its.map(function (x, i) { return { r: '', m: marcas[i].m }; });
-          if (lido && lido.estado === 'ok') lido.cmp.linhas.forEach(function (l) {
-            var i = its.indexOf(l.cot); if (i < 0) return;
-            if (l.st === 'ok') { m[i].r = 'ganho'; m[i].m = ''; } else if (l.st === 'fora') m[i].r = 'perdido';
-          });
-          return m;
-        }
-        function linhasConfronto() {
-          var linha = function (cls, d, s, r) { return '<tr class="' + cls + '"><td class="d"><b>' + esc(d) + '</b>' + (s ? '<small>' + s + '</small>' : '') + '</td><td class="r">' + r + '</td></tr>'; };
-          var qp = function (x) { return C.qtd(x.quantidade) + ' × ' + (x.valorUnitario ? C.brl(x.valorUnitario) : 'sem preço'); };
-          var nome = function (x, i) { return (x && (x.descricao || x.codigo)) || 'Item ' + (i + 1); };
-          if (!arq) return linha('', 'Escolha o PDF do pedido', 'cada item dele é conferido com a oportunidade: o mesmo item, o mesmo preço e a mesma quantidade', '');
-          if (!lido || lido.estado === 'lendo') return linha('', 'Lendo o pedido…', 'e conferindo item a item com a oportunidade', '<span class="cs-spin"></span>');
-          if (lido.estado === 'erro') return linha('div', 'Não deu para conferir', esc(lido.msg), '<span class="cot-res-chip perdido">' + IC.alert + 'PDF</span>');
-          var mots = ((S.cfg && S.cfg.motivosPerda) || []).slice();
-          return lido.cmp.linhas.map(function (l, k) {
-            var i = l.cot ? its.indexOf(l.cot) : -1;
-            if (l.st === 'ok') return linha('', nome(l.cot, i), esc(qp(l.cot)) + ' · igual no pedido', '<span class="cot-res-chip ganho">' + IC.check + 'Ganho</span>');
-            if (l.st === 'fora') {
-              var x = marcas[i] || { m: '' }, lm = mots.slice(); if (x.m && lm.indexOf(x.m) < 0) lm.unshift(x.m);
-              return linha('', nome(l.cot, i), esc(qp(l.cot)) + ' · não veio no pedido', '<span class="cot-res-chip perdido">' + IC.x + 'Perdido</span>' +
-                '<select class="cot-res-mot" data-dlg-mot="' + i + '" aria-label="Motivo da perda do item ' + (i + 1) + '"><option value="">Motivo (opcional)…</option>' +
-                lm.map(function (m) { return '<option' + (m === x.m ? ' selected' : '') + '>' + esc(m) + '</option>'; }).join('') + '</select>');
-            }
-            // 22/10/2026 (pedido do usuário): "Ajustar" põe o item do pedido na cotação
-            var bt = function (tit) { return '<button type="button" class="cs-btn cs-btn-xs cot-ajustar" data-ajustar="' + k + '" title="' + esc(tit) + '"' + (ajustando ? ' disabled' : '') + '>' + IC.edit + 'Ajustar</button>'; };
-            if (l.st === 'extra') return linha('div', nome(l.ped, k), 'no pedido: ' + esc(qp(l.ped)) + (l.ped.codigo ? ' · cód. ' + esc(l.ped.codigo) : '') + ' · <b>não está na oportunidade</b>', bt('Incluir este item na oportunidade, como veio no pedido'));
-            var o = [!l.mesmaQtd ? 'quantidade' : '', !l.mesmoPreco ? 'preço' : ''].filter(Boolean).join(' e ');
-            return linha('div', nome(l.cot, i), 'cotado ' + esc(qp(l.cot)) + ' · no pedido ' + esc(qp(l.ped)) + ' · <b>' + esc(o) + ' diferente</b>', bt('Deixar a ' + o + ' da oportunidade igual à do pedido'));
-          }).join('');
         }
         // 21/10/2026 (pedido do usuário: "a pessoa pode errar o número"): as
         // Ordens de Venda do cliente no Dynamics, para escolher com um clique
@@ -1309,7 +1255,6 @@
         }
         function pintarItens() {
           var tb = $('dlg-itens'); if (!tb) return;
-          if (modo === 'pdf') { tb.innerHTML = linhasConfronto(); return; }
           var mots = ((S.cfg && S.cfg.motivosPerda) || []).slice();
           tb.innerHTML = its.map(function (it, i) {
             var x = marcas[i];
@@ -1323,31 +1268,37 @@
           }).join('');
         }
         function falta() {
-          if (modo === 'pdf') {
-            if (!arq) return 'Escolha o PDF do pedido.';
-            if (!lido || lido.estado === 'lendo') return 'Lendo o pedido e conferindo com a oportunidade…';
-            if (lido.estado === 'erro') return lido.msg;
-            var nd = lido.cmp.dif + lido.cmp.extra;
-            if (nd) return 'O pedido não bate com a oportunidade em ' + (nd > 1 ? nd + ' itens' : '1 item') + ' — ajuste os itens da oportunidade (ou confira o PDF) antes de virar pedido.';
-            if (!lido.cmp.ok) return 'Nenhum item do pedido está na oportunidade — confira se o PDF é o pedido desta oportunidade.';
-            return '';
-          }
           var sem = marcas.filter(function (x) { return !x.r; }).length;
           if (modo === 'ov' && !C.numeroOv(ovTxt)) return ovTxt ? 'Número da Ordem de Venda inválido — OV e os números (ou só os números).' : 'Informe o número da Ordem de Venda.';
+          if (modo === 'proposta') {
+            var pag = String(co.pagamento || '').trim();
+            if (!its.length) return 'A oportunidade não tem itens — inclua os itens antes de virar pedido.';
+            if (!pag) return 'Informe a condição de pagamento em Condições ofertadas — ela vai para o PI.';
+            if (C.COND_PAGAMENTO.length && !C.naListaPag(pag)) return 'A condição de pagamento "' + pag + '" não está na lista do PI · Pedido — escolha uma da lista em Condições ofertadas.';
+          }
           if (sem) return 'Marque cada item como Ganho ou Perdido — falta' + (sem > 1 ? 'm ' + sem + ' itens' : ' 1 item') + '.';
           if (its.length && !marcas.some(function (x) { return x.r === 'ganho'; })) return 'Nenhum item ganho — se nada foi ganho, a oportunidade é Perdida.';
           return '';
         }
         function checar() {
-          var f = falta(), g = 0, vg = 0, ms = modo === 'pdf' ? marcasPdf() : marcas;
-          its.forEach(function (it, i) { if (ms[i].r === 'ganho') { g++; vg += (Number(it.quantidade) || 0) * (Number(it.valorUnitario) || 0); } });
+          var f = falta(), g = 0, vg = 0;
+          its.forEach(function (it, i) { if (marcas[i].r === 'ganho') { g++; vg += (Number(it.quantidade) || 0) * (Number(it.valorUnitario) || 0); } });
           var el = $('dlg-falta');
-          var ajustar = modo === 'pdf' && lido && lido.estado === 'ok' && (lido.cmp.dif || lido.cmp.extra);
-          el.className = 'cot-dlg-falta' + (f ? '' : ' ok') + (modo === 'pdf' && lido && lido.estado === 'lendo' ? ' lendo' : '');
-          el.innerHTML = f ? IC.alert + '<span>' + esc(f) + '</span>' + (ajustar ? '<span class="cot-dlg-falta-bts"><button type="button" class="cs-btn cs-btn-xs cs-btn-p" id="dlg-ajustar"' + (ajustando ? ' disabled' : '') + '>' + IC.edit + (ajustando ? 'Ajustando…' : 'Ajustar todos pelo pedido') + '</button>' +
-              '<button type="button" class="cs-btn cs-btn-xs" id="dlg-editar" title="Fechar e editar os itens da oportunidade">Editar à mão</button></span>' : '')
-            : IC.checkc + esc(g + ' item(ns) ganho(s)' + (vg ? ' · ' + C.brl(vg) : '') + (its.length - g ? ' · ' + (its.length - g) + ' perdido(s)' : '') + (modo === 'pdf' ? ' — conferido com o PDF' : ''));
+          el.className = 'cot-dlg-falta' + (f ? '' : ' ok');
+          el.innerHTML = f ? IC.alert + '<span>' + esc(f) + '</span>'
+            : IC.checkc + esc(g + ' item(ns) ganho(s)' + (vg ? ' · ' + C.brl(vg) : '') + (its.length - g ? ' · ' + (its.length - g) + ' perdido(s)' : '') + (modo === 'proposta' ? ' — vão no PDF do pedido' : ''));
           $('dlg-ok').disabled = !!f;
+        }
+        // a prévia do PDF que vai como pedido (a proposta só com os ganhos)
+        function verPdf() {
+          if (!W.COTPROP || !W.COTPROP.pronto()) { C.toast('O gerador da proposta não carregou', 'Recarregue a página (F5).', 'erro'); return; }
+          var janela = W.open('', '_blank');
+          if (janela) { try { janela.document.title = 'Pedido ' + c.numero; janela.document.body.innerHTML = '<p style="font:15px system-ui;padding:40px;color:#0F2831">Gerando o PDF do pedido…</p>'; } catch (e) {} }
+          W.COTPROP.gerar(casoDoPedido(c, resultados()), operador(c)).then(function (pdf) {
+            var url = URL.createObjectURL(pdf.blob);
+            if (janela && !janela.closed) janela.location.href = url; else W.open(url, '_blank');
+            setTimeout(function () { URL.revokeObjectURL(url); }, 120000);
+          }).catch(function (e) { if (janela && !janela.closed) janela.close(); C.toast('Não consegui gerar o PDF', e.message, 'erro'); });
         }
         dlg.addEventListener('click', function (ev) {
           var m = ev.target.closest('[data-modo]');
@@ -1355,22 +1306,7 @@
           var r = ev.target.closest('[data-dlg-res]');
           if (r) { ev.preventDefault(); var i = Number(r.getAttribute('data-i')); marcas[i].r = r.getAttribute('data-dlg-res'); if (marcas[i].r !== 'perdido') marcas[i].m = ''; pintarItens(); checar(); return; }
           if (ev.target.closest('#dlg-todos-g')) { ev.preventDefault(); marcas.forEach(function (x) { x.r = 'ganho'; x.m = ''; }); pintarItens(); checar(); return; }
-          // 22/10/2026: "Ajustar" (a linha) e "Ajustar todos" põem o pedido na cotação
-          var aj = ev.target.closest('[data-ajustar]');
-          if (aj) { ev.preventDefault(); ajustar([Number(aj.getAttribute('data-ajustar'))]); return; }
-          if (ev.target.closest('#dlg-ajustar')) {
-            ev.preventDefault();
-            ajustar(lido && lido.estado === 'ok' ? lido.cmp.linhas.map(function (l, k) { return l.st === 'dif' || l.st === 'extra' ? k : -1; }).filter(function (k) { return k >= 0; }) : []);
-            return;
-          }
-          // ou fecha e abre a edição dos itens da cotação
-          if (ev.target.closest('#dlg-editar')) {
-            ev.preventDefault(); C.fecharDialogo();
-            var be = D.querySelector('#cot-caso [data-act="itens-editar"]');
-            if (be) { be.click(); var card = D.querySelector('#cot-caso .cot-itens'); if (card && card.scrollIntoView) card.scrollIntoView({ behavior: 'smooth', block: 'center' }); }
-            C.toast('Ajuste os itens da oportunidade', 'Deixe item, quantidade e preço iguais aos do pedido, salve e vire pedido de novo.', '');
-            return;
-          }
+          if (ev.target.closest('#dlg-ver-pdf')) { ev.preventDefault(); verPdf(); return; }
           var oe = ev.target.closest('[data-ov-esc]');
           if (oe) { ev.preventDefault(); ovEsc = oe.getAttribute('data-ov-esc'); if (ovListas[ovEsc] == null) carregarOvs(); else pintarOvs(); var fi = $('dlg-ov-filtro'); if (fi) fi.focus(); return; }
           var op = ev.target.closest('[data-ov-opc]');
@@ -1384,30 +1320,16 @@
         dlg.addEventListener('keydown', function (ev) { if (ev.key === 'Enter' && ev.target.tagName === 'INPUT') ev.preventDefault(); });
         dlg.addEventListener('change', function (ev) {
           var t = ev.target;
-          if (t.id === 'dlg-arq') { if (t.files && t.files[0]) { arq = t.files[0]; $('dlg-arq-nome').textContent = arq.name; lido = null; lerPdf(); pintarItens(); checar(); } return; }
           if (t.matches('[data-dlg-mot]')) marcas[Number(t.getAttribute('data-dlg-mot'))].m = t.value;
-        });
-        dlg.addEventListener('dragover', function (ev) { var d = ev.target.closest && ev.target.closest('#dlg-drop'); if (d) { ev.preventDefault(); d.classList.add('drag'); } });
-        dlg.addEventListener('dragleave', function (ev) { var d = ev.target.closest && ev.target.closest('#dlg-drop'); if (d) d.classList.remove('drag'); });
-        dlg.addEventListener('drop', function (ev) {
-          var d = ev.target.closest && ev.target.closest('#dlg-drop'); if (!d) return;
-          ev.preventDefault(); d.classList.remove('drag');
-          var f = ev.dataTransfer && ev.dataTransfer.files && ev.dataTransfer.files[0];
-          if (f) { arq = f; $('dlg-arq-nome').textContent = f.name; lido = null; lerPdf(); pintarItens(); checar(); }
         });
         $('dlg-ok').addEventListener('click', function (ev) {
           if (falta()) { ev.preventDefault(); checar(); return; }
-          if (modo === 'pdf') { C.fecharDialogo(); virarPedidoPdf(c, lido, oc.trim(), marcasPdf()); return; }
-          var resultados = marcas.map(function (x, i) {
-            var it = its[i], o = { i: i, codigo: it.codigo || '', descricao: it.descricao || '', resultado: x.r };
-            if (x.r === 'perdido' && x.m) o.motivo = x.m;
-            return o;
-          });
+          var res = resultados();
           C.fecharDialogo();
-          if (modo === 'manual') acao({ acao: 'pedido', numero: c.numero, manual: true, oc: oc.trim(), resultados: resultados }, 'Pedido registrado (à mão) — a oportunidade fecha como Ganha com a Ordem de Venda').catch(function () {});
-          else ovDireta(c, C.numeroOv(ovTxt), resultados, false);
+          if (modo === 'proposta') pedidoPelaProposta(c, oc.trim(), res);
+          else ovDireta(c, C.numeroOv(ovTxt), res, false);
         });
-        pintarModo(); pintarItens(); checar();
+        pintarModo();
       }, 'cot-dlg-largo');
   }
   // a OV de um pedido feito antes: a cotação vira pedido e fecha de uma vez
@@ -2374,14 +2296,21 @@
       if (act === 'assumir' || act === 'liberar') { acao({ acao: act, numero: c.numero }, act === 'assumir' ? 'Você assumiu a oportunidade' : 'Oportunidade devolvida para a fila').catch(function () {}); return; }
       if (act === 'atribuir') { dlgAtribuir(c); return; }
       if (act === 'virou-pedido') { dlgPedido(c); return; }
-      if (act === 'ped-manual') { dlgPedido(c, null, 'manual'); return; }
-      if (act === 'ped-ov') { dlgPedido(c, null, 'ov'); return; }
+      if (act === 'ped-proposta') { dlgPedido(c); return; }
+      if (act === 'ped-ov') { dlgPedido(c, 'ov'); return; }
+      if (act === 'ped-atualizar') { pedidoPelaProposta(c); return; }
       if (act === 'reabrir') { dlgReabrir(c); return; }
       if (act === 'amostra') { dlgAmostra(c); return; }
       if (act === 'descartar') { dlgDescartar(c); return; }
       if (act === 'restaurar') { acao({ acao: 'descartar', numero: c.numero, descartado: false }, 'Oportunidade restaurada').catch(function () {}); return; }
-      if (act === 'abrir-pi') { abrirPI(c); return; }
       if (act === 'ler-pedido') { lerPedido(c); return; }
+      // 25/11/2026: reenviar o devolvido — o pedido pela proposta sai com o PDF
+      // refeito (os dados que o vendedor ajustou); o antigo só volta para a fila
+      if (act === 'ped-reenviar') {
+        if (c.pedido && c.pedido.proposta) pedidoPelaProposta(c);
+        else acao({ acao: 'pi', numero: c.numero, estado: 'fila' }, 'Pedido reenviado para a fila do PI · Pedido').catch(function () {});
+        return;
+      }
       if (act === 'ov-fechar') { registrarOv(c, false); return; }
       if (act === 'ov-mais') { S.ovMais[c.numero] = true; renderCaso(); var oi = $('cot-ov-num'); if (oi) oi.focus(); return; }
       if (act === 'ov-mais-x') { S.ovMais[c.numero] = false; S.ovEnvio[c.numero] = {}; renderCaso(); return; }
@@ -2397,6 +2326,15 @@
       if (act === 'item-mais') { S.itensRascunho.push(novoItem()); renderCaso(); return; }
       if (act === 'itens-salvar') {
         var its = (S.itensRascunho || []).filter(function (x) { return x.descricao || x.codigo || x.codigoCliente; });
+        // 25/11/2026 (pedido do dono): quantidade e preço obrigatórios em cada item
+        var semQP = C.itensSemQtdPreco(S.itensRascunho);
+        if (semQP.length) {
+          renderCaso();
+          var it1 = S.itensRascunho[semQP[0]], inp1 = D.querySelector('#cot-caso tr[data-i="' + semQP[0] + '"] input[data-f="' + (C.semQtd(it1) ? 'quantidade' : 'valorUnitario') + '"]');
+          if (inp1) { inp1.scrollIntoView({ behavior: 'smooth', block: 'center' }); try { inp1.focus({ preventScroll: true }); } catch (e) { inp1.focus(); } }
+          C.toast(semQP.length + (semQP.length === 1 ? ' item sem' : ' itens sem') + ' quantidade ou preço', 'Os dois são obrigatórios em cada item — preencha as linhas em vermelho.', 'erro');
+          return;
+        }
         var salvar = function () { acao({ acao: 'itens', numero: c.numero, itens: its }, 'Itens salvos').then(function (j) { if (!j) return; S.editandoItens = false; S.itensRascunho = null; S.salvarSemConferir = false; renderCaso(); }).catch(function () {}); };
         // o Cód. Biomedical tem de ser um produto nosso (a mesma conferência do agente e do PI)
         b.disabled = true; b.innerHTML = '<span class="cs-spin"></span> Conferindo os códigos…';
@@ -2445,6 +2383,7 @@
         if (f === 'codigo' || f === 'quantidade') estoqueCasoDepois();
         if (f === 'quantidade' || f === 'valorUnitario') {
           var cel = app.querySelector('[data-tot="' + i + '"]'); if (cel) cel.textContent = it.quantidade && it.valorUnitario ? C.brl(it.quantidade * it.valorUnitario) : '—';
+          C.marcarQtdPreco(tr, it);
           var tt = $('cot-itens-total'); if (tt) tt.textContent = C.brl(totalDe(S.itensRascunho));
           var tj = $('cot-tot-ipi'); if (tj) tj.outerHTML = htmlTotIpi(S.itensRascunho, S.ipiEdicao || C.temIpi(S.itensRascunho));
         }
@@ -2461,7 +2400,6 @@
         if (t.checked) { var pi = D.querySelector('#cot-caso table.cot-itens input[data-f="ipi"]'); if (pi) pi.focus(); }
         return;
       }
-      if (t.id === 'cot-arq-ped' && c) { var fp = t.files && t.files[0]; t.value = ''; if (c.pedido) anexarPedido(c, fp); else if (fp) dlgPedido(c, fp); return; }
       if (t.id === 'cot-arq-outro' && c) { anexarOutro(c, t.files && t.files[0]); t.value = ''; return; }
       // os outros arquivos da proposta (22/10/2026)
       if (t.matches('#cot-prop-extras input[data-extras]') && c) {
@@ -2478,7 +2416,6 @@
       if (t.id === 'cot-nota' && ev.key === 'Enter' && (ev.ctrlKey || ev.metaKey) && S.caso) { ev.preventDefault(); enviarNota(S.caso); return; }
       if (t.id === 'cot-ov-num' && ev.key === 'Enter' && S.caso) { ev.preventDefault(); registrarOv(S.caso, false); return; }
       if (t.classList && t.classList.contains('cot-row') && (ev.key === 'Enter' || ev.key === ' ')) { ev.preventDefault(); abrirCaso(t.getAttribute('data-num')); return; }
-      if ((t.id === 'cot-drop-ped') && (ev.key === 'Enter' || ev.key === ' ')) { ev.preventDefault(); $('cot-arq-ped').click(); }
     });
     // atalhos J/K e Esc no caso
     D.addEventListener('keydown', function (ev) {
@@ -2487,14 +2424,15 @@
       if (ev.key === 'j' || ev.key === 'k') { var b = D.querySelector('[data-nav="' + (ev.key === 'j' ? 1 : -1) + '"]'); if (b && !b.disabled) b.click(); }
       if (ev.key === 'Escape') fecharCaso();
     });
-    // soltar o PDF do pedido / anexo no caso
-    app.addEventListener('dragover', function (ev) { var d = ev.target.closest && ev.target.closest('#cot-drop-ped, #cot-anexo-add'); if (d) { ev.preventDefault(); d.classList.add('drag'); } });
-    app.addEventListener('dragleave', function (ev) { var d = ev.target.closest && ev.target.closest('#cot-drop-ped, #cot-anexo-add'); if (d) d.classList.remove('drag'); });
+    // soltar um anexo no caso (25/11/2026: o PDF do pedido não se anexa mais —
+    // é a proposta gerada no "Virou pedido")
+    app.addEventListener('dragover', function (ev) { var d = ev.target.closest && ev.target.closest('#cot-anexo-add'); if (d) { ev.preventDefault(); d.classList.add('drag'); } });
+    app.addEventListener('dragleave', function (ev) { var d = ev.target.closest && ev.target.closest('#cot-anexo-add'); if (d) d.classList.remove('drag'); });
     app.addEventListener('drop', function (ev) {
-      var d = ev.target.closest && ev.target.closest('#cot-drop-ped, #cot-anexo-add'); if (!d || !S.caso) return;
+      var d = ev.target.closest && ev.target.closest('#cot-anexo-add'); if (!d || !S.caso) return;
       ev.preventDefault(); d.classList.remove('drag');
       var f = ev.dataTransfer && ev.dataTransfer.files && ev.dataTransfer.files[0];
-      if (d.id === 'cot-drop-ped') { if (S.caso.pedido) anexarPedido(S.caso, f); else if (f) dlgPedido(S.caso, f); } else anexarOutro(S.caso, f);
+      anexarOutro(S.caso, f);
     });
     // quadro: arrastar muda a fase
     var arrastando = '';
@@ -2592,7 +2530,11 @@
     if (qc) { S.histCod = qc; var hi = $('cot-hist-cod'); if (hi) hi.value = qc; irAba('historico', true); }
     var sel = $('cot-ordem'); if (sel) sel.value = S.ordem;
     var q = new URLSearchParams(location.search);
-    C.aguardarLogin().then(function () { return carregar(true); }).then(function () {
+    C.aguardarLogin().then(function () {
+      // 25/11/2026: a lista de transportadoras do PI (Dynamics), para a edição no caso
+      C.transportadoras().then(function (l) { S.transp = l; if (S.caso && !D.querySelector('#cot-caso .cs-edit select, #cot-caso .cs-edit input, #cot-caso .cs-edit textarea')) renderCaso(); });
+      return carregar(true);
+    }).then(function () {
       var num = q.get('caso');
       if (num) abrirCaso(num, true);
       ciclo();

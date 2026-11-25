@@ -303,8 +303,11 @@
       // ── os totais à direita; a condição, o prazo, o frete e a observação à esquerda
       var vTot = totalDe(itens) || c.total || 0, vIpi = comIpi ? ipiTotal(itens) : 0;
       var obs = String(co.observacao || '').trim();
-      fonte(9, COR.txt); var lObs = obs ? doc.splitTextToSize(obs, 288) : [];
-      var altura = Math.max(comIpi ? 62 : 48, 40 + lObs.length * 12) + 70;
+      // 25/11/2026 (pedido do dono): a Transportadora e a Observação na nota (as
+      // do PI · Pedido) também saem na proposta
+      var transp = String(co.transportadora || '').trim(), obsNota = String(co.obsNota || '').trim();
+      fonte(9, COR.txt); var lObs = obs ? doc.splitTextToSize(obs, 288) : [], lNota = obsNota ? doc.splitTextToSize(obsNota, 288) : [];
+      var altura = Math.max(comIpi ? 62 : 48, 40 + (transp ? 14 : 0) + lObs.length * 12 + (lNota.length ? 18 + lNota.length * 12 : 0)) + 70;
       if (y + altura > LIMITE_Y + 30) { doc.addPage(); y = TOPO_PAG - 10; }
       var xT = 351.7;
       var yT = y + 18.3;
@@ -317,7 +320,7 @@
       if (comIpi) { fonte(7.5, COR.rot); doc.text('com IPI', xT, yT + 22); }
       var yL = y + 32.5;
       function linhaEsq(rot, val) {
-        fonte(9, COR.txt); var w = doc.getTextWidth(rot + ' ');
+        fonte(9, COR.txt); var w = doc.getTextWidth(rot + ' ') + 2.5;   // 25/11/2026: o rótulo grudava no valor ("TransportadoraBRIX")
         doc.text(rot, X.esq, yL);
         var lv = doc.splitTextToSize(String(val || '—'), 288 - w);
         doc.text(lv, X.esq + w, yL, { lineHeightFactor: 12 / 9 });
@@ -326,18 +329,23 @@
       linhaEsq('Condição de Pagamento', String(co.pagamento || '').trim() || '—');
       linhaEsq('Prazo de entrega', String(co.entrega || '').trim() || '—');
       if (freteDe(co)) linhaEsq('Frete', freteDe(co));
-      if (lObs.length) {
+      if (transp) linhaEsq('Transportadora', transp);
+      // a observação e a observação na nota: quebra de página no meio do texto longo
+      function blocoEsq(rot, linhas) {
+        if (!linhas.length) return;
         yL += 4;
-        fonte(8.2, COR.rot); doc.text('OBSERVAÇÃO', X.esq, yL); yL += 14;
-        // quebra de página no meio da observação longa
-        while (lObs.length) {
+        if (yL + 26 > LIMITE_Y + 30) { doc.addPage(); yL = TOPO_PAG; }
+        fonte(8.2, COR.rot); doc.text(rot, X.esq, yL); yL += 14;
+        while (linhas.length) {
           var cabe = Math.max(1, Math.floor((LIMITE_Y + 30 - yL) / 12));
-          var parte = lObs.slice(0, cabe); lObs = lObs.slice(cabe);
+          var parte = linhas.slice(0, cabe); linhas = linhas.slice(cabe);
           fonte(9, COR.txt); doc.text(parte, X.esq, yL, { lineHeightFactor: 12 / 9 });
           yL += parte.length * 12;
-          if (lObs.length) { doc.addPage(); yL = TOPO_PAG; }
+          if (linhas.length) { doc.addPage(); yL = TOPO_PAG; }
         }
       }
+      blocoEsq('OBSERVAÇÃO', lObs);
+      blocoEsq('OBSERVAÇÃO NA NOTA', lNota);
 
       // ── o rodapé: a validade, a MSB e o site
       var yR = Math.max(yL, yT + 22) + 35;
@@ -372,6 +380,7 @@
       n + ' item(ns) · ' + (vIpi ? 'valor sem IPI ' + brl(vTot) + ' · IPI ' + brl(vIpi) + ' · valor total com IPI ' + brl(vTot + vIpi) : 'valor total ' + brl(vTot)),
       co.pagamento ? 'Condição de pagamento: ' + co.pagamento : '',
       freteDe(co) ? 'Frete: ' + freteDe(co) : '',
+      String(co.transportadora || '').trim() ? 'Transportadora: ' + String(co.transportadora).trim() : '',
       String(co.entrega || '').trim() ? 'Prazo de entrega: ' + String(co.entrega).trim() : '',
       // 29/10/2026 (pedido do usuário): era "Data de vencimento"
       dt.validade ? 'Data de validade da proposta: ' + diaBR(dt.validade) : ''

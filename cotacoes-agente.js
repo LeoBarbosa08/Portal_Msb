@@ -36,6 +36,7 @@
     // texto/leitura/lidos ficam vazios (sem PDF, nada é lido pela IA)
     texto: '', leitura: null, dados: null, lidos: {},
     dup: null, forcar: false, criado: null, criando: false,
+    transp: null,   // 25/11/2026: as transportadoras do PI ({ nomes, erro } — C.transportadoras)
     // o comprador: 'cnpj' | 'codigo' (o Dynamics preenche o cadastro) — sem o 'manual' (cliente novo) desde 25/11/2026
     modoCli: 'cnpj',
     // à mão (sem PDF): uma ordem nova, sem portal e sem nº da cotação — sempre, desde 25/11/2026
@@ -52,7 +53,7 @@
     return { portal: '', cotacaoId: '', empresa: 'MSB', area: (S.eu && S.eu.area) || '', unidade: unidadeUnica(),
       cliente: { nome: '', cnpj: '', codigo: '', cidade: '', uf: '', endereco: '', cep: '' }, contato: { nome: '', email: '', telefone: '' },
       datas: { cotacao: '', validade: '' }, validadeCalculada: 0, vencimentoOrigem: '',
-      condicoes: { pagamento: '', entrega: '', frete: '', validade: '', medico: '', observacao: '' },
+      condicoes: { pagamento: '', entrega: '', frete: '', validade: '', medico: '', observacao: '', transportadora: '', obsNota: '' },
       itens: [], totalPdf: 0, nota: '' };
   }
   // a unidade de negócio de quem registra, quando ela só tem uma (2+: escolhe)
@@ -192,7 +193,7 @@
     if (tr) {
       var inp = tr.querySelector('[data-f="valorUnitario"]'); if (inp) inp.value = it.valorUnitario.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 4 });
       var cel = tr.querySelector('[data-tot="' + i + '"]'); if (cel) cel.textContent = it.quantidade && it.valorUnitario ? C.brl(it.quantidade * it.valorUnitario) : '—';
-      tr.classList.toggle('qtd-falta', Number(it.valorUnitario) > 0 && !(Number(it.quantidade) > 0));
+      C.marcarQtdPreco(tr, it);
     }
     atualizarTotal();
   }
@@ -315,7 +316,7 @@
     var ni = !!opt.ni && naoInformado(v);
     var input;
     if (opt.lista) {
-      input = '<select data-k="' + k + '"><option value="">—</option>' + opt.lista.map(function (o) { return '<option' + (o === v ? ' selected' : '') + '>' + esc(o) + '</option>'; }).join('') + '</select>';
+      input = '<select data-k="' + k + '"><option value="">' + esc(opt.vazio || '—') + '</option>' + opt.lista.map(function (o) { return '<option' + (o === v ? ' selected' : '') + '>' + esc(o) + '</option>'; }).join('') + '</select>';
     } else if (opt.area) {
       input = '<textarea data-k="' + k + '" rows="' + (opt.linhas || 2) + '" placeholder="' + esc(opt.ph || '') + '">' + esc(v) + '</textarea>';
     } else {
@@ -376,14 +377,11 @@
     var s = cep.closest('.cs-campo').querySelector('.cot-aviso-campo');
     if (s) s.textContent = C.avisoCepUf(S.dados.cliente.cep, S.dados.cliente.uf);
   }
-  // os itens: com preço, a quantidade tem de ser > 0
-  function itensSemQtd() {
-    return ((S.dados && S.dados.itens) || []).map(function (it, i) { return Number(it.valorUnitario) > 0 && !(Number(it.quantidade) > 0) ? i : -1; }).filter(function (i) { return i >= 0; });
-  }
+  // os itens: quantidade E preço obrigatórios em cada item (25/11/2026, pedido do dono)
   function pintarQtd() {
-    var sem = itensSemQtd();
-    D.querySelectorAll('#cot-itens tr[data-i]').forEach(function (tr) { tr.classList.toggle('qtd-falta', sem.indexOf(Number(tr.getAttribute('data-i'))) >= 0); });
-    return sem;
+    var its = (S.dados && S.dados.itens) || [];
+    D.querySelectorAll('#cot-itens tr[data-i]').forEach(function (tr) { C.marcarQtdPreco(tr, its[Number(tr.getAttribute('data-i'))]); });
+    return C.itensSemQtdPreco(its);
   }
   // o que veio preenchido (IA, Dynamics, telefone guardado) já aparece conferido
   function marcarInvalidos() {
@@ -403,7 +401,8 @@
     if (!tem(dt.validade)) f.push(['Data de vencimento', el('datas.validade')]);
     var temId = String(cli.cnpj || '').replace(/\D/g, '').length >= 11 || tem(cli.codigo);
     if (!temId) f.push(['o CNPJ ou o código do cliente', el(S.modoCli === 'codigo' ? 'cliente.codigo' : 'cliente.cnpj')]);
-    if (!tem(co.pagamento)) f.push(['Condição de pagamento', el('condicoes.pagamento')]);
+    // 25/11/2026: da lista do PI (a antiga, digitada, não passa)
+    if (!tem(co.pagamento) || (C.COND_PAGAMENTO.length && !C.naListaPag(co.pagamento))) f.push(['Condição de pagamento (da lista do PI)', el('condicoes.pagamento')]);
     if (!tem(co.frete)) f.push(['Frete', el('condicoes.frete')]);
     if (!tem(co.entrega)) f.push(['Prazo de entrega', el('condicoes.entrega')]);
     var cotados = (d.itens || []).filter(function (it) { return (tem(it.descricao) || tem(it.codigo)) && Number(it.quantidade) > 0 && Number(it.valorUnitario) > 0; });
@@ -421,7 +420,11 @@
       if (e) ruins.push({ el: el, nome: lb ? lb.childNodes[0].textContent.trim() : '', erro: e });
     });
     var sem = pintarQtd();
-    if (sem.length) ruins.push({ el: D.querySelector('#cot-itens tr[data-i="' + sem[0] + '"] input[data-f="quantidade"]'), nome: '', erro: sem.length + ' item(ns) com preço e sem quantidade' });
+    if (sem.length) {
+      var it0 = S.dados.itens[sem[0]];
+      ruins.push({ el: D.querySelector('#cot-itens tr[data-i="' + sem[0] + '"] input[data-f="' + (C.semQtd(it0) ? 'quantidade' : 'valorUnitario') + '"]'), nome: '',
+        erro: sem.length + (sem.length === 1 ? ' item sem' : ' itens sem') + ' quantidade ou preço (os dois são obrigatórios)' });
+    }
     if (!ruins.length && !faltam.length) return true;
     msg((faltam.length ? '<b>Preencha antes de criar:</b> ' + faltam.map(function (x) { return esc(x[0]); }).join(' · ') + (ruins.length ? '<br>' : '') : '') +
       (ruins.length ? '<b>Corrija antes de criar:</b> ' + ruins.map(function (r) { return esc(r.nome ? r.nome + ': ' : '') + esc(r.erro); }).join(' · ') : ''), 'erro');
@@ -434,18 +437,20 @@
     ((S.leitura && S.leitura.avisos) || []).forEach(function (a) { if (a.item >= 0) avisoDe[a.item] = a.texto; });
     var linhas = d.itens.map(function (it, i) {
       var ruim = it._cod && (it._cod.st === 'nao' || (it._cod.st === 'vazio' && Number(it.valorUnitario) > 0));
-      var semQtd = Number(it.valorUnitario) > 0 && !(Number(it.quantidade) > 0);
-      var cls = [avisoDe[i] ? 'aviso' : '', ruim ? 'cod-nao' : '', it._cod && it._cod.st === 'ok' ? 'cod-ok' : '', semQtd ? 'qtd-falta' : '', C.acimaDasReferencias(it).length ? 'preco-acima' : ''].filter(Boolean).join(' ');
+      // 25/11/2026: quantidade e preço obrigatórios em cada item
+      var cls = [avisoDe[i] ? 'aviso' : '', ruim ? 'cod-nao' : '', it._cod && it._cod.st === 'ok' ? 'cod-ok' : '', C.semQtd(it) ? 'qtd-falta' : '', C.semPreco(it) ? 'vu-falta' : '', C.acimaDasReferencias(it).length ? 'preco-acima' : ''].filter(Boolean).join(' ');
       return '<tr' + (cls ? ' class="' + cls + '"' : '') + (avisoDe[i] ? ' title="' + esc(avisoDe[i]) + '"' : '') + ' data-i="' + i + '">' +
+        // 25/11/2026 (pedido do dono: "preço e qtd são obrigatórios"): a Qtd e o Preço logo depois
+        // da descrição — com a prévia da proposta ao lado a tabela rola, e eles ficavam escondidos
         '<td class="cod"><input data-f="codigo" value="' + esc(it.codigo) + '" placeholder="Código" autocomplete="off"><span class="cod-st-box">' + C.statusCodigo(it) + '</span></td>' +
-        '<td class="codc"><input data-f="codigoCliente" value="' + esc(it.codigoCliente) + '" placeholder="Comprador"></td>' +
-        '<td><input data-f="descricao" value="' + esc(it.descricao) + '" placeholder="Descrição do produto"><span class="cot-sf-box">' + C.dicaSf(it) + '</span></td>' +
-        '<td class="marca"><input data-f="marca" value="' + esc(it.marca) + '" placeholder="Fabricante"></td>' +
-        '<td class="rms"><input data-f="registro" data-mask="digitos" value="' + esc(it.registro) + '" placeholder="ANVISA" inputmode="numeric" maxlength="15"></td>' +
+        '<td class="desc"><input data-f="descricao" value="' + esc(it.descricao) + '" placeholder="Descrição do produto"><span class="cot-sf-box">' + C.dicaSf(it) + '</span></td>' +
         '<td class="qtd n"><input data-f="quantidade" data-mask="num" inputmode="decimal" value="' + esc(it.quantidade ? C.qtd(it.quantidade) : '') + '"></td>' +
         '<td class="vu n"><input data-f="valorUnitario" data-mask="num" inputmode="decimal" value="' + esc(it.valorUnitario ? it.valorUnitario.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 4 }) : '') + '"></td>' +
         (comIpi ? '<td class="ipi n"><input data-f="ipi" data-mask="num" inputmode="decimal" value="' + esc(it.ipi ? String(it.ipi).replace('.', ',') : '') + '" placeholder="%" title="O IPI do item, em %"></td>' : '') +
         '<td class="vt tot" data-tot="' + i + '">' + (it.quantidade && it.valorUnitario ? C.brl(it.quantidade * it.valorUnitario) : '—') + '</td>' +
+        '<td class="codc"><input data-f="codigoCliente" value="' + esc(it.codigoCliente) + '" placeholder="Comprador"></td>' +
+        '<td class="marca"><input data-f="marca" value="' + esc(it.marca) + '" placeholder="Fabricante"></td>' +
+        '<td class="rms"><input data-f="registro" data-mask="digitos" value="' + esc(it.registro) + '" placeholder="ANVISA" inputmode="numeric" maxlength="15"></td>' +
         '<td class="x"><button type="button" class="cs-btn cs-btn-xs cs-btn-ghost" data-tirar="' + i + '" title="Tirar o item">' + IC.x + '</button></td></tr>' +
         // as referências de preço (a média e a tabela) e o alerta — 23/10/2026
         '<tr class="cot-ref-tr" data-ref-i="' + i + '"' + (it.codigo ? '' : ' hidden') + '><td colspan="' + nCol + '"><div class="cot-ref-box">' + C.refsPreco(it, i, codigoCli()) + '</div></td></tr>';
@@ -453,7 +458,7 @@
     var ruins = C.itensComCodigoRuim(d.itens).filter(function (it) { return it._cod && it._cod.st !== 'checando'; }).length;
     var topo = S.codErro ? '<div class="cot-cod-faixa erro">' + IC.alert + '<div><b>Não consegui conferir os códigos no BI</b>' + esc(S.codErro) + '</div><button type="button" class="cs-btn cs-btn-xs" id="cot-cod-reconferir">' + IC.refresh + 'Conferir de novo</button></div>'
       : ruins ? '<div class="cot-cod-faixa">' + IC.alert + '<div><b>' + ruins + ' item(ns) sem código do produto</b>O Código do produto tem de ser um produto nosso (o cadastro do BI do Comercial). Corrija as linhas em vermelho.</div></div>' : '';
-    return topo + '<div id="cot-ref-faixa"></div><div class="cot-itens-w"><table class="cot-itens"><thead><tr><th class="cod">Código do produto</th><th class="codc">Cód. comprador</th><th>Descrição</th><th class="marca">Fabricante</th><th class="rms">RMS</th><th class="qtd n">Qtd</th><th class="vu n" title="Embaixo de cada item: a média dos ' + C.MESES_FAT + ' meses de faturamento no cliente e a tabela de preço (Venda Direta e Venda Futura)">Preço unit.</th>' + (comIpi ? '<th class="ipi n" title="O IPI de cada item, em % — sai na proposta">IPI %</th>' : '') + '<th class="vt n">Total</th><th class="x"></th></tr></thead>' +
+    return topo + '<div id="cot-ref-faixa"></div><div class="cot-itens-w"><table class="cot-itens cot-itens-nova"><thead><tr><th class="cod">Código do produto</th><th class="desc">Descrição</th><th class="qtd n">Qtd<b class="cot-req" title="obrigatório">*</b></th><th class="vu n" title="Obrigatório. Embaixo de cada item: a média dos ' + C.MESES_FAT + ' meses de faturamento no cliente e a tabela de preço (Venda Direta e Venda Futura)">Preço unit.<b class="cot-req">*</b></th>' + (comIpi ? '<th class="ipi n" title="O IPI de cada item, em % — sai na proposta">IPI %</th>' : '') + '<th class="vt n">Total</th><th class="codc">Cód. comprador</th><th class="marca">Fabricante</th><th class="rms">RMS</th><th class="x"></th></tr></thead>' +
       '<tbody>' + (linhas || '<tr><td colspan="' + nCol + '" style="padding:16px;text-align:center;color:var(--cs-mut)">Nenhum item — adicione abaixo.</td></tr>') + '</tbody></table></div>' +
       '<div class="cot-itens-pe"><button type="button" class="cs-btn cs-btn-sm" id="cot-add-item">' + IC.plus + 'Item</button>' +
       '<span>' + d.itens.length + ' item(ns)' + (d.totalPdf ? ' · total no PDF ' + C.brl(d.totalPdf) : '') + '</span>' +
@@ -673,6 +678,14 @@
     w.outerHTML = htmlPortal();
     var el = foco && D.querySelector('#cot-portal-campo input, #cot-portal-campo select'); if (el) el.focus();
   }
+  // a TRANSPORTADORA (25/11/2026): a lista do PI (Dynamics) chega depois — o
+  // campo é refeito quando ela chega (repintarTransp)
+  function htmlTransp() {
+    var v = ((S.dados && S.dados.condicoes) || {}).transportadora || '', tr = S.transp;
+    var dica = !tr ? 'carregando a lista do Dynamics…' : tr.erro ? 'lista do Dynamics indisponível (' + esc(tr.erro) + ') · opcional' : 'a lista do PI · Pedido · opcional';
+    return campo('Transportadora', 'condicoes.transportadora', { cls: 's2', id: 'cot-transp-campo', lista: C.listaCom(tr ? tr.nomes : [], v), vazio: 'Não informar', dica: dica });
+  }
+  function repintarTransp() { var w = $('cot-transp-campo'); if (w) w.outerHTML = htmlTransp(); }
   function htmlConf() {
     var d = S.dados, cfg = S.cfg || {};
     return '<h3>Dados da oportunidade</h3>' +
@@ -701,11 +714,17 @@
           campo('E-mail do comprador', 'contato.email', { cls: 's4', mask: 'email', ph: 'nome@hospital.com.br', dica: 'é para ele que a proposta vai' }) +
         '</div></div>' +
         '<div class="cot-sec"><h5>' + IC.tag + 'Condições ofertadas</h5><div class="cot-grade">' +
-          campo('Condição de pagamento', 'condicoes.pagamento', { cls: 's4', req: true, dica: 'sai na proposta' }) +
+          // 25/11/2026 (pedido do dono): a condição de pagamento é a LISTA do PI ·
+          // Pedido (era campo aberto); a TRANSPORTADORA, a mesma lista do PI (o
+          // Dynamics, opcional); e a OBSERVAÇÃO NA NOTA. Tudo sai na proposta e vai
+          // para o PI pela fila de aprovação quando a oportunidade virar pedido
+          campo('Condição de pagamento', 'condicoes.pagamento', { cls: 's2', req: true, lista: C.listaCom(C.COND_PAGAMENTO, d.condicoes.pagamento), vazio: 'Escolha a condição…', dica: 'a lista do PI · Pedido · sai na proposta' }) +
+          htmlTransp() +
           // 22/10/2026: o frete e o prazo de entrega voltaram (saem na proposta)
           campo('Frete', 'condicoes.frete', { cls: 's1', req: true, lista: ['CIF', 'FOB'] }) +
           campo('Prazo de entrega', 'condicoes.entrega', { cls: 's3', req: true, ni: true, ph: 'ex.: 5 dias úteis após o pedido', max: 120 }) +
           campo('Observação', 'condicoes.observacao', { cls: 's4', area: true, linhas: 2, dica: 'sai no PDF da proposta' }) +
+          campo('Observação na nota', 'condicoes.obsNota', { cls: 's4', area: true, linhas: 2, ph: 'Opcional — deixe em branco se não houver observação na nota fiscal', dica: 'vai para o rodapé da nota fiscal (PI · Pedido) e sai no PDF da proposta' }) +
         '</div></div>' +
       '<div class="cot-sec cot-sec-larga"><h5>' + IC.list + 'Itens cotados' + (S.lidos.itens ? ' <span class="cs-chip" style="height:18px;font-size:10px;color:#5A3BC4">IA</span>' : '') + '</h5><div id="cot-itens">' + htmlItens() + '</div>' +
         // o estoque da venda (05/11/2026, RECORTE MSB): o mesmo do PI · Pedido da MSB
@@ -1110,7 +1129,7 @@
           var cel = corpo.querySelector('[data-tot="' + i + '"]');
           if (cel) cel.textContent = it.quantidade && it.valorUnitario ? C.brl(it.quantidade * it.valorUnitario) : '—';
           atualizarTotal();
-          tr.classList.toggle('qtd-falta', Number(it.valorUnitario) > 0 && !(Number(it.quantidade) > 0));
+          C.marcarQtdPreco(tr, it);
         }
         tr.classList.remove('aviso');
       }
@@ -1191,7 +1210,11 @@
     if (!$('cot-corpo')) return;
     ligar();
     render();
-    C.aguardarLogin().then(function () { return C.api('cot-casos'); }).then(function (j) {
+    C.aguardarLogin().then(function () {
+      // 25/11/2026: as transportadoras do PI (Dynamics) — não seguram a tela
+      C.transportadoras().then(function (l) { S.transp = l; repintarTransp(); });
+      return C.api('cot-casos');
+    }).then(function (j) {
       S.cfg = j.cfg || {}; S.eu = j.eu || null; S.configurado = j.configurado !== false;
       if (S.dados && !S.dados.area && S.eu && S.eu.area) S.dados.area = S.eu.area;
       if (S.dados && !S.dados.unidade) S.dados.unidade = unidadeUnica();

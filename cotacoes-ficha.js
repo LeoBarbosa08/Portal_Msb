@@ -480,6 +480,9 @@
       ['Pagamento', co.pagamento ? esc(co.pagamento) : vazio()],
       ['Entrega', co.entrega ? esc(co.entrega) : vazio()],
       co.frete ? ['Frete', esc(co.frete)] : null,
+      // 25/11/2026: a transportadora e a observação na nota (as do PI · Pedido)
+      co.transportadora ? ['Transportadora', esc(co.transportadora)] : null,
+      co.obsNota ? ['Obs. na nota', esc(co.obsNota)] : null,
       co.validade ? ['Validade (PDF)', esc(co.validade)] : null,
       ['Empresa', esc(c.empresa || 'MSB')],
       ['Unidade de negócio', c.unidade ? esc(c.unidade) : vazio('sem unidade')],

@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Fila de Pedidos · PI · MSB</title>
+  <link rel="stylesheet" href="../styles.css?v=15">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300..900&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../dash-v2.css?v=3">
+  <!-- Login BLOQUEANTE: a tela chama /api/cot-casos no boot e o token tem de
+       existir na primeira chamada. _portalAuthLoaded impede o nav-sidebar de
+       carregar um 2º auth.js. -->
+  <script src="https://unpkg.com/@azure/msal-browser@2.38.3/lib/msal-browser.min.js"></script>
+  <script src="../auth.js?v=8"></script>
+  <script>window._portalAuthLoaded = true;</script>
+  <link rel="stylesheet" href="../portal-v3.css?v=2">
+  <script src="../portal-motion.js?v=3" defer></script>
+  <script>try{if(localStorage.getItem('bm-tema')==='escuro')document.documentElement.setAttribute('data-tema','escuro')}catch(e){}</script>
+  <link rel="stylesheet" href="../portal-tema.css?v=1">
+  <script src="../portal-tema.js?v=1" defer></script>
+  <link rel="stylesheet" href="../portal-mobile.css?v=1" media="(max-width: 767.98px)">
+  <script src="../portal-mobile.js?v=1" defer></script>
+  <!-- a família visual do CRM (botões, chips, cartões, diálogo) -->
+  <link rel="stylesheet" href="../customer-service.css?v=4">
+  <link rel="stylesheet" href="../cotacoes.css?v=37">
+</head>
+<!-- ================================================================
+     PI · Fila de Pedidos (25/11/2026, pedido do dono)
+     "Quando virar pedido, isso vai para uma FILA DE APROVAÇÕES no PI PEDIDOS
+     para alguém dar andamento, em formato de lista, com tudo lá, o PDF etc."
+     O vendedor clica em Virou pedido no CRM (o PDF da proposta vira o PDF do
+     pedido) e a oportunidade fica "Aguardando pedido ser finalizado". Aqui o
+     time abre cada pedido (comprador, condições, transportadora, observação
+     na nota, itens, o PDF) e dá andamento no PI · Pedido — ou devolve ao
+     vendedor com o motivo. Script: pi-fila.js; dados: /api/cot-casos?fila=1.
+     ================================================================ -->
+<body class="dept cs-page cot-page pf-page">
+
+  <header class="site-header">
+    <div class="container">
+      <a href="../index.html" class="brand" aria-label="Portal MSB — página inicial">
+        <img class="brand-logo" src="/icons/logo-msb.png" alt="MSB · Medical System do Brasil" onerror="this.dataset.failed='true'">
+        <span class="brand-fallback">MSB</span>
+      </a>
+      <nav class="header-nav">
+        <a href="../index.html">Início</a>
+        <a href="../index.html#areas">Áreas</a>
+        <a href="../index.html#sistemas">Sistemas</a>
+        <a href="../index.html#avisos">Avisos</a>
+        <a href="../index.html#contato">Contato</a>
+      </nav>
+    </div>
+  </header>
+
+  <div class="area-body">
+    <div class="container">
+      <div class="area-grid">
+
+        <aside class="area-sidebar">
+          <div class="sb-card">
+            <div class="sb-head">
+              <span class="sb-ic"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg></span>
+              <div><div class="sb-tt">PI · Pedido</div><div class="sb-st">Fila de aprovação</div></div>
+            </div>
+            <nav>
+              <div class="sb-section">Navegação</div>
+              <a href="comercial.html">Área Comercial</a>
+              <a href="pedido-inteligente.html">PI · Pedido</a>
+              <a href="pi-fila.html" class="active">PI · Fila de Pedidos</a>
+              <a href="comercial-cot-casos.html">CRM · Oportunidades</a>
+            </nav>
+          </div>
+          <a href="comercial.html" class="sb-back"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></svg>Voltar ao Comercial</a>
+        </aside>
+
+        <div class="area-main">
+
+          <div class="fx-head">
+            <div>
+              <div class="fx-bc"><a href="comercial.html">Comercial</a><span>›</span><a href="pedido-inteligente.html">PI · Pedido</a><span>›</span><span>Fila de Pedidos</span></div>
+              <h1 class="fx-title" data-recente="PI · Fila de Pedidos">Fila de Pedidos</h1>
+            </div>
+            <div class="fx-head-right">
+              <span class="pf-atual" id="pf-atual">Carregando…</span>
+              <button type="button" class="cs-btn cs-btn-sm" id="pf-recarregar"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>Atualizar</button>
+              <div class="fx-tabs">
+                <a href="pedido-inteligente.html">Novo pedido</a>
+                <a href="pi-fila.html" class="active">Fila de aprovação</a>
+              </div>
+            </div>
+          </div>
+
+          <div class="cot-wrap cs-wrap pf-wrap" id="pf-app">
+            <p class="pf-intro">Os pedidos que o CRM mandou ao clicar em <b>Virou pedido</b>. Abra um pedido para ver tudo — comprador, condições, transportadora, observação na nota, itens e o PDF — e clique em <b>Dar andamento no PI</b>: o PI · Pedido abre com tudo preenchido para conferir e lançar no Dynamics. Falta alguma coisa? <b>Devolva ao vendedor</b> com o motivo.</p>
+            <div class="cs-kpis" id="pf-kpis"></div>
+            <div class="pf-barra">
+              <div class="tk-visoes" id="pf-visoes" role="group" aria-label="Situação do pedido"></div>
+              <label class="cs-busca"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg><input id="pf-busca" type="search" placeholder="Cliente, CNPJ, nº da oportunidade, OC, vendedor, produto…" autocomplete="off" aria-label="Buscar na fila"></label>
+            </div>
+            <div class="pf-lista" id="pf-lista" role="list" aria-label="Pedidos da fila"></div>
+          </div>
+
+        </div><!-- /area-main -->
+      </div><!-- /area-grid -->
+    </div><!-- /container -->
+  </div><!-- /area-body -->
+
+  <footer class="site-footer">
+    <div class="container">
+      <div class="bm-footer-bottom">
+        <span>© <span id="year"></span> MSB · Medical System do Brasil · Portal interno</span>
+        <span class="bm-footer-meta">Comercial · PI · Fila de Pedidos</span>
+      </div>
+    </div>
+  </footer>
+
+  <dialog class="cs-dlg" id="cs-dlg"></dialog>
+  <div class="cs-toasts" id="cs-toasts" aria-live="polite"></div>
+
+  <script src="../script.js?v=9"></script>
+  <script src="../nav-sidebar.js?v=91"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+  <script>
+    if (window.pdfjsLib) {
+      pdfjsLib.GlobalWorkerOptions.workerSrc =
+        'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+    }
+  </script>
+  <script src="../customer-service-pi.js?v=2"></script>
+  <script src="../pi-listas.js?v=1"></script>
+  <script src="../cotacoes-base.js?v=33"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <script src="../cotacoes-proposta.js?v=10"></script>
+  <script src="../pi-fila.js?v=1"></script>
+</body>
+</html>

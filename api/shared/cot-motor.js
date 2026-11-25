@@ -600,8 +600,11 @@ function dadosDe(d, cfg) {
     datas: { cotacao: cotacao, validade: venc },
     // a condição de pagamento fica COMO VEIO no PDF (sem resumir)
     // a validade (texto) passa a ser os DIAS entre a cotação e o vencimento
+    // 25/11/2026 (pedido do dono): a TRANSPORTADORA (a lista do PI, do Dynamics)
+    // e a OBSERVAÇÃO NA NOTA (o rodapé da nota fiscal) — saem na proposta e vão
+    // para o PI · Pedido pela fila de aprovação
     condicoes: { pagamento: txt(co.pagamento, 300), entrega: txt(co.entrega, 120), frete: txt(co.frete, 60), validade: dias != null ? textoDias(dias) : valTxt,
-      medico: txt(co.medico, 120), observacao: texto(co.observacao, 1500) },
+      medico: txt(co.medico, 120), observacao: texto(co.observacao, 1500), transportadora: txt(co.transportadora, 120), obsNota: texto(co.obsNota, 1000) },
     itens: itens,
     // sem preço nos itens (pedido de cotação ainda sem resposta), vale o total do PDF
     total: soma > 0 ? soma : num(d.total),
@@ -743,6 +746,89 @@ async function arquivo(numero, id, quem) {
   const bytes = await store.lerArquivo(a.caminho);
   if (!bytes) throw erro(404, 'O arquivo deste anexo não está mais no armazenamento.');
   return { nome: a.nome, tipo: a.mime, tamanho: bytes.length, base64: bytes.toString('base64') };
+}
+// ── a FILA DE APROVAÇÃO do PI · Pedido (25/11/2026, pedido do dono) ──
+// "A pessoa do CRM que fez a proposta e virou pedido não se preocupa em fazer
+// no PI: clica em VIRAR PEDIDO e a oportunidade fica Aguardando o pedido ser
+// finalizado." O pedido registrado entra numa fila no PI · Pedido, em lista,
+// com tudo (o comprador, as condições, a transportadora, a observação na
+// nota, os itens, o PDF do pedido e a proposta), para alguém dar andamento:
+// abrir no PI e lançar no Dynamics — ou devolver ao vendedor com o motivo.
+// A fila NÃO tem armazenamento próprio: é o recorte das cotações com o
+// pedido registrado (c.pedido), lido do índice, e cada uma lida inteira.
+//   aguardando  pedido registrado, ninguém pegou ainda (pi: disponivel|lido|erro)
+//   andamento   alguém abriu no PI (pi: em_andamento) e ainda não lançou
+//   devolvido   voltou para o vendedor, com o motivo (pi: devolvido)
+//   lancado     o PI lançou no Dynamics; falta a OV voltar do flow
+//   finalizado  fechou com a Ordem de Venda (Ganha)
+// Os lançados e finalizados ficam na fila por FILA_DIAS dias (a aba Lançados).
+const FILA_DIAS = 15, FILA_MAX = 150;
+const FILA_PENDENTES = ['aguardando', 'andamento', 'devolvido'];
+function msDe(iso) { const t = Date.parse(iso || ''); return isNaN(t) ? 0 : t; }
+function estadoFila(c) {
+  const pi = (c && c.pi) || {};
+  if ((c.ovs || []).length || faseAtual(c.fase) === 'pedido') return 'finalizado';
+  if (pi.estado === 'enviado') return 'lancado';
+  if (pi.estado === 'devolvido') return 'devolvido';
+  if (pi.estado === 'em_andamento') return 'andamento';
+  return 'aguardando';
+}
+function naFila(r) {
+  return !!(r && r.temPedido && !r.descartado && !r.amostra && faseAtual(r.fase) !== 'perdida');
+}
+function pessoaFila(p) { return p ? { nome: p.nome || p.email || '', email: p.email || '' } : null; }
+function itemDaFila(c) {
+  const ped = c.pedido || {}, pi = c.pi || {}, pv = ped.previa || null, co = c.condicoes || {}, cli = c.cliente || {}, ct = c.contato || {};
+  const ganhos = (c.itens || []).filter(function (it) { return it.resultado === 'ganho'; });
+  const base = pv && Array.isArray(pv.produtos) && pv.produtos.length ? pv.produtos : ganhos;
+  const itens = base.slice(0, 120).map(function (it) {
+    return { codigo: it.codigo || '', descricao: it.descricao || '', quantidade: num(it.quantidade), valorUnitario: num(it.valorUnitario) };
+  });
+  const enviado = pi.enviado || null, dev = pi.devolvido || null;
+  return {
+    numero: c.numero, estado: estadoFila(c), fase: faseDoCaso(c),
+    portal: c.portal || '', cotacaoId: c.cotacaoId || '', unidade: c.unidade || '',
+    cliente: { nome: cli.nome || '', cnpj: cli.cnpj || '', codigo: cli.codigo || '', cidade: cli.cidade || '', uf: cli.uf || '', endereco: cli.endereco || '', cep: cli.cep || '' },
+    contato: { nome: ct.nome || '', email: ct.email || '', telefone: ct.telefone || '' },
+    // o vendedor: o responsável da oportunidade (sem ele, quem registrou o pedido)
+    vendedor: pessoaFila(c.dono || ped.por || c.criadoPor),
+    totalCotado: r2(c.total), total: r2((pv && pv.total) || ped.total || somaGanhos(c)), nItens: itens.length, itens: itens,
+    pedido: { manual: !!ped.manual, anexoId: ped.anexoId || '', nome: ped.nome || '', oc: ped.oc || (pv && pv.oc) || '', em: ped.em || null, por: pessoaFila(ped.por), obs: ped.obs || '', lido: !!pv },
+    condicoes: { pagamento: co.pagamento || '', frete: co.frete || '', entrega: co.entrega || '', transportadora: co.transportadora || '', obsNota: co.obsNota || '', observacao: co.observacao || '' },
+    pi: {
+      estado: pi.estado || '', erro: pi.erro || '',
+      abertoPor: pessoaFila(pi.abertoPor), abertoEm: pi.abertoEm || null,
+      enviado: enviado ? { em: enviado.em || null, por: pessoaFila(enviado.por), oc: enviado.oc || '', total: num(enviado.total), itens: enviado.itens || 0 } : null,
+      devolvido: dev ? { em: dev.em || null, por: pessoaFila(dev.por), motivo: dev.motivo || '' } : null
+    },
+    ovs: (c.ovs || []).map(function (o) { return { numero: o.numero, em: o.em || null }; }),
+    proposta: c.proposta ? { anexoId: c.proposta.anexoId || '', nome: c.proposta.nome || '', em: c.proposta.em || null } : null,
+    anexos: (c.anexos || []).filter(function (a) { return !a.removido; }).map(function (a) { return { id: a.id, nome: a.nome, tipo: a.tipo || '', tamanho: a.tamanho || 0, em: a.em || null }; }),
+    atualizadoEm: c.atualizadoEm || null
+  };
+}
+// ?fila=1 — os pedidos da fila (os pendentes + os lançados/finalizados dos
+// últimos FILA_DIAS dias); ?fila=conta — só quantos esperam (o selo do PI)
+async function fila(quem, soContar) {
+  const ix = await listar();
+  const desde = Date.now() - FILA_DIAS * 86400e3;
+  const rs = (ix.casos || []).filter(function (r) { return naFila(r) && veCaso(quem, r); });
+  const pendente = function (r) { return r.pi !== 'enviado' && !(r.ovs || []).length && faseAtual(r.fase) !== 'pedido'; };
+  if (soContar) {
+    return { aguardando: rs.filter(function (r) { return pendente(r) && r.pi !== 'devolvido' && r.pi !== 'em_andamento'; }).length,
+      andamento: rs.filter(function (r) { return pendente(r) && r.pi === 'em_andamento'; }).length };
+  }
+  const escolhidos = rs.filter(function (r) { return pendente(r) || msDe(r.atualizadoEm) >= desde; }).slice(0, FILA_MAX);
+  const casos = await Promise.all(escolhidos.map(function (r) { return obterBruto(r.numero).catch(function () { return null; }); }));
+  const ordem = { aguardando: 0, andamento: 1, devolvido: 2, lancado: 3, finalizado: 4 };
+  const itens = casos.filter(function (c) { return c && c.pedido && !c.descartado && !c.amostra && veCaso(quem, c); }).map(itemDaFila);
+  itens.sort(function (a, b) {
+    if (ordem[a.estado] !== ordem[b.estado]) return ordem[a.estado] - ordem[b.estado];
+    // os pendentes por ordem de chegada (o mais antigo primeiro); os feitos, o mais novo primeiro
+    const ta = msDe(a.pedido.em), tb = msDe(b.pedido.em);
+    return FILA_PENDENTES.indexOf(a.estado) >= 0 ? ta - tb : msDe(b.atualizadoEm) - msDe(a.atualizadoEm);
+  });
+  return { fila: itens, dias: FILA_DIAS, atualizadoEm: agora() };
 }
 // a mesma cotação já virou caso? (o Agente pergunta antes de criar)
 async function duplicado(portal, cotacaoId, cfg, quem) {
@@ -1125,6 +1211,9 @@ function previaDe(p, eu) {
   return {
     cnpj: cnpjDe(p.cnpj), cliente: txt(p.cliente, 160), oc: txt(p.oc, 60), itens: Math.max(0, Math.round(Number(p.itens) || 0)),
     total: num(p.total), condicao: txt(p.condicao, 80), email: emailOk(p.email) ? txt(p.email, 200).toLowerCase() : '',
+    // 25/11/2026: o endereço de entrega e a observação do PDF — a fila do PI
+    // entrega a leitura pronta (sem ler o PDF de novo)
+    endereco: txt(p.endereco, 300), observacao: texto(p.observacao, 1000),
     produtos: (Array.isArray(p.produtos) ? p.produtos : []).slice(0, 120).map(function (x) {
       x = x || {};
       return { codigo: txt(x.codigo, 40), descricao: txt(x.descricao, 200), quantidade: num(x.quantidade), valorUnitario: num(x.valorUnitario) };
@@ -1133,12 +1222,38 @@ function previaDe(p, eu) {
   };
 }
 
+// o pedido pelo PDF da PROPOSTA (25/11/26): a leitura é o próprio caso — os
+// itens ganhos, o comprador e a condição de pagamento. O endereço e a
+// observação ficam vazios: o PI completa com os da cotação (a mesma ponte)
+function previaDaProposta(c, eu) {
+  const cli = c.cliente || {}, ct = c.contato || {}, co = c.condicoes || {};
+  const ganhos = (c.itens || []).filter(function (it) { return it.resultado === 'ganho'; });
+  return previaDe({
+    cnpj: cli.cnpj, cliente: cli.nome, oc: (c.pedido && c.pedido.oc) || '', itens: ganhos.length, total: somaGanhos(c),
+    condicao: co.pagamento, email: ct.email,
+    produtos: ganhos.map(function (it) { return { codigo: it.codigo || '', descricao: it.descricao || '', quantidade: it.quantidade, valorUnitario: it.valorUnitario }; })
+  }, eu);
+}
+
 // a cotação não muda mais de fase, de PDF do pedido nem é descartada:
 // o pedido já está no Dynamics (o PI lançou) ou ela já fechou com a OV
 function travada(c) {
   if (c.ovs && c.ovs.length) return 'Esta cotação já fechou com a Ordem de Venda ' + c.ovs.map(function (o) { return o.numero; }).join(', ');
   if (c.pi && c.pi.estado === 'enviado') return 'O pedido desta cotação já foi lançado no Dynamics pelo PI';
   return '';
+}
+
+// QUANTIDADE e PREÇO obrigatórios em cada item (25/11/26, pedido do dono:
+// "campo de preço e qtd é obrigatório") — na Nova oportunidade e na edição dos
+// itens. A cotação da Loja (novoDaLoja) chega sem preço e não passa por aqui.
+function exigirQtdPreco(itens) {
+  const ruins = [];
+  (itens || []).forEach(function (it, i) {
+    if (!(it.codigo || it.codigoCliente || it.descricao)) return;
+    const falta = [!(it.quantidade > 0) ? 'quantidade' : '', !(it.valorUnitario > 0) ? 'preço' : ''].filter(Boolean);
+    if (falta.length) ruins.push('item ' + (i + 1) + (it.codigo ? ' (' + it.codigo + ')' : '') + ' sem ' + falta.join(' e '));
+  });
+  if (ruins.length) throw erro(400, 'Quantidade e preço são obrigatórios em cada item: ' + ruins.slice(0, 5).join('; ') + (ruins.length > 5 ? ' e mais ' + (ruins.length - 5) : '') + '.');
 }
 
 // ── criar (o Agente de Cotações) ──────────────────────────────────
@@ -1151,6 +1266,7 @@ async function novo(b, quem) {
   if (inval.length) throw erro(400, 'Corrija antes de criar: ' + inval.join(', ') + (inval.length > 1 ? ' inválidos.' : ' inválido.'));
   const d = dadosDe(b.dados, cfg);
   if (!d.cliente.nome && !d.cotacaoId && !d.itens.length) throw erro(400, 'Informe ao menos o cliente, o número da cotação ou um item.');
+  exigirQtdPreco(d.itens);
   // a unidade de negócio de quem registra (RLS do Power BI): sem ela, não registra
   d.unidade = unidadeParaRegistrar(quem, d.unidade);
   // a área é a da equipe de segurança de quem registra (a tela só manda a
@@ -1490,10 +1606,12 @@ function aplicar(c, tipo, b, quem, cfg, ctx) {
       });
       if ((dt.cotacao != null || dt.validade != null) && (diasEntre(c.datas.cotacao, c.datas.validade) || 0) < 0) throw erro(400, 'A data de vencimento é antes da data da cotação.');
       const co = f.condicoes || {};
-      [['pagamento', 'Condição de pagamento', 300], ['entrega', 'Prazo de entrega', 120], ['frete', 'Frete', 60], ['validade', 'Validade (dias, do PDF)', 60], ['medico', 'Nome do médico', 120]].forEach(function (x) {
+      [['pagamento', 'Condição de pagamento', 300], ['entrega', 'Prazo de entrega', 120], ['frete', 'Frete', 60], ['validade', 'Validade (dias, do PDF)', 60], ['medico', 'Nome do médico', 120],
+        ['transportadora', 'Transportadora', 120]].forEach(function (x) {
         if (co[x[0]] != null) setar(x[1], c.condicoes[x[0]], txt(co[x[0]], x[2]), function (v) { c.condicoes[x[0]] = v; });
       });
       if (co.observacao != null) setar('Observação', c.condicoes.observacao, texto(co.observacao, 1500), function (v) { c.condicoes.observacao = v; });
+      if (co.obsNota != null) setar('Observação na nota', c.condicoes.obsNota, texto(co.obsNota, 1000), function (v) { c.condicoes.obsNota = v; });
       // mudou uma das datas: a validade em dias acompanha (vencimento −
       // data da cotação). Só os dias mudaram (API): o vencimento é recalculado
       if (dt.cotacao != null || dt.validade != null) {
@@ -1513,6 +1631,7 @@ function aplicar(c, tipo, b, quem, cfg, ctx) {
 
     case 'itens': {
       const itens = itensDe(b.itens);
+      exigirQtdPreco(itens);
       // o lote que já estava conferido no Dynamics segue conferido (mesmo produto e lote)
       itens.forEach(function (it) {
         if (!it.lote) return;
@@ -1589,13 +1708,20 @@ function aplicar(c, tipo, b, quem, cfg, ctx) {
       if (c.descartado) throw erro(409, 'Esta cotação foi descartada — restaure antes de registrar o pedido.');
       if (c.amostra) throw erro(409, AMOSTRA_SEM_PEDIDO);
       if (travada(c)) throw erro(409, travada(c) + '.');
-      const manual = !!b.manual, jaTinha = !!c.pedido;
+      // 25/11/26 (pedido do dono): "quando virar pedido, retire a opção manual —
+      // somente JÁ TENHO UMA OV e usar o PDF gerado da PROPOSTA, sem anexar; se
+      // vai virar pedido, todos os dados da cotação estão corretos". b.proposta:
+      // o PDF é a proposta que a tela gerou com os dados do caso (os itens
+      // ganhos) — sem confronto com outro PDF; a leitura do pedido (previa) sai
+      // dos itens ganhos e das condições do caso, pronta para o PI.
+      const proposta = !!b.proposta;
+      const manual = !!b.manual && !proposta, jaTinha = !!c.pedido;
       // 22/10/26: registrar o pedido pelo PDF exige a LEITURA dele (b.previa, os
       // itens do pedido) e o match com a cotação: divergência barra; o
       // resultado de cada item sai do confronto (só o motivo do perdido vem
       // da tela). Trocar o PDF do pedido já registrado não confronta.
       let res = Array.isArray(b.resultados) ? b.resultados : [], conferido = '';
-      if (!manual && !jaTinha) {
+      if (!manual && !jaTinha && !proposta) {
         const k = conferirPedidoPdf(c, b.previa, res);
         res = k.resultados;
         conferido = ' · conferido com a cotação: ' + k.cmp.ok + ' item(ns) igual(is), ganho(s)' + (k.cmp.fora ? ' · ' + k.cmp.fora + ' não veio(vieram) no pedido, perdido(s)' : '');
@@ -1608,7 +1734,7 @@ function aplicar(c, tipo, b, quem, cfg, ctx) {
         if (extDe(a.nome) !== 'pdf') throw erro(400, 'O pedido precisa ser o PDF que o portal gerou.');
         a.tipo = 'pedido';
       }
-      if (!manual && !a) throw erro(400, 'Anexe o PDF do pedido — ou registre o pedido à mão.');
+      if (!manual && !a) throw erro(400, proposta ? 'O PDF da proposta não chegou — tente de novo.' : 'Anexe o PDF do pedido — ou registre o pedido à mão.');
       if (!jaTinha && c.fase !== 'pedido') { const falta = faltaResultado(c); if (falta) throw erro(400, falta); }
       if (a && ctx.arquivo) c.anexos.push(a);
       const trocou = jaTinha;
@@ -1616,13 +1742,22 @@ function aplicar(c, tipo, b, quem, cfg, ctx) {
         ? { manual: true, anexoId: '', nome: '', oc: txt(b.oc, 60), data: dataDe(b.data), total: num(b.total) || somaGanhos(c), obs: texto(b.obs, 1000), em: agora(), por: eu, previa: null }
         : { anexoId: a.id, nome: a.nome, oc: txt(b.oc, 60), data: dataDe(b.data), total: num(b.total), obs: texto(b.obs, 1000), em: agora(), por: eu, previa: null };
       c.pi = { estado: 'disponivel' };
+      if (proposta) {
+        c.pedido.proposta = true;
+        c.pedido.total = somaGanhos(c);
+        c.pedido.previa = previaDaProposta(c, eu);
+        c.pi.estado = 'lido';
+      }
       // a leitura que já veio junto (o confronto): o PI recebe o pedido lido
-      if (!manual && b.previa && Array.isArray(b.previa.produtos) && b.previa.produtos.length) {
+      else if (!manual && b.previa && Array.isArray(b.previa.produtos) && b.previa.produtos.length) {
         c.pedido.previa = previaDe(b.previa, eu);
         if (!c.pedido.oc && c.pedido.previa.oc) c.pedido.oc = c.pedido.previa.oc;
         c.pi.estado = 'lido';
       }
-      hist(c, { por: eu, tipo: 'pedido', texto: (manual
+      hist(c, { por: eu, tipo: 'pedido', texto: (proposta
+        ? (trocou ? 'Atualizou o PDF do pedido (a proposta com os dados de agora): ' : 'Virou pedido pelo PDF da proposta: ') + a.nome + (c.pedido.oc ? ' · OC ' + c.pedido.oc : '') +
+          (c.pedido.total ? ' · ' + brl(c.pedido.total) : '') + ' · foi para a fila de aprovação do PI · Pedido'
+        : manual
         ? 'Pedido registrado à mão (sem o PDF)' + (c.pedido.oc ? ' · OC ' + c.pedido.oc : '') + (c.pedido.total ? ' · ' + brl(c.pedido.total) : '')
         : (trocou ? 'Trocou o PDF do pedido: ' : 'Pedido anexado: ') + a.nome + (c.pedido.oc ? ' · OC ' + c.pedido.oc : '') + conferido) +
         (!jaTinha && c.fase !== 'pedido' ? ' · a cotação fecha como Ganha com a Ordem de Venda' : '') });
@@ -1635,7 +1770,7 @@ function aplicar(c, tipo, b, quem, cfg, ctx) {
 
     case 'pi': {
       const est = String(b.estado || '');
-      if (['lido', 'em_andamento', 'enviado', 'erro', 'disponivel'].indexOf(est) < 0) throw erro(400, 'Estado do PI inválido.');
+      if (['lido', 'em_andamento', 'enviado', 'erro', 'disponivel', 'devolvido', 'fila'].indexOf(est) < 0) throw erro(400, 'Estado do PI inválido.');
       if (!c.pedido) throw erro(409, 'Esta cotação ainda não tem o PDF do pedido.');
       c.pi = c.pi || { estado: 'disponivel' };
       const antes = c.pi.estado;
@@ -1651,8 +1786,30 @@ function aplicar(c, tipo, b, quem, cfg, ctx) {
       if (est === 'em_andamento') {
         if (antes === 'enviado') return false;
         c.pi.estado = 'em_andamento'; c.pi.abertoPor = eu; c.pi.abertoEm = agora();
-        assumeSeSemDono();
-        hist(c, { por: eu, tipo: 'pi', texto: 'Aberto no PI · Pedido com o PDF ' + (c.pedido.nome || '') });
+        delete c.pi.devolvido;
+        // 25/11/2026: quem dá andamento é o time da fila do PI, não o vendedor —
+        // a oportunidade não muda de responsável
+        hist(c, { por: eu, tipo: 'pi', texto: 'Aberto no PI · Pedido' + (c.pedido.nome ? ' com o PDF ' + c.pedido.nome : c.pedido.manual ? ' (pedido à mão)' : '') });
+        break;
+      }
+      // a FILA DE APROVAÇÃO do PI (25/11/2026, pedido do dono): quem dá andamento
+      // pode DEVOLVER o pedido ao vendedor, com o motivo (falta um dado, a
+      // condição está errada…); o vendedor ajusta e REENVIA para a fila ('fila').
+      // 'fila' também solta o pedido que ficou "em andamento" e não foi lançado.
+      if (est === 'devolvido') {
+        if (antes === 'enviado') throw erro(409, 'Este pedido já foi lançado no Dynamics — não dá para devolver.');
+        if ((c.ovs || []).length) throw erro(409, travada(c) + '.');
+        const motivo = texto(b.motivo, 600);
+        if (!motivo) throw erro(400, 'Diga o motivo da devolução — o vendedor vê na oportunidade.');
+        c.pi = { estado: 'devolvido', devolvido: { em: agora(), por: eu, motivo: motivo } };
+        hist(c, { por: eu, tipo: 'pi', texto: 'Pedido devolvido ao vendedor pela fila do PI: ' + motivo });
+        break;
+      }
+      if (est === 'fila') {
+        if (antes === 'enviado' || (c.ovs || []).length) return false;
+        if (antes !== 'devolvido' && antes !== 'em_andamento') return false;
+        c.pi = { estado: c.pedido.previa ? 'lido' : 'disponivel' };
+        hist(c, { por: eu, tipo: 'pi', texto: antes === 'devolvido' ? 'Pedido reenviado para a fila do PI · Pedido' : 'Pedido voltou para a fila do PI · Pedido (não foi lançado)' });
         break;
       }
       if (est === 'enviado') {
@@ -1920,7 +2077,8 @@ async function agir(numero, b, quem) {
     if (tipo === 'proposta' && existe.amostra) throw erro(409, AMOSTRA_SEM_PROPOSTA);
     if (tipo === 'pedido' && travada(existe)) throw erro(409, travada(existe) + '.');
     // o PDF que não bate com a cotação não vira pedido: confere ANTES de guardar o PDF
-    if (tipo === 'pedido' && !existe.pedido) conferirPedidoPdf(existe, b.previa, b.resultados);
+    // (o PDF da PROPOSTA — 25/11/26 — é gerado da própria cotação: não confronta)
+    if (tipo === 'pedido' && !existe.pedido && !b.proposta) conferirPedidoPdf(existe, b.previa, b.resultados);
     const qual = tipo === 'pedido' ? 'pedido' : tipo === 'proposta' ? 'proposta' : (b.tipo === 'cotacao' ? 'cotacao' : 'outro');
     ctx.arquivo = await guardarArquivo(b.anexo, qual, quem);
   }
@@ -2135,7 +2293,8 @@ module.exports = {
   novoDaLoja, PORTAL_LOJA,
   motivosDaPerda, ovsDaCotacao, conferirLotes: lotesD365.conferir, listar, obter, arquivo, duplicado, novo, agir, criarAmostra, perderVencidas, completarResumos, familias, resumoDe, diagnostico, consultarErp, consultarErpCodigo,
   produtosSf: produtosSf.porCodigos,
+  fila, estadoFila, itemDaFila,
   // para os testes
-  dataDe, num, chaveDe, portalDe, dadosDe, validadeCalculada, diasEntre, venceu, equipeDosGrupos, confrontar, numeroOv: ovD365.numeroOv,
+  dataDe, num, chaveDe, portalDe, dadosDe, aplicar, validadeCalculada, diasEntre, venceu, equipeDosGrupos, confrontar, numeroOv: ovD365.numeroOv,
   _zerarCaches: function () { _completouEm = 0; _perdeuEm = 0; _vencidasVistas.clear(); _perfis.clear(); _familias.clear(); produtosSf._zerar(); lotesD365._zerar(); }
 };

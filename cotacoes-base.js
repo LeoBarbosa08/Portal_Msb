@@ -381,9 +381,22 @@
     var p = prazoDe(c, avisoDias);
     return p && !p.semData ? '<span class="cs-chip ' + p.cls + '" title="' + esc(p.txt) + '">' + IC.alarm + esc(p.curto) + '</span>' : '';
   }
+  // o estado do PI no caso inteiro ({estado}) ou no resumo da lista (o texto)
+  function estadoPi(c) { var p = c && c.pi; return p && typeof p === 'object' ? p.estado || '' : String(p || ''); }
   function chipPi(c) {
     // 22/10/2026: o pedido registrado (PDF ou à mão) deixa a cotação aberta até a OV
-    if (c.fase !== 'pedido') return (c.temPedido || c.pedido) && !c.descartado ? '<span class="cs-chip pi-aguarda-ov" title="O pedido está registrado — a oportunidade fecha como Ganha com a Ordem de Venda (do fluxo do PI ou informada no cartão)">' + IC.tag + 'Pedido · aguardando OV</span>' : '';
+    // 25/11/2026 (pedido do dono): o vendedor só clica em Virou pedido — o pedido
+    // vai para a FILA DE APROVAÇÃO do PI · Pedido e a oportunidade fica
+    // "Aguardando pedido ser finalizado" até a OV voltar e fechar como Ganha;
+    // devolvido pela fila: "Pedido devolvido" (o motivo está no cartão Pedido)
+    if (c.fase !== 'pedido') {
+      if (!(c.temPedido || c.pedido) || c.descartado) return '';
+      var est = estadoPi(c);
+      if (est === 'devolvido') return '<span class="cs-chip pi-devolvido" title="A fila do PI · Pedido devolveu o pedido — veja o motivo no cartão Pedido, ajuste e reenvie">' + IC.alert + 'Pedido devolvido</span>';
+      return '<span class="cs-chip pi-aguarda-ov" title="' + esc(est === 'enviado' ? 'Lançado no Dynamics pelo PI — a oportunidade fecha como Ganha quando a Ordem de Venda voltar'
+        : est === 'em_andamento' ? 'Em andamento na fila do PI · Pedido — a oportunidade fecha como Ganha com a Ordem de Venda'
+        : 'Na fila de aprovação do PI · Pedido — a oportunidade fecha como Ganha com a Ordem de Venda') + '">' + IC.tag + 'Aguardando pedido ser finalizado</span>';
+    }
     // fechou com a Ordem de Venda: o número dela (e quantas mais)
     var ovs = c.ovs || [];
     if (ovs.length) return '<span class="cs-chip pi-lancado" title="' + esc(ovs.join(', ')) + '">' + IC.checkc + esc(ovs[0]) + (ovs.length > 1 ? ' +' + (ovs.length - 1) : '') + '</span>';
@@ -1347,16 +1360,31 @@
     var g = norm(c.equipe);
     return /consultiva/.test(g) ? AREA_PI['venda consultiva'] : /recorrente/.test(g) ? AREA_PI['venda recorrente'] : /bio\.?\s?id/.test(g) ? AREA_PI['bio.id'] : '';
   }
-  function abrirNoPI(c, extracao) {
+  // a leitura do pedido que o caso guardou (pedido.previa) no formato do PI —
+  // a fila (25/11/2026) entrega pronta, sem pagar a IA de novo
+  function extracaoDaPrevia(c) {
+    var pv = c && c.pedido && c.pedido.previa;
+    if (!pv || !(pv.produtos || []).length) return null;
+    return { dados: {
+      cnpj: pv.cnpj || (c.cliente && c.cliente.cnpj) || '', nomeCliente: pv.cliente || (c.cliente && c.cliente.nome) || '', ordemDeCompra: pv.oc || c.pedido.oc || '',
+      enderecoEntrega: pv.endereco || '', email: pv.email || '', observacao: pv.observacao || '', condicaoPagamento: pv.condicao || '',
+      produtos: (pv.produtos || []).map(function (p) { return { codigo: p.codigo || '', descricao: p.descricao || '', quantidade: p.quantidade || 0, valorUnitario: p.valorUnitario || 0 }; })
+    }, avisos: [] };
+  }
+  // opts.fila (25/11/2026): quem abre é a FILA DE APROVAÇÃO do PI (pi-fila.html) —
+  // o PI volta para ela depois de lançar
+  function abrirNoPI(c, extracao, opts) {
+    opts = opts || {};
     if (!W.CSPI) { toast('A ponte com o PI não carregou', 'Recarregue a página.', 'erro'); return Promise.resolve(false); }
     if (!c.pedido) { toast('Sem o PDF do pedido', 'Anexe o pedido do portal primeiro.', 'erro'); return Promise.resolve(false); }
+    if (!extracao || !extracao.dados) extracao = extracaoDaPrevia(c);
     // o pedido à mão (21/10/2026): sem PDF — o PI chega com o comprador e os
     // itens GANHOS da cotação no lugar da leitura do PDF
     var manual = !!c.pedido.manual;
     // RECORTE MSB (05/11/2026, pedido do dono): o PI · Pedido abre NESTA aba —
     // sem guia nova; a oportunidade é marcada "aberta no PI" antes de sair
     toast('Abrindo o PI · Pedido', 'Preparando o pedido da oportunidade ' + c.numero + '…', '');
-    var destino = new URL('pedido-inteligente.html?cot=' + encodeURIComponent(c.numero), location.href).href;
+    var destino = new URL('pedido-inteligente.html?cot=' + encodeURIComponent(c.numero) + (opts.fila ? '&fila=1' : ''), location.href).href;
     return (manual ? Promise.resolve(null) : baixarAnexo(c.numero, c.pedido.anexoId)).then(function (arq) {
       var ganhos = (c.itens || []).filter(function (it) { return it.resultado === 'ganho'; });
       // 22/10/2026 (pedido do usuário: "no pedido à mão, aproveitar as informações
@@ -1368,7 +1396,7 @@
       var obs = ['Cotação ' + c.numero + (c.cotacaoId ? ' · ' + (c.portal || '') + ' nº ' + c.cotacaoId : ''), String(co.observacao || '').trim()].filter(Boolean).join(' · ');
       var lidaAMao = manual ? { dados: {
         cnpj: cli.cnpj || '', nomeCliente: cli.nome || '', ordemDeCompra: c.pedido.oc || '',
-        enderecoEntrega: endereco, email: (c.contato && c.contato.email) || '', observacao: obs, condicaoPagamento: co.pagamento || '',
+        enderecoEntrega: endereco, email: (c.contato && c.contato.email) || '', observacao: obs, condicaoPagamento: co.pagamento || '', observacaoNota: co.obsNota || '',
         produtos: ganhos.map(function (it) { return { codigo: it.codigo || '', descricao: it.descricao || '', quantidade: it.quantidade || 0, valorUnitario: it.valorUnitario || 0 }; })
       }, avisos: [] } : null;
       return W.CSPI.guardar({
@@ -1380,7 +1408,10 @@
         portal: c.portal || '', empresa: c.empresa || 'MSB', areaPI: areaPI(c),
         oc: (c.pedido && c.pedido.oc) || '',
         // o que a cotação sabe do pedido (o PI completa os campos vazios)
-        cotacao: { endereco: endereco, email: (c.contato && c.contato.email) || '', observacao: obs, pagamento: co.pagamento || '', frete: freteCifFob(co.frete) || co.frete || '', entrega: co.entrega || '' },
+        // 25/11/2026: a transportadora e a observação na nota do CRM (as listas do PI)
+        cotacao: { endereco: endereco, email: (c.contato && c.contato.email) || '', observacao: obs, pagamento: co.pagamento || '', frete: freteCifFob(co.frete) || co.frete || '', entrega: co.entrega || '',
+          transportadora: co.transportadora || '', obsNota: co.obsNota || '' },
+        fila: !!opts.fila,
         extracao: lidaAMao || (extracao && extracao.dados ? { dados: extracao.dados, avisos: extracao.avisos || [] } : null)
       });
     }).then(function () {
@@ -1392,6 +1423,40 @@
       toast('Não consegui preparar o pedido', e.message, 'erro');
       return false;
     });
+  }
+
+  /* ── QUANTIDADE e PREÇO obrigatórios em cada item (25/11/2026) ─────── */
+  // Pedido do dono: "campo de preço e qtd é obrigatório". Todo item com código,
+  // código do comprador ou descrição precisa de quantidade > 0 e preço > 0 —
+  // na Nova oportunidade e na edição dos itens (o servidor confere de novo).
+  function itemTemConteudo(it) { return !!(it && (String(it.codigo || '').trim() || String(it.codigoCliente || '').trim() || String(it.descricao || '').trim())); }
+  function semQtd(it) { return itemTemConteudo(it) && !(Number(it.quantidade) > 0); }
+  function semPreco(it) { return itemTemConteudo(it) && !(Number(it.valorUnitario) > 0); }
+  // os índices dos itens que faltam quantidade ou preço
+  function itensSemQtdPreco(itens) { return (itens || []).map(function (it, i) { return semQtd(it) || semPreco(it) ? i : -1; }).filter(function (i) { return i >= 0; }); }
+  function marcarQtdPreco(tr, it) { if (!tr) return; tr.classList.toggle('qtd-falta', semQtd(it)); tr.classList.toggle('vu-falta', semPreco(it)); }
+
+  /* ── as listas do PI · Pedido no CRM (25/11/2026, pedido do dono) ───── */
+  // "Levar a lista e as informações do PI PEDIDO para o CRM": a CONDIÇÃO DE
+  // PAGAMENTO deixa de ser campo aberto — é a lista do PI (pi-listas.js) — e
+  // a TRANSPORTADORA é a mesma lista do PI (a SalesCarrierEntity do Dynamics,
+  // /api/pedido-transportadoras — opcional). A condição antiga, digitada à
+  // mão, aparece na lista marcada "fora da lista do PI" até a pessoa trocar.
+  var COND_PAGAMENTO = (W.PILISTAS && W.PILISTAS.condPagamento) || [];
+  function naListaPag(v) { return !!v && COND_PAGAMENTO.indexOf(String(v)) >= 0; }
+  // a lista com o valor de agora na frente, quando não é dela (não some ao editar)
+  function listaCom(lista, v) { lista = lista || []; return v && lista.indexOf(v) < 0 ? [v].concat(lista) : lista.slice(); }
+  // { nomes: [...], erro: '' } — uma consulta por página (o servidor guarda 10 min)
+  var _transp = null;
+  function transportadoras() {
+    if (_transp) return _transp;
+    _transp = api('pedido-transportadoras').then(function (j) {
+      if (!j || !j.configured) return { nomes: [], erro: 'consulta ao Dynamics desligada' };
+      if (j.erro) return { nomes: [], erro: j.erro };
+      var nomes = (j.transportadoras || []).map(function (t) { return t && t.nome; }).filter(Boolean);
+      return { nomes: nomes, erro: nomes.length ? '' : 'nenhuma transportadora cadastrada na empresa ' + (j.empresa || '') };
+    }).catch(function (e) { _transp = null; return { nomes: [], erro: e.message || String(e) }; });
+    return _transp;
   }
 
   /* ── o ESTOQUE DA VENDA (05/11/2026, RECORTE MSB — pedido do dono) ── */
@@ -1539,6 +1604,8 @@
     produtosSf: produtosSf, descricaoSf: descricaoSf, sfMotivo: sfMotivo, completarDoSf: completarDoSf, dicaSf: dicaSf,
     codigosDoTexto: codigosDoTexto, codigosNossosNoTexto: codigosNossosNoTexto, casarPeloTexto: casarPeloTexto,
     estoqueDe: estoqueDe, htmlEstoque: htmlEstoque, pintarEstoque: pintarEstoque,
-    comparar: comparar, parecido: parecido, casarCodigos: casarCodigos, codigosDoPedido: codigosDoPedido, RESULTADOS: RESULTADOS, resultadoItem: resultadoItem, abrirNoPI: abrirNoPI
+    comparar: comparar, parecido: parecido, casarCodigos: casarCodigos, codigosDoPedido: codigosDoPedido, RESULTADOS: RESULTADOS, resultadoItem: resultadoItem, abrirNoPI: abrirNoPI,
+    itemTemConteudo: itemTemConteudo, semQtd: semQtd, semPreco: semPreco, itensSemQtdPreco: itensSemQtdPreco, marcarQtdPreco: marcarQtdPreco,
+    extracaoDaPrevia: extracaoDaPrevia, estadoPi: estadoPi, COND_PAGAMENTO: COND_PAGAMENTO, naListaPag: naListaPag, listaCom: listaCom, transportadoras: transportadoras
   };
 })();

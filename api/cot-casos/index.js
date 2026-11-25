@@ -27,6 +27,11 @@
 //                                                 fabricante, procedencia, rms, isento, ativo, nome } }, erro? }
 //                                                 (o produto no Salesforce pelo código Biomedical — o que
 //                                                 vai na PROPOSTA; shared/cot-produtos.js — 21/10/26)
+//   GET  /api/cot-casos?fila=1                 -> { ok, fila:[item], dias }  a FILA DE APROVAÇÃO do PI ·
+//                                                 Pedido (25/11/26): as cotações com o pedido registrado
+//                                                 (aguardando, em andamento, devolvidas) + as lançadas e
+//                                                 finalizadas dos últimos 15 dias — motor.fila / itemDaFila
+//   GET  /api/cot-casos?fila=conta             -> { ok, aguardando, andamento }  (o selo da aba no PI)
 //   GET  /api/cot-casos?duplicado=1&portal=…&cotacao=…
 //                                              -> { ok, caso: resumo | null }
 //   POST /api/cot-casos {acao:'novo', dados, anexo?, leitura?, fase?, nota?, forcar?}
@@ -40,7 +45,9 @@
 //             | removerAnexo{id} | pedido{anexo|anexoId|manual, oc,data,total,obs, resultados}
 //               (virar pedido exige TODO item marcado ganho|perdido, ao menos
 //               um ganho — resultados = as marcas, no formato de 'resultado' — 21/10/26)
-//             | pi{estado,previa,enviado,erro} | leitura{dados,leitura,sobrescrever}
+//             | pi{estado,previa,enviado,erro,motivo} | leitura{dados,leitura,sobrescrever}
+//               (25/11/26: estado 'devolvido' {motivo} — a fila do PI devolve ao vendedor;
+//               'fila' — o vendedor reenvia, ou o "em andamento" volta para a fila)
 //             | descartar{descartado,motivo} | erp (busca o CNPJ no Dynamics de novo)
 //             | ov{ov, obs?, forcar?, virarPedido?, resultados?}  (a cotação FECHA com a Ordem de Venda do
 //               Dynamics — conferida no F&O; OV que não existe, já está em outra
@@ -147,6 +154,11 @@ module.exports = async function (context, req) {
       // as Ordens de Venda do cliente da cotação no Dynamics (o "Já tenho a OV" — 21/10/26)
       if (q.ovsDe) {
         return H.ok(context, req, Object.assign({ ok: true }, await motor.ovsDaCotacao(String(q.ovsDe), quem, q.todas === '1' || q.todas === 'true')));
+      }
+      // a FILA DE APROVAÇÃO do PI · Pedido (25/11/2026): os pedidos registrados
+      // no CRM esperando alguém dar andamento (?fila=conta: só quantos)
+      if (q.fila) {
+        return H.ok(context, req, Object.assign({ ok: true, configurado: true, eu: eu }, await motor.fila(quem, q.fila === 'conta')));
       }
       if (q.duplicado) {
         return H.ok(context, req, { ok: true, caso: await motor.duplicado(String(q.portal || ''), String(q.cotacao || ''), quem.cfg, quem) });

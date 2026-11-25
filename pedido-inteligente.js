@@ -13,30 +13,10 @@
   'use strict';
 
   // ── Listas fixas (idênticas às do agente do Copilot Studio) ────
-  // RECORTE MSB (05/11/2026, pedido do dono): as condições de pagamento da
-  // MSB, na ordem da lista que ele mandou (linhas repetidas idênticas saíram;
-  // "4 Parcelas" e "4 parcelas" ficam as duas, como vieram). O texto vai
-  // como está em CondicaoPagamento para o flow.
-  var COND_PAGAMENTO = [
-    'CR 90/120 DIAS', 'CR A VISTA/30/60', '20/50/81/111 dias', '30/45/60/90',
-    '12 VEZES DE 15 EM 15 DIAS', 'ADIANTAMENTO DE FORNECEDOR', '28 DIAS', '30 DIAS', '45 DIAS',
-    '60 DIAS', '75 DIAS', '90 DIAS', 'CR 10 DIAS', 'CR 13 PARCELAS DE 15 EM 15 DIAS', 'CR 15 DIAS',
-    'CR 15/30', 'CR 15/30/45/60', 'CR 15/30/45/60/75/90', 'CR 15/30/45', 'CR 15/30/45/60/75',
-    'CR 15/30/45/60/75/90/105', 'CR 15/30/45/60/75/90/105/120/135',
-    'CR 15/30/45/60/75/90/105/120/135/150', 'CR 15/30/45/60/75/90/105/120/135/150/165/180/195/210',
-    'CR 15/75', 'CR 20 DIAS', 'CR 20 PC 15 EM 15 DIAS', 'CR 20/40', 'CR 23 PC DE 15 EM 15 DIAS',
-    'CR 25% ANTECIPADO 30/60/90 DIAS', 'CR 28 DIAS', '28/42', 'CR 28/56 DIAS', 'CR 28/35/42',
-    'CR 30 DIAS', 'CR 30% A VISTA 30/60 DIAS', 'CR 30/60/90/120', '30/45', 'CR 30/45/60/75',
-    'CR 30/45/60/75/90/105/120/135/150', 'CR 30/45/60', 'CR 30/45/60/75/90', 'CR 30/60 DIAS',
-    '30/60/90/120/150/180', 'CR 30/60/90/120/150', 'CR 34 VEZES DE 15 EM 15 DIAS', 'CR 35 DIAS',
-    'CR 40 DIAS', 'CR 40/60/90', 'CR 45/60', 'CR 45/60/75/90 DIAS', 'CR 45/60/90',
-    'CR 45/60/90/120', 'CR 45/90/120', 'CR 50% avista / 30 dias', 'CR 60 DIAS', 'CR 60/90/120/150',
-    'CR 60/90/120', 'CR 7 PARCELAS DE 15 EM 15 DIAS', 'CR 8 PC 15 E 15 DIAS', 'CR 90 DIAS',
-    'CR 90/120/150', 'CR À VISTA', 'CR A VISTA / 30 /60 / 90', 'CR A VISTA / 30 DIAS',
-    'CR A VISTA/30/60/90/120', 'CR A VISTA30,0%/30/60', 'CR AVISTA/60/90/120/150',
-    'CR15/30/45/60/75/90/105/120/135/150/165/180/195/210/225', 'CR 20/40/60',
-    'CR30/45/60/75/90/105/120', 'CR 30/60/90', 'CR 60/90', '4 Parcelas', '4 parcelas'
-  ];
+  // 25/11/2026: a lista mora no pi-listas.js (window.PILISTAS) — o CRM usa a
+  // mesma (pedido do dono). As condições de pagamento da MSB (05/11/2026).
+  var COND_PAGAMENTO = (window.PILISTAS && window.PILISTAS.condPagamento) || [];
+  if (!COND_PAGAMENTO.length) console.warn('[pedido] pi-listas.js não carregou — a lista de condições de pagamento ficou vazia');
   var FRETES       = ['CIF - COM VALOR', 'CIF - SEM VALOR', 'FOB - DESTINATARIO'];
   var COND_ENTREGA = ['PADRÃO', 'URGENTE'];
   var PORTAIS      = ['APOIO COTACOES', 'BIONEXO', 'GTPLAN', 'NAO INFORMADO', 'SINTESE',
@@ -582,8 +562,20 @@
         popularSelect('cab-transp', nomes, 'Não informar');
         sel.disabled = false;
         dicaTransp('');
+        aplicarTranspDaCotacao();   // 25/11/2026: a do CRM, se veio (a lista chegou depois)
       })
       .catch(function (e) { console.warn('[pedido] transportadoras:', e); falhou(e.message || String(e)); });
+  }
+
+  // 25/11/2026 (pedido do dono): a TRANSPORTADORA escolhida no CRM (a mesma
+  // lista) chega pela fila/cotação; a lista do Dynamics carrega sozinha, então
+  // ela é escolhida quando as duas estiverem prontas
+  var transpQuer = '';
+  function aplicarTranspDaCotacao() {
+    var sel = $('cab-transp');
+    if (!sel || !transpQuer || sel.disabled || sel.options.length < 2) return;
+    escolherOpcao('cab-transp', transpQuer);
+    dicaTransp(sel.value ? '' : 'Transportadora na oportunidade: <strong>' + esc(transpQuer) + '</strong> — não está na lista do Dynamics; escolha a correspondente.');
   }
 
   // RECORTE MSB (04/11/2026): campo obrigatório que faltou fica em vermelho
@@ -1456,16 +1448,19 @@
     try { e = await CSPI.ler(numero); } catch (err) { console.warn('[pedido] CSPI.ler:', err); }
     if (!e) {
       bannerCS('<div>' + (tipo === 'cot' ? 'Cotação' : 'Caso') + ' <strong>' + esc(numero) + '</strong> (' + O.modulo + '): não encontrei o PDF entregue (a entrega vale 24 h, neste navegador). ' +
-        'Volte ' + (tipo === 'cot' ? 'à cotação' : 'ao caso') + ' e clique em "Abrir no PI" de novo — ou anexe o PDF aqui.</div>', 'err');
+        (tipo === 'cot' ? 'Abra de novo pela <a href="pi-fila.html?caso=' + encodeURIComponent(numero) + '" style="color:inherit;font-weight:700">Fila de Pedidos</a> (Dar andamento no PI)' : 'Volte ao caso e clique em "Abrir no PI" de novo') + ' — ou anexe o PDF aqui.</div>', 'err');
       CS = { numero: numero, origemPI: tipo };
       return;
     }
     CS = e;
     CS.origemPI = tipo;
+    // 25/11/2026: veio da FILA DE APROVAÇÃO (pi-fila.html) — depois de lançar, volta para ela
+    if (q.get('fila') === '1') CS.fila = true;
     var c = e.contato || {};
-    bannerCS('<span style="font-size:18px;line-height:1.2">' + O.icone + '</span><div><strong>Pedido ' + O.rotulo + ' ' + esc(e.numero) + '</strong> · ' + O.modulo + '<br>' +
+    bannerCS('<span style="font-size:18px;line-height:1.2">' + O.icone + '</span><div><strong>Pedido ' + O.rotulo + ' ' + esc(e.numero) + '</strong> · ' + O.modulo + (CS.fila ? ' · <a href="pi-fila.html?caso=' + encodeURIComponent(e.numero) + '" style="color:inherit">da Fila de Pedidos</a>' : '') + '<br>' +
       esc(c.nome || c.email || (e.conta && e.conta.nome) || 'cliente') + (c.nome && c.email ? ' &lt;' + esc(c.email) + '&gt;' : '') + (e.assunto ? ' · ' + esc(e.assunto) : '') +
       '<br><span style="opacity:.8">' + (e.manual && !e.base64 ? 'Sem PDF — pedido registrado à mão na cotação: o comprador e os itens ganhos já vêm preenchidos'
+        : e.base64 && e.extracao && /^Pedido /.test(e.arquivo || '') ? 'PDF do pedido: a proposta da oportunidade (' + esc(e.arquivo) + ') · os itens ganhos, a condição de pagamento, a transportadora e a observação na nota já vêm do CRM'
         : 'Anexo: ' + esc(e.arquivo || '') + (e.extracao ? ' · já lido ' + (tipo === 'cot' ? 'na Gestão de Cotações' : 'no Customer Service') : '')) + '</span></div>', 'info');
     if (e.manual && !e.base64) {
       // 21/10/2026: o pedido à mão da cotação — como o "Preencher manualmente",
@@ -1519,8 +1514,19 @@
     var q = e.cotacao || {};
     var vazio = function (el) { return el && (!el.value || el.value === 'NAO INFORMADO'); };
     [['cab-endereco', q.endereco], ['cab-email', q.email], ['cab-obs', q.observacao]].forEach(function (x) { var el = $(x[0]); if (x[1] && vazio(el)) el.value = x[1]; });
+    // 25/11/2026 (pedido do dono): a condição do CRM é da LISTA do PI (o vendedor
+    // escolheu na mesma lista) — vale por cima; fora da lista (a antiga,
+    // digitada), fica de dica. A transportadora e a observação na nota também
     var cp = $('cab-condpag');
-    if (q.pagamento && cp && !cp.value) { escolherOpcao('cab-condpag', q.pagamento); if (!cp.value) dicaCondPag(q.pagamento); }
+    if (q.pagamento && cp) {
+      var antes = cp.value;
+      cp.value = '';
+      escolherOpcao('cab-condpag', q.pagamento);
+      if (cp.value) dicaCondPag(''); else { cp.value = antes; dicaCondPag(q.pagamento); }
+    }
+    if (q.transportadora) { transpQuer = q.transportadora; aplicarTranspDaCotacao(); }
+    var on = $('cab-obsnota');
+    if (q.obsNota && on && !String(on.value || '').trim()) on.value = q.obsNota;
     var fr = $('cab-frete');
     if (q.frete && fr && !fr.value) {
       if (/\bfob\b/i.test(q.frete)) escolherOpcao('cab-frete', 'FOB - DESTINATARIO');
@@ -1537,7 +1543,7 @@
   // Gestão de Cotações, se aberta, recarrega)
   function notificarCS() {
     if (!CS || !CS.numero) return;
-    var numero = CS.numero, cab = S.cab || {}, O = origemPI();
+    var numero = CS.numero, cab = S.cab || {}, O = origemPI(), daFila = !!CS.fila;
     var corpo = { acao: 'pi', numero: numero, estado: 'enviado', enviado: {
       oc: cab.ordemDeCompra && cab.ordemDeCompra !== 'NAO INFORMADO' ? cab.ordemDeCompra : '',
       cliente: cab.nomeCliente || S.cliente.nome || '', codigoCliente: cab.codCliente || S.cliente.codigo || '',
@@ -1548,8 +1554,9 @@
       .then(function () {
         if (window.CSPI) { CSPI.avisar({ tipo: 'pi-enviado', numero: numero }); CSPI.apagar(numero); }
         bannerCS('<span style="font-size:18px;line-height:1.2">✓</span><div><strong>' + (O === ORIGENS_PI.cot ? 'Cotação ' : 'Caso ') + esc(numero) + ' atualizad' + (O === ORIGENS_PI.cot ? 'a' : 'o') + '</strong> — ' +
-          (O === ORIGENS_PI.cot ? 'a Gestão de Cotações já mostra o pedido como lançado no Dynamics. ' : 'o Customer Service já mostra o pedido como enviado ao Dynamics. ') +
-          '<a href="' + O.volta + '?caso=' + encodeURIComponent(numero) + '" style="color:inherit;font-weight:700">' + (O === ORIGENS_PI.cot ? 'Voltar à cotação' : 'Voltar ao caso') + '</a></div>', 'ok');
+          (O === ORIGENS_PI.cot ? 'a oportunidade já mostra o pedido como lançado no Dynamics (fecha como Ganha quando a OV voltar). ' : 'o Customer Service já mostra o pedido como enviado ao Dynamics. ') +
+          (daFila ? '<a href="pi-fila.html" style="color:inherit;font-weight:700">Voltar à Fila de Pedidos</a> · ' : '') +
+          '<a href="' + O.volta + '?caso=' + encodeURIComponent(numero) + '" style="color:inherit;font-weight:700">' + (O === ORIGENS_PI.cot ? 'Ver a oportunidade' : 'Voltar ao caso') + '</a></div>', 'ok');
       })
       .catch(function (e) {
         console.warn('[pedido] ' + O.api + ':', e);
@@ -1557,6 +1564,23 @@
       });
     try { history.replaceState(null, '', location.pathname); } catch (e) {}   // "Registrar novo pedido" não reabre o caso
     CS = null;
+  }
+
+  // 25/11/2026 (pedido do dono): a FILA DE APROVAÇÃO (pi-fila.html) — os pedidos
+  // que o CRM mandou no "Virou pedido". O link no topo do PI mostra quantos
+  // esperam; sem acesso ao CRM (só Estoque), o link some.
+  function contarFila() {
+    var a = $('pi-fila-link'), n = $('pi-fila-n');
+    if (!a) return;
+    fetch('/api/cot-casos?fila=conta', { cache: 'no-store' })
+      .then(function (r) { if (r.status === 401 || r.status === 403) { a.hidden = true; return null; } return r.ok ? r.json() : null; })
+      .then(function (j) {
+        if (!j || !n) return;
+        var k = Number(j.aguardando) || 0;
+        n.textContent = k; n.hidden = !k;
+        a.title = k ? k + (k === 1 ? ' pedido esperando' : ' pedidos esperando') + (j.andamento ? ' · ' + j.andamento + ' em andamento' : '') : 'Nenhum pedido esperando';
+      })
+      .catch(function () {});
   }
 
   // ── Bootstrap ───────────────────────────────────────────────────
@@ -1571,6 +1595,7 @@
     popularSelect('cab-portal',    PORTAIS,        'Escolha o portal');
     popularSelect('cab-vendedor',  VENDEDORES,     'Escolha o vendedor');
     carregarTransportadoras();   // opcional; não segura a tela
+    contarFila();                // 25/11/2026: o selo da Fila de Pedidos no topo
     $('cab-caso').value = 'N/D';
     $('cab-obsnota').value = '';
     // RECORTE MSB: empresa e área fixas (aparecem, mas não se escolhe) e o

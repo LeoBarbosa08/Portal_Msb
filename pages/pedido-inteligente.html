@@ -74,6 +74,19 @@
     }
     .pi-head .pi-tt { font-family: var(--font-display); font-size: 15px; font-weight: 600; }
     .pi-head .pi-st { font-size: 12px; color: rgba(255,255,255,.7); margin-top: 2px; }
+    /* 25/11/2026: o link da Fila de Pedidos (os pedidos do CRM), com quantos esperam */
+    .pi-head .pi-fila-link {
+      margin-left: auto; display: inline-flex; align-items: center; gap: 8px; flex-shrink: 0;
+      padding: 7px 12px; border-radius: 999px; background: rgba(255,255,255,.12); border: 1px solid rgba(255,255,255,.25);
+      color: #fff; font-size: 12.5px; font-weight: 600; text-decoration: none;
+    }
+    .pi-head .pi-fila-link:hover { background: rgba(255,255,255,.2); }
+    .pi-head .pi-fila-link[hidden] { display: none; }
+    .pi-head .pi-fila-link .n {
+      min-width: 20px; height: 20px; padding: 0 6px; border-radius: 999px; background: #F59E0B; color: #1F1300;
+      display: inline-flex; align-items: center; justify-content: center; font-size: 11.5px; font-weight: 800;
+    }
+    .pi-head .pi-fila-link .n[hidden] { display: none; }
     .pi-steps {
       display: flex; gap: 6px; flex-wrap: wrap; padding: 14px 22px;
       border-bottom: 1px solid var(--border); background: #f8fafc;
@@ -355,6 +368,7 @@
             <nav>
               <div class="sb-section">Navegação</div>
               <a href="comercial.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="8.5" cy="7" r="4"/><path d="M20 8v6"/><path d="M23 11h-6"/></svg>Área Comercial</a>
+              <a href="pi-fila.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>Fila de Pedidos</a>
               <a href="pi-consignacao.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="2" width="20" height="8" rx="2"/><rect x="2" y="14" width="20" height="8" rx="2"/><line x1="6" y1="6" x2="6.01" y2="6"/><line x1="6" y1="18" x2="6.01" y2="18"/></svg>PI · Consignação</a>
               <a href="agente-pedidos.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>Versão Copilot (antiga)</a>
               <div class="sb-divider"></div>
@@ -383,6 +397,8 @@
                   <div class="pi-tt">Pedido Inteligente</div>
                   <div class="pi-st">Extração por IA · Validação no BI · Envio automático</div>
                 </div>
+                <!-- 25/11/2026: a FILA DE APROVAÇÃO — os pedidos que o CRM mandou no "Virou pedido" -->
+                <a class="pi-fila-link" id="pi-fila-link" href="pi-fila.html">Fila de Pedidos <span class="n" id="pi-fila-n" hidden></span><span aria-hidden="true">→</span></a>
               </div>
 
               <div class="pi-steps">
@@ -578,8 +594,8 @@
     </div>
   </footer>
 
-  <script src="../script.js?v=8"></script>
-  <script src="../nav-sidebar.js?v=88"></script>
+  <script src="../script.js?v=9"></script>
+  <script src="../nav-sidebar.js?v=91"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
   <script>
     if (window.pdfjsLib) {
@@ -590,6 +606,7 @@
   <script src="../voz-pbi.js?v=3"></script>
   <script src="../pi-pdf-texto.js?v=1"></script>
   <script src="../customer-service-pi.js?v=2"></script>
-  <script src="../pedido-inteligente.js?v=43"></script>
+  <script src="../pi-listas.js?v=1"></script>
+  <script src="../pedido-inteligente.js?v=44"></script>
 </body>
 </html>
