@@ -1012,6 +1012,10 @@
 
   function ligar() {
     var corpo = $('cot-corpo');
+    // 24/11/2026 (pedido do usuário): o autocomplete do Código do produto — os
+    // códigos do catálogo aparecem enquanto digita (COT.autocompletarCodigos),
+    // o mesmo do Portal Biomedical
+    C.autocompletarCodigos(corpo);
     corpo.addEventListener('change', function (ev) {
       var t = ev.target;
       if (t.id === 'cot-forcar') { S.forcar = t.checked; msg(''); return; }
@@ -1149,7 +1153,7 @@
         return;
       }
       if (t.id === 'cot-voltar') {
-        C.dialogo('<h3>Recomeçar?</h3><p>O que foi lido e editado aqui se perde (nada foi gravado ainda).</p><div class="cs-dlg-pe"><button class="cs-btn" value="x">Continuar aqui</button><button class="cs-btn cs-btn-p" value="ok" id="dlg-ok">Recomeçar</button></div>',
+        C.dialogo('<h3>Recomeçar?</h3><p>O que foi preenchido aqui se perde (nada foi gravado ainda).</p><div class="cs-dlg-pe"><button class="cs-btn" value="x">Continuar aqui</button><button class="cs-btn cs-btn-p" value="ok" id="dlg-ok">Recomeçar</button></div>',
           function () { $('dlg-ok').addEventListener('click', function () { C.fecharDialogo(); recomecar(); }); });
         return;
       }
@@ -1159,7 +1163,9 @@
       if (t.id === 'cot-add-item') {
         S.dados.itens.push({ codigo: '', codigoCliente: '', descricao: '', marca: '', registro: '', unidade: '', quantidade: 0, valorUnitario: 0 });
         $('cot-itens').innerHTML = htmlItens();
-        var ins = $('cot-itens').querySelectorAll('tbody tr[data-i] input[data-f="descricao"]'); if (ins.length) ins[ins.length - 1].focus();
+        // 24/11/2026: o foco vai para o Código do produto (o autocomplete); a
+        // descrição vazia ganha o nome do cadastro na conferência
+        var ins = $('cot-itens').querySelectorAll('tbody tr[data-i] input[data-f="codigo"]'); if (ins.length) ins[ins.length - 1].focus();
         return;
       }
       if (t.hasAttribute('data-usar-ref')) { ev.preventDefault(); var ur = t.getAttribute('data-usar-ref').split('|'); usarRef(Number(ur[0]), ur[1], false); pintarRefs(); return; }
