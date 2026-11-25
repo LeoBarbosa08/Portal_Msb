@@ -2277,6 +2277,9 @@
   function ligar() {
     var app = $('cot-app');
     ligarTramitacao(app);
+    // 24/11/2026 (pedido do usuário): o autocomplete do Código do produto
+    // também na edição dos itens do caso (COT.autocompletarCodigos)
+    C.autocompletarCodigos(app);
     D.addEventListener('click', function (ev) {
       var a = ev.target.closest('#cot-abas [data-aba]'), aba = a && a.getAttribute('data-aba');
       // o menu lateral: Cotações (#lista) e Quadro (#quadro) são abas DESTA

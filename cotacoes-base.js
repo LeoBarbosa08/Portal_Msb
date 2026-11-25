@@ -699,6 +699,201 @@
       });
     }, Promise.resolve()).then(function () { cods.forEach(function (c) { if (!_cods[c]) _cods[c] = false; }); });
   }
+
+  /* ── o AUTOCOMPLETE do Código do produto (24/11/2026) ───────────
+     Pedido do usuário: "no CRM do portal da MSB, na hora de inserir o item
+     na cotação, o autofill igual ao da Bio" — o mesmo do Portal Biomedical
+     (COT.autocompletarCodigos de lá): ir digitando e aparecer os códigos que
+     existem, para evitar erro de digitação. O catálogo é a tabela 'Produtos'
+     do Power BI do Comercial — a mesma da conferência acima —, carregado
+     UMA vez, no primeiro foco num Código do produto, e guardado na aba
+     (sessionStorage, 6 h: o localStorage fica para o login). RECORTE MSB:
+     o pbi-throttle.js embrulha a consulta em 'Empresas' = MSB e, pelas
+     relações do modelo, isso some com produto do cadastro (o mesmo motivo do
+     REMOVEFILTERS da conferência) — por isso o catálogo vai com
+     REMOVEFILTERS('Empresas') POR DENTRO: só código e nome, nenhum número.
+     Assim a lista mostra exatamente o que a conferência aceita. O que ele
+     traz também entra no cache da conferência: o código escolhido chega
+     conferido sem ir ao BI. Casa pelo começo do código, por dentro dele
+     (com ou sem - . / e espaço) e, a partir de 3 letras, pelo nome do
+     produto. ↑/↓ andam, Enter usa a marcada (de partida, a primeira), Tab
+     usa só a que a pessoa marcou com as setas, Esc fecha. Usar = escrever o
+     código no campo e disparar o 'input': cada tela segue com o que já
+     fazia (confere, completa a descrição, o estoque…). Sem o catálogo
+     (Power BI fora), a lista diz e o campo segue como antes. */
+  var CAT_CHAVE = 'cot-catalogo-msb-v1', CAT_TTL = 6 * 3600e3, CAT_MAX = 10;
+  var _cat = null, _catP = null;
+  function semSep(s) { return String(s || '').replace(/[\s.\-\/]+/g, ''); }
+  function montarCatalogo(pares) {
+    var vistos = {}, l = [];
+    (pares || []).forEach(function (p) {
+      var c = normCod(p[0]); if (!c || vistos[c]) return;
+      vistos[c] = 1;
+      var nome = String(p[1] == null ? '' : p[1]).trim();
+      l.push({ c: c, n: nome, k: semSep(c), nn: norm(nome) });
+      if (!(c in _cods)) _cods[c] = { nome: nome };
+    });
+    return l;
+  }
+  function catalogoGuardado() {
+    try {
+      var o = JSON.parse(W.sessionStorage.getItem(CAT_CHAVE) || 'null');
+      return o && o.em && Date.now() - o.em < CAT_TTL && o.l && o.l.length ? o.l : null;
+    } catch (e) { return null; }
+  }
+  // Promise da lista [{ c, n, k, nn }] (a mesma promessa enquanto carrega)
+  function catalogoProdutos() {
+    if (_cat) return Promise.resolve(_cat);
+    if (_catP) return _catP;
+    var g = catalogoGuardado();
+    if (g) { _cat = montarCatalogo(g); return Promise.resolve(_cat); }
+    if (!W.VOZPBI) return Promise.reject(new Error('a consulta ao Power BI (voz-pbi.js) não carregou — recarregue a página'));
+    _catP = W.VOZPBI.query("EVALUATE CALCULATETABLE(SELECTCOLUMNS(FILTER('Produtos', NOT ISBLANK('Produtos'[Cód. produto])), \"cod\", 'Produtos'[Cód. produto], \"nome\", 'Produtos'[Produto]), REMOVEFILTERS('Empresas'))").then(function (rows) {
+      var pares = (rows || []).map(function (r) { return [r['[cod]'], r['[nome]']]; }).filter(function (p) { return p[0] != null && String(p[0]).trim(); });
+      _cat = montarCatalogo(pares);
+      try { W.sessionStorage.setItem(CAT_CHAVE, JSON.stringify({ em: Date.now(), l: _cat.map(function (p) { return [p.c, p.n]; }) })); } catch (e) {}
+      _catP = null;
+      return _cat;
+    }, function (e) { _catP = null; throw e; });
+    return _catP;
+  }
+  // as sugestões para o que foi digitado: { l: até max, n: quantas casaram }
+  function buscarNoCatalogo(cat, q, max) {
+    var k = normCod(q), ks = semSep(k), pal = norm(q).split(/\s+/).filter(Boolean), r = [];
+    if (!k) return { l: [], n: 0 };
+    (cat || []).forEach(function (p) {
+      var rk;
+      if (p.c.indexOf(k) === 0) rk = p.c === k ? 0 : 1;
+      else if (ks && p.k.indexOf(ks) === 0) rk = p.k === ks ? 0 : 2;
+      else if (p.c.indexOf(k) > 0 || (ks.length >= 2 && p.k.indexOf(ks) > 0)) rk = 3;
+      else if (k.length >= 3 && pal.every(function (w) { return p.nn.indexOf(w) >= 0; })) rk = 4;
+      else return;
+      r.push({ rk: rk, p: p });
+    });
+    r.sort(function (a, b) { return a.rk - b.rk || a.p.c.length - b.p.c.length || (a.p.c < b.p.c ? -1 : a.p.c > b.p.c ? 1 : 0); });
+    return { l: r.slice(0, max || CAT_MAX).map(function (x) { return x.p; }), n: r.length };
+  }
+  // o trecho que casou, marcado (o código pelo texto; o nome pela 1ª palavra)
+  function marcar(txt, q, nome) {
+    var s = String(txt || ''), i = -1, len = 0;
+    if (!nome) { var k = normCod(q); i = s.indexOf(k); len = k.length; }
+    else { var w = norm(q).split(/\s+/).filter(Boolean)[0] || ''; if (w.length >= 3) { i = norm(s).indexOf(w); len = w.length; } }
+    if (i < 0 || !len) return esc(s);
+    return esc(s.slice(0, i)) + '<mark>' + esc(s.slice(i, i + len)) + '</mark>' + esc(s.slice(i + len));
+  }
+  // liga o autocomplete aos Códigos do produto que ficam dentro de `raiz` (um
+  // ouvinte só, delegado: as linhas redesenhadas continuam com ele)
+  var AC = { lista: null, alvo: null, itens: [], ativo: -1, setas: false, calando: false, q: '' };
+  function acLista() {
+    if (AC.lista) return AC.lista;
+    var l = D.createElement('div');
+    l.className = 'cot-ac'; l.id = 'cot-ac-lista'; l.setAttribute('role', 'listbox'); l.setAttribute('aria-label', 'Produtos do catálogo'); l.hidden = true;
+    // mousedown: o foco fica no campo (o focusout não fecha antes do clique)
+    l.addEventListener('mousedown', function (ev) { ev.preventDefault(); var o = ev.target.closest('[data-ac-i]'); if (o) acUsar(Number(o.getAttribute('data-ac-i'))); });
+    D.body.appendChild(l);
+    AC.lista = l;
+    return l;
+  }
+  function acAberta() { return !!(AC.lista && !AC.lista.hidden); }
+  function acFechar() {
+    if (AC.lista) { AC.lista.hidden = true; AC.lista.innerHTML = ''; }
+    if (AC.alvo) { AC.alvo.setAttribute('aria-expanded', 'false'); AC.alvo.removeAttribute('aria-activedescendant'); }
+    AC.itens = []; AC.ativo = -1; AC.setas = false;
+  }
+  // a lista fica presa embaixo do campo (fixed: a tabela rola de lado e cortaria)
+  function acPosicionar() {
+    var l = AC.lista, a = AC.alvo; if (!l || l.hidden || !a) return;
+    var r = a.getBoundingClientRect(), vw = W.innerWidth || D.documentElement.clientWidth, vh = W.innerHeight || D.documentElement.clientHeight;
+    if (!a.isConnected || r.bottom < 0 || r.top > vh || (!r.width && !r.height)) { acFechar(); return; }
+    var w = Math.min(Math.max(r.width, 380), vw - 16);
+    l.style.width = w + 'px';
+    l.style.left = Math.max(8, Math.min(r.left, vw - w - 8)) + 'px';
+    var h = l.offsetHeight, embaixo = vh - r.bottom - 8;
+    l.style.top = (embaixo < h && r.top - 8 > embaixo ? Math.max(8, r.top - h - 4) : r.bottom + 4) + 'px';
+  }
+  function acPintar(html) {
+    var l = acLista();
+    l.innerHTML = html; l.hidden = false;
+    if (AC.alvo) AC.alvo.setAttribute('aria-expanded', AC.itens.length ? 'true' : 'false');
+    acPosicionar();
+  }
+  function acMarcar(i) {
+    AC.ativo = i;
+    Array.prototype.forEach.call(AC.lista ? AC.lista.querySelectorAll('[data-ac-i]') : [], function (o) {
+      var on = Number(o.getAttribute('data-ac-i')) === i;
+      o.classList.toggle('on', on); o.setAttribute('aria-selected', on ? 'true' : 'false');
+      if (on && o.scrollIntoView) o.scrollIntoView({ block: 'nearest' });
+    });
+    if (AC.alvo) { if (i >= 0) AC.alvo.setAttribute('aria-activedescendant', 'cot-ac-o' + i); else AC.alvo.removeAttribute('aria-activedescendant'); }
+  }
+  function acMostrar() {
+    var a = AC.alvo; if (!a) return;
+    var q = a.value, seq = (AC.seq = (AC.seq || 0) + 1);
+    AC.q = q;
+    if (!normCod(q)) { acFechar(); return; }
+    if (!_cat) {
+      AC.itens = [];
+      acPintar('<div class="cot-ac-msg"><span class="cs-spin"></span>Abrindo o catálogo de produtos…</div>');
+      catalogoProdutos().then(function () { if (AC.seq === seq && D.activeElement === a) acMostrar(); }, function (e) {
+        if (AC.seq !== seq || D.activeElement !== a) return;
+        AC.itens = [];
+        acPintar('<div class="cot-ac-msg erro"><b>Não consegui abrir o catálogo de produtos</b>' + esc((e && e.message) || String(e)) + '<br>O código segue sendo conferido no BI ao digitar.</div>');
+      });
+      return;
+    }
+    var r = buscarNoCatalogo(_cat, q, CAT_MAX);
+    AC.itens = r.l; AC.setas = false;
+    if (!r.l.length) { acPintar('<div class="cot-ac-msg"><b>Nenhum produto do catálogo com “' + esc(q.trim()) + '”</b>Confira o código — ou digite parte do nome do produto.</div>'); return; }
+    acPintar(r.l.map(function (p, i) {
+      var porNome = p.c.indexOf(normCod(q)) < 0 && p.k.indexOf(semSep(normCod(q))) < 0;
+      return '<div class="cot-ac-o" role="option" id="cot-ac-o' + i + '" data-ac-i="' + i + '" aria-selected="false"><b>' + (porNome ? esc(p.c) : marcar(p.c, q, false)) + '</b>' +
+        '<small title="' + esc(p.n) + '">' + (porNome ? marcar(p.n, q, true) : esc(p.n || '—')) + '</small></div>';
+    }).join('') + (r.n > r.l.length ? '<div class="cot-ac-pe">+ ' + int(r.n - r.l.length) + ' outro(s) — continue digitando</div>' : ''));
+    acMarcar(0);
+  }
+  function acUsar(i) {
+    var p = AC.itens[i], a = AC.alvo; if (!p || !a) return;
+    acFechar();
+    a.value = p.c;
+    // o 'input' é o da tela (confere, descrição, estoque) — a lista não reabre com ele
+    AC.calando = true;
+    try { a.dispatchEvent(new Event('input', { bubbles: true })); } finally { AC.calando = false; }
+  }
+  function autocompletarCodigos(raiz, seletor) {
+    if (!raiz || raiz.__cotAc) return; raiz.__cotAc = 1;
+    var SEL = seletor || 'input[data-f="codigo"]';
+    var eh = function (t) { return t && t.matches && t.matches(SEL); };
+    raiz.addEventListener('focusin', function (ev) {
+      var t = ev.target; if (!eh(t)) return;
+      if (AC.alvo !== t) acFechar();
+      AC.alvo = t;
+      t.setAttribute('role', 'combobox'); t.setAttribute('aria-autocomplete', 'list'); t.setAttribute('aria-controls', 'cot-ac-lista'); t.setAttribute('aria-expanded', 'false');
+      catalogoProdutos().catch(function () {});   // já vai abrindo; o erro aparece ao digitar
+    });
+    raiz.addEventListener('input', function (ev) { if (!AC.calando && eh(ev.target)) { AC.alvo = ev.target; acMostrar(); } });
+    raiz.addEventListener('focusout', function (ev) { if (eh(ev.target) && ev.target === AC.alvo) acFechar(); });
+    raiz.addEventListener('keydown', function (ev) {
+      var t = ev.target; if (!eh(t)) return;
+      if (ev.key === 'ArrowDown' || ev.key === 'ArrowUp') {
+        if (!acAberta()) { if (normCod(t.value)) { AC.alvo = t; acMostrar(); ev.preventDefault(); } return; }
+        if (!AC.itens.length) return;
+        ev.preventDefault();
+        var n = AC.itens.length, d = ev.key === 'ArrowDown' ? 1 : -1;
+        AC.setas = true;
+        acMarcar(((AC.ativo < 0 ? (d > 0 ? -1 : 0) : AC.ativo) + d + n) % n);
+        return;
+      }
+      if (!acAberta()) return;
+      if (ev.key === 'Enter' && AC.ativo >= 0 && AC.itens.length) { ev.preventDefault(); acUsar(AC.ativo); return; }
+      if (ev.key === 'Tab') { if (AC.setas && AC.ativo >= 0) acUsar(AC.ativo); else acFechar(); return; }
+      if (ev.key === 'Escape') { ev.preventDefault(); ev.stopPropagation(); acFechar(); }
+    });
+    if (!AC.ligado) {
+      AC.ligado = 1;
+      W.addEventListener('scroll', function () { if (acAberta()) acPosicionar(); }, true);
+      W.addEventListener('resize', function () { if (acAberta()) acPosicionar(); });
+    }
+  }
   /* ── o preço de referência: a MÉDIA DE FATURAMENTO do item no cliente ──
      23/10/2026 (pedido do usuário): na hora de digitar o preço da cotação, o
      histórico de faturamento daquele item naquele cliente — a média dos
@@ -1338,6 +1533,7 @@
     leitorPronto: leitorPronto, textoDoPdf: textoDoPdf, lerComIA: lerComIA, dadosDaLeitura: dadosDaLeitura, freteCifFob: freteCifFob, contatoDoSetor: contatoDoSetor, htmlExtras: htmlExtras, lerExtras: lerExtras, comoSaiu: comoSaiu, idDaCotacao: idDaCotacao, dataDoTexto: dataDoTexto, validadeDe: validadeDe,
     hojeIso: hojeIso, venceu: venceu,
     normCod: normCod, validarCodigos: validarCodigos, produtoDoCodigo: produtoDoCodigo, codigosNaDescricao: codigosNaDescricao,
+    catalogoProdutos: catalogoProdutos, buscarNoCatalogo: buscarNoCatalogo, autocompletarCodigos: autocompletarCodigos,
     faturamentoDoCliente: faturamentoDoCliente, tabelaDePrecos: tabelaDePrecos, acimaDasReferencias: acimaDasReferencias, textoAcima: textoAcima, refsPreco: refsPreco, MESES_FAT: MESES_FAT,
     conferirItens: conferirItens, itensComCodigoRuim: itensComCodigoRuim, statusCodigo: statusCodigo,
     produtosSf: produtosSf, descricaoSf: descricaoSf, sfMotivo: sfMotivo, completarDoSf: completarDoSf, dicaSf: dicaSf,
