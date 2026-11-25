@@ -1,49 +1,42 @@
 /* ================================================================
    cotacoes-agente.js — AGENTE DE COTAÇÕES (pages/comercial-cot-nova.html)
 
-   O "PI" das cotações: a pessoa responde a cotação no portal de compras
-   (Bionexo, Apoio Cotações, GTPlan, Síntese…), baixa o PDF e solta aqui.
+   25/11/2026 (pedido do usuário): SEM PDF — a oportunidade é registrada
+   sempre à mão. Saíram o anexo do PDF do portal, a leitura pela IA e o
+   visor do PDF; a tela já abre no formulário (o antigo "Preencher à mão"):
+   uma ordem nova, sem portal e sem nº da cotação.
 
-     1 · PDF          o arquivo (até 10 MB)
-     2 · Leitura      pi-pdf-texto.js tira o texto com as COLUNAS no lugar e
-                      a IA (/api/pedido-extrair, perfil 'cotacao') devolve
-                      portal, nº da cotação, comprador, prazos, condições e
-                      os itens com o preço cotado
-     3 · Conferência  tudo editável, com o PDF do lado; a mesma cotação já
-                      registrada aparece ANTES de criar (portal + nº)
-     4 · Caso         /api/cot-casos {acao:'novo'} guarda o PDF e abre o caso
-                      (COT-AAAA-NNNNNN) na Gestão de Cotações — e a PROPOSTA
-                      no modelo da MSB (cotacoes-proposta.js) sai por
-                      e-mail para o comprador, se a pessoa deixou marcado
+     1 · Oportunidade  o formulário: comprador, condições, itens e proposta
+     2 · Caso          /api/cot-casos {acao:'novo'} abre o caso
+                       (COT-AAAA-NNNNNN) na Gestão de Cotações — e a PROPOSTA
+                       no modelo da MSB (cotacoes-proposta.js) sai por
+                       e-mail para o comprador, se a pessoa deixou marcado
 
    Regras de 09/10/2026: a cotação nasce SEMPRE Cotada; empresa sempre BIO;
    a UNIDADE DE NEGÓCIO (20/10/2026) é a do RLS de quem registra no Power BI
    — uma só: automática; 2+: escolhe entre as suas; nenhuma confirmada: não
    registra (o servidor confere de novo); não existe
-   prazo do portal — a validade é a data da cotação + os dias de validade
-   do PDF. Com ela já passada o caso nasce Cotada do mesmo jeito (20/10/2026:
+   prazo do portal — a validade é a data da cotação + os dias de validade.
+   Com ela já passada o caso nasce Cotada do mesmo jeito (20/10/2026:
    sem trava de vencida — a data é só um aviso) e a proposta pode sair.
-
-   Sem IA (ou PDF escaneado): o formulário vem vazio para preencher à mão —
-   o PDF vai junto para o caso do mesmo jeito.
    ================================================================ */
 (function () {
   'use strict';
   var C = window.COT; if (!C) return;
   var P = window.COTPROP || null;
   var D = document, $ = C.$, esc = C.esc, IC = C.IC;
-  var MAX_MB = 10;
 
   var S = {
-    passo: 'pdf', cfg: null, eu: null, configurado: null, erroBoot: '',
-    arq: null, url: '', texto: '', leitura: null, dados: null, lidos: {},
-    dup: null, forcar: false, criado: null, etapas: {}, criando: false, erroIA: '',
+    passo: 'conf', cfg: null, eu: null, configurado: null, erroBoot: '',
+    // texto/leitura/lidos ficam vazios (sem PDF, nada é lido pela IA)
+    texto: '', leitura: null, dados: null, lidos: {},
+    dup: null, forcar: false, criado: null, criando: false,
     // o comprador: 'cnpj' | 'codigo' (o Dynamics preenche o cadastro) | 'manual' (cliente novo, à mão)
     modoCli: 'cnpj',
-    // "Preencher à mão (sem PDF)": cotação fora de portal — uma ordem nova, sem portal e sem nº da cotação
-    semPortal: false,
+    // à mão (sem PDF): uma ordem nova, sem portal e sem nº da cotação — sempre, desde 25/11/2026
+    semPortal: true,
     // a proposta: enviar ao criar? para quem? (o telefone fica guardado no navegador).
-    // 21/10/2026 (pedido do usuário): o envio começa DESMARCADO — PDF ou à mão
+    // 21/10/2026 (pedido do usuário): o envio começa DESMARCADO
     prop: { enviar: false, para: '', copia: '', telefone: C.lerLocal('cot-prop-tel'), anexos: [] },
     envio: null,  // { estado: 'enviando'|'ok'|'erro', msg, para }
     // 29/10/2026 (pedido do usuário): o "Tem IPI?" — a coluna do IPI de cada item
@@ -87,9 +80,9 @@
       render();
     }).catch(function (e) { msg('Não consegui falar com o Power BI: ' + esc(e.message || e), 'erro'); });
   }
-  // A DATA DE VENCIMENTO (datas.validade): o "Vencimento" do PDF, ou a data da
-  // cotação + os dias de validade do PDF. Só a calculada acompanha a troca da
-  // data da cotação; a lida do PDF ou digitada pela pessoa fica como está.
+  // A DATA DE VENCIMENTO (datas.validade): a data da cotação + os dias de
+  // validade. Só a calculada acompanha a troca da data da cotação; a digitada
+  // pela pessoa fica como está.
   function recalcularVencimento() {
     var d = S.dados; if (!d || d.vencimentoOrigem !== 'calc') return false;
     var v = C.validadeDe(d.condicoes.validade, d.datas.cotacao);
@@ -110,7 +103,7 @@
   function totalItens(itens) { return (itens || []).reduce(function (s, it) { return s + (Number(it.quantidade) || 0) * (Number(it.valorUnitario) || 0); }, 0); }
 
   /* ── passos e faixa ─────────────────────────────────────────── */
-  var PASSOS = [['pdf', 'PDF'], ['lendo', 'Leitura'], ['conf', 'Conferência'], ['pronto', 'Caso']];
+  var PASSOS = [['conf', 'Oportunidade'], ['pronto', 'Caso']];
   function pintarPassos() {
     var i = PASSOS.findIndex(function (p) { return p[0] === S.passo; });
     $('cot-passos').innerHTML = PASSOS.map(function (p, k) {
@@ -122,72 +115,6 @@
     f.innerHTML = html ? '<div class="cs-faixa ' + (tipo || '') + '">' + (tipo === 'erro' ? IC.alert : IC.info) + '<div>' + html + '</div></div>' : '';
   }
 
-  /* ── 1 · PDF ────────────────────────────────────────────────── */
-  function htmlPdf() {
-    return '<h3>Anexar a cotação do portal</h3>' +
-      '<p class="cot-ag-sub">Solte aqui o PDF que o portal gerou da cotação — a proposta que você enviou ou o pedido de cotação do comprador. A IA lê o documento e preenche tudo para você conferir.</p>' +
-      '<label class="cot-drop" id="cot-drop" tabindex="0"><input type="file" id="cot-arquivo" accept="application/pdf,.pdf" hidden>' +
-        '<span class="ic">' + C.svg('<path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/>', 28) + '</span>' +
-        '<b>Clique para escolher ou arraste o PDF da cotação</b><small>Somente .pdf · até ' + MAX_MB + ' MB</small></label>' +
-      '<div class="cot-drop-pe"><button type="button" class="cs-btn cs-btn-sm" id="cot-manual">' + IC.edit + 'Preencher à mão (sem PDF)</button><span>Oportunidade por telefone ou e-mail, fora de portal — uma ordem nova, sem portal e sem nº da cotação.</span></div>' +
-      '<div class="cot-dicas">' +
-        '<div class="cot-dica">' + IC.sparkle + '<div><b>A IA lê por você</b>Portal, nº da cotação, comprador, prazo, condições e cada item com o preço cotado.</div></div>' +
-        '<div class="cot-dica">' + IC.copy + '<div><b>Sem oportunidade em dobro</b>Se a mesma oportunidade (portal + nº) já estiver no portal, o agente avisa antes de criar.</div></div>' +
-        '<div class="cot-dica">' + IC.cart + '<div><b>Virou pedido? Vai para o PI</b>No caso, anexe o PDF do pedido do portal e mande para o PI · Pedido com um clique.</div></div>' +
-      '</div>';
-  }
-
-  function receberArquivo(file) {
-    if (!file) return;
-    if (!/\.pdf$/i.test(file.name || '') && !/pdf/i.test(file.type || '')) { C.toast('Só PDF', 'Escolha o PDF que o portal gerou da cotação.', 'erro'); return; }
-    if (file.size > MAX_MB * 1048576) { C.toast('Arquivo grande demais', 'O limite é ' + MAX_MB + ' MB.', 'erro'); return; }
-    C.lerArquivo(file).then(function (arq) {
-      if (S.url) URL.revokeObjectURL(S.url);
-      S.arq = arq;
-      S.url = URL.createObjectURL(new Blob([arq.buffer], { type: 'application/pdf' }));
-      ler();
-    }).catch(function (e) { C.toast('Não consegui abrir o arquivo', e.message, 'erro'); });
-  }
-
-  /* ── 2 · leitura ────────────────────────────────────────────── */
-  var ETAPAS = [['texto', 'Lendo o texto do PDF'], ['ia', 'A IA está lendo a oportunidade — portal, nº, comprador, prazos e itens'], ['conf', 'Conferindo itens, valores e se a oportunidade já existe']];
-  function htmlLendo() {
-    return '<div class="cot-lendo"><span class="cot-lendo-ic">' + C.svg('<path d="M12 3l1.9 5.6L19.5 10l-5.6 1.9L12 17.5l-1.9-5.6L4.5 10l5.6-1.4z"/><path d="M19 15l.8 2.2L22 18l-2.2.8L19 21l-.8-2.2L16 18l2.2-.8z"/>', 32) + '</span>' +
-      '<b>Lendo ' + esc(S.arq ? S.arq.nome : 'a oportunidade') + '…</b>' +
-      '<div class="cot-lendo-passos">' + ETAPAS.map(function (e) {
-        var st = S.etapas[e[0]] || '';
-        return '<div class="' + st + '">' + (st === 'on' ? '<span class="cs-spin"></span>' : st === 'ok' ? IC.checkc : IC.info) + esc(e[1]) + '</div>';
-      }).join('') + '</div></div>';
-  }
-  function etapa(id, st) { S.etapas[id] = st; if (S.passo === 'lendo') render(); }
-
-  function ler() {
-    S.passo = 'lendo'; S.etapas = {}; S.leitura = null; S.erroIA = ''; S.dup = null; S.forcar = false; S.lidos = {};
-    S.dados = vazio();
-    render();
-    etapa('texto', 'on');
-    C.textoDoPdf(S.arq.buffer).then(function (texto) {
-      S.texto = texto || '';
-      etapa('texto', 'ok');
-      if (S.texto.trim().length < 40) {
-        S.leitura = { ia: false, avisos: [], erro: 'O PDF parece escaneado (imagem, sem texto) — preencha à mão. O PDF vai junto para o caso.' };
-        return null;
-      }
-      return lerIA();
-    }).catch(function (e) {
-      S.leitura = { ia: false, avisos: [], erro: 'Não consegui ler o texto do PDF: ' + (e.message || e) };
-      return null;
-    }).then(function () {
-      etapa('conf', 'on');
-      return checarDupAgora();
-    }).then(function () {
-      etapa('conf', 'ok');
-      S.passo = 'conf';
-      render();
-      conferirCodigos(true);
-      buscarErp();
-    });
-  }
   // o Cód. Biomedical de cada item tem de ser um produto NOSSO (a tabela de
   // Produtos do BI do Comercial — a mesma conferência do PI · Pedido). Com
   // corrigir, o código que não é nosso é trocado pelo nosso da descrição
@@ -201,7 +128,7 @@
       var pelaLinha = corrigir && S.texto ? C.casarPeloTexto(d.itens, S.texto) : 0;
       pintarItens();
       var n = ((r && r.corrigidos) || 0) + pelaLinha;
-      if (n) C.toast('Código do produto corrigido', n + ' item(ns): o código lido não era nosso — usei o nosso que está no PDF.', '');
+      if (n) C.toast('Código do produto corrigido', n + ' item(ns): o código não era nosso — usei o nosso que está na descrição.', '');
       completarSf(d.itens);
     }).catch(function (e) {
       S.codErro = e.message || String(e);
@@ -335,42 +262,6 @@
     completarSf([it]);
     referencias();
   }, 500);
-  // a IA (pode ser chamada de novo pelo botão "Ler de novo")
-  function lerIA() {
-    etapa('ia', 'on');
-    // o gabarito: os códigos do PDF que existem no nosso cadastro (BI) vão junto para a IA
-    return C.codigosNossosNoTexto(S.texto).then(function (cods) {
-      S.codigosPdf = cods;
-      return C.lerComIA(S.texto, S.arq && S.arq.nome, 'cotacao', cods);
-    }).then(function (r) {
-      var d = C.dadosDaLeitura(r && r.dados);
-      d.nota = (S.dados && S.dados.nota) || '';
-      d.empresa = 'MSB';
-      d.area = (S.dados && S.dados.area) || (S.eu && S.eu.area) || '';
-      d.unidade = (S.dados && S.dados.unidade) || unidadeUnica();
-      S.dados = d;
-      S.lidos = {};
-      ['portal', 'cotacaoId', 'cliente.nome', 'cliente.cnpj', 'cliente.cidade', 'cliente.uf', 'cliente.endereco', 'cliente.cep', 'contato.nome', 'contato.email', 'contato.telefone',
-        'datas.cotacao', 'datas.validade', 'condicoes.pagamento', 'condicoes.frete', 'condicoes.entrega', 'condicoes.observacao']
-        .forEach(function (k) { if (pegar(d, k)) S.lidos[k] = 1; });
-      if (d.itens.length) S.lidos.itens = 1;
-      // 21/10/2026 (pedido do usuário): sem o aviso "quantidade x valor ≠ total
-      // do PDF" (tipo 'total') — na cotação do portal a coluna do total costuma
-      // trazer outra coisa e o aviso só fazia barulho; os demais ficam
-      S.leitura = { ia: true, modelo: (r && (r.model || r.deployment)) || '', avisos: ((r && r.avisos) || []).filter(function (a) { return a.tipo !== 'total'; }), erro: '' };
-      S.erroIA = '';
-      // a proposta vai para o e-mail do comprador que veio no PDF
-      S.prop.para = d.contato.email || S.prop.para;
-      etapa('ia', 'ok');
-    }).catch(function (e) {
-      S.erroIA = e.status === 429 ? (e.message || 'O serviço de IA está ocupado agora.') : 'A IA não conseguiu ler: ' + (e.message || e);
-      S.leitura = { ia: false, avisos: [], erro: S.erroIA };
-      // sem a IA, o número da cotação sai do rótulo do PDF (ID / Identificador / Nº da cotação)
-      var id = C.idDaCotacao(S.texto);
-      if (id && S.dados && !S.dados.cotacaoId) { S.dados.cotacaoId = id; S.lidos.cotacaoId = 1; }
-      etapa('ia', 'erro');
-    });
-  }
 
   /* ── duplicidade (portal + nº da cotação) ───────────────────── */
   function checarDupAgora() {
@@ -571,24 +462,11 @@
     var vi = C.totalIpi(itens);
     return '<span id="cot-tot-ipi" class="cot-tot-ipi"><span class="tot">IPI<b>' + C.brl(vi) + '</b></span><span class="tot">Total com IPI<b>' + C.brl(totalItens(itens) + vi) + '</b></span></span>';
   }
-  function htmlAvisos() {
-    var l = S.leitura || {};
-    var avisos = (l.avisos || []);
-    var h = '';
-    if (l.erro) {
-      h += '<div class="cot-avisos"><b>' + (S.erroIA ? 'A leitura da IA não veio' : 'Preencha à mão') + '</b>' + esc(l.erro) +
-        (S.erroIA && S.texto ? ' <button type="button" class="cs-btn cs-btn-xs" id="cot-reler" style="margin-left:6px">' + IC.refresh + 'Tentar ler de novo</button>' : '') + '</div>';
-    }
-    if (avisos.length) {
-      h += '<div class="cot-avisos"><b>Confira antes de criar</b><ul>' + avisos.slice(0, 12).map(function (a) { return '<li>' + esc(a.texto) + '</li>'; }).join('') + '</ul></div>';
-    }
-    return h;
-  }
   // de onde veio a DATA DE VENCIMENTO (a dica embaixo do campo) — redesenhada
   // a cada tecla, sem perder o foco. A data passada é só um aviso (20/10/2026)
   function htmlVencDica() {
     var d = S.dados, v = d.datas.validade, o = d.vencimentoOrigem;
-    var txt = !v ? 'o PDF não trouxe — informe a data' : o === 'pdf' ? 'lida do PDF (Vencimento)' : o === 'calc' ? 'data da cotação + ' + d.validadeCalculada + ' dia(s) de validade' : 'informada por você';
+    var txt = !v ? 'informe a data' : o === 'calc' ? 'data da cotação + ' + d.validadeCalculada + ' dia(s) de validade' : 'informada por você';
     return (C.venceu(v) ? '<b class="venc">prazo vencido · </b>' : '') + esc(txt);
   }
   // a VALIDADE em dias = data de vencimento − data da cotação
@@ -745,7 +623,7 @@
     var v = e.v, pag = S.dados.condicoes.pagamento;
     var linhas = [
       ['Código do cliente', v.codigo], ['Empresa', (v.empresas || []).join(', ') || v.empresa], ['Grupo', v.grupo],
-      ['Cond. pagamento cadastrada', v.pagamento + (pag && v.pagamento && C.norm(pag).indexOf(C.norm(v.pagamento)) < 0 ? ' (o PDF diz: ' + pag + ')' : '')],
+      ['Cond. pagamento cadastrada', v.pagamento + (pag && v.pagamento && C.norm(pag).indexOf(C.norm(v.pagamento)) < 0 ? ' (informada: ' + pag + ')' : '')],
       ['Forma de pagamento', v.formaPagamento], ['Segmento', v.segmento], ['Vendedor', v.vendedor],
       ['Limite de crédito', v.limiteCredito ? C.brl(v.limiteCredito) : ''], ['E-mail no cadastro', v.email], ['Telefone no cadastro', v.telefone]
     ].filter(function (l) { return l[1]; });
@@ -755,103 +633,6 @@
       (e.completou ? '<small>' + (e.sobre ? 'Preenchi ' + e.completou + ' campo(s) com o cadastro' : 'Completei ' + e.completou + ' campo(s) vazio(s) com o cadastro') + ' (marcados "Dynamics") — dá para corrigir.</small>' : '') + '</div></div>';
   }
   function pintarErp() { var b = $('cot-erp-box'); if (b) b.innerHTML = htmlErp(); }
-
-  /* ── o PDF ao lado: visor próprio (pdf.js), ajustado à largura ─────
-     O <iframe> abria o visor do navegador com as miniaturas e a 50%. Aqui
-     cada página vira um canvas na largura do painel (zoom −/+; clicar no %
-     volta a "ajustar") e o "⋯" do topo tem Abrir em nova aba, Baixar,
-     Salvar como, Imprimir e Tela cheia. Sem pdf.js, volta o <iframe>. */
-  var V = { doc: null, de: null, zoom: 0, escala: 1, vez: 0 };   // zoom 0 = ajustar à largura
-  var IC_PDF = {
-    dots: C.svg('<circle cx="5" cy="12" r="1.6" fill="currentColor"/><circle cx="12" cy="12" r="1.6" fill="currentColor"/><circle cx="19" cy="12" r="1.6" fill="currentColor"/>'),
-    print: C.svg('<polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/>'),
-    save: C.svg('<path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/>'),
-    full: C.svg('<polyline points="15 3 21 3 21 9"/><polyline points="9 21 3 21 3 15"/><line x1="21" y1="3" x2="14" y2="10"/><line x1="3" y1="21" x2="10" y2="14"/>'),
-    novo: C.svg('<path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/>')
-  };
-  function htmlVisor() {
-    var item = function (id, ic, txt) { return '<button type="button" role="menuitem" data-pdf="' + id + '">' + ic + '<span>' + esc(txt) + '</span></button>'; };
-    return '<div class="cot-pdf-h">' + IC.pdf + '<span class="nm" title="' + esc(S.arq.nome) + '">' + esc(S.arq.nome) + ' · ' + C.bytes(S.arq.tamanho) + '</span>' +
-      '<div class="cot-pdf-zoom"><button type="button" data-pdf="menos" title="Diminuir">−</button><button type="button" data-pdf="ajustar" class="pct" id="cot-pdf-pct" title="Ajustar à largura">100%</button><button type="button" data-pdf="mais" title="Aumentar">+</button></div>' +
-      '<div class="cot-pdf-mais"><button type="button" class="cot-pdf-dots" data-pdf="menu" aria-haspopup="menu" aria-expanded="false" title="Mais opções">' + IC_PDF.dots + '</button>' +
-        '<div class="cot-pdf-menu" id="cot-pdf-menu" role="menu" hidden>' +
-          item('abrir', IC_PDF.novo, 'Abrir em nova aba') + item('baixar', IC.down, 'Baixar (download)') + item('salvar', IC_PDF.save, 'Salvar como…') +
-          item('imprimir', IC_PDF.print, 'Imprimir') + item('cheia', IC_PDF.full, 'Tela cheia') +
-        '</div></div></div>' +
-      '<div class="cot-pdf-v" id="cot-pdf-v"><div class="cot-pdf-pags" id="cot-pdf-pags"><div class="cot-pdf-car"><span class="cs-spin"></span> Abrindo o PDF…</div></div></div>';
-  }
-  function visorIframe() { var v = $('cot-pdf-v'); if (v) v.innerHTML = '<iframe src="' + S.url + '#navpanes=0&view=FitH" title="PDF da cotação"></iframe>'; }
-  function montarVisor() {
-    if (!$('cot-pdf-pags') || !S.arq) return;
-    if (!window.pdfjsLib) { visorIframe(); return; }
-    if (V.de !== S.arq) {
-      if (V.doc) { try { V.doc.destroy(); } catch (e) {} }
-      V.doc = null; V.de = S.arq; V.zoom = 0;
-      V.carga = window.pdfjsLib.getDocument({ data: new Uint8Array(S.arq.buffer.slice(0)) }).promise.then(function (doc) { V.doc = doc; return doc; });
-    }
-    V.carga.then(desenharPdf).catch(visorIframe);
-  }
-  function desenharPdf() {
-    var box = $('cot-pdf-pags'), doc = V.doc; if (!box || !doc) return;
-    var vez = ++V.vez, larg = Math.max(220, box.clientWidth - 28), dpr = Math.min(window.devicePixelRatio || 1, 2.5);
-    var limpou = false, cadeia = Promise.resolve();
-    for (var i = 1; i <= doc.numPages; i++) {
-      (function (n) {
-        cadeia = cadeia.then(function () { return vez === V.vez ? doc.getPage(n) : null; }).then(function (pg) {
-          if (!pg || vez !== V.vez) return;
-          var esc1 = V.zoom || (larg / pg.getViewport({ scale: 1 }).width);
-          if (n === 1) { V.escala = esc1; var p = $('cot-pdf-pct'); if (p) p.textContent = Math.round(esc1 * 100) + '%'; }
-          var vp = pg.getViewport({ scale: esc1 * dpr });
-          var cv = D.createElement('canvas');
-          cv.width = Math.floor(vp.width); cv.height = Math.floor(vp.height);
-          cv.style.width = Math.floor(vp.width / dpr) + 'px'; cv.style.height = Math.floor(vp.height / dpr) + 'px';
-          if (!limpou) { box.innerHTML = ''; limpou = true; }
-          box.appendChild(cv);
-          return pg.render({ canvasContext: cv.getContext('2d'), viewport: vp }).promise;
-        });
-      })(i);
-    }
-    return cadeia;
-  }
-  function menuPdf(abrir) {
-    var m = $('cot-pdf-menu'), b = D.querySelector('.cot-pdf-dots'); if (!m) return;
-    var on = abrir == null ? m.hidden : abrir;
-    m.hidden = !on; if (b) b.setAttribute('aria-expanded', on ? 'true' : 'false');
-  }
-  function baixarPdf() { var a = D.createElement('a'); a.href = S.url; a.download = S.arq.nome; D.body.appendChild(a); a.click(); a.remove(); }
-  function acaoPdf(id) {
-    if (!S.arq) return;
-    if (id === 'menu') { menuPdf(); return; }
-    if (id === 'mais' || id === 'menos') { V.zoom = Math.max(0.4, Math.min(4, Math.round(((V.zoom || V.escala) + (id === 'mais' ? 0.25 : -0.25)) * 4) / 4)); desenharPdf(); return; }
-    if (id === 'ajustar') { V.zoom = 0; desenharPdf(); return; }
-    menuPdf(false);
-    if (id === 'abrir') { window.open(S.url, '_blank'); return; }
-    if (id === 'baixar') { baixarPdf(); return; }
-    if (id === 'salvar') {
-      // "Salvar como" de verdade (Chrome/Edge escolhem a pasta); sem ele, o download
-      if (!window.showSaveFilePicker) { baixarPdf(); C.toast('Baixado', 'Este navegador salva direto na pasta Downloads.', ''); return; }
-      window.showSaveFilePicker({ suggestedName: S.arq.nome, types: [{ description: 'PDF', accept: { 'application/pdf': ['.pdf'] } }] })
-        .then(function (h) { return h.createWritable(); })
-        .then(function (w) { return w.write(new Blob([S.arq.buffer], { type: 'application/pdf' })).then(function () { return w.close(); }); })
-        .then(function () { C.toast('PDF salvo', S.arq.nome, 'ok'); })
-        .catch(function (e) { if (e && e.name !== 'AbortError') C.toast('Não consegui salvar', e.message, 'erro'); });
-      return;
-    }
-    if (id === 'imprimir') {
-      // o PDF num iframe escondido e o print dele (o diálogo de impressão do navegador)
-      var f = D.createElement('iframe');
-      f.style.cssText = 'position:fixed;right:0;bottom:0;width:1px;height:1px;border:0;opacity:0';
-      f.src = S.url;
-      f.onload = function () { try { f.contentWindow.focus(); f.contentWindow.print(); } catch (e) { window.open(S.url, '_blank'); } };
-      D.body.appendChild(f);
-      setTimeout(function () { if (f.parentNode) f.parentNode.removeChild(f); }, 120000);
-      return;
-    }
-    if (id === 'cheia') {
-      var p = $('cot-pdf');
-      if (D.fullscreenElement) D.exitFullscreen(); else if (p && p.requestFullscreen) p.requestFullscreen().catch(function () { window.open(S.url, '_blank'); });
-    }
-  }
 
   // CNPJ e código do cliente: o do modo vem primeiro, com o "Buscar"
   function htmlCamposId() {
@@ -890,11 +671,10 @@
   }
   function htmlConf() {
     var d = S.dados, cfg = S.cfg || {};
-    return '<h3>' + (S.leitura && S.leitura.ia ? 'Confira o que a IA leu' : 'Dados da oportunidade') + '</h3>' +
-      '<p class="cot-ag-sub">' + (S.leitura && S.leitura.ia ? 'Os campos com <b style="color:#5A3BC4">IA</b> vieram do PDF. Corrija o que precisar — o caso guarda exatamente o que estiver aqui. ' : '') +
-        'Os campos com <b class="cot-req">*</b> são obrigatórios para criar, e ao menos 1 item cotado (com quantidade e preço)' + (S.leitura && S.leitura.ia ? '.' : '; o resto dá para completar depois, no caso.') + '</p>' +
-      '<div id="cot-dup">' + htmlDup() + '</div>' + htmlAvisos() +
-      '<div class="cot-conf"><div class="cot-conf-form">' +
+    return '<h3>Dados da oportunidade</h3>' +
+      '<p class="cot-ag-sub">Os campos com <b class="cot-req">*</b> são obrigatórios para criar, e ao menos 1 item cotado (com quantidade e preço); o resto dá para completar depois, no caso.</p>' +
+      '<div id="cot-dup">' + htmlDup() + '</div>' +
+      '<div class="cot-conf-form">' +
         '<div class="cot-sec"><h5>' + IC.inbox + (S.semPortal ? 'Oportunidade' : 'Cotação no portal') + ' <span class="cs-chip f-cotada" style="margin-left:auto"><span class="bol"></span>Entra como Cotada</span></h5><div class="cot-grade">' +
           // à mão (sem PDF) é uma ordem nova: não há portal nem nº da cotação (23/10/2026)
           (S.semPortal ? '' : htmlPortal() +
@@ -917,17 +697,13 @@
           campo('E-mail do comprador', 'contato.email', { cls: 's4', mask: 'email', ph: 'nome@hospital.com.br', dica: 'é para ele que a proposta vai' }) +
         '</div></div>' +
         '<div class="cot-sec"><h5>' + IC.tag + 'Condições ofertadas</h5><div class="cot-grade">' +
-          campo('Condição de pagamento', 'condicoes.pagamento', { cls: 's4', req: true, dica: 'exatamente como veio no PDF' }) +
+          campo('Condição de pagamento', 'condicoes.pagamento', { cls: 's4', req: true, dica: 'sai na proposta' }) +
           // 22/10/2026: o frete e o prazo de entrega voltaram (saem na proposta)
           campo('Frete', 'condicoes.frete', { cls: 's1', req: true, lista: ['CIF', 'FOB'] }) +
           campo('Prazo de entrega', 'condicoes.entrega', { cls: 's3', req: true, ni: true, ph: 'ex.: 5 dias úteis após o pedido', max: 120 }) +
           campo('Observação', 'condicoes.observacao', { cls: 's4', area: true, linhas: 2, dica: 'sai no PDF da proposta' }) +
         '</div></div>' +
       '</div>' +
-      '<div class="cot-pdf" id="cot-pdf">' + (S.arq
-        ? htmlVisor()
-        :'<div class="cs-vazio"><div class="ic">' + C.svg('<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/>', 30) + '</div><h3>Sem PDF</h3>Oportunidade registrada à mão. Se tiver o PDF, anexe no caso depois.</div>') +
-      '</div></div>' +
       '<div class="cot-sec cot-sec-larga"><h5>' + IC.list + 'Itens cotados' + (S.lidos.itens ? ' <span class="cs-chip" style="height:18px;font-size:10px;color:#5A3BC4">IA</span>' : '') + '</h5><div id="cot-itens">' + htmlItens() + '</div>' +
         // o estoque da venda (05/11/2026, RECORTE MSB): o mesmo do PI · Pedido da MSB
         '<div id="cot-estoque" class="cot-est-box"></div></div>' +
@@ -1013,9 +789,10 @@
     pintarPassos();
     var el = $('cot-corpo');
     if (S.erroBoot) { el.innerHTML = '<div class="cs-vazio"><div class="ic">' + C.svg('<rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/>', 30) + '</div><h3>Sem acesso</h3>' + esc(S.erroBoot) + '</div>'; return; }
-    el.innerHTML = S.passo === 'pdf' ? htmlPdf() : S.passo === 'lendo' ? htmlLendo() : S.passo === 'conf' ? htmlConf() : htmlPronto();
+    if (S.passo === 'conf' && !S.dados) S.dados = vazio();
+    el.innerHTML = S.passo === 'conf' ? htmlConf() : htmlPronto();
     C.quieto(el);
-    if (S.passo === 'conf') { montarVisor(); marcarInvalidos(); referencias(); estoqueDepois(); }
+    if (S.passo === 'conf') { marcarInvalidos(); referencias(); estoqueDepois(); }
   }
   function msg(html, tipo) {
     var m = $('cot-msg'); if (!m) return;
@@ -1023,10 +800,9 @@
     m.innerHTML = html || '';
   }
   function recomecar() {
-    if (S.url) URL.revokeObjectURL(S.url);
-    S.passo = 'pdf'; S.arq = null; S.url = ''; S.texto = ''; S.leitura = null; S.dados = null; S.lidos = {}; S.dup = null; S.forcar = false;
-    S.criado = null; S.erroIA = ''; S.envio = null; S.codErro = ''; S.criarSemConferir = false; S.erp = null; S.modoCli = 'cnpj';
-    S.prop.enviar = false; S.prop.para = ''; S.prop.copia = ''; S.prop.anexos = []; S.portalLivre = false; S.semPortal = false; S.ipi = false;
+    S.passo = 'conf'; S.texto = ''; S.leitura = null; S.dados = null; S.lidos = {}; S.dup = null; S.forcar = false;
+    S.criado = null; S.envio = null; S.codErro = ''; S.criarSemConferir = false; S.erp = null; S.modoCli = 'cnpj';
+    S.prop.enviar = false; S.prop.para = ''; S.prop.copia = ''; S.prop.anexos = []; S.portalLivre = false; S.semPortal = true; S.ipi = false;
     render();
   }
   function atualizarTotal() {
@@ -1097,8 +873,7 @@
       if (b) b.innerHTML = '<span class="cs-spin"></span> Criando o caso…';
       return C.api('cot-casos', {
         acao: 'novo', fase: 'cotada', forcar: !!(S.dup && S.forcar), dados: d, nota: nota,
-        anexo: S.arq ? { nome: S.arq.nome, tipo: 'application/pdf', base64: S.arq.base64 } : null,
-        leitura: S.leitura ? { ia: !!S.leitura.ia, modelo: S.leitura.modelo || '', avisos: (S.leitura.avisos || []).map(function (a) { return { tipo: a.tipo, texto: a.texto }; }), erro: S.leitura.erro || '' } : null
+        anexo: null, leitura: null
       }).then(function (j) { return { j: j, aut: aut }; });
     }).then(function (r) {
       var j = r.j;
@@ -1140,7 +915,6 @@
     var corpo = $('cot-corpo');
     corpo.addEventListener('change', function (ev) {
       var t = ev.target;
-      if (t.id === 'cot-arquivo') { receberArquivo(t.files && t.files[0]); t.value = ''; return; }
       if (t.id === 'cot-forcar') { S.forcar = t.checked; msg(''); return; }
       if (t.id === 'cot-prop-enviar') { S.prop.enviar = t.checked; msg(''); pintarValidade(); return; }
       // o "Não informado" (prazo de entrega): marcar trava o campo com NÃO INFORMADO;
@@ -1254,8 +1028,6 @@
       if (t.id === 'cot-pbi-conectar') { ev.preventDefault(); conectarPbi(); return; }
       if (t.id === 'cot-portal-lista') { ev.preventDefault(); S.portalLivre = false; repintarPortal(true); return; }
       if (t.hasAttribute('data-tirar-extra')) { ev.preventDefault(); S.prop.anexos.splice(Number(t.getAttribute('data-tirar-extra')), 1); pintarExtras(); return; }
-      if (t.hasAttribute('data-pdf')) { acaoPdf(t.getAttribute('data-pdf')); return; }
-      if (t.id === 'cot-manual') { S.dados = vazio(); S.leitura = null; S.lidos = {}; S.erp = null; S.portalLivre = false; S.semPortal = true; S.passo = 'conf'; render(); return; }
       if (t.id === 'cot-erp-de-novo') { buscarCli((S.erp && S.erp.por) || S.modoCli); return; }
       if (t.hasAttribute('data-modo-cli')) {
         S.modoCli = t.getAttribute('data-modo-cli');
@@ -1297,37 +1069,12 @@
         $('cot-itens').innerHTML = htmlItens(); estoqueDepois();
         return;
       }
-      if (t.id === 'cot-reler') {
-        t.disabled = true; t.innerHTML = '<span class="cs-spin"></span> Lendo…';
-        lerIA().then(checarDupAgora).then(function () { render(); conferirCodigos(true); });
-      }
-    });
-    // arrastar e soltar o PDF
-    corpo.addEventListener('dragover', function (ev) { var d = ev.target.closest && ev.target.closest('#cot-drop'); if (d) { ev.preventDefault(); d.classList.add('drag'); } });
-    corpo.addEventListener('dragleave', function (ev) { var d = ev.target.closest && ev.target.closest('#cot-drop'); if (d) d.classList.remove('drag'); });
-    corpo.addEventListener('drop', function (ev) {
-      var d = ev.target.closest && ev.target.closest('#cot-drop'); if (!d) return;
-      ev.preventDefault(); d.classList.remove('drag');
-      receberArquivo(ev.dataTransfer && ev.dataTransfer.files && ev.dataTransfer.files[0]);
     });
     corpo.addEventListener('keydown', function (ev) {
-      if (ev.target.id === 'cot-drop' && (ev.key === 'Enter' || ev.key === ' ')) { ev.preventDefault(); $('cot-arquivo').click(); }
       if (ev.key === 'Enter' && ev.target.closest && ev.target.closest('.cot-busca')) {
         var k = ev.target.getAttribute('data-k');
         if (k === 'cliente.codigo' || k === 'cliente.cnpj') { ev.preventDefault(); buscarCli(k === 'cliente.codigo' ? 'codigo' : 'cnpj'); }
       }
-    });
-    // o visor do PDF: o menu fecha clicando fora / Esc; ajustado à largura acompanha a janela e a tela cheia
-    D.addEventListener('click', function (ev) { var m = $('cot-pdf-menu'); if (m && !m.hidden && !(ev.target.closest && ev.target.closest('.cot-pdf-mais'))) menuPdf(false); });
-    D.addEventListener('keydown', function (ev) { if (ev.key === 'Escape') menuPdf(false); });
-    window.addEventListener('resize', C.debounce(function () { if (S.passo === 'conf' && !V.zoom && V.doc) desenharPdf(); }, 200));
-    D.addEventListener('fullscreenchange', function () { if (S.passo === 'conf' && V.doc) { V.zoom = 0; setTimeout(desenharPdf, 60); } });
-    // o PDF solto em qualquer lugar da tela, no passo 1
-    D.addEventListener('dragover', function (ev) { if (S.passo === 'pdf') ev.preventDefault(); });
-    D.addEventListener('drop', function (ev) {
-      if (S.passo !== 'pdf' || (ev.target.closest && ev.target.closest('#cot-drop'))) return;
-      ev.preventDefault();
-      receberArquivo(ev.dataTransfer && ev.dataTransfer.files && ev.dataTransfer.files[0]);
     });
   }
 
@@ -1342,12 +1089,11 @@
       if (P) P.preCarregar();
       if (P && !P.pronto()) faixa('<b>O gerador da proposta (jsPDF) não carregou.</b> Recarregue a página — sem ele o caso é criado, mas a proposta não sai.', 'alerta');
       if (S.cfg.fases) C.FASES.forEach(function (f) { var s = S.cfg.fases.filter(function (x) { return x.id === f.id; })[0]; if (s) { f.nome = s.nome; f.desc = s.desc || f.desc; } });
-      if (!S.configurado) faixa('<b>Armazenamento não configurado.</b> A leitura funciona, mas o caso só é gravado depois que o dono do portal configurar o COT_MSB_BLOB_URL.', 'alerta');
-      if (!C.leitorPronto()) faixa('<b>O leitor de PDF não carregou.</b> Recarregue a página — sem ele, dá para registrar a oportunidade à mão.', 'alerta');
+      if (!S.configurado) faixa('<b>Armazenamento não configurado.</b> Dá para preencher, mas o caso só é gravado depois que o dono do portal configurar o COT_MSB_BLOB_URL.', 'alerta');
       render();
     }).catch(function (e) {
       if (e.status === 401 || e.status === 403) { S.erroBoot = e.message; render(); return; }
-      faixa('<b>Não consegui falar com o servidor.</b> ' + esc(e.message) + ' — a leitura funciona, tente criar o caso em instantes.', 'erro');
+      faixa('<b>Não consegui falar com o servidor.</b> ' + esc(e.message) + ' — tente criar o caso em instantes.', 'erro');
     });
   }
   if (D.readyState === 'loading') D.addEventListener('DOMContentLoaded', iniciar); else iniciar();
