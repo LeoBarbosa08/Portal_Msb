@@ -487,13 +487,15 @@
   }
   // TROCA DE PORTAL (Biomedical ⇄ MSB) — 25/11/2026. Os dois portais usam o
   // mesmo login da Microsoft (app 129978ce…, mesmo tenant): quem cruza chega
-  // já logado. Só quem tem acesso FULL vê o atalho — por ora, só o Leonardo.
+  // já logado. Aqui no MSB o atalho de volta, por ora, é só do Leonardo
+  // (TROCA.quem); no portal Bio quem vê é todo o ACESSO FULL de lá.
   // Não é trava de acesso: o outro portal confere o acesso dele sozinho
-  // (/api/my-areas); aqui é só a porta. Para liberar a mais alguém, ponha o
-  // e-mail em TROCA.quem NOS DOIS portais.
+  // (/api/my-areas); aqui é só a porta. Mesmo visual do Bio (25/11): ícone do
+  // portal de destino + nome + ⇄, no vão do topo colado à esquerda da busca.
   var TROCA = {
     nome: 'Biomedical',
     url: 'https://portalcorporativo.biomedical.com.br/',   // Portal Corporativo Biomedical
+    icone: ROOT + 'icons/bio-192.png',        // ícone do app da Biomedical (cópia de Claude.rep/icons/icon-192.png)
     quem: ['leonardo.barbosa@biomedical.com.br']
   };
   IC.troca = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 3l4 4-4 4"/><path d="M21 7H8"/><path d="M7 21l-4-4 4-4"/><path d="M3 17h13"/></svg>';
@@ -505,19 +507,36 @@
     if (D.getElementById('bm3-troca-css')) return;
     var st = D.createElement('style'); st.id = 'bm3-troca-css';
     st.textContent =
-      '.bm3-troca{display:inline-flex;align-items:center;gap:7px;height:36px;padding:0 13px 0 11px;flex:none;' +
-        'border-radius:999px;border:1px solid var(--bm3-line,rgba(11,27,48,.14));background:transparent;' +
-        'color:var(--bm3-ink-2,#2b3a52);font:700 13px/1 var(--bm3-font-text,inherit);text-decoration:none;white-space:nowrap;' +
+      // order 8 = o da busca: fica no vão do topo, colado à esquerda dela
+      '.site-header .container>.bm3-troca{order:8}' +
+      '.bm3-troca{display:inline-flex;align-items:center;gap:9px;height:40px;padding:0 13px 0 6px;flex:none;' +
+        'border-radius:12px;border:1px solid var(--bm3-line,rgba(11,27,48,.14));background:rgba(11,27,48,.03);' +
+        'color:var(--bm3-ink-2,#2b3a52);font:700 13.5px/1 var(--bm3-font-text,inherit);text-decoration:none;white-space:nowrap;' +
         'transition:background-color .2s,color .2s,border-color .2s,transform .18s}' +
-      '.bm3-troca:hover{background:rgba(11,27,48,.06);color:var(--bm3-ink,#0b1b30)}' +
-      '.bm3-troca:active{transform:scale(.96)}' +
-      '.bm3-troca svg{width:16px;height:16px;flex:none}' +
-      'body.home-v3.hv3-dark .bm3-troca{color:rgba(255,255,255,.88);border-color:rgba(255,255,255,.24)}' +
-      'body.home-v3.hv3-dark .bm3-troca:hover{background:rgba(255,255,255,.1);color:#fff}' +
-      'html[data-tema="escuro"] .bm3-troca{color:var(--bmt-ink,#e6edf7);border-color:var(--bmt-line,rgba(255,255,255,.16))}' +
-      'html[data-tema="escuro"] .bm3-troca:hover{background:rgba(255,255,255,.07)}' +
-      '@media (max-width:767.98px){.bm3-troca{width:40px;height:40px;padding:0;justify-content:center}.bm3-troca span{display:none}}';
+      '.bm3-troca:hover{background:rgba(11,27,48,.07);color:var(--bm3-ink,#0b1b30)}' +
+      '.bm3-troca:active{transform:scale(.97)}' +
+      '.bm3-troca img{width:28px;height:28px;border-radius:8px;flex:none;display:block}' +
+      '.bm3-troca svg{width:15px;height:15px;flex:none;opacity:.7}' +
+      'body.home-v3.hv3-dark .bm3-troca{color:rgba(255,255,255,.9);border-color:rgba(255,255,255,.16);background:rgba(255,255,255,.08)}' +
+      'body.home-v3.hv3-dark .bm3-troca:hover{background:rgba(255,255,255,.14);color:#fff}' +
+      'html[data-tema="escuro"] .bm3-troca{color:var(--bmt-ink,#e6edf7);border-color:var(--bmt-line,rgba(255,255,255,.16));background:rgba(255,255,255,.05)}' +
+      'html[data-tema="escuro"] .bm3-troca:hover{background:rgba(255,255,255,.09)}' +
+      '.bm3-menu img.bm3-troca-ic{width:18px;height:18px;border-radius:5px;flex:none}' +
+      // até 1180 a busca vira só a lupa: o atalho vira só o ícone
+      '@media (max-width:1180px){.bm3-troca{padding:0 5px;gap:0}.bm3-troca span,.bm3-troca svg{display:none}}';
     D.head.appendChild(st);
+  }
+  function placeTroca(hc) {
+    if (hc.querySelector('.bm3-troca')) return;
+    cssTroca();
+    var tp = D.createElement('a');
+    tp.className = 'bm3-troca'; tp.href = TROCA.url;
+    tp.title = 'Ir para o Portal ' + TROCA.nome; tp.setAttribute('aria-label', 'Ir para o Portal ' + TROCA.nome);
+    tp.innerHTML = '<img src="' + TROCA.icone + '" alt="" width="28" height="28"><span>Portal ' + esc(TROCA.nome) + '</span>' + IC.troca;
+    // a busca das páginas internas (script.js) pode chegar DEPOIS: ela entra
+    // no fim do cabeçalho, então o atalho continua antes dela (mesmo order 8)
+    var alvo = hc.querySelector(':scope > .header-search') || hc.querySelector(':scope > .hv-head-actions') || hc.querySelector(':scope > .bm3-hd-actions');
+    hc.insertBefore(tp, alvo || null);
   }
 
   function setupHeaderActions() {
@@ -539,19 +558,12 @@
       var u = W._portalUser; if (!u) return false;
       av.textContent = initials(u.name || u.email);
       var troca = podeTrocar(u);
-      if (troca && !box.querySelector('.bm3-troca')) {
-        cssTroca();
-        var tp = D.createElement('a');
-        tp.className = 'bm3-troca'; tp.href = TROCA.url;
-        tp.title = 'Ir para o Portal ' + TROCA.nome; tp.setAttribute('aria-label', 'Ir para o Portal ' + TROCA.nome);
-        tp.innerHTML = IC.troca + '<span>' + esc(TROCA.nome) + '</span>';
-        box.insertBefore(tp, av);
-      }
+      if (troca) placeTroca(hc);
       menu.innerHTML = '<div class="bm3-menu-head"><span class="bm3-avatar" aria-hidden="true">' + esc(initials(u.name || u.email)) + '</span><div style="min-width:0"><strong>' + esc(u.name || 'Usuário') + '</strong><small>' + esc(u.email || '') + '</small></div></div>' +
         // Tema claro/escuro: o seletor e o clique são do portal-tema.js
         (W.BMTema && W.BMTema.seletorHtml ? W.BMTema.seletorHtml() : '') +
         (home ? '' : '<a href="' + ROOT + 'index.html" role="menuitem">' + IC.home + 'Voltar ao portal</a>') +
-        (troca ? '<a href="' + TROCA.url + '" role="menuitem">' + IC.troca + 'Ir para o Portal ' + esc(TROCA.nome) + '</a>' : '') +
+        (troca ? '<a href="' + TROCA.url + '" role="menuitem"><img class="bm3-troca-ic" src="' + TROCA.icone + '" alt="">Ir para o Portal ' + esc(TROCA.nome) + '</a>' : '') +
         '<button type="button" class="bm3-menu-item" data-bm3="motion" role="menuitem">' + IC.motion + (reduced() ? 'Ligar animações' : 'Reduzir animações') + '</button>' +
         '<button type="button" class="bm3-menu-item is-danger" data-bm3="sair" role="menuitem">' + IC.out + 'Sair da conta</button>';
       var n = alertCount(), b = box.querySelector('.bm3-bell .bm3-badge');
