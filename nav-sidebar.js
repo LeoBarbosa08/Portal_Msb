@@ -18,7 +18,7 @@
     // Páginas do ecossistema PI liberadas no quiosque (Pedido + Consignação).
     // Cada PI "recomeça" recarregando a si mesmo (window.location.reload),
     // então TODAS precisam estar aqui — senão o reload cai no Pedido.
-    var PI_PAGES = ['pedido-inteligente.html', 'pi-fila.html', 'pi-consignacao.html', 'pi-consignacao-incompleto.html', 'pi-cotacao.html', 'pi-pedido-teste.html'];
+    var PI_PAGES = ['pedido-inteligente.html', 'pi-consignacao.html', 'pi-consignacao-incompleto.html', 'pi-cotacao.html', 'pi-pedido-teste.html'];
     if (PI_PAGES.indexOf(file) >= 0) return;   // página PI permitida
     var n = 0, iv = setInterval(function () {
       var email = ((window._portalUser && window._portalUser.email) || '').toLowerCase();
@@ -470,8 +470,6 @@ if (!window._bmPerfilSheetLoaded && !window._bmPerfilSheetInjected) {
     'lici':                      ['licitacao'],
     'lici-relatorio':            ['licitacao'],
     'pedido-inteligente':        ['comercial'],
-    // 25/11/26: a fila de aprovação do PI · Pedido (os pedidos do CRM) — o /api/cot-casos exige o Comercial
-    'pi-fila':                   ['comercial'],
     'pi-pedido-teste':           ['comercial'],
     'pi-cotacao':                ['comercial', 'licitacao'],
     'pi-consignacao':            ['comercial', 'estoque'],
@@ -935,9 +933,9 @@ if (!window._bmPerfilSheetLoaded && !window._bmPerfilSheetInjected) {
       // dono): liberado para quem tem a área Comercial — saiu do gate SO_DONO
       // no topo deste arquivo e entrou na busca (MSB_VISIVEIS do
       // portal-catalogo.js).
-      // 25/11/26 (pedido do dono): a FILA DE APROVAÇÃO do PI · Pedido — os pedidos
-      // que o CRM mandou ao clicar em Virou pedido, para alguém dar andamento
-      agen:[{l:'PI · Pedido',h:'pedido-inteligente.html'},{l:'PI · Fila de Pedidos',h:'pi-fila.html'}],
+      // 25/11/26 (pedido do dono: "tem que estar no PI, não crie dois agentes"): a
+      // Fila de aprovação dos pedidos do CRM é uma ABA do próprio PI · Pedido
+      agen:[{l:'PI · Pedido',h:'pedido-inteligente.html'}],
       atal:[]
     },
 
@@ -1304,7 +1302,7 @@ if (!window._bmPerfilSheetLoaded && !window._bmPerfilSheetInjected) {
       [/^comercial/,      'comercial'],
       // Agentes PI do Comercial (Pedido, Consignação, Consignação incompleto, Cotação):
       // herdam o menu lateral completo do Comercial (submódulos + agentes).
-      [/^pedido-inteligente|^pi-fila|^pi-pedido-teste|^pi-consignacao|^pi-cotacao/, 'comercial'],
+      [/^pedido-inteligente|^pi-pedido-teste|^pi-consignacao|^pi-cotacao/, 'comercial'],
       [/^financeiro|^cobranca-automatica|^cobranca-notas/, 'financeiro'],
       [/^ti/,             'ti'],
       [/^logistica/,      'logistica'],

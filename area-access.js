@@ -45,7 +45,6 @@
     'lici':                      ['licitacao'],
     'lici-relatorio':            ['licitacao'],
     'pedido-inteligente':        ['comercial'],
-    'pi-fila':                   ['comercial'],
     'pi-pedido-teste':           ['comercial'],
     'pi-cotacao':                ['comercial', 'licitacao'],
     'pi-consignacao':            ['comercial', 'estoque'],

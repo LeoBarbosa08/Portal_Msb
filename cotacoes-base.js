@@ -1371,7 +1371,7 @@
       produtos: (pv.produtos || []).map(function (p) { return { codigo: p.codigo || '', descricao: p.descricao || '', quantidade: p.quantidade || 0, valorUnitario: p.valorUnitario || 0 }; })
     }, avisos: [] };
   }
-  // opts.fila (25/11/2026): quem abre é a FILA DE APROVAÇÃO do PI (pi-fila.html) —
+  // opts.fila (25/11/2026): quem abre é a aba FILA DE APROVAÇÃO do PI (pi-fila.js) —
   // o PI volta para ela depois de lançar
   function abrirNoPI(c, extracao, opts) {
     opts = opts || {};

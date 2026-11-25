@@ -524,12 +524,12 @@
   }
   // 25/11/2026 (pedido do dono): "o vendedor clica em VIRAR PEDIDO e fica
   // Aguardando o pedido ser finalizado" — onde o pedido está na FILA DE
-  // APROVAÇÃO do PI · Pedido (pages/pi-fila.html): esperando alguém, em
+  // APROVAÇÃO — a aba do PI · Pedido (pi-fila.js): esperando alguém, em
   // andamento com alguém, ou DEVOLVIDO com o motivo (o vendedor ajusta e
   // reenvia). Lançado, o cartão mostra o "Pedido lançado no Dynamics".
   function htmlNaFila(c) {
     var pi = c.pi || {}, ped = c.pedido || {};
-    var link = '<a class="cot-fila-link" href="pi-fila.html?caso=' + encodeURIComponent(c.numero) + '">' + IC.eye + 'Ver na fila do PI</a>';
+    var link = '<a class="cot-fila-link" href="pedido-inteligente.html?aba=fila&caso=' + encodeURIComponent(c.numero) + '">' + IC.eye + 'Ver na fila do PI</a>';
     if (pi.estado === 'devolvido') {
       var d = pi.devolvido || {};
       return '<div class="cot-na-fila devolvido">' + IC.alert + '<div><b>Pedido devolvido pela fila do PI · Pedido</b>' +

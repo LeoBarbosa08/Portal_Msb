@@ -64,12 +64,19 @@ function casoBase(numero, extra) {
     { soNoNavegador: L.condPagamento.filter(x => doServidor.indexOf(x) < 0), soNoServidor: doServidor.filter(x => L.condPagamento.indexOf(x) < 0) });
   const pi = fs.readFileSync(path.join(__dirname, '..', 'pedido-inteligente.js'), 'utf8');
   t('o PI lê a lista do pi-listas.js (sem cópia própria)', /PILISTAS\.condPagamento/.test(pi) && !/'CR 90\/120 DIAS'/.test(pi));
-  const pag = ['pages/pedido-inteligente.html', 'pages/comercial-cot-nova.html', 'pages/comercial-cot-casos.html'].concat(['pages/pi-fila.html']);
+  const pag = ['pages/pedido-inteligente.html', 'pages/comercial-cot-nova.html', 'pages/comercial-cot-casos.html'];
   pag.forEach(function (p) {
     const h = fs.readFileSync(path.join(__dirname, '..', p), 'utf8');
     const iL = h.indexOf('pi-listas.js'), iD = Math.max(h.indexOf('pedido-inteligente.js?'), h.indexOf('cotacoes-base.js?'));
     t(p + ': carrega o pi-listas.js antes de quem usa', iL > 0 && iL < iD);
   });
+
+  // 25/11/26 (o dono: "tem que estar no PI, não crie dois agentes"): a fila é uma aba do PI
+  const htmlPi = fs.readFileSync(path.join(__dirname, '..', 'pages', 'pedido-inteligente.html'), 'utf8');
+  const nav = fs.readFileSync(path.join(__dirname, '..', 'nav-sidebar.js'), 'utf8');
+  t('a fila é uma ABA do PI (Novo pedido | Fila de aprovação), com o pi-fila.js', /data-pi-aba="novo"/.test(htmlPi) && /data-pi-aba="fila"/.test(htmlPi) && /id="pf-app"/.test(htmlPi) && /pi-fila\.js\?v=/.test(htmlPi));
+  t('sem página nem agente à parte (nada de pi-fila.html no menu, na busca ou no disco)', !/pi-fila\.html/.test(nav) && !/pi-fila\.html/.test(fs.readFileSync(path.join(__dirname, '..', 'portal-catalogo.js'), 'utf8')) &&
+    !fs.existsSync(path.join(__dirname, '..', 'pages', 'pi-fila.html')));
 
   console.log('2) a transportadora e a observação na nota no caso');
   const d = M.dadosDe({ condicoes: { pagamento: 'CR 30 DIAS', transportadora: '  BRIX  ', obsNota: 'linha 1\nlinha 2' } }, QUEM.cfg);

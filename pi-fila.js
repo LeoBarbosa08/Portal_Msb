@@ -1,5 +1,6 @@
 /* ================================================================
-   pi-fila.js — a FILA DE APROVAÇÃO do PI · Pedido (pages/pi-fila.html)
+   pi-fila.js — a aba FILA DE APROVAÇÃO do PI · Pedido
+                (pages/pedido-inteligente.html — as abas Novo pedido | Fila)
 
    25/11/2026 (pedido do dono): "quando virar pedido, isso vai para uma fila
    de aprovações no PI PEDIDOS para alguém dar andamento, em formato de
@@ -22,8 +23,15 @@
    . "Devolver ao vendedor" (com o motivo) e "Voltar para a fila" (o em
      andamento que não foi lançado): POST /api/cot-casos {acao:'pi'}.
 
-   Usa cotacoes-base.js (window.COT: api, toast, diálogo, ícones, formatação)
-   e cotacoes-proposta.js (window.COTPROP).
+   25/11/2026 (o dono: "isso tem que estar no PI, não crie dois agentes"): a
+   fila NÃO é uma página/agente à parte — é a aba "Fila de aprovação" do PI ·
+   Pedido, ao lado de "Novo pedido" (o assistente). A aba lembra a última
+   escolha da pessoa (localStorage); ?aba=fila (&caso=COT-…) abre nela; o PI
+   vindo do CRM/da fila (?cot=…) abre sempre no assistente. Sem acesso ao CRM
+   (só Estoque), as abas somem e fica só o assistente.
+
+   Usa cotacoes-base.js (window.COT: api, toast, diálogo, ícones, formatação);
+   a proposta (jsPDF + cotacoes-proposta.js) só carrega no clique.
    ================================================================ */
 (function () {
   'use strict';
@@ -88,7 +96,7 @@
 
   /* ── pintar ─────────────────────────────────────────────────── */
   function render() {
-    renderKpis(); renderVisoes(); renderLista();
+    renderKpis(); renderVisoes(); renderLista(); pintarSelo(contar(['aguardando']));
     pintarAtual(S.em ? 'Atualizado às ' + C.dataBR(new Date(S.em).toISOString(), true).slice(11) : '');
   }
   function contar(estados) { return S.fila.filter(function (it) { return estados.indexOf(it.estado) >= 0; }).length; }
@@ -301,11 +309,11 @@
   // a proposta de agora (todos os itens da oportunidade), no modelo da MSB
   function verProposta(num) {
     var it = item(num); if (!it) return;
-    if (!W.COTPROP || !W.COTPROP.pronto()) { C.toast('O gerador da proposta não carregou', 'Recarregue a página (F5).', 'erro'); return; }
     var janela = W.open('', '_blank');
     if (janela) { try { janela.document.title = 'Proposta ' + num; janela.document.body.innerHTML = '<p style="font:15px system-ui;padding:40px;color:#0F2831">Gerando a proposta…</p>'; } catch (e) {} }
-    casoInteiro(num).then(function (c) {
-      var v = it.vendedor || {};
+    Promise.all([casoInteiro(num), garantirProposta()]).then(function (r) {
+      var c = r[0], v = it.vendedor || {};
+      if (!W.COTPROP || !W.COTPROP.pronto()) throw new Error('o gerador da proposta não carregou — recarregue a página (F5)');
       return W.COTPROP.gerar(c, { nome: v.nome || '', email: v.email || '', area: c.area || '', telefone: '' });
     }).then(function (pdf) {
       var url = URL.createObjectURL(pdf.blob);
@@ -322,9 +330,54 @@
     }
   }
 
+  /* ── as ABAS do PI: Novo pedido | Fila de aprovação ─────────── */
+  var ABA_CHAVE = 'pi-aba';
+  function pintarSelo(n) {
+    var el = $('pi-fila-n'); if (!el) return;
+    el.textContent = n; el.hidden = !n;
+    var b = $('pi-aba-bt-fila'); if (b) b.title = n ? n + (n === 1 ? ' pedido esperando' : ' pedidos esperando') : 'Nenhum pedido esperando';
+  }
+  function abaAtual() { var f = $('pi-aba-fila'); return f && !f.hidden ? 'fila' : 'novo'; }
+  function mostrarAba(id, lembrar) {
+    var fila = id === 'fila', pf = $('pi-aba-fila'), pn = $('pi-aba-novo');
+    if (!pf || !pn) return;
+    pf.hidden = !fila; pn.hidden = fila;
+    ['novo', 'fila'].forEach(function (k) { var b = $('pi-aba-bt-' + k); if (b) b.setAttribute('aria-selected', String(k === id)); });
+    if (lembrar) { try { W.localStorage.setItem(ABA_CHAVE, id); } catch (e) {} }
+    if (fila && (!S.carregou || Date.now() - S.em > 15e3)) carregar(S.carregou);
+    // o PDF ao lado do assistente se redesenha na largura de agora
+    if (!fila) { try { W.dispatchEvent(new Event('resize')); } catch (e) {} }
+  }
+  function semAcesso() {
+    var a = $('pi-abas'); if (a) a.hidden = true;
+    mostrarAba('novo');
+  }
+  // a proposta (jsPDF + cotacoes-proposta.js) só quando alguém pede
+  var _prop = null;
+  function carregarScript(src) {
+    return new Promise(function (ok, falha) {
+      var s = D.createElement('script'); s.src = src; s.onload = ok; s.onerror = function () { falha(new Error('não carregou ' + src)); };
+      D.head.appendChild(s);
+    });
+  }
+  function garantirProposta() {
+    if (W.COTPROP && W.COTPROP.pronto()) return Promise.resolve();
+    if (!_prop) {
+      _prop = (W.jspdf ? Promise.resolve() : carregarScript('https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js'))
+        .then(function () { return W.COTPROP ? null : carregarScript('../cotacoes-proposta.js?v=10'); })
+        .catch(function (e) { _prop = null; throw e; });
+    }
+    return _prop;
+  }
+
   /* ── eventos ────────────────────────────────────────────────── */
   function ligar() {
     var app = $('pf-app');
+    var abas = $('pi-abas');
+    if (abas) abas.addEventListener('click', function (ev) {
+      var b = ev.target.closest('[data-pi-aba]'); if (!b) return;
+      mostrarAba(b.getAttribute('data-pi-aba'), true);
+    });
     app.addEventListener('click', function (ev) {
       var t = ev.target;
       var b;
@@ -350,35 +403,60 @@
     $('pf-busca').addEventListener('input', C.debounce(function (ev) { S.busca = ev.target.value; renderVisoes(); renderLista(); }, 180));
     $('pf-recarregar').addEventListener('click', function () { carregar(); });
     // volta para a aba (ou o PI lançou noutra aba): atualiza
-    D.addEventListener('visibilitychange', function () { if (!D.hidden && Date.now() - S.em > 15e3) carregar(true); });
-    if (W.CSPI && W.CSPI.ouvir) W.CSPI.ouvir(function (m) { if (m && m.tipo === 'pi-enviado') carregar(true); });
+    D.addEventListener('visibilitychange', function () { if (!D.hidden && abaAtual() === 'fila' && Date.now() - S.em > 15e3) carregar(true); });
+    if (W.CSPI && W.CSPI.ouvir) W.CSPI.ouvir(function (m) { if (m && m.tipo === 'pi-enviado' && S.carregou) carregar(true); });
     // a cada 60 s, com a aba à vista e sem diálogo aberto
     setInterval(function () {
       var dlg = $('cs-dlg');
-      if (!D.hidden && !(dlg && dlg.open) && !Object.keys(S.agindo).length) carregar(true);
+      if (!D.hidden && abaAtual() === 'fila' && !(dlg && dlg.open) && !Object.keys(S.agindo).length) carregar(true);
     }, 60e3);
   }
 
   function iniciar() {
     if (!$('pf-app')) return;
     ligar();
-    render();
     var q = new URLSearchParams(location.search), alvo = q.get('caso') || '';
+    // de onde abrir: o PI vindo do CRM/da fila (?cot=/?cs=) fica no assistente;
+    // ?aba=fila (&caso=) abre na fila; sem nada, a última aba da pessoa
+    var doCrm = !!(q.get('cot') || q.get('cs'));
+    var lembrada = ''; try { lembrada = W.localStorage.getItem(ABA_CHAVE) || ''; } catch (e) {}
+    var inicial = doCrm ? 'novo' : (q.get('aba') === 'fila' || alvo) ? 'fila' : q.get('aba') === 'novo' ? 'novo' : (lembrada === 'fila' ? 'fila' : 'novo');
+    if (!doCrm && (q.get('aba') || alvo)) { try { history.replaceState(null, '', location.pathname); } catch (e) {} }
+    var abas = $('pi-abas'); if (abas) abas.hidden = false;
+    mostrarAbaSemCarregar(inicial);
+    render();
     C.aguardarLogin().then(function () {
       S.eu = W._portalUser ? { email: String(W._portalUser.email || '').toLowerCase(), nome: W._portalUser.name || '' } : null;
-      return carregar();
-    }).then(function () {
-      // ?caso=COT-MSB-…: abre aquele pedido (o "Ver na fila do PI" do CRM)
-      var it = alvo && item(alvo);
-      if (it) {
-        if (!passa(it, S.visao)) S.visao = VISOES.filter(function (v) { return v.estados && v.estados.indexOf(it.estado) >= 0; })[0].id;
-        S.aberto = '';
-        render();
-        abrir(alvo);
-      } else if (alvo && S.carregou && !S.erro) {
-        C.toast('Esse pedido não está na fila', alvo + ' — talvez já tenha sido finalizado há mais de ' + S.dias + ' dias.', '');
-      }
+      // o selo da aba (barato: só o índice) — e quem não tem o CRM não vê as abas
+      return C.api('cot-casos?fila=conta').then(function (k) {
+        pintarSelo((k && k.aguardando) || 0);
+        return true;
+      }, function (e) {
+        if (e.status === 401 || e.status === 403) { semAcesso(); return false; }
+        return true;
+      });
+    }).then(function (ok) {
+      if (!ok || abaAtual() !== 'fila') return;
+      return carregar().then(function () {
+        // ?caso=COT-MSB-…: abre aquele pedido (o "Ver na fila do PI" do CRM)
+        var it = alvo && item(alvo);
+        if (it) {
+          if (!passa(it, S.visao)) S.visao = VISOES.filter(function (v) { return v.estados && v.estados.indexOf(it.estado) >= 0; })[0].id;
+          S.aberto = '';
+          render();
+          abrir(alvo);
+        } else if (alvo && S.carregou && !S.erro) {
+          C.toast('Esse pedido não está na fila', alvo + ' — talvez já tenha sido finalizado há mais de ' + S.dias + ' dias.', '');
+        }
+      });
     });
+  }
+  // a aba de abertura, sem buscar a fila ainda (o login vem antes)
+  function mostrarAbaSemCarregar(id) {
+    var fila = id === 'fila', pf = $('pi-aba-fila'), pn = $('pi-aba-novo');
+    if (!pf || !pn) return;
+    pf.hidden = !fila; pn.hidden = fila;
+    ['novo', 'fila'].forEach(function (k) { var b = $('pi-aba-bt-' + k); if (b) b.setAttribute('aria-selected', String(k === id)); });
   }
   if (D.readyState === 'loading') D.addEventListener('DOMContentLoaded', iniciar); else iniciar();
 })();

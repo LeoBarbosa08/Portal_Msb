@@ -1528,3 +1528,8 @@ html[data-tema="escuro"] .pf-alerta, html[data-tema="escuro"] b.pf-alerta, html[
 }
 /* 25/11/2026: na Nova oportunidade a Qtd e o Preço (obrigatórios) vêm logo depois da descrição */
 table.cot-itens.cot-itens-nova th.desc, table.cot-itens.cot-itens-nova td.desc { min-width: 200px; }
+/* 25/11/2026: a fila é uma ABA do PI · Pedido (pages/pedido-inteligente.html) */
+.pf-topo { display: flex; gap: 12px 20px; align-items: flex-start; justify-content: space-between; flex-wrap: wrap; }
+.pf-topo .pf-intro { flex: 1 1 420px; }
+.pf-topo-d { display: flex; align-items: center; gap: 10px; flex: none; }
+body.pi-page .pf-wrap { margin-bottom: 8px; }

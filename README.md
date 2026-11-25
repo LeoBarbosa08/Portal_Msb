@@ -19,7 +19,7 @@ Venda Recorrente".
 | Área | Páginas |
 |---|---|
 | Comercial | Visão geral · Sales Report (6 abas) · CRM › Venda Recorrente (Funil, Analítico, Gestão, Quadro, Histórico, Nova oportunidade) · Negociações + Analítico · FCA · Sales Playbook · Materiais · Tabela de Preços |
-| Comercial · agentes | Dossiê de Visita · PI · Pedido (liberado para o Comercial em 11/11 — ver "PI · Pedido liberado") · PI · Fila de Pedidos (25/11 — ver "CRM · as listas do PI…") · PI · Consignação · PI · Consignação (INCOMPLETO, em testes) · Agente Comercial (o Agente de Cotações virou o "Nova oportunidade" do CRM) |
+| Comercial · agentes | Dossiê de Visita · PI · Pedido (liberado para o Comercial em 11/11 — ver "PI · Pedido liberado") (com a aba Fila de aprovação desde 25/11 — ver "CRM · as listas do PI…") · PI · Consignação · PI · Consignação (INCOMPLETO, em testes) · Agente Comercial (o Agente de Cotações virou o "Nova oportunidade" do CRM) |
 | Estoque | Visão geral · Gestão de Estoque (Saldo, Ruptura, Validade Curta, Movimentações) · Gestão de Consignação (Saldo Consignado, Saldo por Nota, Devoluções, Rastreabilidade, GMROI) · Perdas · Consignado |
 | Estoque · agentes | Agente de Estoque |
 | Contábil | Visão geral · Gestão de Custos SG&A (só a MSB) |
@@ -2649,7 +2649,7 @@ mostrava as rejeitadas desde 11/11 (o corte fixo), com notas de 17/11 e 19/11.
   Pallet; `KANBAN_DESDE=0` não traz a rejeitada antiga de volta. `sw.js` — cache
   `bm-comest-v103`.
 
-### CRM · as listas do PI, o "Virou pedido" pela proposta e a Fila de Pedidos no PI (25/11/2026)
+### CRM · as listas do PI, o "Virou pedido" pela proposta e a Fila de aprovação no PI (25/11/2026)
 
 Pedido do dono: "levar a lista e as informações do PI PEDIDO para o CRM —
 CONDIÇÃO DE PAGAMENTO (a mesma lista do PI, hoje no CRM é campo aberto), a
@@ -2689,9 +2689,17 @@ qtd são obrigatórios".
   fulano, lançado) com "Ver na fila do PI". Fecha como Ganha quando a OV volta
   pelo flow (`/api/cot-ov-retorno`, como antes) — ou com a OV informada.
   "Atualizar o PDF do pedido" refaz a proposta com os dados de agora.
-- **Fila de Pedidos** (`pages/pi-fila.html` + `pi-fila.js`, no menu do
-  Comercial em Agentes, na busca e no topo do PI com quantos esperam) — os
-  pedidos registrados no CRM, sem armazenamento próprio:
+- **Fila de aprovação = uma ABA do PI · Pedido** (o dono: "isso tem que estar
+  no PI, não crie dois agentes"): `pages/pedido-inteligente.html` tem as abas
+  **Novo pedido** (o assistente de sempre) | **Fila de aprovação** (com o selo
+  de quantos esperam) — `pi-fila.js`, com o núcleo do CRM (`cotacoes-base.js`)
+  e os estilos dele (`customer-service.css`, `cotacoes.css`; a página ganhou
+  `cs-page cot-page`). Nada de página nem item de menu à parte. A aba lembra a
+  última escolha da pessoa; `?aba=fila&caso=COT-…` abre na fila e naquele
+  pedido (o "Ver na fila do PI" do CRM); o PI vindo da fila (`?cot=…&fila=1`)
+  abre no assistente; quem não tem o CRM (só Estoque) não vê as abas. A
+  proposta (jsPDF) só carrega no clique. Os pedidos registrados no CRM, sem
+  armazenamento próprio:
   `GET /api/cot-casos?fila=1` (`motor.fila`/`itemDaFila`: aguardando, em
   andamento, devolvidos, e os lançados/finalizados dos últimos 15 dias;
   `?fila=conta` para o selo). Cada pedido abre com tudo — comprador, vendedor,
@@ -2703,7 +2711,7 @@ qtd são obrigatórios".
     quando a lista do Dynamics chega, a observação na nota entra no rodapé); o
     pedido fica "em andamento" com o nome de quem abriu (se outra pessoa já
     abriu, pergunta antes). Lançado, o PI marca a oportunidade e oferece
-    "Voltar à Fila de Pedidos".
+    "Voltar à Fila de aprovação".
   - **Devolver ao vendedor** (com o motivo) — `acao:'pi', estado:'devolvido'`;
     o vendedor vê o motivo no cartão Pedido (selo "Pedido devolvido"), ajusta e
     clica em **Reenviar para a fila** (o PDF é refeito). **Voltar para a fila**
@@ -2715,15 +2723,14 @@ qtd são obrigatórios".
   `itens`). Na Nova oportunidade a Qtd e o Preço vêm logo depois da Descrição
   (com a prévia ao lado a tabela rolava e o Preço ficava escondido).
 - Acesso: a fila usa o `/api/cot-casos` (área Comercial), como o retorno do PI
-  já usava; quem só tem Estoque não vê o link no PI. Mapa de áreas
-  (`nav-sidebar.js`, `area-access.js`): `pi-fila` = Comercial.
+  já usava; quem só tem Estoque não vê a aba.
 - Testes: `node scripts/test-pi-fila.js` (a lista do navegador = a do prompt da
   IA, os campos novos, devolver/reenviar, o item e a rota da fila, o pedido
   pela proposta, quantidade e preço obrigatórios).
-- Versões: `cotacoes-base.js?v=33`, `cotacoes.js?v=46`, `cotacoes-agente.js?v=31`,
-  `cotacoes-proposta.js?v=10`, `cotacoes-ficha.js?v=15`, `cotacoes.css?v=37`,
-  `pedido-inteligente.js?v=44`, `nav-sidebar.js?v=91`, `script.js?v=9`,
-  `portal-catalogo.js?v=26`, `area-access.js?v=22`; `sw.js` — cache `bm-comest-v104`.
+- Versões: `cotacoes-base.js?v=34`, `cotacoes.js?v=47`, `cotacoes-agente.js?v=31`,
+  `cotacoes-proposta.js?v=10`, `cotacoes-ficha.js?v=15`, `cotacoes.css?v=38`,
+  `pedido-inteligente.js?v=45`, `pi-fila.js?v=2`, `nav-sidebar.js?v=92`, `script.js?v=10`,
+  `portal-catalogo.js?v=27`, `area-access.js?v=23`; `sw.js` — cache `bm-comest-v105`.
 
 ### Cuidados
 

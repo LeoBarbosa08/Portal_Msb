@@ -1448,16 +1448,16 @@
     try { e = await CSPI.ler(numero); } catch (err) { console.warn('[pedido] CSPI.ler:', err); }
     if (!e) {
       bannerCS('<div>' + (tipo === 'cot' ? 'Cotação' : 'Caso') + ' <strong>' + esc(numero) + '</strong> (' + O.modulo + '): não encontrei o PDF entregue (a entrega vale 24 h, neste navegador). ' +
-        (tipo === 'cot' ? 'Abra de novo pela <a href="pi-fila.html?caso=' + encodeURIComponent(numero) + '" style="color:inherit;font-weight:700">Fila de Pedidos</a> (Dar andamento no PI)' : 'Volte ao caso e clique em "Abrir no PI" de novo') + ' — ou anexe o PDF aqui.</div>', 'err');
+        (tipo === 'cot' ? 'Abra de novo pela aba <a href="pedido-inteligente.html?aba=fila&caso=' + encodeURIComponent(numero) + '" style="color:inherit;font-weight:700">Fila de aprovação</a> (Dar andamento no PI)' : 'Volte ao caso e clique em "Abrir no PI" de novo') + ' — ou anexe o PDF aqui.</div>', 'err');
       CS = { numero: numero, origemPI: tipo };
       return;
     }
     CS = e;
     CS.origemPI = tipo;
-    // 25/11/2026: veio da FILA DE APROVAÇÃO (pi-fila.html) — depois de lançar, volta para ela
+    // 25/11/2026: veio da aba FILA DE APROVAÇÃO (pi-fila.js) — depois de lançar, volta para ela
     if (q.get('fila') === '1') CS.fila = true;
     var c = e.contato || {};
-    bannerCS('<span style="font-size:18px;line-height:1.2">' + O.icone + '</span><div><strong>Pedido ' + O.rotulo + ' ' + esc(e.numero) + '</strong> · ' + O.modulo + (CS.fila ? ' · <a href="pi-fila.html?caso=' + encodeURIComponent(e.numero) + '" style="color:inherit">da Fila de Pedidos</a>' : '') + '<br>' +
+    bannerCS('<span style="font-size:18px;line-height:1.2">' + O.icone + '</span><div><strong>Pedido ' + O.rotulo + ' ' + esc(e.numero) + '</strong> · ' + O.modulo + (CS.fila ? ' · <a href="pedido-inteligente.html?aba=fila&caso=' + encodeURIComponent(e.numero) + '" style="color:inherit">da Fila de aprovação</a>' : '') + '<br>' +
       esc(c.nome || c.email || (e.conta && e.conta.nome) || 'cliente') + (c.nome && c.email ? ' &lt;' + esc(c.email) + '&gt;' : '') + (e.assunto ? ' · ' + esc(e.assunto) : '') +
       '<br><span style="opacity:.8">' + (e.manual && !e.base64 ? 'Sem PDF — pedido registrado à mão na cotação: o comprador e os itens ganhos já vêm preenchidos'
         : e.base64 && e.extracao && /^Pedido /.test(e.arquivo || '') ? 'PDF do pedido: a proposta da oportunidade (' + esc(e.arquivo) + ') · os itens ganhos, a condição de pagamento, a transportadora e a observação na nota já vêm do CRM'
@@ -1555,7 +1555,7 @@
         if (window.CSPI) { CSPI.avisar({ tipo: 'pi-enviado', numero: numero }); CSPI.apagar(numero); }
         bannerCS('<span style="font-size:18px;line-height:1.2">✓</span><div><strong>' + (O === ORIGENS_PI.cot ? 'Cotação ' : 'Caso ') + esc(numero) + ' atualizad' + (O === ORIGENS_PI.cot ? 'a' : 'o') + '</strong> — ' +
           (O === ORIGENS_PI.cot ? 'a oportunidade já mostra o pedido como lançado no Dynamics (fecha como Ganha quando a OV voltar). ' : 'o Customer Service já mostra o pedido como enviado ao Dynamics. ') +
-          (daFila ? '<a href="pi-fila.html" style="color:inherit;font-weight:700">Voltar à Fila de Pedidos</a> · ' : '') +
+          (daFila ? '<a href="pedido-inteligente.html?aba=fila" style="color:inherit;font-weight:700">Voltar à Fila de aprovação</a> · ' : '') +
           '<a href="' + O.volta + '?caso=' + encodeURIComponent(numero) + '" style="color:inherit;font-weight:700">' + (O === ORIGENS_PI.cot ? 'Ver a oportunidade' : 'Voltar ao caso') + '</a></div>', 'ok');
       })
       .catch(function (e) {
@@ -1564,23 +1564,6 @@
       });
     try { history.replaceState(null, '', location.pathname); } catch (e) {}   // "Registrar novo pedido" não reabre o caso
     CS = null;
-  }
-
-  // 25/11/2026 (pedido do dono): a FILA DE APROVAÇÃO (pi-fila.html) — os pedidos
-  // que o CRM mandou no "Virou pedido". O link no topo do PI mostra quantos
-  // esperam; sem acesso ao CRM (só Estoque), o link some.
-  function contarFila() {
-    var a = $('pi-fila-link'), n = $('pi-fila-n');
-    if (!a) return;
-    fetch('/api/cot-casos?fila=conta', { cache: 'no-store' })
-      .then(function (r) { if (r.status === 401 || r.status === 403) { a.hidden = true; return null; } return r.ok ? r.json() : null; })
-      .then(function (j) {
-        if (!j || !n) return;
-        var k = Number(j.aguardando) || 0;
-        n.textContent = k; n.hidden = !k;
-        a.title = k ? k + (k === 1 ? ' pedido esperando' : ' pedidos esperando') + (j.andamento ? ' · ' + j.andamento + ' em andamento' : '') : 'Nenhum pedido esperando';
-      })
-      .catch(function () {});
   }
 
   // ── Bootstrap ───────────────────────────────────────────────────
@@ -1595,7 +1578,6 @@
     popularSelect('cab-portal',    PORTAIS,        'Escolha o portal');
     popularSelect('cab-vendedor',  VENDEDORES,     'Escolha o vendedor');
     carregarTransportadoras();   // opcional; não segura a tela
-    contarFila();                // 25/11/2026: o selo da Fila de Pedidos no topo
     $('cab-caso').value = 'N/D';
     $('cab-obsnota').value = '';
     // RECORTE MSB: empresa e área fixas (aparecem, mas não se escolhe) e o

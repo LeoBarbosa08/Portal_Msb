@@ -256,8 +256,7 @@ window.PORTAL_CATALOGO = (function () {
   // [area, nome, arquivo, palavras-chave]
   var AGENTES = [
     ['comercial', 'Dossiê de Visita',              'comercial-dossie-visita.html',   'dossie visita cliente cnpj preparacao vendedor compras familia abandonada cirurgia carteira abc'],
-    ['comercial', 'PI · Pedido',                   'pedido-inteligente.html',        'pedido inteligente pi pdf ocr digitacao salesforce'],
-    ['comercial', 'PI · Fila de Pedidos',          'pi-fila.html',                   'fila aprovacao pedidos pi crm virou pedido andamento'],
+    ['comercial', 'PI · Pedido',                   'pedido-inteligente.html',        'pedido inteligente pi pdf ocr digitacao salesforce fila aprovacao pedidos crm'],
     // PI · Cotação oculto para todos (07/10); PI · Consignação (INCOMPLETO) voltou em 19/10
     ['comercial', 'PI · Consignação',              'pi-consignacao.html',            'pi consignacao lote faturamento remessa'],
     ['comercial', 'PI · Consignação (INCOMPLETO)', 'pi-consignacao-incompleto.html', 'pi consignacao incompleto nota devolucao teste'],
@@ -319,8 +318,6 @@ window.PORTAL_CATALOGO = (function () {
     'comercial-cot-nova.html',
     // 11/11/26: o PI · Pedido, liberado para o Comercial (saiu do SO_DONO do nav-sidebar.js)
     'pedido-inteligente.html',
-    // 25/11/26: a fila de aprovação do PI · Pedido (os pedidos do CRM)
-    'pi-fila.html',
     'contabil-custos-sgna.html'
   ];
   var AREAS_RECORTADAS = { comercial: 'Sales Report, CRM (Venda Recorrente) e Tabela de Preços.', contabil: 'Gestão de custos SG&A da MSB.' };
