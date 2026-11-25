@@ -75,6 +75,11 @@ function casoBase(numero, extra) {
   const htmlPi = fs.readFileSync(path.join(__dirname, '..', 'pages', 'pedido-inteligente.html'), 'utf8');
   const nav = fs.readFileSync(path.join(__dirname, '..', 'nav-sidebar.js'), 'utf8');
   t('a fila é uma ABA do PI (Novo pedido | Fila de aprovação), com o pi-fila.js', /data-pi-aba="novo"/.test(htmlPi) && /data-pi-aba="fila"/.test(htmlPi) && /id="pf-app"/.test(htmlPi) && /pi-fila\.js\?v=/.test(htmlPi));
+  const jsFila = fs.readFileSync(path.join(__dirname, '..', 'pi-fila.js'), 'utf8');
+  t('as abas ficam DENTRO do cartão do PI (Novo pedido | Aprovações), como na alçada de remessa',
+    /id="pi-card"[\s\S]*id="pi-abas"[\s\S]*id="pi-aba-novo"[\s\S]*id="pi-aba-fila"/.test(htmlPi) && />Aprovações <span class="n" id="pi-fila-n"/.test(htmlPi));
+  t('a aba Aprovações em duas seções de lista: Fila de aprovação e Já decididos (sem filtros nem busca)',
+    /nome: 'Fila de aprovação'/.test(jsFila) && /nome: 'Já decididos'/.test(jsFila) && !/pf-busca|pf-visoes/.test(htmlPi + jsFila));
   t('a fila é só uma lista: sem os cartões nem a introdução ("não precisa desses cards")', !/id="pf-kpis"/.test(htmlPi) && !/pf-intro/.test(htmlPi) &&
     !/renderKpis/.test(fs.readFileSync(path.join(__dirname, '..', 'pi-fila.js'), 'utf8')));
   t('sem página nem agente à parte (nada de pi-fila.html no menu, na busca ou no disco)', !/pi-fila\.html/.test(nav) && !/pi-fila\.html/.test(fs.readFileSync(path.join(__dirname, '..', 'portal-catalogo.js'), 'utf8')) &&

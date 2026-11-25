@@ -1424,9 +1424,6 @@ html[data-tema="escuro"] .cs-chip.pi-devolvido { background: rgba(207, 52, 52, .
 .pf-wrap { display: flex; flex-direction: column; gap: 14px; }
 .pf-atual { font-size: 12px; color: var(--cs-mut); display: inline-flex; align-items: center; gap: 6px; }
 .pf-atual .cs-spin { width: 12px; height: 12px; }
-.pf-barra { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
-.pf-barra .tk-visoes { flex: 1 1 auto; min-width: 0; }
-.pf-barra .cs-busca { flex: 0 1 380px; min-width: 220px; }
 .pf-lista { border: 1px solid var(--cs-line); border-radius: var(--cs-r, 18px); background: var(--bm3-surface, #fff); overflow: hidden; }
 .pf-cab, .pf-linha { display: grid; grid-template-columns: minmax(170px, 1.05fr) minmax(180px, 1.5fr) minmax(150px, 1fr) minmax(170px, 1.2fr) minmax(110px, .7fr) auto; gap: 12px; align-items: center; padding: 10px 16px; }
 .pf-cab { font-size: 11px; font-weight: 700; color: var(--cs-mut); text-transform: uppercase; letter-spacing: .05em; background: var(--cs-soft); border-bottom: 1px solid var(--cs-line); }
@@ -1523,12 +1520,29 @@ html[data-tema="escuro"] .pf-alerta, html[data-tema="escuro"] b.pf-alerta, html[
   .pf-c-val { grid-column: 2; grid-row: 1; }
   .pf-c-cli, .pf-c-vend, .pf-c-cond { grid-column: 1 / -1; }
   .pf-c-acao { grid-column: 1 / -1; justify-content: space-between; }
-  .pf-barra .cs-busca { flex: 1 1 100%; }
 }
 /* 25/11/2026: na Nova oportunidade a Qtd e o Preço (obrigatórios) vêm logo depois da descrição */
 table.cot-itens.cot-itens-nova th.desc, table.cot-itens.cot-itens-nova td.desc { min-width: 200px; }
 /* 25/11/2026: a fila é uma ABA do PI · Pedido (pages/pedido-inteligente.html) */
-/* (o dono: "só uma lista") — sem a introdução nem os cartões: a barra (situação, busca, Atualizar) e a lista */
-.pf-barra .pf-atual { white-space: nowrap; }
-.pf-barra > .cs-btn { flex: none; }
+/* a aba APROVAÇÕES (o dono, com o print da alçada de remessa: "algo assim, porém no
+   formato de lista"): título, o aviso de quem deixou um pedido aberto e duas
+   seções em lista — Fila de aprovação e Já decididos */
+.pf-tit { display: flex; gap: 10px 20px; align-items: flex-start; justify-content: space-between; flex-wrap: wrap; }
+.pf-tit > div:first-child { flex: 1 1 420px; min-width: 0; }
+.pf-tit .pi-sub { margin-bottom: 0; }
+.pf-tit-d { display: flex; align-items: center; gap: 10px; flex: none; }
+.pf-tit-d .pf-atual { white-space: nowrap; }
+.pf-corpo { display: flex; flex-direction: column; gap: 18px; }
+.pf-sec h4 { display: flex; align-items: center; gap: 8px; margin: 0 0 10px; font: 800 12px/1.2 var(--bm3-font-text, Roboto, sans-serif); letter-spacing: .06em; text-transform: uppercase; color: var(--cs-ink); }
+.pf-sec-n { min-width: 20px; height: 20px; padding: 0 6px; border-radius: 999px; background: var(--cs-soft); border: 1px solid var(--cs-line); display: inline-flex; align-items: center; justify-content: center; font-size: 11px; letter-spacing: 0; color: var(--cs-ink2); }
+.pf-sec[data-sec="fila"] .pf-sec-n { background: #C62828; border-color: #C62828; color: #fff; }
+.pf-nada { margin: 0; padding: 4px 2px; font-size: 13px; color: var(--cs-ink2); }
+.pf-meu { display: flex; align-items: center; gap: 12px; padding: 14px 16px; border-radius: 14px; border: 1px solid color-mix(in srgb, #1F9D5B 35%, transparent); background: color-mix(in srgb, #1F9D5B 8%, var(--bm3-surface, #fff)); color: var(--bm3-green-700, #0F7A43); font-size: 13px; line-height: 1.5; }
+.pf-meu > svg { width: 18px; height: 18px; flex: none; }
+.pf-meu > div { flex: 1 1 auto; min-width: 0; }
+.pf-meu b { font-weight: 800; }
+.pf-meu span { display: block; color: var(--cs-ink2); }
+.pf-meu .cs-btn { flex: none; }
+html[data-tema="escuro"] .pf-meu { color: #7CF0B0; }
+@media (max-width: 640px) { .pf-meu { flex-wrap: wrap; } .pf-meu .cs-btn { width: 100%; justify-content: center; } }
 body.pi-page .pf-wrap { margin-bottom: 8px; }

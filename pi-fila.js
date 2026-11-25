@@ -47,25 +47,16 @@
     lancado:    { nome: 'Lançado · aguardando OV', cls: 'pf-lancado', ic: IC.checkc },
     finalizado: { nome: 'Finalizado (Ganha)', cls: 'pf-finalizado', ic: IC.trophy }
   };
-  var VISOES = [
-    { id: 'pendentes', nome: 'Pendentes', ic: IC.inbox, estados: ['aguardando', 'andamento'], quente: true },
-    { id: 'devolvidos', nome: 'Devolvidos', ic: IC.alert, estados: ['devolvido'] },
-    { id: 'lancados', nome: 'Lançados', ic: IC.checkc, estados: ['lancado', 'finalizado'] },
-    { id: 'todos', nome: 'Todos', ic: IC.layers, estados: null }
+  // 25/11/2026 (o dono, com o print da alçada de remessa: "algo assim, porém no
+  // formato de lista"): sem filtros nem busca — DUAS SEÇÕES, cada uma em lista:
+  // FILA DE APROVAÇÃO (aguardando e em andamento, o mais antigo primeiro) e JÁ
+  // DECIDIDOS (devolvidos ao vendedor, lançados e finalizados dos últimos dias)
+  var SECOES = [
+    { id: 'fila', nome: 'Fila de aprovação', estados: ['aguardando', 'andamento'], vazio: 'Nada aguardando aprovação.' },
+    { id: 'feitos', nome: 'Já decididos', estados: ['devolvido', 'lancado', 'finalizado'], vazio: 'Nada decidido nos últimos dias.' }
   ];
-  var S = { fila: [], dias: 15, carregou: false, erro: '', visao: 'pendentes', busca: '', aberto: '', em: 0, carregando: false, agindo: {}, pdf: {} };
+  var S = { fila: [], dias: 15, carregou: false, erro: '', aberto: '', em: 0, carregando: false, agindo: {}, pdf: {}, eu: null };
 
-  function visao(id) { return VISOES.filter(function (v) { return v.id === id; })[0] || VISOES[0]; }
-  function passa(it, v) { var e = visao(v).estados; return !e || e.indexOf(it.estado) >= 0; }
-  function textoBusca(it) {
-    return C.norm([it.numero, it.cliente.nome, it.cliente.cnpj, C.cnpjMask(it.cliente.cnpj), it.cliente.codigo, it.cliente.cidade, it.pedido.oc,
-      it.vendedor && it.vendedor.nome, it.condicoes.pagamento, it.condicoes.transportadora,
-      (it.itens || []).map(function (x) { return x.codigo + ' ' + x.descricao; }).join(' '), (it.ovs || []).map(function (o) { return o.numero; }).join(' ')].join(' '));
-  }
-  function visiveis() {
-    var q = C.norm(S.busca).trim();
-    return S.fila.filter(function (it) { return passa(it, S.visao) && (!q || textoBusca(it).indexOf(q) >= 0); });
-  }
   function nome(p) { return (p && (p.nome || p.email)) || ''; }
   function chipEstado(it) {
     var e = ESTADOS[it.estado] || ESTADOS.aguardando;
@@ -96,30 +87,32 @@
 
   /* ── pintar ─────────────────────────────────────────────────── */
   function render() {
-    // 25/11/2026 (o dono: "não precisa desses cards todos, só uma lista"): sem os cartões
-    renderVisoes(); renderLista(); pintarSelo(contar(['aguardando']));
+    renderLista(); pintarSelo(contar(['aguardando']));
     pintarAtual(S.em ? 'Atualizado às ' + C.dataBR(new Date(S.em).toISOString(), true).slice(11) : '');
   }
   function contar(estados) { return S.fila.filter(function (it) { return estados.indexOf(it.estado) >= 0; }).length; }
-  function renderVisoes() {
-    var el = $('pf-visoes'); if (!el) return;
-    el.innerHTML = VISOES.map(function (v) {
-      var n = S.fila.filter(function (it) { return passa(it, v.id); }).length;
-      return '<button type="button" class="tk-visao' + (S.visao === v.id ? ' ativo' : '') + (v.quente && n ? ' quente' : '') + '" data-visao="' + v.id + '">' + v.ic + esc(v.nome) + '<span class="n">' + (S.carregou ? n : '–') + '</span></button>';
+  var CAB = '<div class="pf-cab" aria-hidden="true"><span>Pedido</span><span>Cliente</span><span>Vendedor</span><span>Pagamento · transportadora</span><span class="r">Valor</span><span></span></div>';
+  // o pedido que EU abri no PI e ainda não lancei: o aviso no topo, com "Continuar o pedido"
+  function htmlMeus() {
+    var eu = S.eu && S.eu.email;
+    if (!eu) return '';
+    var meus = S.fila.filter(function (it) { return it.estado === 'andamento' && it.pi.abertoPor && String(it.pi.abertoPor.email || '').toLowerCase() === eu; });
+    return meus.map(function (it) {
+      return '<div class="pf-meu">' + IC.refresh + '<div><b>' + esc(it.numero) + ' · ' + esc(it.cliente.nome || '') + '</b> — você abriu este pedido no PI ' + esc(C.quando(it.pi.abertoEm)) +
+        ' e ele ainda não foi lançado.<span>Continue de onde parou.</span></div>' +
+        '<button type="button" class="cs-btn cs-btn-p" data-andamento="' + esc(it.numero) + '" data-meu="1">Continuar o pedido</button></div>';
     }).join('');
   }
   function renderLista() {
     var el = $('pf-lista'); if (!el) return;
-    if (!S.carregou) { el.innerHTML = '<div class="pf-vazio"><span class="cs-spin"></span> Carregando a fila…</div>'; return; }
-    if (S.erro) { el.innerHTML = '<div class="pf-vazio erro">' + IC.alert + '<div><b>Fila indisponível</b>' + esc(S.erro) + '</div></div>'; return; }
-    var l = visiveis();
-    if (!l.length) {
-      el.innerHTML = '<div class="pf-vazio">' + IC.checkc + '<div><b>' + (S.busca ? 'Nada com “' + esc(S.busca) + '”' : S.visao === 'pendentes' ? 'Nenhum pedido esperando' : 'Nada por aqui') + '</b>' +
-        (S.visao === 'pendentes' && !S.busca ? 'Quando um vendedor clicar em Virou pedido no CRM, o pedido aparece aqui.' : 'Troque a situação acima ou limpe a busca.') + '</div></div>';
-      return;
-    }
-    el.innerHTML = '<div class="pf-cab" aria-hidden="true"><span>Pedido</span><span>Cliente</span><span>Vendedor</span><span>Pagamento · transportadora</span><span class="r">Valor</span><span></span></div>' +
-      l.map(htmlLinha).join('');
+    if (!S.carregou) { el.innerHTML = '<div class="pf-vazio"><span class="cs-spin"></span> Carregando…</div>'; return; }
+    if (S.erro) { el.innerHTML = '<div class="pf-vazio erro">' + IC.alert + '<div><b>Aprovações indisponíveis</b>' + esc(S.erro) + '</div></div>'; return; }
+    el.innerHTML = htmlMeus() + SECOES.map(function (sec) {
+      var l = S.fila.filter(function (it) { return sec.estados.indexOf(it.estado) >= 0; });
+      return '<section class="pf-sec" data-sec="' + sec.id + '"><h4>' + esc(sec.nome) + (l.length ? ' <span class="pf-sec-n">' + l.length + '</span>' : '') + '</h4>' +
+        (l.length ? '<div class="pf-lista" role="list" aria-label="' + esc(sec.nome) + '">' + CAB + l.map(htmlLinha).join('') + '</div>'
+          : '<p class="pf-nada">' + esc(sec.vazio) + '</p>') + '</section>';
+    }).join('');
     if (S.aberto) pintarPdf(S.aberto);
   }
   function htmlLinha(it) {
@@ -328,6 +321,7 @@
     if (!pf || !pn) return;
     pf.hidden = !fila; pn.hidden = fila;
     ['novo', 'fila'].forEach(function (k) { var b = $('pi-aba-bt-' + k); if (b) b.setAttribute('aria-selected', String(k === id)); });
+    var card = $('pi-card'); if (card) card.setAttribute('data-aba', id);
     if (lembrar) { try { W.localStorage.setItem(ABA_CHAVE, id); } catch (e) {} }
     if (fila && (!S.carregou || Date.now() - S.em > 15e3)) carregar(S.carregou);
     // o PDF ao lado do assistente se redesenha na largura de agora
@@ -366,7 +360,7 @@
     app.addEventListener('click', function (ev) {
       var t = ev.target;
       var b;
-      if ((b = t.closest('[data-andamento]'))) { ev.preventDefault(); ev.stopPropagation(); darAndamento(b.getAttribute('data-andamento')); return; }
+      if ((b = t.closest('[data-andamento]'))) { ev.preventDefault(); ev.stopPropagation(); darAndamento(b.getAttribute('data-andamento'), b.hasAttribute('data-meu')); return; }
       if ((b = t.closest('[data-devolver]'))) { ev.preventDefault(); dlgDevolver(b.getAttribute('data-devolver')); return; }
       if ((b = t.closest('[data-soltar]'))) { ev.preventDefault(); var n = b.getAttribute('data-soltar'); agir(n, { acao: 'pi', numero: n, estado: 'fila' }, 'O pedido voltou para a fila'); return; }
       if ((b = t.closest('[data-proposta]'))) { ev.preventDefault(); verProposta(b.getAttribute('data-proposta')); return; }
@@ -377,7 +371,6 @@
         C.abrirAnexo(num, a || { id: id, nome: 'PDF do pedido' });
         return;
       }
-      if ((b = t.closest('[data-visao]'))) { S.visao = b.getAttribute('data-visao'); S.aberto = ''; render(); return; }
       if (t.closest('.pf-det')) return;
       if ((b = t.closest('[data-abrir]'))) { abrir(b.getAttribute('data-abrir')); }
     });
@@ -385,7 +378,6 @@
       var b = ev.target.closest && ev.target.closest('[data-abrir]');
       if (b && ev.target === b && (ev.key === 'Enter' || ev.key === ' ')) { ev.preventDefault(); abrir(b.getAttribute('data-abrir')); }
     });
-    $('pf-busca').addEventListener('input', C.debounce(function (ev) { S.busca = ev.target.value; renderVisoes(); renderLista(); }, 180));
     $('pf-recarregar').addEventListener('click', function () { carregar(); });
     // volta para a aba (ou o PI lançou noutra aba): atualiza
     D.addEventListener('visibilitychange', function () { if (!D.hidden && abaAtual() === 'fila' && Date.now() - S.em > 15e3) carregar(true); });
@@ -426,9 +418,7 @@
         // ?caso=COT-MSB-…: abre aquele pedido (o "Ver na fila do PI" do CRM)
         var it = alvo && item(alvo);
         if (it) {
-          if (!passa(it, S.visao)) S.visao = VISOES.filter(function (v) { return v.estados && v.estados.indexOf(it.estado) >= 0; })[0].id;
           S.aberto = '';
-          render();
           abrir(alvo);
         } else if (alvo && S.carregou && !S.erro) {
           C.toast('Esse pedido não está na fila', alvo + ' — talvez já tenha sido finalizado há mais de ' + S.dias + ' dias.', '');
@@ -442,6 +432,7 @@
     if (!pf || !pn) return;
     pf.hidden = !fila; pn.hidden = fila;
     ['novo', 'fila'].forEach(function (k) { var b = $('pi-aba-bt-' + k); if (b) b.setAttribute('aria-selected', String(k === id)); });
+    var card = $('pi-card'); if (card) card.setAttribute('data-aba', id);
   }
   if (D.readyState === 'loading') D.addEventListener('DOMContentLoaded', iniciar); else iniciar();
 })();
