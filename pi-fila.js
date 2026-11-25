@@ -96,26 +96,11 @@
 
   /* ── pintar ─────────────────────────────────────────────────── */
   function render() {
-    renderKpis(); renderVisoes(); renderLista(); pintarSelo(contar(['aguardando']));
+    // 25/11/2026 (o dono: "não precisa desses cards todos, só uma lista"): sem os cartões
+    renderVisoes(); renderLista(); pintarSelo(contar(['aguardando']));
     pintarAtual(S.em ? 'Atualizado às ' + C.dataBR(new Date(S.em).toISOString(), true).slice(11) : '');
   }
   function contar(estados) { return S.fila.filter(function (it) { return estados.indexOf(it.estado) >= 0; }).length; }
-  function renderKpis() {
-    var el = $('pf-kpis'); if (!el) return;
-    var soma = function (estados) { return S.fila.filter(function (it) { return estados.indexOf(it.estado) >= 0; }).reduce(function (s, it) { return s + (Number(it.total) || 0); }, 0); };
-    var K = [
-      ['pendentes', IC.alarm, contar(['aguardando']), 'Aguardando', 'ninguém pegou ainda · ' + C.brlCurto(soma(['aguardando'])), '#B45309', '#FEF1DA'],
-      ['pendentes', IC.refresh, contar(['andamento']), 'Em andamento', 'abertos no PI, ainda não lançados', '#2C7288', '#EEF5F9'],
-      ['devolvidos', IC.alert, contar(['devolvido']), 'Devolvidos', 'com o vendedor, para ajustar', '#A82424', '#FDE7E7'],
-      ['lancados', IC.checkc, contar(['lancado']), 'Lançados', 'no Dynamics, aguardando a OV', '#0F7A43', '#DDF5E7'],
-      ['lancados', IC.trophy, contar(['finalizado']), 'Finalizados', 'Ganhas com a OV · últimos ' + S.dias + ' dias', '#138A4B', '#E3F6EC']
-    ];
-    el.innerHTML = K.map(function (k) {
-      return '<button type="button" class="cs-kpi' + (S.carregou && !k[2] ? ' zero' : '') + '" data-visao="' + k[0] + '" style="--k:' + k[5] + ';--kf:' + k[6] + '">' +
-        '<span class="cs-kpi-top"><span class="cs-kpi-ic">' + k[1] + '</span></span><span class="cs-kpi-n">' + (S.carregou ? C.int(k[2]) : '–') + '</span>' +
-        '<span class="cs-kpi-l">' + esc(k[3]) + '</span><span class="cs-kpi-s">' + esc(S.carregou ? k[4] : '') + '</span></button>';
-    }).join('');
-  }
   function renderVisoes() {
     var el = $('pf-visoes'); if (!el) return;
     el.innerHTML = VISOES.map(function (v) {

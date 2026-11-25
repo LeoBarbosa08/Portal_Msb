@@ -2698,8 +2698,11 @@ qtd são obrigatórios".
   última escolha da pessoa; `?aba=fila&caso=COT-…` abre na fila e naquele
   pedido (o "Ver na fila do PI" do CRM); o PI vindo da fila (`?cot=…&fila=1`)
   abre no assistente; quem não tem o CRM (só Estoque) não vê as abas. A
-  proposta (jsPDF) só carrega no clique. Os pedidos registrados no CRM, sem
-  armazenamento próprio:
+  proposta (jsPDF) só carrega no clique. A aba é **só a lista** (o dono: "não
+  precisa desses cards todos, só uma lista") — a barra com a situação
+  (Pendentes, Devolvidos, Lançados, Todos), a busca e o Atualizar, sem
+  introdução nem cartões. Os pedidos registrados no CRM, sem armazenamento
+  próprio:
   `GET /api/cot-casos?fila=1` (`motor.fila`/`itemDaFila`: aguardando, em
   andamento, devolvidos, e os lançados/finalizados dos últimos 15 dias;
   `?fila=conta` para o selo). Cada pedido abre com tudo — comprador, vendedor,
@@ -2728,9 +2731,9 @@ qtd são obrigatórios".
   IA, os campos novos, devolver/reenviar, o item e a rota da fila, o pedido
   pela proposta, quantidade e preço obrigatórios).
 - Versões: `cotacoes-base.js?v=34`, `cotacoes.js?v=47`, `cotacoes-agente.js?v=31`,
-  `cotacoes-proposta.js?v=10`, `cotacoes-ficha.js?v=15`, `cotacoes.css?v=38`,
-  `pedido-inteligente.js?v=45`, `pi-fila.js?v=2`, `nav-sidebar.js?v=92`, `script.js?v=10`,
-  `portal-catalogo.js?v=27`, `area-access.js?v=23`; `sw.js` — cache `bm-comest-v105`.
+  `cotacoes-proposta.js?v=10`, `cotacoes-ficha.js?v=15`, `cotacoes.css?v=39`,
+  `pedido-inteligente.js?v=45`, `pi-fila.js?v=3`, `nav-sidebar.js?v=92`, `script.js?v=10`,
+  `portal-catalogo.js?v=27`, `area-access.js?v=23`; `sw.js` — cache `bm-comest-v106`.
 
 ### Cuidados
 

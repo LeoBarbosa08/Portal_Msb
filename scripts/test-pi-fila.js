@@ -75,6 +75,8 @@ function casoBase(numero, extra) {
   const htmlPi = fs.readFileSync(path.join(__dirname, '..', 'pages', 'pedido-inteligente.html'), 'utf8');
   const nav = fs.readFileSync(path.join(__dirname, '..', 'nav-sidebar.js'), 'utf8');
   t('a fila é uma ABA do PI (Novo pedido | Fila de aprovação), com o pi-fila.js', /data-pi-aba="novo"/.test(htmlPi) && /data-pi-aba="fila"/.test(htmlPi) && /id="pf-app"/.test(htmlPi) && /pi-fila\.js\?v=/.test(htmlPi));
+  t('a fila é só uma lista: sem os cartões nem a introdução ("não precisa desses cards")', !/id="pf-kpis"/.test(htmlPi) && !/pf-intro/.test(htmlPi) &&
+    !/renderKpis/.test(fs.readFileSync(path.join(__dirname, '..', 'pi-fila.js'), 'utf8')));
   t('sem página nem agente à parte (nada de pi-fila.html no menu, na busca ou no disco)', !/pi-fila\.html/.test(nav) && !/pi-fila\.html/.test(fs.readFileSync(path.join(__dirname, '..', 'portal-catalogo.js'), 'utf8')) &&
     !fs.existsSync(path.join(__dirname, '..', 'pages', 'pi-fila.html')));
 

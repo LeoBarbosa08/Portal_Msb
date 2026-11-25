@@ -312,7 +312,7 @@
   <script src="../portal-mobile.js?v=1" defer></script>
   <!-- 25/11/2026: a aba Fila de aprovação usa a família visual do CRM (cs-*/cot-*/pf-*) -->
   <link rel="stylesheet" href="../customer-service.css?v=4">
-  <link rel="stylesheet" href="../cotacoes.css?v=38">
+  <link rel="stylesheet" href="../cotacoes.css?v=39">
 </head>
 <body class="dept cs-page cot-page pi-page">
 
@@ -397,15 +397,12 @@
             </div>
             <div id="pi-aba-fila" role="tabpanel" aria-labelledby="pi-aba-bt-fila" hidden>
               <div class="cs-wrap pf-wrap" id="pf-app">
-                <div class="pf-topo">
-                  <p class="pf-intro">Os pedidos que o CRM mandou ao clicar em <b>Virou pedido</b>. Abra um pedido para ver tudo — comprador, condições, transportadora, observação na nota, itens e o PDF — e clique em <b>Dar andamento no PI</b>: o pedido abre aqui no assistente, com tudo preenchido, para conferir e lançar no Dynamics. Falta alguma coisa? <b>Devolva ao vendedor</b> com o motivo.</p>
-                  <div class="pf-topo-d"><span class="pf-atual" id="pf-atual"></span>
-                    <button type="button" class="cs-btn cs-btn-sm" id="pf-recarregar"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>Atualizar</button></div>
-                </div>
-                <div class="cs-kpis" id="pf-kpis"></div>
+                <!-- 25/11/2026 (o dono: "não precisa desses cards, só uma lista"): a barra e a lista -->
                 <div class="pf-barra">
                   <div class="tk-visoes" id="pf-visoes" role="group" aria-label="Situação do pedido"></div>
                   <label class="cs-busca"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg><input id="pf-busca" type="search" placeholder="Cliente, CNPJ, nº da oportunidade, OC, vendedor, produto…" autocomplete="off" aria-label="Buscar na fila"></label>
+                  <span class="pf-atual" id="pf-atual"></span>
+                  <button type="button" class="cs-btn cs-btn-sm" id="pf-recarregar" title="Atualizar a lista"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>Atualizar</button>
                 </div>
                 <div class="pf-lista" id="pf-lista" role="list" aria-label="Pedidos da fila"></div>
               </div>
@@ -633,6 +630,6 @@
   <script src="../pedido-inteligente.js?v=45"></script>
   <!-- 25/11/2026: a aba Fila de aprovação (o núcleo do CRM: API, diálogo, avisos, a ponte para o PI) -->
   <script src="../cotacoes-base.js?v=34"></script>
-  <script src="../pi-fila.js?v=2"></script>
+  <script src="../pi-fila.js?v=3"></script>
 </body>
 </html>
