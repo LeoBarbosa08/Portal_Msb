@@ -78,8 +78,8 @@ function casoBase(numero, extra) {
   const jsFila = fs.readFileSync(path.join(__dirname, '..', 'pi-fila.js'), 'utf8');
   t('as abas ficam DENTRO do cartão do PI (Novo pedido | Aprovações), como na alçada de remessa',
     /id="pi-card"[\s\S]*id="pi-abas"[\s\S]*id="pi-aba-novo"[\s\S]*id="pi-aba-fila"/.test(htmlPi) && />Aprovações <span class="n" id="pi-fila-n"/.test(htmlPi));
-  t('a aba Aprovações em duas seções de lista: Fila de aprovação e Já decididos (sem filtros nem busca)',
-    /nome: 'Fila de aprovação'/.test(jsFila) && /nome: 'Já decididos'/.test(jsFila) && !/pf-busca|pf-visoes/.test(htmlPi + jsFila));
+  t('a aba Aprovações é só a lista da Fila de aprovação ("nem precisa me mostrar esses outros"): sem Já decididos, filtros nem busca',
+    /nome: 'Fila de aprovação'/.test(jsFila) && !/nome: 'Já decididos'/.test(jsFila) && !/pf-busca|pf-visoes/.test(htmlPi + jsFila));
   t('a fila é só uma lista: sem os cartões nem a introdução ("não precisa desses cards")', !/id="pf-kpis"/.test(htmlPi) && !/pf-intro/.test(htmlPi) &&
     !/renderKpis/.test(fs.readFileSync(path.join(__dirname, '..', 'pi-fila.js'), 'utf8')));
   t('sem página nem agente à parte (nada de pi-fila.html no menu, na busca ou no disco)', !/pi-fila\.html/.test(nav) && !/pi-fila\.html/.test(fs.readFileSync(path.join(__dirname, '..', 'portal-catalogo.js'), 'utf8')) &&
@@ -150,10 +150,12 @@ function casoBase(numero, extra) {
   MEM[store.INDICE] = { rev: 1, seq: 18, casos: Object.keys(casos).map(n => M.resumoDe(casos[n])) };
   const r = await M.fila(QUEM);
   const nums = r.fila.map(x => x.numero.slice(-2) + ':' + x.estado);
-  t('entram os pedidos registrados; fora: sem pedido, descartada, perdida e o lançado há mais de 15 dias',
-    JSON.stringify(nums.map(x => x.slice(0, 2)).sort()) === JSON.stringify(['10', '11', '12', '13', '14']), nums);
-  t('a ordem: aguardando (o mais antigo primeiro), em andamento, devolvido, lançado',
-    JSON.stringify(nums) === JSON.stringify(['11:aguardando', '10:aguardando', '12:andamento', '13:devolvido', '14:lancado']), nums);
+  t('?fila=1: só os que esperam alguém — aguardando (o mais antigo primeiro) e em andamento; fora: devolvido, lançado, sem pedido, descartada, perdida',
+    JSON.stringify(nums) === JSON.stringify(['11:aguardando', '10:aguardando', '12:andamento']), nums);
+  const rTodos = await M.fila(QUEM, false, true);
+  const numsT = rTodos.fila.map(x => x.numero.slice(-2) + ':' + x.estado);
+  t('?fila=todos: também o devolvido e o lançado dos últimos 15 dias (o lançado de janeiro, não)',
+    JSON.stringify(numsT) === JSON.stringify(['11:aguardando', '10:aguardando', '12:andamento', '13:devolvido', '14:lancado']), numsT);
   const k = await M.fila(QUEM, true);
   t('?fila=conta: 2 aguardando, 1 em andamento', k.aguardando === 2 && k.andamento === 1, k);
   const fn = require('../api/cot-casos/index.js');
@@ -161,7 +163,7 @@ function casoBase(numero, extra) {
   auth.requireUser = async () => ({ validated: true, user: { email: 'leonardo.barbosa@biomedical.com.br', name: 'Dono' } });
   const ctx = { log: Object.assign(() => {}, { error() {}, warn() {} }) };
   await fn(ctx, { method: 'GET', headers: {}, query: { fila: '1' } });
-  t('a rota responde 200 com a fila', ctx.res && ctx.res.status !== 500 && ctx.res.body && Array.isArray(ctx.res.body.fila) && ctx.res.body.fila.length === 5, ctx.res && ctx.res.body);
+  t('a rota responde 200 com a fila', ctx.res && ctx.res.status !== 500 && ctx.res.body && Array.isArray(ctx.res.body.fila) && ctx.res.body.fila.length === 3, ctx.res && ctx.res.body);
 
   console.log('6) "Virou pedido" pelo PDF da PROPOSTA (sem anexar, sem confronto com outro PDF)');
   c = casoBase('COT-MSB-2026-000020', { pedido: null, pi: null, anexos: [], itens: [

@@ -28,9 +28,10 @@
 //                                                 (o produto no Salesforce pelo código Biomedical — o que
 //                                                 vai na PROPOSTA; shared/cot-produtos.js — 21/10/26)
 //   GET  /api/cot-casos?fila=1                 -> { ok, fila:[item], dias }  a FILA DE APROVAÇÃO do PI ·
-//                                                 Pedido (25/11/26): as cotações com o pedido registrado
-//                                                 (aguardando, em andamento, devolvidas) + as lançadas e
-//                                                 finalizadas dos últimos 15 dias — motor.fila / itemDaFila
+//                                                 Pedido (25/11/26): só os pedidos que esperam alguém —
+//                                                 aguardando e em andamento (motor.fila / itemDaFila);
+//                                                 ?fila=todos: também os devolvidos e os lançados/finalizados
+//                                                 dos últimos 15 dias
 //   GET  /api/cot-casos?fila=conta             -> { ok, aguardando, andamento }  (o selo da aba no PI)
 //   GET  /api/cot-casos?duplicado=1&portal=…&cotacao=…
 //                                              -> { ok, caso: resumo | null }
@@ -158,7 +159,7 @@ module.exports = async function (context, req) {
       // a FILA DE APROVAÇÃO do PI · Pedido (25/11/2026): os pedidos registrados
       // no CRM esperando alguém dar andamento (?fila=conta: só quantos)
       if (q.fila) {
-        return H.ok(context, req, Object.assign({ ok: true, configurado: true, eu: eu }, await motor.fila(quem, q.fila === 'conta')));
+        return H.ok(context, req, Object.assign({ ok: true, configurado: true, eu: eu }, await motor.fila(quem, q.fila === 'conta', q.fila === 'todos')));
       }
       if (q.duplicado) {
         return H.ok(context, req, { ok: true, caso: await motor.duplicado(String(q.portal || ''), String(q.cotacao || ''), quem.cfg, quem) });

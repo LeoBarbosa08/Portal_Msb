@@ -48,12 +48,12 @@
     finalizado: { nome: 'Finalizado (Ganha)', cls: 'pf-finalizado', ic: IC.trophy }
   };
   // 25/11/2026 (o dono, com o print da alçada de remessa: "algo assim, porém no
-  // formato de lista"): sem filtros nem busca — DUAS SEÇÕES, cada uma em lista:
-  // FILA DE APROVAÇÃO (aguardando e em andamento, o mais antigo primeiro) e JÁ
-  // DECIDIDOS (devolvidos ao vendedor, lançados e finalizados dos últimos dias)
+  // formato de lista"): sem filtros nem busca, em lista. E ("nem precisa me
+  // mostrar esses outros"): só a FILA DE APROVAÇÃO — aguardando e em andamento,
+  // o mais antigo primeiro; os devolvidos, lançados e finalizados não aparecem
+  // (o servidor nem manda: /api/cot-casos?fila=1)
   var SECOES = [
-    { id: 'fila', nome: 'Fila de aprovação', estados: ['aguardando', 'andamento'], vazio: 'Nada aguardando aprovação.' },
-    { id: 'feitos', nome: 'Já decididos', estados: ['devolvido', 'lancado', 'finalizado'], vazio: 'Nada decidido nos últimos dias.' }
+    { id: 'fila', nome: 'Fila de aprovação', estados: ['aguardando', 'andamento'], vazio: 'Nada aguardando aprovação.' }
   ];
   var S = { fila: [], dias: 15, carregou: false, erro: '', aberto: '', em: 0, carregando: false, agindo: {}, pdf: {}, eu: null };
 
@@ -421,7 +421,7 @@
           S.aberto = '';
           abrir(alvo);
         } else if (alvo && S.carregou && !S.erro) {
-          C.toast('Esse pedido não está na fila', alvo + ' — talvez já tenha sido finalizado há mais de ' + S.dias + ' dias.', '');
+          C.toast('Esse pedido não está na fila', alvo + ' — já foi lançado ou devolvido ao vendedor.', '');
         }
       });
     });

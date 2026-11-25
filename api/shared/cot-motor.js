@@ -807,9 +807,12 @@ function itemDaFila(c) {
     atualizadoEm: c.atualizadoEm || null
   };
 }
-// ?fila=1 — os pedidos da fila (os pendentes + os lançados/finalizados dos
-// últimos FILA_DIAS dias); ?fila=conta — só quantos esperam (o selo do PI)
-async function fila(quem, soContar) {
+// ?fila=1 — os pedidos que ESPERAM alguém: aguardando e em andamento (25/11/26,
+// o dono: "nem precisa me mostrar esses outros" — os devolvidos, lançados e
+// finalizados não aparecem); ?fila=todos — também os devolvidos e os
+// lançados/finalizados dos últimos FILA_DIAS dias; ?fila=conta — só quantos
+// esperam (o selo da aba no PI)
+async function fila(quem, soContar, comFeitos) {
   const ix = await listar();
   const desde = Date.now() - FILA_DIAS * 86400e3;
   const rs = (ix.casos || []).filter(function (r) { return naFila(r) && veCaso(quem, r); });
@@ -818,10 +821,12 @@ async function fila(quem, soContar) {
     return { aguardando: rs.filter(function (r) { return pendente(r) && r.pi !== 'devolvido' && r.pi !== 'em_andamento'; }).length,
       andamento: rs.filter(function (r) { return pendente(r) && r.pi === 'em_andamento'; }).length };
   }
-  const escolhidos = rs.filter(function (r) { return pendente(r) || msDe(r.atualizadoEm) >= desde; }).slice(0, FILA_MAX);
+  const esperando = function (r) { return pendente(r) && r.pi !== 'devolvido'; };
+  const escolhidos = rs.filter(function (r) { return comFeitos ? (pendente(r) || msDe(r.atualizadoEm) >= desde) : esperando(r); }).slice(0, FILA_MAX);
   const casos = await Promise.all(escolhidos.map(function (r) { return obterBruto(r.numero).catch(function () { return null; }); }));
   const ordem = { aguardando: 0, andamento: 1, devolvido: 2, lancado: 3, finalizado: 4 };
-  const itens = casos.filter(function (c) { return c && c.pedido && !c.descartado && !c.amostra && veCaso(quem, c); }).map(itemDaFila);
+  const itens = casos.filter(function (c) { return c && c.pedido && !c.descartado && !c.amostra && veCaso(quem, c); }).map(itemDaFila)
+    .filter(function (it) { return comFeitos || it.estado === 'aguardando' || it.estado === 'andamento'; });
   itens.sort(function (a, b) {
     if (ordem[a.estado] !== ordem[b.estado]) return ordem[a.estado] - ordem[b.estado];
     // os pendentes por ordem de chegada (o mais antigo primeiro); os feitos, o mais novo primeiro

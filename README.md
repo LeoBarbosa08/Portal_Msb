@@ -2704,13 +2704,14 @@ qtd são obrigatórios".
   estilo pasta — **Novo pedido | Aprovações** (o número vermelho = quantos
   aguardam); a aba Aprovações tem o título "Aprovações de pedido", o aviso
   verde **Continuar o pedido** para quem abriu um pedido no PI e não lançou, e
-  **duas seções em lista** — **Fila de aprovação** (aguardando e em andamento)
-  e **Já decididos** (devolvidos, lançados e finalizados). Sem cartões, filtros
-  nem busca ("não precisa desses cards todos, só uma lista"). Os pedidos
-  registrados no CRM, sem armazenamento próprio:
-  `GET /api/cot-casos?fila=1` (`motor.fila`/`itemDaFila`: aguardando, em
-  andamento, devolvidos, e os lançados/finalizados dos últimos 15 dias;
-  `?fila=conta` para o selo). Cada pedido abre com tudo — comprador, vendedor,
+  a lista **Fila de aprovação** — só o que espera alguém: aguardando e em
+  andamento (o dono: "nem precisa me mostrar esses outros" — os devolvidos,
+  lançados e finalizados não aparecem; o servidor nem manda). Sem cartões,
+  filtros nem busca ("não precisa desses cards todos, só uma lista"). Os
+  pedidos registrados no CRM, sem armazenamento próprio:
+  `GET /api/cot-casos?fila=1` (`motor.fila`/`itemDaFila`: aguardando e em
+  andamento; `?fila=todos` traz também os devolvidos e os lançados/finalizados
+  dos últimos 15 dias — a tela não usa; `?fila=conta` para o selo). Cada pedido abre com tudo — comprador, vendedor,
   condições (pagamento, frete, transportadora, prazo, OC, observação,
   observação na nota), itens e o **PDF ao lado** (pdf.js) — e as ações:
   - **Dar andamento no PI** — a mesma ponte do CRM (`COT.abrirNoPI` com
@@ -2737,8 +2738,8 @@ qtd são obrigatórios".
   pela proposta, quantidade e preço obrigatórios).
 - Versões: `cotacoes-base.js?v=34`, `cotacoes.js?v=47`, `cotacoes-agente.js?v=31`,
   `cotacoes-proposta.js?v=10`, `cotacoes-ficha.js?v=15`, `cotacoes.css?v=40`,
-  `pedido-inteligente.js?v=45`, `pi-fila.js?v=4`, `nav-sidebar.js?v=92`, `script.js?v=10`,
-  `portal-catalogo.js?v=27`, `area-access.js?v=23`; `sw.js` — cache `bm-comest-v107`.
+  `pedido-inteligente.js?v=45`, `pi-fila.js?v=5`, `nav-sidebar.js?v=92`, `script.js?v=10`,
+  `portal-catalogo.js?v=27`, `area-access.js?v=23`; `sw.js` — cache `bm-comest-v108`.
 
 ### Cuidados
 
