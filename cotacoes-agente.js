@@ -6,6 +6,11 @@
    visor do PDF; a tela já abre no formulário (o antigo "Preencher à mão"):
    uma ordem nova, sem portal e sem nº da cotação.
 
+   25/11/2026 (pedido do usuário): sem o "Cliente novo" no Comprador (só
+   pelo CNPJ ou pelo código do cliente) e, à direita do formulário, a PRÉVIA
+   da proposta em PDF — refeita a cada campo preenchido (cotacoes-proposta.js
+   gera, o pdf.js desenha as páginas).
+
      1 · Oportunidade  o formulário: comprador, condições, itens e proposta
      2 · Caso          /api/cot-casos {acao:'novo'} abre o caso
                        (COT-AAAA-NNNNNN) na Gestão de Cotações — e a PROPOSTA
@@ -31,7 +36,7 @@
     // texto/leitura/lidos ficam vazios (sem PDF, nada é lido pela IA)
     texto: '', leitura: null, dados: null, lidos: {},
     dup: null, forcar: false, criado: null, criando: false,
-    // o comprador: 'cnpj' | 'codigo' (o Dynamics preenche o cadastro) | 'manual' (cliente novo, à mão)
+    // o comprador: 'cnpj' | 'codigo' (o Dynamics preenche o cadastro) — sem o 'manual' (cliente novo) desde 25/11/2026
     modoCli: 'cnpj',
     // à mão (sem PDF): uma ordem nova, sem portal e sem nº da cotação — sempre, desde 25/11/2026
     semPortal: true,
@@ -136,7 +141,7 @@
       pintarItens();
     });
   }
-  function pintarItens() { var b = $('cot-itens'); if (b && S.passo === 'conf') { b.innerHTML = htmlItens(); referencias(); estoqueDepois(); } }
+  function pintarItens() { var b = $('cot-itens'); if (b && S.passo === 'conf') { b.innerHTML = htmlItens(); referencias(); estoqueDepois(); previaDepois(); } }
   // o ESTOQUE DA VENDA (05/11/2026, RECORTE MSB — pedido do dono): ao digitar o
   // código (ou a quantidade), o estoque do PI · Pedido da MSB embaixo dos itens
   var estoqueDepois = C.debounce(function () { if (S.passo === 'conf' && S.dados) C.pintarEstoque($('cot-estoque'), S.dados.itens); }, 450);
@@ -174,6 +179,7 @@
         (l.length > 6 ? ' · +' + (l.length - 6) : '') + '. Você está passando da média dos 6 meses ou da tabela de preço — confira antes de criar.</div></div>';
     }
     var dc = $('cot-fat-dica'); if (dc) dc.textContent = textoFatDica();
+    previaDepois();
   }
   // põe no preço do item a média (k 'media') ou o preço lista da tabela ('vd' | 'vf')
   function usarRef(i, k, auto) {
@@ -242,6 +248,7 @@
       ['marca', 'registro'].forEach(function (f) { var el = tr.querySelector('[data-f="' + f + '"]'); if (el && el !== D.activeElement && el.value !== (it[f] || '')) el.value = it[f] || ''; });
       var b = tr.querySelector('.cot-sf-box'); if (b) b.innerHTML = C.dicaSf(it);
     });
+    previaDepois();
   }
   function completarSf(itens) { return C.completarDoSf(itens).then(function () { pintarSf(); }, function () { pintarSf(); }); }
   // um código digitado: confere só ele (sem redesenhar a tabela — o foco fica)
@@ -387,6 +394,7 @@
   // cotação e a de vencimento; o comprador (o CNPJ ou o código do cliente; o
   // cliente novo, a razão social); a condição de pagamento, o frete e o prazo de
   // entrega; e ao menos 1 item cotado (com quantidade e preço). [rótulo, campo]
+  // 25/11/2026: sem o "Cliente novo", o CNPJ ou o código do cliente sempre
   function faltamObrigatorios() {
     var d = S.dados || {}, cli = d.cliente || {}, co = d.condicoes || {}, dt = d.datas || {}, f = [];
     var el = function (k) { return D.querySelector('#cot-corpo [data-k="' + k + '"]'); };
@@ -394,9 +402,7 @@
     if (!tem(dt.cotacao)) f.push(['Data da cotação', el('datas.cotacao')]);
     if (!tem(dt.validade)) f.push(['Data de vencimento', el('datas.validade')]);
     var temId = String(cli.cnpj || '').replace(/\D/g, '').length >= 11 || tem(cli.codigo);
-    if (S.modoCli === 'manual' ? !(tem(cli.nome) || temId) : !temId) {
-      f.push([S.modoCli === 'manual' ? 'a razão social do cliente novo' : 'o CNPJ ou o código do cliente (ou escolha "Cliente novo")', el(S.modoCli === 'manual' ? 'cliente.nome' : S.modoCli === 'codigo' ? 'cliente.codigo' : 'cliente.cnpj')]);
-    }
+    if (!temId) f.push(['o CNPJ ou o código do cliente', el(S.modoCli === 'codigo' ? 'cliente.codigo' : 'cliente.cnpj')]);
     if (!tem(co.pagamento)) f.push(['Condição de pagamento', el('condicoes.pagamento')]);
     if (!tem(co.frete)) f.push(['Frete', el('condicoes.frete')]);
     if (!tem(co.entrega)) f.push(['Prazo de entrega', el('condicoes.entrega')]);
@@ -515,7 +521,7 @@
           '<div class="cs-campo s2' + (semEmail && S.prop.enviar ? ' falta' : '') + '"><label>Para (e-mail do comprador)</label><input id="cot-prop-para" type="text" value="' + esc(S.prop.para) + '" placeholder="compras@hospital.com.br" autocomplete="off"' + attrsMascara('emails') + '><small class="cot-erro-campo" role="alert"></small></div>' +
           '<div class="cs-campo s2"><label>Cópia (opcional)</label><input id="cot-prop-copia" type="text" value="' + esc(S.prop.copia) + '" placeholder="separe com ;" autocomplete="off"' + attrsMascara('emails') + '><small class="cot-erro-campo" role="alert"></small></div>' +
         '</div>' +
-      '</div>' +
+        // 25/11/2026: sobrava um </div> aqui — o "Preparado por" caía fora da grade da proposta
         '<div class="cs-campo s4"><label>Outros arquivos (opcional)</label><div id="cot-prop-extras">' + C.htmlExtras(S.prop.anexos) + '</div></div>' +
       '</div>' +
       // 22/10/2026: a unidade com contato do setor (Venda Recorrente, BIO.ID): o
@@ -530,19 +536,18 @@
         '<button type="button" class="cs-btn cs-btn-sm" id="cot-prop-ver">' + IC.eye + 'Ver a proposta (PDF)</button></div>' +
     '</div>';
   }
-  /* ── o comprador: CNPJ, código do cliente ou à mão ─────────────────
-     Três jeitos de preencher (20/10/2026): PELO CNPJ ou PELO CÓDIGO do
+  /* ── o comprador: CNPJ ou código do cliente ─────────────────────────
+     Dois jeitos de preencher (20/10/2026): PELO CNPJ ou PELO CÓDIGO do
      cliente no ERP o Dynamics preenche o cadastro (/api/cot-casos?cliente=
      CNPJ | ?codigoCliente=COD — shared/cot-erp.js, só leitura: razão social,
-     código, CNPJ, endereço, grupo, condição de pagamento, BLOQUEADO); CLIENTE
-     NOVO (23/10/2026, era "Tudo à mão") não consulta nada. Pelo CNPJ, digitar já consulta e completa só o
+     código, CNPJ, endereço, grupo, condição de pagamento, BLOQUEADO). O CLIENTE
+     NOVO (23/10/2026) saiu em 25/11/2026 (pedido do usuário). Pelo CNPJ, digitar já consulta e completa só o
      que está VAZIO (o que veio do PDF fica); o botão "Buscar" preenche com o
      cadastro (campos marcados "Dynamics"). O servidor completa de novo ao criar. */
-  var MODOS_CLI = [['cnpj', 'Pelo CNPJ'], ['codigo', 'Pelo código do cliente'], ['manual', 'Cliente novo']];
+  var MODOS_CLI = [['cnpj', 'Pelo CNPJ'], ['codigo', 'Pelo código do cliente']];
   var DICA_MODO = {
     cnpj: 'Digite o CNPJ e clique em Buscar: razão social, código e endereço vêm do cadastro do Dynamics.',
-    codigo: 'Digite o código do cliente no ERP (ex.: C004512) e clique em Buscar: CNPJ, razão social e endereço vêm do Dynamics.',
-    manual: 'Cliente novo, ainda sem cadastro no Dynamics: preencha os dados do comprador à mão.'
+    codigo: 'Digite o código do cliente no ERP (ex.: C004512) e clique em Buscar: CNPJ, razão social e endereço vêm do Dynamics.'
   };
   function htmlModoCli() {
     return '<div class="cot-modo-cli" role="radiogroup" aria-label="Como preencher o comprador">' + MODOS_CLI.map(function (m) {
@@ -555,7 +560,6 @@
   function buscarCli(por) { if (por === 'codigo') buscarPorCodigo(); else buscarErp(true); }
   // explicito = o botão "Buscar" (preenche com o cadastro); sem ele = digitando (só o vazio)
   function buscarErp(explicito) {
-    if (S.modoCli === 'manual') { S.erp = null; pintarErp(); return; }
     var d = cnpjDigitos();
     // só CNPJ/CPF válido vai ao Dynamics (o inválido daria "não encontrado" — parece cliente novo)
     if ((d.length !== 14 && d.length !== 11) || C.validar('cnpj', d)) {
@@ -632,13 +636,13 @@
       '<dl>' + linhas.map(function (l) { return '<dt>' + esc(l[0]) + '</dt><dd>' + esc(l[1]) + '</dd>'; }).join('') + '</dl>' +
       (e.completou ? '<small>' + (e.sobre ? 'Preenchi ' + e.completou + ' campo(s) com o cadastro' : 'Completei ' + e.completou + ' campo(s) vazio(s) com o cadastro') + ' (marcados "Dynamics") — dá para corrigir.</small>' : '') + '</div></div>';
   }
-  function pintarErp() { var b = $('cot-erp-box'); if (b) b.innerHTML = htmlErp(); }
+  function pintarErp() { var b = $('cot-erp-box'); if (b) b.innerHTML = htmlErp(); previaDepois(); }
 
   // CNPJ e código do cliente: o do modo vem primeiro, com o "Buscar"
   function htmlCamposId() {
     var m = S.modoCli;
     // o CNPJ com o "Buscar" do lado precisa de 3/4 da linha (o código cabe em 1/4)
-    // 29/10/2026: obrigatório o CNPJ ou o código (o asterisco no do modo); cliente novo, a razão social
+    // 29/10/2026: obrigatório o CNPJ ou o código (o asterisco no do modo)
     var cnpj = campo('CNPJ', 'cliente.cnpj', { cls: m === 'cnpj' ? 's3 cot-busca' : 's2', mask: 'cnpj', ph: '00.000.000/0000-00', req: m === 'cnpj', depois: m === 'cnpj' ? btnBuscarCli('cnpj') : '' });
     var cod = campo(m === 'cnpj' ? 'Código (ERP)' : 'Código do cliente (ERP)', 'cliente.codigo', { cls: m === 'codigo' ? 's2 cot-busca' : m === 'cnpj' ? 'cot-cod' : 's2', ph: 'ex.: C004512', max: 30, req: m === 'codigo', depois: m === 'codigo' ? btnBuscarCli('codigo') : '' });
     return m === 'codigo' ? cod + cnpj : cnpj + cod;
@@ -674,7 +678,7 @@
     return '<h3>Dados da oportunidade</h3>' +
       '<p class="cot-ag-sub">Os campos com <b class="cot-req">*</b> são obrigatórios para criar, e ao menos 1 item cotado (com quantidade e preço); o resto dá para completar depois, no caso.</p>' +
       '<div id="cot-dup">' + htmlDup() + '</div>' +
-      '<div class="cot-conf-form">' +
+      '<div class="cot-conf cot-conf-previa"><div class="cot-conf-form">' +
         '<div class="cot-sec"><h5>' + IC.inbox + (S.semPortal ? 'Oportunidade' : 'Cotação no portal') + ' <span class="cs-chip f-cotada" style="margin-left:auto"><span class="bol"></span>Entra como Cotada</span></h5><div class="cot-grade">' +
           // à mão (sem PDF) é uma ordem nova: não há portal nem nº da cotação (23/10/2026)
           (S.semPortal ? '' : htmlPortal() +
@@ -687,7 +691,7 @@
         '</div></div>' +
         '<div class="cot-sec"><h5>' + IC.building + 'Comprador</h5>' + htmlModoCli() + '<div id="cot-erp-box">' + htmlErp() + '</div><div class="cot-grade">' +
           htmlCamposId() +
-          campo('Cliente (razão social)', 'cliente.nome', { cls: 's4', obrig: true, req: S.modoCli === 'manual' }) +
+          campo('Cliente (razão social)', 'cliente.nome', { cls: 's4', obrig: true }) +
           campo('Endereço', 'cliente.endereco', { cls: 's4', ph: 'rua, número, bairro' }) +
           campo('CEP', 'cliente.cep', { mask: 'cep', ph: '00000-000', aviso: true }) +
           campo('Cidade', 'cliente.cidade', { cls: 's2' }) +
@@ -703,7 +707,6 @@
           campo('Prazo de entrega', 'condicoes.entrega', { cls: 's3', req: true, ni: true, ph: 'ex.: 5 dias úteis após o pedido', max: 120 }) +
           campo('Observação', 'condicoes.observacao', { cls: 's4', area: true, linhas: 2, dica: 'sai no PDF da proposta' }) +
         '</div></div>' +
-      '</div>' +
       '<div class="cot-sec cot-sec-larga"><h5>' + IC.list + 'Itens cotados' + (S.lidos.itens ? ' <span class="cs-chip" style="height:18px;font-size:10px;color:#5A3BC4">IA</span>' : '') + '</h5><div id="cot-itens">' + htmlItens() + '</div>' +
         // o estoque da venda (05/11/2026, RECORTE MSB): o mesmo do PI · Pedido da MSB
         '<div id="cot-estoque" class="cot-est-box"></div></div>' +
@@ -712,7 +715,98 @@
         campo('', 'nota', { area: true, linhas: 3, ph: 'O que você combinou, o que está pendente, quem acompanha…' }) + '</div>' +
       '<div class="cot-acoes-pe"><button type="button" class="cs-btn" id="cot-voltar">' + IC.back + 'Recomeçar</button>' +
         '<div class="dir"><button type="button" class="cs-btn cs-btn-p" id="cot-criar"' + (S.configurado === false ? ' disabled title="Armazenamento não configurado"' : '') + '>' + rotuloCriar() + '</button></div></div>' +
-      '<div class="cot-msg" id="cot-msg"></div>';
+      '<div class="cot-msg" id="cot-msg"></div>' +
+      '</div>' + htmlPrevia() + '</div>';
+  }
+
+  /* ── a PRÉVIA da proposta (25/11/2026, pedido do usuário) ──────────
+     À direita do formulário, o PDF da proposta no modelo da MSB (o mesmo
+     COTPROP.gerar do envio), refeito ~0,6 s depois de cada mudança: só gera
+     de novo quando os dados da proposta mudaram (a assinatura), e as páginas
+     novas (pdf.js, na largura do painel) só entram no lugar das antigas
+     depois de desenhadas — sem piscar. Sem o pdf.js, um <iframe>. */
+  var PV = { assin: '', vez: 0, des: 0, doc: null, url: '', st: '', erro: '' };
+  function htmlPrevia() {
+    return '<aside class="cot-previa" id="cot-previa" aria-label="Prévia da proposta">' +
+      '<div class="cot-previa-h">' + IC.pdf + '<b>Prévia da proposta</b><span class="st" id="cot-previa-st">' + htmlStPrevia() + '</span>' +
+        '<button type="button" class="cs-btn cs-btn-xs" id="cot-previa-abrir" title="Abrir a proposta numa aba nova">' + IC.eye + 'Abrir</button></div>' +
+      '<div class="cot-previa-v" id="cot-previa-v"><div class="cot-previa-pags" id="cot-previa-pags"><div class="cot-previa-car"><span class="cs-spin"></span> Montando a proposta…</div></div></div>' +
+    '</aside>';
+  }
+  function htmlStPrevia() {
+    if (!P) return 'o gerador não carregou';
+    if (PV.st === 'gerando') return '<span class="cs-spin"></span> atualizando…';
+    if (PV.st === 'erro') return '<span class="erro" title="' + esc(PV.erro) + '">não consegui gerar</span>';
+    if (PV.st === 'ok') return 'atualiza enquanto você preenche';
+    return '';
+  }
+  function stPrevia(st, erro) { PV.st = st; PV.erro = erro || ''; var el = $('cot-previa-st'); if (el) el.innerHTML = htmlStPrevia(); }
+  // o caso como vai na proposta (o número só existe depois de criar)
+  function casoDaPrevia() { var c = casoDaTela(); c.numero = ''; return c; }
+  function previa() {
+    if (S.passo !== 'conf' || !S.dados || !P || !P.pronto() || !$('cot-previa')) return;
+    var caso = casoDaPrevia(), op = operador();
+    var assin = JSON.stringify([caso, op]);
+    if (assin === PV.assin) return;
+    PV.assin = assin;
+    var vez = ++PV.vez;
+    stPrevia('gerando');
+    P.gerar(caso, op).then(function (pdf) {
+      if (vez !== PV.vez) return;
+      if (PV.url) URL.revokeObjectURL(PV.url);
+      PV.url = URL.createObjectURL(pdf.blob);
+      if (!window.pdfjsLib) { previaIframe(); stPrevia('ok'); return; }
+      return pdf.blob.arrayBuffer().then(function (buf) {
+        return window.pdfjsLib.getDocument({ data: new Uint8Array(buf) }).promise;
+      }).then(function (doc) {
+        if (vez !== PV.vez) { doc.destroy(); return; }
+        var velho = PV.doc; PV.doc = doc;
+        return desenharPrevia().then(function () {
+          if (velho) { try { velho.destroy(); } catch (e) {} }
+          if (vez === PV.vez) stPrevia('ok');
+        });
+      });
+    }).catch(function (e) {
+      if (vez !== PV.vez) return;
+      PV.assin = '';   // a próxima mudança tenta de novo
+      stPrevia('erro', (e && e.message) || String(e));
+    });
+  }
+  var previaDepois = C.debounce(previa, 600);
+  function previaIframe() {
+    var b = $('cot-previa-pags'); if (!b || !PV.url) return;
+    b.innerHTML = '<iframe src="' + PV.url + '#toolbar=0&navpanes=0&view=FitH" title="Prévia da proposta"></iframe>';
+  }
+  // as páginas do PDF na largura do painel; as novas só entram depois de prontas
+  function desenharPrevia() {
+    var box = $('cot-previa-pags'), doc = PV.doc;
+    if (!box) return Promise.resolve();
+    if (!doc) { if (PV.url && !window.pdfjsLib) previaIframe(); return Promise.resolve(); }
+    var vez = ++PV.des, larg = Math.max(200, box.clientWidth - 24), dpr = Math.min(window.devicePixelRatio || 1, 2);
+    var cvs = [], cadeia = Promise.resolve();
+    for (var n = 1; n <= doc.numPages; n++) {
+      (function (n) {
+        cadeia = cadeia.then(function () { return vez === PV.des ? doc.getPage(n) : null; }).then(function (pg) {
+          if (!pg || vez !== PV.des) return;
+          var vp = pg.getViewport({ scale: (larg / pg.getViewport({ scale: 1 }).width) * dpr });
+          var cv = D.createElement('canvas');
+          cv.width = Math.floor(vp.width); cv.height = Math.floor(vp.height);
+          cvs.push(cv);
+          return pg.render({ canvasContext: cv.getContext('2d'), viewport: vp }).promise;
+        });
+      })(n);
+    }
+    return cadeia.then(function () {
+      var b = $('cot-previa-pags');
+      if (vez !== PV.des || !b || !cvs.length) return;
+      var topo = b.parentNode ? b.parentNode.scrollTop : 0;
+      b.replaceChildren.apply(b, cvs);
+      if (b.parentNode) b.parentNode.scrollTop = topo;
+    }).catch(function (e) { if (vez === PV.des) throw e; });
+  }
+  function abrirPrevia() {
+    if (PV.url && PV.st === 'ok') { window.open(PV.url, '_blank'); return; }
+    verProposta(casoDaPrevia());
   }
 
   /* ── 4 · pronto ─────────────────────────────────────────────── */
@@ -792,7 +886,12 @@
     if (S.passo === 'conf' && !S.dados) S.dados = vazio();
     el.innerHTML = S.passo === 'conf' ? htmlConf() : htmlPronto();
     C.quieto(el);
-    if (S.passo === 'conf') { marcarInvalidos(); referencias(); estoqueDepois(); }
+    if (S.passo === 'conf') {
+      marcarInvalidos(); referencias(); estoqueDepois();
+      // o render refaz o painel: as páginas que já estavam voltam na hora
+      if (PV.doc || PV.url) desenharPrevia().catch(function () {});
+      previaDepois();
+    }
   }
   function msg(html, tipo) {
     var m = $('cot-msg'); if (!m) return;
@@ -801,7 +900,7 @@
   }
   function recomecar() {
     S.passo = 'conf'; S.texto = ''; S.leitura = null; S.dados = null; S.lidos = {}; S.dup = null; S.forcar = false;
-    S.criado = null; S.envio = null; S.codErro = ''; S.criarSemConferir = false; S.erp = null; S.modoCli = 'cnpj';
+    S.criado = null; S.envio = null; PV.assin = ''; S.codErro = ''; S.criarSemConferir = false; S.erp = null; S.modoCli = 'cnpj';
     S.prop.enviar = false; S.prop.para = ''; S.prop.copia = ''; S.prop.anexos = []; S.portalLivre = false; S.semPortal = true; S.ipi = false;
     render();
   }
@@ -1030,14 +1129,15 @@
       if (t.hasAttribute('data-tirar-extra')) { ev.preventDefault(); S.prop.anexos.splice(Number(t.getAttribute('data-tirar-extra')), 1); pintarExtras(); return; }
       if (t.id === 'cot-erp-de-novo') { buscarCli((S.erp && S.erp.por) || S.modoCli); return; }
       if (t.hasAttribute('data-modo-cli')) {
-        S.modoCli = t.getAttribute('data-modo-cli');
-        if (S.modoCli === 'manual' || (S.erp && S.erp.estado !== 'ok')) S.erp = null;
+        S.modoCli = t.getAttribute('data-modo-cli') === 'codigo' ? 'codigo' : 'cnpj';
+        if (S.erp && S.erp.estado !== 'ok') S.erp = null;
         render();
-        var alvo = D.querySelector(S.modoCli === 'codigo' ? '[data-k="cliente.codigo"]' : S.modoCli === 'cnpj' ? '[data-k="cliente.cnpj"]' : '[data-k="cliente.nome"]'); if (alvo) alvo.focus();
+        var alvo = D.querySelector(S.modoCli === 'codigo' ? '[data-k="cliente.codigo"]' : '[data-k="cliente.cnpj"]'); if (alvo) alvo.focus();
         return;
       }
       if (t.hasAttribute('data-buscar-cli')) { buscarCli(t.getAttribute('data-buscar-cli')); return; }
-      if (t.id === 'cot-prop-ver') { var prev = casoDaTela(); prev.numero = ''; verProposta(prev); return; }
+      if (t.id === 'cot-prop-ver') { verProposta(casoDaPrevia()); return; }
+      if (t.id === 'cot-previa-abrir') { abrirPrevia(); return; }
       if (t.id === 'cot-prop-ver2') { verProposta(S.criado); return; }
       if (t.id === 'cot-prop-mandar') {
         if (!P.listaEmails(S.prop.para).length) { S.envio = { estado: 'erro', msg: 'Informe o e-mail do comprador.' }; pintarEnvio(); return; }
@@ -1070,6 +1170,9 @@
         return;
       }
     });
+    // a prévia da proposta: depois de cada mudança (o debounce espera a pessoa parar)
+    ['input', 'change', 'click'].forEach(function (tipo) { corpo.addEventListener(tipo, function () { if (S.passo === 'conf') previaDepois(); }); });
+    window.addEventListener('resize', C.debounce(function () { if (S.passo === 'conf' && PV.doc) desenharPrevia().catch(function () {}); }, 250));
     corpo.addEventListener('keydown', function (ev) {
       if (ev.key === 'Enter' && ev.target.closest && ev.target.closest('.cot-busca')) {
         var k = ev.target.getAttribute('data-k');

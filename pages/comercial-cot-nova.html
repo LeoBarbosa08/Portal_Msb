@@ -27,7 +27,7 @@
   <script src="../portal-mobile.js?v=1" defer></script>
   <!-- Cotações: família do Customer Service (botões, chips, cartões, diálogo) -->
   <link rel="stylesheet" href="../customer-service.css?v=4">
-  <link rel="stylesheet" href="../cotacoes.css?v=34">
+  <link rel="stylesheet" href="../cotacoes.css?v=35">
 </head>
 <body class="dept cs-page cot-page" data-cot-pagina="nova">
 
@@ -127,9 +127,17 @@
   <script src="../nav-sidebar.js?v=88"></script>
   <script src="../pbi-throttle.js?v=5" data-bi-trava="off"></script>
   <script src="../voz-pbi.js?v=3"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+  <script>
+    // o pdf.js desenha a prévia da proposta ao lado do formulário
+    if (window.pdfjsLib) {
+      pdfjsLib.GlobalWorkerOptions.workerSrc =
+        'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+    }
+  </script>
   <script src="../cotacoes-base.js?v=31"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
   <script src="../cotacoes-proposta.js?v=9"></script>
-  <script src="../cotacoes-agente.js?v=28"></script>
+  <script src="../cotacoes-agente.js?v=29"></script>
 </body>
 </html>

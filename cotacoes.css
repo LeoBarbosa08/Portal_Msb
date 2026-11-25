@@ -1337,3 +1337,28 @@ html[data-tema="escuro"] .cot-est-chip { background: transparent; }
 html[data-tema="escuro"] .cot-est-t tbody tr:nth-child(even) td { background: rgba(255, 255, 255, .03); }
 /* 05/11/2026 (RECORTE MSB): o Salesforce não respondeu — o motivo embaixo do item */
 table.cot-itens .cot-sf.cot-sf-falha { color: #9A5B07; font-weight: 500; white-space: normal; }
+
+/* ── a PRÉVIA da proposta à direita do formulário (25/11/2026, Nova oportunidade) ──
+   o card com overflow: clip (e não hidden) para o painel grudar no topo ao rolar */
+.cot-ag-card:has(.cot-previa) { overflow: clip; }
+.cot-conf-previa { grid-template-columns: minmax(0, 1fr) minmax(360px, .78fr); }
+.cot-conf-previa .cot-sec-larga { margin-top: 0; }
+.cot-previa { position: sticky; top: 14px; display: flex; flex-direction: column; max-height: calc(100vh - 28px); min-height: 420px; border-radius: 18px; border: 1px solid var(--cs-line); overflow: hidden; background: var(--cs-soft); }
+.cot-previa-h { display: flex; align-items: center; gap: 8px; padding: 10px 12px; border-bottom: 1px solid var(--cs-line); background: var(--bm3-surface, #fff); font-size: 12.5px; color: var(--cs-ink2); min-width: 0; }
+.cot-previa-h > svg { width: 16px; height: 16px; flex: none; color: var(--bm3-red-600, #CF3434); }
+.cot-previa-h b { font-weight: 800; color: var(--cs-ink); white-space: nowrap; }
+.cot-previa-h .st { margin-left: auto; display: inline-flex; align-items: center; gap: 6px; min-width: 0; font-size: 11.5px; color: var(--cs-mut); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.cot-previa-h .st .cs-spin { width: 12px; height: 12px; }
+.cot-previa-h .st .erro { color: var(--bm3-red-700, #A82424); font-weight: 700; }
+.cot-previa-h .cs-btn { flex: none; }
+.cot-previa-v { flex: 1 1 auto; min-height: 0; overflow: auto; }
+.cot-previa-pags { display: flex; flex-direction: column; gap: 12px; padding: 12px; }
+.cot-previa-pags canvas { display: block; width: 100%; height: auto; background: #fff; border-radius: 4px; box-shadow: 0 1px 3px rgba(15, 29, 35, .12), 0 6px 18px rgba(15, 29, 35, .08); }
+.cot-previa-pags iframe { width: 100%; height: min(80vh, 900px); border: 0; background: #fff; }
+.cot-previa-car { display: flex; align-items: center; justify-content: center; gap: 8px; min-height: 320px; font-size: 12.5px; color: var(--cs-mut); }
+.cot-previa-car .cs-spin { width: 16px; height: 16px; }
+@media (max-width: 1240px) {
+  .cot-conf-previa { grid-template-columns: minmax(0, 1fr); }
+  .cot-previa { position: static; max-height: none; }
+  .cot-previa-v { max-height: 80vh; }
+}
