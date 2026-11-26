@@ -102,6 +102,15 @@ function casoBase(numero, extra) {
     /nome: 'Fila de aprovação'/.test(jsFila) && !/nome: 'Já decididos'/.test(jsFila) && !/pf-busca|pf-visoes/.test(htmlPi + jsFila));
   t('a fila é só uma lista: sem os cartões nem a introdução ("não precisa desses cards")', !/id="pf-kpis"/.test(htmlPi) && !/pf-intro/.test(htmlPi) &&
     !/renderKpis/.test(fs.readFileSync(path.join(__dirname, '..', 'pi-fila.js'), 'utf8')));
+  // 26/11/26 (o dono: "retire a opção de NOVO PEDIDO, tudo será mediante FILA DE APROVAÇÃO")
+  t('sem a aba Novo pedido: a página abre nas Aprovações e o assistente só com o pedido da fila (?cot=)',
+    !/>Novo pedido</.test(htmlPi) && /<div class="pi-card" id="pi-card" data-aba="fila">/.test(htmlPi) &&
+    /id="pi-aba-bt-novo"[^>]*hidden/.test(htmlPi) && /<div id="pi-aba-novo"[^>]*hidden>/.test(htmlPi) && !/<div id="pi-aba-fila"[^>]*hidden/.test(htmlPi) &&
+    /S\.pedido = q\.get\('cot'\) \|\| q\.get\('cs'\)/.test(jsFila) && /if \(id === 'novo' && !S\.pedido\) id = 'fila'/.test(jsFila) && !/ABA_CHAVE/.test(jsFila));
+  t('enviado o pedido, o botão volta à fila (não há "Registrar novo pedido")',
+    !/Registrar novo pedido</.test(htmlPi) && /\$\('ok-novo'\)\.addEventListener\('click', function \(\) \{ window\.location\.href = location\.pathname \+ '\?aba=fila'; \}\)/.test(pi));
+  t('a fila se atualiza sozinha 1 min depois da última busca, e a tela diz isso',
+    /var AUTO_MS = 60e3;/.test(jsFila) && /Date\.now\(\) - S\.tentou >= AUTO_MS/.test(jsFila) && /automático a cada 1 min/.test(jsFila));
   t('sem página nem agente à parte (nada de pi-fila.html no menu, na busca ou no disco)', !/pi-fila\.html/.test(nav) && !/pi-fila\.html/.test(fs.readFileSync(path.join(__dirname, '..', 'portal-catalogo.js'), 'utf8')) &&
     !fs.existsSync(path.join(__dirname, '..', 'pages', 'pi-fila.html')));
 

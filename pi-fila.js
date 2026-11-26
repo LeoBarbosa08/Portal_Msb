@@ -30,6 +30,14 @@
    vindo do CRM/da fila (?cot=…) abre sempre no assistente. Sem acesso ao CRM
    (só Estoque), as abas somem e fica só o assistente.
 
+   26/11/2026 (o dono: "retire a opção de NOVO PEDIDO, tudo será mediante FILA
+   DE APROVAÇÃO"): saiu a aba Novo pedido. A página abre SEMPRE nas
+   Aprovações; o assistente só aparece com o pedido que veio da fila (Dar
+   andamento -> ?cot=…), numa aba com o número dele. Sem acesso ao CRM, fica a
+   fila com o aviso — não há mais pedido avulso. E ("atualiza isso
+   automaticamente a cada 1m"): a lista se busca sozinha 1 min depois da
+   última busca, e a tela diz isso ao lado do horário.
+
    Usa cotacoes-base.js (window.COT: api, toast, diálogo, ícones, formatação);
    a proposta (jsPDF + cotacoes-proposta.js) só carrega no clique.
    ================================================================ */
@@ -55,7 +63,10 @@
   var SECOES = [
     { id: 'fila', nome: 'Fila de aprovação', estados: ['aguardando', 'andamento'], vazio: 'Nada aguardando aprovação.' }
   ];
-  var S = { fila: [], dias: 15, carregou: false, erro: '', aberto: '', em: 0, carregando: false, agindo: {}, pdf: {}, eu: null };
+  // tentou: a última busca (deu certo ou não) — o relógio do "a cada 1 min";
+  // pedido: o número aberto no assistente (?cot=/?cs=) — sem ele, não há a aba
+  var S = { fila: [], dias: 15, carregou: false, erro: '', aberto: '', em: 0, tentou: 0, carregando: false, agindo: {}, pdf: {}, eu: null, pedido: '', semAcesso: false };
+  var AUTO_MS = 60e3;
 
   function nome(p) { return (p && (p.nome || p.email)) || ''; }
   function chipEstado(it) {
@@ -69,7 +80,7 @@
   /* ── carregar ───────────────────────────────────────────────── */
   function carregar(silencioso) {
     if (S.carregando) return Promise.resolve();
-    S.carregando = true;
+    S.carregando = true; S.tentou = Date.now();
     if (!silencioso) pintarAtual('<span class="cs-spin"></span> carregando…');
     return C.api('cot-casos?fila=1').then(function (j) {
       S.carregando = false;
@@ -88,7 +99,7 @@
   /* ── pintar ─────────────────────────────────────────────────── */
   function render() {
     renderLista(); pintarSelo(contar(['aguardando']));
-    pintarAtual(S.em ? 'Atualizado às ' + C.dataBR(new Date(S.em).toISOString(), true).slice(11) : '');
+    pintarAtual(S.em ? 'Atualizado às ' + C.dataBR(new Date(S.em).toISOString(), true).slice(11) + (S.semAcesso ? '' : ' · automático a cada 1 min') : '');
   }
   function contar(estados) { return S.fila.filter(function (it) { return estados.indexOf(it.estado) >= 0; }).length; }
   var CAB = '<div class="pf-cab" aria-hidden="true"><span>Pedido</span><span>Cliente</span><span>Vendedor</span><span>Pagamento · transportadora</span><span class="r">Valor</span><span></span></div>';
@@ -308,28 +319,26 @@
     }
   }
 
-  /* ── as ABAS do PI: Novo pedido | Fila de aprovação ─────────── */
-  var ABA_CHAVE = 'pi-aba';
+  /* ── as ABAS do PI: Aprovações | o pedido em andamento (só com ?cot=) ── */
   function pintarSelo(n) {
     var el = $('pi-fila-n'); if (!el) return;
     el.textContent = n; el.hidden = !n;
     var b = $('pi-aba-bt-fila'); if (b) b.title = n ? n + (n === 1 ? ' pedido esperando' : ' pedidos esperando') : 'Nenhum pedido esperando';
   }
   function abaAtual() { var f = $('pi-aba-fila'); return f && !f.hidden ? 'fila' : 'novo'; }
-  function mostrarAba(id, lembrar) {
-    var fila = id === 'fila', pf = $('pi-aba-fila'), pn = $('pi-aba-novo');
-    if (!pf || !pn) return;
-    pf.hidden = !fila; pn.hidden = fila;
-    ['novo', 'fila'].forEach(function (k) { var b = $('pi-aba-bt-' + k); if (b) b.setAttribute('aria-selected', String(k === id)); });
-    var card = $('pi-card'); if (card) card.setAttribute('data-aba', id);
-    if (lembrar) { try { W.localStorage.setItem(ABA_CHAVE, id); } catch (e) {} }
-    if (fila && (!S.carregou || Date.now() - S.em > 15e3)) carregar(S.carregou);
+  function mostrarAba(id) {
+    if (id === 'novo' && !S.pedido) id = 'fila';   // sem pedido da fila, não há assistente
+    mostrarAbaSemCarregar(id);
+    var fila = id === 'fila';
+    if (fila && !S.semAcesso && (!S.carregou || Date.now() - S.em > 15e3)) carregar(S.carregou);
     // o PDF ao lado do assistente se redesenha na largura de agora
     if (!fila) { try { W.dispatchEvent(new Event('resize')); } catch (e) {} }
   }
-  function semAcesso() {
-    var a = $('pi-abas'); if (a) a.hidden = true;
-    mostrarAba('novo');
+  // sem o CRM, não há fila — e (26/11/2026) não há mais pedido avulso: fica o aviso
+  function semAcesso(e) {
+    S.semAcesso = true; S.carregou = true; S.fila = [];
+    S.erro = 'Você não tem acesso à fila de aprovação (ela vem do CRM)' + (e && e.message ? ': ' + e.message : '') + '. Os pedidos do PI chegam só por ela — peça a liberação ao administrador do portal.';
+    render();
   }
   // a proposta (jsPDF + cotacoes-proposta.js) só quando alguém pede
   var _prop = null;
@@ -355,7 +364,7 @@
     var abas = $('pi-abas');
     if (abas) abas.addEventListener('click', function (ev) {
       var b = ev.target.closest('[data-pi-aba]'); if (!b) return;
-      mostrarAba(b.getAttribute('data-pi-aba'), true);
+      mostrarAba(b.getAttribute('data-pi-aba'));
     });
     app.addEventListener('click', function (ev) {
       var t = ev.target;
@@ -378,38 +387,44 @@
       var b = ev.target.closest && ev.target.closest('[data-abrir]');
       if (b && ev.target === b && (ev.key === 'Enter' || ev.key === ' ')) { ev.preventDefault(); abrir(b.getAttribute('data-abrir')); }
     });
-    $('pf-recarregar').addEventListener('click', function () { carregar(); });
+    $('pf-recarregar').addEventListener('click', function () { if (!S.semAcesso) carregar(); });
     // volta para a aba (ou o PI lançou noutra aba): atualiza
-    D.addEventListener('visibilitychange', function () { if (!D.hidden && abaAtual() === 'fila' && Date.now() - S.em > 15e3) carregar(true); });
-    if (W.CSPI && W.CSPI.ouvir) W.CSPI.ouvir(function (m) { if (m && m.tipo === 'pi-enviado' && S.carregou) carregar(true); });
-    // a cada 60 s, com a aba à vista e sem diálogo aberto
+    D.addEventListener('visibilitychange', function () { if (!D.hidden && abaAtual() === 'fila' && S.carregou && !S.semAcesso && Date.now() - S.em > 15e3) carregar(true); });
+    if (W.CSPI && W.CSPI.ouvir) W.CSPI.ouvir(function (m) { if (m && m.tipo === 'pi-enviado' && S.carregou && !S.semAcesso) carregar(true); });
+    // 26/11/2026 (o dono: "atualiza isso automaticamente a cada 1m, para a pessoa
+    // não ter que clicar em atualizar"): 1 min depois da última busca — o
+    // Atualizar à mão zera a conta —, com a aba à vista, depois da 1ª carga e
+    // sem diálogo aberto nem ação em curso (não mexe na lista no meio de um clique)
     setInterval(function () {
       var dlg = $('cs-dlg');
-      if (!D.hidden && abaAtual() === 'fila' && !(dlg && dlg.open) && !Object.keys(S.agindo).length) carregar(true);
-    }, 60e3);
+      if (D.hidden || abaAtual() !== 'fila' || !S.carregou || S.semAcesso || (dlg && dlg.open) || Object.keys(S.agindo).length) return;
+      if (Date.now() - S.tentou >= AUTO_MS) carregar(true);
+    }, 5e3);
   }
 
   function iniciar() {
     if (!$('pf-app')) return;
     ligar();
     var q = new URLSearchParams(location.search), alvo = q.get('caso') || '';
-    // de onde abrir: o PI vindo do CRM/da fila (?cot=/?cs=) fica no assistente;
-    // ?aba=fila (&caso=) abre na fila; sem nada, a última aba da pessoa
-    var doCrm = !!(q.get('cot') || q.get('cs'));
-    var lembrada = ''; try { lembrada = W.localStorage.getItem(ABA_CHAVE) || ''; } catch (e) {}
-    var inicial = doCrm ? 'novo' : (q.get('aba') === 'fila' || alvo) ? 'fila' : q.get('aba') === 'novo' ? 'novo' : (lembrada === 'fila' ? 'fila' : 'novo');
-    if (!doCrm && (q.get('aba') || alvo)) { try { history.replaceState(null, '', location.pathname); } catch (e) {} }
+    // de onde abrir (26/11/2026: sem Novo pedido): o PI vindo da fila (Dar
+    // andamento -> ?cot=…&fila=1; ou ?cs=) abre no assistente, numa aba com o
+    // número do pedido; o resto abre SEMPRE nas Aprovações
+    S.pedido = q.get('cot') || q.get('cs') || '';
+    var bt = $('pi-aba-bt-novo');
+    if (bt) { bt.hidden = !S.pedido; if (S.pedido) bt.textContent = 'Pedido ' + S.pedido; }
+    try { W.localStorage.removeItem('pi-aba'); } catch (e) {}   // a última aba lembrada (antes de 26/11/2026)
+    if (!S.pedido && (q.get('aba') || alvo)) { try { history.replaceState(null, '', location.pathname); } catch (e) {} }
     var abas = $('pi-abas'); if (abas) abas.hidden = false;
-    mostrarAbaSemCarregar(inicial);
+    mostrarAbaSemCarregar(S.pedido ? 'novo' : 'fila');
     render();
     C.aguardarLogin().then(function () {
       S.eu = W._portalUser ? { email: String(W._portalUser.email || '').toLowerCase(), nome: W._portalUser.name || '' } : null;
-      // o selo da aba (barato: só o índice) — e quem não tem o CRM não vê as abas
+      // o selo da aba (barato: só o índice) — e quem não tem o CRM fica com o aviso
       return C.api('cot-casos?fila=conta').then(function (k) {
         pintarSelo((k && k.aguardando) || 0);
         return true;
       }, function (e) {
-        if (e.status === 401 || e.status === 403) { semAcesso(); return false; }
+        if (e.status === 401 || e.status === 403) { semAcesso(e); return false; }
         return true;
       });
     }).then(function (ok) {

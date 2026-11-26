@@ -1694,7 +1694,9 @@
     $('lotes-continuar').addEventListener('click', validarLotesEContinuar);
     $('rev-voltar').addEventListener('click', function () { goStep(S.produtos.some(function (p) { return p.lotes && p.lotes.length; }) ? 'lotes' : 'prod'); });
     $('rev-enviar').addEventListener('click', enviarPedido);
-    $('ok-novo').addEventListener('click', function () { window.location.reload(); });
+    // 26/11/2026 (o dono: "tudo será mediante FILA DE APROVAÇÃO"): sem pedido
+    // avulso — depois de enviar, volta para a fila (a página sem ?cot abre nela)
+    $('ok-novo').addEventListener('click', function () { window.location.href = location.pathname + '?aba=fila'; });
 
     // RECORTE MSB (05/11/2026, pedido do dono): quantidade e valor (Produtos e
     // Lotes, inclusive a linha "sem rastreio") só aceitam NÚMERO — letra,

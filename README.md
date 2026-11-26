@@ -2689,6 +2689,17 @@ qtd são obrigatórios".
   fulano, lançado) com "Ver na fila do PI". Fecha como Ganha quando a OV volta
   pelo flow (`/api/cot-ov-retorno`, como antes) — ou com a OV informada.
   "Atualizar o PDF do pedido" refaz a proposta com os dados de agora.
+- **Sem Novo pedido — tudo pela fila** (26/11/2026, o dono: "retire a opção de
+  NOVO PEDIDO, tudo será mediante FILA DE APROVAÇÃO"): o PI · Pedido abre
+  SEMPRE na aba **Aprovações**; não há mais pedido avulso. O assistente só
+  aparece com o pedido que veio da fila (Dar andamento -> `?cot=…&fila=1`),
+  numa aba "Pedido COT-…" ao lado de Aprovações; enviado, o botão é **Voltar à
+  fila de aprovação**. A aba lembrada no navegador (`pi-aba`) saiu. Quem não
+  tem o CRM vê a fila com o aviso de acesso (antes caía no assistente). E
+  ("atualiza isso automaticamente a cada 1m"): a lista se busca sozinha 1 min
+  depois da última busca (o Atualizar à mão zera a conta), com a aba à vista e
+  sem diálogo aberto; ao lado do horário: "automático a cada 1 min".
+  O texto abaixo (abas Novo pedido | Aprovações) é o histórico de 25/11.
 - **Fila de aprovação = uma ABA do PI · Pedido** (o dono: "isso tem que estar
   no PI, não crie dois agentes"): `pages/pedido-inteligente.html` tem as abas
   **Novo pedido** (o assistente de sempre) | **Fila de aprovação** (com o selo
