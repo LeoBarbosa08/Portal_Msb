@@ -365,6 +365,10 @@ const UNRESTRICTED_GROUPS = new Set([
   'bf581209-e3b1-4e7d-8a7e-cf95f3ffa270',
   'd0369aaf-d754-47b9-8cd3-1aaf6d0b1dbe',
   '1cd451b5-ec2b-4867-a57e-c70ba902bbd5',
+  // Diretoria - MSB (26/11/2026, pedido do dono: "precisa ter acesso full ao
+  // sistema") — vê todas as áreas, passa nas reservadas (menos RESERVA_ESTRITA)
+  // e é "full" no CRM (escolhe o submódulo).
+  '0585ebeb-7d6d-457f-aa9a-577176d70704',
 ]);
 
 // Liberação EXTRA por e-mail (minúsculo).
