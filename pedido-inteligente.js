@@ -186,6 +186,7 @@
       el.classList.toggle('feito', i >= 0 && i < idx);
     });
     PV.passo = id;
+    if (id === 'cab') ocNaoInformadaSeVazia();   // 26/11/2026: OC em branco = NAO INFORMADO
     painelPdf();
     window.scrollTo({ top: 0, behavior: 'smooth' });
   }
@@ -334,6 +335,21 @@
     }
   }
 
+  // 26/11/2026 (pedido do dono: "se a ordem de compra não estiver informada, ou em
+  // branco, insira NAO INFORMADO"): a OC vazia aparece no próprio campo como NAO
+  // INFORMADO, com o "Não informado" marcado — ao chegar no Cabeçalho e ao sair
+  // do campo em branco. Para digitar a OC, desmarcar o "Não informado".
+  function sincronizarOcNi() {
+    var inp = $('cab-oc'), chk = $('cab-oc-ni'); if (!inp) return;
+    var ni = String(inp.value || '').trim().toUpperCase() === 'NAO INFORMADO';
+    if (ni) inp.value = 'NAO INFORMADO';
+    inp.disabled = ni; if (chk) chk.checked = ni;
+  }
+  function ocNaoInformadaSeVazia() {
+    var inp = $('cab-oc'); if (!inp) return;
+    if (!String(inp.value || '').trim()) inp.value = 'NAO INFORMADO';
+    sincronizarOcNi();
+  }
   function aplicarExtracao() {
     var ext = S.ext || {};
     S.cliente = { cnpj: ext.cnpj || '', codigo: '', nome: '', tipo: '' };
@@ -353,6 +369,7 @@
 
     // pré-preenche o cabeçalho (o número da cotação não é OC: vai no Caso)
     $('cab-oc').value       = ocEhACotacao(ext.ordemDeCompra) ? '' : (ext.ordemDeCompra || '');
+    sincronizarOcNi();
     $('cab-endereco').value = ext.enderecoEntrega || '';
     $('cab-email').value    = ext.email || '';
     $('cab-obs').value      = ext.observacao || '';
@@ -1507,7 +1524,7 @@
     escolherOpcao('cab-area', e.areaPI);
     escolherOpcao('cab-empresa', e.empresa);
     var oc = $('cab-oc');
-    if (e.oc && !ocEhACotacao(e.oc) && oc && !oc.value) oc.value = e.oc;
+    if (e.oc && !ocEhACotacao(e.oc) && oc && (!oc.value || oc.value === 'NAO INFORMADO')) { oc.value = e.oc; sincronizarOcNi(); }
     // 22/10/2026 (pedido do usuário): o resto do que a cotação sabe — endereço,
     // e-mail, observação, condição de pagamento e frete — entra nos campos
     // VAZIOS (o que o PDF trouxe fica). A condição e o frete só quando batem
@@ -1622,6 +1639,8 @@
     }
     bindNaoInformado('cab-oc-ni', 'cab-oc');
     bindNaoInformado('cab-email-ni', 'cab-email');
+    // 26/11/2026: saiu da OC em branco -> NAO INFORMADO
+    $('cab-oc').addEventListener('blur', function () { if (!String(this.value || '').trim()) ocNaoInformadaSeVazia(); });
 
     // flag "Data de Vencimento do Pagamento": abre o campo de data e dispensa
     // (e limpa) a condição de pagamento — que vai vazia para o Power Automate.

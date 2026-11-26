@@ -2739,6 +2739,11 @@ qtd são obrigatórios".
   no "Virou pedido" (sem ela, não vira pedido); `condicoes.condEntrega` no caso.
   Sai na proposta (PDF e e-mail, "Condição de entrega") e chega preenchida no
   PI. O **Prazo de entrega** (o texto "5 dias úteis") continua à parte.
+- **OC em branco = NAO INFORMADO** (26/11/2026, o dono: "se a ordem de compra
+  não estiver informada, ou em branco, insira NAO INFORMADO"): no Cabeçalho do
+  PI, a Ordem de Compra vazia aparece como **NAO INFORMADO** com o "Não
+  informado" marcado — ao chegar no Cabeçalho e ao sair do campo em branco
+  (`ocNaoInformadaSeVazia`). Para digitar a OC, desmarcar o "Não informado".
 - **Ocultar a prévia** (Nova oportunidade): "Ocultar" no cabeçalho da prévia da
   proposta some com o painel (o formulário fica com a largura toda; oculta, a
   prévia nem é gerada) e "Mostrar prévia da proposta" no topo traz de volta —
@@ -2755,8 +2760,8 @@ qtd são obrigatórios".
   pela proposta, quantidade e preço obrigatórios).
 - Versões: `cotacoes-base.js?v=36`, `cotacoes.js?v=49`, `cotacoes-agente.js?v=34`,
   `cotacoes-proposta.js?v=12`, `cotacoes-ficha.js?v=16`, `cotacoes.css?v=41`,
-  `pedido-inteligente.js?v=47`, `pi-fila.js?v=7`, `nav-sidebar.js?v=92`, `script.js?v=10`,
-  `portal-catalogo.js?v=27`, `area-access.js?v=23`; `sw.js` — cache `bm-comest-v111`, `pi-listas.js?v=3`.
+  `pedido-inteligente.js?v=48`, `pi-fila.js?v=7`, `nav-sidebar.js?v=92`, `script.js?v=10`,
+  `portal-catalogo.js?v=27`, `area-access.js?v=23`; `sw.js` — cache `bm-comest-v112`, `pi-listas.js?v=3`.
 
 ### Cuidados
 
