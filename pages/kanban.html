@@ -1074,8 +1074,12 @@
     // Só automático (dono: "vai ser automática, não quero botão"): o servidor envia
     // a cada leitura do quadro; a ficha só mostra a situação e a prévia.
     var ST_MAIL = {
-      enviado: function (m) { return ['ok', 'Enviado ' + (m.em ? 'em ' + fDM(diaSP(m.em)) + ' às ' + fHora(m.em) + ' ' : '') + 'para ' + ((m.para || []).join(', ') || '—') + '.'
-        + (m.memoria ? ' (Sem o registro em blob, o portal guarda o envio só na memória: se reiniciar, pode enviar de novo.)' : '')]; },
+      // 26/11/26 (dono: "só quero enviar 1x"): uma vez só por OV, com o registro em blob
+      enviado: function (m) {
+        if (m.antesDoRegistro) return ['ok', 'Já enviado (antes do registro de envios): não envia de novo.'];
+        return ['ok', 'Enviado ' + (m.em ? 'em ' + fDM(diaSP(m.em)) + ' às ' + fHora(m.em) + ' ' : '') + 'para ' + ((m.para || []).join(', ') || '—') + '. Não envia de novo.'];
+      },
+      'sem-registro': function () { return ['alerta', 'Não enviado: falta o registro dos envios (container de blob) no Azure — sem ele o portal não tem como garantir um envio só.']; },
       // 16/11/26 (dono: "o que você está aguardando?"): diz o que procurou e onde
       'sem-caixas': function (m) {
         var b = m.busca || {};
