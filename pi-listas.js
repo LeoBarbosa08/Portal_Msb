@@ -10,7 +10,7 @@
    O servidor tem a cópia dele no prompt da IA (api/pedido-extrair ›
    CONDICOES_PAGAMENTO); scripts/test-pi-fila.js confere que as duas batem.
    26/11/2026: o FRETE também (as 3 opções do PI) — no PDF da proposta sai só
-   CIF ou FOB.
+   CIF ou FOB — e a CONDIÇÃO DE ENTREGA (PADRÃO / URGENTE).
    A Transportadora não está aqui: vem do Dynamics (/api/pedido-transportadoras).
 
    window.PILISTAS no navegador; module.exports no Node (os testes).
@@ -46,8 +46,12 @@
   // que ser igual à do PI Pedidos; no PDF, CIF com ou sem valor sai como CIF"):
   // o frete do CRM é esta lista; a proposta mostra só CIF / FOB (COT.freteCifFob)
   var FRETES = ['CIF - COM VALOR', 'CIF - SEM VALOR', 'FOB - DESTINATARIO'];
+  // 26/11/2026 (o dono: "faltou a condição de entrega também"): a CONDIÇÃO DE
+  // ENTREGA do PI, obrigatória lá — o CRM usa a mesma (o Prazo de entrega, o
+  // texto "5 dias úteis" da proposta, continua à parte)
+  var COND_ENTREGA = ['PADRÃO', 'URGENTE'];
 
-  var L = { condPagamento: COND_PAGAMENTO, fretes: FRETES };
+  var L = { condPagamento: COND_PAGAMENTO, fretes: FRETES, condEntrega: COND_ENTREGA };
   if (typeof module === 'object' && module.exports) module.exports = L;
   else raiz.PILISTAS = L;
 })(typeof window !== 'undefined' ? window : this);

@@ -2733,6 +2733,12 @@ qtd são obrigatórios".
   nas Condições ofertadas e no "Virou pedido" (o antigo, CIF/FOB, aparece "fora
   da lista do PI" e barra o Virou pedido até trocar). Vai igual para o PI; na
   proposta (PDF e e-mail) sai só **CIF** ou **FOB** (`COT.freteCifFob`).
+- **Condição de entrega do PI** (26/11/2026, o dono: "faltou a condição de
+  entrega também"): **PADRÃO · URGENTE** (`PILISTAS.condEntrega`, a mesma lista
+  do PI, obrigatória como lá) na Nova oportunidade, nas Condições ofertadas e
+  no "Virou pedido" (sem ela, não vira pedido); `condicoes.condEntrega` no caso.
+  Sai na proposta (PDF e e-mail, "Condição de entrega") e chega preenchida no
+  PI. O **Prazo de entrega** (o texto "5 dias úteis") continua à parte.
 - **Ocultar a prévia** (Nova oportunidade): "Ocultar" no cabeçalho da prévia da
   proposta some com o painel (o formulário fica com a largura toda; oculta, a
   prévia nem é gerada) e "Mostrar prévia da proposta" no topo traz de volta —
@@ -2747,10 +2753,10 @@ qtd são obrigatórios".
 - Testes: `node scripts/test-pi-fila.js` (a lista do navegador = a do prompt da
   IA, os campos novos, devolver/reenviar, o item e a rota da fila, o pedido
   pela proposta, quantidade e preço obrigatórios).
-- Versões: `cotacoes-base.js?v=35`, `cotacoes.js?v=48`, `cotacoes-agente.js?v=33`,
-  `cotacoes-proposta.js?v=11`, `cotacoes-ficha.js?v=15`, `cotacoes.css?v=41`,
-  `pedido-inteligente.js?v=46`, `pi-fila.js?v=6`, `nav-sidebar.js?v=92`, `script.js?v=10`,
-  `portal-catalogo.js?v=27`, `area-access.js?v=23`; `sw.js` — cache `bm-comest-v110`, `pi-listas.js?v=2`.
+- Versões: `cotacoes-base.js?v=36`, `cotacoes.js?v=49`, `cotacoes-agente.js?v=34`,
+  `cotacoes-proposta.js?v=12`, `cotacoes-ficha.js?v=16`, `cotacoes.css?v=41`,
+  `pedido-inteligente.js?v=47`, `pi-fila.js?v=7`, `nav-sidebar.js?v=92`, `script.js?v=10`,
+  `portal-catalogo.js?v=27`, `area-access.js?v=23`; `sw.js` — cache `bm-comest-v111`, `pi-listas.js?v=3`.
 
 ### Cuidados
 

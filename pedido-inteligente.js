@@ -19,7 +19,7 @@
   if (!COND_PAGAMENTO.length) console.warn('[pedido] pi-listas.js não carregou — a lista de condições de pagamento ficou vazia');
   // 26/11/2026: o frete também mora no pi-listas.js (o CRM usa a mesma lista)
   var FRETES       = (window.PILISTAS && window.PILISTAS.fretes) || ['CIF - COM VALOR', 'CIF - SEM VALOR', 'FOB - DESTINATARIO'];
-  var COND_ENTREGA = ['PADRÃO', 'URGENTE'];
+  var COND_ENTREGA = (window.PILISTAS && window.PILISTAS.condEntrega) || ['PADRÃO', 'URGENTE'];   // 26/11/2026: do pi-listas.js (o CRM usa a mesma)
   var PORTAIS      = ['APOIO COTACOES', 'BIONEXO', 'GTPLAN', 'NAO INFORMADO', 'SINTESE',
                       'SMART COMPRAS', 'UNIUBE', 'VSSUPPLY -STA CATARINA', 'VSSUPPLY -STA CATARINA/MSB'];
   var VENDEDORES = [
@@ -1528,6 +1528,9 @@
     if (q.transportadora) { transpQuer = q.transportadora; aplicarTranspDaCotacao(); }
     var on = $('cab-obsnota');
     if (q.obsNota && on && !String(on.value || '').trim()) on.value = q.obsNota;
+    // 26/11/2026: a condição de entrega do CRM (a mesma lista do PI)
+    var ce = $('cab-condent');
+    if (q.condEntrega && ce && !ce.value) escolherOpcao('cab-condent', q.condEntrega);
     var fr = $('cab-frete');
     if (q.frete && fr && !fr.value) {
       // 26/11/2026: o frete do CRM é a lista do PI — entra igual; o antigo (CIF/FOB) cai na regra de antes

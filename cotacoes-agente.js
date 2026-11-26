@@ -53,7 +53,7 @@
     return { portal: '', cotacaoId: '', empresa: 'MSB', area: (S.eu && S.eu.area) || '', unidade: unidadeUnica(),
       cliente: { nome: '', cnpj: '', codigo: '', cidade: '', uf: '', endereco: '', cep: '' }, contato: { nome: '', email: '', telefone: '' },
       datas: { cotacao: '', validade: '' }, validadeCalculada: 0, vencimentoOrigem: '',
-      condicoes: { pagamento: '', entrega: '', frete: '', validade: '', medico: '', observacao: '', transportadora: '', obsNota: '' },
+      condicoes: { pagamento: '', entrega: '', frete: '', validade: '', medico: '', observacao: '', transportadora: '', obsNota: '', condEntrega: '' },
       itens: [], totalPdf: 0, nota: '' };
   }
   // a unidade de negócio de quem registra, quando ela só tem uma (2+: escolhe)
@@ -404,6 +404,7 @@
     // 25/11/2026: da lista do PI (a antiga, digitada, não passa)
     if (!tem(co.pagamento) || (C.COND_PAGAMENTO.length && !C.naListaPag(co.pagamento))) f.push(['Condição de pagamento (da lista do PI)', el('condicoes.pagamento')]);
     if (!tem(co.frete) || (C.FRETES.length && !C.naListaFrete(co.frete))) f.push(['Frete (da lista do PI)', el('condicoes.frete')]);
+    if (!tem(co.condEntrega) || (C.COND_ENTREGA.length && !C.naListaEntrega(co.condEntrega))) f.push(['Condição de entrega (da lista do PI)', el('condicoes.condEntrega')]);
     if (!tem(co.entrega)) f.push(['Prazo de entrega', el('condicoes.entrega')]);
     var cotados = (d.itens || []).filter(function (it) { return (tem(it.descricao) || tem(it.codigo)) && Number(it.quantidade) > 0 && Number(it.valorUnitario) > 0; });
     if (!cotados.length) f.push(['ao menos 1 item cotado (com quantidade e preço)', D.querySelector('#cot-itens input[data-f="valorUnitario"]') || $('cot-add-item')]);
@@ -725,7 +726,9 @@
           // 22/10/2026: o frete e o prazo de entrega voltaram (saem na proposta)
           // 26/11/2026: o frete com as opções do PI (no PDF sai só CIF ou FOB)
           campo('Frete', 'condicoes.frete', { cls: 's2', req: true, lista: C.listaCom(C.FRETES, d.condicoes.frete), vazio: 'Escolha o frete…', dica: 'a lista do PI · Pedido · no PDF sai CIF ou FOB' }) +
-          campo('Prazo de entrega', 'condicoes.entrega', { cls: 's2', req: true, ni: true, ph: 'ex.: 5 dias úteis após o pedido', max: 120 }) +
+          // 26/11/2026: a condição de entrega do PI (PADRÃO / URGENTE); o prazo é o texto da proposta
+          campo('Condição de entrega', 'condicoes.condEntrega', { cls: 's2', req: true, lista: C.listaCom(C.COND_ENTREGA, d.condicoes.condEntrega), vazio: 'Escolha a condição…', dica: 'a lista do PI · Pedido · sai na proposta' }) +
+          campo('Prazo de entrega', 'condicoes.entrega', { cls: 's4', req: true, ni: true, ph: 'ex.: 5 dias úteis após o pedido', max: 120 }) +
           campo('Observação', 'condicoes.observacao', { cls: 's4', area: true, linhas: 2, dica: 'sai no PDF da proposta' }) +
           campo('Observação na nota', 'condicoes.obsNota', { cls: 's4', area: true, linhas: 2, ph: 'Opcional — deixe em branco se não houver observação na nota fiscal', dica: 'vai para o rodapé da nota fiscal (PI · Pedido) e sai no PDF da proposta' }) +
         '</div></div>' +

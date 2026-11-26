@@ -309,7 +309,7 @@
       // do PI · Pedido) também saem na proposta
       var transp = String(co.transportadora || '').trim(), obsNota = String(co.obsNota || '').trim();
       fonte(9, COR.txt); var lObs = obs ? doc.splitTextToSize(obs, 288) : [], lNota = obsNota ? doc.splitTextToSize(obsNota, 288) : [];
-      var altura = Math.max(comIpi ? 62 : 48, 40 + (transp ? 14 : 0) + lObs.length * 12 + (lNota.length ? 18 + lNota.length * 12 : 0)) + 70;
+      var altura = Math.max(comIpi ? 62 : 48, 40 + (transp ? 14 : 0) + (String(co.condEntrega || '').trim() ? 14 : 0) + lObs.length * 12 + (lNota.length ? 18 + lNota.length * 12 : 0)) + 70;
       if (y + altura > LIMITE_Y + 30) { doc.addPage(); y = TOPO_PAG - 10; }
       var xT = 351.7;
       var yT = y + 18.3;
@@ -330,6 +330,8 @@
       }
       linhaEsq('Condição de Pagamento', String(co.pagamento || '').trim() || '—');
       linhaEsq('Prazo de entrega', String(co.entrega || '').trim() || '—');
+      // 26/11/2026: a condição de entrega do PI (PADRÃO / URGENTE)
+      if (String(co.condEntrega || '').trim()) linhaEsq('Condição de entrega', String(co.condEntrega).trim());
       if (freteDe(co)) linhaEsq('Frete', freteDe(co));
       if (transp) linhaEsq('Transportadora', transp);
       // a observação e a observação na nota: quebra de página no meio do texto longo
@@ -384,6 +386,7 @@
       freteDe(co) ? 'Frete: ' + freteDe(co) : '',
       String(co.transportadora || '').trim() ? 'Transportadora: ' + String(co.transportadora).trim() : '',
       String(co.entrega || '').trim() ? 'Prazo de entrega: ' + String(co.entrega).trim() : '',
+      String(co.condEntrega || '').trim() ? 'Condição de entrega: ' + String(co.condEntrega).trim() : '',
       // 29/10/2026 (pedido do usuário): era "Data de vencimento"
       dt.validade ? 'Data de validade da proposta: ' + diaBR(dt.validade) : ''
     ].filter(Boolean);

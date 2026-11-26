@@ -478,6 +478,7 @@
       ['Data da cotação', dt.cotacao ? esc(C.diaBR(dt.cotacao)) : vazio()],
       ['Vencimento', dt.validade ? esc(C.diaBR(dt.validade)) + (validade ? ' <span class="cot-dw-mut">· ' + esc(validade) + '</span>' : '') : vazio()],
       ['Pagamento', co.pagamento ? esc(co.pagamento) : vazio()],
+      co.condEntrega ? ['Cond. de entrega', esc(co.condEntrega)] : null,
       ['Entrega', co.entrega ? esc(co.entrega) : vazio()],
       co.frete ? ['Frete', esc(co.frete)] : null,
       // 25/11/2026: a transportadora e a observação na nota (as do PI · Pedido)

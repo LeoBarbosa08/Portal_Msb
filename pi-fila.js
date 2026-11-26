@@ -174,7 +174,7 @@
           '</dl></section>' +
           '<section class="pf-bloco"><h5>' + IC.tag + 'Condições do pedido</h5><dl class="cs-kv">' +
             kv('Condição de pagamento', co.pagamento ? esc(co.pagamento) + (foraPag ? ' <span class="cs-chip prazo-alerta">fora da lista do PI</span>' : '') : '', !co.pagamento || foraPag ? 'pf-alerta' : '') +
-            kv('Frete', esc(co.frete)) + kv('Transportadora', esc(co.transportadora)) + kv('Prazo de entrega', esc(co.entrega)) +
+            kv('Frete', esc(co.frete)) + kv('Transportadora', esc(co.transportadora)) + kv('Condição de entrega', esc(co.condEntrega)) + kv('Prazo de entrega', esc(co.entrega)) +
             kv('Ordem de compra', ped.oc ? '<span class="cs-mono">' + esc(ped.oc) + '</span>' : '') + kv('Observação', esc(co.observacao)) + kv('Obs. na nota', esc(co.obsNota)) +
           '</dl></section>' +
           '<section class="pf-bloco"><h5>' + IC.user + 'Oportunidade</h5><dl class="cs-kv">' +
@@ -343,7 +343,7 @@
     if (W.COTPROP && W.COTPROP.pronto()) return Promise.resolve();
     if (!_prop) {
       _prop = (W.jspdf ? Promise.resolve() : carregarScript('https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js'))
-        .then(function () { return W.COTPROP ? null : carregarScript('../cotacoes-proposta.js?v=11'); })
+        .then(function () { return W.COTPROP ? null : carregarScript('../cotacoes-proposta.js?v=12'); })
         .catch(function (e) { _prop = null; throw e; });
     }
     return _prop;

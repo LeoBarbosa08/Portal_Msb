@@ -1409,7 +1409,7 @@
         oc: (c.pedido && c.pedido.oc) || '',
         // o que a cotação sabe do pedido (o PI completa os campos vazios)
         // 25/11/2026: a transportadora e a observação na nota do CRM (as listas do PI)
-        cotacao: { endereco: endereco, email: (c.contato && c.contato.email) || '', observacao: obs, pagamento: co.pagamento || '', frete: co.frete || '', entrega: co.entrega || '',
+        cotacao: { endereco: endereco, email: (c.contato && c.contato.email) || '', observacao: obs, pagamento: co.pagamento || '', frete: co.frete || '', entrega: co.entrega || '', condEntrega: co.condEntrega || '',
           transportadora: co.transportadora || '', obsNota: co.obsNota || '' },
         fila: !!opts.fila,
         extracao: lidaAMao || (extracao && extracao.dados ? { dados: extracao.dados, avisos: extracao.avisos || [] } : null)
@@ -1448,6 +1448,9 @@
   // CIF - SEM VALOR, FOB - DESTINATARIO); a proposta mostra só CIF / FOB (freteCifFob)
   var FRETES = (W.PILISTAS && W.PILISTAS.fretes) || [];
   function naListaFrete(v) { return !!v && FRETES.indexOf(String(v)) >= 0; }
+  // 26/11/2026 (o dono: "faltou a condição de entrega também"): PADRÃO / URGENTE, a do PI
+  var COND_ENTREGA = (W.PILISTAS && W.PILISTAS.condEntrega) || [];
+  function naListaEntrega(v) { return !!v && COND_ENTREGA.indexOf(String(v)) >= 0; }
   // a lista com o valor de agora na frente, quando não é dela (não some ao editar)
   function listaCom(lista, v) { lista = lista || []; return v && lista.indexOf(v) < 0 ? [v].concat(lista) : lista.slice(); }
   // { nomes: [...], erro: '' } — uma consulta por página (o servidor guarda 10 min)
@@ -1610,6 +1613,6 @@
     estoqueDe: estoqueDe, htmlEstoque: htmlEstoque, pintarEstoque: pintarEstoque,
     comparar: comparar, parecido: parecido, casarCodigos: casarCodigos, codigosDoPedido: codigosDoPedido, RESULTADOS: RESULTADOS, resultadoItem: resultadoItem, abrirNoPI: abrirNoPI,
     itemTemConteudo: itemTemConteudo, semQtd: semQtd, semPreco: semPreco, itensSemQtdPreco: itensSemQtdPreco, marcarQtdPreco: marcarQtdPreco,
-    extracaoDaPrevia: extracaoDaPrevia, estadoPi: estadoPi, COND_PAGAMENTO: COND_PAGAMENTO, naListaPag: naListaPag, FRETES: FRETES, naListaFrete: naListaFrete, listaCom: listaCom, transportadoras: transportadoras
+    extracaoDaPrevia: extracaoDaPrevia, estadoPi: estadoPi, COND_PAGAMENTO: COND_PAGAMENTO, naListaPag: naListaPag, FRETES: FRETES, naListaFrete: naListaFrete, COND_ENTREGA: COND_ENTREGA, naListaEntrega: naListaEntrega, listaCom: listaCom, transportadoras: transportadoras
   };
 })();

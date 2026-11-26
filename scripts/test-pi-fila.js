@@ -40,7 +40,7 @@ function casoBase(numero, extra) {
     cliente: { nome: 'HOSPITAL TESTE', cnpj: '11222333000181', codigo: 'C001', cidade: 'Fortaleza', uf: 'CE', endereco: 'Rua A, 1', cep: '60000000' },
     contato: { nome: 'Natália', email: 'natalia@teste.com', telefone: '' },
     datas: { cotacao: '2026-11-20', validade: '2026-12-20' },
-    condicoes: { pagamento: 'CR 15/30/45/60/75/90', frete: 'CIF', entrega: '5 dias', transportadora: 'BRIX LOGISTICA', obsNota: '5 unidades em doação', observacao: '' },
+    condicoes: { pagamento: 'CR 15/30/45/60/75/90', frete: 'CIF - COM VALOR', entrega: '5 dias', condEntrega: 'URGENTE', transportadora: 'BRIX LOGISTICA', obsNota: '5 unidades em doação', observacao: '' },
     itens: [
       { codigo: 'UAMB-14120', descricao: 'Item A', quantidade: 10, valorUnitario: 100, resultado: 'ganho' },
       { codigo: 'RP-1', descricao: 'Item B', quantidade: 2, valorUnitario: 50, resultado: 'perdido' }
@@ -63,6 +63,8 @@ function casoBase(numero, extra) {
   t('mesma lista, na mesma ordem, do prompt da IA', JSON.stringify(L.condPagamento) === JSON.stringify(doServidor),
     { soNoNavegador: L.condPagamento.filter(x => doServidor.indexOf(x) < 0), soNoServidor: doServidor.filter(x => L.condPagamento.indexOf(x) < 0) });
   // 26/11/26 (o dono: "no FRETE as mesmas opções do PI — a opção tem que ser igual"; no PDF, CIF com ou sem valor = CIF)
+  // 26/11/26 (o dono: "faltou a condição de entrega também")
+  t('a condição de entrega: PADRÃO e URGENTE, a do PI, no pi-listas.js', JSON.stringify(L.condEntrega) === JSON.stringify(['PADRÃO', 'URGENTE']), L.condEntrega);
   t('o frete: as 3 opções do PI no pi-listas.js', JSON.stringify(L.fretes) === JSON.stringify(['CIF - COM VALOR', 'CIF - SEM VALOR', 'FOB - DESTINATARIO']), L.fretes);
   {
     const W = { PILISTAS: L, document: { readyState: 'complete', addEventListener() {}, getElementById() { return null; }, querySelectorAll() { return []; } }, location: { href: 'http://x/' } };
@@ -70,12 +72,14 @@ function casoBase(numero, extra) {
     // eslint-disable-next-line no-new-func
     Function('window', 'document', 'location', fs.readFileSync(path.join(__dirname, '..', 'cotacoes-base.js'), 'utf8'))(W, W.document, W.location);
     const COT = W.COT;
+    t('o CRM usa a mesma condição de entrega (COT.COND_ENTREGA)', JSON.stringify(COT.COND_ENTREGA) === JSON.stringify(L.condEntrega) && COT.naListaEntrega('URGENTE') && !COT.naListaEntrega('urgente!'));
     t('o CRM usa a mesma lista de frete (COT.FRETES)', JSON.stringify(COT.FRETES) === JSON.stringify(L.fretes) && COT.naListaFrete('CIF - SEM VALOR') && !COT.naListaFrete('CIF'));
     t('no PDF: CIF - COM VALOR e CIF - SEM VALOR saem CIF; FOB - DESTINATARIO sai FOB',
       COT.freteCifFob('CIF - COM VALOR') === 'CIF' && COT.freteCifFob('CIF - SEM VALOR') === 'CIF' && COT.freteCifFob('FOB - DESTINATARIO') === 'FOB');
   }
   const pi = fs.readFileSync(path.join(__dirname, '..', 'pedido-inteligente.js'), 'utf8');
   t('o PI lê a lista do pi-listas.js (sem cópia própria)', /PILISTAS\.condPagamento/.test(pi) && !/'CR 90\/120 DIAS'/.test(pi));
+  t('o PI lê o frete e a condição de entrega do pi-listas.js e preenche a condição de entrega vinda do CRM', /PILISTAS\.fretes/.test(pi) && /PILISTAS\.condEntrega/.test(pi) && /escolherOpcao\('cab-condent', q\.condEntrega\)/.test(pi));
   const pag = ['pages/pedido-inteligente.html', 'pages/comercial-cot-nova.html', 'pages/comercial-cot-casos.html'];
   pag.forEach(function (p) {
     const h = fs.readFileSync(path.join(__dirname, '..', p), 'utf8');
@@ -98,11 +102,13 @@ function casoBase(numero, extra) {
     !fs.existsSync(path.join(__dirname, '..', 'pages', 'pi-fila.html')));
 
   console.log('2) a transportadora e a observação na nota no caso');
-  const d = M.dadosDe({ condicoes: { pagamento: 'CR 30 DIAS', transportadora: '  BRIX  ', obsNota: 'linha 1\nlinha 2' } }, QUEM.cfg);
+  const d = M.dadosDe({ condicoes: { pagamento: 'CR 30 DIAS', transportadora: '  BRIX  ', obsNota: 'linha 1\nlinha 2', condEntrega: 'PADRÃO' } }, QUEM.cfg);
+  t('dadosDe guarda a condição de entrega', d.condicoes.condEntrega === 'PADRÃO', d.condicoes);
   t('dadosDe guarda a transportadora (sem espaço sobrando)', d.condicoes.transportadora === 'BRIX', d.condicoes);
   t('dadosDe guarda a observação na nota (com a quebra de linha)', d.condicoes.obsNota === 'linha 1\nlinha 2', d.condicoes.obsNota);
   let c = casoBase('COT-MSB-2026-000001', { condicoes: { pagamento: '30 DIAS' } });
-  M.aplicar(c, 'campos', { campos: { condicoes: { transportadora: 'JADLOG', obsNota: 'Doação de 5 un.', pagamento: 'CR 30 DIAS' } } }, QUEM, QUEM.cfg, {});
+  M.aplicar(c, 'campos', { campos: { condicoes: { transportadora: 'JADLOG', obsNota: 'Doação de 5 un.', pagamento: 'CR 30 DIAS', condEntrega: 'URGENTE' } } }, QUEM, QUEM.cfg, {});
+  t('campos: troca a condição de entrega (e o histórico registra)', c.condicoes.condEntrega === 'URGENTE' && c.historico.some(h => h.campo === 'Condição de entrega'), c.condicoes);
   t('campos: troca a transportadora, a observação na nota e a condição', c.condicoes.transportadora === 'JADLOG' && c.condicoes.obsNota === 'Doação de 5 un.' && c.condicoes.pagamento === 'CR 30 DIAS', c.condicoes);
   t('campos: o histórico registra as três', ['Transportadora', 'Observação na nota', 'Condição de pagamento'].every(n => c.historico.some(h => h.campo === n)), c.historico.map(h => h.campo));
 
@@ -138,7 +144,7 @@ function casoBase(numero, extra) {
   let it = M.itemDaFila(c);
   t('sem a leitura do PDF: os itens GANHOS da oportunidade', it.itens.length === 1 && it.itens[0].codigo === 'UAMB-14120' && it.total === 1000, it.itens);
   t('as condições do CRM: pagamento, frete, entrega, transportadora e observação na nota',
-    it.condicoes.pagamento === 'CR 15/30/45/60/75/90' && it.condicoes.transportadora === 'BRIX LOGISTICA' && it.condicoes.obsNota === '5 unidades em doação' && it.condicoes.frete === 'CIF', it.condicoes);
+    it.condicoes.pagamento === 'CR 15/30/45/60/75/90' && it.condicoes.transportadora === 'BRIX LOGISTICA' && it.condicoes.obsNota === '5 unidades em doação' && it.condicoes.frete === 'CIF - COM VALOR' && it.condicoes.condEntrega === 'URGENTE', it.condicoes);
   t('o vendedor, o cliente, o PDF do pedido e os anexos', it.vendedor.nome === 'Vendedor Teste' && it.cliente.cnpj === '11222333000181' && it.pedido.anexoId === 'a1' && it.anexos.length === 1 && !('caminho' in it.anexos[0]));
   c.pedido.previa = { oc: 'OC-PDF', total: 2000, produtos: [{ codigo: 'UAMB-14120', descricao: 'Item A', quantidade: 20, valorUnitario: 100 }] };
   c.pedido.oc = '';

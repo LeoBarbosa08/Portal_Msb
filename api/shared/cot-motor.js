@@ -604,7 +604,9 @@ function dadosDe(d, cfg) {
     // e a OBSERVAÇÃO NA NOTA (o rodapé da nota fiscal) — saem na proposta e vão
     // para o PI · Pedido pela fila de aprovação
     condicoes: { pagamento: txt(co.pagamento, 300), entrega: txt(co.entrega, 120), frete: txt(co.frete, 60), validade: dias != null ? textoDias(dias) : valTxt,
-      medico: txt(co.medico, 120), observacao: texto(co.observacao, 1500), transportadora: txt(co.transportadora, 120), obsNota: texto(co.obsNota, 1000) },
+      medico: txt(co.medico, 120), observacao: texto(co.observacao, 1500), transportadora: txt(co.transportadora, 120), obsNota: texto(co.obsNota, 1000),
+      // 26/11/2026: a CONDIÇÃO DE ENTREGA do PI (PADRÃO / URGENTE)
+      condEntrega: txt(co.condEntrega, 30) },
     itens: itens,
     // sem preço nos itens (pedido de cotação ainda sem resposta), vale o total do PDF
     total: soma > 0 ? soma : num(d.total),
@@ -794,7 +796,7 @@ function itemDaFila(c) {
     vendedor: pessoaFila(c.dono || ped.por || c.criadoPor),
     totalCotado: r2(c.total), total: r2((pv && pv.total) || ped.total || somaGanhos(c)), nItens: itens.length, itens: itens,
     pedido: { manual: !!ped.manual, anexoId: ped.anexoId || '', nome: ped.nome || '', oc: ped.oc || (pv && pv.oc) || '', em: ped.em || null, por: pessoaFila(ped.por), obs: ped.obs || '', lido: !!pv },
-    condicoes: { pagamento: co.pagamento || '', frete: co.frete || '', entrega: co.entrega || '', transportadora: co.transportadora || '', obsNota: co.obsNota || '', observacao: co.observacao || '' },
+    condicoes: { pagamento: co.pagamento || '', frete: co.frete || '', entrega: co.entrega || '', condEntrega: co.condEntrega || '', transportadora: co.transportadora || '', obsNota: co.obsNota || '', observacao: co.observacao || '' },
     pi: {
       estado: pi.estado || '', erro: pi.erro || '',
       abertoPor: pessoaFila(pi.abertoPor), abertoEm: pi.abertoEm || null,
@@ -1612,7 +1614,7 @@ function aplicar(c, tipo, b, quem, cfg, ctx) {
       if ((dt.cotacao != null || dt.validade != null) && (diasEntre(c.datas.cotacao, c.datas.validade) || 0) < 0) throw erro(400, 'A data de vencimento é antes da data da cotação.');
       const co = f.condicoes || {};
       [['pagamento', 'Condição de pagamento', 300], ['entrega', 'Prazo de entrega', 120], ['frete', 'Frete', 60], ['validade', 'Validade (dias, do PDF)', 60], ['medico', 'Nome do médico', 120],
-        ['transportadora', 'Transportadora', 120]].forEach(function (x) {
+        ['transportadora', 'Transportadora', 120], ['condEntrega', 'Condição de entrega', 30]].forEach(function (x) {
         if (co[x[0]] != null) setar(x[1], c.condicoes[x[0]], txt(co[x[0]], x[2]), function (v) { c.condicoes[x[0]] = v; });
       });
       if (co.observacao != null) setar('Observação', c.condicoes.observacao, texto(co.observacao, 1500), function (v) { c.condicoes.observacao = v; });
