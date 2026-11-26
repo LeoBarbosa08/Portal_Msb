@@ -17,7 +17,8 @@
   // mesma (pedido do dono). As condições de pagamento da MSB (05/11/2026).
   var COND_PAGAMENTO = (window.PILISTAS && window.PILISTAS.condPagamento) || [];
   if (!COND_PAGAMENTO.length) console.warn('[pedido] pi-listas.js não carregou — a lista de condições de pagamento ficou vazia');
-  var FRETES       = ['CIF - COM VALOR', 'CIF - SEM VALOR', 'FOB - DESTINATARIO'];
+  // 26/11/2026: o frete também mora no pi-listas.js (o CRM usa a mesma lista)
+  var FRETES       = (window.PILISTAS && window.PILISTAS.fretes) || ['CIF - COM VALOR', 'CIF - SEM VALOR', 'FOB - DESTINATARIO'];
   var COND_ENTREGA = ['PADRÃO', 'URGENTE'];
   var PORTAIS      = ['APOIO COTACOES', 'BIONEXO', 'GTPLAN', 'NAO INFORMADO', 'SINTESE',
                       'SMART COMPRAS', 'UNIUBE', 'VSSUPPLY -STA CATARINA', 'VSSUPPLY -STA CATARINA/MSB'];
@@ -1529,7 +1530,9 @@
     if (q.obsNota && on && !String(on.value || '').trim()) on.value = q.obsNota;
     var fr = $('cab-frete');
     if (q.frete && fr && !fr.value) {
-      if (/\bfob\b/i.test(q.frete)) escolherOpcao('cab-frete', 'FOB - DESTINATARIO');
+      // 26/11/2026: o frete do CRM é a lista do PI — entra igual; o antigo (CIF/FOB) cai na regra de antes
+      escolherOpcao('cab-frete', q.frete);
+      if (!fr.value && /\bfob\b/i.test(q.frete)) escolherOpcao('cab-frete', 'FOB - DESTINATARIO');
       if (!fr.value) {
         var d = $('cab-frete-dica');
         if (!d) { d = document.createElement('div'); d.className = 'pi-dica'; d.id = 'cab-frete-dica'; fr.insertAdjacentElement('afterend', d); }

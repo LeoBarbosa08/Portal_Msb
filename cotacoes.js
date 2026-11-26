@@ -892,7 +892,9 @@
       '<dt>Pagamento</dt><dd>' + ed('condicoes.pagamento', co.pagamento, 'lista', C.listaCom(C.COND_PAGAMENTO, co.pagamento)) +
         (foraPag ? ' <span class="cs-chip prazo-alerta" title="A condição foi digitada antes da lista — escolha a correspondente da lista do PI · Pedido">fora da lista do PI</span>' : '') + '</dd>' +
       // 22/10/2026: o frete (CIF ou FOB) e o prazo de entrega voltaram — saem na proposta, com a observação
-      '<dt>Frete</dt><dd>' + ed('condicoes.frete', C.freteCifFob(co.frete) || co.frete, 'lista', ['CIF', 'FOB']) + '</dd>' +
+      // 26/11/2026: o frete com as opções do PI (o antigo, CIF/FOB, aparece marcado até trocar)
+      '<dt>Frete</dt><dd>' + ed('condicoes.frete', co.frete, 'lista', C.listaCom(C.FRETES, co.frete)) +
+        (co.frete && C.FRETES.length && !C.naListaFrete(co.frete) ? ' <span class="cs-chip prazo-alerta" title="Escolha a opção correspondente da lista do PI · Pedido">fora da lista do PI</span>' : '') + '</dd>' +
       '<dt>Transportadora</dt><dd>' + ed('condicoes.transportadora', co.transportadora, 'lista', C.listaCom(tr.nomes, co.transportadora)) +
         (!S.transp ? ' <span class="vazio">carregando a lista…</span>' : tr.erro ? ' <span class="vazio" title="' + esc(tr.erro) + '">lista do Dynamics indisponível</span>' : '') + '</dd>' +
       '<dt>Prazo de entrega</dt><dd>' + ed('condicoes.entrega', co.entrega) + '</dd>' +
@@ -1185,7 +1187,7 @@
           var linha = function (rot, val, cls) { return '<div class="' + (cls || '') + '"><small>' + esc(rot) + '</small><b>' + (val ? esc(val) : '<span class="vazio">—</span>') + '</b></div>'; };
           return '<div class="cot-ped-resumo">' +
             linha('Condição de pagamento', pag + (fora ? ' (fora da lista do PI)' : ''), !pag || fora ? 'falta' : '') +
-            linha('Frete', C.freteCifFob(co.frete) || co.frete) + linha('Prazo de entrega', co.entrega) +
+            linha('Frete', String(co.frete || '') + (co.frete && C.FRETES.length && !C.naListaFrete(co.frete) ? ' (fora da lista do PI)' : ''), !co.frete || (C.FRETES.length && !C.naListaFrete(co.frete)) ? 'falta' : '') + linha('Prazo de entrega', co.entrega) +
             linha('Transportadora', co.transportadora || 'não informada') +
             linha('Observação na nota', co.obsNota, 'largo') + '</div>';
         }
@@ -1275,6 +1277,9 @@
             if (!its.length) return 'A oportunidade não tem itens — inclua os itens antes de virar pedido.';
             if (!pag) return 'Informe a condição de pagamento em Condições ofertadas — ela vai para o PI.';
             if (C.COND_PAGAMENTO.length && !C.naListaPag(pag)) return 'A condição de pagamento "' + pag + '" não está na lista do PI · Pedido — escolha uma da lista em Condições ofertadas.';
+            // 26/11/2026: o frete também da lista do PI
+            if (!String(co.frete || '').trim()) return 'Informe o frete em Condições ofertadas — ele vai para o PI.';
+            if (C.FRETES.length && !C.naListaFrete(co.frete)) return 'O frete "' + co.frete + '" não está na lista do PI · Pedido — escolha CIF - COM VALOR, CIF - SEM VALOR ou FOB - DESTINATARIO em Condições ofertadas.';
           }
           if (sem) return 'Marque cada item como Ganho ou Perdido — falta' + (sem > 1 ? 'm ' + sem + ' itens' : ' 1 item') + '.';
           if (its.length && !marcas.some(function (x) { return x.r === 'ganho'; })) return 'Nenhum item ganho — se nada foi ganho, a oportunidade é Perdida.';

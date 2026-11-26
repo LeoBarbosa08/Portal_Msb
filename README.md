@@ -2726,6 +2726,13 @@ qtd são obrigatórios".
     clica em **Reenviar para a fila** (o PDF é refeito). **Voltar para a fila**
     solta o "em andamento" que não foi lançado (`estado:'fila'`).
   - **Proposta (PDF)** gera a proposta de agora; os anexos abrem em outra aba.
+- **Frete com as opções do PI** (26/11/2026, o dono: "no FRETE, as mesmas opções
+  do PI — a opção tem que ser igual à do PI Pedidos; no PDF, CIF com ou sem
+  valor aparece como CIF"): **CIF - COM VALOR · CIF - SEM VALOR · FOB -
+  DESTINATARIO** (`PILISTAS.fretes`, a mesma lista do PI) na Nova oportunidade,
+  nas Condições ofertadas e no "Virou pedido" (o antigo, CIF/FOB, aparece "fora
+  da lista do PI" e barra o Virou pedido até trocar). Vai igual para o PI; na
+  proposta (PDF e e-mail) sai só **CIF** ou **FOB** (`COT.freteCifFob`).
 - **Ocultar a prévia** (Nova oportunidade): "Ocultar" no cabeçalho da prévia da
   proposta some com o painel (o formulário fica com a largura toda; oculta, a
   prévia nem é gerada) e "Mostrar prévia da proposta" no topo traz de volta —
@@ -2740,10 +2747,10 @@ qtd são obrigatórios".
 - Testes: `node scripts/test-pi-fila.js` (a lista do navegador = a do prompt da
   IA, os campos novos, devolver/reenviar, o item e a rota da fila, o pedido
   pela proposta, quantidade e preço obrigatórios).
-- Versões: `cotacoes-base.js?v=34`, `cotacoes.js?v=47`, `cotacoes-agente.js?v=32`,
-  `cotacoes-proposta.js?v=10`, `cotacoes-ficha.js?v=15`, `cotacoes.css?v=41`,
-  `pedido-inteligente.js?v=45`, `pi-fila.js?v=5`, `nav-sidebar.js?v=92`, `script.js?v=10`,
-  `portal-catalogo.js?v=27`, `area-access.js?v=23`; `sw.js` — cache `bm-comest-v109`.
+- Versões: `cotacoes-base.js?v=35`, `cotacoes.js?v=48`, `cotacoes-agente.js?v=33`,
+  `cotacoes-proposta.js?v=11`, `cotacoes-ficha.js?v=15`, `cotacoes.css?v=41`,
+  `pedido-inteligente.js?v=46`, `pi-fila.js?v=6`, `nav-sidebar.js?v=92`, `script.js?v=10`,
+  `portal-catalogo.js?v=27`, `area-access.js?v=23`; `sw.js` — cache `bm-comest-v110`, `pi-listas.js?v=2`.
 
 ### Cuidados
 

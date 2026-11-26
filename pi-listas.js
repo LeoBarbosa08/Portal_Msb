@@ -9,6 +9,8 @@
      . cotacoes-base.js → COT.COND_PAGAMENTO (as páginas do CRM)
    O servidor tem a cópia dele no prompt da IA (api/pedido-extrair ›
    CONDICOES_PAGAMENTO); scripts/test-pi-fila.js confere que as duas batem.
+   26/11/2026: o FRETE também (as 3 opções do PI) — no PDF da proposta sai só
+   CIF ou FOB.
    A Transportadora não está aqui: vem do Dynamics (/api/pedido-transportadoras).
 
    window.PILISTAS no navegador; module.exports no Node (os testes).
@@ -40,7 +42,12 @@
     'CR30/45/60/75/90/105/120', 'CR 30/60/90', 'CR 60/90', '4 Parcelas', '4 parcelas'
   ];
 
-  var L = { condPagamento: COND_PAGAMENTO };
+  // 26/11/2026 (pedido do dono: "no FRETE, as mesmas opções do PI — a opção tem
+  // que ser igual à do PI Pedidos; no PDF, CIF com ou sem valor sai como CIF"):
+  // o frete do CRM é esta lista; a proposta mostra só CIF / FOB (COT.freteCifFob)
+  var FRETES = ['CIF - COM VALOR', 'CIF - SEM VALOR', 'FOB - DESTINATARIO'];
+
+  var L = { condPagamento: COND_PAGAMENTO, fretes: FRETES };
   if (typeof module === 'object' && module.exports) module.exports = L;
   else raiz.PILISTAS = L;
 })(typeof window !== 'undefined' ? window : this);

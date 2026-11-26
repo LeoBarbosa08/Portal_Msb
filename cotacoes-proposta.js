@@ -138,6 +138,8 @@
     var s = W.COT && W.COT.contatoDoSetor ? W.COT.contatoDoSetor(c && c.unidade) : null;
     return s ? Object.assign({}, op || {}, { email: s.email, telefone: s.telefone, setor: s.setor }) : (op || {});
   }
+  // 26/11/2026 (pedido do dono): o frete do CRM é a lista do PI (CIF - COM VALOR,
+  // CIF - SEM VALOR, FOB - DESTINATARIO) — na proposta sai só CIF ou FOB
   function freteDe(co) { return (W.COT && W.COT.freteCifFob && W.COT.freteCifFob(co.frete)) || String(co.frete || '').trim(); }
   // o produto de cada código no Salesforce ({} se não der: a proposta sai com o do item)
   function produtosDoSf(itens) {

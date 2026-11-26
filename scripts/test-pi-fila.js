@@ -62,6 +62,18 @@ function casoBase(numero, extra) {
   t('75 condições no pi-listas.js', L.condPagamento.length === 75, L.condPagamento.length);
   t('mesma lista, na mesma ordem, do prompt da IA', JSON.stringify(L.condPagamento) === JSON.stringify(doServidor),
     { soNoNavegador: L.condPagamento.filter(x => doServidor.indexOf(x) < 0), soNoServidor: doServidor.filter(x => L.condPagamento.indexOf(x) < 0) });
+  // 26/11/26 (o dono: "no FRETE as mesmas opções do PI — a opção tem que ser igual"; no PDF, CIF com ou sem valor = CIF)
+  t('o frete: as 3 opções do PI no pi-listas.js', JSON.stringify(L.fretes) === JSON.stringify(['CIF - COM VALOR', 'CIF - SEM VALOR', 'FOB - DESTINATARIO']), L.fretes);
+  {
+    const W = { PILISTAS: L, document: { readyState: 'complete', addEventListener() {}, getElementById() { return null; }, querySelectorAll() { return []; } }, location: { href: 'http://x/' } };
+    W.window = W;
+    // eslint-disable-next-line no-new-func
+    Function('window', 'document', 'location', fs.readFileSync(path.join(__dirname, '..', 'cotacoes-base.js'), 'utf8'))(W, W.document, W.location);
+    const COT = W.COT;
+    t('o CRM usa a mesma lista de frete (COT.FRETES)', JSON.stringify(COT.FRETES) === JSON.stringify(L.fretes) && COT.naListaFrete('CIF - SEM VALOR') && !COT.naListaFrete('CIF'));
+    t('no PDF: CIF - COM VALOR e CIF - SEM VALOR saem CIF; FOB - DESTINATARIO sai FOB',
+      COT.freteCifFob('CIF - COM VALOR') === 'CIF' && COT.freteCifFob('CIF - SEM VALOR') === 'CIF' && COT.freteCifFob('FOB - DESTINATARIO') === 'FOB');
+  }
   const pi = fs.readFileSync(path.join(__dirname, '..', 'pedido-inteligente.js'), 'utf8');
   t('o PI lê a lista do pi-listas.js (sem cópia própria)', /PILISTAS\.condPagamento/.test(pi) && !/'CR 90\/120 DIAS'/.test(pi));
   const pag = ['pages/pedido-inteligente.html', 'pages/comercial-cot-nova.html', 'pages/comercial-cot-casos.html'];

@@ -403,7 +403,7 @@
     if (!temId) f.push(['o CNPJ ou o código do cliente', el(S.modoCli === 'codigo' ? 'cliente.codigo' : 'cliente.cnpj')]);
     // 25/11/2026: da lista do PI (a antiga, digitada, não passa)
     if (!tem(co.pagamento) || (C.COND_PAGAMENTO.length && !C.naListaPag(co.pagamento))) f.push(['Condição de pagamento (da lista do PI)', el('condicoes.pagamento')]);
-    if (!tem(co.frete)) f.push(['Frete', el('condicoes.frete')]);
+    if (!tem(co.frete) || (C.FRETES.length && !C.naListaFrete(co.frete))) f.push(['Frete (da lista do PI)', el('condicoes.frete')]);
     if (!tem(co.entrega)) f.push(['Prazo de entrega', el('condicoes.entrega')]);
     var cotados = (d.itens || []).filter(function (it) { return (tem(it.descricao) || tem(it.codigo)) && Number(it.quantidade) > 0 && Number(it.valorUnitario) > 0; });
     if (!cotados.length) f.push(['ao menos 1 item cotado (com quantidade e preço)', D.querySelector('#cot-itens input[data-f="valorUnitario"]') || $('cot-add-item')]);
@@ -723,8 +723,9 @@
           campo('Condição de pagamento', 'condicoes.pagamento', { cls: 's2', req: true, lista: C.listaCom(C.COND_PAGAMENTO, d.condicoes.pagamento), vazio: 'Escolha a condição…', dica: 'a lista do PI · Pedido · sai na proposta' }) +
           htmlTransp() +
           // 22/10/2026: o frete e o prazo de entrega voltaram (saem na proposta)
-          campo('Frete', 'condicoes.frete', { cls: 's1', req: true, lista: ['CIF', 'FOB'] }) +
-          campo('Prazo de entrega', 'condicoes.entrega', { cls: 's3', req: true, ni: true, ph: 'ex.: 5 dias úteis após o pedido', max: 120 }) +
+          // 26/11/2026: o frete com as opções do PI (no PDF sai só CIF ou FOB)
+          campo('Frete', 'condicoes.frete', { cls: 's2', req: true, lista: C.listaCom(C.FRETES, d.condicoes.frete), vazio: 'Escolha o frete…', dica: 'a lista do PI · Pedido · no PDF sai CIF ou FOB' }) +
+          campo('Prazo de entrega', 'condicoes.entrega', { cls: 's2', req: true, ni: true, ph: 'ex.: 5 dias úteis após o pedido', max: 120 }) +
           campo('Observação', 'condicoes.observacao', { cls: 's4', area: true, linhas: 2, dica: 'sai no PDF da proposta' }) +
           campo('Observação na nota', 'condicoes.obsNota', { cls: 's4', area: true, linhas: 2, ph: 'Opcional — deixe em branco se não houver observação na nota fiscal', dica: 'vai para o rodapé da nota fiscal (PI · Pedido) e sai no PDF da proposta' }) +
         '</div></div>' +
