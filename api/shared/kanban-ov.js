@@ -2184,6 +2184,8 @@ async function processarEmails(cands, ovs, token, ate, diag, avisos) {
   });
   if (res.erro) avisos.push('O e-mail da Cotação não conseguiu ler o registro dos envios (' + res.erro + ').');
   if (!EMAIL.configurado()) avisos.push(cands.length + ' OV(s) em Cotação pedem o e-mail de transportadora, mas falta configurar o remetente e o destinatário (KANBAN_EMAIL_DE e KANBAN_EMAIL_PARA) no Azure.');
+  // 26/11/26 (dono: "só quero enviar 1x"): sem blob, o portal não tem onde lembrar do envio e não envia
+  else if (!EMAIL.comRegistro()) avisos.push('O e-mail da Cotação está parado: falta um container de blob para registrar os envios (KANBAN_BLOB_URL, LOG_PORTAL_BLOB_URL ou COT_MSB_BLOB_URL) — sem ele o portal não tem como garantir um envio só por OV.');
   return Object.assign({}, res, { porOv });
 }
 
@@ -2195,7 +2197,7 @@ async function processarEmails(cands, ovs, token, ate, diag, avisos) {
 // prazo próprio, sobre o QUADRO EM CACHE (não relê o Dynamics inteiro — sem o
 // cache, só avisa e a tela tenta depois). As marcas (blob ou memória) seguem
 // garantindo uma vez só por OV. Atualiza os cartões do cache.
-const EMAIL_FINAL = ['enviado', 'enviando', 'erro', 'nao-configurado', 'desligado'];
+const EMAIL_FINAL = ['enviado', 'enviando', 'erro', 'nao-configurado', 'desligado', 'sem-registro'];
 async function emailCotacaoAuto() {
   const c = _cache.get('quadro|' + hojeSP());
   if (!c || Date.now() - c.ts > TTL_QUADRO * 4) return { ok: true, semQuadro: true, candidatas: 0, enviados: 0, porOv: {} };

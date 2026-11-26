@@ -21,10 +21,13 @@ process.env.KANBAN_DESDE = '0';
 process.env.KANBAN_CRIADA_MIN = '0';
 const BLOBS = {}, EMAILS = [];
 let BLOB_FALHA = 0;   // 13/11/26: o registro que não deixa ler (ex.: SAS vencida -> 403)
+// 26/11/26: o registro do e-mail já "em uso" (o _inicio existe) nos cenários antigos; SEM_INICIO = true testa a passagem da memória
+let SEM_INICIO = false;
 function blobFalso(u, opts) {
   const nome = decodeURIComponent(u.pathname.replace(/^\/kanban\//, '')), metodo = (opts && opts.method) || 'GET', h = (opts && opts.headers) || {};
   const resp = (st, tx) => ({ ok: st < 400, status: st, text: async () => tx || '', json: async () => JSON.parse(tx || 'null') });
   if (BLOB_FALHA) return resp(BLOB_FALHA);
+  if (metodo === 'GET' && nome === 'kanban-email-cotacao/_inicio.json' && BLOBS[nome] == null && !SEM_INICIO) return resp(200, '{}');
   if (metodo === 'GET') return BLOBS[nome] == null ? resp(404) : resp(200, BLOBS[nome]);
   if (metodo === 'PUT') { if (h['If-None-Match'] === '*' && BLOBS[nome] != null) return resp(409); BLOBS[nome] = String(opts.body || ''); return resp(201); }
   return resp(400);
@@ -1545,24 +1548,69 @@ const bio = (n, st, lib) => ({ dataAreaId: 'msb', SalesOrderNumber: n, StatusPed
   K._limparCache(); r = await K.quadro({});
   t('na leitura seguinte, a próxima da fila', EMAILS.length === 4, EMAILS.length);
   delete process.env.KANBAN_EMAIL_DE; delete process.env.KANBAN_EMAIL_MAX;
-  // 12/11/26 (dono: "não precisa de blob ainda"): sem o registro, a memória do servidor
-  K._limparCache(); EM._limparMemoria(); delete process.env.KANBAN_BLOB_URL;
+  // 26/11/26 (dono: "EU SÓ QUERO ENVIAR 1X, somente uma! por cartão da OV" — a OV017816
+  // recebeu 4 vezes: na MEMÓRIA, cada instância/reinício do servidor esquecia e mandava de
+  // novo). Sem nenhum blob: NÃO envia
+  K._limparCache(); delete process.env.KANBAN_BLOB_URL;
   process.env.KANBAN_EMAIL_DE = 'remetente@empresa.teste';
   const nb0 = EMAILS.length, nBlobs = Object.keys(BLOBS).length;
   r = await K.quadro({});
-  const env11 = r.ovs.filter(o => o.emailCotacao && o.emailCotacao.status === 'enviado' && o.emailCotacao.memoria);
-  t('sem blob: envia (até o teto por leitura) e guarda na memória, sem gravar blob', EMAILS.length - nb0 === 5 && env11.length === 5 && Object.keys(BLOBS).length === nBlobs && !r.avisos.some(a => /KANBAN_BLOB_URL/.test(a)), { n: EMAILS.length - nb0, mem: env11.length });
+  const sr11 = r.ovs.filter(o => o.emailCotacao && o.emailCotacao.status === 'sem-registro').map(o => o.numero).sort();
+  t('sem nenhum blob: não envia ("sem-registro"), não grava e avisa', EMAILS.length === nb0 && Object.keys(BLOBS).length === nBlobs && sr11.join() === 'OV019501,OV019502,OV019505,OV019506,OV019507'
+    && q10('OV019504').emailCotacao.status === 'sem-caixas' && r.avisos.some(a => /e-mail da Cotação está parado/.test(a) && /COT_MSB_BLOB_URL/.test(a)), { n: EMAILS.length - nb0, sr11, avisos: r.avisos });
   K._limparCache(); r = await K.quadro({});
-  const nb1 = EMAILS.length;
-  t('sem blob: na leitura seguinte, as que já receberam não recebem de novo (a sem caixas segue esperando)', nb1 - nb0 === 5 && r.ovs.filter(o => o.emailCotacao && o.emailCotacao.status === 'enviado').length === 5
-    && r.ovs.find(o => o.numero === 'OV019504').emailCotacao.status === 'sem-caixas', nb1 - nb0);
-  K._limparCache(); EM._limparMemoria(); r = await K.quadro({});
-  t('sem blob: se o servidor reiniciar (memória vazia), pode reenviar — o aviso da ficha diz isso', EMAILS.length > nb1, EMAILS.length - nb1);
+  t('sem nenhum blob: nem na leitura seguinte', EMAILS.length === nb0, EMAILS.length - nb0);
+  // sem KANBAN_BLOB_URL e sem LOG_PORTAL_BLOB_URL: as marcas vão para o container das Oportunidades (COT_MSB_BLOB_URL)
+  K._limparCache(); process.env.COT_MSB_BLOB_URL = 'https://blob.teste/kanban?sv=1&sig=x';
+  r = await K.quadro({});
+  const env11 = ['OV019501', 'OV019502', 'OV019505', 'OV019506', 'OV019507'].map(n => q10(n).emailCotacao.status);
+  t('só com o COT_MSB_BLOB_URL: o registro é lá — as que já receberam não recebem de novo; a que faltava (fila do teto), uma vez', EM.comRegistro() && EMAILS.length === nb0 + 1 && env11.every(s => s === 'enviado')
+    && /^https:\/\/blob\.teste\/kanban\/kanban-email-cotacao\/OV1\.json\?sv=1/.test(EM._blobUrl('OV1')), { n: EMAILS.length - nb0, env11 });
+  K._limparCache(); r = await K.quadro({});
+  t('só com o COT_MSB_BLOB_URL: na leitura seguinte, nenhuma', EMAILS.length === nb0 + 1, EMAILS.length - nb0);
+  delete process.env.COT_MSB_BLOB_URL;
+  // a PASSAGEM da memória para o registro (sem o _inicio): as que têm as caixas já receberam
+  // da memória — viram "enviado antes do registro", SEM reenviar
+  K._limparCache(); Object.keys(BLOBS).forEach(k => { delete BLOBS[k]; }); SEM_INICIO = true;
+  process.env.KANBAN_BLOB_URL = 'https://blob.teste/kanban?sv=1&sig=x';
+  const nb2 = EMAILS.length;
+  r = await K.quadro({});
+  const ant11 = ['OV019501', 'OV019502', 'OV019505', 'OV019506', 'OV019507'].map(n => q10(n).emailCotacao);
+  t('passagem para o registro: as que têm caixas ficam "enviado antes do registro", SEM reenviar; a sem caixas segue esperando', EMAILS.length === nb2 && ant11.every(m => m.status === 'enviado' && m.antesDoRegistro === true)
+    && JSON.parse(BLOBS['kanban-email-cotacao/OV019506.json']).antesDoRegistro === true && q10('OV019504').emailCotacao.status === 'sem-caixas' && !BLOBS['kanban-email-cotacao/OV019504.json']
+    && !!BLOBS['kanban-email-cotacao/_inicio.json'], { n: EMAILS.length - nb2, ant11 });
+  K._limparCache(); r = await K.quadro({});
+  t('depois da passagem, nenhuma recebe de novo', EMAILS.length === nb2, EMAILS.length - nb2);
+  const nova11 = (n, x) => { CEN.SalesOrderHeadersV2.linhas.push(ov10(n, '18')); CEN.BIOSalesOrderHeaderV1.linhas.push(bio10(n, 'Yes')); CEN.SalesOrderLines.linhas.push(lin10(n, 1, 250));
+    CEN.WHSWorkTableBiEntities.linhas.push(w(n, 'W' + x, 'Closed', { LoadId: 'LD-' + x, ShipmentId: 'SH-' + x })); CEN.WHSLoadTableBiEntities.linhas.push(ld10('LD-' + x));
+    CEN.BioWHSContainerV1Entities.linhas.push(cx10('CX-' + x, 'LD-' + x, 'SH-' + x));
+    CEN.BioWHSWorkLineV1.linhas.push({ dataAreaId: 'msb', WorkId: 'W' + x, LineNum: 1, OrderNum: n, ItemId: 'IT-1', InventTransId: '', FreghtType_InoveProjects: 'ChargeFreight' }); };
+  K._limparCache(); nova11('OV019509', '509');
+  r = await K.quadro({});
+  t('a OV que cai em Cotação depois da passagem recebe — uma vez', EMAILS.length === nb2 + 1 && q10('OV019509').emailCotacao.status === 'enviado' && !q10('OV019509').emailCotacao.antesDoRegistro, { n: EMAILS.length - nb2, st: q10('OV019509').emailCotacao });
+  K._limparCache(); r = await K.quadro({});
+  t('a que caiu depois da passagem não recebe de novo', EMAILS.length === nb2 + 1, EMAILS.length - nb2);
+  // sem o _inicio, mas o registro já tem marca de envio de verdade: não é passagem — a nova recebe
+  K._limparCache(); delete BLOBS['kanban-email-cotacao/_inicio.json']; nova11('OV019510', '510');
+  r = await K.quadro({});
+  t('sem o _inicio com o registro já em uso: não é passagem — a nova recebe (uma vez)', EMAILS.length === nb2 + 2 && q10('OV019510').emailCotacao.status === 'enviado' && !q10('OV019510').emailCotacao.antesDoRegistro
+    && !!BLOBS['kanban-email-cotacao/_inicio.json'], { n: EMAILS.length - nb2, st: q10('OV019510').emailCotacao });
+  // várias leituras AO MESMO TEMPO (instâncias diferentes, várias pessoas com o quadro aberto)
+  const cand11 = (ov) => ({ ov, pronto: true, email: { assunto: 'Pedido ' + ov + ' — pronto para faturamento e coleta', html: '<div>x</div>', totalCaixas: 1 } });
+  const nb3 = EMAILS.length;
+  const dup11 = await Promise.all([1, 2, 3].map(() => EM.processar([cand11('OV019901')])));
+  t('três leituras ao mesmo tempo: a OV recebe UMA vez', EMAILS.length === nb3 + 1 && dup11.filter(x => x.porOv.OV019901.status === 'enviado').length === 1, dup11.map(x => x.porOv.OV019901));
+  await EM.processar([cand11('OV019901')]);
+  t('e não recebe de novo depois', EMAILS.length === nb3 + 1, EMAILS.length - nb3);
+  Object.keys(BLOBS).forEach(k => { delete BLOBS[k]; });
+  const dup11b = await Promise.all([1, 2].map(() => EM.processar([cand11('OV019902')])));
+  t('na passagem, duas leituras ao mesmo tempo: ninguém envia', EMAILS.length === nb3 + 1 && dup11b.every(x => x.porOv.OV019902.status === 'enviado' && x.porOv.OV019902.antesDoRegistro), dup11b.map(x => x.porOv.OV019902));
+  SEM_INICIO = false;
 
   // 13/11/26 (dono: "tá tudo configurado e nada" — a OV017594 em Cotação, Sim + FOB,
   // parada em "Na fila"): a leitura do quadro gasta o prazo e o e-mail, o último
   // passo, ficava de fora sem aviso. Agora: "sem-tempo" + a chamada própria
-  K._limparCache(); EM._limparMemoria(); Object.keys(BLOBS).forEach(k => { delete BLOBS[k]; });
+  K._limparCache(); Object.keys(BLOBS).forEach(k => { delete BLOBS[k]; });
   process.env.KANBAN_BLOB_URL = 'https://blob.teste/kanban?sv=1&sig=x';
   process.env.KANBAN_EMAIL_DE = 'remetente@empresa.teste'; process.env.KANBAN_EMAIL_PARA = 'teste@empresa.teste';
   const wl12 = (n, x) => ({ dataAreaId: 'msb', WorkId: 'W' + x, LineNum: 1, OrderNum: n, ItemId: 'IT-1', InventTransId: '', FreghtType_InoveProjects: 'ChargeFreight' });
@@ -1757,7 +1805,7 @@ const bio = (n, st, lib) => ({ dataAreaId: 'msb', SalesOrderNumber: n, StatusPed
   t('as linhas da carga só de outra OV: "sem-caixas" dizendo de qual OV são (a remessa não é desta)', e16b.status === 'sem-caixas' && e16b.busca.semRemessa[0].motivo === 'outra-ov'
     && e16b.busca.semRemessa[0].fonte === 'WHSLoadLineBiEntities' && e16b.busca.semRemessa[0].ovsLinhas.join() === 'OV099999', e16b.busca);
   SERVICO = serv15;
-  EM._limparMemoria(); delete process.env.KANBAN_EMAIL_DE;
+  delete process.env.KANBAN_EMAIL_DE;
   delete process.env.KANBAN_EMAIL_PARA; delete process.env.KANBAN_BLOB_URL;
   CEN = guarda10; SERVICO = serv10;
 

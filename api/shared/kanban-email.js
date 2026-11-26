@@ -34,6 +34,19 @@
 // botão da ficha e sem a "base": as OVs que já estão em Cotação com Solicitar
 // transportadora = Sim também recebem (uma vez cada, no máximo KANBAN_EMAIL_MAX
 // por leitura).
+// 26/11/26 (dono: "EU SÓ QUERO ENVIAR 1X, somente uma! por cartão da OV" — a
+// OV017816 recebeu o e-mail 4 vezes em 40 min): a lembrança na MEMÓRIA não
+// segura — cada instância do servidor (e cada reinício) tem a sua, e cada
+// pessoa com o quadro aberto cai numa delas. Agora:
+//   . o registro é SEMPRE em blob: KANBAN_BLOB_URL, LOG_PORTAL_BLOB_URL ou, sem
+//     as duas, o container das Oportunidades da MSB (COT_MSB_BLOB_URL, que o
+//     portal já tem) — as marcas ficam só na pasta kanban-email-cotacao/,
+//     longe dos arquivos das oportunidades (indice.json, casos/, anexos/);
+//   . SEM nenhum container: NÃO envia (status 'sem-registro') — sem como lembrar,
+//     nenhum envio é melhor que vários;
+//   . a PASSAGEM da memória para o registro (sem kanban-email-cotacao/_inicio.json):
+//     as OVs em Cotação que já têm as caixas já receberam (da memória) — ganham a
+//     marca "enviado antes do registro" SEM reenviar. Só então o _inicio é criado.
 // ================================================================
 
 const auth = require('./auth');
@@ -43,10 +56,11 @@ const lista = (v) => txt(v).split(/[,;]/).map(s => s.trim()).filter(Boolean);
 const DE   = () => txt(process.env.KANBAN_EMAIL_DE);
 const PARA = () => lista(process.env.KANBAN_EMAIL_PARA);
 const CC   = () => lista(process.env.KANBAN_EMAIL_CC);
-const BLOB = () => txt(process.env.KANBAN_BLOB_URL || process.env.LOG_PORTAL_BLOB_URL);
+const BLOB = () => txt(process.env.KANBAN_BLOB_URL || process.env.LOG_PORTAL_BLOB_URL || process.env.COT_MSB_BLOB_URL);
 const AUTO = () => txt(process.env.KANBAN_EMAIL_AUTO) !== '0';
 const MAX  = () => Math.max(0, Number(process.env.KANBAN_EMAIL_MAX || 5));
 const PASTA = 'kanban-email-cotacao/';
+const INICIO = '_inicio';   // 26/11/26: a marca de que o registro já está em uso (a passagem da memória)
 const FUSO_H = 3;   // Brasília = UTC-3
 
 // o endereço de coleta e o horário (do modelo do dono; trocáveis por env)
@@ -188,7 +202,8 @@ const semCaixas = (c) => c.semLeitura ? { status: 'pendente', motivo: c.semLeitu
 // Cotação com Solicitar transportadora = Sim. -> { porOv: { OV: { status, em,
 // para, erro } }, base: bool, enviados: n, erro }
 // status: 'enviado' | 'sem-caixas' | 'pendente' (fica para a próxima leitura) |
-// 'erro' | 'nao-configurado' | 'desligado' (memoria: true = sem o registro em blob)
+// 'erro' | 'nao-configurado' | 'desligado' | 'sem-registro' (26/11/26: sem blob, não
+// envia). antesDoRegistro: true = enviado da memória, antes do registro (não reenvia)
 async function processar(candidatos, opts) {
   opts = opts || {};
   const porOv = {}, out = { porOv, enviados: 0, erro: null };
@@ -196,13 +211,19 @@ async function processar(candidatos, opts) {
   if (!candidatos.length) return out;
   const marca = (st) => candidatos.forEach(c => { porOv[c.ov] = { status: st }; });
   if (!configurado()) { marca('nao-configurado'); return out; }
-  if (!comRegistro()) return processarNaMemoria(candidatos, tempo, out);
+  if (!comRegistro()) return semRegistro(candidatos, out);
   try {
     // as marcas de cada OV (o que já foi feito)
     // 13/11/26: a marca ilegível deixa o MOTIVO (antes, "pendente" calado para sempre)
-    const marcas = await Promise.all(candidatos.map(c => lerMarca(nomeOv(c.ov)).catch(e => ({ _falha: String((e && e.name === 'AbortError') ? 'sem resposta em 6 s' : (e && e.message) || e).slice(0, 120) }))));
+    const falha = (e) => ({ _falha: String((e && e.name === 'AbortError') ? 'sem resposta em 6 s' : (e && e.message) || e).slice(0, 120) });
+    const inicio = await lerMarca(INICIO).catch(falha);
+    if (inicio && inicio._falha) { candidatos.forEach(c => { porOv[c.ov] = { status: 'pendente', motivo: 'não deu para ler o registro dos envios (' + inicio._falha + ')' }; }); return out; }
+    const marcas = await Promise.all(candidatos.map(c => lerMarca(nomeOv(c.ov)).catch(falha)));
+    // 26/11/26: a 1ª leitura com o registro — as que já receberam da memória não recebem de novo
+    if (!inicio) await abrirRegistro(candidatos, marcas, porOv);
     for (let i = 0; i < candidatos.length; i++) {
       const c = candidatos[i], m = marcas[i];
+      if (porOv[c.ov]) continue;
       if (m && m._falha) { porOv[c.ov] = { status: 'pendente', motivo: 'não deu para ler o registro dos envios (' + m._falha + ')' }; continue; }
       if (m) { porOv[c.ov] = m; continue; }
       if (!c.pronto) { porOv[c.ov] = semCaixas(c); continue; }
@@ -228,40 +249,42 @@ async function processar(candidatos, opts) {
   return out;
 }
 
-// SEM o registro em blob (12/11/26, "não precisa de blob ainda"): a lembrança
-// dos envios fica na memória do servidor — marca ANTES de enviar (duas leituras
-// ao mesmo tempo na mesma instância não mandam dois); erro não tenta de novo
-const _memoria = new Map();
-async function processarNaMemoria(candidatos, tempo, out) {
-  const porOv = out.porOv;
-  for (const c of candidatos) {
-    const k = nomeOv(c.ov), m = _memoria.get(k);
-    if (m) { porOv[c.ov] = m; continue; }
-    if (!c.pronto) { porOv[c.ov] = semCaixas(c); continue; }
-    if (!AUTO()) { porOv[c.ov] = { status: 'desligado' }; continue; }
-    if (out.enviados >= MAX() || !tempo()) { porOv[c.ov] = { status: 'pendente', motivo: motivoFila(out) }; continue; }
-    _memoria.set(k, { status: 'enviando', memoria: true });
-    try {
-      const r = await enviar(c.email);
-      const reg = { status: 'enviado', em: new Date().toISOString(), para: r.para, cc: r.cc, assunto: c.email.assunto, caixas: c.email.totalCaixas, auto: true, memoria: true };
-      _memoria.set(k, reg); porOv[c.ov] = reg; out.enviados++;
-    } catch (e) {
-      const reg = { status: 'erro', em: new Date().toISOString(), erro: String(e.message || e).slice(0, 300), memoria: true };
-      _memoria.set(k, reg); porOv[c.ov] = reg;
+// 26/11/26: a PASSAGEM da memória para o registro (ainda sem o _inicio). Até
+// aqui o portal enviava lembrando só na memória: as OVs em Cotação que já têm as
+// caixas já receberam (várias vezes) — ganham a marca "enviado antes do
+// registro" SEM enviar. Se alguma OV já tem marca de envio de verdade, o
+// registro já estava em uso: não marca nada. O _inicio é criado POR ÚLTIMO (uma
+// leitura ao mesmo tempo também só marca, nunca envia) e só se todas as marcas
+// foram lidas (a OV de marca ilegível tentaria de novo sem a passagem).
+async function abrirRegistro(candidatos, marcas, porOv) {
+  const emUso = marcas.some(m => m && !m._falha && !m.antesDoRegistro);
+  if (!emUso) {
+    for (let i = 0; i < candidatos.length; i++) {
+      const c = candidatos[i];
+      if (marcas[i] || !c.pronto) continue;
+      const reg = { status: 'enviado', antesDoRegistro: true, marcadoEm: new Date().toISOString(), assunto: c.email.assunto, caixas: c.email.totalCaixas };
+      porOv[c.ov] = (await reivindicar(nomeOv(c.ov), reg)) ? reg : ((await lerMarca(nomeOv(c.ov))) || reg);
     }
   }
-  if (_memoria.size > 2000) _memoria.delete(_memoria.keys().next().value);
+  if (marcas.some(m => m && m._falha)) return;
+  await reivindicar(INICIO, { em: new Date().toISOString(), emUso, marcadas: Object.keys(porOv).length });
+}
+
+// SEM nenhum container de blob (26/11/26): o portal não tem onde lembrar do envio
+// — NÃO envia (antes, lembrava na memória e repetia a cada reinício/instância)
+function semRegistro(candidatos, out) {
+  candidatos.forEach(c => { out.porOv[c.ov] = !c.pronto ? semCaixas(c) : !AUTO() ? { status: 'desligado' } : { status: 'sem-registro' }; });
   return out;
 }
 
 // envio já, fora da automação (12/11/26: sem uso — a ficha não tem botão e a rota
 // recusa; fica para um reenvio manual futuro): envia e grava a marca
 async function enviarAgora(c, por) {
+  if (!comRegistro()) { const e = new Error('Sem o registro dos envios (blob), o portal não envia: não teria como saber que já enviou.'); e.status = 409; e.publicMessage = e.message; throw e; }
   const r = await enviar(c.email);
   const reg = { status: 'enviado', em: new Date().toISOString(), para: r.para, cc: r.cc, assunto: c.email.assunto, caixas: c.email.totalCaixas, manual: true, por: por || '' };
-  if (comRegistro()) await gravarMarca(nomeOv(c.ov), reg).catch(() => {});
-  else _memoria.set(nomeOv(c.ov), Object.assign({ memoria: true }, reg));
+  await gravarMarca(nomeOv(c.ov), reg).catch(() => {});
   return reg;
 }
 
-module.exports = { configurado, comRegistro, montarEmail, agruparCaixas, saudacao, enviar, processar, enviarAgora, _blobUrl: blobUrl, _limparMemoria: () => _memoria.clear() };
+module.exports = { configurado, comRegistro, montarEmail, agruparCaixas, saudacao, enviar, processar, enviarAgora, _blobUrl: blobUrl };

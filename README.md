@@ -2744,6 +2744,36 @@ qtd são obrigatórios".
   `cotacoes-proposta.js?v=10`, `cotacoes-ficha.js?v=15`, `cotacoes.css?v=41`,
   `pedido-inteligente.js?v=45`, `pi-fila.js?v=5`, `nav-sidebar.js?v=92`, `script.js?v=10`,
   `portal-catalogo.js?v=27`, `area-access.js?v=23`; `sw.js` — cache `bm-comest-v109`.
+### Kanban · e-mail da Cotação UMA vez só por OV (26/11/2026)
+
+O dono: "estou enviando a cubagem toda hora, já te falei EU SÓ QUERO ENVIAR 1X,
+somente uma! por cartão da OV" — a OV017816 recebeu o e-mail 4 vezes em 40 min
+(08:10, 08:15, 08:45, 08:47).
+
+- **A causa**: sem `KANBAN_BLOB_URL`/`LOG_PORTAL_BLOB_URL`, o portal lembrava do
+  envio só na MEMÓRIA do servidor. O Azure roda mais de uma instância e reinicia
+  a qualquer hora; cada pessoa com o quadro aberto cai numa — e cada instância
+  nova "esquecia" e mandava de novo.
+- **O registro agora é sempre permanente** (`api/shared/kanban-email.js`): a
+  marca `kanban-email-cotacao/<OV>.json` vai para `KANBAN_BLOB_URL`,
+  `LOG_PORTAL_BLOB_URL` ou, sem as duas, o container das Oportunidades da MSB
+  (`COT_MSB_BLOB_URL`, que o portal já tem) — só na pasta
+  `kanban-email-cotacao/`, longe de `indice.json`, `casos/` e `anexos/`. Criada
+  com `If-None-Match:*`: várias leituras ao mesmo tempo, um envio só.
+- **Sem nenhum container**: não envia (`sem-registro`) e avisa no topo — sem onde
+  lembrar, nenhum envio é melhor que vários. Saiu a lembrança na memória.
+- **A passagem** (a 1ª leitura com o registro, sem `kanban-email-cotacao/_inicio.json`):
+  as OVs em Cotação que já têm as caixas já receberam (da memória) — ganham a
+  marca "enviado antes do registro" **sem reenviar**; a sem caixas segue
+  esperando. Se alguma OV já tem marca de envio de verdade, o registro já estava
+  em uso e nada é marcado. O `_inicio` é criado por último.
+- **Ficha**: "Enviado em … para …. Não envia de novo."; "Já enviado (antes do
+  registro de envios): não envia de novo."; e o "Não enviado: falta o registro…".
+- Testes (10): sem blob não envia (nem na leitura seguinte); só com o
+  `COT_MSB_BLOB_URL` o registro é lá; a passagem não reenvia e a OV que chega
+  depois recebe uma vez; sem `_inicio` com o registro em uso não é passagem;
+  três leituras ao mesmo tempo → um envio; na passagem ao mesmo tempo → nenhum.
+  `sw.js` — cache `bm-comest-v110`.
 
 ### Cuidados
 
