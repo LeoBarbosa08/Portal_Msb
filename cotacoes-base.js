@@ -1393,7 +1393,10 @@
       // observação da cotação também vão; o PI preenche só o que estiver vazio
       var cli = c.cliente || {}, co = c.condicoes || {};
       var endereco = [cli.endereco, [cli.cidade, cli.uf].filter(Boolean).join('/'), cli.cep ? 'CEP ' + formatar('cep', cli.cep) : ''].filter(Boolean).join(' - ');
-      var obs = ['Cotação ' + c.numero + (c.cotacaoId ? ' · ' + (c.portal || '') + ' nº ' + c.cotacaoId : ''), String(co.observacao || '').trim()].filter(Boolean).join(' · ');
+      // 26/11/2026 (pedido do dono: "a observação tem que ser igual à do PDF"): a
+      // Observação do PI é a da oportunidade, como sai na proposta — sem o
+      // "Cotação COT-MSB-… ·" na frente (o número da cotação já vai no Caso)
+      var obs = String(co.observacao || '').trim();
       var lidaAMao = manual ? { dados: {
         cnpj: cli.cnpj || '', nomeCliente: cli.nome || '', ordemDeCompra: c.pedido.oc || '',
         enderecoEntrega: endereco, email: (c.contato && c.contato.email) || '', observacao: obs, condicaoPagamento: co.pagamento || '', observacaoNota: co.obsNota || '',

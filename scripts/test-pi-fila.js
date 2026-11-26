@@ -72,6 +72,10 @@ function casoBase(numero, extra) {
     // eslint-disable-next-line no-new-func
     Function('window', 'document', 'location', fs.readFileSync(path.join(__dirname, '..', 'cotacoes-base.js'), 'utf8'))(W, W.document, W.location);
     const COT = W.COT;
+    // 26/11/26 (o dono: "a observação tem que ser igual à do PDF"): sem o "Cotação COT-… ·" na frente
+    const base = fs.readFileSync(path.join(__dirname, '..', 'cotacoes-base.js'), 'utf8');
+    t('a Observação que vai para o PI é a da oportunidade, igual à do PDF (sem o "Cotação COT-…")',
+      /var obs = String\(co\.observacao \|\| ''\)\.trim\(\);/.test(base) && !/'Cotação ' \+ c\.numero/.test(base));
     t('o CRM usa a mesma condição de entrega (COT.COND_ENTREGA)', JSON.stringify(COT.COND_ENTREGA) === JSON.stringify(L.condEntrega) && COT.naListaEntrega('URGENTE') && !COT.naListaEntrega('urgente!'));
     t('o CRM usa a mesma lista de frete (COT.FRETES)', JSON.stringify(COT.FRETES) === JSON.stringify(L.fretes) && COT.naListaFrete('CIF - SEM VALOR') && !COT.naListaFrete('CIF'));
     t('no PDF: CIF - COM VALOR e CIF - SEM VALOR saem CIF; FOB - DESTINATARIO sai FOB',

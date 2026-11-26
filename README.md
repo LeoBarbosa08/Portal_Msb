@@ -2744,6 +2744,10 @@ qtd são obrigatórios".
   PI, a Ordem de Compra vazia aparece como **NAO INFORMADO** com o "Não
   informado" marcado — ao chegar no Cabeçalho e ao sair do campo em branco
   (`ocNaoInformadaSeVazia`). Para digitar a OC, desmarcar o "Não informado".
+- **Observação igual à do PDF** (26/11/2026, o dono: "a observação tem que ser
+  igual à do PDF"): a Observação que chega no PI é a da oportunidade, como sai
+  na proposta — sem o "Cotação COT-MSB-… ·" na frente (o número da cotação já
+  vai para o flow no Caso).
 - **Ocultar a prévia** (Nova oportunidade): "Ocultar" no cabeçalho da prévia da
   proposta some com o painel (o formulário fica com a largura toda; oculta, a
   prévia nem é gerada) e "Mostrar prévia da proposta" no topo traz de volta —
@@ -2758,10 +2762,10 @@ qtd são obrigatórios".
 - Testes: `node scripts/test-pi-fila.js` (a lista do navegador = a do prompt da
   IA, os campos novos, devolver/reenviar, o item e a rota da fila, o pedido
   pela proposta, quantidade e preço obrigatórios).
-- Versões: `cotacoes-base.js?v=36`, `cotacoes.js?v=49`, `cotacoes-agente.js?v=34`,
+- Versões: `cotacoes-base.js?v=37`, `cotacoes.js?v=49`, `cotacoes-agente.js?v=34`,
   `cotacoes-proposta.js?v=12`, `cotacoes-ficha.js?v=16`, `cotacoes.css?v=41`,
   `pedido-inteligente.js?v=48`, `pi-fila.js?v=7`, `nav-sidebar.js?v=92`, `script.js?v=10`,
-  `portal-catalogo.js?v=27`, `area-access.js?v=23`; `sw.js` — cache `bm-comest-v112`, `pi-listas.js?v=3`.
+  `portal-catalogo.js?v=27`, `area-access.js?v=23`; `sw.js` — cache `bm-comest-v113`, `pi-listas.js?v=3`.
 
 ### Cuidados
 
