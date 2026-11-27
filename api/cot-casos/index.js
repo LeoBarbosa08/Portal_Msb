@@ -15,6 +15,10 @@
 //                                                 bloqueio — shared/cot-erp.js)
 //   GET  /api/cot-casos?codigoCliente=<cód.>    -> { ok, erp } o mesmo, pelo CÓDIGO do
 //                                                 cliente no ERP (traz o CNPJ do cadastro)
+//   GET  /api/cot-casos?clientesLista=1         -> { ok, clientes:[[cód, nome, cnpj, msb, fantasia]], geradoEm }
+//                                                 | { ok, carregando } | { ok, clientes:[], erro } — o
+//                                                 cadastro do Dynamics para o autocomplete do Comprador
+//                                                 (a base da Carteira de Clientes — 27/11/26)
 //   GET  /api/cot-casos?familias=1             -> { ok, familias: { CÓDIGO: família }, motivo? }
 //                                                 ('Produtos'[Família] do Power BI do
 //                                                 Comercial, com o token da pessoa — o
@@ -80,6 +84,7 @@
 const motor = require('../shared/cot-motor');
 const store = require('../shared/cot-store');
 const H = require('../shared/cot-http');
+const erp = require('../shared/cot-erp');
 
 function cfgParaTela(cfg) {
   return {
@@ -129,6 +134,14 @@ module.exports = async function (context, req) {
         try { v = await motor.consultarErpCodigo(String(q.codigoCliente), true); }
         catch (e) { return H.ok(context, req, { ok: true, erp: { achou: false, erro: e.publicMessage || e.message } }); }
         return H.ok(context, req, { ok: true, erp: v || { achou: false, desligado: true } });
+      }
+      // a lista de clientes do Dynamics para o autocomplete do Comprador
+      // (27/11/2026: nome, CNPJ ou código — shared/cot-erp.listaClientes)
+      if (q.clientesLista) {
+        let v;
+        try { v = await erp.listaClientes(); }
+        catch (e) { return H.ok(context, req, { ok: true, clientes: [], erro: e.naoConfigurado ? 'o cadastro de clientes não está ligado no portal' : String(e.publicMessage || e.message || e).slice(0, 240) }); }
+        return H.ok(context, req, Object.assign({ ok: true }, v));
       }
       // o produto no Salesforce (a descrição, o fabricante e o RMS da proposta)
       if (q.produtos) {

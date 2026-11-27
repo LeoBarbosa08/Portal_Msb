@@ -157,4 +157,31 @@ async function clientePorCodigo(codigo, opts) {
   return v;
 }
 
-module.exports = { clientePorCnpj, clientePorCodigo, codigoDe, CONFIGURADO: D.CONFIGURED, _zerar: function () { _cache.clear(); _alvo = null; } };
+// ── a LISTA de clientes para o autocomplete do Comprador (27/11/2026) ──
+// Pedido do usuário: no Agente de Cotações, digitar o nome, o CNPJ ou o
+// código do cliente e aparecerem as opções — CÓDIGO e NOME, como no Código
+// do produto. O OData do F&O não busca por pedaço (só eq), então a lista vem
+// INTEIRA, uma vez, e a tela filtra. A fonte é a base da Carteira de
+// Clientes (shared/carteira-clientes.js): o mesmo cadastro do Dynamics, já
+// em cache de módulo e no blob (a instância fria abre em ~1 s). Só quem tem
+// código no ERP entra (o "Buscar" é no Dynamics); um item por código.
+// Linha: [código, razão social, CNPJ/CPF (dígitos), 1 = tem cadastro na MSB, fantasia].
+let _lista = null;   // { base, l, geradoEm } — refeita quando a base muda
+async function listaClientes(opts) {
+  const CART = require('./carteira-clientes');
+  const r = await CART.obterBase({ prazoMs: (opts && opts.prazoMs) || 8000 });
+  if (r.carregando) return { carregando: true, desde: r.desde };
+  const b = r.base;
+  if (!_lista || _lista.base !== b) {
+    const l = [];
+    (b.clientes || []).forEach(function (c) {
+      const msb = (c.empresas || []).some(function (e) { return String(e).toLowerCase() === EMPRESA_PREFERIDA; }) ? 1 : 0;
+      const fant = c.fantasia && c.fantasia !== c.nome ? c.fantasia : '';
+      (c.codigos || []).forEach(function (cod) { if (cod) l.push([cod, c.nome || '', c.doc || '', msb, fant]); });
+    });
+    _lista = { base: b, l: l, geradoEm: b.geradoEm };
+  }
+  return { clientes: _lista.l, total: _lista.l.length, geradoEm: _lista.geradoEm, parcial: !!b.parcial };
+}
+
+module.exports = { clientePorCnpj, clientePorCodigo, codigoDe, listaClientes, CONFIGURADO: D.CONFIGURED, _zerar: function () { _cache.clear(); _alvo = null; _lista = null; } };

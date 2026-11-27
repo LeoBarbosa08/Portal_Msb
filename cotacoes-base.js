@@ -794,13 +794,19 @@
     if (i < 0 || !len) return esc(s);
     return esc(s.slice(0, i)) + '<mark>' + esc(s.slice(i, i + len)) + '</mark>' + esc(s.slice(i + len));
   }
-  // liga o autocomplete aos Códigos do produto que ficam dentro de `raiz` (um
-  // ouvinte só, delegado: as linhas redesenhadas continuam com ele)
-  var AC = { lista: null, alvo: null, itens: [], ativo: -1, setas: false, calando: false, q: '' };
+  /* ── o MOTOR do autocomplete (27/11/2026) ─────────────────────
+     O mesmo do Código do produto, agora com a "fonte" de fora (cfg), para
+     servir também ao Comprador (nome, CNPJ e código do cliente — pedido do
+     usuário: "a mesma ideia do produto, CÓDIGO E NOME"). Uma lista só na
+     tela (a do campo em foco). cfg: { id, sel, rotulo, largura?, vale(q, a),
+     pronto(), carregar(), abrindo(), falhou(e), buscar(q, a) -> { l, n },
+     item(p, q, a) -> html, vazio(q, a) -> html, usar(p, a) }. Um ouvinte só
+     por raiz e cfg, delegado: as linhas redesenhadas continuam com ele. */
+  var AC = { lista: null, alvo: null, cfg: null, itens: [], ativo: -1, setas: false, calando: false, q: '' };
   function acLista() {
     if (AC.lista) return AC.lista;
     var l = D.createElement('div');
-    l.className = 'cot-ac'; l.id = 'cot-ac-lista'; l.setAttribute('role', 'listbox'); l.setAttribute('aria-label', 'Produtos do catálogo'); l.hidden = true;
+    l.className = 'cot-ac'; l.id = 'cot-ac-lista'; l.setAttribute('role', 'listbox'); l.hidden = true;
     // mousedown: o foco fica no campo (o focusout não fecha antes do clique)
     l.addEventListener('mousedown', function (ev) { ev.preventDefault(); var o = ev.target.closest('[data-ac-i]'); if (o) acUsar(Number(o.getAttribute('data-ac-i'))); });
     D.body.appendChild(l);
@@ -818,7 +824,7 @@
     var l = AC.lista, a = AC.alvo; if (!l || l.hidden || !a) return;
     var r = a.getBoundingClientRect(), vw = W.innerWidth || D.documentElement.clientWidth, vh = W.innerHeight || D.documentElement.clientHeight;
     if (!a.isConnected || r.bottom < 0 || r.top > vh || (!r.width && !r.height)) { acFechar(); return; }
-    var w = Math.min(Math.max(r.width, 380), vw - 16);
+    var w = Math.min(Math.max(r.width, (AC.cfg && AC.cfg.largura) || 380), vw - 16);
     l.style.width = w + 'px';
     l.style.left = Math.max(8, Math.min(r.left, vw - w - 8)) + 'px';
     var h = l.offsetHeight, embaixo = vh - r.bottom - 8;
@@ -826,6 +832,7 @@
   }
   function acPintar(html) {
     var l = acLista();
+    if (AC.cfg) l.setAttribute('aria-label', AC.cfg.rotulo);
     l.innerHTML = html; l.hidden = false;
     if (AC.alvo) AC.alvo.setAttribute('aria-expanded', AC.itens.length ? 'true' : 'false');
     acPosicionar();
@@ -840,55 +847,52 @@
     if (AC.alvo) { if (i >= 0) AC.alvo.setAttribute('aria-activedescendant', 'cot-ac-o' + i); else AC.alvo.removeAttribute('aria-activedescendant'); }
   }
   function acMostrar() {
-    var a = AC.alvo; if (!a) return;
+    var a = AC.alvo, cfg = AC.cfg; if (!a || !cfg) return;
     var q = a.value, seq = (AC.seq = (AC.seq || 0) + 1);
     AC.q = q;
-    if (!normCod(q)) { acFechar(); return; }
-    if (!_cat) {
+    if (!cfg.vale(q, a)) { acFechar(); return; }
+    if (!cfg.pronto()) {
       AC.itens = [];
-      acPintar('<div class="cot-ac-msg"><span class="cs-spin"></span>Abrindo o catálogo de produtos…</div>');
-      catalogoProdutos().then(function () { if (AC.seq === seq && D.activeElement === a) acMostrar(); }, function (e) {
+      acPintar('<div class="cot-ac-msg"><span class="cs-spin"></span>' + cfg.abrindo() + '</div>');
+      cfg.carregar().then(function () { if (AC.seq === seq && D.activeElement === a) acMostrar(); }, function (e) {
         if (AC.seq !== seq || D.activeElement !== a) return;
         AC.itens = [];
-        acPintar('<div class="cot-ac-msg erro"><b>Não consegui abrir o catálogo de produtos</b>' + esc((e && e.message) || String(e)) + '<br>O código segue sendo conferido no BI ao digitar.</div>');
+        acPintar('<div class="cot-ac-msg erro">' + cfg.falhou(e) + '</div>');
       });
       return;
     }
-    var r = buscarNoCatalogo(_cat, q, CAT_MAX);
+    var r = cfg.buscar(q, a);
     AC.itens = r.l; AC.setas = false;
-    if (!r.l.length) { acPintar('<div class="cot-ac-msg"><b>Nenhum produto do catálogo com “' + esc(q.trim()) + '”</b>Confira o código — ou digite parte do nome do produto.</div>'); return; }
+    if (!r.l.length) { acPintar('<div class="cot-ac-msg">' + cfg.vazio(q, a) + '</div>'); return; }
     acPintar(r.l.map(function (p, i) {
-      var porNome = p.c.indexOf(normCod(q)) < 0 && p.k.indexOf(semSep(normCod(q))) < 0;
-      return '<div class="cot-ac-o" role="option" id="cot-ac-o' + i + '" data-ac-i="' + i + '" aria-selected="false"><b>' + (porNome ? esc(p.c) : marcar(p.c, q, false)) + '</b>' +
-        '<small title="' + esc(p.n) + '">' + (porNome ? marcar(p.n, q, true) : esc(p.n || '—')) + '</small></div>';
+      return '<div class="cot-ac-o" role="option" id="cot-ac-o' + i + '" data-ac-i="' + i + '" aria-selected="false">' + cfg.item(p, q, a) + '</div>';
     }).join('') + (r.n > r.l.length ? '<div class="cot-ac-pe">+ ' + int(r.n - r.l.length) + ' outro(s) — continue digitando</div>' : ''));
     acMarcar(0);
   }
+  // usar = o que a fonte faz com a escolhida; o 'input' que ela disparar não reabre a lista
   function acUsar(i) {
-    var p = AC.itens[i], a = AC.alvo; if (!p || !a) return;
+    var p = AC.itens[i], a = AC.alvo, cfg = AC.cfg; if (!p || !a || !cfg) return;
     acFechar();
-    a.value = p.c;
-    // o 'input' é o da tela (confere, descrição, estoque) — a lista não reabre com ele
     AC.calando = true;
-    try { a.dispatchEvent(new Event('input', { bubbles: true })); } finally { AC.calando = false; }
+    try { cfg.usar(p, a); } finally { AC.calando = false; }
   }
-  function autocompletarCodigos(raiz, seletor) {
-    if (!raiz || raiz.__cotAc) return; raiz.__cotAc = 1;
-    var SEL = seletor || 'input[data-f="codigo"]';
-    var eh = function (t) { return t && t.matches && t.matches(SEL); };
+  function autocompletar(raiz, cfg) {
+    var marca = '__cotAc_' + cfg.id;
+    if (!raiz || raiz[marca]) return; raiz[marca] = 1;
+    var eh = function (t) { return t && t.matches && t.matches(cfg.sel); };
     raiz.addEventListener('focusin', function (ev) {
       var t = ev.target; if (!eh(t)) return;
       if (AC.alvo !== t) acFechar();
-      AC.alvo = t;
+      AC.alvo = t; AC.cfg = cfg;
       t.setAttribute('role', 'combobox'); t.setAttribute('aria-autocomplete', 'list'); t.setAttribute('aria-controls', 'cot-ac-lista'); t.setAttribute('aria-expanded', 'false');
-      catalogoProdutos().catch(function () {});   // já vai abrindo; o erro aparece ao digitar
+      cfg.carregar().catch(function () {});   // já vai abrindo; o erro aparece ao digitar
     });
-    raiz.addEventListener('input', function (ev) { if (!AC.calando && eh(ev.target)) { AC.alvo = ev.target; acMostrar(); } });
+    raiz.addEventListener('input', function (ev) { if (!AC.calando && eh(ev.target)) { AC.alvo = ev.target; AC.cfg = cfg; acMostrar(); } });
     raiz.addEventListener('focusout', function (ev) { if (eh(ev.target) && ev.target === AC.alvo) acFechar(); });
     raiz.addEventListener('keydown', function (ev) {
       var t = ev.target; if (!eh(t)) return;
       if (ev.key === 'ArrowDown' || ev.key === 'ArrowUp') {
-        if (!acAberta()) { if (normCod(t.value)) { AC.alvo = t; acMostrar(); ev.preventDefault(); } return; }
+        if (!acAberta()) { if (cfg.vale(t.value, t)) { AC.alvo = t; AC.cfg = cfg; acMostrar(); ev.preventDefault(); } return; }
         if (!AC.itens.length) return;
         ev.preventDefault();
         var n = AC.itens.length, d = ev.key === 'ArrowDown' ? 1 : -1;
@@ -897,6 +901,7 @@
         return;
       }
       if (!acAberta()) return;
+      // preventDefault: quem ouve o Enter depois (o "Buscar" do Comprador) vê que já foi usado
       if (ev.key === 'Enter' && AC.ativo >= 0 && AC.itens.length) { ev.preventDefault(); acUsar(AC.ativo); return; }
       if (ev.key === 'Tab') { if (AC.setas && AC.ativo >= 0) acUsar(AC.ativo); else acFechar(); return; }
       if (ev.key === 'Escape') { ev.preventDefault(); ev.stopPropagation(); acFechar(); }
@@ -906,6 +911,160 @@
       W.addEventListener('scroll', function () { if (acAberta()) acPosicionar(); }, true);
       W.addEventListener('resize', function () { if (acAberta()) acPosicionar(); });
     }
+  }
+  // o Código do produto: o catálogo do Power BI (acima)
+  var CFG_PRODUTOS = {
+    id: 'produtos', sel: 'input[data-f="codigo"]', rotulo: 'Produtos do catálogo',
+    vale: function (q) { return !!normCod(q); },
+    pronto: function () { return !!_cat; },
+    carregar: catalogoProdutos,
+    abrindo: function () { return 'Abrindo o catálogo de produtos…'; },
+    falhou: function (e) { return '<b>Não consegui abrir o catálogo de produtos</b>' + esc((e && e.message) || String(e)) + '<br>O código segue sendo conferido no BI ao digitar.'; },
+    buscar: function (q) { return buscarNoCatalogo(_cat, q, CAT_MAX); },
+    vazio: function (q) { return '<b>Nenhum produto do catálogo com “' + esc(q.trim()) + '”</b>Confira o código — ou digite parte do nome do produto.'; },
+    item: function (p, q) {
+      var porNome = p.c.indexOf(normCod(q)) < 0 && p.k.indexOf(semSep(normCod(q))) < 0;
+      return '<b>' + (porNome ? esc(p.c) : marcar(p.c, q, false)) + '</b>' +
+        '<small title="' + esc(p.n) + '">' + (porNome ? marcar(p.n, q, true) : esc(p.n || '—')) + '</small>';
+    },
+    // escrever o código e disparar o 'input' da tela (confere, descrição, estoque)
+    usar: function (p, a) { a.value = p.c; a.dispatchEvent(new Event('input', { bubbles: true })); }
+  };
+  function autocompletarCodigos(raiz, seletor) {
+    autocompletar(raiz, seletor && seletor !== CFG_PRODUTOS.sel ? Object.assign({}, CFG_PRODUTOS, { id: 'produtos:' + seletor, sel: seletor }) : CFG_PRODUTOS);
+  }
+
+  /* ── o AUTOCOMPLETE do Comprador (27/11/2026) ──────────────────
+     Pedido do usuário: no Agente de Cotações, o comprador também PELO NOME
+     do cliente — digitar e aparecerem as opções, CÓDIGO e NOME, como no
+     Código do produto — e o mesmo no CNPJ e no Código do cliente. A lista é
+     o cadastro do Dynamics (/api/cot-casos?clientesLista=1: a base da
+     Carteira de Clientes, só quem tem código no ERP, um item por código),
+     carregada UMA vez, no primeiro foco num desses campos, e guardada na aba
+     (sessionStorage, 6 h). Instância fria sem a carteira montada responde
+     { carregando }: pergunta de novo a cada 4 s (até ~2 min). Casa:
+     CNPJ pelos dígitos (do começo; a partir de 4, por dentro); código como o
+     do produto (começo, sem - . /, por dentro e, com 3 letras, pelo nome);
+     nome pelo começo e pelas palavras (razão social e fantasia), e também
+     código e CNPJ. O cadastro com a MSB vem antes. Usar = a tela decide
+     (o Agente preenche código, CNPJ e nome e busca o resto no Dynamics). */
+  var CLI_CHAVE = 'cot-clientes-erp-v1', CLI_TTL = 6 * 3600e3, CLI_MAX = 10, CLI_ESPERA = 4000, CLI_TENTATIVAS = 30;
+  var _cli = null, _cliP = null;
+  var COLADOR = W.Intl && W.Intl.Collator ? new W.Intl.Collator('pt-BR') : null;
+  function montarClientes(rows) {
+    return (rows || []).map(function (r) {
+      var c = String(r[0] == null ? '' : r[0]).trim().toUpperCase(), n = String(r[1] || ''), f = String(r[4] || '');
+      return { c: c, n: n, d: digitos(r[2]), m: r[3] ? 1 : 0, f: f, k: semSep(c), nn: norm(n + (f ? ' ' + f : '')).replace(/\s+/g, ' ') };
+    }).filter(function (p) { return p.c; });
+  }
+  function clientesGuardados() {
+    try {
+      var o = JSON.parse(W.sessionStorage.getItem(CLI_CHAVE) || 'null');
+      return o && o.em && Date.now() - o.em < CLI_TTL && o.l && o.l.length ? o.l : null;
+    } catch (e) { return null; }
+  }
+  // Promise da lista [{ c, n, d, m, f, k, nn }] (a mesma promessa enquanto carrega)
+  function clientesErp() {
+    if (_cli) return Promise.resolve(_cli);
+    if (_cliP) return _cliP;
+    var g = clientesGuardados();
+    if (g) { _cli = montarClientes(g); return Promise.resolve(_cli); }
+    var n = 0;
+    var pedir = function () {
+      return api('cot-casos?clientesLista=1').then(function (j) {
+        if (j && j.carregando) {
+          if (++n >= CLI_TENTATIVAS) throw new Error('o cadastro de clientes ainda está carregando no servidor — tente de novo em instantes');
+          return new Promise(function (ok) { setTimeout(ok, CLI_ESPERA); }).then(pedir);
+        }
+        if (!j || j.erro || !(j.clientes || []).length) throw new Error((j && j.erro) || 'a lista de clientes veio vazia');
+        return j.clientes;
+      });
+    };
+    _cliP = pedir().then(function (rows) {
+      _cli = montarClientes(rows); _cliP = null;
+      try { W.sessionStorage.setItem(CLI_CHAVE, JSON.stringify({ em: Date.now(), l: rows })); } catch (e) {}
+      return _cli;
+    }, function (e) { _cliP = null; throw e; });
+    return _cliP;
+  }
+  // de qual campo é a busca: 'nome' | 'cnpj' | 'codigo'
+  function campoCli(a) {
+    var k = (a && a.getAttribute && a.getAttribute('data-k')) || '';
+    return k === 'cliente.cnpj' ? 'cnpj' : k === 'cliente.codigo' ? 'codigo' : 'nome';
+  }
+  function chaveCli(q) { return String(q == null ? '' : q).trim().toUpperCase().replace(/\s+/g, ''); }
+  function textoCli(q) { return norm(q).replace(/\s+/g, ' ').trim(); }
+  // as sugestões para o que foi digitado no campo: { l: até max, n: quantas casaram }
+  function buscarClientes(lista, q, campo, max) {
+    var k = chaveCli(q), ks = semSep(k), dg = digitos(q), qn = textoCli(q);
+    var pal = qn.split(' ').filter(Boolean), r = [];
+    var palavras = function (p) { return pal.length && pal.every(function (w) { return p.nn.indexOf(w) >= 0; }); };
+    (lista || []).forEach(function (p) {
+      var rk;
+      if (campo === 'cnpj') {
+        if (!dg || !p.d) return;
+        if (p.d.indexOf(dg) === 0) rk = p.d === dg ? 0 : 1;
+        else if (dg.length >= 4 && p.d.indexOf(dg) > 0) rk = 3;
+        else return;
+      } else if (campo === 'codigo') {
+        if (!k) return;
+        if (p.c.indexOf(k) === 0) rk = p.c === k ? 0 : 1;
+        else if (ks && p.k.indexOf(ks) === 0) rk = p.k === ks ? 0 : 2;
+        else if (k.length >= 2 && p.c.indexOf(k) > 0) rk = 3;
+        else if (qn.length >= 3 && palavras(p)) rk = 4;
+        else return;
+      } else {
+        if (!qn) return;
+        if (p.nn.indexOf(qn) === 0) rk = textoCli(p.n) === qn ? 0 : 1;
+        else if (palavras(p)) rk = 2;
+        else if (k.length >= 2 && p.c.indexOf(k) === 0) rk = 3;
+        else if (dg.length >= 4 && p.d.indexOf(dg) === 0) rk = 3;
+        else return;
+      }
+      r.push({ rk: rk, p: p });
+    });
+    r.sort(function (a, b) {
+      return a.rk - b.rk || b.p.m - a.p.m || (COLADOR ? COLADOR.compare(a.p.n, b.p.n) : a.p.n < b.p.n ? -1 : a.p.n > b.p.n ? 1 : 0) || (a.p.c < b.p.c ? -1 : a.p.c > b.p.c ? 1 : 0);
+    });
+    return { l: r.slice(0, max || CLI_MAX).map(function (x) { return x.p; }), n: r.length };
+  }
+  // o CNPJ formatado com os dígitos digitados marcados
+  function marcarDoc(d, dg) {
+    var fmt = formatar('cnpj', d), i = dg ? d.indexOf(dg) : -1;
+    if (i < 0) return esc(fmt);
+    var pos = [];
+    for (var j = 0; j < fmt.length; j++) if (/\d/.test(fmt.charAt(j))) pos.push(j);
+    if (pos.length !== d.length) return esc(fmt);
+    var a = pos[i], b = pos[i + dg.length - 1] + 1;
+    return esc(fmt.slice(0, a)) + '<mark>' + esc(fmt.slice(a, b)) + '</mark>' + esc(fmt.slice(b));
+  }
+  // liga o autocomplete ao Nome, ao CNPJ e ao Código do cliente dentro de `raiz`;
+  // usar(cliente, input) — cliente = { codigo, nome, cnpj (dígitos), fantasia, msb }
+  function autocompletarClientes(raiz, usar) {
+    autocompletar(raiz, {
+      id: 'clientes', sel: 'input[data-k="cliente.nome"], input[data-k="cliente.cnpj"], input[data-k="cliente.codigo"]',
+      rotulo: 'Clientes do Dynamics', largura: 520,
+      vale: function (q, a) { var c = campoCli(a); return c === 'cnpj' ? digitos(q).length >= 2 : c === 'codigo' ? !!chaveCli(q) : textoCli(q).length >= 2; },
+      pronto: function () { return !!_cli; },
+      carregar: clientesErp,
+      abrindo: function () { return 'Abrindo o cadastro de clientes do Dynamics…'; },
+      falhou: function (e) { return '<b>Não consegui abrir a lista de clientes</b>' + esc((e && e.message) || String(e)) + '<br>Dá para buscar pelo CNPJ ou pelo código no "Buscar".'; },
+      buscar: function (q, a) { return buscarClientes(_cli, q, campoCli(a), CLI_MAX); },
+      vazio: function (q, a) {
+        var c = campoCli(a);
+        return '<b>Nenhum cliente do Dynamics com “' + esc(q.trim()) + '”</b>' + (c === 'cnpj' ? 'Confira o CNPJ — se for cliente novo, termine de digitar e o portal confere no Dynamics.'
+          : c === 'codigo' ? 'Confira o código — ou digite parte do nome do cliente.' : 'Tente outra parte do nome — ou busque pelo CNPJ.');
+      },
+      item: function (p, q, a) {
+        var c = campoCli(a), dg = digitos(q);
+        var porCod = c === 'codigo' && p.c.indexOf(chaveCli(q)) >= 0;
+        var docMarca = c === 'cnpj' || (c === 'nome' && dg.length >= 4) ? dg : '';
+        return '<b>' + (porCod || (c === 'nome' && chaveCli(q).length >= 2 && p.c.indexOf(chaveCli(q)) === 0) ? marcar(p.c, q, false) : esc(p.c)) + '</b>' +
+          '<small title="' + esc(p.n + (p.f ? ' (' + p.f + ')' : '')) + '">' + (c === 'cnpj' || porCod ? esc(p.n || '—') : marcar(p.n || '—', q, true)) + '</small>' +
+          '<em>' + (p.d ? marcarDoc(p.d, docMarca) : 'sem CNPJ') + '</em>';
+      },
+      usar: function (p, a) { usar({ codigo: p.c, nome: p.n, cnpj: p.d, fantasia: p.f, msb: !!p.m }, a); }
+    });
   }
   /* ── o preço de referência: a MÉDIA DE FATURAMENTO do item no cliente ──
      23/10/2026 (pedido do usuário): na hora de digitar o preço da cotação, o
@@ -1619,6 +1778,7 @@
     hojeIso: hojeIso, venceu: venceu,
     normCod: normCod, validarCodigos: validarCodigos, produtoDoCodigo: produtoDoCodigo, codigosNaDescricao: codigosNaDescricao,
     catalogoProdutos: catalogoProdutos, buscarNoCatalogo: buscarNoCatalogo, autocompletarCodigos: autocompletarCodigos,
+    clientesErp: clientesErp, buscarClientes: buscarClientes, autocompletarClientes: autocompletarClientes,
     faturamentoDoCliente: faturamentoDoCliente, tabelaDePrecos: tabelaDePrecos, acimaDasReferencias: acimaDasReferencias, textoAcima: textoAcima, refsPreco: refsPreco, MESES_FAT: MESES_FAT,
     conferirItens: conferirItens, itensComCodigoRuim: itensComCodigoRuim, statusCodigo: statusCodigo,
     produtosSf: produtosSf, descricaoSf: descricaoSf, sfMotivo: sfMotivo, completarDoSf: completarDoSf, dicaSf: dicaSf,

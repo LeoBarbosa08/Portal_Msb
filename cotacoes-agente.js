@@ -400,7 +400,8 @@
     if (!tem(dt.cotacao)) f.push(['Data da cotação', el('datas.cotacao')]);
     if (!tem(dt.validade)) f.push(['Data de vencimento', el('datas.validade')]);
     var temId = String(cli.cnpj || '').replace(/\D/g, '').length >= 11 || tem(cli.codigo);
-    if (!temId) f.push(['o CNPJ ou o código do cliente', el(S.modoCli === 'codigo' ? 'cliente.codigo' : 'cliente.cnpj')]);
+    if (!temId) f.push(S.modoCli === 'nome' ? ['o cliente — escolha na lista pelo nome (ou informe o CNPJ ou o código)', el('cliente.nome')]
+      : ['o CNPJ ou o código do cliente', el(S.modoCli === 'codigo' ? 'cliente.codigo' : 'cliente.cnpj')]);
     // 25/11/2026: da lista do PI (a antiga, digitada, não passa)
     if (!tem(co.pagamento) || (C.COND_PAGAMENTO.length && !C.naListaPag(co.pagamento))) f.push(['Condição de pagamento (da lista do PI)', el('condicoes.pagamento')]);
     if (!tem(co.frete) || (C.FRETES.length && !C.naListaFrete(co.frete))) f.push(['Frete (da lista do PI)', el('condicoes.frete')]);
@@ -550,12 +551,19 @@
      código, CNPJ, endereço, grupo, condição de pagamento, BLOQUEADO). O CLIENTE
      NOVO (23/10/2026) saiu em 25/11/2026 (pedido do usuário). Pelo CNPJ, digitar já consulta e completa só o
      que está VAZIO (o que veio do PDF fica); o botão "Buscar" preenche com o
-     cadastro (campos marcados "Dynamics"). O servidor completa de novo ao criar. */
-  var MODOS_CLI = [['cnpj', 'Pelo CNPJ'], ['codigo', 'Pelo código do cliente']];
+     cadastro (campos marcados "Dynamics"). O servidor completa de novo ao criar.
+     27/11/2026 (pedido do usuário): o 3º jeito, PELO NOME do cliente, e nos
+     três campos (nome, CNPJ e código) a LISTA enquanto digita — CÓDIGO, NOME
+     e CNPJ do cadastro do Dynamics, como no Código do produto
+     (COT.autocompletarClientes). Escolher preenche os três e busca o resto
+     pelo código (usarCliente). */
+  var MODOS_CLI = [['cnpj', 'Pelo CNPJ'], ['codigo', 'Pelo código do cliente'], ['nome', 'Pelo nome do cliente']];
   var DICA_MODO = {
-    cnpj: 'Digite o CNPJ e clique em Buscar: razão social, código e endereço vêm do cadastro do Dynamics.',
-    codigo: 'Digite o código do cliente no ERP (ex.: C004512) e clique em Buscar: CNPJ, razão social e endereço vêm do Dynamics.'
+    cnpj: 'Digite o CNPJ e escolha na lista (ou clique em Buscar): razão social, código e endereço vêm do cadastro do Dynamics.',
+    codigo: 'Digite o código do cliente no ERP (ex.: C004512) e escolha na lista (ou clique em Buscar): CNPJ, razão social e endereço vêm do Dynamics.',
+    nome: 'Digite parte do nome do cliente e escolha na lista: código, CNPJ e endereço vêm do cadastro do Dynamics.'
   };
+  function modoCli(v) { return v === 'codigo' || v === 'nome' ? v : 'cnpj'; }
   function htmlModoCli() {
     return '<div class="cot-modo-cli" role="radiogroup" aria-label="Como preencher o comprador">' + MODOS_CLI.map(function (m) {
       return '<button type="button" role="radio" aria-checked="' + (S.modoCli === m[0]) + '" class="' + (S.modoCli === m[0] ? 'on' : '') + '" data-modo-cli="' + m[0] + '">' + esc(m[1]) + '</button>';
@@ -599,7 +607,29 @@
       pintarErp();
     }).catch(function (e) { if (codigoCli() === cod) { S.erp = { estado: 'erro', msg: e.message, por: 'codigo' }; pintarErp(); } });
   }
-  var buscarErpDepois = C.debounce(buscarErp, 700);
+  // o "digitando" do CNPJ (700 ms); escolher um cliente na lista cancela o que estava para sair
+  var _erpT = 0;
+  function buscarErpDepois() { clearTimeout(_erpT); _erpT = setTimeout(function () { buscarErp(); }, 700); }
+  // o cliente escolhido na LISTA (nome, CNPJ ou código — 27/11/2026): código,
+  // CNPJ e razão social na hora; o resto do cadastro (endereço, contato,
+  // condição de pagamento, bloqueio) vem do "Buscar" pelo código, que preenche.
+  // Cliente sem CNPJ no cadastro: o CNPJ que estava (de outro cliente) sai.
+  function usarCliente(c) {
+    if (!S.dados) return;
+    clearTimeout(_erpT);
+    var cli = S.dados.cliente;
+    var pon = function (k, campoK, val) {
+      cli[k] = val;
+      var inp = D.querySelector('#cot-corpo [data-k="' + campoK + '"]'); if (!inp) return;
+      inp.value = val; erroNoCampo(inp, '');
+      var w = inp.closest('.cs-campo'); if (w) w.classList.remove('falta', 'erp');
+    };
+    pon('codigo', 'cliente.codigo', c.codigo);
+    pon('cnpj', 'cliente.cnpj', c.cnpj ? C.formatar('cnpj', c.cnpj) : '');
+    if (c.nome) pon('nome', 'cliente.nome', c.nome);
+    referencias();
+    buscarPorCodigo();
+  }
   // sobre = o "Buscar": o cadastro do Dynamics PREENCHE (troca o que estiver lá);
   // sem ele (digitando o CNPJ) só completa o vazio. Contato: só se estiver vazio.
   function completarDoErp(v, sobre) {
@@ -645,14 +675,21 @@
   }
   function pintarErp() { var b = $('cot-erp-box'); if (b) b.innerHTML = htmlErp(); previaDepois(); }
 
-  // CNPJ e código do cliente: o do modo vem primeiro, com o "Buscar"
+  // CNPJ, código e nome do cliente: o do modo vem primeiro, com o "Buscar"
+  // (pelo nome não há "Buscar": o Dynamics não procura por pedaço — é a lista)
   function htmlCamposId() {
     var m = S.modoCli;
+    if (m === 'nome') {
+      return campo('Cliente (razão social)', 'cliente.nome', { cls: 's4', req: true, ph: 'digite parte do nome e escolha na lista' }) +
+        campo('CNPJ', 'cliente.cnpj', { cls: 's2', mask: 'cnpj', ph: '00.000.000/0000-00' }) +
+        campo('Código do cliente (ERP)', 'cliente.codigo', { cls: 's2', ph: 'ex.: C004512', max: 30 });
+    }
+    var nome = campo('Cliente (razão social)', 'cliente.nome', { cls: 's4', obrig: true });
     // o CNPJ com o "Buscar" do lado precisa de 3/4 da linha (o código cabe em 1/4)
     // 29/10/2026: obrigatório o CNPJ ou o código (o asterisco no do modo)
     var cnpj = campo('CNPJ', 'cliente.cnpj', { cls: m === 'cnpj' ? 's3 cot-busca' : 's2', mask: 'cnpj', ph: '00.000.000/0000-00', req: m === 'cnpj', depois: m === 'cnpj' ? btnBuscarCli('cnpj') : '' });
     var cod = campo(m === 'cnpj' ? 'Código (ERP)' : 'Código do cliente (ERP)', 'cliente.codigo', { cls: m === 'codigo' ? 's2 cot-busca' : m === 'cnpj' ? 'cot-cod' : 's2', ph: 'ex.: C004512', max: 30, req: m === 'codigo', depois: m === 'codigo' ? btnBuscarCli('codigo') : '' });
-    return m === 'codigo' ? cod + cnpj : cnpj + cod;
+    return (m === 'codigo' ? cod + cnpj : cnpj + cod) + nome;
   }
   // o PORTAL (21/10/2026, pedido do usuário: "possibilite alterar o portal
   // quando o operador quiser"): uma lista com os portais das Configurações —
@@ -708,7 +745,6 @@
         '</div></div>' +
         '<div class="cot-sec"><h5>' + IC.building + 'Comprador</h5>' + htmlModoCli() + '<div id="cot-erp-box">' + htmlErp() + '</div><div class="cot-grade">' +
           htmlCamposId() +
-          campo('Cliente (razão social)', 'cliente.nome', { cls: 's4', obrig: true }) +
           campo('Endereço', 'cliente.endereco', { cls: 's4', ph: 'rua, número, bairro' }) +
           campo('CEP', 'cliente.cep', { mask: 'cep', ph: '00000-000', aviso: true }) +
           campo('Cidade', 'cliente.cidade', { cls: 's2' }) +
@@ -1058,6 +1094,8 @@
     // códigos do catálogo aparecem enquanto digita (COT.autocompletarCodigos),
     // o mesmo do Portal Biomedical
     C.autocompletarCodigos(corpo);
+    // 27/11/2026: o mesmo no Comprador — nome, CNPJ e código do cliente (o cadastro do Dynamics)
+    C.autocompletarClientes(corpo, usarCliente);
     corpo.addEventListener('change', function (ev) {
       var t = ev.target;
       if (t.id === 'cot-forcar') { S.forcar = t.checked; msg(''); return; }
@@ -1176,10 +1214,10 @@
       if (t.hasAttribute('data-tirar-extra')) { ev.preventDefault(); S.prop.anexos.splice(Number(t.getAttribute('data-tirar-extra')), 1); pintarExtras(); return; }
       if (t.id === 'cot-erp-de-novo') { buscarCli((S.erp && S.erp.por) || S.modoCli); return; }
       if (t.hasAttribute('data-modo-cli')) {
-        S.modoCli = t.getAttribute('data-modo-cli') === 'codigo' ? 'codigo' : 'cnpj';
+        S.modoCli = modoCli(t.getAttribute('data-modo-cli'));
         if (S.erp && S.erp.estado !== 'ok') S.erp = null;
         render();
-        var alvo = D.querySelector(S.modoCli === 'codigo' ? '[data-k="cliente.codigo"]' : '[data-k="cliente.cnpj"]'); if (alvo) alvo.focus();
+        var alvo = D.querySelector('#cot-corpo [data-k="cliente.' + S.modoCli + '"]'); if (alvo) alvo.focus();
         return;
       }
       if (t.hasAttribute('data-buscar-cli')) { buscarCli(t.getAttribute('data-buscar-cli')); return; }
@@ -1225,6 +1263,8 @@
     ['input', 'change', 'click'].forEach(function (tipo) { corpo.addEventListener(tipo, function () { if (S.passo === 'conf') previaDepois(); }); });
     window.addEventListener('resize', C.debounce(function () { if (S.passo === 'conf' && PV.doc && !PV.oculta) desenharPrevia().catch(function () {}); }, 250));
     corpo.addEventListener('keydown', function (ev) {
+      // o Enter que escolheu um cliente da lista (o autocomplete ouve antes) não busca de novo
+      if (ev.defaultPrevented) return;
       if (ev.key === 'Enter' && ev.target.closest && ev.target.closest('.cot-busca')) {
         var k = ev.target.getAttribute('data-k');
         if (k === 'cliente.codigo' || k === 'cliente.cnpj') { ev.preventDefault(); buscarCli(k === 'cliente.codigo' ? 'codigo' : 'cnpj'); }
