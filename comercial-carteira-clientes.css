@@ -129,7 +129,8 @@ html[data-tema="escuro"] .cc-espelho svg{color:#84C2D4;}
 .cc-tb .al{display:flex;gap:4px;flex-wrap:wrap;margin-top:5px;}
 .cc-vz{padding:28px;text-align:center;color:#97A8AE;}
 .cc-pag{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;margin-top:12px;font-size:12px;font-weight:600;color:#5F727A;}
-.cc-pag .bts{display:flex;gap:6px;}
+.cc-pag .bts{display:flex;align-items:center;gap:6px;flex-wrap:wrap;}
+.cc-pag .bts .pg{padding:0 6px;white-space:nowrap;color:#10323E;}
 
 /* ---- selos ---- */
 .cc-sit{display:inline-flex;align-items:center;gap:6px;padding:3px 9px;border-radius:999px;font-size:11px;font-weight:800;white-space:nowrap;}

@@ -64,7 +64,9 @@
   // a área da Carteira (a página que não tem .cc-raiz é a de antes: vale a página toda)
   var ESCOPO = document.querySelector('.cc-raiz') ? '.cc-raiz, #cc-ficha, #cc-ov, #cc-nova, #cc-toast' : null;
   var API = '/api/carteira-clientes';
-  var POR_PAG = 50;
+  var POR_PAG = 25;   // 25 por página (27/11/2026): a lista desenha menos e a troca de página é leve
+  // um comparador só para a ordenação (o localeCompare com 'pt-BR' monta um a cada chamada: pesado em 12 mil clientes)
+  var COLL = new Intl.Collator('pt-BR');
   var COR = { erp: '#22A061', ambos: '#22A061', d365: '#287A8E', sf: '#D9822B' };
   var IC_ERP = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>';
   var IC_MAIS = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>';
@@ -467,7 +469,7 @@
         x.n++; x[ladoSit(c.sit)]++;
       });
     });
-    var arr = Array.from(g.values()).sort(function (a, b) { return b.n - a.n || String(a.v).localeCompare(String(b.v), 'pt-BR'); });
+    var arr = Array.from(g.values()).sort(function (a, b) { return b.n - a.n || COLL.compare(String(a.v), String(b.v)); });
     var max = arr.length ? arr[0].n : 1;
     var desc = d.soAlertas ? '<div class="cc-g-desc">O que o cruzamento achou de diferente entre os dois cadastros — passe o mouse para ver o que é cada uma.</div>' : '';
     $('cc-grupos').innerHTML = desc + (arr.length ? arr.slice(0, 300).map(function (x) {
@@ -490,16 +492,23 @@
     { c: 'dono', rot: 'CRM', x: true },
     { c: 'sit', rot: 'Cadastro no ERP' }
   ];
+  // a lista ordenada fica guardada: trocar de página não reordena tudo de novo
+  // (o pintar() troca o ST.filtrados a cada filtro/busca, e aí reordena)
+  var _ordMemo = null;
   function ordenar(arr) {
     var o = ST.ord, ordSit = { ambos: 0, d365: 0, sf: 1 }, B = ST.qB;
-    return arr.slice().sort(function (a, b) {
+    var m = _ordMemo;
+    if (m && m.arr === arr && m.c === o.c && m.d === o.d && m.B === B) return m.out;
+    var out = arr.slice().sort(function (a, b) {
       // com busca: primeiro quem casou pelo nome/documento/código, depois pelo resto
       if (B && (a._nv || 0) !== (b._nv || 0)) return (a._nv || 0) - (b._nv || 0);
       var va = o.c === 'sit' ? ordSit[a.sit] : a[o.c] || '', vb = o.c === 'sit' ? ordSit[b.sit] : b[o.c] || '';
-      if (va === vb) return a.nome.localeCompare(b.nome, 'pt-BR');
+      if (va === vb) return COLL.compare(a.nome, b.nome);
       if (va === '') return 1; if (vb === '') return -1;
-      return (typeof va === 'number' ? va - vb : String(va).localeCompare(String(vb), 'pt-BR')) * o.d;
+      return (typeof va === 'number' ? va - vb : COLL.compare(String(va), String(vb))) * o.d;
     });
+    _ordMemo = { arr: arr, c: o.c, d: o.d, B: B, out: out };
+    return out;
   }
   function pintarLista() {
     $('cc-head').innerHTML = '<tr>' + COLS.map(function (k) {
@@ -539,10 +548,16 @@
           '<td>' + selo(c.sit) + (c.sit === 'sf' && ST.erpPed && ST.erpPed[c.k] ? '<span class="sub erp-ped" title="Cadastro no ERP pedido por ' + esc(ST.erpPed[c.k].por || '') + '">ERP pedido em ' + esc(fDiaMes(ST.erpPed[c.k].em)) + '</span>' : '') + '</td></tr>';
       }).join('');
     }
-    var fim = Math.min(ini + POR_PAG, tot);
+    var fim = Math.min(ini + POR_PAG, tot), nPag = Math.ceil(tot / POR_PAG);
+    var bt = function (p, rot, tit, ok) {
+      return '<button type="button" class="cc-btn" data-pag="' + p + '" title="' + tit + '"' + (ok ? '' : ' disabled') + '>' + rot + '</button>';
+    };
     $('cc-pag').innerHTML = tot > POR_PAG ? '<span>' + fINT(ini + 1) + '–' + fINT(fim) + ' de ' + fINT(tot) + '</span><span class="bts">' +
-      '<button type="button" class="cc-btn" data-pag="-1"' + (ST.pag ? '' : ' disabled') + '>‹ Anteriores</button>' +
-      '<button type="button" class="cc-btn" data-pag="1"' + (fim < tot ? '' : ' disabled') + '>Próximos ›</button></span>' : '';
+      bt(0, '«', 'Primeira página', ST.pag > 0) +
+      bt(ST.pag - 1, '‹ Anterior', 'Página anterior', ST.pag > 0) +
+      '<span class="pg">Página ' + fINT(ST.pag + 1) + ' de ' + fINT(nPag) + '</span>' +
+      bt(ST.pag + 1, 'Próxima ›', 'Próxima página', fim < tot) +
+      bt(nPag - 1, '»', 'Última página', fim < tot) + '</span>' : '';
   }
 
   // onde a busca achou quem não casou pelo nome (e-mail, telefone, contato…)
@@ -2045,7 +2060,7 @@
         var c = x.getAttribute('data-ord');
         ST.ord = { c: c, d: ST.ord.c === c ? -ST.ord.d : 1 }; pintarLista(); return;
       }
-      if ((x = t.closest('[data-pag]'))) { ST.pag = Math.max(0, ST.pag + Number(x.getAttribute('data-pag'))); pintarLista(); $('cc-lista').scrollIntoView({ block: 'start', behavior: 'smooth' }); return; }
+      if ((x = t.closest('[data-pag]'))) { ST.pag = Math.max(0, Number(x.getAttribute('data-pag')) || 0); pintarLista(); $('cc-lista').scrollIntoView({ block: 'start', behavior: 'smooth' }); return; }
       if ((x = t.closest('[data-nova]'))) { ncAbrir({ doc: x.getAttribute('data-nova'), preencher: true }); return; }
       if (t.closest('#cc-nova-btn')) { ncAbrir({}); return; }
       if ((x = t.closest('[data-ficha]'))) { abrirFicha(x.getAttribute('data-ficha')); return; }
