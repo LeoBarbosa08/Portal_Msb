@@ -926,6 +926,10 @@ if (!window._bmPerfilSheetLoaded && !window._bmPerfilSheetInjected) {
         // 05/11/26 (pedido do dono): SEM submódulo — o CRM é um item só e abre
         // direto o Funil de Oportunidade (aceso em todas as páginas dele).
         {id:'comercial-cot-funil', label:'CRM',                  href:'comercial-cot-funil.html',   icon:I.kanban, also:['comercial-crm','comercial-cot-analitico','comercial-cot-casos','comercial-cot-nova']},
+        // 27/11/26 (pedido do dono): a Carteira de Clientes do portal completo
+        // (Dynamics × CRM pelo CNPJ), aqui SÓ COMO ESPELHO — consulta, sem criar
+        // conta nem escrever nada (/api/carteira-clientes só lê).
+        {id:'comercial-carteira-clientes', label:'Carteira de Clientes', href:'comercial-carteira-clientes.html', icon:I.users},
         {id:'comercial-tabela-precos', label:'Tabela de Preços', href:'comercial-tabela-precos.html', icon:I.dollar},
       ],
       auto:[],

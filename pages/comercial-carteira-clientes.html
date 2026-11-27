@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Carteira de Clientes · Comercial · MSB</title>
+  <link rel="stylesheet" href="../styles.css?v=15">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="../dash-v2.css?v=3">
+  <script src="https://unpkg.com/@azure/msal-browser@2.38.3/lib/msal-browser.min.js"></script>
+  <!-- Layout v3 (Claude Design · animado): fonte + camada visual + motor de animações -->
+  <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300..900&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../portal-v3.css?v=2">
+  <script src="../portal-motion.js?v=3" defer></script>
+  <!-- Tema claro/escuro (menu do avatar): marca o <html> antes de pintar + camada escura -->
+  <script>try{if(localStorage.getItem('bm-tema')==='escuro')document.documentElement.setAttribute('data-tema','escuro')}catch(e){}</script>
+  <link rel="stylesheet" href="../portal-tema.css?v=1">
+  <script src="../portal-tema.js?v=1" defer></script>
+  <!-- Celular (varredura 15/10/26): só vale em tela < 768px; no computador não se aplica -->
+  <link rel="stylesheet" href="../portal-mobile.css?v=1" media="(max-width: 767.98px)">
+  <script src="../portal-mobile.js?v=1" defer></script>
+  <link rel="stylesheet" href="../comercial-carteira-clientes.css?v=1">
+</head>
+<!-- CARTEIRA DE CLIENTES · ESPELHO (27/11/2026) — trazida do portal completo
+     (pages/comercial-carteira-clientes.html e o espelho pages/vendedor-carteira-clientes.html
+     de lá) a pedido do dono: "a carteira de clientes toda, só que eles não podem criar
+     conta: é apenas um espelho". RECORTE MSB: SÓ CONSULTA — sem "Nova conta", criar conta
+     no CRM, pedido de cadastro no ERP, novo contato, anexar arquivo e incluir descrição;
+     o data-cc-espelho abaixo e o comercial-carteira-clientes.js (ESPELHO fixo) tiram tudo
+     isso, e o /api/carteira-clientes daqui só aceita GET de leitura. A página só aponta
+     para o que existe no portal da MSB (sem Dossiê, sem visão 360, sem link ao Salesforce). -->
+<body class="dept" data-cc-espelho>
+
+  <header class="site-header">
+    <div class="container">
+      <a href="../index.html" class="brand" aria-label="Portal MSB — página inicial">
+        <img class="brand-logo" src="/icons/logo-msb.png" alt="MSB · Medical System do Brasil" onerror="this.dataset.failed='true'">
+        <span class="brand-fallback">MSB</span>
+      </a>
+      <nav class="header-nav">
+        <a href="../index.html">Início</a>
+        <a href="../index.html#areas">Áreas</a>
+        <a href="../index.html#sistemas">Sistemas</a>
+        <a href="../index.html#avisos">Avisos</a>
+        <a href="../index.html#contato">Contato</a>
+      </nav>
+    </div>
+  </header>
+
+  <div class="area-body">
+    <div class="container">
+      <div class="area-grid">
+
+        <aside class="area-sidebar">
+          <div class="sb-card">
+            <div class="sb-head">
+              <span class="sb-ic"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="8.5" cy="7" r="4"/><path d="M20 8v6"/><path d="M23 11h-6"/></svg></span>
+              <div><div class="sb-tt">Comercial</div><div class="sb-st">Departamento</div></div>
+            </div>
+            <nav></nav>
+          </div>
+          <a href="../index.html" class="sb-back"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></svg>Voltar ao Portal</a>
+        </aside>
+
+        <div class="area-main">
+
+          <!-- ═══════════ CARTEIRA DE CLIENTES (espelho, só consulta) — Dynamics × CRM pelo CNPJ ═══════════ -->
+          <div class="fx-wrap cc-raiz">
+
+            <div class="fx-head">
+              <div>
+                <div class="fx-bc"><a href="comercial.html">Comercial</a><span>›</span><span>Carteira de Clientes</span></div>
+                <h1 class="fx-title" data-recente="Comercial · Carteira de Clientes">Carteira de Clientes</h1>
+              </div>
+              <div class="fx-head-right">
+                <span class="cc-espelho" title="Espelho da Carteira de Clientes: aqui só se consulta — conta nova, contato, arquivo, descrição e pedido de cadastro no ERP não são feitos por este portal"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>Só consulta</span>
+                <span class="fx-dw" id="cc-dw" hidden title="Quando as duas bases foram lidas"><i></i><span id="cc-dw-txt"></span></span>
+                <button type="button" class="cc-btn" id="cc-atualizar" disabled title="Reler o Dynamics e o CRM agora">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>Atualizar</button>
+              </div>
+            </div>
+
+            <div class="cc-banner" id="cc-banner" role="status" hidden></div>
+
+            <div>
+              <div class="cc-busca" id="cc-busca">
+                <svg class="lupa" width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+                <input type="search" id="cc-q" placeholder="Buscar cliente por qualquer dado: nome, CNPJ, código, e-mail, telefone, endereço, contato…" autocomplete="off" spellcheck="false" aria-label="Buscar cliente">
+                <button type="button" class="cc-limpa" id="cc-limpa" aria-label="Limpar a busca"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+              </div>
+              <div class="cc-dica">Procura em tudo do cliente nos dois sistemas: razão social, fantasia, CNPJ/CPF, códigos (Dynamics, Código ERP, Identificador), e-mail, telefone, CEP, endereço, IE e os contatos e oportunidades do CRM · Enter com o CNPJ completo abre a ficha na hora · atalho: <b>/</b></div>
+            </div>
+
+            <div class="cc-kpis" id="cc-kpis"></div>
+
+            <div class="cc-ativos" id="cc-ativos" hidden></div>
+
+            <div class="cc-grid">
+              <div class="fx-panel">
+                <div class="fx-p-head">
+                  <div>
+                    <div class="fx-p-title">Agrupar por</div>
+                    <div class="fx-p-sub">clique para filtrar a lista · a barra mostra quem tem cadastro no ERP</div>
+                  </div>
+                </div>
+                <div class="cc-seg" id="cc-seg"></div>
+                <div class="cc-leg">
+                  <span><i style="background:#22A061"></i>Com cadastro no ERP</span>
+                  <span><i style="background:#D9822B"></i>Sem cadastro no ERP</span>
+                </div>
+                <div class="cc-grupos" id="cc-grupos"></div>
+              </div>
+
+              <div class="fx-panel" id="cc-lista">
+                <div class="fx-p-head">
+                  <div>
+                    <div class="fx-p-title">Clientes</div>
+                    <div class="fx-p-sub" id="cc-lista-sub">—</div>
+                  </div>
+                  <label class="cc-minha" id="cc-minha" hidden title="Só as contas em que você é o dono no CRM"><input type="checkbox" id="cc-minha-in">Só a minha carteira</label>
+                </div>
+                <div class="cc-tw"><table class="cc-tb"><thead id="cc-head"></thead><tbody id="cc-body"></tbody></table></div>
+                <div class="cc-pag" id="cc-pag"></div>
+              </div>
+            </div>
+
+          </div><!-- /fx-wrap -->
+
+        </div><!-- /area-main -->
+      </div><!-- /area-grid -->
+    </div><!-- /container -->
+  </div><!-- /area-body -->
+
+  <!-- FICHA do cliente (abre por cima, à direita) — só leitura -->
+  <div class="cc-ov" id="cc-ov"></div>
+  <aside class="cc-ficha" id="cc-ficha" role="dialog" aria-modal="true" aria-label="Ficha do cliente" aria-hidden="true">
+    <div class="cc-fh" id="cc-fh"></div>
+    <div class="cc-fb" id="cc-fb"></div>
+  </aside>
+  <div class="cc-toast" id="cc-toast" role="status" aria-live="polite"></div>
+
+  <footer class="site-footer">
+    <div class="container">
+      <div class="bm-footer-bottom">
+        <span>© <span id="year"></span> MSB · Medical System do Brasil · Portal interno</span>
+        <span class="bm-footer-meta">Endourologia · Endovascular · Cardiologia · Cirurgia Cardíaca/Torácica</span>
+      </div>
+    </div>
+  </footer>
+
+  <script src="../script.js?v=12"></script>
+  <script src="../nav-sidebar.js?v=94"></script>
+  <script src="../comercial-carteira-clientes.js?v=1"></script>
+</body>
+</html>

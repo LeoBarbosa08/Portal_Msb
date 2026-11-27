@@ -9,7 +9,7 @@
 if (!window.PORTAL_CATALOGO && !window._bmCatalogoPronto) {
   window._bmCatalogoPronto = new Promise(function (pronto) {
     var s = document.createElement('script');
-    s.src = (location.pathname.indexOf('/pages/') >= 0 ? '../' : '') + 'portal-catalogo.js?v=28';
+    s.src = (location.pathname.indexOf('/pages/') >= 0 ? '../' : '') + 'portal-catalogo.js?v=29';
     s.onload = pronto; s.onerror = pronto;
     (document.head || document.documentElement).appendChild(s);
   });
@@ -258,6 +258,7 @@ document.addEventListener('DOMContentLoaded', () => {
     ['Base de Notas Fiscais','comercial-base-notas-fiscais.html','Comercial','base notas fiscais nf faturamento item nota detalhado exportar excel'],
     ['Análise de Clientes','comercial-clientes.html','Comercial','analise clientes carteira'],
     ['CRM','comercial-cot-funil.html','Comercial','crm venda recorrente funil de oportunidade oportunidades cotacao cotacoes portal de compras bionexo proposta gestao quadro historico'],
+    ['Carteira de Clientes','comercial-carteira-clientes.html','Comercial','carteira de clientes cliente clientes cnpj cadastro dynamics crm salesforce conta contas dono codigo erp ficha contatos filiais consulta'],
     ['Funil de Oportunidades','comercial-funil.html','Comercial','funil pipeline etapas negociacao negociacoes oportunidade oportunidades'],
     ['FCA','comercial-fca.html','Comercial','fca ficha atividade comercial visita'],
     ['Materiais e Recursos','comercial-materiais.html','Comercial','materiais recursos apoio'],

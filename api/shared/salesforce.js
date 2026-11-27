@@ -1,7 +1,7 @@
 // ================================================================
 // api/shared/salesforce.js — helper de acesso ao Salesforce (REST)
 // Autenticação OAuth 2.0 Client Credentials (token em cache) + SOQL.
-// SOMENTE LEITURA. Espelha o shared/d365.js (que lê o Dynamics).
+// SOMENTE LEITURA (SOQL, SOSL e describe). Espelha o shared/d365.js (que lê o Dynamics).
 //
 // DUAS ORGS (28/08/2026). A Biomedical tem mais de uma org e elas NÃO
 // compartilham credencial nem dado:
@@ -97,6 +97,22 @@ function criarOrg(nome, rotulo, prefixo, padroes) {
     return out;
   }
 
+  // SOSL (18/11/2026 — 1º uso: a busca da Carteira de Clientes acha o
+  // cliente por qualquer campo da conta, do contato e da oportunidade).
+  // Devolve os searchRecords (cada um com attributes.type). É LEITURA: na
+  // MSB a Carteira é só um espelho (27/11/2026) — criar/atualizar do portal
+  // completo NÃO vieram.
+  async function search(sosl) {
+    var auth = await getToken();
+    var url = auth.instance + '/services/data/' + APIVER + '/search/?q=' + encodeURIComponent(sosl);
+    var r = await fetch(url, { headers: { Authorization: 'Bearer ' + auth.token, Accept: 'application/json' } });
+    var txt = await r.text();
+    if (!r.ok) throw new Error('SF search (' + rotulo + ') ' + r.status + ': ' + txt.slice(0, 200));
+    var j = JSON.parse(txt);
+    // API antiga devolvia a lista solta; a atual, { searchRecords: [...] }
+    return Array.isArray(j) ? j : (Array.isArray(j.searchRecords) ? j.searchRecords : []);
+  }
+
   // describe de um sobject (lista de campos etc.), com cache por org.
   // Usado p/ auto-descobrir campos customizados (ex.: CRM do médico).
   let _desc = {};
@@ -136,7 +152,7 @@ function criarOrg(nome, rotulo, prefixo, padroes) {
   return {
     nome: nome, rotulo: rotulo, prefixo: prefixo,
     CONFIGURED: CONFIGURED, LOGIN: LOGIN, APIVER: APIVER,
-    getToken: getToken, soql: soql, describe: describe, sobjects: sobjects,
+    getToken: getToken, soql: soql, search: search, describe: describe, sobjects: sobjects,
     soqlStr: soqlStr, digits: digits, pick: pick
   };
 }
@@ -168,7 +184,7 @@ function orgsConfiguradas() {
 module.exports = {
   // superfície ANTIGA (org do CRM) — nada do que já existia muda
   CONFIGURED: CRM.CONFIGURED, LOGIN: CRM.LOGIN, APIVER: CRM.APIVER,
-  getToken: CRM.getToken, soql: CRM.soql, describe: CRM.describe, sobjects: CRM.sobjects,
+  getToken: CRM.getToken, soql: CRM.soql, search: CRM.search, describe: CRM.describe, sobjects: CRM.sobjects,
   soqlStr: soqlStr, digits: digits, pick: pick,
   // multi-org
   org: org, ORGS: ORGS, CRM: CRM, IMPORTACAO: IMPORTACAO, orgsConfiguradas: orgsConfiguradas

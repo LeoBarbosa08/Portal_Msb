@@ -18,7 +18,7 @@ Venda Recorrente".
 
 | Área | Páginas |
 |---|---|
-| Comercial | Visão geral · Sales Report (6 abas) · CRM › Venda Recorrente (Funil, Analítico, Gestão, Quadro, Histórico, Nova oportunidade) · Negociações + Analítico · FCA · Sales Playbook · Materiais · Tabela de Preços |
+| Comercial | Visão geral · Sales Report (6 abas) · CRM › Venda Recorrente (Funil, Analítico, Gestão, Quadro, Histórico, Nova oportunidade) · Carteira de Clientes (espelho, só consulta — 27/11) · Negociações + Analítico · FCA · Sales Playbook · Materiais · Tabela de Preços |
 | Comercial · agentes | Dossiê de Visita · PI · Pedido (liberado para o Comercial em 11/11 — ver "PI · Pedido liberado") (com a aba Fila de aprovação desde 25/11 — ver "CRM · as listas do PI…") · PI · Consignação · PI · Consignação (INCOMPLETO, em testes) · Agente Comercial (o Agente de Cotações virou o "Nova oportunidade" do CRM) |
 | Estoque | Visão geral · Gestão de Estoque (Saldo, Ruptura, Validade Curta, Movimentações) · Gestão de Consignação (Saldo Consignado, Saldo por Nota, Devoluções, Rastreabilidade, GMROI) · Perdas · Consignado |
 | Estoque · agentes | Agente de Estoque |
@@ -29,8 +29,9 @@ Venda Recorrente".
 `directline-token`, `chat`, `transcrever`, `comercial-funil`, `cot-casos`,
 `cot-config`, `cot-ov-retorno`, `fca`, `pedido-extrair`, `pedido-enviar`, `pedido-lotes`,
 `consig-lote`, `consig-faturar`, `consig-processo`, `dossie-cliente`,
-`dossie-ganchos`, `dossie-agenda` (+ `pedido-transportadoras`, de 12/11/2026, e
-`nf-status`, de 18/11/2026 — o Power Automate manda o status das notas).
+`dossie-ganchos`, `dossie-agenda` (+ `pedido-transportadoras`, de 12/11/2026,
+`nf-status`, de 18/11/2026 — o Power Automate manda o status das notas — e
+`carteira-clientes`, de 27/11/2026 — só leitura, ver "Comercial · Carteira de Clientes").
 
 ## O que mudou em relação ao portal completo
 
@@ -205,6 +206,74 @@ e **Analítico por NF** — trazida do portal completo (`origin/master` e6ac11c 
   quem tem o Contábil e, como no completo, o grupo Equipe de compras e estoque -
   Coordenação (`GRUPO_MODULOS`), que vê só a Margem dentro do Contábil.
 - `sw.js` — cache `bm-comest-v116`.
+
+### Comercial · Carteira de Clientes, só como espelho (27/11/2026)
+
+Pedido do dono: "traga a carteira de clientes toda do portal da BIO para a MSB —
+a única diferença é que só pode apontar para coisas que existem no portal da MSB e
+eles não podem criar conta: será apenas um espelho". Trazida do portal completo
+(`origin/master` e6ac11c de `Claude.rep`, 27/11; lá: `docs/carteira-clientes.md`).
+
+A mesma carteira do completo: o cadastro de clientes do **Dynamics** (todas as
+empresas, BIO e MSB) cruzado com as **Contas do Salesforce** (o "CRM" da tela) pelo
+CNPJ, com busca por tudo do cliente, os números, Agrupar por, a lista (com "Só a
+minha carteira") e a ficha inteira — cruzamento, cadastro do ERP ou do CRM,
+descrição, contatos, notas e anexos (os arquivos abrem pelo portal), filiais,
+histórico dos pedidos de cadastro no ERP e Copiar link.
+
+- **Só consulta (`RECORTE MSB`).** Saíram a **Nova conta**, Criar conta no CRM,
+  Pedir cadastro no ERP, Novo contato, Anexar arquivo e Incluir descrição:
+  - tela — `pages/comercial-carteira-clientes.html` é o espelho do completo
+    (`<body data-cc-espelho>`, selo "Só consulta", sem o botão e sem o modal da
+    conta nova) e `comercial-carteira-clientes.js` tem o `ESPELHO` fixo em `true`;
+  - servidor — `api/carteira-clientes` (`function.json` só com GET/OPTIONS) só lê:
+    lista, `fresh=1`, `?ficha=`, `?busca=`, `?arquivo=` e `?diag=1`. POST/PUT/… →
+    405; as leituras que só servem aos formulários de escrita (`?conta`,
+    `?modeloConta`, `?cep`, `?modeloContato`, `?erpConferir`, `?novaConta`) → 403.
+    Os módulos de escrita do completo (`carteira-conta-nova.js`,
+    `carteira-contato-anexo.js`, `carteira-erp.js`, `brasilapi.js`) **não vieram**; o
+    `api/shared/salesforce.js` daqui ganhou só o `search` (SOSL, leitura da busca) e
+    segue sem `criar`/`atualizar`;
+  - o histórico dos pedidos de cadastro no ERP feitos no completo aparece na ficha e
+    na lista ("ERP pedido em…"): `api/shared/carteira-erp-leitura.js` lê o mesmo
+    `erp-pedidos.json`, sem gravar.
+- **Só aponta para o que existe aqui.** A ficha **não** tem o botão do Dossiê de
+  Cliente (a página está oculta na MSB desde o recorte de 20/10), nem a visão 360
+  (o `portal-elo.js` não existe aqui), nem link para o Salesforce (a rota manda
+  `sfInstance: null`). Os links que sobram são o Copiar link (desta página), e-mail/
+  telefone e os arquivos da conta (pelo `/api/carteira-clientes`).
+- **O motor é o do completo, sem mudança** (`api/shared/carteira-clientes.js`): a
+  mesma carteira, o mesmo cruzamento e o mesmo formato do blob. Acesso: área
+  **Comercial** + id token validado (conferidos na própria rota).
+- Registro: `nav-sidebar.js` (`NAV.comercial`, `?v=94` em todas as páginas),
+  `pages/comercial.html` (cartão), `index.html` (cartão do Comercial),
+  `portal-catalogo.js` (`MODULOS` + `MSB_VISIVEIS`, `?v=29`), `script.js` (guia,
+  `?v=12` em todas as páginas). `sw.js` — cache `bm-comest-v117`.
+- Cores: `scripts/msb-cores.js` na página, no `.js` e no `.css` (só nesses três, que
+  chegaram azuis).
+
+**Para colocar no ar (Azure, na Static Web App da MSB):** a rota usa as variáveis
+que já existem (`D365_*` e `SF_*`). Para a carteira **abrir na hora** em vez de
+montar tudo de novo a cada instância fria (um ou dois minutos de "Montando a
+carteira"), configure o **mesmo blob do completo**: copie de lá a
+`CARTEIRA_BLOB_URL` (ou, se o completo não tiver, o `RADAR_BLOB_URL` — a carteira
+fica na pasta `carteira-clientes/` dele). Com o mesmo blob, o espelho também mostra
+o histórico dos pedidos de cadastro no ERP. O `.claude/filtrar-variaveis.js` já
+deixa passar `CARTEIRA_*` e `RADAR_BLOB_URL`. Conferir depois do deploy:
+`/api/carteira-clientes?diag=1` (`blob.configurado`, `origemDaBase`).
+
+Testes: `node scripts/test-carteira-clientes.js` (46 verificações: o que lê, o que
+dá 405/403, que nada chega ao Salesforce nem ao registro do ERP, e que a tela só
+aponta para páginas deste portal; usa o dublê `.claude/cc-fake.js`, o do completo).
+Tela local: `node .claude/teste-server.js` → `/pages/comercial-carteira-clientes.html?fake=1`
+(sabotagens na URL: `&d365off=1`, `&sfoff=1`, `&lento=1`, `&sfsemsosl=1`,
+`&sem401=1`, `&semarea=1`, `&frio=1`).
+
+**Ao trazer novidades da Carteira do completo:** copie `api/shared/carteira-clientes.js`
+como está; no `comercial-carteira-clientes.js`/`.css` reaplique os trechos
+`RECORTE MSB` e rode o `msb-cores.js` só neles; a rota daqui
+(`api/carteira-clientes/index.js`) **não** se copia por cima — traga só o que mudou
+nas leituras.
 
 ### Sem o InventarIA e o Vigia (30/10/2026)
 
@@ -2859,6 +2928,10 @@ somente uma! por cartão da OV" — a OV017816 recebeu o e-mail 4 vezes em 40 mi
 **CRM › Venda Recorrente:** os `cotacoes*.js`, as `comercial-cot-*` e o
 `api/shared/cot-*` têm ajustes `RECORTE MSB` (empresa, número, OV, unidade,
 armazenamento) — não copie por cima; traga só o que mudou e reaplique.
+
+**Carteira de Clientes:** é um espelho só de consulta — o `comercial-carteira-clientes.js`
+tem trechos `RECORTE MSB` e a rota `api/carteira-clientes` daqui é outra (só GET);
+ver "Comercial · Carteira de Clientes".
 
 Os arquivos são os mesmos do completo. Para atualizar um módulo, copie o
 arquivo de lá e, se for um dos arquivos da lista "O que mudou", reaplique o

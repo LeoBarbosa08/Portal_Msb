@@ -116,6 +116,8 @@ window.PORTAL_CATALOGO = (function () {
     ['comercial', 'Quadro de Oportunidades',   'CRM',          'comercial-cot-casos.html#quadro',       'sub',   'quadro kanban oportunidades cotacoes fases arrastar cotada em andamento virou pedido'],
     ['comercial', 'Histórico do Cliente',      'CRM',          'comercial-cot-casos.html#historico',    'sub',   'historico cliente codigo oportunidades cotacoes precos cotados ganhas perdidas amostras'],
     ['comercial', 'Nova oportunidade',         'CRM',          'comercial-cot-nova.html',               'sub',   'nova oportunidade agente de oportunidades agente de cotacoes registrar cotacao pdf portal de compras bionexo leitura ia proposta caso'],
+    // 27/11/26: a Carteira de Clientes, só como espelho (consulta)
+    ['comercial', 'Carteira de Clientes',      '',             'comercial-carteira-clientes.html',      'users', 'carteira de clientes cliente clientes cnpj cpf cadastro dynamics crm salesforce cruzamento conta contas dono da conta codigo erp codcfo buscar pesquisar ficha do cliente contatos filiais matriz grupo pendencias consulta espelho'],
     ['comercial', 'FCA',                       '',             'comercial-fca.html',                    'file',  'fca ficha atividade comercial visita relato'],
     ['comercial', 'Sales Playbook',            '',             'comercial-salesbooking.html',           'book',  'sales playbook salesbooking roteiro abordagem argumento treinamento'],
     ['comercial', 'Materiais e Recursos',      '',             'comercial-materiais.html',              'brief', 'materiais recursos apoio catalogo folder'],
@@ -319,11 +321,13 @@ window.PORTAL_CATALOGO = (function () {
     'comercial-cot-nova.html',
     // 11/11/26: o PI · Pedido, liberado para o Comercial (saiu do SO_DONO do nav-sidebar.js)
     'pedido-inteligente.html',
+    // 27/11/26: a Carteira de Clientes (espelho do portal completo, só consulta)
+    'comercial-carteira-clientes.html',
     'contabil-custos-sgna.html',
     // 27/11/26: a Margem de Contribuição (Visão Geral, Analítico e Analítico por NF)
     'contabil-margem.html', 'contabil-margem-analitico.html', 'contabil-margem-nf.html'
   ];
-  var AREAS_RECORTADAS = { comercial: 'Sales Report, CRM (Venda Recorrente) e Tabela de Preços.', contabil: 'Gestão de custos SG&A e margem de contribuição da MSB.' };
+  var AREAS_RECORTADAS = { comercial: 'Sales Report, CRM (Venda Recorrente), Carteira de Clientes e Tabela de Preços.', contabil: 'Gestão de custos SG&A e margem de contribuição da MSB.' };
   function msbVisivel(area, arquivo) { return !AREAS_RECORTADAS[area] || MSB_VISIVEIS.indexOf(arquivo) >= 0; }
   AREAS      = AREAS.map(function (a) {
     return !AREAS_RECORTADAS[a[0]] ? a : [a[0], a[1], AREAS_RECORTADAS[a[0]], a[3], a[4], a[5]];
