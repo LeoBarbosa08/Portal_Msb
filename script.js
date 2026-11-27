@@ -9,7 +9,7 @@
 if (!window.PORTAL_CATALOGO && !window._bmCatalogoPronto) {
   window._bmCatalogoPronto = new Promise(function (pronto) {
     var s = document.createElement('script');
-    s.src = (location.pathname.indexOf('/pages/') >= 0 ? '../' : '') + 'portal-catalogo.js?v=27';
+    s.src = (location.pathname.indexOf('/pages/') >= 0 ? '../' : '') + 'portal-catalogo.js?v=28';
     s.onload = pronto; s.onerror = pronto;
     (document.head || document.documentElement).appendChild(s);
   });
@@ -241,7 +241,7 @@ document.addEventListener('DOMContentLoaded', () => {
     ['Logística','logistica.html','Fluxo logístico, relatórios de distribuição e cotação de frete.','logistica distribuicao carga cargas expedicao rotas entregas transporte fornecedor fornecedores frete cotacao transportadora'],
     ['Marketing','marketing.html','Captação de leads, formulários e materiais institucionais.','marketing campanha campanhas evento eventos redes sociais instagram formularios materiais comunicacao midia'],
     ['Estoque','estoque.html','Saldo, ruptura, validade curta e consignação.','estoque consignado saldo inventario ordens de compra roi armazem deposito produto material'],
-    ['Contábil','contabil.html','Gestão de custos SG&A da MSB.','contabil contabilidade fiscal imposto impostos obrigacoes acessorias fechamento patrimonio inventario nota fiscal escrituracao'],
+    ['Contábil','contabil.html','Gestão de custos SG&A e margem de contribuição da MSB.','contabil contabilidade margem contribuicao fiscal imposto impostos obrigacoes acessorias fechamento patrimonio inventario nota fiscal escrituracao'],
     ['Licitação','licitacao.html','Editais, Sales Report da Licitação e Comitê de Produto.','licitacao licitacoes edital editais pregao pregoes contrato contratos publico governo orgao publico compra publica'],
     ['Administrativo','administrativo.html','Requisições de compra, lançamento de faturas no Dynamics e pagamento de comissão dos vendedores PJ.','administrativo requisicao requisicoes compra compras oc ordem de compra comissao comissionado fatura lancamento diario'],
     ['Produtos','produtos.html','Linhas, estratégias e famílias de produtos, e cadastro de novos SKUs.','produtos produto familia familias estrategia registro registros anvisa regulatorio portfolio fornecedor pesquisa mercado'],
@@ -262,6 +262,9 @@ document.addEventListener('DOMContentLoaded', () => {
     ['FCA','comercial-fca.html','Comercial','fca ficha atividade comercial visita'],
     ['Materiais e Recursos','comercial-materiais.html','Comercial','materiais recursos apoio'],
     ['Gestão de Custos SG&A','contabil-custos-sgna.html','Contábil','custo custos sgna sga despesa administrativa orcado realizado centro de custo pacote conta'],
+    ['Margem de Contribuição','contabil-margem.html','Contábil','margem contribuicao mc meta visao geral receita bruta liquida deducoes impostos custo produto filial'],
+    ['Margem · Analítico','contabil-margem-analitico.html','Contábil','margem analitico detalhado cliente produto familia estrategia tipo de cliente'],
+    ['Margem · Analítico por NF','contabil-margem-nf.html','Contábil','margem nota fiscal nf analitico item fatura'],
     ['Cobrança Automática','cobranca-automatica.html','Financeiro','cobranca carta vencidos titulos boleto inadimplencia cobrar enviar pdf sharepoint cartas de cobranca'],
     ['Cobrança · Notas em Aberto','cobranca-notas.html','Financeiro','cobranca notas em aberto faturas dynamics custtransopen nao liquidado sinief tipo de cliente responsavel status power automate selecionar notas'],
     ['Inadimplência','financeiro-inadimplencia.html','Financeiro','inadimplencia atraso devedor'],

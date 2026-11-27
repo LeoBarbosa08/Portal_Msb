@@ -1055,10 +1055,16 @@ if (!window._bmPerfilSheetLoaded && !window._bmPerfilSheetInjected) {
       label:'Contábil',
       nav:[
         {id:'contabil',              label:'Visão geral',          href:'contabil.html',              icon:I.grid},
-        // RECORTE MSB (22/10/26): o Contábil da MSB tem só a Gestão de Custos
-        // SG&A, recortada na empresa MSB. DRE e Margem de Contribuição do
-        // portal completo não vieram (ver PAGINAS_FORA em api/shared/auth.js).
+        // RECORTE MSB (22/10/26): o Contábil da MSB tem a Gestão de Custos SG&A
+        // e (27/11/26) a Margem de Contribuição com as 3 abas, as duas
+        // recortadas na empresa MSB. DRE, CT-e e o Agente Contábil do portal
+        // completo não vieram (ver PAGINAS_FORA em api/shared/auth.js).
         {id:'contabil-custos-sgna',  label:'Gestão de Custos SG&A',href:'contabil-custos-sgna.html',  icon:I.dollar},
+        {id:'contabil-margem-g',     label:'Margem de Contribuição',href:'contabil-margem.html',      icon:I.bars, children:[
+          {id:'contabil-margem',           label:'Visão Geral',      href:'contabil-margem.html'},
+          {id:'contabil-margem-analitico', label:'Analítico',        href:'contabil-margem-analitico.html'},
+          {id:'contabil-margem-nf',        label:'Analítico por NF', href:'contabil-margem-nf.html'},
+        ]},
       ],
       auto:[],
       agen:[],

@@ -54,7 +54,8 @@ const GUID = /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a
 // full entregam exatamente ela). Assim o mapa pode ser recopiado do portal
 // completo sem ajuste.
 // RECORTE MSB (22/10/26): entra o Contábil, só com a Gestão de Custos SG&A
-// (as páginas que não vieram estão em PAGINAS_FORA, mais abaixo).
+// (+ a Margem de Contribuição em 27/11/26; as páginas que não vieram estão
+// em PAGINAS_FORA, mais abaixo).
 // 06/11/26: entra o KANBAN (ordens de venda do dia, ao vivo do Dynamics),
 // RESERVADO em AREAS_RESERVADAS logo abaixo.
 // 09/11/26: o KANBAN deixou de ser reservado — aberto a todos (AREAS_ABERTAS).
@@ -325,10 +326,13 @@ const MODULO_CRM = /^comercial-(cot-|crm$)/;
 // contabil). Serve para não repetir no payload um módulo cuja área a pessoa
 // já tem inteira.
 // RECORTE MSB: páginas de área DESTE portal que não vieram do completo (o
-// Contábil daqui tem só a Gestão de Custos SG&A; o InventarIA e o Vigia de
+// Contábil daqui tem a Gestão de Custos SG&A e, desde 27/11/26, a Margem de
+// Contribuição — DRE e Agente Contábil não; o InventarIA e o Vigia de
 // Consignação do Estoque saíram em 30/10/26). Módulo avulso apontando para
 // elas é tratado como de outra área: não entra no payload.
-const PAGINAS_FORA = ['contabil-dre', 'contabil-margem', 'contabil-margem-analitico', 'contabil-margem-nf', 'agente-contabil',
+// 27/11/26: a Margem saiu desta lista — o módulo avulso da Coordenação de
+// Compras e Estoque (GRUPO_MODULOS) volta a valer aqui, igual ao completo.
+const PAGINAS_FORA = ['contabil-dre', 'agente-contabil',
   'estoque-consignado-inventario', 'estoque-vigia'];
 function areaDoModulo(id) {
   const f = String(id || '').toLowerCase();

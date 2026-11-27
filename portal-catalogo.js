@@ -306,8 +306,9 @@ window.PORTAL_CATALOGO = (function () {
   // (só a Venda Recorrente, desde 04/11/26) e a Tabela de Preços: os outros módulos e os agentes do Comercial saem da
   // busca — mesmo recorte do NAV.comercial de nav-sidebar.js e dos cartões
   // de pages/comercial.html. O Estoque fica inteiro (voltou no mesmo dia).
-  // O Contábil (22/10/26) tem só a Gestão de Custos SG&A — mesmo recorte do
-  // NAV.contabil e de pages/contabil.html.
+  // O Contábil (22/10/26) tem a Gestão de Custos SG&A e (27/11/26) a Margem de
+  // Contribuição com as 3 abas — mesmo recorte do NAV.contabil e de
+  // pages/contabil.html.
   var MSB_VISIVEIS = [
     'comercial-sales-report.html', 'comercial-performance-vendas.html', 'comercial-vendas.html',
     'comercial-clientes.html', 'comercial-base-notas-fiscais.html',
@@ -318,9 +319,11 @@ window.PORTAL_CATALOGO = (function () {
     'comercial-cot-nova.html',
     // 11/11/26: o PI · Pedido, liberado para o Comercial (saiu do SO_DONO do nav-sidebar.js)
     'pedido-inteligente.html',
-    'contabil-custos-sgna.html'
+    'contabil-custos-sgna.html',
+    // 27/11/26: a Margem de Contribuição (Visão Geral, Analítico e Analítico por NF)
+    'contabil-margem.html', 'contabil-margem-analitico.html', 'contabil-margem-nf.html'
   ];
-  var AREAS_RECORTADAS = { comercial: 'Sales Report, CRM (Venda Recorrente) e Tabela de Preços.', contabil: 'Gestão de custos SG&A da MSB.' };
+  var AREAS_RECORTADAS = { comercial: 'Sales Report, CRM (Venda Recorrente) e Tabela de Preços.', contabil: 'Gestão de custos SG&A e margem de contribuição da MSB.' };
   function msbVisivel(area, arquivo) { return !AREAS_RECORTADAS[area] || MSB_VISIVEIS.indexOf(arquivo) >= 0; }
   AREAS      = AREAS.map(function (a) {
     return !AREAS_RECORTADAS[a[0]] ? a : [a[0], a[1], AREAS_RECORTADAS[a[0]], a[3], a[4], a[5]];

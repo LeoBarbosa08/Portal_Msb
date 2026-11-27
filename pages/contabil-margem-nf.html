@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Analítico por NF · Margem de Contribuição · Contábil · MSB</title>
+  <link rel="stylesheet" href="../styles.css?v=15">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="../dash-v2.css?v=3">
+  <link rel="stylesheet" href="../contabil-margem.css?v=5">
+  <script src="https://unpkg.com/@azure/msal-browser@2.38.3/lib/msal-browser.min.js"></script>
+<script src="../pbi-throttle.js?v=5"></script>
+  <!-- Layout v3 (Claude Design · animado): fonte + camada visual + motor de animações -->
+  <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300..900&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../portal-v3.css?v=2">
+  <script src="../portal-motion.js?v=3" defer></script>
+  <!-- Tema claro/escuro (menu do avatar): marca o <html> antes de pintar + camada escura -->
+  <script>try{if(localStorage.getItem('bm-tema')==='escuro')document.documentElement.setAttribute('data-tema','escuro')}catch(e){}</script>
+  <link rel="stylesheet" href="../portal-tema.css?v=1">
+  <script src="../portal-tema.js?v=1" defer></script>
+  <!-- Celular (varredura 15/10/26): só vale em tela < 768px; no computador não se aplica -->
+  <link rel="stylesheet" href="../portal-mobile.css?v=1" media="(max-width: 767.98px)">
+  <script src="../portal-mobile.js?v=1" defer></script>
+</head>
+<body class="dept">
+
+  <header class="site-header">
+    <div class="container">
+      <a href="../index.html" class="brand" aria-label="Portal MSB — página inicial">
+        <img class="brand-logo" src="/icons/logo-msb.png" alt="MSB · Medical System do Brasil" onerror="this.dataset.failed='true'">
+        <span class="brand-fallback">MSB</span>
+      </a>
+      <nav class="header-nav">
+        <a href="../index.html">Início</a>
+        <a href="../index.html#areas">Áreas</a>
+        <a href="../index.html#sistemas">Sistemas</a>
+        <a href="../index.html#avisos">Avisos</a>
+        <a href="../index.html#contato">Contato</a>
+      </nav>
+    </div>
+  </header>
+
+  <div class="area-body">
+    <div class="container">
+      <div class="area-grid">
+        <aside class="area-sidebar">
+          <div class="sb-card">
+            <div class="sb-head">
+              <span class="sb-ic"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg></span>
+              <div><div class="sb-tt">Contábil</div><div class="sb-st">Departamento</div></div>
+            </div>
+            <nav></nav>
+          </div>
+          <a href="contabil-margem.html" class="sb-back"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></svg>Voltar à Visão Geral</a>
+        </aside>
+
+        <div class="area-main">
+          <div class="fx-wrap">
+
+            <div class="fx-head">
+              <div>
+                <div class="fx-bc"><span>Contábil</span><span>›</span><span>Margem de Contribuição</span></div>
+                <div class="fx-titlerow">
+                  <h1 class="fx-title">Analítico por NF</h1>
+                  <span class="fx-titlesub">Relatório fiscal item a item · abre com todos os campos e medidas</span>
+                </div>
+              </div>
+              <div class="fx-head-right">
+                <div class="fx-tabs">
+                  <a href="contabil-margem.html">Visão Geral</a>
+                  <a href="contabil-margem-analitico.html">Analítico</a>
+                  <span class="active">Analítico por NF</span>
+                </div>
+              </div>
+            </div>
+
+            <div class="mg-banner" id="mg-banner">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+              Conectando ao Power BI…
+            </div>
+
+            <div class="fx-filters">
+              <div class="av-dd" id="mg-periodo">
+                <button type="button" class="fx-fbtn" id="mg-periodo-btn">
+                  <span class="fx-fk">Período</span><span id="mg-periodo-lbl">Todos</span>
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#81939B" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg>
+                </button>
+                <div class="av-dd-panel fx-period-panel">
+                  <div class="fx-pp-sec">Ano · 'Calendário'[Ano]</div>
+                  <div class="fx-chips" id="mg-anos"></div>
+                  <div class="fx-pp-sec mt">Mês · 'Calendário'[Mês (nome abreviado)]</div>
+                  <div class="fx-chips" id="mg-meses"></div>
+                  <div class="fx-pp-hint">Ctrl (ou ⌘) + clique seleciona mais de um ano/mês.</div>
+                </div>
+              </div>
+              <div class="fx-fdiv"></div>
+              <div id="mg-filtros" style="display:contents;"></div>
+            </div>
+
+            <div class="mg-kpis">
+              <div class="mg-kpi"><div class="mg-kpi-l">Receita bruta</div><div class="mg-kpi-v" id="mg-k-rb">—</div><div class="mg-kpi-s" id="mg-k-rb-s">—</div></div>
+              <div class="mg-kpi cy"><div class="mg-kpi-l">Receita líquida</div><div class="mg-kpi-v" id="mg-k-rl">—</div><div class="mg-kpi-s" id="mg-k-rl-s">—</div></div>
+              <div class="mg-kpi pu"><div class="mg-kpi-l">Custo produto</div><div class="mg-kpi-v" id="mg-k-cp">—</div><div class="mg-kpi-s" id="mg-k-cp-s">—</div></div>
+              <div class="mg-kpi gr"><div class="mg-kpi-l">Margem de contribuição</div><div class="mg-kpi-v" id="mg-k-mg">—</div><div class="mg-kpi-s" id="mg-k-mg-s">—</div></div>
+              <div class="mg-kpi am"><div class="mg-kpi-l">Frete + Descontos</div><div class="mg-kpi-v" id="mg-k-fd">—</div><div class="mg-kpi-s" id="mg-k-fd-s">—</div></div>
+            </div>
+
+            <div class="fx-panel mg-tbl-panel">
+              <div class="mg-tbl-head">
+                <div>
+                  <div class="fx-p-title">Margem por nota fiscal</div>
+                  <div class="fx-p-sub">Abre com a lista completa de campos e medidas, na ordem definida pelo negócio; use <b>Campos</b>/<b>Medidas</b> para tirar ou repor coluna · <span id="mg-tbl-info">—</span></div>
+                </div>
+                <div class="mg-tbl-tools" id="mg-tbl-tools"></div>
+              </div>
+              <div class="mg-tbl-wrap">
+                <table class="mg-tbl">
+                  <thead id="mg-thead"></thead>
+                  <tbody id="mg-tbody"><tr><td style="text-align:center;color:#97A8AE;padding:20px;">Carregando…</td></tr></tbody>
+                </table>
+              </div>
+              <div class="mg-cards" id="mg-cards"></div>
+              <div class="mg-tbl-foot">Abre em <b>Tabular</b>, uma linha por item da nota (limite de 5.000 — refine o período ou os filtros para reduzir). A 1ª coluna acompanha a rolagem horizontal. Deduções são exibidas em módulo; CÓDIGO_CBS/IBS/IBSM são texto e não somam no total.</div>
+            </div>
+
+          </div><!-- /fx-wrap -->
+        </div><!-- /area-main -->
+      </div><!-- /area-grid -->
+    </div><!-- /container -->
+  </div><!-- /area-body -->
+
+  <footer class="site-footer">
+    <div class="container">
+      <div class="bm-footer-bottom">
+        <span>© <span id="year"></span> MSB · Medical System do Brasil · Portal interno</span>
+        <span class="bm-footer-meta">Endourologia · Endovascular · Cardiologia · Cirurgia Cardíaca/Torácica</span>
+      </div>
+    </div>
+  </footer>
+
+  <script src="../script.js?v=11"></script>
+  <script src="../nav-sidebar.js?v=93"></script>
+  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+  <script>
+  window.MG_VIEW = 'nf';
+  window.MG_META = 58;
+  </script>
+  <script src="../contabil-margem.js?v=6"></script>
+</body>
+</html>

@@ -22,7 +22,7 @@ Venda Recorrente".
 | Comercial · agentes | Dossiê de Visita · PI · Pedido (liberado para o Comercial em 11/11 — ver "PI · Pedido liberado") (com a aba Fila de aprovação desde 25/11 — ver "CRM · as listas do PI…") · PI · Consignação · PI · Consignação (INCOMPLETO, em testes) · Agente Comercial (o Agente de Cotações virou o "Nova oportunidade" do CRM) |
 | Estoque | Visão geral · Gestão de Estoque (Saldo, Ruptura, Validade Curta, Movimentações) · Gestão de Consignação (Saldo Consignado, Saldo por Nota, Devoluções, Rastreabilidade, GMROI) · Perdas · Consignado |
 | Estoque · agentes | Agente de Estoque |
-| Contábil | Visão geral · Gestão de Custos SG&A (só a MSB) |
+| Contábil | Visão geral · Gestão de Custos SG&A · Margem de Contribuição (Visão Geral, Analítico, Analítico por NF) — só a MSB |
 | Comum | Home, busca (Ctrl+K), Central de Avisos, tema escuro, celular, PWA |
 
 21 Functions em `api/`: `my-areas`, `alertas`, `avisos`, `pbi-query`,
@@ -154,7 +154,8 @@ novidades de lá, reaplique:
 
 Entrou a área **Contábil** só com a **Gestão de Custos SG&A**, trazida do portal
 completo (`origin/master` c5aa0cf de `Claude.rep`, 22/10) e recortada na MSB.
-DRE, Margem de Contribuição e o Agente Contábil do completo **não vieram**.
+DRE, Margem de Contribuição e o Agente Contábil do completo **não vieram** (a
+Margem veio depois, em 27/11/2026 — ver abaixo).
 
 - `pages/contabil-custos-sgna.html` — cópia do completo convertida para a marca
   (`scripts/msb-cores.js`, Roboto, logo, "· MSB"). **Empresa fixa em MSB**: na
@@ -173,6 +174,37 @@ DRE, Margem de Contribuição e o Agente Contábil do completo **não vieram**.
   `script.js` (guia).
 - `pbi-throttle.js?v=5` nas páginas, para nenhum navegador ficar com o recorte
   antigo.
+
+### Contábil · Margem de Contribuição (27/11/2026)
+
+Entrou a **Margem de Contribuição** com as 3 abas — **Visão Geral**, **Analítico**
+e **Analítico por NF** — trazida do portal completo (`origin/master` e6ac11c de
+`Claude.rep`, 27/11) e recortada na MSB. Mesmo dataset do Sales Report (relatório
+`10a505aa-…`), lido direto do navegador (`executeQueries`), sem Function.
+
+- `contabil-margem.js` + `contabil-margem.css` (o motor único das 3 abas) e
+  `pages/contabil-margem.html`, `-analitico.html`, `-nf.html` — cópias do
+  completo convertidas para a marca (`scripts/msb-cores.js`, Roboto também no
+  texto dos gráficos, logo, rodapé, "· MSB"); sem o `portal-elo.js`, que este
+  portal não tem; versões de `styles.css`/`portal-v3.css`/`portal-motion.js`/
+  `portal-mobile.*` as daqui.
+- **Empresa fixa em MSB** (`RECORTE MSB` no `contabil-margem.js`): `fixa: 'MSB'`
+  na dimensão Empresa — a barra mostra o rótulo "Empresa MSB" (`.av-dd-fixa`)
+  em vez da lista, o "Limpar filtros" não a tira, e `dimFilters()` põe
+  `TREATAS({ "MSB" }, 'Empresas'[Código da empresa])` em toda consulta, inclusive
+  nas listas dos filtros. Por fora, o `pbi-throttle.js` embrulha cada `EVALUATE`
+  em `'Empresas'[Código da empresa] IN { "MSB" }` (ver "Só a empresa MSB"). Os
+  Excel saem como `margem_contribuicao_msb_…` e `margem-top-produtos-msb.xlsx`.
+- O resto é igual ao completo: meta de 58%, filtro-base "Gera Fatura a receber?
+  = SIM", INTERCOMPANY à vista, nenhuma NF oculta.
+- `pages/contabil.html` — cartão e link da Margem; `nav-sidebar.js`
+  (`NAV.contabil` com a Margem e as 3 abas, `?v=93` em todas as páginas),
+  `index.html` (cartão Contábil), `portal-catalogo.js` (`MSB_VISIVEIS` + as 3
+  páginas, `?v=28`) e `script.js` (guia, `?v=11` em todas as páginas).
+- Acesso: as 3 páginas saíram de `PAGINAS_FORA` (`api/shared/auth.js`). Entra
+  quem tem o Contábil e, como no completo, o grupo Equipe de compras e estoque -
+  Coordenação (`GRUPO_MODULOS`), que vê só a Margem dentro do Contábil.
+- `sw.js` — cache `bm-comest-v116`.
 
 ### Sem o InventarIA e o Vigia (30/10/2026)
 
