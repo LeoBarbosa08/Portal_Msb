@@ -187,7 +187,7 @@
     var it = S.dados && S.dados.itens[i]; if (!it) return;
     var v = k === 'media' ? it._fat && it._fat.v && it._fat.v.media : it._tab && it._tab.v && it._tab.v[k] && it._tab.v[k].lista;
     if (!(v > 0)) return;
-    it.valorUnitario = v;
+    it.valorUnitario = v; delete it.precoZero;
     if (it._fat) it._fat.auto = !!auto && k === 'media';
     var tr = D.querySelector('#cot-itens tr[data-i="' + i + '"]');
     if (tr) {
@@ -231,7 +231,7 @@
         if (v === undefined) return;
         var auto = !!(it._fat && it._fat.auto && it._fat.cod === k);
         it._fat = v ? { st: 'ok', v: v, cli: cli, cod: k, auto: auto } : { st: 'nada', cli: cli, cod: k };
-        if (v && v.media > 0 && !(Number(it.valorUnitario) > 0) && Number(it.quantidade) > 0) { usarRef(i, 'media', true); usadas++; }
+        if (v && v.media > 0 && !C.temPreco(it) && Number(it.quantidade) > 0) { usarRef(i, 'media', true); usadas++; }   // o 0,00 digitado fica
       });
       pintarRefs();
       if (usadas) C.toast('Preço pela média de faturamento', usadas + ' item(ns) sem preço receberam a média dos últimos ' + C.MESES_FAT + ' meses deste cliente — confira.', '');
@@ -257,7 +257,7 @@
     var it = S.dados && S.dados.itens[i]; if (!it) return;
     var linha = function () {
       var tr = D.querySelector('#cot-itens tr[data-i="' + i + '"]'); if (!tr) return;
-      tr.classList.toggle('cod-nao', !!(it._cod && (it._cod.st === 'nao' || (it._cod.st === 'vazio' && Number(it.valorUnitario) > 0))));
+      tr.classList.toggle('cod-nao', !!(it._cod && (it._cod.st === 'nao' || (it._cod.st === 'vazio' && C.temPreco(it)))));
       tr.classList.toggle('cod-ok', !!(it._cod && it._cod.st === 'ok'));
       var st = tr.querySelector('.cod-st-box'); if (st) st.innerHTML = C.statusCodigo(it);
       // RECORTE MSB: a descrição vazia ganhou o nome do cadastro na conferência
@@ -406,7 +406,7 @@
     if (!tem(co.frete) || (C.FRETES.length && !C.naListaFrete(co.frete))) f.push(['Frete (da lista do PI)', el('condicoes.frete')]);
     if (!tem(co.condEntrega) || (C.COND_ENTREGA.length && !C.naListaEntrega(co.condEntrega))) f.push(['Condição de entrega (da lista do PI)', el('condicoes.condEntrega')]);
     if (!tem(co.entrega)) f.push(['Prazo de entrega', el('condicoes.entrega')]);
-    var cotados = (d.itens || []).filter(function (it) { return (tem(it.descricao) || tem(it.codigo)) && Number(it.quantidade) > 0 && Number(it.valorUnitario) > 0; });
+    var cotados = (d.itens || []).filter(function (it) { return (tem(it.descricao) || tem(it.codigo)) && Number(it.quantidade) > 0 && C.temPreco(it); });
     if (!cotados.length) f.push(['ao menos 1 item cotado (com quantidade e preço)', D.querySelector('#cot-itens input[data-f="valorUnitario"]') || $('cot-add-item')]);
     return f;
   }
@@ -424,7 +424,7 @@
     if (sem.length) {
       var it0 = S.dados.itens[sem[0]];
       ruins.push({ el: D.querySelector('#cot-itens tr[data-i="' + sem[0] + '"] input[data-f="' + (C.semQtd(it0) ? 'quantidade' : 'valorUnitario') + '"]'), nome: '',
-        erro: sem.length + (sem.length === 1 ? ' item sem' : ' itens sem') + ' quantidade ou preço (os dois são obrigatórios)' });
+        erro: sem.length + (sem.length === 1 ? ' item sem' : ' itens sem') + ' quantidade ou preço (os dois são obrigatórios — para preço zero, digite 0,00)' });
     }
     if (!ruins.length && !faltam.length) return true;
     msg((faltam.length ? '<b>Preencha antes de criar:</b> ' + faltam.map(function (x) { return esc(x[0]); }).join(' · ') + (ruins.length ? '<br>' : '') : '') +
@@ -437,8 +437,9 @@
     var d = S.dados, avisoDe = {}, comIpi = S.ipi || C.temIpi(d.itens), nCol = comIpi ? 10 : 9;   // 05/11/2026 (RECORTE MSB): sem a coluna Un
     ((S.leitura && S.leitura.avisos) || []).forEach(function (a) { if (a.item >= 0) avisoDe[a.item] = a.texto; });
     var linhas = d.itens.map(function (it, i) {
-      var ruim = it._cod && (it._cod.st === 'nao' || (it._cod.st === 'vazio' && Number(it.valorUnitario) > 0));
+      var ruim = it._cod && (it._cod.st === 'nao' || (it._cod.st === 'vazio' && C.temPreco(it)));
       // 25/11/2026: quantidade e preço obrigatórios em cada item
+      // 27/11/2026: o preço pode ser zero, mas digitado ("0,00")
       var cls = [avisoDe[i] ? 'aviso' : '', ruim ? 'cod-nao' : '', it._cod && it._cod.st === 'ok' ? 'cod-ok' : '', C.semQtd(it) ? 'qtd-falta' : '', C.semPreco(it) ? 'vu-falta' : '', C.acimaDasReferencias(it).length ? 'preco-acima' : ''].filter(Boolean).join(' ');
       return '<tr' + (cls ? ' class="' + cls + '"' : '') + (avisoDe[i] ? ' title="' + esc(avisoDe[i]) + '"' : '') + ' data-i="' + i + '">' +
         // 25/11/2026 (pedido do dono: "preço e qtd são obrigatórios"): a Qtd e o Preço logo depois
@@ -446,7 +447,7 @@
         '<td class="cod"><input data-f="codigo" value="' + esc(it.codigo) + '" placeholder="Código" autocomplete="off"><span class="cod-st-box">' + C.statusCodigo(it) + '</span></td>' +
         '<td class="desc"><input data-f="descricao" value="' + esc(it.descricao) + '" placeholder="Descrição do produto"><span class="cot-sf-box">' + C.dicaSf(it) + '</span></td>' +
         '<td class="qtd n"><input data-f="quantidade" data-mask="num" inputmode="decimal" value="' + esc(it.quantidade ? C.qtd(it.quantidade) : '') + '"></td>' +
-        '<td class="vu n"><input data-f="valorUnitario" data-mask="num" inputmode="decimal" value="' + esc(it.valorUnitario ? it.valorUnitario.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 4 }) : '') + '"></td>' +
+        '<td class="vu n"><input data-f="valorUnitario" data-mask="num" inputmode="decimal" value="' + esc(C.precoCampo(it)) + '" placeholder="0,00" title="Obrigatório — para preço zero, digite 0,00"></td>' +
         (comIpi ? '<td class="ipi n"><input data-f="ipi" data-mask="num" inputmode="decimal" value="' + esc(it.ipi ? String(it.ipi).replace('.', ',') : '') + '" placeholder="%" title="O IPI do item, em %"></td>' : '') +
         '<td class="vt tot" data-tot="' + i + '">' + (it.quantidade && it.valorUnitario ? C.brl(it.quantidade * it.valorUnitario) : '—') + '</td>' +
         '<td class="codc"><input data-f="codigoCliente" value="' + esc(it.codigoCliente) + '" placeholder="Comprador"></td>' +
@@ -1142,14 +1143,15 @@
       if (t.matches('[data-f]')) {
         var tr = t.closest('tr'), i = Number(tr.getAttribute('data-i')), f = t.getAttribute('data-f');
         var it = S.dados.itens[i]; if (!it) return;
-        it[f] = (f === 'quantidade' || f === 'valorUnitario' || f === 'ipi') ? C.num(t.value) : t.value;
+        if (f === 'valorUnitario') C.lerPreco(it, t.value);   // o 0,00 digitado vale como preço
+        else it[f] = (f === 'quantidade' || f === 'ipi') ? C.num(t.value) : t.value;
         if (f === 'codigo') { it._cod = null; conferirLinha(i); }
         if (f === 'codigo' || f === 'quantidade') estoqueDepois();
         if (f === 'valorUnitario') { if (it._fat) it._fat.auto = false; pintarRefs(); }
         if (f === 'ipi') { t.classList.toggle('invalido', Number(it.ipi) > 100); atualizarTotal(); }
         if (f === 'quantidade' || f === 'valorUnitario') {
           var cel = corpo.querySelector('[data-tot="' + i + '"]');
-          if (cel) cel.textContent = it.quantidade && it.valorUnitario ? C.brl(it.quantidade * it.valorUnitario) : '—';
+          if (cel) cel.textContent = it.quantidade && C.temPreco(it) ? C.brl(it.quantidade * it.valorUnitario) : '—';
           atualizarTotal();
           C.marcarQtdPreco(tr, it);
         }

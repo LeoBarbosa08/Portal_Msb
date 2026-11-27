@@ -704,15 +704,16 @@
         '<div class="cot-itens-w"><table class="cot-itens"><thead><tr><th class="cod">Código do produto</th><th class="codc">Cód. comprador</th><th>Descrição</th><th class="marca">Fabricante</th><th class="rms">RMS</th><th class="qtd n">Qtd<b class="cot-req" title="obrigatório">*</b></th><th class="vu n">Preço unit.<b class="cot-req" title="obrigatório">*</b></th>' +
         (comIpi ? '<th class="ipi n" title="O IPI de cada item, em % — sai na proposta">IPI %</th>' : '') + '<th class="vt n">Total</th><th class="res">Resultado do item</th><th class="x"></th></tr></thead><tbody>' +
         its.map(function (it, i) {
-          var ruim = it._cod && (it._cod.st === 'nao' || (it._cod.st === 'vazio' && Number(it.valorUnitario) > 0));
+          var ruim = it._cod && (it._cod.st === 'nao' || (it._cod.st === 'vazio' && C.temPreco(it)));
           // 25/11/2026: quantidade e preço obrigatórios (a linha fica vermelha no que falta)
+          // 27/11/2026: o preço pode ser zero, mas digitado ("0,00")
           var clsL = [ruim ? 'cod-nao' : it._cod && it._cod.st === 'ok' ? 'cod-ok' : '', C.semQtd(it) ? 'qtd-falta' : '', C.semPreco(it) ? 'vu-falta' : ''].filter(Boolean).join(' ');
           return '<tr data-i="' + i + '"' + (clsL ? ' class="' + clsL + '"' : '') + '><td class="cod"><input data-f="codigo" value="' + esc(it.codigo) + '" autocomplete="off"><span class="cod-st-box">' + C.statusCodigo(it) + '</span></td><td class="codc"><input data-f="codigoCliente" value="' + esc(it.codigoCliente) + '"></td>' +
             '<td><input data-f="descricao" value="' + esc(it.descricao) + '"><span class="cot-sf-box">' + C.dicaSf(it) + '</span></td><td class="marca"><input data-f="marca" value="' + esc(it.marca) + '" placeholder="Fabricante"></td><td class="rms"><input data-f="registro" value="' + esc(it.registro || '') + '" placeholder="ANVISA" inputmode="numeric"></td>' +
             '<td class="qtd n"><input data-f="quantidade" inputmode="decimal" value="' + esc(it.quantidade ? C.qtd(it.quantidade) : '') + '"></td>' +
-            '<td class="vu n"><input data-f="valorUnitario" inputmode="decimal" value="' + esc(it.valorUnitario ? it.valorUnitario.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 4 }) : '') + '"></td>' +
+            '<td class="vu n"><input data-f="valorUnitario" inputmode="decimal" value="' + esc(C.precoCampo(it)) + '" placeholder="0,00" title="Obrigatório — para preço zero, digite 0,00"></td>' +
             (comIpi ? '<td class="ipi n"><input data-f="ipi" inputmode="decimal" value="' + esc(it.ipi ? String(it.ipi).replace('.', ',') : '') + '" placeholder="%" title="O IPI do item, em %"></td>' : '') +
-            '<td class="vt tot" data-tot="' + i + '">' + (it.quantidade && it.valorUnitario ? C.brl(it.quantidade * it.valorUnitario) : '—') + '</td>' +
+            '<td class="vt tot" data-tot="' + i + '">' + (it.quantidade && C.temPreco(it) ? C.brl(it.quantidade * it.valorUnitario) : '—') + '</td>' +
             '<td class="res"><select data-f="resultado" aria-label="Resultado do item"><option value="">—</option>' +
               ['ganho', 'perdido'].map(function (r) { return '<option value="' + r + '"' + (it.resultado === r ? ' selected' : '') + '>' + C.RESULTADOS[r] + '</option>'; }).join('') + '</select></td>' +
             '<td class="x"><button type="button" class="cs-btn cs-btn-xs cs-btn-ghost" data-tirar-item="' + i + '" title="Tirar">' + IC.x + '</button></td></tr>';
@@ -735,9 +736,9 @@
         l.map(function (it, i) {
           var cods = metaItem(it);
           return '<tr><td class="desc"><b>' + esc(it.descricao || it.codigo || '—') + '</b><small class="cot-it-meta" data-i="' + i + '"' + (cods ? '' : ' hidden') + '>' + esc(cods) + '</small><span class="cot-sf-box" data-sf-i="' + i + '">' + C.dicaSf(it) + '</span></td>' +
-            '<td class="n qtd">' + C.qtd(it.quantidade) + '</td><td class="n vu">' + (it.valorUnitario ? C.brl(it.valorUnitario) : '<span style="color:var(--cs-mut)">sem preço</span>') + '</td>' +
+            '<td class="n qtd">' + C.qtd(it.quantidade) + '</td><td class="n vu">' + (C.temPreco(it) ? C.brl(it.valorUnitario) : '<span style="color:var(--cs-mut)">sem preço</span>') + '</td>' +
             (lIpi ? '<td class="n ipi">' + (C.ipiDe(it) ? C.pctIpi(C.ipiDe(it)) : '—') + '</td>' : '') +
-            '<td class="n tot">' + (it.quantidade && it.valorUnitario ? C.brl(it.quantidade * it.valorUnitario) : '—') + '</td><td class="res">' + htmlResultado(c, i, rs[i]) + '</td></tr>';
+            '<td class="n tot">' + (it.quantidade && C.temPreco(it) ? C.brl(it.quantidade * it.valorUnitario) : '—') + '</td><td class="res">' + htmlResultado(c, i, rs[i]) + '</td></tr>';
         }).join('') + '</tbody><tfoot><tr><td colspan="' + (lIpi ? 4 : 3) + '" class="rot">Total cotado' + (lIpi ? ' (sem IPI)' : '') + '</td><td class="n tot">' + C.brl(c.total) + '</td><td class="res-tot">' + totRes + '</td></tr>' +
           (lIpi ? '<tr class="cot-ipi-tr"><td colspan="4" class="rot">IPI</td><td class="n tot">' + C.brl(C.totalIpi(l)) + '</td><td></td></tr>' +
             '<tr class="cot-ipi-tr"><td colspan="4" class="rot">Total com IPI</td><td class="n tot">' + C.brl((c.total || 0) + C.totalIpi(l)) + '</td><td></td></tr>' : '') + '</tfoot></table></div>'
@@ -1266,7 +1267,7 @@
             var l = mots.slice(); if (x.m && l.indexOf(x.m) < 0) l.unshift(x.m);
             var mot = x.r === 'perdido' ? '<select class="cot-res-mot" data-dlg-mot="' + i + '" aria-label="Motivo da perda do item ' + (i + 1) + '"><option value="">Motivo (opcional)…</option>' +
               l.map(function (m) { return '<option' + (m === x.m ? ' selected' : '') + '>' + esc(m) + '</option>'; }).join('') + '</select>' : '';
-            var num = [it.codigo, C.qtd(it.quantidade) + ' × ' + (it.valorUnitario ? C.brl(it.valorUnitario) : 'sem preço'), it.quantidade && it.valorUnitario ? '= ' + C.brl(it.quantidade * it.valorUnitario) : ''].filter(Boolean).join(' ');
+            var num = [it.codigo, C.qtd(it.quantidade) + ' × ' + (C.temPreco(it) ? C.brl(it.valorUnitario) : 'sem preço'), it.quantidade && C.temPreco(it) ? '= ' + C.brl(it.quantidade * it.valorUnitario) : ''].filter(Boolean).join(' ');
             return '<tr class="' + (x.r ? '' : 'sem') + '"><td class="d"><b>' + esc(it.descricao || it.codigo || 'Item ' + (i + 1)) + '</b><small>' + esc(num) + '</small></td>' +
               '<td class="r"><div class="cot-res" role="group" aria-label="Resultado do item ' + (i + 1) + '">' + bt('ganho') + bt('perdido') + '</div>' + mot + '</td></tr>';
           }).join('');
@@ -2341,7 +2342,7 @@
           renderCaso();
           var it1 = S.itensRascunho[semQP[0]], inp1 = D.querySelector('#cot-caso tr[data-i="' + semQP[0] + '"] input[data-f="' + (C.semQtd(it1) ? 'quantidade' : 'valorUnitario') + '"]');
           if (inp1) { inp1.scrollIntoView({ behavior: 'smooth', block: 'center' }); try { inp1.focus({ preventScroll: true }); } catch (e) { inp1.focus(); } }
-          C.toast(semQP.length + (semQP.length === 1 ? ' item sem' : ' itens sem') + ' quantidade ou preço', 'Os dois são obrigatórios em cada item — preencha as linhas em vermelho.', 'erro');
+          C.toast(semQP.length + (semQP.length === 1 ? ' item sem' : ' itens sem') + ' quantidade ou preço', 'Os dois são obrigatórios em cada item — preencha as linhas em vermelho (para preço zero, digite 0,00).', 'erro');
           return;
         }
         var salvar = function () { acao({ acao: 'itens', numero: c.numero, itens: its }, 'Itens salvos').then(function (j) { if (!j) return; S.editandoItens = false; S.itensRascunho = null; S.salvarSemConferir = false; renderCaso(); }).catch(function () {}); };
@@ -2385,13 +2386,14 @@
       }
       if (t.matches('[data-f]') && S.itensRascunho) {
         var tr = t.closest('tr'), i = Number(tr.getAttribute('data-i')), f = t.getAttribute('data-f'), it = S.itensRascunho[i]; if (!it) return;
-        it[f] = (f === 'quantidade' || f === 'valorUnitario' || f === 'ipi') ? C.num(t.value) : t.value;
+        if (f === 'valorUnitario') C.lerPreco(it, t.value);   // o 0,00 digitado vale como preço
+        else it[f] = (f === 'quantidade' || f === 'ipi') ? C.num(t.value) : t.value;
         if (f === 'ipi') { t.classList.toggle('invalido', Number(it.ipi) > 100); var ti = $('cot-tot-ipi'); if (ti) ti.outerHTML = htmlTotIpi(S.itensRascunho, true); }
         if (f === 'codigo' && it._cod) { it._cod = null; tr.classList.remove('cod-nao', 'cod-ok'); var st = tr.querySelector('.cod-st-box'); if (st) st.innerHTML = ''; }
         if (f === 'codigo') sfRascunho(it);
         if (f === 'codigo' || f === 'quantidade') estoqueCasoDepois();
         if (f === 'quantidade' || f === 'valorUnitario') {
-          var cel = app.querySelector('[data-tot="' + i + '"]'); if (cel) cel.textContent = it.quantidade && it.valorUnitario ? C.brl(it.quantidade * it.valorUnitario) : '—';
+          var cel = app.querySelector('[data-tot="' + i + '"]'); if (cel) cel.textContent = it.quantidade && C.temPreco(it) ? C.brl(it.quantidade * it.valorUnitario) : '—';
           C.marcarQtdPreco(tr, it);
           var tt = $('cot-itens-total'); if (tt) tt.textContent = C.brl(totalDe(S.itensRascunho));
           var tj = $('cot-tot-ipi'); if (tj) tj.outerHTML = htmlTotIpi(S.itensRascunho, S.ipiEdicao || C.temIpi(S.itensRascunho));

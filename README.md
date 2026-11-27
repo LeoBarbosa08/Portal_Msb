@@ -2909,15 +2909,24 @@ qtd são obrigatórios".
   salvar barrados — e o servidor recusa (`exigirQtdPreco` no `novo` e na ação
   `itens`). Na Nova oportunidade a Qtd e o Preço vêm logo depois da Descrição
   (com a prévia ao lado a tabela rolava e o Preço ficava escondido).
+- **Preço zero, se digitado** (27/11/2026, o dono: "deixe a opção do valor
+  zerado, porém tem que colocar 0,00"): o preço pode ser R$ 0,00, mas só
+  digitado — o campo vazio segue em vermelho e barrado. O zero digitado marca
+  o item com `precoZero` (`COT.lerPreco`; `COT.temPreco` = preço > 0 ou a
+  marca); o servidor guarda a marca só com o preço 0 (`itensDe`) e o
+  `exigirQtdPreco` aceita. O preço 0 sem a marca (legado, a cotação da Loja)
+  continua sendo "sem preço". Com a marca, o item sai como R$ 0,00 na lista,
+  na ficha e no PDF da proposta; a média de faturamento não troca o 0,00
+  digitado; e itens todos a 0,00 dão total R$ 0,00 (não o do PDF).
 - Acesso: a fila usa o `/api/cot-casos` (área Comercial), como o retorno do PI
   já usava; quem só tem Estoque não vê a aba.
 - Testes: `node scripts/test-pi-fila.js` (a lista do navegador = a do prompt da
   IA, os campos novos, devolver/reenviar, o item e a rota da fila, o pedido
   pela proposta, quantidade e preço obrigatórios).
-- Versões: `cotacoes-base.js?v=37`, `cotacoes.js?v=49`, `cotacoes-agente.js?v=34`,
-  `cotacoes-proposta.js?v=12`, `cotacoes-ficha.js?v=16`, `cotacoes.css?v=41`,
-  `pedido-inteligente.js?v=48`, `pi-fila.js?v=7`, `nav-sidebar.js?v=92`, `script.js?v=10`,
-  `portal-catalogo.js?v=27`, `area-access.js?v=23`; `sw.js` — cache `bm-comest-v114` (a junção com o Kanban da master), `pi-listas.js?v=3`.
+- Versões: `cotacoes-base.js?v=38`, `cotacoes.js?v=50`, `cotacoes-agente.js?v=35`,
+  `cotacoes-proposta.js?v=13`, `cotacoes-ficha.js?v=17`, `cotacoes.css?v=41`,
+  `pedido-inteligente.js?v=48`, `pi-fila.js?v=9`, `nav-sidebar.js?v=92`, `script.js?v=10`,
+  `portal-catalogo.js?v=27`, `area-access.js?v=23`; `sw.js` — cache `bm-comest-v118` (o preço zero digitado), `pi-listas.js?v=3`.
 
 ### Kanban · e-mail da Cotação UMA vez só por OV (26/11/2026)
 

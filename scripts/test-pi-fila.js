@@ -231,6 +231,16 @@ function casoBase(numero, extra) {
   erro = null;
   try { await M.novo({ dados: { cliente: { nome: 'X' }, itens: [{ codigo: 'A1', descricao: 'x', quantidade: 1 }] } }, QUEM); } catch (e) { erro = e; }
   t('criar a oportunidade com item sem preço: 400', erro && erro.status === 400 && /sem preço/.test(erro.publicMessage), erro && erro.publicMessage);
+  // 27/11/2026: o preço ZERO passa quando digitado (0,00 — a tela marca precoZero)
+  M.aplicar(c, 'itens', { itens: [{ codigo: 'A1', descricao: 'x', quantidade: 2, valorUnitario: 5 }, { codigo: 'B2', descricao: 'y', quantidade: 3, valorUnitario: '0,00', precoZero: true }] }, QUEM, QUEM.cfg, {});
+  t('preço 0,00 digitado (precoZero) passa e fica marcado', c.itens.length === 2 && c.itens[1].valorUnitario === 0 && c.itens[1].precoZero === true && c.total === 10, c.itens);
+  M.aplicar(c, 'itens', { itens: [{ codigo: 'B2', descricao: 'y', quantidade: 3, valorUnitario: 0, precoZero: true }] }, QUEM, QUEM.cfg, {});
+  t('itens todos a 0,00: total R$ 0,00 (não o do PDF)', c.total === 0, c.total);
+  M.aplicar(c, 'itens', { itens: [{ codigo: 'B2', descricao: 'y', quantidade: 3, valorUnitario: 7, precoZero: true }] }, QUEM, QUEM.cfg, {});
+  t('a marca precoZero só fica com o preço 0', c.itens[0].precoZero === undefined && c.total === 21, c.itens);
+  erro = null;
+  try { M.aplicar(c, 'itens', { itens: [{ codigo: 'B2', descricao: 'y', quantidade: 3, valorUnitario: 0 }] }, QUEM, QUEM.cfg, {}); } catch (e) { erro = e; }
+  t('preço 0 sem a marca (campo vazio) segue barrado: 400', erro && erro.status === 400 && /0,00/.test(erro.publicMessage), erro && erro.publicMessage);
 
   console.log(falhas ? '\n' + falhas + ' FALHA(S)' : '\ntudo ok');
   process.exit(falhas ? 1 : 0);

@@ -553,6 +553,9 @@ function itensDe(l) {
       marca: txt(it.marca, 80), registro: txt(it.registro, 30), unidade: txt(it.unidade, 12),
       quantidade: num(it.quantidade), valorUnitario: num(it.valorUnitario)
     };
+    // 27/11/2026 (pedido do dono): o preço ZERO digitado ("0,00") — a tela marca
+    // o item; sem a marca, o preço 0 continua sendo o "sem preço"
+    if (o.valorUnitario === 0 && it.precoZero === true) o.precoZero = true;
     // só quando marcado: o item sem resultado continua igual ao de antes; o
     // perdido pode dizer o motivo (a lista de motivos de perda, ou o escrito)
     const r = resultadoDe(it.resultado);
@@ -567,6 +570,8 @@ function itensDe(l) {
   }).filter(function (it) { return it.descricao || it.codigo || it.codigoCliente; });
 }
 function somaItens(itens) { return r2((itens || []).reduce(function (s, it) { return s + (it.quantidade || 0) * (it.valorUnitario || 0); }, 0)); }
+// algum item com o preço zero digitado: a soma (mesmo 0) é o total — não o do PDF
+function temPrecoZero(itens) { return (itens || []).some(function (it) { return it.precoZero; }); }
 // "3 item(ns) · R$ 5.219,00 · 2 ganho(s) · 1 perdido(s)" (o histórico)
 function textoItens(itens, total) {
   const g = (itens || []).filter(function (it) { return it.resultado === 'ganho'; }).length;
@@ -609,7 +614,7 @@ function dadosDe(d, cfg) {
       condEntrega: txt(co.condEntrega, 30) },
     itens: itens,
     // sem preço nos itens (pedido de cotação ainda sem resposta), vale o total do PDF
-    total: soma > 0 ? soma : num(d.total),
+    total: soma > 0 || temPrecoZero(itens) ? soma : num(d.total),
     totalPdf: num(d.totalPdf != null ? d.totalPdf : d.total)
   };
 }
@@ -1253,14 +1258,15 @@ function travada(c) {
 // QUANTIDADE e PREÇO obrigatórios em cada item (25/11/26, pedido do dono:
 // "campo de preço e qtd é obrigatório") — na Nova oportunidade e na edição dos
 // itens. A cotação da Loja (novoDaLoja) chega sem preço e não passa por aqui.
+// 27/11/2026: o preço pode ser ZERO, se digitado ("0,00" — o item com precoZero)
 function exigirQtdPreco(itens) {
   const ruins = [];
   (itens || []).forEach(function (it, i) {
     if (!(it.codigo || it.codigoCliente || it.descricao)) return;
-    const falta = [!(it.quantidade > 0) ? 'quantidade' : '', !(it.valorUnitario > 0) ? 'preço' : ''].filter(Boolean);
+    const falta = [!(it.quantidade > 0) ? 'quantidade' : '', !(it.valorUnitario > 0 || it.precoZero) ? 'preço' : ''].filter(Boolean);
     if (falta.length) ruins.push('item ' + (i + 1) + (it.codigo ? ' (' + it.codigo + ')' : '') + ' sem ' + falta.join(' e '));
   });
-  if (ruins.length) throw erro(400, 'Quantidade e preço são obrigatórios em cada item: ' + ruins.slice(0, 5).join('; ') + (ruins.length > 5 ? ' e mais ' + (ruins.length - 5) : '') + '.');
+  if (ruins.length) throw erro(400, 'Quantidade e preço são obrigatórios em cada item (para preço zero, digite 0,00): ' + ruins.slice(0, 5).join('; ') + (ruins.length > 5 ? ' e mais ' + (ruins.length - 5) : '') + '.');
 }
 
 // ── criar (o Agente de Cotações) ──────────────────────────────────
@@ -1650,7 +1656,7 @@ function aplicar(c, tipo, b, quem, cfg, ctx) {
       const deTxt = textoItens(c.itens, c.total || 0);
       c.itens = itens;
       const soma = somaItens(itens);
-      c.total = soma > 0 ? soma : (b.total != null ? num(b.total) : (c.totalPdf || 0));
+      c.total = soma > 0 || temPrecoZero(itens) ? soma : (b.total != null ? num(b.total) : (c.totalPdf || 0));
       hist(c, { por: eu, tipo: 'campo', campo: 'Itens', de: deTxt, para: textoItens(itens, c.total) });
       break;
     }

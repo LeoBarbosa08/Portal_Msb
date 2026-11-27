@@ -352,7 +352,7 @@
     if (W.COTPROP && W.COTPROP.pronto()) return Promise.resolve();
     if (!_prop) {
       _prop = (W.jspdf ? Promise.resolve() : carregarScript('https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js'))
-        .then(function () { return W.COTPROP ? null : carregarScript('../cotacoes-proposta.js?v=12'); })
+        .then(function () { return W.COTPROP ? null : carregarScript('../cotacoes-proposta.js?v=13'); })
         .catch(function (e) { _prop = null; throw e; });
     }
     return _prop;

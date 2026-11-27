@@ -1155,7 +1155,7 @@
   function itensComCodigoRuim(itens) {
     return (itens || []).filter(function (it) {
       if (!(it.descricao || it.codigo || it.codigoCliente)) return false;
-      if (!it.codigo) return Number(it.valorUnitario) > 0;
+      if (!it.codigo) return temPreco(it);
       return !produtoDoCodigo(it.codigo);
     });
   }
@@ -1166,7 +1166,7 @@
     if (s.st === 'checando') return '<small class="cod-st chk">conferindo…</small>';
     if (s.st === 'ok') return '<small class="cod-st ok" title="' + esc(s.nome) + '">' + (s.de ? 'corrigido (era ' + esc(s.de) + ') · ' : '✓ ') + esc(s.nome) + '</small>';
     if (s.st === 'nao') return '<small class="cod-st nao">não é produto nosso</small>';
-    if (s.st === 'vazio') return Number(it.valorUnitario) > 0 ? '<small class="cod-st nao">informe o código</small>' : '';
+    if (s.st === 'vazio') return temPreco(it) ? '<small class="cod-st nao">informe o código</small>' : '';
     return '';
   }
 
@@ -1433,8 +1433,18 @@
   // código do comprador ou descrição precisa de quantidade > 0 e preço > 0 —
   // na Nova oportunidade e na edição dos itens (o servidor confere de novo).
   function itemTemConteudo(it) { return !!(it && (String(it.codigo || '').trim() || String(it.codigoCliente || '').trim() || String(it.descricao || '').trim())); }
+  // 27/11/2026 (pedido do dono): na MSB o preço pode ser ZERO, mas digitado —
+  // "0,00" no campo. O campo vazio continua faltando; o zero digitado fica
+  // marcado no item (precoZero) para não se confundir com o "sem preço".
+  function temPreco(it) { return !!it && (Number(it.valorUnitario) > 0 || !!it.precoZero); }
+  // o texto do campo é um zero digitado ("0", "0,00", "R$ 0,00")?
+  function zeroDigitado(v) { var s = String(v == null ? '' : v).replace(/[^\d,.\-]/g, ''); return /\d/.test(s) && num(s) === 0; }
+  // o preço digitado no campo: o número e a marca do zero digitado
+  function lerPreco(it, v) { it.valorUnitario = num(v); if (it.valorUnitario === 0 && zeroDigitado(v)) it.precoZero = true; else delete it.precoZero; }
+  // o valor do campo: o preço, "0,00" no zero digitado, vazio no sem preço
+  function precoCampo(it) { return it && it.valorUnitario ? it.valorUnitario.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 4 }) : it && it.precoZero ? '0,00' : ''; }
   function semQtd(it) { return itemTemConteudo(it) && !(Number(it.quantidade) > 0); }
-  function semPreco(it) { return itemTemConteudo(it) && !(Number(it.valorUnitario) > 0); }
+  function semPreco(it) { return itemTemConteudo(it) && !temPreco(it); }
   // os índices dos itens que faltam quantidade ou preço
   function itensSemQtdPreco(itens) { return (itens || []).map(function (it, i) { return semQtd(it) || semPreco(it) ? i : -1; }).filter(function (i) { return i >= 0; }); }
   function marcarQtdPreco(tr, it) { if (!tr) return; tr.classList.toggle('qtd-falta', semQtd(it)); tr.classList.toggle('vu-falta', semPreco(it)); }
@@ -1615,7 +1625,7 @@
     codigosDoTexto: codigosDoTexto, codigosNossosNoTexto: codigosNossosNoTexto, casarPeloTexto: casarPeloTexto,
     estoqueDe: estoqueDe, htmlEstoque: htmlEstoque, pintarEstoque: pintarEstoque,
     comparar: comparar, parecido: parecido, casarCodigos: casarCodigos, codigosDoPedido: codigosDoPedido, RESULTADOS: RESULTADOS, resultadoItem: resultadoItem, abrirNoPI: abrirNoPI,
-    itemTemConteudo: itemTemConteudo, semQtd: semQtd, semPreco: semPreco, itensSemQtdPreco: itensSemQtdPreco, marcarQtdPreco: marcarQtdPreco,
+    itemTemConteudo: itemTemConteudo, semQtd: semQtd, semPreco: semPreco, temPreco: temPreco, zeroDigitado: zeroDigitado, lerPreco: lerPreco, precoCampo: precoCampo, itensSemQtdPreco: itensSemQtdPreco, marcarQtdPreco: marcarQtdPreco,
     extracaoDaPrevia: extracaoDaPrevia, estadoPi: estadoPi, COND_PAGAMENTO: COND_PAGAMENTO, naListaPag: naListaPag, FRETES: FRETES, naListaFrete: naListaFrete, COND_ENTREGA: COND_ENTREGA, naListaEntrega: naListaEntrega, listaCom: listaCom, transportadoras: transportadoras
   };
 })();

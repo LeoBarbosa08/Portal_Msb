@@ -424,7 +424,8 @@
     var l = c.itens || [];
     if (!l.length) return card('Itens cotados', 0, '<div class="fv-dw-nada">Nenhum item registrado.</div>');
     var LIM = 12, vis = F.itensTudo ? l : l.slice(0, LIM);
-    var semPreco = l.filter(function (it) { return !Number(it.valorUnitario); }).length;
+    // 27/11/2026: o preço zero digitado (precoZero) é cotado, não "sem preço"
+    var semPreco = l.filter(function (it) { return !C.temPreco(it); }).length;
     // o resultado de cada item (sem marca, o da fase: Virou pedido = ganho, Perdida = perdido)
     var rs = l.map(function (it) { return C.resultadoItem(it.resultado, c.fase); });
     var nRes = function (r) { return rs.filter(function (x) { return x.r === r; }).length; };
@@ -436,7 +437,7 @@
         var tot = (Number(it.quantidade) || 0) * (Number(it.valorUnitario) || 0), rr = rs[i];
         return '<div class="fv-dw-it"><div class="n">' + (i + 1) + '</div>' +
           '<div class="c"><div class="t">' + esc(it.descricao || it.codigo || 'Item sem descrição') + '</div>' + (meta ? '<div class="s">' + esc(meta) + '</div>' : '') + '</div>' +
-          '<div class="v"><b>' + (tot ? esc(C.brl(tot)) : '<span class="cot-dw-mut">sem preço</span>') + '</b><span>' + esc(C.qtd(it.quantidade) + (it.valorUnitario ? ' × ' + C.brl(it.valorUnitario) : '')) + '</span>' +
+          '<div class="v"><b>' + (tot || C.temPreco(it) ? esc(C.brl(tot)) : '<span class="cot-dw-mut">sem preço</span>') + '</b><span>' + esc(C.qtd(it.quantidade) + (C.temPreco(it) ? ' × ' + C.brl(it.valorUnitario) : '')) + '</span>' +
             (rr.r ? '<em class="cot-res-chip ' + rr.r + (rr.implicito ? ' imp' : '') + '" title="' + esc(rr.implicito ? 'pela fase da oportunidade' : 'resultado do item') + '">' + C.RESULTADOS[rr.r] + '</em>' : '') + '</div></div>';
       }).join('') + '</div>' + maisBtn('itens', F.itensTudo, l.length, LIM, 'os itens'));
   }

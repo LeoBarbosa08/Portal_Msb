@@ -280,9 +280,11 @@
         var tq = q ? qtd(q) : '—';
         fonte(TB, COR.txt);
         var lQtd = q && doc.getTextWidth(tq + ' ' + un) <= col.qtd[3] - col.qtd[2] ? [tq + ' ' + un] : q ? [tq, un] : ['—'];
-        var cVu = celNumero(vu ? brl(vu) : '—', col.vu[3] - col.vu[2]);
+        // 27/11/2026: o preço zero digitado (precoZero) sai como R$ 0,00, não como "—"
+        var comVu = vu > 0 || !!it.precoZero;
+        var cVu = celNumero(comVu ? brl(vu) : '—', col.vu[3] - col.vu[2]);
         var cIpi = comIpi ? celNumero(ipiDe(it) ? pctIpi(ipiDe(it)) : '—', col.ipi[3] - col.ipi[2]) : null;
-        var cSub = celNumero(vu && q ? brl(vu * q) : '—', col.sub[3] - col.sub[2], 'bold');
+        var cSub = celNumero(comVu && q ? brl(vu * q) : '—', col.sub[3] - col.sub[2], 'bold');
         var nL = Math.max(lCod.length, lProd.length + lExtra.length * 11 / 12, lFab.length, lQtd.length, cVu.l.length, cSub.l.length, cIpi ? cIpi.l.length : 1, 1);
         var h = 14 + 12 * Math.ceil(nL);
         if (y + h > LIMITE_Y) y = novaPagina();
