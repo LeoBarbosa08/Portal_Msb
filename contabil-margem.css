@@ -441,3 +441,135 @@ table.mg-tbl tbody tr.mg-total td.ded{color:#B54545;}
   .mg-bl-row>.mg-bl-rb,.mg-bl-row.hd>div.rb{display:none;}
   .mg-rk-row.hd>div,.mg-bl-row.hd>div{font-size:8.5px;}
 }
+
+/* ================================================================
+   OVERVIEW DO MÊS (MSB · 27/11/2026) — clicar numa coluna do gráfico de
+   Evolução abre este painel à direita (contabil-margem.js, seção 9a).
+   Mesmo desenho da ficha do mês do Sales Report (.sd-dw), em classes
+   próprias para a página não carregar o sr-diario.css inteiro.
+   O tema escuro vem do portal-tema.js (converte estas cores sozinho).
+   ================================================================ */
+html.mgo-on,html.mgo-on body{overflow:hidden;}
+#mg-chart-cv:focus-visible{outline:2px solid #287A8E;outline-offset:4px;border-radius:6px;}
+.mgo-ov{position:fixed;inset:0;background:rgba(14,32,41,.42);z-index:9200;opacity:0;visibility:hidden;transition:opacity .2s ease,visibility 0s linear .2s;}
+.mgo-ov.open{opacity:1;visibility:visible;transition:opacity .2s ease;}
+.mgo{position:fixed;top:0;right:0;bottom:0;width:min(800px,100%);z-index:9201;background:#F2F5F7;display:flex;flex-direction:column;
+  box-shadow:-18px 0 48px rgba(16,50,62,.22);transform:translateX(104%);visibility:hidden;
+  transition:transform .22s ease,visibility 0s linear .22s;font-family:inherit;}
+.mgo.open{transform:none;visibility:visible;transition:transform .24s cubic-bezier(.2,.7,.2,1);}
+.mgo-head{background:#fff;padding:18px 22px 15px;border-bottom:1px solid #E5EAED;display:flex;align-items:flex-start;gap:14px;}
+.mgo-hl{flex:1;min-width:0;}
+.mgo-k{font-size:9.5px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:#97A8AE;}
+.mgo-tt{margin:5px 0 0;font-size:20px;font-weight:800;line-height:1.2;color:#10323E;letter-spacing:-.2px;}
+.mgo-sub{font-size:11.5px;font-weight:600;color:#5F727A;margin-top:5px;line-height:1.45;}
+.mgo-sub b{color:#10323E;}
+.mgo-tags{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px;}
+.mgo-tag{display:inline-flex;align-items:center;padding:3px 10px;border-radius:999px;font-size:10.5px;font-weight:700;background:#F1F4F6;color:#5F727A;}
+.mgo-tag.ok{background:#EAF8F0;color:#22794C;} .mgo-tag.am{background:#FEF3E2;color:#A8541F;} .mgo-tag.rd{background:#FDECEC;color:#B54545;}
+.mgo-tag.az{background:#ECF3F5;color:#286473;}
+.mgo-nav{display:flex;align-items:center;gap:6px;flex-shrink:0;}
+.mgo-x,.mgo-pn{width:34px;height:34px;display:grid;place-items:center;border:1px solid #E5EAED;border-radius:9px;background:#fff;color:#5F727A;cursor:pointer;padding:0;}
+.mgo-x:hover,.mgo-pn:hover:not(:disabled){color:#10323E;border-color:#C6D2D7;background:#F7FAFB;}
+.mgo-pn:disabled{opacity:.35;cursor:default;}
+.mgo-x:focus-visible,.mgo-pn:focus-visible,.mgo-btn:focus-visible,.mgo-mais summary:focus-visible{outline:2px solid #287A8E;outline-offset:1px;}
+.mgo-body{flex:1;overflow-y:auto;padding:16px 22px 26px;display:flex;flex-direction:column;gap:12px;overscroll-behavior:contain;}
+.mgo-foot{background:#fff;border-top:1px solid #E5EAED;padding:12px 22px;display:flex;align-items:center;gap:10px;flex-wrap:wrap;}
+.mgo-btn{display:inline-flex;align-items:center;gap:7px;padding:9px 14px;border-radius:9px;border:1px solid #E5EAED;background:#fff;
+  font-family:inherit;font-size:12.5px;font-weight:700;color:#374951;cursor:pointer;white-space:nowrap;}
+.mgo-btn:hover:not(:disabled){border-color:#C6D2D7;background:#F7FAFB;}
+.mgo-btn:disabled{opacity:.45;cursor:default;}
+.mgo-btn.pri{background:#10323E;border-color:#10323E;color:#fff;}
+.mgo-btn.pri:hover{background:#1A4856;border-color:#1A4856;}
+.mgo-lido{flex:1;font-size:11px;font-weight:600;color:#97A8AE;text-align:right;min-width:120px;}
+
+/* números do mês: duas linhas de 5 (o destaque ocupa 2) */
+.mgo-kpis{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:10px;}
+.mgo-kpis>.mgo-load,.mgo-kpis>.mgo-err,.mgo-kpis>.fx-empty{grid-column:1/-1;}
+.mgo-kp{background:#fff;border:1px solid #E5EAED;border-radius:12px;padding:11px 13px;min-width:0;}
+.mgo-kp .k{font-size:9px;font-weight:800;letter-spacing:.07em;text-transform:uppercase;color:#97A8AE;}
+.mgo-kp .v{font-size:17px;font-weight:800;color:#10323E;margin-top:6px;line-height:1.15;font-variant-numeric:tabular-nums;overflow-wrap:anywhere;}
+.mgo-kp .s{font-size:10.5px;font-weight:600;color:#5F727A;margin-top:4px;line-height:1.4;}
+.mgo-kp.ok .v{color:#22794C;} .mgo-kp.rd .v{color:#B54545;}
+.mgo-kp.destaque{grid-column:span 2;background:linear-gradient(150deg,#0C2029,#1A5160);border-color:transparent;}
+.mgo-kp.destaque .k{color:#ACC3CC;} .mgo-kp.destaque .v{color:#fff;font-size:24px;} .mgo-kp.destaque .s{color:#C6D2D7;}
+.mgo-d{font-weight:800;font-size:9px;}
+.mgo-d.up{color:#22794C;} .mgo-d.dn{color:#B54545;}
+.mgo-kp.destaque .mgo-d.up{color:#6FD9A0;} .mgo-kp.destaque .mgo-d.dn{color:#F4A3A3;}
+
+/* cartões */
+.mgo-card{background:#fff;border:1px solid #E5EAED;border-radius:12px;padding:14px 16px;min-width:0;}
+.mgo-ch{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;}
+.mgo-cl{min-width:0;}
+.mgo-card h5{margin:0;font-size:10.5px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:#374951;}
+.mgo-cs{font-size:11px;font-weight:600;color:#81939B;margin-top:3px;line-height:1.4;}
+.mgo-card .mg-rk,.mgo-card .mg-bl{margin-top:12px;overflow:visible;padding-right:0;}
+/* na página o cabeçalho das listas gruda no topo da lista que rola; aqui quem
+   rola é o painel inteiro, e o cabeçalho grudado passava por cima das linhas */
+.mgo-card .mg-rk-row.hd,.mgo-card .mg-bl-row.hd{position:static;}
+.mgo-card .mg-fil{margin-top:12px;}
+/* mês com dedução maior que a receita (devoluções) não vaza para o cartão de baixo */
+.mgo-card .mg-wf{height:236px;margin-top:6px;overflow:hidden;}
+.mgo-load{display:flex;align-items:center;justify-content:center;gap:10px;padding:18px 12px;font-size:12px;font-weight:600;color:#81939B;}
+.mgo-spin{width:15px;height:15px;border-radius:50%;border:2px solid #DBE3E7;border-top-color:#287A8E;animation:mgoGira .8s linear infinite;flex-shrink:0;}
+@keyframes mgoGira{to{transform:rotate(360deg);}}
+.mgo-err{margin-top:10px;padding:10px 12px;border-radius:10px;background:#FFFBEB;border:1px solid #FDE68A;font-size:12px;font-weight:600;color:#7C4A03;}
+.mgo-okmsg{margin-top:10px;padding:10px 12px;border-radius:10px;background:#EAF8F0;font-size:12px;font-weight:700;color:#22794C;}
+.mgo-p{margin:8px 0 0;font-size:12px;line-height:1.55;color:#374951;font-weight:500;}
+.mgo-p code{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:10.5px;background:#F1F4F6;border-radius:5px;padding:1px 5px;color:#287A8E;}
+.mgo-mais summary{list-style:none;cursor:pointer;display:flex;align-items:center;}
+.mgo-mais summary::-webkit-details-marker{display:none;}
+.mgo-mais summary h5{flex:1;display:flex;}
+.mgo-mais summary h5::after{content:"mostrar";margin-left:auto;font-size:10px;font-weight:700;letter-spacing:0;text-transform:none;color:#287A8E;}
+.mgo-mais[open] summary h5::after{content:"recolher";}
+
+/* leitura do mês */
+.mgo-diag-l{list-style:none;margin:10px 0 0;padding:0;display:flex;flex-direction:column;gap:8px;}
+.mgo-diag-l li{display:flex;gap:10px;align-items:flex-start;font-size:12.5px;line-height:1.55;color:#374951;font-weight:500;}
+.mgo-diag-l li b{color:#10323E;font-weight:700;}
+.mgo-diag-l li i{flex-shrink:0;width:8px;height:8px;border-radius:50%;margin-top:7px;background:#97C3CF;}
+.mgo-diag-l li.ok i{background:#2FBF71;} .mgo-diag-l li.am i{background:#E8A33D;} .mgo-diag-l li.rd i{background:#DC6B6B;}
+
+/* impostos (o mesmo desenho do painel da página) */
+.mgo-trib-top{margin-top:10px;display:flex;align-items:baseline;gap:10px;flex-wrap:wrap;}
+.mgo-big{font-size:19px;font-weight:800;color:#C77E22;line-height:1;}
+.mgo-card .mg-trib-stack{margin-top:12px;}
+.mgo-card .mg-trib-rows{margin-top:12px;}
+
+/* contra o mês anterior */
+.mgo-cmp{margin-top:10px;}
+.mgo-cmp-r{display:grid;grid-template-columns:1fr 96px 96px 150px;gap:10px;align-items:center;padding:7px 0;border-bottom:1px solid #F1F5F7;
+  font-size:12px;font-weight:600;color:#374951;font-variant-numeric:tabular-nums;}
+.mgo-cmp-r:last-child{border-bottom:none;}
+.mgo-cmp-r.hd{padding-top:0;font-size:9px;font-weight:800;letter-spacing:.05em;text-transform:uppercase;color:#97A8AE;}
+.mgo-cmp-r.forte{font-weight:800;color:#10323E;}
+.mgo-cmp-r .n{text-align:right;white-space:nowrap;}
+.mgo-cmp-r .n.soft{color:#97A8AE;}
+.mgo-cmp-r .var small{font-size:10.5px;color:#81939B;font-weight:600;}
+.mgo-cmp-r .var.up{color:#22794C;} .mgo-cmp-r .var.dn{color:#B54545;}
+
+/* abaixo da meta */
+.mgo-gap{margin-top:12px;display:flex;flex-direction:column;gap:10px;}
+.mgo-gap-r{display:grid;grid-template-columns:1fr 88px 64px 104px;gap:10px;align-items:center;min-width:0;}
+.mgo-gap-r.hd{align-items:end;padding-bottom:9px;border-bottom:1px solid #F1F5F7;font-size:9px;font-weight:800;letter-spacing:.05em;text-transform:uppercase;color:#97A8AE;}
+.mgo-gap-mid{min-width:0;}
+.mgo-gap-r .n{text-align:right;font-size:11.5px;font-weight:700;white-space:nowrap;font-variant-numeric:tabular-nums;}
+.mgo-gap-r.hd .n{font-size:9px;font-weight:800;}
+.mgo-gap-r .n.soft{color:#97A8AE;font-weight:600;}
+.mgo-gap-r .n.neg{color:#B54545;font-weight:800;}
+
+@media (max-width:767.98px){
+  .mgo-head{padding:14px 14px 12px;gap:10px;}
+  .mgo-tt{font-size:17px;}
+  .mgo-x,.mgo-pn{width:32px;height:32px;}
+  .mgo-body{padding:12px 12px 20px;gap:10px;}
+  .mgo-foot{padding:10px 12px;}
+  .mgo-btn{flex:1;justify-content:center;}
+  .mgo-lido{flex-basis:100%;text-align:center;}
+  .mgo-kpis{grid-template-columns:repeat(2,minmax(0,1fr));}
+  .mgo-kp .v{font-size:15.5px;}
+  .mgo-card{padding:12px;}
+  .mgo-cmp-r{grid-template-columns:1fr 74px 74px 92px;gap:6px;font-size:11px;}
+  .mgo-cmp-r .var small{display:none;}
+  .mgo-gap-r{grid-template-columns:1fr 54px 84px;gap:6px;}
+  .mgo-gap-r>.n.soft,.mgo-gap-r.hd>div:nth-child(2){display:none;}
+}

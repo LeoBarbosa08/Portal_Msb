@@ -467,11 +467,13 @@
     if (!dim || !dim._ref || valor == null || valor === '') return null;
     return 'FILTER(VALUES(' + dim._ref + '), ' + dim._ref + ' & "" = "' + avDax(valor) + '")';
   }
-  function allFilters(extra, skipId) {
-    return baseFilters().concat(periodFilters(), dimFilters(skipId), extra || []);
+  // periodo (opcional) = filtros de Ano/Mês NO LUGAR dos do painel de Período:
+  // o overview do mês (MSB) mede um mês só com os mesmos filtros da página.
+  function allFilters(extra, skipId, periodo) {
+    return baseFilters().concat(periodo || periodFilters(), dimFilters(skipId), extra || []);
   }
-  function ct(expr, extra, skipId) {
-    var f = allFilters(extra, skipId);
+  function ct(expr, extra, skipId, periodo) {
+    var f = allFilters(extra, skipId, periodo);
     return f.length ? 'CALCULATETABLE(' + expr + ', ' + f.join(', ') + ')' : expr;
   }
   var measExpr = function (ids) { return ids.map(function (id) { var m = meaById(id); return '"' + m.key + '", ' + m._ref; }).join(', '); };
@@ -722,33 +724,33 @@
 
   // Totais. Se a query combinada falhar (um nome de medida errado derruba a
   // query INTEIRA), refaz medida por medida para o dashboard não morrer todo.
-  async function qTotais(extraIds) {
+  async function qTotais(extraIds, periodo) {
     var ids = TOT_IDS.slice();
     (extraIds || []).forEach(function (id) { if (ids.indexOf(id) < 0 && meaById(id)) ids.push(id); });
     var out = {};
     try {
-      var rows = await q('EVALUATE ' + ct('ROW(' + measExpr(ids) + ')'));
+      var rows = await q('EVALUATE ' + ct('ROW(' + measExpr(ids) + ')', null, null, periodo));
       var r = rows && rows[0] ? rows[0] : {};
       ids.forEach(function (id) { out[id] = readMea(r, id); });
       return out;
     } catch (e) { console.warn('[MARGEM] totais combinados falharam, medindo uma a uma:', e.message); }
     await Promise.all(ids.map(async function (id) {
-      try { var rows = await q('EVALUATE ' + ct('ROW(' + measExpr([id]) + ')')); out[id] = readMea(rows && rows[0] ? rows[0] : {}, id); }
+      try { var rows = await q('EVALUATE ' + ct('ROW(' + measExpr([id]) + ')', null, null, periodo)); out[id] = readMea(rows && rows[0] ? rows[0] : {}, id); }
       catch (e2) { out[id] = null; console.warn('[MARGEM] medida ' + id + ':', e2.message); }
     }));
     return out;
   }
 
-  async function qTributos() {
+  async function qTributos(periodo) {
     var out = {};
     try {
-      var rows = await q('EVALUATE ' + ct('ROW(' + measExpr(TRIBUTOS) + ')'));
+      var rows = await q('EVALUATE ' + ct('ROW(' + measExpr(TRIBUTOS) + ')', null, null, periodo));
       var r = rows && rows[0] ? rows[0] : {};
       TRIBUTOS.forEach(function (id) { out[id] = abs(readMea(r, id)); });
       return out;
     } catch (e) { console.warn('[MARGEM] tributos combinados falharam:', e.message); }
     await Promise.all(TRIBUTOS.map(async function (id) {
-      try { var rows = await q('EVALUATE ' + ct('ROW(' + measExpr([id]) + ')')); out[id] = abs(readMea(rows && rows[0] ? rows[0] : {}, id)); }
+      try { var rows = await q('EVALUATE ' + ct('ROW(' + measExpr([id]) + ')', null, null, periodo)); out[id] = abs(readMea(rows && rows[0] ? rows[0] : {}, id)); }
       catch (e2) { out[id] = null; }
     }));
     return out;
@@ -773,13 +775,13 @@
   }
 
   // um nível da matriz (também usado pelo painel de filiais)
-  async function qNivel(dim, ids, extra, top, sortKey) {
+  async function qNivel(dim, ids, extra, top, sortKey, periodo) {
     if (!dim || !dim._ref) return [];
     var expr = 'FILTER(ADDCOLUMNS(SUMMARIZE(' + FATO + ', ' + dim._ref + '), ' + measExpr(ids) + '), NOT ISBLANK([rb]) || NOT ISBLANK([mg]))';
     // ordena pela chave da medida pedida; ela PRECISA estar em ids, senão a
     // coluna não existe no ADDCOLUMNS e a query inteira cai
     var sk = '[' + meaById(ids.indexOf(sortKey) >= 0 ? sortKey : 'rb').key + ']';
-    var dax = 'EVALUATE TOPN(' + (top || 3000) + ', ' + ct(expr, extra) + ', ' + sk + ', DESC)\nORDER BY ' + sk + ' DESC';
+    var dax = 'EVALUATE TOPN(' + (top || 3000) + ', ' + ct(expr, extra, null, periodo) + ', ' + sk + ', DESC)\nORDER BY ' + sk + ' DESC';
     var rows = await q(dax);
     return rows.map(function (r) {
       var o = { nome: valorDim(r, dim) };
@@ -864,10 +866,10 @@
   }
 
   // ── cascata ──
-  function renderCascata(t) {
+  function renderCascata(t, hostId) {
     var rb = t.rb || 0, mg = t.margem || 0;
     var imp = abs(t.imp) || 0, fr = abs(t.frete) || 0, ds = abs(t.desc) || 0, cp = abs(t.custo) || 0;
-    var host = document.getElementById('mg-wf'); if (!host) return;
+    var host = document.getElementById(hostId || 'mg-wf'); if (!host) return;
     if (!rb) { host.innerHTML = '<div class="fx-empty" style="width:100%;">Sem dados no período.</div>'; return; }
     var max = Math.max(rb, mg) || 1;
     var passos = [
@@ -897,13 +899,15 @@
   }
 
   // ── impostos por tributo ──
-  function renderTributos(trib, t) {
+  // pre = prefixo dos ids (a página usa 'mg-trib'; o overview do mês, 'mgo-trib')
+  function renderTributos(trib, t, pre) {
+    pre = pre || 'mg-trib';
     var rb = t.rb, impTotal = abs(t.imp);
     var itens = TRIBUTOS.map(function (id) { return { id: id, label: meaById(id).trib, v: trib[id] || 0 }; })
       .sort(function (a, b) { return b.v - a.v; });
     var soma = itens.reduce(function (s, x) { return s + x.v; }, 0);
     var denom = soma || impTotal || 1;
-    setTxt('mg-trib-tot', fMi(impTotal != null ? impTotal : soma));
+    setTxt(pre + '-tot', fMi(impTotal != null ? impTotal : soma));
     // CBS/IBS/IBS-M são colunas novas (reforma) e podem NÃO estar dentro da
     // medida [Impostos]: quando a soma dos tributos listados diverge do total
     // da medida, a página diz isso em vez de deixar o leitor conciliando sozinho
@@ -911,15 +915,15 @@
     if (impTotal != null && Math.abs(soma - impTotal) > Math.max(1, impTotal * 0.01)) {
       sub += ' · tributos listados somam ' + fMi(soma);
     }
-    setTxt('mg-trib-sub', sub);
-    var stack = document.getElementById('mg-trib-stack');
+    setTxt(pre + '-sub', sub);
+    var stack = document.getElementById(pre + '-stack');
     if (stack) {
       stack.innerHTML = itens.filter(function (x) { return x.v > 0; }).map(function (x) {
         return '<span style="width:' + (x.v / denom * 100).toFixed(2) + '%;background:' + TRIB_COLOR[x.id] + ';"></span>';
       }).join('') || '<span style="width:100%;background:#E5EAED;"></span>';
     }
     var maxV = itens.length ? itens[0].v : 0;
-    setHTML('mg-trib-rows', itens.map(function (x) {
+    setHTML(pre + '-rows', itens.map(function (x) {
       var w = maxV ? (x.v / maxV * 100) : 0;
       return '<div class="mg-trib-row">'
         + '<span class="mg-trib-tag">' + escH(x.label) + '</span>'
@@ -967,12 +971,13 @@
       + itens.map(function (i) { return '<span class="mg-fref-i"><b>' + escH(i.k) + '</b> = <code>' + escH(i.v) + '</code></span>'; }).join('')
       + '</div>';
   }
-  function renderFiliais(rows) {
-    var host = document.getElementById('mg-fil'); if (!host) return;
+  // hostId/semRef: o overview do mês desenha a mesma lista, sem a faixa de referência
+  function renderFiliais(rows, hostId, semRef) {
+    var host = document.getElementById(hostId || 'mg-fil'); if (!host) return;
     var itens = rows.filter(function (r) { return r.nome != null && (r.rb || r.margem); })
       .sort(function (a, b) { return (b.pct || -1e9) - (a.pct || -1e9); });
     if (!itens.length) { host.innerHTML = '<div class="fx-empty">Sem dados no período.</div>'; return; }
-    setTxt('mg-fil-meta', 'Linha de meta: ' + fPct(META));
+    if (!hostId) setTxt('mg-fil-meta', 'Linha de meta: ' + fPct(META));
     host.innerHTML = filHeader() + itens.map(function (r) {
       var pct = r.pct, w = pct == null ? 0 : Math.max(0, Math.min(100, pct));
       return '<div class="mg-frow">'
@@ -985,14 +990,17 @@
         + '<div class="mg-frec" data-k="' + avEsc(FIL_COLS[2].k) + '">' + fMi(r.rb) + '</div>'
         + '<div class="mg-fnota ' + cls(pct) + '" data-k="' + avEsc(FIL_COLS[3].k) + '">' + fNum2(r.nota) + '</div>'
         + '</div></div>';
-    }).join('') + filRef();
+    }).join('') + (semRef ? '' : filRef());
   }
 
   // ── evolução (Chart.js: barras de receita/custo + linha de % de margem) ──
   var _chart = null;
+  var _evo = [];   // os meses do gráfico ({ ano, mesLbl, rb, cp, mp }) — o overview anda por eles
   function renderEvolucao(pts) {
     var el = document.getElementById('mg-chart-cv');
     if (!el || typeof Chart === 'undefined') return;
+    _evo = pts.slice();
+    ligarCanvasOverview(el);
     var labels = pts.map(function (p) { return cap(p.mesLbl); });
     var rb = pts.map(function (p) { return p.rb || 0; });
     var cp = pts.map(function (p) { return p.cp || 0; });
@@ -1025,11 +1033,15 @@
       }
     };
 
+    // a coluna do mês aberto no overview fica petróleo (scriptable: o update('none')
+    // do abrir/fechar repinta sem refazer o gráfico)
+    var corRb = function (c) { return _ov.aberto && c.dataIndex === _ov.idx ? '#10323E' : '#4695AA'; };
+    var corCp = function (c) { return _ov.aberto && c.dataIndex === _ov.idx ? '#97C3CF' : '#C2D9E1'; };
     var data = {
       labels: labels,
       datasets: [
-        { label: 'Receita bruta', data: rb, backgroundColor: '#4695AA', borderRadius: 3, order: 3, yAxisID: 'y' },
-        { label: 'Custo produto', data: cp, backgroundColor: '#C2D9E1', borderRadius: 3, order: 4, yAxisID: 'y' },
+        { label: 'Receita bruta', data: rb, backgroundColor: corRb, borderRadius: 3, order: 3, yAxisID: 'y' },
+        { label: 'Custo produto', data: cp, backgroundColor: corCp, borderRadius: 3, order: 4, yAxisID: 'y' },
         { label: '% Margem', data: mp, type: 'line', yAxisID: 'y1', order: 1, borderColor: '#E8A33D', backgroundColor: '#fff',
           borderWidth: 2, pointRadius: 3, pointBackgroundColor: '#fff', pointBorderColor: '#E8A33D', pointBorderWidth: 2, tension: .25, spanGaps: true }
       ]
@@ -1037,6 +1049,16 @@
     var opts = {
       responsive: true, maintainAspectRatio: false,
       layout: { padding: { top: 18 } },
+      // MSB: clicar em QUALQUER ponto da coluna do mês (barra, linha ou o vão
+      // entre elas) abre o overview do mês — modo 'index', sem exigir acerto
+      onClick: function (evt, els, chart) {
+        var hit = chart.getElementsAtEventForMode(evt, 'index', { intersect: false }, false);
+        if (hit && hit.length) abrirMes(hit[0].index, 'grafico');
+      },
+      onHover: function (evt, els, chart) {
+        var hit = chart.getElementsAtEventForMode(evt, 'index', { intersect: false }, false);
+        chart.canvas.style.cursor = hit && hit.length ? 'pointer' : 'default';
+      },
       plugins: {
         legend: { display: false },
         // O script.js registra um plugin GLOBAL (bmValueLabels) que rotula TODO
@@ -1050,8 +1072,10 @@
             label: function (c) {
               if (c.dataset.yAxisID === 'y1') return c.dataset.label + ': ' + fPct(c.raw);
               return c.dataset.label + ': ' + fBRL0(c.raw);
-            }
-          }
+            },
+            footer: function () { return 'Clique para ver o overview do mês'; }
+          },
+          footerFont: { size: 10.5, weight: '600' }, footerColor: '#C2D9E1'
         }
       },
       scales: {
@@ -1064,6 +1088,539 @@
     if (_chart) { _chart.data = data; _chart.options = opts; _chart.update(); return; }
     _chart = new Chart(el.getContext('2d'), { type: 'bar', data: data, options: opts, plugins: [rotulos] });
   }
+
+  /* ============================================================
+     9a. OVERVIEW DO MÊS (MSB · 27/11/2026)
+     Clicar numa coluna do gráfico "Evolução da margem de contribuição"
+     abre, à direita, TUDO o que aconteceu na margem daquele mês:
+       • os números do mês (% e gap contra a meta, margem, receita bruta e
+         líquida, custo, deduções, notas fiscais, clientes), contra o mês
+         anterior do calendário e contra o período da página;
+       • a LEITURA do mês, escrita a partir dos números (meta, mês anterior,
+         posição no gráfico, de cada R$ 100, impostos, concentração, o que
+         puxou, unidades, abaixo da meta, negativos, mês em andamento);
+       • a composição (cascata), o comparativo linha a linha com o mês
+         anterior, os impostos por tributo, as unidades de negócio, os
+         clientes, produtos e famílias que mais faturaram e os produtos que
+         mais ficaram abaixo da meta;
+       • ‹ › e ← → andam pelos meses do gráfico, Esc fecha, "Filtrar a página
+         por este mês" e o Excel do mês (uma aba por bloco).
+     A conta é a da página — mesmo filtro-base, Empresa MSB e filtros da
+     barra; só o Período troca por Ano = a e Mês = m (ct(…, periodo)). Por
+     isso o overview soma igual à coluna.
+     ============================================================ */
+  var MESES_LONGO = ['Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho', 'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'];
+  var OV_TOP = 10, OV_ABAIXO = 8;
+  var _ov = { aberto: false, idx: -1, tok: 0, cache: {}, dados: null, origem: null, dom: null };
+  var _tPer = null;   // totais do período da página (os do topo) — o mês é medido contra eles
+
+  var okT = function (t) { return !!t && !t._erro && t.rb != null; };
+  var lista = function (v) { return Array.isArray(v) ? v : null; };
+  var ordinal = function (n) { return n + 'º'; };
+  var fPP = function (v) { return v == null ? '—' : Math.abs(v).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ' p.p.'; };
+  var fPPs = function (v) { return v == null ? '—' : (v >= 0 ? '+' : '−') + fPP(v); };
+  var varPct = function (a, b) { return (a == null || b == null || !b) ? null : (a - b) / Math.abs(b) * 100; };
+  var fVar = function (v) { return v == null ? '—' : (v >= 0 ? '+' : '−') + Math.abs(v).toLocaleString('pt-BR', { minimumFractionDigits: 1, maximumFractionDigits: 1 }) + '%'; };
+  var fMiS = function (v) { return v == null ? '—' : (v >= 0 ? '+' : '−') + fMi(Math.abs(v)); };
+  var tomPct = function (pct) { return pct == null ? '' : (pct >= META ? 'ok' : (pct >= META - AMBER_BAND ? 'am' : 'rd')); };
+
+  function nomeMesLongo(p) { var n = mesNum(p.mesLbl); return (n >= 1 && n <= 12 ? MESES_LONGO[n - 1] : cap(p.mesLbl)) + (p.ano != null ? ' de ' + p.ano : ''); }
+  function nomeMesCurto(p) { return cap(p.mesLbl) + (p.ano != null ? '/' + p.ano : ''); }
+  function emAndamento(p) { var h = new Date(); return Number(p.ano) === h.getFullYear() && mesNum(p.mesLbl) === h.getMonth() + 1; }
+
+  // Ano = a e Mês = m, com a grafia do modelo (o mês vai como o modelo grava: "abr")
+  function periodoDoMes(p) {
+    var dAno = dimById('ano'), dMes = dimById('mes'), f = [];
+    if (p.ano != null && dAno._ref) f.push(dAno._ref + ' = ' + Number(p.ano));
+    if (dMes._ref) f.push(dMes._ref + ' = "' + avDax(p.mesLbl) + '"');
+    return f;
+  }
+  // o mês anterior do CALENDÁRIO (não o do gráfico: com meses escolhidos a dedo
+  // no painel, o vizinho do gráfico pode estar longe). O rótulo sai do modelo.
+  function mesAnterior(p) {
+    var n = mesNum(p.mesLbl);
+    if (!(n >= 1 && n <= 12) || p.ano == null) return null;
+    var alvo = n === 1 ? 12 : n - 1, ano = n === 1 ? Number(p.ano) - 1 : Number(p.ano);
+    var lbl = _mesesOpc.concat(_evo.map(function (x) { return x.mesLbl; }))
+      .filter(function (m) { return mesNum(m) === alvo; })[0];
+    return lbl == null ? null : { ano: ano, mesLbl: lbl };
+  }
+  // filtros da barra que estão valendo (a Empresa fixa não entra: é sempre MSB)
+  function filtrosAtivos() {
+    var out = [];
+    DIMS.forEach(function (d) {
+      if (d.fixa || d.id === 'ano' || d.id === 'mes') return;
+      var v = Array.from(_sel[d.id] || []);
+      if (v.length) out.push(d.label + ': ' + (v.length > 3 ? v.slice(0, 3).join(', ') + ' +' + (v.length - 3) : v.join(', ')));
+    });
+    return out;
+  }
+  function chaveMes(p) { return [p.ano, p.mesLbl, META].concat(baseFilters(), dimFilters()).join('§'); }
+
+  // ── consultas do mês (as da página, com o período do mês) ──
+  async function qContagens(per) {
+    var dNf = dimById('nf'), dCli = dimById('cliente'), cols = [];
+    if (dNf && dNf._ref) cols.push('"nnf", CALCULATE(DISTINCTCOUNT(' + dNf._ref + '))');
+    // cliente é dimensão: conta pelos que aparecem no FATO (SUMMARIZE), não a tabela inteira
+    if (dCli && dCli._ref) cols.push('"ncl", CALCULATE(COUNTROWS(SUMMARIZE(' + FATO + ', ' + dCli._ref + ')))');
+    if (!cols.length) return {};
+    var rows = await q('EVALUATE ' + ct('ROW(' + cols.join(', ') + ')', null, null, per));
+    var r = (rows && rows[0]) || {};
+    return { nnf: _numN(_v(r, /\[nnf\]$/)), ncl: _numN(_v(r, /\[ncl\]$/)) };
+  }
+  // os produtos que mais ficaram ABAIXO da meta, em R$: (% margem − meta) × receita
+  // líquida — a mesma régua do "Gap vs meta" do topo. [pct] vem em fração.
+  async function qAbaixoMeta(per) {
+    var dA = dimById('codproduto'), dB = dimById('produto'), mp = meaById('pct'), rl = meaById('rl');
+    if (!dA._ref || !dB._ref || !mp._ref || !rl._ref) return [];
+    var gap = '(' + mp._ref + ' - ' + (META / 100) + ') * ' + rl._ref;
+    var expr = 'FILTER(ADDCOLUMNS(SUMMARIZE(' + FATO + ', ' + dA._ref + ', ' + dB._ref + '), '
+      + measExpr(['rb', 'rl', 'margem', 'pct']) + ', "gap", ' + gap + '), NOT ISBLANK([rb]) && [gap] < 0)';
+    var rows = await q('EVALUATE TOPN(' + OV_ABAIXO + ', ' + ct(expr, null, null, per) + ', [gap], ASC)');
+    return rows.map(function (r) {
+      var o = { cod: valorDim(r, dA), nome: valorDim(r, dB), gap: _numN(_v(r, /\[gap\]$/)) };
+      ['rb', 'rl', 'margem', 'pct'].forEach(function (id) { o[id] = readMea(r, id); });
+      return o;
+    }).sort(function (a, b) { return (a.gap || 0) - (b.gap || 0); });
+  }
+  var porRb = function (arr) { return arr.slice().sort(function (a, b) { return (b.rb || 0) - (a.rb || 0); }); };
+
+  // ── abrir / fechar / andar ──
+  function abrirMes(idx, origem) {
+    if (!_evo.length) return;
+    idx = Math.max(0, Math.min(_evo.length - 1, idx));
+    var p = _evo[idx];
+    montarOverview();
+    var D = _ov.dom, primeira = !_ov.aberto;
+    if (primeira) _ov.origem = (origem === 'grafico' || origem === 'teclado') ? document.getElementById('mg-chart-cv') : document.activeElement;
+    _ov.aberto = true; _ov.idx = idx;
+    D.ov.classList.add('open'); D.dw.classList.add('open'); D.dw.setAttribute('aria-hidden', 'false');
+    document.documentElement.classList.add('mgo-on');
+    D.prev.disabled = idx <= 0; D.next.disabled = idx >= _evo.length - 1;
+    if (_chart) { try { _chart.update('none'); } catch (e) {} }
+    if (primeira) setTimeout(function () { try { D.x.focus({ preventScroll: true }); } catch (e) {} }, 40);
+    D.body.scrollTop = 0;
+
+    var chave = chaveMes(p), tok = ++_ov.tok;
+    var pronto = _ov.cache[chave];
+    if (pronto) { _ov.dados = pronto; pintarTudo(pronto); return; }
+    var d = { p: p, ant: mesAnterior(p), carregando: true };
+    _ov.dados = d;
+    pintarTudo(d);
+    var vivo = function () { return tok === _ov.tok && _ov.aberto; };
+    // ‹ › em sequência: só consulta o mês em que a pessoa parou
+    setTimeout(function () {
+      if (tok !== _ov.tok) return;
+      var per = periodoDoMes(p), M = ['rb', 'margem', 'pct'], falhou = false;
+      var passo = function (pr, k) {
+        return Promise.resolve(pr).then(function (v) { d[k] = v; }, function (e) {
+          falhou = true; console.warn('[MARGEM] overview · ' + k + ':', e.message); d[k] = { _erro: e.message };
+        }).then(function () { if (vivo()) pintarTudo(d); });
+      };
+      Promise.all([
+        passo(qTotais([], per), 't'),
+        passo(d.ant ? qTotais([], periodoDoMes(d.ant)) : null, 'ta'),
+        passo(qTributos(per), 'trib'),
+        passo(qContagens(per), 'cnt'),
+        passo(qNivel(dimById('unidade'), ['rb', 'margem', 'pct', 'nota'], [], 200, 'rb', per), 'fil'),
+        passo(qNivel(dimById('cliente'), M, [], OV_TOP, 'rb', per), 'cli'),
+        passo(qNivelPar(dimById('codproduto'), dimById('produto'), M, [], OV_TOP, 'rb', per), 'prod'),
+        passo(qNivel(dimById('familia'), M, [], OV_TOP, 'rb', per), 'fam'),
+        passo(qAbaixoMeta(per), 'abaixo')
+      ]).then(function () {
+        d.carregando = false; d.lido = new Date();
+        if (!falhou) _ov.cache[chave] = d;     // com erro, reabrir tenta de novo
+        if (vivo()) pintarTudo(d);
+      });
+    }, origem === 'nav' ? 220 : 0);
+  }
+  function navMes(delta) {
+    if (!_ov.aberto) return;
+    var i = _ov.idx + delta;
+    if (i < 0 || i >= _evo.length) return;
+    abrirMes(i, 'nav');
+  }
+  function fecharMes() {
+    if (!_ov.aberto) return;
+    _ov.aberto = false; _ov.tok++;
+    var D = _ov.dom;
+    D.ov.classList.remove('open'); D.dw.classList.remove('open'); D.dw.setAttribute('aria-hidden', 'true');
+    document.documentElement.classList.remove('mgo-on');
+    if (_chart) { try { _chart.update('none'); } catch (e) {} }
+    var o = _ov.origem; _ov.origem = null;
+    if (o && o.focus) { try { o.focus({ preventScroll: true }); } catch (e) {} }
+  }
+  function filtrarPaginaPeloMes() {
+    var d = _ov.dados; if (!d) return;
+    if (d.p.ano != null) _anos = [String(d.p.ano)];
+    _meses = [String(d.p.mesLbl)];
+    fecharMes(); pintarPeriodo(); aplicar();
+  }
+  // o canvas do gráfico: foco pelo teclado e Enter abre o último mês
+  function ligarCanvasOverview(el) {
+    if (el.getAttribute('data-mgo')) return;
+    el.setAttribute('data-mgo', '1');
+    el.setAttribute('tabindex', '0');
+    el.setAttribute('role', 'button');
+    el.setAttribute('aria-label', 'Evolução da margem por mês. Clique numa coluna, ou tecle Enter, para ver o overview do mês.');
+    el.addEventListener('keydown', function (e) {
+      if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); if (_evo.length) abrirMes(_evo.length - 1, 'teclado'); }
+    });
+  }
+
+  // ── o painel (criado uma vez, no <body>) ──
+  var SVG = function (d, w) { return '<svg width="' + (w || 16) + '" height="' + (w || 16) + '" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">' + d + '</svg>'; };
+  function montarOverview() {
+    if (_ov.dom) return;
+    var ov = document.createElement('div'); ov.className = 'mgo-ov';
+    var dw = document.createElement('aside');
+    dw.className = 'mgo'; dw.setAttribute('role', 'dialog'); dw.setAttribute('aria-modal', 'true');
+    dw.setAttribute('aria-labelledby', 'mgo-tt'); dw.setAttribute('aria-hidden', 'true');
+    dw.innerHTML = '<header class="mgo-head">'
+      + '<div class="mgo-hl"><div class="mgo-k">Margem de contribuição · overview do mês</div>'
+      + '<h3 class="mgo-tt" id="mgo-tt">—</h3><div class="mgo-sub" id="mgo-sub"></div><div class="mgo-tags" id="mgo-tags"></div></div>'
+      + '<div class="mgo-nav">'
+      + '<button type="button" class="mgo-pn" title="Mês anterior (←)" aria-label="Mês anterior">' + SVG('<polyline points="15 18 9 12 15 6"/>') + '</button>'
+      + '<button type="button" class="mgo-pn" title="Mês seguinte (→)" aria-label="Mês seguinte">' + SVG('<polyline points="9 18 15 12 9 6"/>') + '</button>'
+      + '<button type="button" class="mgo-x" title="Fechar (Esc)" aria-label="Fechar">' + SVG('<line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>') + '</button>'
+      + '</div></header>'
+      + '<div class="mgo-body" id="mgo-body"></div>'
+      + '<footer class="mgo-foot">'
+      + '<button type="button" class="mgo-btn pri" id="mgo-filtrar">' + SVG('<polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/>', 14) + 'Filtrar a página por este mês</button>'
+      + '<button type="button" class="mgo-btn" id="mgo-xls">' + SVG('<path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3"/>', 14) + 'Excel do mês</button>'
+      + '<span class="mgo-lido" id="mgo-lido"></span>'
+      + '</footer>';
+    document.body.appendChild(ov); document.body.appendChild(dw);
+    var pn = dw.querySelectorAll('.mgo-pn');
+    _ov.dom = { ov: ov, dw: dw, body: dw.querySelector('#mgo-body'), prev: pn[0], next: pn[1], x: dw.querySelector('.mgo-x') };
+    ov.addEventListener('click', fecharMes);
+    _ov.dom.x.addEventListener('click', fecharMes);
+    pn[0].addEventListener('click', function () { navMes(-1); });
+    pn[1].addEventListener('click', function () { navMes(1); });
+    dw.querySelector('#mgo-filtrar').addEventListener('click', filtrarPaginaPeloMes);
+    dw.querySelector('#mgo-xls').addEventListener('click', exportarMes);
+    document.addEventListener('keydown', function (e) {
+      if (!_ov.aberto) return;
+      if (e.key === 'Escape') { e.preventDefault(); fecharMes(); return; }
+      if (e.key === 'Tab') {             // o foco não sai do painel
+        var f = Array.prototype.filter.call(dw.querySelectorAll('button, [href], summary, [tabindex]:not([tabindex="-1"])'),
+          function (x) { return !x.disabled && x.offsetParent !== null; });
+        if (!f.length) return;
+        var i = f.indexOf(document.activeElement);
+        if (e.shiftKey && (i <= 0)) { e.preventDefault(); f[f.length - 1].focus(); }
+        else if (!e.shiftKey && (i === f.length - 1 || i < 0)) { e.preventDefault(); f[0].focus(); }
+        return;
+      }
+      var tg = e.target && e.target.tagName;
+      if (tg === 'INPUT' || tg === 'TEXTAREA' || tg === 'SELECT') return;
+      if (e.key === 'ArrowLeft') { e.preventDefault(); navMes(-1); }
+      else if (e.key === 'ArrowRight') { e.preventDefault(); navMes(1); }
+    });
+  }
+
+  // ── pintura ──
+  var CARREG = '<div class="mgo-load"><span class="mgo-spin"></span>Lendo no Power BI…</div>';
+  function estadoDe(v) {
+    if (v === undefined) return CARREG;
+    if (v && v._erro) return '<div class="mgo-err">Indisponível: ' + escH(String(v._erro).substring(0, 160)) + '</div>';
+    return null;
+  }
+  function card(tt, corpo, sub, dir, cl) {
+    return '<section class="mgo-card' + (cl ? ' ' + cl : '') + '"><div class="mgo-ch"><div class="mgo-cl"><h5>' + tt + '</h5>'
+      + (sub ? '<div class="mgo-cs">' + sub + '</div>' : '') + '</div>' + (dir || '') + '</div>' + corpo + '</section>';
+  }
+  function kp(k, v, s, cl) {
+    return '<div class="mgo-kp' + (cl ? ' ' + cl : '') + '"><div class="k">' + k + '</div><div class="v">' + v + '</div>'
+      + (s ? '<div class="s">' + s + '</div>' : '') + '</div>';
+  }
+  var seta = function (v, bom) {
+    if (v == null) return '';
+    var c = bom == null ? '' : ((v >= 0) === bom ? ' up' : ' dn');
+    return '<b class="mgo-d' + c + '">' + (v >= 0 ? '▲' : '▼') + '</b> ';
+  };
+
+  function cabecalho(d) {
+    var p = d.p, t = okT(d.t) ? d.t : null, pct = t ? t.pct : p.mp, fa = filtrosAtivos();
+    setTxt('mgo-tt', nomeMesLongo(p));
+    setHTML('mgo-sub', 'Tudo o que entrou na margem do mês · Empresa <b>MSB</b>'
+      + (fa.length ? ' · filtros da página: ' + escH(fa.join(' · ')) : ''));
+    var tags = [];
+    if (pct != null) tags.push('<span class="mgo-tag ' + tomPct(pct) + '">' + fPct(pct) + ' de margem · ' + (pct >= META ? 'acima' : 'abaixo') + ' da meta</span>');
+    if (t && t.nota != null) tags.push('<span class="mgo-tag az">Nota ' + fNum2(t.nota) + '</span>');
+    tags.push('<span class="mgo-tag">' + (emAndamento(p) ? 'Mês em andamento' : 'Mês fechado') + '</span>');
+    tags.push('<span class="mgo-tag">' + (_ov.idx + 1) + 'º de ' + _evo.length + ' meses no gráfico</span>');
+    setHTML('mgo-tags', tags.join(''));
+    setTxt('mgo-lido', d.carregando ? 'lendo no Power BI…' : (d.lido ? 'lido às ' + d.lido.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }) : ''));
+    var bx = document.getElementById('mgo-xls'); if (bx) bx.disabled = !t || !!d.carregando;
+  }
+
+  function pintarTudo(d) {
+    var D = _ov.dom; if (!D) return;
+    var p = d.p, nomeAnt = d.ant ? nomeMesCurto(d.ant) : '';
+    cabecalho(d);
+    var trib = '<div class="mgo-trib-top"><div class="mgo-big" id="mgo-trib-tot">—</div><div class="mgo-cs" id="mgo-trib-sub">—</div></div>'
+      + '<div class="mg-trib-stack" id="mgo-trib-stack"></div><div class="mg-trib-rows" id="mgo-trib-rows"></div>';
+    D.body.innerHTML = ''
+      + '<div class="mgo-kpis" id="mgo-kpis"></div>'
+      + card('Leitura do mês', '<div class="mgo-diag" id="mgo-diag"></div>', 'Escrita a partir dos números do mês')
+      + card('Composição da margem', '<div class="mg-wf mgo-wf" id="mgo-wf"></div>', 'Da receita bruta até a margem de contribuição · só este mês')
+      + card(d.ant ? 'Contra ' + escH(nomeMesLongo(d.ant).toLowerCase()) : 'Contra o mês anterior', '<div id="mgo-cmp"></div>',
+             d.ant ? 'O mês anterior do calendário, com os mesmos filtros' : '')
+      + card('Impostos por tributo', trib, 'Carga sobre a receita bruta do mês')
+      + card('Por unidade de negócio', '<div class="mg-fil mgo-fil" id="mgo-fil"></div>', 'Ordenado por % de margem · marca = meta de ' + fPct(META))
+      + card('Clientes que mais faturaram', '<div id="mgo-cli"></div>', 'Os ' + OV_TOP + ' maiores por receita bruta · cor = % de margem contra a meta')
+      + card('Produtos que mais faturaram', '<div id="mgo-prod"></div>', 'Os ' + OV_TOP + ' maiores por receita bruta')
+      + card('Famílias', '<div id="mgo-fam"></div>', 'As ' + OV_TOP + ' maiores por receita bruta')
+      + card('Abaixo da meta', '<div id="mgo-gap"></div>', 'Os produtos que mais deixaram margem na mesa: (% margem − meta) × receita líquida')
+      + '<details class="mgo-card mgo-mais"><summary><h5>Como conta</h5></summary>'
+      +   '<p class="mgo-p">A mesma conta da página: só operações que geram fatura a receber, só a empresa <b>MSB</b> e os filtros da barra. O Período troca por <code>'
+      +   escH(periodoDoMes(p).join(' · ')) + '</code> — por isso o overview soma igual à coluna do gráfico.</p>'
+      +   '<p class="mgo-p"><b>Gap vs meta</b> = (% margem − meta de ' + fPct(META) + ') × receita líquida, a mesma régua do topo da página. '
+      +   '<b>Mês anterior</b> = o mês do calendário antes deste' + (nomeAnt ? ' (' + escH(nomeAnt) + ')' : '') + ', com os mesmos filtros.</p>'
+      +   '<p class="mgo-p">Listas: as ' + OV_TOP + ' maiores por receita bruta; em <b>Abaixo da meta</b>, os ' + OV_ABAIXO + ' produtos com mais margem a menos que a meta. Deduções aparecem em módulo.</p>'
+      + '</details>';
+
+    pintarKpis(d);
+    setHTML('mgo-diag', d.carregando
+      ? (okT(d.t) ? '<div class="mgo-load"><span class="mgo-spin"></span>Montando a leitura do mês…</div>' : (estadoDe(d.t) || CARREG))
+      : diagHtml(leitura(d)));
+    var t = okT(d.t) ? d.t : null;
+    if (t) renderCascata(t, 'mgo-wf'); else setHTML('mgo-wf', estadoDe(d.t) || '<div class="fx-empty" style="width:100%;">Sem dados no mês.</div>');
+    pintarComparativo(d);
+    var stT = estadoDe(d.trib) || (t ? null : estadoDe(d.t));
+    if (stT) setHTML('mgo-trib-rows', stT);
+    else if (t) renderTributos(d.trib, t, 'mgo-trib');
+    else setHTML('mgo-trib-rows', '<div class="fx-empty">Sem dados no mês.</div>');
+    pintarLista('mgo-fil', d.fil, function (rs) { renderFiliais(rs, 'mgo-fil', true); });
+    pintarLista('mgo-cli', d.cli, function (rs) { renderRank('mgo-cli', porRb(rs), { dim: 'Cliente' }); });
+    pintarLista('mgo-prod', d.prod, function (rs) { renderRank('mgo-prod', porRb(rs), { dim: 'Produto' }); });
+    pintarLista('mgo-fam', d.fam, function (rs) { renderBarList('mgo-fam', porRb(rs), 'Família'); });
+    pintarAbaixo(d);
+  }
+  function pintarLista(id, v, fn) {
+    var st = estadoDe(v);
+    if (st) { setHTML(id, st); return; }
+    var rs = lista(v) || [];
+    if (!rs.length) { setHTML(id, '<div class="fx-empty">Sem dados no mês.</div>'); return; }
+    fn(rs);
+  }
+
+  function pintarKpis(d) {
+    var host = document.getElementById('mgo-kpis'); if (!host) return;
+    var st = estadoDe(d.t);
+    if (st) { host.innerHTML = st; return; }
+    var t = d.t;
+    if (!okT(t)) { host.innerHTML = '<div class="fx-empty" style="width:100%;">Sem faturamento neste mês com os filtros da página.</div>'; return; }
+    var ta = okT(d.ta) ? d.ta : null, c = (d.cnt && !d.cnt._erro) ? d.cnt : {}, cntLendo = d.cnt === undefined;
+    var nAnt = d.ant ? cap(d.ant.mesLbl) : '';
+    var rb = t.rb, rl = t.rl, mg = t.margem, pct = t.pct;
+    var imp = abs(t.imp) || 0, fr = abs(t.frete) || 0, ds = abs(t.desc) || 0, ded = imp + fr + ds, cp = abs(t.custo);
+    var gap = (pct == null || rl == null) ? null : (pct - META) / 100 * rl;
+    var dMeta = pct == null ? null : pct - META;
+    var contra = function (a, b, bom) {
+      if (!ta) return d.ant && d.ta === undefined ? 'lendo ' + escH(nAnt) + '…' : '';
+      var v = varPct(a, b);
+      return v == null ? '' : seta(v, bom) + fVar(v) + ' vs ' + escH(nAnt);
+    };
+    var partPer = (_tPer && _tPer.rb && rb != null) ? fPct(rb / _tPer.rb * 100) + ' do período' : '';
+    var junta = function (a, b) { return [a, b].filter(Boolean).join(' · '); };
+    host.innerHTML = [
+      kp('% Margem', fPct(pct), 'meta ' + fPct(META) + (dMeta == null ? '' : ' · ' + seta(dMeta, true) + fPP(dMeta))
+        + (ta && ta.pct != null && pct != null ? ' · ' + fPPs(pct - ta.pct) + ' vs ' + escH(nAnt) : ''), 'destaque'),
+      kp('Gap vs meta', gap == null ? '—' : (gap >= 0 ? '▲ ' : '▼ ') + fMi(Math.abs(gap)), gap == null ? '' : (gap >= 0 ? 'de margem além da meta' : 'de margem faltando para a meta'), gap == null ? '' : (gap >= 0 ? 'ok' : 'rd')),
+      kp('Margem R$', fMi(mg), junta(contra(mg, ta && ta.margem, true), (_tPer && _tPer.margem && mg != null) ? fPct(mg / _tPer.margem * 100) + ' da margem do período' : '')),
+      kp('Receita bruta', fMi(rb), junta(contra(rb, ta && ta.rb, true), partPer)),
+      kp('Receita líquida', fMi(rl), rb ? fPct(rl / rb * 100) + ' da receita bruta' : ''),
+      kp('Custo produto', fMi(cp), junta(rl ? fPct(cp / rl * 100) + ' da receita líquida' : '', ta ? contra(cp, abs(ta.custo), null) : '')),
+      kp('Deduções', fMi(ded), rb ? fPct(ded / rb * 100) + ' da receita bruta · impostos ' + fMi(imp) : ''),
+      kp('Notas fiscais', cntLendo ? '…' : fINT(c.nnf), (c.nnf && rb != null) ? 'ticket médio ' + fBRL0(rb / c.nnf) + ' por nota' : ''),
+      kp('Clientes', cntLendo ? '…' : fINT(c.ncl), t.itens != null ? fINT(t.itens) + ' itens faturados' : '')
+    ].join('');
+  }
+
+  // comparativo linha a linha com o mês anterior
+  var CMP = [
+    { id: 'rb', l: 'Receita bruta', bom: true }, { id: 'rl', l: 'Receita líquida', bom: true },
+    { id: 'imp', l: 'Impostos', ded: true }, { id: 'frete', l: 'Frete', ded: true }, { id: 'desc', l: 'Descontos', ded: true },
+    { id: 'custo', l: 'Custo produto', ded: true }, { id: 'margem', l: 'Margem R$', bom: true, forte: true },
+    { id: 'pct', l: '% Margem', pp: true, bom: true, forte: true }, { id: 'nota', l: 'Nota', num: true, bom: true }, { id: 'itens', l: 'Itens faturados', int: true }
+  ];
+  function valCmp(c, t) { var v = t[c.id]; return v == null ? null : (c.ded ? Math.abs(v) : v); }
+  function fmtCmp(c, v) { return c.pp ? fPct(v) : c.num ? fNum2(v) : c.int ? fINT(v) : fMi(v); }
+  function pintarComparativo(d) {
+    var host = document.getElementById('mgo-cmp'); if (!host) return;
+    if (!d.ant) { host.innerHTML = '<div class="fx-empty">Não há mês anterior com dados no modelo para comparar.</div>'; return; }
+    var st = estadoDe(d.t) || estadoDe(d.ta);
+    if (st) { host.innerHTML = st; return; }
+    if (!okT(d.t)) { host.innerHTML = '<div class="fx-empty">Sem faturamento neste mês.</div>'; return; }
+    if (!okT(d.ta)) { host.innerHTML = '<div class="fx-empty">Sem faturamento em ' + escH(nomeMesLongo(d.ant)) + ' com os filtros da página — nada para comparar.</div>'; return; }
+    host.innerHTML = '<div class="mgo-cmp"><div class="mgo-cmp-r hd"><div></div><div class="n">' + escH(nomeMesCurto(d.ant)) + '</div><div class="n">'
+      + escH(nomeMesCurto(d.p)) + '</div><div class="n">Variação</div></div>'
+      + CMP.map(function (c) {
+        var a = valCmp(c, d.ta), b = valCmp(c, d.t), vtxt = '—', cl = '';
+        if (a != null && b != null) {
+          if (c.pp) { vtxt = seta(b - a, true) + fPPs(b - a); }
+          else {
+            var v = varPct(b, a);
+            vtxt = seta(v == null ? b - a : v, c.bom == null ? null : c.bom)
+              + (c.int || c.num ? (c.num ? (b - a >= 0 ? '+' : '−') + fNum2(Math.abs(b - a)) : (b - a >= 0 ? '+' : '−') + fINT(Math.abs(b - a))) : fMiS(b - a))
+              + (v == null || c.num ? '' : ' <small>' + fVar(v) + '</small>');
+          }
+          if (c.bom) cl = (b - a >= 0) ? ' up' : ' dn';
+        }
+        return '<div class="mgo-cmp-r' + (c.forte ? ' forte' : '') + '"><div>' + escH(c.l) + '</div><div class="n soft">' + fmtCmp(c, a) + '</div><div class="n">'
+          + fmtCmp(c, b) + '</div><div class="n var' + cl + '">' + vtxt + '</div></div>';
+      }).join('') + '</div>';
+  }
+
+  function pintarAbaixo(d) {
+    var host = document.getElementById('mgo-gap'); if (!host) return;
+    var st = estadoDe(d.abaixo); if (st) { host.innerHTML = st; return; }
+    var rs = lista(d.abaixo) || [];
+    if (!rs.length) { host.innerHTML = '<div class="mgo-okmsg">Nenhum produto ficou abaixo da meta de ' + fPct(META) + ' neste mês.</div>'; return; }
+    var maxG = Math.max.apply(null, rs.map(function (r) { return Math.abs(r.gap || 0); }).concat([1]));
+    host.innerHTML = '<div class="mgo-gap"><div class="mgo-gap-r hd"><div>Produto</div><div class="n">Receita</div><div class="n">% Margem</div><div class="n">Abaixo da meta</div></div>'
+      + rs.map(function (r) {
+        var nome = nomeDim(r.nome), w = Math.abs(r.gap || 0) / maxG * 100;
+        return '<div class="mgo-gap-r"><div class="mgo-gap-mid"><div class="mg-rk-name" title="' + avEsc((r.cod ? r.cod + ' · ' : '') + nome) + '">'
+          + (r.cod ? '<span class="mg-rk-cod">' + escH(r.cod) + '</span> ' : '') + escH(nome) + '</div>'
+          + '<div class="mg-rk-track"><div class="mg-rk-fill" style="width:' + Math.max(1.5, w).toFixed(2) + '%;background:' + barColor(r.pct) + ';"></div></div></div>'
+          + '<div class="n soft">' + fMi(r.rb) + '</div><div class="n ' + cls(r.pct) + '">' + fPct(r.pct) + '</div>'
+          + '<div class="n neg">−' + fMi(Math.abs(r.gap || 0)) + '</div></div>';
+      }).join('') + '</div>';
+  }
+
+  // a LEITURA do mês: frases montadas a partir dos números (tom: ok | am | rd | info)
+  function leitura(d) {
+    var t = okT(d.t) ? d.t : null; if (!t) return [];
+    var L = [], p = d.p, pct = t.pct, rb = t.rb, rl = t.rl, mg = t.margem;
+    var imp = abs(t.imp) || 0, fr = abs(t.frete) || 0, ds = abs(t.desc) || 0, cp = abs(t.custo) || 0;
+    if (emAndamento(p)) L.push({ tom: 'info', h: '<b>Mês em andamento</b>: os números ainda mudam até o fechamento.' });
+    // 1. meta
+    if (pct != null) {
+      var dif = pct - META, gap = rl == null ? null : dif / 100 * rl;
+      L.push({ tom: tomPct(pct),
+        h: 'Margem de <b>' + fPct(pct) + '</b>, ' + fPP(dif) + ' ' + (dif >= 0 ? 'acima' : 'abaixo') + ' da meta de ' + fPct(META)
+          + (gap == null ? '.' : (dif >= 0 ? ': <b>' + fMi(gap) + '</b> de margem além do que a meta pedia.' : ': faltaram <b>' + fMi(-gap) + '</b> de margem para a meta.')) });
+    }
+    // 2. contra o mês anterior
+    if (d.ant) {
+      var ta = okT(d.ta) ? d.ta : null;
+      if (ta) {
+        var dpp = (pct != null && ta.pct != null) ? pct - ta.pct : null, vr = varPct(rb, ta.rb), vm = varPct(mg, ta.margem);
+        L.push({ tom: dpp == null ? 'info' : (dpp >= 0 ? 'ok' : 'am'),
+          h: 'Contra ' + escH(nomeMesLongo(d.ant).toLowerCase()) + ': a margem foi de ' + fPct(ta.pct) + ' para <b>' + fPct(pct) + '</b> (' + fPPs(dpp) + '); '
+            + 'a receita bruta, de ' + fMi(ta.rb) + ' para <b>' + fMi(rb) + '</b> (' + fVar(vr) + '), e a margem em R$, ' + fVar(vm) + '.' });
+      } else if (d.ta !== undefined && !(d.ta && d.ta._erro)) {
+        L.push({ tom: 'info', h: 'Sem faturamento em ' + escH(nomeMesLongo(d.ant).toLowerCase()) + ' com estes filtros — nada para comparar com o mês anterior.' });
+      }
+    }
+    // 3. posição entre os meses do gráfico
+    var comPct = _evo.filter(function (x) { return x.mp != null; });
+    if (comPct.length > 1 && p.mp != null) {
+      var rkP = 1 + comPct.filter(function (x) { return x.mp > p.mp; }).length;
+      var rkR = 1 + _evo.filter(function (x) { return (x.rb || 0) > (p.rb || 0); }).length;
+      var perPct = _tPer && _tPer.pct;
+      var marca = rkP === 1 ? ' — <b>o melhor mês</b>' : (rkP === comPct.length ? ' — <b>o pior mês</b>' : '');
+      L.push({ tom: rkP === 1 ? 'ok' : (rkP === comPct.length ? 'am' : 'info'),
+        h: 'Entre os ' + comPct.length + ' meses do gráfico, é o <b>' + ordinal(rkP) + '</b> em % de margem' + marca + ' e o ' + ordinal(rkR) + ' em receita bruta'
+          + (perPct != null && pct != null ? '. A margem do período inteiro é ' + fPct(perPct) + ' (' + fPPs(pct - perPct) + ' neste mês).' : '.') });
+    }
+    // 4. de cada R$ 100
+    if (rb > 0) {
+      var c100 = function (x) { return 'R$ ' + (x / rb * 100).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }); };
+      L.push({ tom: 'info', h: 'De cada <b>R$ 100</b> faturados: ' + c100(cp) + ' de custo de produto, ' + c100(imp) + ' de impostos, '
+        + c100(fr + ds) + ' de frete e descontos — e <b>' + c100(mg || 0) + '</b> viraram margem.' });
+    }
+    // 5. impostos
+    if (d.trib && !d.trib._erro && rb > 0) {
+      var tr = TRIBUTOS.map(function (id) { return { l: meaById(id).trib, v: d.trib[id] || 0 }; }).sort(function (a, b) { return b.v - a.v; });
+      var somaT = tr.reduce(function (s, x) { return s + x.v; }, 0);
+      if (tr[0] && tr[0].v > 0) L.push({ tom: 'info', h: 'Os impostos levaram <b>' + fPct(imp / rb * 100) + '</b> da receita bruta (' + fMi(imp) + '); o maior foi o <b>'
+        + escH(tr[0].l) + '</b>, com ' + fMi(tr[0].v) + (somaT ? ' (' + fPct(tr[0].v / somaT * 100) + ' dos tributos)' : '') + '.' });
+    }
+    // 6. concentração por cliente
+    var cli = lista(d.cli) ? porRb(d.cli) : null, ncl = d.cnt && !d.cnt._erro ? d.cnt.ncl : null;
+    if (cli && cli.length && rb > 0) {
+      var c1 = cli[0], sh = (c1.rb || 0) / rb * 100;
+      var top3 = cli.slice(0, 3).reduce(function (s, x) { return s + (x.rb || 0); }, 0) / rb * 100;
+      L.push({ tom: sh >= 30 ? 'am' : 'info',
+        h: (ncl ? 'Faturou para <b>' + fINT(ncl) + '</b> clientes. ' : '') + 'O maior, <b>' + escH(nomeDim(c1.nome)) + '</b>, fez ' + fPct(sh) + ' da receita do mês (margem de '
+          + fPct(c1.pct) + ')' + (cli.length >= 3 ? '; os 3 maiores somam ' + fPct(top3) : '') + '.' });
+    }
+    // 7. o que puxou a margem
+    var fam = lista(d.fam);
+    if (fam && fam.length && mg) {
+      var fm = fam.slice().sort(function (a, b) { return (b.margem || 0) - (a.margem || 0); })[0];
+      L.push({ tom: 'info', h: 'Entre as famílias que mais faturaram, a que mais deu margem foi <b>' + escH(nomeDim(fm.nome)) + '</b>: ' + fMi(fm.margem)
+        + ' (' + fPct((fm.margem || 0) / mg * 100) + ' da margem do mês, a ' + fPct(fm.pct) + ').' });
+    }
+    // 8. unidades de negócio
+    var fil = (lista(d.fil) || []).filter(function (r) { return r.nome != null && r.rb && r.pct != null; });
+    if (fil.length === 1) L.push({ tom: 'info', h: 'Toda a receita do mês veio de <b>' + escH(nomeDim(fil[0].nome)) + '</b>.' });
+    else if (fil.length > 1) {
+      var o = fil.slice().sort(function (a, b) { return b.pct - a.pct; }), mx = o[0], mn = o[o.length - 1];
+      L.push({ tom: mn.pct < META - AMBER_BAND ? 'am' : 'info', h: 'Por unidade de negócio, a melhor margem foi <b>' + escH(nomeDim(mx.nome)) + '</b> (' + fPct(mx.pct)
+        + ') e a menor, <b>' + escH(nomeDim(mn.nome)) + '</b> (' + fPct(mn.pct) + ').' });
+    }
+    // 9. abaixo da meta e negativos
+    var ab = lista(d.abaixo);
+    if (ab) {
+      if (!ab.length) L.push({ tom: 'ok', h: 'Nenhum produto ficou abaixo da meta de margem neste mês.' });
+      else {
+        var soma = ab.reduce(function (s, x) { return s + Math.abs(x.gap || 0); }, 0), a1 = ab[0];
+        L.push({ tom: 'am', h: 'Os ' + ab.length + ' produtos que mais ficaram abaixo da meta somam <b>' + fMi(soma) + '</b> de margem a menos; o maior foi <b>'
+          + escH((a1.cod ? a1.cod + ' · ' : '') + nomeDim(a1.nome)) + '</b> (margem de ' + fPct(a1.pct) + ', ' + fMi(Math.abs(a1.gap || 0)) + ' abaixo).' });
+        var neg = ab.filter(function (x) { return x.pct != null && x.pct < 0; }).length;
+        if (neg) L.push({ tom: 'rd', h: neg + (neg === 1 ? ' deles teve' : ' deles tiveram') + ' <b>margem negativa</b> no mês (custo e deduções acima da receita).' });
+      }
+    }
+    return L;
+  }
+  function diagHtml(L) {
+    if (!L.length) return '<div class="fx-empty">Sem números para ler neste mês.</div>';
+    return '<ul class="mgo-diag-l">' + L.map(function (x) { return '<li class="' + (x.tom || 'info') + '"><i></i><span>' + x.h + '</span></li>'; }).join('') + '</ul>';
+  }
+
+  // Excel do mês: uma aba por bloco, números como número
+  function exportarMes() {
+    var d = _ov.dados;
+    if (!d || d.carregando || !okT(d.t) || typeof XLSX === 'undefined') return;
+    var p = d.p, t = d.t, c = (d.cnt && !d.cnt._erro) ? d.cnt : {}, wb = XLSX.utils.book_new();
+    var add = function (nome, aoa) { XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(aoa), nome); };
+    var puro = function (h) { var el = document.createElement('div'); el.innerHTML = h; return el.textContent; };
+    var resumo = [['Margem de contribuição · overview do mês'], ['Mês', nomeMesLongo(p)], ['Empresa', 'MSB'],
+      ['Filtros da página', filtrosAtivos().join(' · ') || 'nenhum'], ['Meta de margem (%)', META], [], ['Indicador', 'Valor']];
+    [['Receita bruta', t.rb], ['Receita líquida', t.rl], ['Impostos', abs(t.imp)], ['Frete', abs(t.frete)], ['Descontos', abs(t.desc)],
+     ['Custo produto', abs(t.custo)], ['Margem R$', t.margem], ['% Margem', t.pct], ['Nota', t.nota], ['Itens faturados', t.itens],
+     ['Notas fiscais', c.nnf], ['Clientes', c.ncl]].forEach(function (r) { resumo.push(r); });
+    resumo.push([], ['Leitura do mês']);
+    leitura(d).forEach(function (x) { resumo.push([puro(x.h)]); });
+    add('Resumo', resumo);
+    if (okT(d.ta)) {
+      var cmp = [['Indicador', nomeMesCurto(d.ant), nomeMesCurto(p), 'Variação', 'Variação %']];
+      CMP.forEach(function (k) {
+        var a = valCmp(k, d.ta), b = valCmp(k, t);
+        cmp.push([k.l, a, b, (a == null || b == null) ? null : b - a, k.pp ? null : varPct(b, a)]);
+      });
+      add('Contra o mês anterior', cmp);
+    }
+    if (d.trib && !d.trib._erro) {
+      var tr = [['Tributo', 'Valor', '% da receita bruta']];
+      TRIBUTOS.forEach(function (id) { var v = d.trib[id]; tr.push([meaById(id).trib, v, (v != null && t.rb) ? v / t.rb * 100 : null]); });
+      add('Tributos', tr);
+    }
+    var aba = function (nome, rs, cab, linha) { if (!lista(rs)) return; var a = [cab]; rs.forEach(function (r) { a.push(linha(r)); }); add(nome, a); };
+    aba('Unidades', d.fil, ['Unidade de negócio', 'Receita bruta', 'Margem R$', '% Margem', 'Nota'], function (r) { return [r.nome, r.rb, r.margem, r.pct, r.nota]; });
+    aba('Clientes', lista(d.cli) && porRb(d.cli), ['Cliente', 'Receita bruta', 'Margem R$', '% Margem'], function (r) { return [r.nome, r.rb, r.margem, r.pct]; });
+    aba('Produtos', lista(d.prod) && porRb(d.prod), ['Cód. produto', 'Produto', 'Receita bruta', 'Margem R$', '% Margem'], function (r) { return [r.cod, r.nome, r.rb, r.margem, r.pct]; });
+    aba('Famílias', lista(d.fam) && porRb(d.fam), ['Família', 'Receita bruta', 'Margem R$', '% Margem'], function (r) { return [r.nome, r.rb, r.margem, r.pct]; });
+    aba('Abaixo da meta', d.abaixo, ['Cód. produto', 'Produto', 'Receita bruta', 'Receita líquida', 'Margem R$', '% Margem', 'Abaixo da meta (R$)'],
+      function (r) { return [r.cod, r.nome, r.rb, r.rl, r.margem, r.pct, r.gap == null ? null : Math.abs(r.gap)]; });
+    var mm = mesNum(p.mesLbl);
+    XLSX.writeFile(wb, 'margem_overview_msb_' + (p.ano != null ? p.ano : '') + '-' + (mm <= 12 ? ('0' + mm).slice(-2) : avDax(p.mesLbl)) + '.xlsx');
+  }
+  window.mgOverview = { abrir: function (i) { abrirMes(i == null ? _evo.length - 1 : i, 'api'); }, fechar: fecharMes, estado: function () { return { aberto: _ov.aberto, idx: _ov.idx, meses: _evo.length, dados: _ov.dados }; } };
 
   /* ============================================================
      9b. ANALÍTICO — visuais por dimensão
@@ -1273,12 +1830,12 @@
 
   // duas dimensões no mesmo agrupamento (Top de produtos: código + descrição).
   // A ordenação final é em JS: TOPN já trouxe as 10 maiores.
-  async function qNivelPar(dimA, dimB, ids, extra, top, sortKey) {
+  async function qNivelPar(dimA, dimB, ids, extra, top, sortKey, periodo) {
     if (!dimA || !dimA._ref || !dimB || !dimB._ref) return [];
     var expr = 'FILTER(ADDCOLUMNS(SUMMARIZE(' + FATO + ', ' + dimA._ref + ', ' + dimB._ref + '), '
       + measExpr(ids) + '), NOT ISBLANK([rb]) || NOT ISBLANK([mg]))';
     var sk = '[' + meaById(ids.indexOf(sortKey) >= 0 ? sortKey : 'rb').key + ']';
-    var rows = await q('EVALUATE TOPN(' + (top || 200) + ', ' + ct(expr, extra) + ', ' + sk + ', DESC)');
+    var rows = await q('EVALUATE TOPN(' + (top || 200) + ', ' + ct(expr, extra, null, periodo) + ', ' + sk + ', DESC)');
     var out = rows.map(function (r) {
       var o = { cod: valorDim(r, dimA), nome: valorDim(r, dimB) };
       ids.forEach(function (id) { o[id] = readMea(r, id); });
@@ -1646,6 +2203,7 @@
       calibrarPctm(t);
       renderKpis(t);
       if (VIEW === 'geral') {
+        _tPer = t;   // o overview do mês se mede contra o período da página
         renderHero(t); renderResumo(t); renderCascata(t);
         qTributos().then(function (tr) { if (meu === _pend) renderTributos(tr, t); })
           .catch(function (e) { console.warn('[MARGEM] tributos:', e.message); });

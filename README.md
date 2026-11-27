@@ -207,6 +207,46 @@ e **Analítico por NF** — trazida do portal completo (`origin/master` e6ac11c 
   Coordenação (`GRUPO_MODULOS`), que vê só a Margem dentro do Contábil.
 - `sw.js` — cache `bm-comest-v116`.
 
+### Contábil · overview do mês na Margem (27/11/2026)
+
+Pedido do dono: "quero que tenha um overview ao clicar na coluna de tudo que
+aconteceu aqui". Na Visão Geral da Margem, clicar numa coluna do gráfico
+**Evolução da margem de contribuição** — em qualquer ponto da coluna, não só na
+barra — abre à direita o **overview do mês**, no molde da ficha do mês do Sales
+Report. **Só existe na MSB**: ao trazer novidades do `contabil-margem.js` do
+completo, reaplique a seção `9a. OVERVIEW DO MÊS` e o `periodo` de
+`ct`/`qTotais`/`qTributos`/`qNivel`/`qNivelPar`.
+
+- **Números do mês**: % de margem (contra a meta e o mês anterior), gap vs meta
+  em R$, margem R$, receita bruta (% do período), receita líquida, custo,
+  deduções, notas fiscais (ticket médio) e clientes.
+- **Leitura do mês**, escrita a partir dos números: meta, mês anterior, posição
+  entre os meses do gráfico (melhor/pior), de cada R$ 100 faturados, impostos
+  (o maior tributo), concentração por cliente, a família que mais deu margem,
+  melhor e pior unidade, produtos abaixo da meta e margem negativa; mês em
+  andamento avisa.
+- **Composição** (a cascata da página, só do mês), **contra o mês anterior**
+  (linha a linha: receita, impostos, frete, descontos, custo, margem, %, nota,
+  itens), **impostos por tributo**, **unidades de negócio**, os 10 **clientes**,
+  **produtos** e **famílias** que mais faturaram e **abaixo da meta** — os 8
+  produtos com mais margem a menos que a meta, (% margem − meta) × receita
+  líquida, a régua do "Gap vs meta" do topo.
+- ‹ › e ← → andam pelos meses do gráfico (a coluna aberta fica petróleo), Esc
+  fecha e devolve o foco ao gráfico, Enter no gráfico abre o último mês.
+  **Filtrar a página por este mês** e **Excel do mês** (abas Resumo, Contra o mês
+  anterior, Tributos, Unidades, Clientes, Produtos, Famílias e Abaixo da meta).
+- A conta é a da página — filtro-base, Empresa MSB (por dentro e pelo
+  `pbi-throttle.js`) e os filtros da barra; só o Período troca por
+  `'Calendário'[Ano] = a` e `'Calendário'[Mês (nome abreviado)] = "m"`. O
+  overview soma igual à coluna. Mês anterior = o do calendário (janeiro compara
+  com dezembro do ano anterior), com os mesmos filtros. 9 consultas por mês
+  aberto, guardadas enquanto os filtros não mudam.
+- `contabil-margem.js?v=7` e `contabil-margem.css?v=6` nas 3 abas; tema escuro
+  pelo `portal-tema.js`; no celular o painel ocupa a tela.
+- Teste local: o `.claude/fake-pbi-generico.js` ganhou respostas da Margem
+  (`MARGEM_FAKE`: jan–nov/2026 com os números do relatório real e dez/2025),
+  só nas páginas `contabil-margem*`. `mgOverview.abrir(3)` no F12 abre abril.
+
 ### Comercial · Carteira de Clientes, só como espelho (27/11/2026)
 
 Pedido do dono: "traga a carteira de clientes toda do portal da BIO para a MSB —
